@@ -1,0 +1,10 @@
+.vscode/
+
+*.obj
+*.lib
+*.pdb
+*.dll
+*.exe
+
+*.sln
+*.ninja
