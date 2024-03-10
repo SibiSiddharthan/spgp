@@ -9,6 +9,7 @@
 #include <string.h>
 #include "armor.h"
 #include "base64.h"
+#include "crc24.h"
 
 static char *begin_armor_message = "-----BEGIN PGP MESSAGE-----";
 static char *end_armor_message = "-----END PGP MESSAGE-----";
@@ -103,7 +104,7 @@ armor_status armor_add_header(armor_ctx *ctx, armor_header header, byte_t *value
 	return ARMOR_SUCCESS;
 }
 
-armor_status armor_encode_data(armor_ctx *ctx, const void *data, size_t size)
+armor_status armor_encode_data(armor_ctx *ctx, void *data, size_t size)
 {
 	buffer_range_t input, output;
 
