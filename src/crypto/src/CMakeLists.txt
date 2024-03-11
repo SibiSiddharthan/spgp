@@ -6,6 +6,7 @@
 ]]
 
 add_library(crypto STATIC 
-			hash/md5.c)
+			hash/md5.c
+			hash/sha1.c)
 
 target_include_directories(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
