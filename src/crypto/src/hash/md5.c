@@ -173,10 +173,12 @@ void md5_update(md5_ctx *ctx, void *data, size_t size)
 	// First process the previous data if any.
 	if (unhashed != 0)
 	{
-		memcpy(&ctx->internal[unhashed], pdata, MD5_BLOCK_SIZE - unhashed);
+		uint64_t spill = MD5_BLOCK_SIZE - unhashed;
 
-		ctx->size += MD5_BLOCK_SIZE - unhashed;
-		pos += MD5_BLOCK_SIZE - unhashed;
+		memcpy(&ctx->internal[unhashed], pdata, spill);
+
+		ctx->size += spill;
+		pos += spill;
 
 		md5_hash_block(ctx, ctx->internal);
 	}
@@ -200,75 +202,26 @@ void md5_update(md5_ctx *ctx, void *data, size_t size)
 	}
 }
 
-void md5_final(md5_ctx *ctx, byte_t buffer[MD5_BLOCK_SIZE])
+void md5_final(md5_ctx *ctx, byte_t buffer[MD5_HASH_SIZE])
 {
-	uint64_t unhashed = ctx->size % MD5_BLOCK_SIZE;
-	uint64_t padding = ctx->size % MD5_BLOCK_SIZE;
 	uint64_t bits = ctx->size * 8;
+	uint64_t zero_padding = (64 + 56 - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
+	uint64_t total_padding = 0;
+	byte_t padding[128] = {0};
 
-	if (padding == 56)
-	{
-		// Add 64 + 8 bytes of padding.
-		// First padding byte.
-		ctx->internal[unhashed++] = 0x80; // 57
-		// Remaining padding bytes
-		ctx->internal[unhashed++] = 0x00; // 58
-		ctx->internal[unhashed++] = 0x00; // 59
-		ctx->internal[unhashed++] = 0x00; // 60
-		ctx->internal[unhashed++] = 0x00; // 61
-		ctx->internal[unhashed++] = 0x00; // 62
-		ctx->internal[unhashed++] = 0x00; // 63
-		ctx->internal[unhashed++] = 0x00; // 64
+	// First byte.
+	padding[0] = 0x80;
+	total_padding += 1;
 
-		// Hash this.
-		md5_hash_block(ctx, ctx->internal);
+	// Zero padding
+	total_padding += zero_padding;
 
-		// Remaining padding bytes.
-		memset(&ctx->internal, 0, 56);
+	// Append message length (bits) in Little Endian order.
+	memcpy(&padding[total_padding], &bits, sizeof(uint64_t));
+	total_padding += 8;
 
-		// Append length in Little Endian order.
-		memcpy(&ctx->internal[56], &bits, sizeof(uint64_t));
-
-		// Final Hash.
-		md5_hash_block(ctx, ctx->internal);
-	}
-	else if (padding > 56)
-	{
-		// First padding byte.
-		ctx->internal[unhashed++] = 0x80;
-
-		// Remaining padding bytes
-		while (unhashed != MD5_BLOCK_SIZE)
-		{
-			ctx->internal[unhashed++] = 0x00;
-		}
-
-		// Hash this.
-		md5_hash_block(ctx, ctx->internal);
-
-		// Remaining padding bytes.
-		memset(&ctx->internal, 0, 56);
-
-		// Append length in Little Endian order.
-		memcpy(&ctx->internal[56], &bits, sizeof(uint64_t));
-
-		// Final Hash.
-		md5_hash_block(ctx, ctx->internal);
-	}
-	else
-	{
-		// First padding byte.
-		ctx->internal[unhashed++] = 0x80;
-
-		// Remaining padding bytes
-		memset(&ctx->internal[unhashed], 0, 56 - 1 - padding);
-
-		// Append length in Little Endian order.
-		memcpy(&ctx->internal[56], &bits, sizeof(uint64_t));
-
-		// Final Hash.
-		md5_hash_block(ctx, ctx->internal);
-	}
+	// Final Hash.
+	md5_update(ctx, padding, total_padding);
 
 	// Copy the hash to the buffer, {a,b,c,d}.
 	memcpy(buffer, &ctx->a, MD5_HASH_SIZE);
@@ -277,7 +230,7 @@ void md5_final(md5_ctx *ctx, byte_t buffer[MD5_BLOCK_SIZE])
 	memset(ctx, 0, sizeof(md5_ctx));
 }
 
-int32_t md5_quick_hash(void *data, size_t size, byte_t buffer[MD5_BLOCK_SIZE])
+int32_t md5_quick_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE])
 {
 	// Initialize the context.
 	md5_ctx *ctx = md5_init();

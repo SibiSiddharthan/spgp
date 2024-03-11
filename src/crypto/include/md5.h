@@ -24,7 +24,7 @@ md5_ctx *md5_init(void);
 void md5_free(md5_ctx *ctx);
 void md5_reset(md5_ctx *ctx);
 void md5_update(md5_ctx *ctx, void *data, size_t size);
-void md5_final(md5_ctx *ctx, byte_t buffer[MD5_BLOCK_SIZE]);
-int32_t md5_quick_hash(void *data, size_t size, byte_t buffer[MD5_BLOCK_SIZE]);
+void md5_final(md5_ctx *ctx, byte_t buffer[MD5_HASH_SIZE]);
+int32_t md5_quick_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE]);
 
 #endif
