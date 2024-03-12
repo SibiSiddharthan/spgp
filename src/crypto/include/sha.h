@@ -37,6 +37,13 @@ typedef struct _sha256_ctx
 	byte_t internal[SHA256_BLOCK_SIZE];
 } sha224_ctx, sha256_ctx;
 
+typedef struct _sha512_ctx
+{
+	uint64_t h0, h1, h2, h3, h4, h5, h6, h7;
+	uint64_t size_high, size_low;
+	byte_t internal[SHA512_BLOCK_SIZE];
+} sha384_ctx, sha512_ctx;
+
 sha1_ctx *sha1_init(void);
 void sha1_free(sha1_ctx *ctx);
 void sha1_reset(sha1_ctx *ctx);
@@ -57,5 +64,19 @@ void sha256_reset(sha256_ctx *ctx);
 void sha256_update(sha256_ctx *ctx, void *data, size_t size);
 void sha256_final(sha256_ctx *ctx, byte_t buffer[SHA256_HASH_SIZE]);
 int32_t sha256_quick_hash(void *data, size_t size, byte_t buffer[SHA256_HASH_SIZE]);
+
+sha384_ctx *sha384_init(void);
+void sha384_free(sha384_ctx *ctx);
+void sha384_reset(sha384_ctx *ctx);
+void sha384_update(sha384_ctx *ctx, void *data, size_t size);
+void sha384_final(sha384_ctx *ctx, byte_t buffer[SHA384_HASH_SIZE]);
+int32_t sha384_quick_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZE]);
+
+sha512_ctx *sha512_init(void);
+void sha512_free(sha512_ctx *ctx);
+void sha512_reset(sha512_ctx *ctx);
+void sha512_update(sha512_ctx *ctx, void *data, size_t size);
+void sha512_final(sha512_ctx *ctx, byte_t buffer[SHA512_HASH_SIZE]);
+int32_t sha512_quick_hash(void *data, size_t size, byte_t buffer[SHA512_HASH_SIZE]);
 
 #endif
