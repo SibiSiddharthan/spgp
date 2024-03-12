@@ -223,7 +223,7 @@ void md5_final(md5_ctx *ctx, byte_t buffer[MD5_HASH_SIZE])
 	// Final Hash.
 	md5_update(ctx, padding, total_padding);
 
-	// Copy the hash to the buffer, {a,b,c,d}.
+	// Copy the hash to the buffer, {a,b,c,d} in Little Endian Order.
 	memcpy(buffer, &ctx->a, MD5_HASH_SIZE);
 
 	// Zero the context for security reasons.

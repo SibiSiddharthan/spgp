@@ -54,7 +54,7 @@ static void sha1_hash_block(sha1_ctx *ctx, byte_t block[SHA1_BLOCK_SIZE])
 		w[i] = BSWAP_32(temp[i]);
 	}
 
-	for (int32_t i = 16, j = 0; i < 79; ++i, ++j)
+	for (int32_t i = 16, j = 0; i < 80; ++i, ++j)
 	{
 		// j = i + 16
 		w[i] = ROTL_32((w[j + 13] ^ w[j + 8] ^ w[j + 2] ^ w[j]), 1);
@@ -158,7 +158,16 @@ static void sha1_hash_block(sha1_ctx *ctx, byte_t block[SHA1_BLOCK_SIZE])
 	ctx->h1 += b;
 	ctx->h2 += c;
 	ctx->h3 += d;
-	ctx->h4 += d;
+	ctx->h4 += e;
+}
+
+static void sha1_quick_reset(sha1_ctx *ctx)
+{
+	ctx->h0 = H0;
+	ctx->h1 = H1;
+	ctx->h2 = H2;
+	ctx->h3 = H3;
+	ctx->h4 = H4;
 }
 
 sha1_ctx *sha1_init(void)
@@ -171,12 +180,7 @@ sha1_ctx *sha1_init(void)
 	}
 
 	memset(ctx, 0, sizeof(sha1_ctx));
-
-	ctx->h0 = H0;
-	ctx->h1 = H1;
-	ctx->h2 = H2;
-	ctx->h3 = H3;
-	ctx->h4 = H4;
+	sha1_quick_reset(ctx);
 
 	return ctx;
 }
@@ -189,12 +193,7 @@ void sha1_free(sha1_ctx *ctx)
 void sha1_reset(sha1_ctx *ctx)
 {
 	memset(ctx, 0, sizeof(sha1_ctx));
-
-	ctx->h0 = H0;
-	ctx->h1 = H1;
-	ctx->h2 = H2;
-	ctx->h3 = H3;
-	ctx->h4 = H4;
+	sha1_quick_reset(ctx);
 }
 
 void sha1_update(sha1_ctx *ctx, void *data, size_t size)
@@ -241,6 +240,7 @@ void sha1_final(sha1_ctx *ctx, byte_t buffer[SHA1_HASH_SIZE])
 	uint64_t bits = BSWAP_64(ctx->size * 8);
 	uint64_t zero_padding = (64 + 56 - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
 	uint64_t total_padding = 0;
+	uint32_t *words = (uint32_t *)buffer;
 	byte_t padding[128] = {0};
 
 	// First byte.
@@ -257,8 +257,12 @@ void sha1_final(sha1_ctx *ctx, byte_t buffer[SHA1_HASH_SIZE])
 	// Final Hash.
 	sha1_update(ctx, padding, total_padding);
 
-	// Copy the hash to the buffer, {h0,h1,h2,h3,h4}.
-	memcpy(buffer, &ctx->h0, SHA1_HASH_SIZE);
+	// Copy the hash to the buffer {h0,h1,h2,h3,h4} in Big Endian Order.
+	words[0] = BSWAP_32(ctx->h0);
+	words[1] = BSWAP_32(ctx->h1);
+	words[2] = BSWAP_32(ctx->h2);
+	words[3] = BSWAP_32(ctx->h3);
+	words[4] = BSWAP_32(ctx->h4);
 
 	// Zero the context for security reasons.
 	memset(ctx, 0, sizeof(sha1_ctx));
