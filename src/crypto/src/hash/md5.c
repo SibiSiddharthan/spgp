@@ -205,7 +205,7 @@ void md5_update(md5_ctx *ctx, void *data, size_t size)
 void md5_final(md5_ctx *ctx, byte_t buffer[MD5_HASH_SIZE])
 {
 	uint64_t bits = ctx->size * 8;
-	uint64_t zero_padding = (64 + 56 - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
+	uint64_t zero_padding = ((64 + 56) - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
 	uint64_t total_padding = 0;
 	byte_t padding[128] = {0};
 

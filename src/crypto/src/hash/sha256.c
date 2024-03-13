@@ -219,7 +219,7 @@ static void sha256_common_update(sha256_ctx *ctx, void *data, size_t size)
 static void sha256_common_pre_final(sha256_ctx *ctx)
 {
 	uint64_t bits = BSWAP_64(ctx->size * 8);
-	uint64_t zero_padding = (64 + 56 - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
+	uint64_t zero_padding = ((64 + 56) - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
 	uint64_t total_padding = 0;
 	byte_t padding[128] = {0};
 
@@ -382,6 +382,9 @@ void sha224_final(sha224_ctx *ctx, byte_t buffer[SHA224_HASH_SIZE])
 	words[4] = BSWAP_32(ctx->h4);
 	words[5] = BSWAP_32(ctx->h5);
 	words[6] = BSWAP_32(ctx->h6);
+
+	// Zero the context for security reasons.
+	memset(ctx, 0, sizeof(sha224_ctx));
 }
 
 int32_t sha224_quick_hash(void *data, size_t size, byte_t buffer[SHA224_HASH_SIZE])

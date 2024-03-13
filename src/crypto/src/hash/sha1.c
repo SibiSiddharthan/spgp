@@ -238,7 +238,7 @@ void sha1_update(sha1_ctx *ctx, void *data, size_t size)
 void sha1_final(sha1_ctx *ctx, byte_t buffer[SHA1_HASH_SIZE])
 {
 	uint64_t bits = BSWAP_64(ctx->size * 8);
-	uint64_t zero_padding = (64 + 56 - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
+	uint64_t zero_padding = ((64 + 56) - ((ctx->size + 1) % 64)) % 64; // (l+1+k)mod64 = 56mod64
 	uint64_t total_padding = 0;
 	uint32_t *words = (uint32_t *)buffer;
 	byte_t padding[128] = {0};
