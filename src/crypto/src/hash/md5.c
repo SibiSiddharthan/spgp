@@ -14,14 +14,14 @@
 // See RFC 1321 : The MD5 Message-Digest Algorithm
 
 // Initialization vectors
-static uint32_t A = 0x67452301;
-static uint32_t B = 0xEFCDAB89;
-static uint32_t C = 0x98BADCFE;
-static uint32_t D = 0x10325476;
+static const uint32_t A = 0x67452301;
+static const uint32_t B = 0xEFCDAB89;
+static const uint32_t C = 0x98BADCFE;
+static const uint32_t D = 0x10325476;
 
 // Sine table
 // clang-format off
-static uint32_t T[64] = 
+static const uint32_t T[64] = 
 {
 	0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
 	0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,

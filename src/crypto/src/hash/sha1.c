@@ -16,17 +16,17 @@
 // See FIPS 180-4 : Secure Hash Standard
 
 // Initialization vectors
-static uint32_t H0 = 0x67452301;
-static uint32_t H1 = 0xEFCDAB89;
-static uint32_t H2 = 0x98BADCFE;
-static uint32_t H3 = 0x10325476;
-static uint32_t H4 = 0xC3D2E1F0;
+static const uint32_t H0 = 0x67452301;
+static const uint32_t H1 = 0xEFCDAB89;
+static const uint32_t H2 = 0x98BADCFE;
+static const uint32_t H3 = 0x10325476;
+static const uint32_t H4 = 0xC3D2E1F0;
 
 // SHA-1 Constants
-static uint32_t K0 = 0x5A827999; // Rounds 1 - 20
-static uint32_t K1 = 0x6ED9EBA1; // Rounds 21 - 40
-static uint32_t K2 = 0x8F1BBCDC; // Rounds 41 - 60
-static uint32_t K3 = 0xCA62C1D6; // Rounds 61 - 80
+static const uint32_t K0 = 0x5A827999; // Rounds 1 - 20
+static const uint32_t K1 = 0x6ED9EBA1; // Rounds 21 - 40
+static const uint32_t K2 = 0x8F1BBCDC; // Rounds 41 - 60
+static const uint32_t K3 = 0xCA62C1D6; // Rounds 61 - 80
 
 // Auxillary functions
 #define CH(x, y, z)     (((x) & (y)) | (~(x) & (z)))              // Rounds 1 - 20

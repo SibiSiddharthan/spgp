@@ -12,28 +12,28 @@
 #include <ripemd.h>
 
 // Initialization vectors
-static uint32_t H0 = 0x67452301;
-static uint32_t H1 = 0xEFCDAB89;
-static uint32_t H2 = 0x98BADCFE;
-static uint32_t H3 = 0x10325476;
-static uint32_t H4 = 0xC3D2E1F0;
+static const uint32_t H0 = 0x67452301;
+static const uint32_t H1 = 0xEFCDAB89;
+static const uint32_t H2 = 0x98BADCFE;
+static const uint32_t H3 = 0x10325476;
+static const uint32_t H4 = 0xC3D2E1F0;
 
 // RIPEMD-160 Constants
-static uint32_t KA_0 = 0x00000000; // Rounds 1 - 16
-static uint32_t KA_1 = 0x5A827999; // Rounds 17 - 32
-static uint32_t KA_2 = 0x6ED9EBA1; // Rounds 33 - 48
-static uint32_t KA_3 = 0x8F1BBCDC; // Rounds 49 - 64
-static uint32_t KA_4 = 0xA953FD4E; // Rounds 65 - 80
+static const uint32_t KA_0 = 0x00000000; // Rounds 1 - 16
+static const uint32_t KA_1 = 0x5A827999; // Rounds 17 - 32
+static const uint32_t KA_2 = 0x6ED9EBA1; // Rounds 33 - 48
+static const uint32_t KA_3 = 0x8F1BBCDC; // Rounds 49 - 64
+static const uint32_t KA_4 = 0xA953FD4E; // Rounds 65 - 80
 
-static uint32_t KB_0 = 0x50A28BE6; // Rounds 1 - 16
-static uint32_t KB_1 = 0x5C4DD124; // Rounds 17 - 32
-static uint32_t KB_2 = 0x6D703EF3; // Rounds 33 - 48
-static uint32_t KB_3 = 0x7A6D76E9; // Rounds 49 - 64
-static uint32_t KB_4 = 0x00000000; // Rounds 65 - 80
+static const uint32_t KB_0 = 0x50A28BE6; // Rounds 1 - 16
+static const uint32_t KB_1 = 0x5C4DD124; // Rounds 17 - 32
+static const uint32_t KB_2 = 0x6D703EF3; // Rounds 33 - 48
+static const uint32_t KB_3 = 0x7A6D76E9; // Rounds 49 - 64
+static const uint32_t KB_4 = 0x00000000; // Rounds 65 - 80
 
 // clang-format off
 // Message word selection
-static uint8_t RA[80] = 
+static const uint8_t RA[80] = 
 {
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 	7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
@@ -42,7 +42,7 @@ static uint8_t RA[80] =
 	4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3,  8, 11, 6, 15, 13
 };
 
-static uint8_t RB[80] = 
+static const uint8_t RB[80] = 
 {
 	5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
 	6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
@@ -52,7 +52,7 @@ static uint8_t RB[80] =
 };
 
 // Rotations
-static uint8_t SA[80] = 
+static const uint8_t SA[80] = 
 {
 	11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
 	7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
@@ -61,7 +61,7 @@ static uint8_t SA[80] =
 	9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6
 };
 
-static uint8_t SB[80] = 
+static const uint8_t SB[80] = 
 {
 	8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
 	9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
@@ -89,8 +89,10 @@ static uint8_t SB[80] =
 	}
 
 #define RIPEMD160_ROUND(I, X, Y, W, KA, KB, T, A1, B1, C1, D1, E1, A2, B2, C2, D2, E2) \
-	RIPEMD160_ROUND_STEP(X, W, RA[I], SA[I], KA, T, A1, B1, C1, D1, E1);               \
-	RIPEMD160_ROUND_STEP(Y, W, RB[I], SB[I], KB, T, A2, B2, C2, D2, E2);
+	{                                                                                  \
+		RIPEMD160_ROUND_STEP(X, W, RA[I], SA[I], KA, T, A1, B1, C1, D1, E1);           \
+		RIPEMD160_ROUND_STEP(Y, W, RB[I], SB[I], KB, T, A2, B2, C2, D2, E2);           \
+	}
 
 static void ripemd160_hash_block(ripemd160_ctx *ctx, byte_t block[RIPEMD160_BLOCK_SIZE])
 {
