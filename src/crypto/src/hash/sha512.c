@@ -55,10 +55,10 @@ uint64_t K_512[80] =
 // Auxillary functions
 #define CH(x, y, z)  (((x) & (y)) ^ (~(x) & (z)))
 #define MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define SIGMA0(x)    (ROTR_32(x, 28) ^ ROTR_32(x, 34) ^ ROTR_32(x, 39))
-#define SIGMA1(x)    (ROTR_32(x, 14) ^ ROTR_32(x, 18) ^ ROTR_32(x, 41))
-#define GAMMA0(x)    (ROTR_32(x, 1) ^ ROTR_32(x, 8) ^ ((x) >> 7))
-#define GAMMA1(x)    (ROTR_32(x, 19) ^ ROTR_32(x, 61) ^ ((x) >> 6))
+#define SIGMA0(x)    (ROTR_64(x, 28) ^ ROTR_64(x, 34) ^ ROTR_64(x, 39))
+#define SIGMA1(x)    (ROTR_64(x, 14) ^ ROTR_64(x, 18) ^ ROTR_64(x, 41))
+#define GAMMA0(x)    (ROTR_64(x, 1) ^ ROTR_64(x, 8) ^ ((x) >> 7))
+#define GAMMA1(x)    (ROTR_64(x, 19) ^ ROTR_64(x, 61) ^ ((x) >> 6))
 
 #define SHA512_ROUND(I, W, K, T1, T2, A, B, C, D, E, F, G, H) \
 	{                                                         \
@@ -77,7 +77,7 @@ uint64_t K_512[80] =
 static void sha512_common_hash_block(sha512_ctx *ctx, byte_t block[SHA512_BLOCK_SIZE])
 {
 	uint64_t a, b, c, d, e, f, g, h, t1, t2;
-	uint64_t w[64];
+	uint64_t w[80];
 	uint64_t *temp = (uint64_t *)block;
 
 	for (int32_t i = 0; i < 16; ++i)
@@ -243,8 +243,8 @@ static void sha512_common_update(sha512_ctx *ctx, void *data, size_t size)
 
 static void sha512_common_pre_final(sha512_ctx *ctx)
 {
-	uint64_t bits_high = BSWAP_64(ctx->size_high * 8);
-	uint64_t bits_low = BSWAP_64(ctx->size_low * 8);
+	uint64_t bits_high = BSWAP_64((ctx->size_high << 3) | (ctx->size_low >> 61));
+	uint64_t bits_low = BSWAP_64(ctx->size_low << 3);
 	uint64_t zero_padding = ((128 + 112) - ((ctx->size_low + 1) % 128)) % 128; // (l+1+k)mod128 = 112mod128
 	uint64_t total_padding = 0;
 	byte_t padding[256] = {0};
