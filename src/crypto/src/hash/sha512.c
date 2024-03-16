@@ -35,6 +35,26 @@ static uint64_t H512_5 = 0x9B05688C2B3E6C1F;
 static uint64_t H512_6 = 0x1F83D9ABFB41BD6B;
 static uint64_t H512_7 = 0x5BE0CD19137E2179;
 
+// SHA-512/224
+static uint64_t H512_224_0 = 0x8C3D37C819544DA2;
+static uint64_t H512_224_1 = 0x73E1996689DCD4D6;
+static uint64_t H512_224_2 = 0x1DFAB7AE32FF9C82;
+static uint64_t H512_224_3 = 0x679DD514582F9FCF;
+static uint64_t H512_224_4 = 0x0F6D2B697BD44DA8;
+static uint64_t H512_224_5 = 0x77E36F7304C48942;
+static uint64_t H512_224_6 = 0x3F9D85A86A1D36C8;
+static uint64_t H512_224_7 = 0x1112E6AD91D692A1;
+
+// SHA-512/256
+static uint64_t H512_256_0 = 0x22312194FC2BF72C;
+static uint64_t H512_256_1 = 0x9F555FA3C84C64C2;
+static uint64_t H512_256_2 = 0x2393B86B6F53B151;
+static uint64_t H512_256_3 = 0x963877195940EABD;
+static uint64_t H512_256_4 = 0x96283EE2A88EFFE3;
+static uint64_t H512_256_5 = 0xBE5E1E2553863992;
+static uint64_t H512_256_6 = 0x2B0199FC2C85B8AA;
+static uint64_t H512_256_7 = 0x0EB72DDC81C52CA2;
+
 // SHA-384, SHA-512 Constants
 // clang-format off
 uint64_t K_512[80] = 
@@ -431,6 +451,170 @@ int32_t sha384_quick_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZ
 
 	// Free the context.
 	sha384_free(ctx);
+
+	return 0;
+}
+
+static void sha512_224_quick_rest(sha512_224_ctx *ctx)
+{
+	ctx->h0 = H512_224_0;
+	ctx->h1 = H512_224_1;
+	ctx->h2 = H512_224_2;
+	ctx->h3 = H512_224_3;
+	ctx->h4 = H512_224_4;
+	ctx->h5 = H512_224_5;
+	ctx->h6 = H512_224_6;
+	ctx->h7 = H512_224_7;
+}
+
+sha512_224_ctx *sha512_224_init(void)
+{
+	sha512_224_ctx *ctx = malloc(sizeof(sha512_224_ctx));
+
+	if (ctx == NULL)
+	{
+		return NULL;
+	}
+
+	memset(ctx, 0, sizeof(sha512_224_ctx));
+	sha512_224_quick_rest(ctx);
+
+	return ctx;
+}
+
+void sha512_224_free(sha512_224_ctx *ctx)
+{
+	free(ctx);
+}
+
+void sha512_224_reset(sha512_224_ctx *ctx)
+{
+	memset(ctx, 0, sizeof(sha512_224_ctx));
+	sha512_224_quick_rest(ctx);
+}
+
+void sha512_224_update(sha512_224_ctx *ctx, void *data, size_t size)
+{
+	return sha512_common_update(ctx, data, size);
+}
+
+void sha512_224_final(sha512_224_ctx *ctx, byte_t buffer[SHA512_224_HASH_SIZE])
+{
+	uint64_t *words = (uint64_t *)buffer;
+
+	// Final hash step.
+	sha512_common_pre_final(ctx);
+
+	// Copy the hash to the buffer {h0,h1,h2,h3(leftmost 32 bits)} in Big Endian Order.
+	words[0] = BSWAP_64(ctx->h0);
+	words[1] = BSWAP_64(ctx->h1);
+	words[2] = BSWAP_64(ctx->h2);
+	*(uint32_t *)&words[3] = (uint32_t)BSWAP_64(ctx->h3); // Truncate to 32 bits.
+
+	// Zero the context for security reasons.
+	memset(ctx, 0, sizeof(sha512_224_ctx));
+}
+
+int32_t sha512_224_quick_hash(void *data, size_t size, byte_t buffer[SHA512_224_HASH_SIZE])
+{
+	// Initialize the context.
+	sha512_224_ctx *ctx = sha512_224_init();
+
+	if (ctx == NULL)
+	{
+		return -1;
+	}
+
+	// Hash the data.
+	sha512_224_update(ctx, data, size);
+
+	// Output the hash
+	sha512_224_final(ctx, buffer);
+
+	// Free the context.
+	sha512_224_free(ctx);
+
+	return 0;
+}
+
+static void sha512_256_quick_rest(sha512_256_ctx *ctx)
+{
+	ctx->h0 = H512_256_0;
+	ctx->h1 = H512_256_1;
+	ctx->h2 = H512_256_2;
+	ctx->h3 = H512_256_3;
+	ctx->h4 = H512_256_4;
+	ctx->h5 = H512_256_5;
+	ctx->h6 = H512_256_6;
+	ctx->h7 = H512_256_7;
+}
+
+sha512_256_ctx *sha512_256_init(void)
+{
+	sha512_256_ctx *ctx = malloc(sizeof(sha512_256_ctx));
+
+	if (ctx == NULL)
+	{
+		return NULL;
+	}
+
+	memset(ctx, 0, sizeof(sha512_256_ctx));
+	sha512_256_quick_rest(ctx);
+
+	return ctx;
+}
+
+void sha512_256_free(sha512_256_ctx *ctx)
+{
+	free(ctx);
+}
+
+void sha512_256_reset(sha512_256_ctx *ctx)
+{
+	memset(ctx, 0, sizeof(sha512_256_ctx));
+	sha512_256_quick_rest(ctx);
+}
+
+void sha512_256_update(sha512_256_ctx *ctx, void *data, size_t size)
+{
+	return sha512_common_update(ctx, data, size);
+}
+
+void sha512_256_final(sha512_256_ctx *ctx, byte_t buffer[SHA512_256_HASH_SIZE])
+{
+	uint64_t *words = (uint64_t *)buffer;
+
+	// Final hash step.
+	sha512_common_pre_final(ctx);
+
+	// Copy the hash to the buffer {h0,h1,h2,h3} in Big Endian Order.
+	words[0] = BSWAP_64(ctx->h0);
+	words[1] = BSWAP_64(ctx->h1);
+	words[2] = BSWAP_64(ctx->h2);
+	words[3] = BSWAP_64(ctx->h3);
+
+	// Zero the context for security reasons.
+	memset(ctx, 0, sizeof(sha512_256_ctx));
+}
+
+int32_t sha512_256_quick_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_SIZE])
+{
+	// Initialize the context.
+	sha512_256_ctx *ctx = sha512_256_init();
+
+	if (ctx == NULL)
+	{
+		return -1;
+	}
+
+	// Hash the data.
+	sha512_256_update(ctx, data, size);
+
+	// Output the hash
+	sha512_256_final(ctx, buffer);
+
+	// Free the context.
+	sha512_256_free(ctx);
 
 	return 0;
 }
