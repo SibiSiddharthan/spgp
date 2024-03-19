@@ -5,7 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-add_executable(test-md5 hash/test-md5.c)
-target_link_libraries(test-md5 crypto)
+# Function for adding tests
+function(crypto_hash_test test)
+	add_executable(test-${test} hash/test-${test}.c)
+	target_link_libraries(test-${test} crypto)
+	add_test(NAME test-${test} COMMAND test-${test} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endfunction()
 
-add_test(NAME test-md5 COMMAND test-md5)
+crypto_hash_test(md5)
