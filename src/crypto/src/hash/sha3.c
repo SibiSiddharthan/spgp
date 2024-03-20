@@ -301,6 +301,15 @@ void sha3_update(sha3_ctx *ctx, void *data, size_t size)
 	{
 		uint64_t spill = ctx->block_size - unhashed;
 
+		if (size < spill)
+		{
+			memcpy(&ctx->internal[unhashed], pdata, size);
+			ctx->message_size += size;
+
+			// Nothing to do.
+			return;
+		}
+
 		memcpy(&ctx->internal[unhashed], pdata, spill);
 
 		ctx->message_size += spill;

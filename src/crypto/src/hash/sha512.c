@@ -231,6 +231,16 @@ static void sha512_common_update(sha512_ctx *ctx, void *data, size_t size)
 	{
 		uint64_t spill = SHA512_BLOCK_SIZE - unhashed;
 
+		if (size < spill)
+		{
+			memcpy(&ctx->internal[unhashed], pdata, size);
+			ctx->size_high += (ctx->size_low + size < ctx->size_low);
+			ctx->size_low += size;
+
+			// Nothing to do.
+			return;
+		}
+
 		memcpy(&ctx->internal[unhashed], pdata, spill);
 
 		ctx->size_high += (ctx->size_low + spill < ctx->size_low);

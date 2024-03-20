@@ -208,6 +208,15 @@ void sha1_update(sha1_ctx *ctx, void *data, size_t size)
 	{
 		uint64_t spill = SHA1_BLOCK_SIZE - unhashed;
 
+		if (size < spill)
+		{
+			memcpy(&ctx->internal[unhashed], pdata, size);
+			ctx->size += size;
+
+			// Nothing to do.
+			return;
+		}
+
 		memcpy(&ctx->internal[unhashed], pdata, spill);
 
 		ctx->size += spill;

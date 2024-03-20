@@ -219,6 +219,16 @@ void blake2b_update(blake2b_ctx *ctx, void *data, size_t size)
 	{
 		uint64_t spill = BLAKE2B_BLOCK_SIZE - unhashed;
 
+		if (size < spill)
+		{
+			memcpy(&ctx->internal[unhashed], pdata, size);
+			ctx->size[1] += (ctx->size[0] + size < ctx->size[0]);
+			ctx->size[0] += size;
+
+			// Nothing to do.
+			return;
+		}
+
 		memcpy(&ctx->internal[unhashed], pdata, spill);
 
 		ctx->size[1] += (ctx->size[0] + spill < ctx->size[0]);
@@ -331,6 +341,15 @@ void blake2s_update(blake2s_ctx *ctx, void *data, size_t size)
 	if (unhashed != 0)
 	{
 		uint64_t spill = BLAKE2S_BLOCK_SIZE - unhashed;
+
+		if (size < spill)
+		{
+			memcpy(&ctx->internal[unhashed], pdata, size);
+			ctx->size += size;
+
+			// Nothing to do.
+			return;
+		}
 
 		memcpy(&ctx->internal[unhashed], pdata, spill);
 
