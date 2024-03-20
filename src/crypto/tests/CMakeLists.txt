@@ -16,4 +16,5 @@ endfunction()
 
 crypto_hash_tests(
 md5
+ripemd
 )

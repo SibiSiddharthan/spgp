@@ -11,6 +11,8 @@
 #include <rotate.h>
 #include <ripemd.h>
 
+// See RIPEMD-160: A Strengthened Version of RIPEMD
+
 // Initialization vectors
 static const uint32_t H0 = 0x67452301;
 static const uint32_t H1 = 0xEFCDAB89;
@@ -257,6 +259,15 @@ void ripemd160_update(ripemd160_ctx *ctx, void *data, size_t size)
 	if (unhashed != 0)
 	{
 		uint64_t spill = RIPEMD160_BLOCK_SIZE - unhashed;
+
+		if (size < spill)
+		{
+			memcpy(&ctx->internal[unhashed], pdata, size);
+			ctx->size += size;
+
+			// Nothing to do.
+			return;
+		}
 
 		memcpy(&ctx->internal[unhashed], pdata, spill);
 
