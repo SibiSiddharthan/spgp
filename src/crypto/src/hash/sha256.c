@@ -65,7 +65,7 @@ static const uint32_t K_256[64] =
 		H = G;                                                \
 		G = F;                                                \
 		F = E;                                                \
-		E = D + T2;                                           \
+		E = D + T1;                                           \
 		D = C;                                                \
 		C = B;                                                \
 		B = A;                                                \
@@ -85,7 +85,7 @@ static void sha256_common_hash_block(sha256_ctx *ctx, byte_t block[SHA256_BLOCK_
 
 	for (int32_t i = 16, j = 0; i < 64; ++i, ++j)
 	{
-		// j = i + 16
+		// i = j + 16
 		w[i] = GAMMA1(w[j + 14]) + w[j + 9] + GAMMA0(w[j + 1]) + w[j];
 	}
 

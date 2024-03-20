@@ -87,7 +87,7 @@ static const uint64_t K_512[80] =
 		H = G;                                                \
 		G = F;                                                \
 		F = E;                                                \
-		E = D + T2;                                           \
+		E = D + T1;                                           \
 		D = C;                                                \
 		C = B;                                                \
 		B = A;                                                \
@@ -107,7 +107,7 @@ static void sha512_common_hash_block(sha512_ctx *ctx, byte_t block[SHA512_BLOCK_
 
 	for (int32_t i = 16, j = 0; i < 80; ++i, ++j)
 	{
-		// j = i + 16
+		// i = j + 16
 		w[i] = GAMMA1(w[j + 14]) + w[j + 9] + GAMMA0(w[j + 1]) + w[j];
 	}
 
@@ -288,8 +288,10 @@ static void sha512_common_pre_final(sha512_ctx *ctx)
 
 	// Append message length (bits) in Big Endian order.
 	memcpy(&padding[total_padding], &bits_high, sizeof(uint64_t));
+	total_padding += 8;
+	
 	memcpy(&padding[total_padding], &bits_low, sizeof(uint64_t));
-	total_padding += 16;
+	total_padding += 8;
 
 	// Final Hash.
 	sha512_common_update(ctx, padding, total_padding);

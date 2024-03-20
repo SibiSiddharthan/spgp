@@ -18,4 +18,5 @@ crypto_hash_tests(
 md5
 ripemd
 sha1
+sha2
 )
