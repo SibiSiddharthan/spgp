@@ -16,7 +16,7 @@ int32_t md5_test_suite(void)
 	int32_t status = 0;
 	byte_t buffer[MD5_HASH_SIZE];
 
-	// See RFC 1321, Appendix A.5 for test cases
+	// See RFC 1321, Appendix A.5 for test vectors.
 
 	md5_quick_hash("", 0, buffer);
 	status += check_hash(buffer, MD5_HASH_SIZE, "d41d8cd98f00b204e9800998ecf8427e");

@@ -175,6 +175,15 @@ void md5_update(md5_ctx *ctx, void *data, size_t size)
 	{
 		uint64_t spill = MD5_BLOCK_SIZE - unhashed;
 
+		if (size < spill)
+		{
+			memcpy(&ctx->internal[unhashed], pdata, size);
+			ctx->size += size;
+
+			// Nothing to do.
+			return;
+		}
+
 		memcpy(&ctx->internal[unhashed], pdata, spill);
 
 		ctx->size += spill;
