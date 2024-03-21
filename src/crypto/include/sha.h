@@ -122,6 +122,11 @@ void sha3_free(sha3_ctx *ctx);
 void sha3_update(sha3_ctx *ctx, void *data, size_t size);
 int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size);
 
+int32_t sha3_224_quick_hash(void *data, size_t size, byte_t buffer[SHA3_224_HASH_SIZE]);
+int32_t sha3_256_quick_hash(void *data, size_t size, byte_t buffer[SHA3_256_HASH_SIZE]);
+int32_t sha3_384_quick_hash(void *data, size_t size, byte_t buffer[SHA3_384_HASH_SIZE]);
+int32_t sha3_512_quick_hash(void *data, size_t size, byte_t buffer[SHA3_512_HASH_SIZE]);
+
 shake128_ctx *shake128_init(uint32_t bits);
 void shake128_free(shake128_ctx *ctx);
 void shake128_update(shake128_ctx *ctx, void *data, size_t size);
