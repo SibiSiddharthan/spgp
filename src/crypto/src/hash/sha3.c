@@ -191,16 +191,16 @@ static const uint64_t IOTA_CONSTANTS[24] = {
 
 static inline void iota(uint64_t A[25], uint32_t round)
 {
-	A[0] = IOTA_CONSTANTS[round];
+	A[0] ^= IOTA_CONSTANTS[round];
 }
 
-#define KECCAK_ROUND(I, W) \
+#define KECCAK_ROUND(I, A) \
 	{                      \
-		theta(W);          \
-		rho(W);            \
-		pi(W);             \
-		chi(W);            \
-		iota(W, I);        \
+		theta(A);          \
+		rho(A);            \
+		pi(A);             \
+		chi(A);            \
+		iota(A, I);        \
 	}
 
 static void keccak1600(uint64_t A[25])
@@ -229,7 +229,7 @@ static void keccak1600(uint64_t A[25])
 	KECCAK_ROUND(20, A);
 	KECCAK_ROUND(21, A);
 	KECCAK_ROUND(22, A);
-	KECCAK_ROUND(24, A);
+	KECCAK_ROUND(23, A);
 }
 
 static void sha3_hash_block(sha3_ctx *ctx)
@@ -239,7 +239,7 @@ static void sha3_hash_block(sha3_ctx *ctx)
 		ctx->block[i] ^= ctx->internal[i];
 	}
 
-	keccak1600((uint64_t*)ctx->block);
+	keccak1600((uint64_t *)ctx->block);
 }
 
 sha3_ctx *sha3_init(uint32_t bits)
@@ -351,10 +351,10 @@ int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	memset(&ctx->internal[unhashed], 0, ctx->block_size - unhashed);
 
 	// Append '011' as bitstring. (i.e 00000110)
-	ctx->internal[unhashed++] ^= 0x06;
+	ctx->internal[unhashed++] |= 0x06;
 
 	// Most significant bit set to 1.
-	ctx->internal[ctx->block_size - 1] ^= 0x80;
+	ctx->internal[ctx->block_size - 1] |= 0x80;
 
 	// Final hash
 	sha3_hash_block(ctx);
@@ -405,7 +405,7 @@ static int32_t shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 			}
 
 			// Next hash
-			keccak1600((uint64_t*)ctx->block);
+			keccak1600((uint64_t *)ctx->block);
 		}
 		else
 		{
