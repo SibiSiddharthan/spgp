@@ -19,4 +19,5 @@ md5
 ripemd
 sha1
 sha2
+sha3
 )
