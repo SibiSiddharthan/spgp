@@ -29,9 +29,9 @@ static const uint32_t K2 = 0x8F1BBCDC; // Rounds 41 - 60
 static const uint32_t K3 = 0xCA62C1D6; // Rounds 61 - 80
 
 // Auxillary functions
-#define CH(x, y, z)     (((x) & (y)) | (~(x) & (z)))              // Rounds 1 - 20
+#define CH(x, y, z)     (((x) & (y)) ^ (~(x) & (z)))              // Rounds 1 - 20
 #define PARITY(x, y, z) ((x) ^ (y) ^ (z))                         // Rounds 21 - 40, 61 - 80
-#define MAJ(x, y, z)    (((x) & (y)) | ((x) & (z)) | ((y) & (z))) // Rounds 41 - 60
+#define MAJ(x, y, z)    (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z))) // Rounds 41 - 60
 
 #define SHA1_ROUND(I, F, K, W, T, A, B, C, D, E)       \
 	{                                                  \
