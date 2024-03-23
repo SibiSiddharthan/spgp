@@ -15,6 +15,7 @@ function(crypto_hash_tests ...)
 endfunction()
 
 crypto_hash_tests(
+blake2
 md5
 ripemd
 sha1
