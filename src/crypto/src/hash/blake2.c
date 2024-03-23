@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include <minmax.h>
 #include <rotate.h>
 #include <blake2.h>
 
@@ -97,13 +98,17 @@ static void blake2b_hash_block(blake2b_ctx *ctx, byte_t block[BLAKE2B_BLOCK_SIZE
 	memcpy(&work[0], ctx->state, sizeof(uint64_t) * 8);
 	memcpy(&work[8], BLAKE2B_IV, sizeof(uint64_t) * 8);
 
-	work[12] ^= ctx->size[0]; // low 64 bits
-	work[13] ^= ctx->size[1]; // high 64 bits
-
 	if (final)
 	{
 		work[14] = ~work[14];
+
+		// Add the unhashed length here.
+		ctx->size[1] += (ctx->size[0] + ctx->unhashed < ctx->size[0]);
+		ctx->size[0] += ctx->unhashed;
 	}
+
+	work[12] ^= ctx->size[0]; // low 64 bits
+	work[13] ^= ctx->size[1]; // high 64 bits
 
 	// Rounds 1 - 12
 	BLAKE2B_ROUND(0, work, words);
@@ -128,19 +133,22 @@ static void blake2b_hash_block(blake2b_ctx *ctx, byte_t block[BLAKE2B_BLOCK_SIZE
 static void blake2s_hash_block(blake2s_ctx *ctx, byte_t block[BLAKE2S_BLOCK_SIZE], bool final)
 {
 	uint32_t work[16];
-	uint32_t *words = (uint64_t *)block;
+	uint32_t *words = (uint32_t *)block;
 	uint32_t *size = (uint32_t *)&ctx->size;
 
 	memcpy(&work[0], ctx->state, sizeof(uint32_t) * 8);
 	memcpy(&work[8], BLAKE2S_IV, sizeof(uint32_t) * 8);
 
-	work[12] ^= size[0]; // low 32 bits
-	work[13] ^= size[1]; // high 32 bits
-
 	if (final)
 	{
 		work[14] = ~work[14];
+
+		// Add the unhashed length here.
+		ctx->size += ctx->unhashed;
 	}
+
+	work[12] ^= size[0]; // low 32 bits
+	work[13] ^= size[1]; // high 32 bits
 
 	// Rounds 1 - 10
 	BLAKE2S_ROUND(0, work, words);
@@ -160,16 +168,16 @@ static void blake2s_hash_block(blake2s_ctx *ctx, byte_t block[BLAKE2S_BLOCK_SIZE
 	}
 }
 
-blake2b_ctx *blake2b_init(uint32_t hash_size, void *key, uint32_t key_size)
+blake2b_ctx *blake2b_init(blake2b_param *param, void *key)
 {
 	blake2b_ctx *ctx = NULL;
 
-	if (!(hash_size <= BLAKE2B_MAX_HASH_SIZE && hash_size >= 1))
+	if (!(param->digest_length <= BLAKE2B_MAX_HASH_SIZE && param->digest_length >= 1))
 	{
 		return NULL;
 	}
 
-	if (!(key_size <= BLAKE2B_MAX_KEY_SIZE && key_size >= 0))
+	if (!(param->key_length <= BLAKE2B_MAX_KEY_SIZE && param->key_length >= 0))
 	{
 		return NULL;
 	}
@@ -183,20 +191,23 @@ blake2b_ctx *blake2b_init(uint32_t hash_size, void *key, uint32_t key_size)
 
 	memset(ctx, 0, sizeof(blake2b_ctx));
 
-	ctx->hash_size = hash_size;
-	ctx->key_size = key_size;
+	ctx->hash_size = param->digest_length;
+	ctx->key_size = param->key_length;
 
 	memcpy(ctx->state, BLAKE2B_IV, sizeof(uint64_t) * 8);
 
 	// XOR with parameter block.
-	ctx->state[0] ^= 0x01010000 | (key_size << 8) | hash_size;
+	for (int32_t i = 0; i < 8; ++i)
+	{
+		uint64_t *qword = (uint64_t *)param;
+		ctx->state[i] ^= qword[i];
+	}
 
 	// Keyed hashing.
-	if (key_size > 0)
+	if (ctx->key_size > 0)
 	{
-		memcpy(ctx->internal, key, key_size);
-		blake2b_hash_block(ctx, ctx->internal, false);
-		ctx->size[0] += BLAKE2B_BLOCK_SIZE;
+		memcpy(ctx->internal, key, ctx->key_size);
+		ctx->unhashed += BLAKE2B_BLOCK_SIZE;
 	}
 
 	return ctx;
@@ -211,65 +222,36 @@ void blake2b_update(blake2b_ctx *ctx, void *data, size_t size)
 {
 	uint64_t pos = 0;
 	uint64_t remaining = 0;
-	uint64_t unhashed = ctx->size[0] % BLAKE2B_BLOCK_SIZE;
 	byte_t *pdata = (byte_t *)data;
 
-	// First process the previous data if any.
-	if (unhashed != 0)
+	while (pos < size)
 	{
-		uint64_t spill = BLAKE2B_BLOCK_SIZE - unhashed;
-
-		if (size < spill)
+		if (ctx->unhashed == BLAKE2B_BLOCK_SIZE)
 		{
-			memcpy(&ctx->internal[unhashed], pdata, size);
-			ctx->size[1] += (ctx->size[0] + size < ctx->size[0]);
-			ctx->size[0] += size;
-
-			// Nothing to do.
-			return;
+			// Update size before hashing.
+			ctx->size[1] += (ctx->size[0] + BLAKE2B_BLOCK_SIZE < ctx->size[0]);
+			ctx->size[0] += BLAKE2B_BLOCK_SIZE;
+			blake2b_hash_block(ctx, ctx->internal, false);
+			ctx->unhashed = 0;
 		}
 
-		memcpy(&ctx->internal[unhashed], pdata, spill);
+		remaining = MIN(BLAKE2B_BLOCK_SIZE - ctx->unhashed, size - pos);
+		memcpy(&ctx->internal[ctx->unhashed], pdata + pos, remaining);
 
-		ctx->size[1] += (ctx->size[0] + spill < ctx->size[0]);
-		ctx->size[0] += spill;
-		pos += spill;
-
-		blake2b_hash_block(ctx, ctx->internal, false);
-	}
-
-	while (pos + BLAKE2B_BLOCK_SIZE <= size)
-	{
-		blake2b_hash_block(ctx, (pdata + pos), false);
-
-		ctx->size[1] += (ctx->size[0] + BLAKE2B_BLOCK_SIZE < ctx->size[0]);
-		ctx->size[0] += BLAKE2B_BLOCK_SIZE;
-		pos += BLAKE2B_BLOCK_SIZE;
-	}
-
-	// Copy the remaining data to the internal buffer.
-	remaining = size - pos;
-
-	if (remaining > 0)
-	{
-		ctx->size[1] += (ctx->size[0] + remaining < ctx->size[0]);
-		ctx->size[0] += remaining;
-
-		memcpy(&ctx->internal[0], pdata + pos, remaining);
+		pos += remaining;
+		ctx->unhashed += remaining;
 	}
 }
 
 int32_t blake2b_final(blake2b_ctx *ctx, byte_t *buffer, size_t size)
 {
-	uint64_t unhashed = ctx->size[0] % BLAKE2B_BLOCK_SIZE;
-
 	if (size < ctx->hash_size)
 	{
 		return -1;
 	}
 
 	// Zero padding
-	memset(&ctx->internal[unhashed], 0, BLAKE2B_BLOCK_SIZE - unhashed);
+	memset(&ctx->internal[ctx->unhashed], 0, BLAKE2B_BLOCK_SIZE - ctx->unhashed);
 
 	// Final hash
 	blake2b_hash_block(ctx, ctx->internal, true);
@@ -283,16 +265,16 @@ int32_t blake2b_final(blake2b_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
-blake2s_ctx *blake2s_init(uint32_t hash_size, void *key, uint32_t key_size)
+blake2s_ctx *blake2s_init(blake2s_param *param, void *key)
 {
 	blake2s_ctx *ctx = NULL;
 
-	if (!(hash_size <= BLAKE2S_MAX_HASH_SIZE && hash_size >= 1))
+	if (!(param->digest_length <= BLAKE2S_MAX_HASH_SIZE && param->digest_length >= 1))
 	{
 		return NULL;
 	}
 
-	if (!(key_size <= BLAKE2S_MAX_KEY_SIZE && key_size >= 0))
+	if (!(param->key_length <= BLAKE2S_MAX_KEY_SIZE && param->key_length >= 0))
 	{
 		return NULL;
 	}
@@ -306,20 +288,23 @@ blake2s_ctx *blake2s_init(uint32_t hash_size, void *key, uint32_t key_size)
 
 	memset(ctx, 0, sizeof(blake2s_ctx));
 
-	ctx->hash_size = hash_size;
-	ctx->key_size = key_size;
+	ctx->hash_size = param->digest_length;
+	ctx->key_size = param->key_length;
 
 	memcpy(ctx->state, BLAKE2S_IV, sizeof(uint32_t) * 8);
 
 	// XOR with parameter block.
-	ctx->state[0] ^= 0x01010000 | (key_size << 8) | hash_size;
+	for (int32_t i = 0; i < 8; ++i)
+	{
+		uint32_t *dword = (uint32_t *)param;
+		ctx->state[i] ^= dword[i];
+	}
 
 	// Keyed hashing.
-	if (key_size > 0)
+	if (ctx->key_size > 0)
 	{
-		memcpy(ctx->internal, key, key_size);
-		blake2s_hash_block(ctx, ctx->internal, false);
-		ctx->size += BLAKE2S_BLOCK_SIZE;
+		memcpy(ctx->internal, key, ctx->key_size);
+		ctx->unhashed += BLAKE2S_BLOCK_SIZE;
 	}
 
 	return ctx;
@@ -334,61 +319,35 @@ void blake2s_update(blake2s_ctx *ctx, void *data, size_t size)
 {
 	uint64_t pos = 0;
 	uint64_t remaining = 0;
-	uint64_t unhashed = ctx->size % BLAKE2S_BLOCK_SIZE;
 	byte_t *pdata = (byte_t *)data;
 
-	// First process the previous data if any.
-	if (unhashed != 0)
+	while (pos < size)
 	{
-		uint64_t spill = BLAKE2S_BLOCK_SIZE - unhashed;
-
-		if (size < spill)
+		if (ctx->unhashed == BLAKE2S_BLOCK_SIZE)
 		{
-			memcpy(&ctx->internal[unhashed], pdata, size);
-			ctx->size += size;
-
-			// Nothing to do.
-			return;
+			// Update size before hashing.
+			ctx->size += BLAKE2S_BLOCK_SIZE;
+			blake2s_hash_block(ctx, ctx->internal, false);
+			ctx->unhashed = 0;
 		}
 
-		memcpy(&ctx->internal[unhashed], pdata, spill);
+		remaining = MIN(BLAKE2S_BLOCK_SIZE - ctx->unhashed, size - pos);
+		memcpy(&ctx->internal[ctx->unhashed], pdata + pos, remaining);
 
-		ctx->size += spill;
-		pos += spill;
-
-		blake2s_hash_block(ctx, ctx->internal, false);
-	}
-
-	while (pos + BLAKE2S_BLOCK_SIZE <= size)
-	{
-		blake2s_hash_block(ctx, (pdata + pos), false);
-
-		ctx->size += BLAKE2S_BLOCK_SIZE;
-		pos += BLAKE2S_BLOCK_SIZE;
-	}
-
-	// Copy the remaining data to the internal buffer.
-	remaining = size - pos;
-
-	if (remaining > 0)
-	{
-		ctx->size += remaining;
-
-		memcpy(&ctx->internal[0], pdata + pos, remaining);
+		pos += remaining;
+		ctx->unhashed += remaining;
 	}
 }
 
 int32_t blake2s_final(blake2s_ctx *ctx, byte_t *buffer, size_t size)
 {
-	uint64_t unhashed = ctx->size % BLAKE2S_BLOCK_SIZE;
-
 	if (size < ctx->hash_size)
 	{
 		return -1;
 	}
 
 	// Zero padding
-	memset(&ctx->internal[unhashed], 0, BLAKE2S_BLOCK_SIZE - unhashed);
+	memset(&ctx->internal[ctx->unhashed], 0, BLAKE2S_BLOCK_SIZE - ctx->unhashed);
 
 	// Final hash
 	blake2s_hash_block(ctx, ctx->internal, true);
