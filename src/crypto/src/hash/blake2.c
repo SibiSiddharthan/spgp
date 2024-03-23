@@ -265,6 +265,52 @@ int32_t blake2b_final(blake2b_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
+int32_t blake2b_512_hash(void *data, size_t size, byte_t buffer[BLAKE2B_MAX_HASH_SIZE])
+{
+	// Initialize the context.
+	blake2b_param param = {.digest_length = 64, .key_length = 0, .depth = 1, .fanout = 1};
+	blake2b_ctx *ctx = blake2b_init(&param, NULL);
+
+	if (ctx == NULL)
+	{
+		return -1;
+	}
+
+	// Hash the data.
+	blake2b_update(ctx, data, size);
+
+	// Output the hash
+	blake2b_final(ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
+
+	// Free the context.
+	blake2b_free(ctx);
+
+	return 0;
+}
+
+int32_t blake2b_512_mac(void *data, size_t size, byte_t key[BLAKE2B_MAX_KEY_SIZE], byte_t buffer[BLAKE2B_MAX_HASH_SIZE])
+{
+	// Initialize the context.
+	blake2b_param param = {.digest_length = 64, .key_length = 64, .depth = 1, .fanout = 1};
+	blake2b_ctx *ctx = blake2b_init(&param, key);
+
+	if (ctx == NULL)
+	{
+		return -1;
+	}
+
+	// Hash the data.
+	blake2b_update(ctx, data, size);
+
+	// Output the hash
+	blake2b_final(ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
+
+	// Free the context.
+	blake2b_free(ctx);
+
+	return 0;
+}
+
 blake2s_ctx *blake2s_init(blake2s_param *param, void *key)
 {
 	blake2s_ctx *ctx = NULL;
@@ -357,6 +403,52 @@ int32_t blake2s_final(blake2s_ctx *ctx, byte_t *buffer, size_t size)
 
 	// Zero the context for security reasons.
 	memset(ctx, 0, sizeof(blake2s_ctx));
+
+	return 0;
+}
+
+int32_t blake2s_256_hash(void *data, size_t size, byte_t buffer[BLAKE2S_MAX_HASH_SIZE])
+{
+	// Initialize the context.
+	blake2s_param param = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
+	blake2s_ctx *ctx = blake2s_init(&param, NULL);
+
+	if (ctx == NULL)
+	{
+		return -1;
+	}
+
+	// Hash the data.
+	blake2s_update(ctx, data, size);
+
+	// Output the hash
+	blake2s_final(ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
+
+	// Free the context.
+	blake2s_free(ctx);
+
+	return 0;
+}
+
+int32_t blake2s_512_mac(void *data, size_t size, byte_t key[BLAKE2S_MAX_KEY_SIZE], byte_t buffer[BLAKE2S_MAX_HASH_SIZE])
+{
+	// Initialize the context.
+	blake2s_param param = {.digest_length = 32, .key_length = 32, .depth = 1, .fanout = 1};
+	blake2s_ctx *ctx = blake2s_init(&param, key);
+
+	if (ctx == NULL)
+	{
+		return -1;
+	}
+
+	// Hash the data.
+	blake2s_update(ctx, data, size);
+
+	// Output the hash
+	blake2s_final(ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
+
+	// Free the context.
+	blake2s_free(ctx);
 
 	return 0;
 }

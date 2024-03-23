@@ -1,0 +1,14 @@
+/*
+   Copyright (c) 2024 Sibi Siddharthan
+
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
+*/
+
+#ifndef CRYPTO_MINMAX_H
+#define CRYPTO_MINMAX_H
+
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+
+#endif
