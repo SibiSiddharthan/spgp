@@ -28,7 +28,7 @@ typedef struct _aes_key
 	aes_type type;
 } aes_key;
 
-aes_key *new_aes_key(uint32_t bits, byte_t *key);
+aes_key *new_aes_key(aes_type type, byte_t *key);
 void delete_aes_key(aes_key *key);
 
 void aes_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE]);
