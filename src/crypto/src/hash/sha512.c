@@ -361,7 +361,7 @@ void sha512_final(sha512_ctx *ctx, byte_t buffer[SHA512_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha512_ctx));
 }
 
-int32_t sha512_quick_hash(void *data, size_t size, byte_t buffer[SHA512_HASH_SIZE])
+int32_t sha512_hash(void *data, size_t size, byte_t buffer[SHA512_HASH_SIZE])
 {
 	// Initialize the context.
 	sha512_ctx *ctx = sha512_init();
@@ -445,7 +445,7 @@ void sha384_final(sha384_ctx *ctx, byte_t buffer[SHA384_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha384_ctx));
 }
 
-int32_t sha384_quick_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZE])
+int32_t sha384_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZE])
 {
 	// Initialize the context.
 	sha384_ctx *ctx = sha384_init();
@@ -527,7 +527,7 @@ void sha512_224_final(sha512_224_ctx *ctx, byte_t buffer[SHA512_224_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha512_224_ctx));
 }
 
-int32_t sha512_224_quick_hash(void *data, size_t size, byte_t buffer[SHA512_224_HASH_SIZE])
+int32_t sha512_224_hash(void *data, size_t size, byte_t buffer[SHA512_224_HASH_SIZE])
 {
 	// Initialize the context.
 	sha512_224_ctx *ctx = sha512_224_init();
@@ -609,7 +609,7 @@ void sha512_256_final(sha512_256_ctx *ctx, byte_t buffer[SHA512_256_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha512_256_ctx));
 }
 
-int32_t sha512_256_quick_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_SIZE])
+int32_t sha512_256_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_SIZE])
 {
 	// Initialize the context.
 	sha512_256_ctx *ctx = sha512_256_init();

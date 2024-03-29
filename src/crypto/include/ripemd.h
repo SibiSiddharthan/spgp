@@ -25,6 +25,6 @@ void ripemd160_free(ripemd160_ctx *ctx);
 void ripemd160_reset(ripemd160_ctx *ctx);
 void ripemd160_update(ripemd160_ctx *ctx, void *data, size_t size);
 void ripemd160_final(ripemd160_ctx *ctx, byte_t buffer[RIPEMD160_HASH_SIZE]);
-int32_t ripemd160_quick_hash(void *data, size_t size, byte_t buffer[RIPEMD160_HASH_SIZE]);
+int32_t ripemd160_hash(void *data, size_t size, byte_t buffer[RIPEMD160_HASH_SIZE]);
 
 #endif

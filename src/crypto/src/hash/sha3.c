@@ -393,22 +393,22 @@ static int32_t sha3_common_quick_hash(int32_t bits, void *data, size_t message_s
 	return 0;
 }
 
-int32_t sha3_224_quick_hash(void *data, size_t size, byte_t buffer[SHA3_224_HASH_SIZE])
+int32_t sha3_224_hash(void *data, size_t size, byte_t buffer[SHA3_224_HASH_SIZE])
 {
 	return sha3_common_quick_hash(224, data, size, buffer, SHA224_HASH_SIZE);
 }
 
-int32_t sha3_256_quick_hash(void *data, size_t size, byte_t buffer[SHA3_256_HASH_SIZE])
+int32_t sha3_256_hash(void *data, size_t size, byte_t buffer[SHA3_256_HASH_SIZE])
 {
 	return sha3_common_quick_hash(256, data, size, buffer, SHA256_HASH_SIZE);
 }
 
-int32_t sha3_384_quick_hash(void *data, size_t size, byte_t buffer[SHA3_384_HASH_SIZE])
+int32_t sha3_384_hash(void *data, size_t size, byte_t buffer[SHA3_384_HASH_SIZE])
 {
 	return sha3_common_quick_hash(384, data, size, buffer, SHA384_HASH_SIZE);
 }
 
-int32_t sha3_512_quick_hash(void *data, size_t size, byte_t buffer[SHA3_512_HASH_SIZE])
+int32_t sha3_512_hash(void *data, size_t size, byte_t buffer[SHA3_512_HASH_SIZE])
 {
 	return sha3_common_quick_hash(512, data, size, buffer, SHA512_HASH_SIZE);
 }

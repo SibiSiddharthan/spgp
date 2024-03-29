@@ -324,7 +324,7 @@ void ripemd160_final(ripemd160_ctx *ctx, byte_t buffer[RIPEMD160_HASH_SIZE])
 	memset(ctx, 0, sizeof(ripemd160_ctx));
 }
 
-int32_t ripemd160_quick_hash(void *data, size_t size, byte_t buffer[RIPEMD160_HASH_SIZE])
+int32_t ripemd160_hash(void *data, size_t size, byte_t buffer[RIPEMD160_HASH_SIZE])
 {
 	// Initialize the context.
 	ripemd160_ctx *ctx = ripemd160_init();

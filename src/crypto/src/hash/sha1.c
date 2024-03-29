@@ -277,7 +277,7 @@ void sha1_final(sha1_ctx *ctx, byte_t buffer[SHA1_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha1_ctx));
 }
 
-int32_t sha1_quick_hash(void *data, size_t size, byte_t buffer[SHA1_HASH_SIZE])
+int32_t sha1_hash(void *data, size_t size, byte_t buffer[SHA1_HASH_SIZE])
 {
 	// Initialize the context.
 	sha1_ctx *ctx = sha1_init();

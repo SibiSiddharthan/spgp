@@ -311,7 +311,7 @@ void sha256_final(sha256_ctx *ctx, byte_t buffer[SHA256_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha256_ctx));
 }
 
-int32_t sha256_quick_hash(void *data, size_t size, byte_t buffer[SHA256_HASH_SIZE])
+int32_t sha256_hash(void *data, size_t size, byte_t buffer[SHA256_HASH_SIZE])
 {
 	// Initialize the context.
 	sha256_ctx *ctx = sha256_init();
@@ -396,7 +396,7 @@ void sha224_final(sha224_ctx *ctx, byte_t buffer[SHA224_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha224_ctx));
 }
 
-int32_t sha224_quick_hash(void *data, size_t size, byte_t buffer[SHA224_HASH_SIZE])
+int32_t sha224_hash(void *data, size_t size, byte_t buffer[SHA224_HASH_SIZE])
 {
 	// Initialize the context.
 	sha224_ctx *ctx = sha224_init();

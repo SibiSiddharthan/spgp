@@ -239,7 +239,7 @@ void md5_final(md5_ctx *ctx, byte_t buffer[MD5_HASH_SIZE])
 	memset(ctx, 0, sizeof(md5_ctx));
 }
 
-int32_t md5_quick_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE])
+int32_t md5_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE])
 {
 	// Initialize the context.
 	md5_ctx *ctx = md5_init();

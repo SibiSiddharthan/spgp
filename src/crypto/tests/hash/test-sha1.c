@@ -18,22 +18,22 @@ int32_t sha1_test_suite(void)
 
 	// See https://www.di-mgt.com.au/sha_testvectors.html for SHA-1 test vectors.
 
-	sha1_quick_hash("", 0, buffer);
+	sha1_hash("", 0, buffer);
 	status += check_hash(buffer, SHA1_HASH_SIZE, "da39a3ee5e6b4b0d3255bfef95601890afd80709");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha1_quick_hash("abc", 3, buffer);
+	sha1_hash("abc", 3, buffer);
 	status += check_hash(buffer, SHA1_HASH_SIZE, "a9993e364706816aba3e25717850c26c9cd0d89d");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha1_quick_hash("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56, buffer);
+	sha1_hash("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56, buffer);
 	status += check_hash(buffer, SHA1_HASH_SIZE, "84983e441c3bd26ebaae4aa1f95129e5e54670f1");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha1_quick_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
+	sha1_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
 						 112, buffer);
 	status += check_hash(buffer, SHA1_HASH_SIZE, "a49b2446a02c645bf419f995b67091253a04a259");
 
