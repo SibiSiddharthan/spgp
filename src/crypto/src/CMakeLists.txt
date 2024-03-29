@@ -8,6 +8,7 @@
 add_library(crypto STATIC
 #cipher
 cipher/aes.c
+cipher/aria.c
 cipher/camellia.c
 #hash
 hash/md5.c hash/ripemd.c
