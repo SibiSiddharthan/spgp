@@ -32,6 +32,6 @@ aes_key *new_aes_key(aes_type type, byte_t *key);
 void delete_aes_key(aes_key *key);
 
 void aes_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE]);
-void aes_decrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE]);
+void aes_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE]);
 
 #endif

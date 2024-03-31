@@ -12,6 +12,7 @@
 #include <rotate.h>
 
 // clang-format off
+// S-box data
 static const uint8_t SBOX[256] = 
 {
 	0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -52,6 +53,7 @@ static const uint8_t INVSBOX[256] =
 	0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
 };
 
+// Key rotation constants
 static const uint8_t RCON[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 // clang-format on
 
@@ -226,23 +228,23 @@ static const uint8_t RCON[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
 		S[15] = GFBTIME(T[3]) ^ GFDTIME(T[7]) ^ GF9TIME(T[11]) ^ GFETIME(T[15]); \
 	}
 
-#define AES_ENCRYPT_STEP(K, S, T) \
-	{                             \
-		SUB_BYTES(S);             \
-		SHIFT_ROWS(S);            \
-		MIX_COLUMNS(S, T);        \
-		ADD_ROUND_KEY(K, S);      \
-	}
+static inline void rijndael_encrypt_step(aes_round_key key, byte_t state[16], byte_t temp[16])
+{
+	SUB_BYTES(state);
+	SHIFT_ROWS(state);
+	MIX_COLUMNS(state, temp);
+	ADD_ROUND_KEY(key, state);
+}
 
-#define AES_DECRYPT_STEP(K, S, T) \
-	{                             \
-		ADD_ROUND_KEY(K, S);      \
-		INVMIX_COLUMNS(S, T);     \
-		INVSHIFT_ROWS(S);         \
-		INVSUB_BYTES(S);          \
-	}
+static inline void rijndael_decrypt_step(aes_round_key key, byte_t state[16], byte_t temp[16])
+{
+	ADD_ROUND_KEY(key, state);
+	INVMIX_COLUMNS(state, temp);
+	INVSHIFT_ROWS(state);
+	INVSUB_BYTES(state);
+}
 
-static void aes128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
+static void rijndael128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
 	byte_t state[16], temp[16];
 
@@ -252,15 +254,15 @@ static void aes128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE],
 	ADD_ROUND_KEY(key->round_key[0], state);
 
 	// Rounds 1 - 9
-	AES_ENCRYPT_STEP(key->round_key[1], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[2], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[3], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[4], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[5], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[6], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[7], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[8], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[9], state, temp);
+	rijndael_encrypt_step(key->round_key[1], state, temp);
+	rijndael_encrypt_step(key->round_key[2], state, temp);
+	rijndael_encrypt_step(key->round_key[3], state, temp);
+	rijndael_encrypt_step(key->round_key[4], state, temp);
+	rijndael_encrypt_step(key->round_key[5], state, temp);
+	rijndael_encrypt_step(key->round_key[6], state, temp);
+	rijndael_encrypt_step(key->round_key[7], state, temp);
+	rijndael_encrypt_step(key->round_key[8], state, temp);
+	rijndael_encrypt_step(key->round_key[9], state, temp);
 
 	// End
 	SUB_BYTES(state);
@@ -270,7 +272,7 @@ static void aes128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE],
 	BLOCK_TRANSPOSE(ciphertext, state);
 }
 
-static void aes128_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t decryptedtext[AES_BLOCK_SIZE])
+static void rijndael128_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
 	byte_t state[16], temp[16];
 
@@ -282,23 +284,23 @@ static void aes128_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE]
 	INVSUB_BYTES(state);
 
 	// Rounds 9 - 1
-	AES_DECRYPT_STEP(key->round_key[9], state, temp);
-	AES_DECRYPT_STEP(key->round_key[8], state, temp);
-	AES_DECRYPT_STEP(key->round_key[7], state, temp);
-	AES_DECRYPT_STEP(key->round_key[6], state, temp);
-	AES_DECRYPT_STEP(key->round_key[5], state, temp);
-	AES_DECRYPT_STEP(key->round_key[4], state, temp);
-	AES_DECRYPT_STEP(key->round_key[3], state, temp);
-	AES_DECRYPT_STEP(key->round_key[2], state, temp);
-	AES_DECRYPT_STEP(key->round_key[1], state, temp);
+	rijndael_decrypt_step(key->round_key[9], state, temp);
+	rijndael_decrypt_step(key->round_key[8], state, temp);
+	rijndael_decrypt_step(key->round_key[7], state, temp);
+	rijndael_decrypt_step(key->round_key[6], state, temp);
+	rijndael_decrypt_step(key->round_key[5], state, temp);
+	rijndael_decrypt_step(key->round_key[4], state, temp);
+	rijndael_decrypt_step(key->round_key[3], state, temp);
+	rijndael_decrypt_step(key->round_key[2], state, temp);
+	rijndael_decrypt_step(key->round_key[1], state, temp);
 
 	// End
 	ADD_ROUND_KEY(key->round_key[0], state);
 
-	BLOCK_TRANSPOSE(decryptedtext, state);
+	BLOCK_TRANSPOSE(plaintext, state);
 }
 
-static void aes192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
+static void rijndael192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
 	byte_t state[16], temp[16];
 
@@ -308,17 +310,17 @@ static void aes192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE],
 	ADD_ROUND_KEY(key->round_key[0], state);
 
 	// Rounds 1 - 11
-	AES_ENCRYPT_STEP(key->round_key[1], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[2], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[3], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[4], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[5], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[6], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[7], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[8], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[9], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[10], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[11], state, temp);
+	rijndael_encrypt_step(key->round_key[1], state, temp);
+	rijndael_encrypt_step(key->round_key[2], state, temp);
+	rijndael_encrypt_step(key->round_key[3], state, temp);
+	rijndael_encrypt_step(key->round_key[4], state, temp);
+	rijndael_encrypt_step(key->round_key[5], state, temp);
+	rijndael_encrypt_step(key->round_key[6], state, temp);
+	rijndael_encrypt_step(key->round_key[7], state, temp);
+	rijndael_encrypt_step(key->round_key[8], state, temp);
+	rijndael_encrypt_step(key->round_key[9], state, temp);
+	rijndael_encrypt_step(key->round_key[10], state, temp);
+	rijndael_encrypt_step(key->round_key[11], state, temp);
 
 	// End
 	SUB_BYTES(state);
@@ -328,7 +330,7 @@ static void aes192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE],
 	BLOCK_TRANSPOSE(ciphertext, state);
 }
 
-static void aes192_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t decryptedtext[AES_BLOCK_SIZE])
+static void rijndael192_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
 	byte_t state[16], temp[16];
 
@@ -340,25 +342,25 @@ static void aes192_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE]
 	INVSUB_BYTES(state);
 
 	// Rounds 11 - 1
-	AES_DECRYPT_STEP(key->round_key[11], state, temp);
-	AES_DECRYPT_STEP(key->round_key[10], state, temp);
-	AES_DECRYPT_STEP(key->round_key[9], state, temp);
-	AES_DECRYPT_STEP(key->round_key[8], state, temp);
-	AES_DECRYPT_STEP(key->round_key[7], state, temp);
-	AES_DECRYPT_STEP(key->round_key[6], state, temp);
-	AES_DECRYPT_STEP(key->round_key[5], state, temp);
-	AES_DECRYPT_STEP(key->round_key[4], state, temp);
-	AES_DECRYPT_STEP(key->round_key[3], state, temp);
-	AES_DECRYPT_STEP(key->round_key[2], state, temp);
-	AES_DECRYPT_STEP(key->round_key[1], state, temp);
+	rijndael_decrypt_step(key->round_key[11], state, temp);
+	rijndael_decrypt_step(key->round_key[10], state, temp);
+	rijndael_decrypt_step(key->round_key[9], state, temp);
+	rijndael_decrypt_step(key->round_key[8], state, temp);
+	rijndael_decrypt_step(key->round_key[7], state, temp);
+	rijndael_decrypt_step(key->round_key[6], state, temp);
+	rijndael_decrypt_step(key->round_key[5], state, temp);
+	rijndael_decrypt_step(key->round_key[4], state, temp);
+	rijndael_decrypt_step(key->round_key[3], state, temp);
+	rijndael_decrypt_step(key->round_key[2], state, temp);
+	rijndael_decrypt_step(key->round_key[1], state, temp);
 
 	// End
 	ADD_ROUND_KEY(key->round_key[0], state);
 
-	BLOCK_TRANSPOSE(decryptedtext, state);
+	BLOCK_TRANSPOSE(plaintext, state);
 }
 
-static void aes256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
+static void rijndael256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
 	byte_t state[16], temp[16];
 
@@ -368,19 +370,19 @@ static void aes256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE],
 	ADD_ROUND_KEY(key->round_key[0], state);
 
 	// Rounds 1 - 13
-	AES_ENCRYPT_STEP(key->round_key[1], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[2], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[3], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[4], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[5], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[6], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[7], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[8], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[9], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[10], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[11], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[12], state, temp);
-	AES_ENCRYPT_STEP(key->round_key[13], state, temp);
+	rijndael_encrypt_step(key->round_key[1], state, temp);
+	rijndael_encrypt_step(key->round_key[2], state, temp);
+	rijndael_encrypt_step(key->round_key[3], state, temp);
+	rijndael_encrypt_step(key->round_key[4], state, temp);
+	rijndael_encrypt_step(key->round_key[5], state, temp);
+	rijndael_encrypt_step(key->round_key[6], state, temp);
+	rijndael_encrypt_step(key->round_key[7], state, temp);
+	rijndael_encrypt_step(key->round_key[8], state, temp);
+	rijndael_encrypt_step(key->round_key[9], state, temp);
+	rijndael_encrypt_step(key->round_key[10], state, temp);
+	rijndael_encrypt_step(key->round_key[11], state, temp);
+	rijndael_encrypt_step(key->round_key[12], state, temp);
+	rijndael_encrypt_step(key->round_key[13], state, temp);
 
 	// End
 	SUB_BYTES(state);
@@ -390,7 +392,7 @@ static void aes256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE],
 	BLOCK_TRANSPOSE(ciphertext, state);
 }
 
-static void aes256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t decryptedtext[AES_BLOCK_SIZE])
+static void rijndael256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
 	byte_t state[16], temp[16];
 
@@ -402,27 +404,27 @@ static void aes256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE]
 	INVSUB_BYTES(state);
 
 	// Rounds 13 - 1
-	AES_DECRYPT_STEP(key->round_key[13], state, temp);
-	AES_DECRYPT_STEP(key->round_key[12], state, temp);
-	AES_DECRYPT_STEP(key->round_key[11], state, temp);
-	AES_DECRYPT_STEP(key->round_key[10], state, temp);
-	AES_DECRYPT_STEP(key->round_key[9], state, temp);
-	AES_DECRYPT_STEP(key->round_key[8], state, temp);
-	AES_DECRYPT_STEP(key->round_key[7], state, temp);
-	AES_DECRYPT_STEP(key->round_key[6], state, temp);
-	AES_DECRYPT_STEP(key->round_key[5], state, temp);
-	AES_DECRYPT_STEP(key->round_key[4], state, temp);
-	AES_DECRYPT_STEP(key->round_key[3], state, temp);
-	AES_DECRYPT_STEP(key->round_key[2], state, temp);
-	AES_DECRYPT_STEP(key->round_key[1], state, temp);
+	rijndael_decrypt_step(key->round_key[13], state, temp);
+	rijndael_decrypt_step(key->round_key[12], state, temp);
+	rijndael_decrypt_step(key->round_key[11], state, temp);
+	rijndael_decrypt_step(key->round_key[10], state, temp);
+	rijndael_decrypt_step(key->round_key[9], state, temp);
+	rijndael_decrypt_step(key->round_key[8], state, temp);
+	rijndael_decrypt_step(key->round_key[7], state, temp);
+	rijndael_decrypt_step(key->round_key[6], state, temp);
+	rijndael_decrypt_step(key->round_key[5], state, temp);
+	rijndael_decrypt_step(key->round_key[4], state, temp);
+	rijndael_decrypt_step(key->round_key[3], state, temp);
+	rijndael_decrypt_step(key->round_key[2], state, temp);
+	rijndael_decrypt_step(key->round_key[1], state, temp);
 
 	// End
 	ADD_ROUND_KEY(key->round_key[0], state);
 
-	BLOCK_TRANSPOSE(decryptedtext, state);
+	BLOCK_TRANSPOSE(plaintext, state);
 }
 
-static void aes_key_expansion(aes_key *expanded_key, byte_t *actual_key)
+static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 {
 	const uint8_t nb = 4;
 	uint8_t nk, nr;
@@ -486,7 +488,7 @@ aes_key *new_aes_key(aes_type type, byte_t *key)
 	}
 
 	expanded_key->type = type;
-	aes_key_expansion(expanded_key, key);
+	rijndael_key_expansion(expanded_key, key);
 
 	return expanded_key;
 }
@@ -503,23 +505,23 @@ void aes_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ci
 	switch (key->type)
 	{
 	case AES128:
-		return aes128_encrypt_block(key, plaintext, ciphertext);
+		return rijndael128_encrypt_block(key, plaintext, ciphertext);
 	case AES192:
-		return aes192_encrypt_block(key, plaintext, ciphertext);
+		return rijndael192_encrypt_block(key, plaintext, ciphertext);
 	case AES256:
-		return aes256_encrypt_block(key, plaintext, ciphertext);
+		return rijndael256_encrypt_block(key, plaintext, ciphertext);
 	}
 }
 
-void aes_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t decryptedtext[AES_BLOCK_SIZE])
+void aes_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
 	switch (key->type)
 	{
 	case AES128:
-		return aes128_decrypt_block(key, ciphertext, decryptedtext);
+		return rijndael128_decrypt_block(key, ciphertext, plaintext);
 	case AES192:
-		return aes192_decrypt_block(key, ciphertext, decryptedtext);
+		return rijndael192_decrypt_block(key, ciphertext, plaintext);
 	case AES256:
-		return aes256_decrypt_block(key, ciphertext, decryptedtext);
+		return rijndael256_decrypt_block(key, ciphertext, plaintext);
 	}
 }
