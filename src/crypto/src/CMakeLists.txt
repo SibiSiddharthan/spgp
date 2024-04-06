@@ -11,6 +11,7 @@ cipher/aes.c
 cipher/aria.c
 cipher/camellia.c
 cipher/chacha20.c
+cipher/des.c
 #hash
 hash/md5.c hash/ripemd.c
 hash/sha1.c hash/sha256.c hash/sha512.c hash/sha3.c
