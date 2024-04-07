@@ -12,8 +12,9 @@
 
 #define TWOFISH_ROUNDS 16
 #define TWOFISH_BLOCK_SIZE 16
+#define TWOFISH_ROUND_KEYS ((TWOFISH_BLOCK_SIZE * 2) + 4 + 4)
 
-typedef uint8_t twofish_round_key[16];
+typedef uint32_t twofish_round_key;
 
 typedef enum _twofish_type
 {
@@ -25,7 +26,8 @@ typedef enum _twofish_type
 typedef struct _twofish_key
 {
 	twofish_type type;
-	twofish_round_key encryption_round_key[TWOFISH_ROUNDS + 1];
+	twofish_round_key round_key[TWOFISH_ROUND_KEYS];
+	byte_t sbox0[256], sbox1[256], sbox2[256], sbox3[256];
 } twofish_key;
 
 twofish_key *new_twofish_key(twofish_type type, byte_t *key);
