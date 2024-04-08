@@ -11,6 +11,8 @@
 #include <aes.h>
 #include <rotate.h>
 
+// See NIST FIPS-197 ADVANCED ENCRYPTION STANDARD (AES)
+
 // clang-format off
 // S-box data
 static const uint8_t SBOX[256] = 
@@ -54,7 +56,8 @@ static const uint8_t INVSBOX[256] =
 };
 
 // Key rotation constants
-static const uint8_t RCON[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+static const uint8_t RCON[11] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+
 // clang-format on
 
 #define SIZEOF_KEY_WORD 4
@@ -71,7 +74,13 @@ static const uint8_t RCON[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
 #define SUBWORD(W) SBOX[((W) >> 24) & 0xFF] << 24 | SBOX[((W) >> 16) & 0xFF] << 16 | SBOX[((W) >> 8) & 0xFF] << 8 | SBOX[(W) & 0xFF]
 
 // Galois Field Multiplications
-#define XTIME(A)  (((A) & 0X80) ? ((A) << 1) : (((A) << 1) ^ 0X1B))
+// Residue polymnial x^8 + x^4 + x^3 + x + 1
+static inline byte_t xtime(byte_t x)
+{
+	return x & 0x80 ? ((x << 1) ^ 0x1B) : (x << 1);
+}
+
+#define XTIME(A)  (xtime(A))
 #define X2TIME(A) (XTIME(XTIME((A))))
 #define X3TIME(A) (XTIME(XTIME(XTIME((A)))))
 
@@ -82,346 +91,342 @@ static const uint8_t RCON[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
 #define GFDTIME(A) (X3TIME(A) ^ X2TIME(A) ^ (A))
 #define GFETIME(A) (X3TIME(A) ^ X2TIME(A) ^ XTIME(A))
 
-#define BLOCK_TRANSPOSE(S, B) \
-	{                         \
-		S[0] = B[0];          \
-		S[1] = B[4];          \
-		S[2] = B[8];          \
-		S[3] = B[12];         \
-		S[4] = B[1];          \
-		S[5] = B[5];          \
-		S[6] = B[9];          \
-		S[7] = B[13];         \
-		S[8] = B[2];          \
-		S[9] = B[6];          \
-		S[10] = B[10];        \
-		S[11] = B[14];        \
-		S[12] = B[3];         \
-		S[13] = B[7];         \
-		S[14] = B[11];        \
-		S[15] = B[15];        \
-	}
-
-#define ADD_ROUND_KEY(K, S) \
-	{                       \
-		S[0] ^= K[0];       \
-		S[1] ^= K[1];       \
-		S[2] ^= K[2];       \
-		S[3] ^= K[3];       \
-		S[4] ^= K[4];       \
-		S[5] ^= K[5];       \
-		S[6] ^= K[6];       \
-		S[7] ^= K[7];       \
-		S[8] ^= K[8];       \
-		S[9] ^= K[9];       \
-		S[10] ^= K[10];     \
-		S[11] ^= K[11];     \
-		S[12] ^= K[12];     \
-		S[13] ^= K[13];     \
-		S[14] ^= K[14];     \
-		S[15] ^= K[15];     \
-	}
-
-#define SUB_BYTES(S)         \
-	{                        \
-		S[0] = SBOX[S[0]];   \
-		S[1] = SBOX[S[1]];   \
-		S[2] = SBOX[S[2]];   \
-		S[3] = SBOX[S[3]];   \
-		S[4] = SBOX[S[4]];   \
-		S[5] = SBOX[S[5]];   \
-		S[6] = SBOX[S[6]];   \
-		S[7] = SBOX[S[7]];   \
-		S[8] = SBOX[S[8]];   \
-		S[9] = SBOX[S[9]];   \
-		S[10] = SBOX[S[10]]; \
-		S[11] = SBOX[S[11]]; \
-		S[12] = SBOX[S[12]]; \
-		S[13] = SBOX[S[13]]; \
-		S[14] = SBOX[S[14]]; \
-		S[15] = SBOX[S[15]]; \
-	}
-
-#define INVSUB_BYTES(S)         \
-	{                           \
-		S[0] = INVSBOX[S[0]];   \
-		S[1] = INVSBOX[S[1]];   \
-		S[2] = INVSBOX[S[2]];   \
-		S[3] = INVSBOX[S[3]];   \
-		S[4] = INVSBOX[S[4]];   \
-		S[5] = INVSBOX[S[5]];   \
-		S[6] = INVSBOX[S[6]];   \
-		S[7] = INVSBOX[S[7]];   \
-		S[8] = INVSBOX[S[8]];   \
-		S[9] = INVSBOX[S[9]];   \
-		S[10] = INVSBOX[S[10]]; \
-		S[11] = INVSBOX[S[11]]; \
-		S[12] = INVSBOX[S[12]]; \
-		S[13] = INVSBOX[S[13]]; \
-		S[14] = INVSBOX[S[14]]; \
-		S[15] = INVSBOX[S[15]]; \
-	}
-
-#define SHIFT_ROWS(S)                \
-	{                                \
-		uint32_t *W = (uint32_t *)S; \
-		ROTR_32(W[1], 8);            \
-		ROTR_32(W[2], 16);           \
-		ROTR_32(W[3], 24);           \
-	}
-
-#define INVSHIFT_ROWS(S)             \
-	{                                \
-		uint32_t *W = (uint32_t *)S; \
-		ROTL_32(W[1], 8);            \
-		ROTL_32(W[2], 16);           \
-		ROTL_32(W[3], 24);           \
-	}
-
-#define MIX_COLUMNS(S, T)                                          \
-	{                                                              \
-		memcpy(T, S, 16);                                          \
-                                                                   \
-		S[0] = GF2TIME(T[0]) ^ GF3TIME(T[4]) ^ (T[8]) ^ (T[12]);   \
-		S[1] = GF2TIME(T[1]) ^ GF3TIME(T[5]) ^ (T[9]) ^ (T[13]);   \
-		S[2] = GF2TIME(T[2]) ^ GF3TIME(T[6]) ^ (T[10]) ^ (T[14]);  \
-		S[3] = GF2TIME(T[3]) ^ GF3TIME(T[7]) ^ (T[11]) ^ (T[15]);  \
-                                                                   \
-		S[4] = (T[0]) ^ GF2TIME(T[4]) ^ GF3TIME(T[8]) ^ (T[12]);   \
-		S[5] = (T[1]) ^ GF2TIME(T[5]) ^ GF3TIME(T[9]) ^ (T[13]);   \
-		S[6] = (T[2]) ^ GF2TIME(T[6]) ^ GF3TIME(T[10]) ^ (T[14]);  \
-		S[7] = (T[3]) ^ GF2TIME(T[7]) ^ GF3TIME(T[11]) ^ (T[15]);  \
-                                                                   \
-		S[8] = (T[0]) ^ (T[4]) ^ GF2TIME(T[8]) ^ GF3TIME(T[12]);   \
-		S[9] = (T[1]) ^ (T[5]) ^ GF2TIME(T[9]) ^ GF3TIME(T[13]);   \
-		S[10] = (T[2]) ^ (T[6]) ^ GF2TIME(T[10]) ^ GF3TIME(T[14]); \
-		S[11] = (T[3]) ^ (T[7]) ^ GF2TIME(T[11]) ^ GF3TIME(T[15]); \
-                                                                   \
-		S[12] = GF3TIME(T[0]) ^ (T[4]) ^ (T[8]) ^ GF2TIME(T[12]);  \
-		S[13] = GF3TIME(T[1]) ^ (T[5]) ^ (T[9]) ^ GF2TIME(T[13]);  \
-		S[14] = GF3TIME(T[2]) ^ (T[6]) ^ (T[10]) ^ GF2TIME(T[14]); \
-		S[15] = GF3TIME(T[3]) ^ (T[7]) ^ (T[11]) ^ GF2TIME(T[15]); \
-	}
-
-#define INVMIX_COLUMNS(S, T)                                                     \
-	{                                                                            \
-		memcpy(T, S, 16);                                                        \
-                                                                                 \
-		S[0] = GFETIME(T[0]) ^ GFBTIME(T[4]) ^ GFDTIME(T[8]) ^ GF9TIME(T[12]);   \
-		S[1] = GFETIME(T[1]) ^ GFBTIME(T[5]) ^ GFDTIME(T[9]) ^ GF9TIME(T[13]);   \
-		S[2] = GFETIME(T[2]) ^ GFBTIME(T[6]) ^ GFDTIME(T[10]) ^ GF9TIME(T[14]);  \
-		S[3] = GFETIME(T[3]) ^ GFBTIME(T[7]) ^ GFDTIME(T[11]) ^ GF9TIME(T[15]);  \
-                                                                                 \
-		S[4] = GF9TIME(T[0]) ^ GFETIME(T[4]) ^ GFBTIME(T[8]) ^ GFDTIME(T[12]);   \
-		S[5] = GF9TIME(T[1]) ^ GFETIME(T[5]) ^ GFBTIME(T[9]) ^ GFDTIME(T[13]);   \
-		S[6] = GF9TIME(T[2]) ^ GFETIME(T[6]) ^ GFBTIME(T[10]) ^ GFDTIME(T[14]);  \
-		S[7] = GF9TIME(T[3]) ^ GFETIME(T[7]) ^ GFBTIME(T[11]) ^ GFDTIME(T[15]);  \
-                                                                                 \
-		S[8] = GFDTIME(T[0]) ^ GF9TIME(T[4]) ^ GFETIME(T[8]) ^ GFBTIME(T[12]);   \
-		S[9] = GFDTIME(T[1]) ^ GF9TIME(T[5]) ^ GFETIME(T[9]) ^ GFBTIME(T[13]);   \
-		S[10] = GFDTIME(T[2]) ^ GF9TIME(T[6]) ^ GFETIME(T[10]) ^ GFBTIME(T[14]); \
-		S[11] = GFDTIME(T[3]) ^ GF9TIME(T[7]) ^ GFETIME(T[11]) ^ GFBTIME(T[15]); \
-                                                                                 \
-		S[12] = GFBTIME(T[0]) ^ GFDTIME(T[4]) ^ GF9TIME(T[8]) ^ GFETIME(T[12]);  \
-		S[13] = GFBTIME(T[1]) ^ GFDTIME(T[5]) ^ GF9TIME(T[9]) ^ GFETIME(T[13]);  \
-		S[14] = GFBTIME(T[2]) ^ GFDTIME(T[6]) ^ GF9TIME(T[10]) ^ GFETIME(T[14]); \
-		S[15] = GFBTIME(T[3]) ^ GFDTIME(T[7]) ^ GF9TIME(T[11]) ^ GFETIME(T[15]); \
-	}
-
-static inline void rijndael_encrypt_step(aes_round_key key, byte_t state[16], byte_t temp[16])
+static inline void block_transpose(byte_t state[AES_BLOCK_SIZE], byte_t block[AES_BLOCK_SIZE])
 {
-	SUB_BYTES(state);
-	SHIFT_ROWS(state);
-	MIX_COLUMNS(state, temp);
-	ADD_ROUND_KEY(key, state);
+	state[0] = block[0];
+	state[1] = block[4];
+	state[2] = block[8];
+	state[3] = block[12];
+	state[4] = block[1];
+	state[5] = block[5];
+	state[6] = block[9];
+	state[7] = block[13];
+	state[8] = block[2];
+	state[9] = block[6];
+	state[10] = block[10];
+	state[11] = block[14];
+	state[12] = block[3];
+	state[13] = block[7];
+	state[14] = block[11];
+	state[15] = block[15];
 }
 
-static inline void rijndael_decrypt_step(aes_round_key key, byte_t state[16], byte_t temp[16])
+static inline void add_round_key(byte_t state[AES_BLOCK_SIZE], aes_round_key key)
 {
-	ADD_ROUND_KEY(key, state);
-	INVMIX_COLUMNS(state, temp);
-	INVSHIFT_ROWS(state);
-	INVSUB_BYTES(state);
+	uint64_t *ps = (uint64_t *)state;
+	uint64_t *pk = (uint64_t *)key;
+
+	// Use 2 64-bit XORs
+	ps[0] ^= pk[0];
+	ps[1] ^= pk[1];
+}
+
+static inline void sub_bytes(byte_t state[AES_BLOCK_SIZE])
+{
+	state[0] = SBOX[state[0]];
+	state[1] = SBOX[state[1]];
+	state[2] = SBOX[state[2]];
+	state[3] = SBOX[state[3]];
+	state[4] = SBOX[state[4]];
+	state[5] = SBOX[state[5]];
+	state[6] = SBOX[state[6]];
+	state[7] = SBOX[state[7]];
+	state[8] = SBOX[state[8]];
+	state[9] = SBOX[state[9]];
+	state[10] = SBOX[state[10]];
+	state[11] = SBOX[state[11]];
+	state[12] = SBOX[state[12]];
+	state[13] = SBOX[state[13]];
+	state[14] = SBOX[state[14]];
+	state[15] = SBOX[state[15]];
+}
+
+static inline void invsub_bytes(byte_t state[AES_BLOCK_SIZE])
+{
+	state[0] = INVSBOX[state[0]];
+	state[1] = INVSBOX[state[1]];
+	state[2] = INVSBOX[state[2]];
+	state[3] = INVSBOX[state[3]];
+	state[4] = INVSBOX[state[4]];
+	state[5] = INVSBOX[state[5]];
+	state[6] = INVSBOX[state[6]];
+	state[7] = INVSBOX[state[7]];
+	state[8] = INVSBOX[state[8]];
+	state[9] = INVSBOX[state[9]];
+	state[10] = INVSBOX[state[10]];
+	state[11] = INVSBOX[state[11]];
+	state[12] = INVSBOX[state[12]];
+	state[13] = INVSBOX[state[13]];
+	state[14] = INVSBOX[state[14]];
+	state[15] = INVSBOX[state[15]];
+}
+
+static inline void shift_rows(byte_t state[AES_BLOCK_SIZE])
+{
+	uint32_t *dword = (uint32_t *)state;
+
+	dword[1] = ROTR_32(dword[1], 8);
+	dword[2] = ROTR_32(dword[2], 16);
+	dword[3] = ROTR_32(dword[3], 24);
+}
+
+static inline void invshift_rows(byte_t state[AES_BLOCK_SIZE])
+{
+	uint32_t *dword = (uint32_t *)state;
+
+	dword[1] = ROTL_32(dword[1], 8);
+	dword[2] = ROTL_32(dword[2], 16);
+	dword[3] = ROTL_32(dword[3], 24);
+}
+
+static inline void mix_columns(byte_t state[AES_BLOCK_SIZE])
+{
+	byte_t temp[AES_BLOCK_SIZE];
+
+	memcpy(temp, state, AES_BLOCK_SIZE);
+
+	state[0] = GF2TIME(temp[0]) ^ GF3TIME(temp[4]) ^ (temp[8]) ^ (temp[12]);
+	state[1] = GF2TIME(temp[1]) ^ GF3TIME(temp[5]) ^ (temp[9]) ^ (temp[13]);
+	state[2] = GF2TIME(temp[2]) ^ GF3TIME(temp[6]) ^ (temp[10]) ^ (temp[14]);
+	state[3] = GF2TIME(temp[3]) ^ GF3TIME(temp[7]) ^ (temp[11]) ^ (temp[15]);
+
+	state[4] = (temp[0]) ^ GF2TIME(temp[4]) ^ GF3TIME(temp[8]) ^ (temp[12]);
+	state[5] = (temp[1]) ^ GF2TIME(temp[5]) ^ GF3TIME(temp[9]) ^ (temp[13]);
+	state[6] = (temp[2]) ^ GF2TIME(temp[6]) ^ GF3TIME(temp[10]) ^ (temp[14]);
+	state[7] = (temp[3]) ^ GF2TIME(temp[7]) ^ GF3TIME(temp[11]) ^ (temp[15]);
+
+	state[8] = (temp[0]) ^ (temp[4]) ^ GF2TIME(temp[8]) ^ GF3TIME(temp[12]);
+	state[9] = (temp[1]) ^ (temp[5]) ^ GF2TIME(temp[9]) ^ GF3TIME(temp[13]);
+	state[10] = (temp[2]) ^ (temp[6]) ^ GF2TIME(temp[10]) ^ GF3TIME(temp[14]);
+	state[11] = (temp[3]) ^ (temp[7]) ^ GF2TIME(temp[11]) ^ GF3TIME(temp[15]);
+
+	state[12] = GF3TIME(temp[0]) ^ (temp[4]) ^ (temp[8]) ^ GF2TIME(temp[12]);
+	state[13] = GF3TIME(temp[1]) ^ (temp[5]) ^ (temp[9]) ^ GF2TIME(temp[13]);
+	state[14] = GF3TIME(temp[2]) ^ (temp[6]) ^ (temp[10]) ^ GF2TIME(temp[14]);
+	state[15] = GF3TIME(temp[3]) ^ (temp[7]) ^ (temp[11]) ^ GF2TIME(temp[15]);
+}
+
+static inline void invmix_columns(byte_t state[AES_BLOCK_SIZE])
+{
+	byte_t temp[AES_BLOCK_SIZE];
+
+	memcpy(temp, state, AES_BLOCK_SIZE);
+
+	state[0] = GFETIME(temp[0]) ^ GFBTIME(temp[4]) ^ GFDTIME(temp[8]) ^ GF9TIME(temp[12]);
+	state[1] = GFETIME(temp[1]) ^ GFBTIME(temp[5]) ^ GFDTIME(temp[9]) ^ GF9TIME(temp[13]);
+	state[2] = GFETIME(temp[2]) ^ GFBTIME(temp[6]) ^ GFDTIME(temp[10]) ^ GF9TIME(temp[14]);
+	state[3] = GFETIME(temp[3]) ^ GFBTIME(temp[7]) ^ GFDTIME(temp[11]) ^ GF9TIME(temp[15]);
+
+	state[4] = GF9TIME(temp[0]) ^ GFETIME(temp[4]) ^ GFBTIME(temp[8]) ^ GFDTIME(temp[12]);
+	state[5] = GF9TIME(temp[1]) ^ GFETIME(temp[5]) ^ GFBTIME(temp[9]) ^ GFDTIME(temp[13]);
+	state[6] = GF9TIME(temp[2]) ^ GFETIME(temp[6]) ^ GFBTIME(temp[10]) ^ GFDTIME(temp[14]);
+	state[7] = GF9TIME(temp[3]) ^ GFETIME(temp[7]) ^ GFBTIME(temp[11]) ^ GFDTIME(temp[15]);
+
+	state[8] = GFDTIME(temp[0]) ^ GF9TIME(temp[4]) ^ GFETIME(temp[8]) ^ GFBTIME(temp[12]);
+	state[9] = GFDTIME(temp[1]) ^ GF9TIME(temp[5]) ^ GFETIME(temp[9]) ^ GFBTIME(temp[13]);
+	state[10] = GFDTIME(temp[2]) ^ GF9TIME(temp[6]) ^ GFETIME(temp[10]) ^ GFBTIME(temp[14]);
+	state[11] = GFDTIME(temp[3]) ^ GF9TIME(temp[7]) ^ GFETIME(temp[11]) ^ GFBTIME(temp[15]);
+
+	state[12] = GFBTIME(temp[0]) ^ GFDTIME(temp[4]) ^ GF9TIME(temp[8]) ^ GFETIME(temp[12]);
+	state[13] = GFBTIME(temp[1]) ^ GFDTIME(temp[5]) ^ GF9TIME(temp[9]) ^ GFETIME(temp[13]);
+	state[14] = GFBTIME(temp[2]) ^ GFDTIME(temp[6]) ^ GF9TIME(temp[10]) ^ GFETIME(temp[14]);
+	state[15] = GFBTIME(temp[3]) ^ GFDTIME(temp[7]) ^ GF9TIME(temp[11]) ^ GFETIME(temp[15]);
+}
+
+static inline void rijndael_encrypt_step(aes_round_key key, byte_t state[AES_BLOCK_SIZE])
+{
+	sub_bytes(state);
+	shift_rows(state);
+	mix_columns(state);
+	add_round_key(state, key);
+}
+
+static inline void rijndael_decrypt_step(aes_round_key key, byte_t state[AES_BLOCK_SIZE])
+{
+	add_round_key(state, key);
+	invmix_columns(state);
+	invshift_rows(state);
+	invsub_bytes(state);
 }
 
 static void rijndael128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
-	byte_t state[16], temp[16];
+	byte_t state[AES_BLOCK_SIZE];
 
-	BLOCK_TRANSPOSE(state, plaintext);
+	block_transpose(state, plaintext);
 
 	// Start
-	ADD_ROUND_KEY(key->round_key[0], state);
+	add_round_key(state, key->round_key[0]);
 
 	// Rounds 1 - 9
-	rijndael_encrypt_step(key->round_key[1], state, temp);
-	rijndael_encrypt_step(key->round_key[2], state, temp);
-	rijndael_encrypt_step(key->round_key[3], state, temp);
-	rijndael_encrypt_step(key->round_key[4], state, temp);
-	rijndael_encrypt_step(key->round_key[5], state, temp);
-	rijndael_encrypt_step(key->round_key[6], state, temp);
-	rijndael_encrypt_step(key->round_key[7], state, temp);
-	rijndael_encrypt_step(key->round_key[8], state, temp);
-	rijndael_encrypt_step(key->round_key[9], state, temp);
+	rijndael_encrypt_step(key->round_key[1], state);
+	rijndael_encrypt_step(key->round_key[2], state);
+	rijndael_encrypt_step(key->round_key[3], state);
+	rijndael_encrypt_step(key->round_key[4], state);
+	rijndael_encrypt_step(key->round_key[5], state);
+	rijndael_encrypt_step(key->round_key[6], state);
+	rijndael_encrypt_step(key->round_key[7], state);
+	rijndael_encrypt_step(key->round_key[8], state);
+	rijndael_encrypt_step(key->round_key[9], state);
 
 	// End
-	SUB_BYTES(state);
-	SHIFT_ROWS(state);
-	ADD_ROUND_KEY(key->round_key[10], state);
+	sub_bytes(state);
+	shift_rows(state);
+	add_round_key(state, key->round_key[10]);
 
-	BLOCK_TRANSPOSE(ciphertext, state);
+	block_transpose(ciphertext, state);
 }
 
 static void rijndael128_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
-	byte_t state[16], temp[16];
+	byte_t state[AES_BLOCK_SIZE];
 
-	BLOCK_TRANSPOSE(state, ciphertext);
+	block_transpose(state, ciphertext);
 
 	// Start
-	ADD_ROUND_KEY(key->round_key[10], state);
-	INVSHIFT_ROWS(state);
-	INVSUB_BYTES(state);
+	add_round_key(state, key->round_key[10]);
+	invshift_rows(state);
+	invsub_bytes(state);
 
 	// Rounds 9 - 1
-	rijndael_decrypt_step(key->round_key[9], state, temp);
-	rijndael_decrypt_step(key->round_key[8], state, temp);
-	rijndael_decrypt_step(key->round_key[7], state, temp);
-	rijndael_decrypt_step(key->round_key[6], state, temp);
-	rijndael_decrypt_step(key->round_key[5], state, temp);
-	rijndael_decrypt_step(key->round_key[4], state, temp);
-	rijndael_decrypt_step(key->round_key[3], state, temp);
-	rijndael_decrypt_step(key->round_key[2], state, temp);
-	rijndael_decrypt_step(key->round_key[1], state, temp);
+	rijndael_decrypt_step(key->round_key[9], state);
+	rijndael_decrypt_step(key->round_key[8], state);
+	rijndael_decrypt_step(key->round_key[7], state);
+	rijndael_decrypt_step(key->round_key[6], state);
+	rijndael_decrypt_step(key->round_key[5], state);
+	rijndael_decrypt_step(key->round_key[4], state);
+	rijndael_decrypt_step(key->round_key[3], state);
+	rijndael_decrypt_step(key->round_key[2], state);
+	rijndael_decrypt_step(key->round_key[1], state);
 
 	// End
-	ADD_ROUND_KEY(key->round_key[0], state);
+	add_round_key(state, key->round_key[0]);
 
-	BLOCK_TRANSPOSE(plaintext, state);
+	block_transpose(plaintext, state);
 }
 
 static void rijndael192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
-	byte_t state[16], temp[16];
+	byte_t state[AES_BLOCK_SIZE];
 
-	BLOCK_TRANSPOSE(state, plaintext);
+	block_transpose(state, plaintext);
 
 	// Start
-	ADD_ROUND_KEY(key->round_key[0], state);
+	add_round_key(state, key->round_key[0]);
 
 	// Rounds 1 - 11
-	rijndael_encrypt_step(key->round_key[1], state, temp);
-	rijndael_encrypt_step(key->round_key[2], state, temp);
-	rijndael_encrypt_step(key->round_key[3], state, temp);
-	rijndael_encrypt_step(key->round_key[4], state, temp);
-	rijndael_encrypt_step(key->round_key[5], state, temp);
-	rijndael_encrypt_step(key->round_key[6], state, temp);
-	rijndael_encrypt_step(key->round_key[7], state, temp);
-	rijndael_encrypt_step(key->round_key[8], state, temp);
-	rijndael_encrypt_step(key->round_key[9], state, temp);
-	rijndael_encrypt_step(key->round_key[10], state, temp);
-	rijndael_encrypt_step(key->round_key[11], state, temp);
+	rijndael_encrypt_step(key->round_key[1], state);
+	rijndael_encrypt_step(key->round_key[2], state);
+	rijndael_encrypt_step(key->round_key[3], state);
+	rijndael_encrypt_step(key->round_key[4], state);
+	rijndael_encrypt_step(key->round_key[5], state);
+	rijndael_encrypt_step(key->round_key[6], state);
+	rijndael_encrypt_step(key->round_key[7], state);
+	rijndael_encrypt_step(key->round_key[8], state);
+	rijndael_encrypt_step(key->round_key[9], state);
+	rijndael_encrypt_step(key->round_key[10], state);
+	rijndael_encrypt_step(key->round_key[11], state);
 
 	// End
-	SUB_BYTES(state);
-	SHIFT_ROWS(state);
-	ADD_ROUND_KEY(key->round_key[12], state);
+	sub_bytes(state);
+	shift_rows(state);
+	add_round_key(state, key->round_key[12]);
 
-	BLOCK_TRANSPOSE(ciphertext, state);
+	block_transpose(ciphertext, state);
 }
 
 static void rijndael192_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
-	byte_t state[16], temp[16];
+	byte_t state[AES_BLOCK_SIZE];
 
-	BLOCK_TRANSPOSE(state, ciphertext);
+	block_transpose(state, ciphertext);
 
 	// Start
-	ADD_ROUND_KEY(key->round_key[12], state);
-	INVSHIFT_ROWS(state);
-	INVSUB_BYTES(state);
+	add_round_key(state, key->round_key[12]);
+	invshift_rows(state);
+	invsub_bytes(state);
 
 	// Rounds 11 - 1
-	rijndael_decrypt_step(key->round_key[11], state, temp);
-	rijndael_decrypt_step(key->round_key[10], state, temp);
-	rijndael_decrypt_step(key->round_key[9], state, temp);
-	rijndael_decrypt_step(key->round_key[8], state, temp);
-	rijndael_decrypt_step(key->round_key[7], state, temp);
-	rijndael_decrypt_step(key->round_key[6], state, temp);
-	rijndael_decrypt_step(key->round_key[5], state, temp);
-	rijndael_decrypt_step(key->round_key[4], state, temp);
-	rijndael_decrypt_step(key->round_key[3], state, temp);
-	rijndael_decrypt_step(key->round_key[2], state, temp);
-	rijndael_decrypt_step(key->round_key[1], state, temp);
+	rijndael_decrypt_step(key->round_key[11], state);
+	rijndael_decrypt_step(key->round_key[10], state);
+	rijndael_decrypt_step(key->round_key[9], state);
+	rijndael_decrypt_step(key->round_key[8], state);
+	rijndael_decrypt_step(key->round_key[7], state);
+	rijndael_decrypt_step(key->round_key[6], state);
+	rijndael_decrypt_step(key->round_key[5], state);
+	rijndael_decrypt_step(key->round_key[4], state);
+	rijndael_decrypt_step(key->round_key[3], state);
+	rijndael_decrypt_step(key->round_key[2], state);
+	rijndael_decrypt_step(key->round_key[1], state);
 
 	// End
-	ADD_ROUND_KEY(key->round_key[0], state);
+	add_round_key(state, key->round_key[0]);
 
-	BLOCK_TRANSPOSE(plaintext, state);
+	block_transpose(plaintext, state);
 }
 
 static void rijndael256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
-	byte_t state[16], temp[16];
+	byte_t state[AES_BLOCK_SIZE];
 
-	BLOCK_TRANSPOSE(state, plaintext);
+	block_transpose(state, plaintext);
 
 	// Start
-	ADD_ROUND_KEY(key->round_key[0], state);
+	add_round_key(state, key->round_key[0]);
 
 	// Rounds 1 - 13
-	rijndael_encrypt_step(key->round_key[1], state, temp);
-	rijndael_encrypt_step(key->round_key[2], state, temp);
-	rijndael_encrypt_step(key->round_key[3], state, temp);
-	rijndael_encrypt_step(key->round_key[4], state, temp);
-	rijndael_encrypt_step(key->round_key[5], state, temp);
-	rijndael_encrypt_step(key->round_key[6], state, temp);
-	rijndael_encrypt_step(key->round_key[7], state, temp);
-	rijndael_encrypt_step(key->round_key[8], state, temp);
-	rijndael_encrypt_step(key->round_key[9], state, temp);
-	rijndael_encrypt_step(key->round_key[10], state, temp);
-	rijndael_encrypt_step(key->round_key[11], state, temp);
-	rijndael_encrypt_step(key->round_key[12], state, temp);
-	rijndael_encrypt_step(key->round_key[13], state, temp);
+	rijndael_encrypt_step(key->round_key[1], state);
+	rijndael_encrypt_step(key->round_key[2], state);
+	rijndael_encrypt_step(key->round_key[3], state);
+	rijndael_encrypt_step(key->round_key[4], state);
+	rijndael_encrypt_step(key->round_key[5], state);
+	rijndael_encrypt_step(key->round_key[6], state);
+	rijndael_encrypt_step(key->round_key[7], state);
+	rijndael_encrypt_step(key->round_key[8], state);
+	rijndael_encrypt_step(key->round_key[9], state);
+	rijndael_encrypt_step(key->round_key[10], state);
+	rijndael_encrypt_step(key->round_key[11], state);
+	rijndael_encrypt_step(key->round_key[12], state);
+	rijndael_encrypt_step(key->round_key[13], state);
 
 	// End
-	SUB_BYTES(state);
-	SHIFT_ROWS(state);
-	ADD_ROUND_KEY(key->round_key[14], state);
+	sub_bytes(state);
+	shift_rows(state);
+	add_round_key(state, key->round_key[14]);
 
-	BLOCK_TRANSPOSE(ciphertext, state);
+	block_transpose(ciphertext, state);
 }
 
 static void rijndael256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
-	byte_t state[16], temp[16];
+	byte_t state[AES_BLOCK_SIZE];
 
-	BLOCK_TRANSPOSE(state, ciphertext);
+	block_transpose(state, ciphertext);
 
 	// Start
-	ADD_ROUND_KEY(key->round_key[14], state);
-	INVSHIFT_ROWS(state);
-	INVSUB_BYTES(state);
+	add_round_key(state, key->round_key[14]);
+	invshift_rows(state);
+	invsub_bytes(state);
 
 	// Rounds 13 - 1
-	rijndael_decrypt_step(key->round_key[13], state, temp);
-	rijndael_decrypt_step(key->round_key[12], state, temp);
-	rijndael_decrypt_step(key->round_key[11], state, temp);
-	rijndael_decrypt_step(key->round_key[10], state, temp);
-	rijndael_decrypt_step(key->round_key[9], state, temp);
-	rijndael_decrypt_step(key->round_key[8], state, temp);
-	rijndael_decrypt_step(key->round_key[7], state, temp);
-	rijndael_decrypt_step(key->round_key[6], state, temp);
-	rijndael_decrypt_step(key->round_key[5], state, temp);
-	rijndael_decrypt_step(key->round_key[4], state, temp);
-	rijndael_decrypt_step(key->round_key[3], state, temp);
-	rijndael_decrypt_step(key->round_key[2], state, temp);
-	rijndael_decrypt_step(key->round_key[1], state, temp);
+	rijndael_decrypt_step(key->round_key[13], state);
+	rijndael_decrypt_step(key->round_key[12], state);
+	rijndael_decrypt_step(key->round_key[11], state);
+	rijndael_decrypt_step(key->round_key[10], state);
+	rijndael_decrypt_step(key->round_key[9], state);
+	rijndael_decrypt_step(key->round_key[8], state);
+	rijndael_decrypt_step(key->round_key[7], state);
+	rijndael_decrypt_step(key->round_key[6], state);
+	rijndael_decrypt_step(key->round_key[5], state);
+	rijndael_decrypt_step(key->round_key[4], state);
+	rijndael_decrypt_step(key->round_key[3], state);
+	rijndael_decrypt_step(key->round_key[2], state);
+	rijndael_decrypt_step(key->round_key[1], state);
 
 	// End
-	ADD_ROUND_KEY(key->round_key[0], state);
+	add_round_key(state, key->round_key[0]);
 
-	BLOCK_TRANSPOSE(plaintext, state);
+	block_transpose(plaintext, state);
 }
 
 static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
@@ -436,12 +441,15 @@ static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 	case AES128:
 		nk = AES128_KEY_WORDS;
 		nr = AES128_ROUNDS;
+		break;
 	case AES192:
 		nk = AES192_KEY_WORDS;
 		nr = AES192_ROUNDS;
+		break;
 	case AES256:
 		nk = AES256_KEY_WORDS;
 		nr = AES256_ROUNDS;
+		break;
 	}
 
 	// Copy the key first.
@@ -453,7 +461,7 @@ static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 
 		if (i % nk == 0)
 		{
-			temp = SUBWORD(ROTL_32(temp, 8)) ^ RCON[i / nk];
+			temp = SUBWORD(ROTR_32(temp, 8)) ^ RCON[i / nk];
 		}
 		else if (nk > 6 && i % 4 == 0)
 		{
@@ -467,7 +475,7 @@ static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 	for (uint8_t i = 0; i < nr + 1; ++i)
 	{
 		byte_t *bytes = (byte_t *)&word[i * 4];
-		BLOCK_TRANSPOSE(expanded_key->round_key[i], bytes);
+		block_transpose(expanded_key->round_key[i], bytes);
 	}
 }
 

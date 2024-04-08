@@ -13,6 +13,10 @@
 #define AES_MAX_ROUNDS 14
 #define AES_BLOCK_SIZE 16
 
+#define AES128_KEY_SIZE 16
+#define AES192_KEY_SIZE 24
+#define AES256_KEY_SIZE 32
+
 typedef uint8_t aes_round_key[16];
 
 typedef enum _aes_type
@@ -24,8 +28,8 @@ typedef enum _aes_type
 
 typedef struct _aes_key
 {
-	aes_round_key round_key[AES_MAX_ROUNDS + 1];
 	aes_type type;
+	aes_round_key round_key[AES_MAX_ROUNDS + 1];
 } aes_key;
 
 aes_key *new_aes_key(aes_type type, byte_t *key);
