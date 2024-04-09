@@ -10,7 +10,9 @@
 
 #include <types.h>
 
-#define CHACHA20_BLOCK_SIZE 16
+#define CHACHA20_BLOCK_SIZE  64
+#define CHACHA20_KEY_SIZE    32
+#define CHACHA20_NONCE_SIZE  24
 
 typedef struct _chacha20_key
 {

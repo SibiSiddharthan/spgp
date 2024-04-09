@@ -11,6 +11,9 @@
 #include <chacha20.h>
 #include <rotate.h>
 
+// See RFC 8439: ChaCha20 and Poly1305 for IETF Protocols
+#define CHACHA20_BLOCK_WORDS 16
+
 static const uint32_t CHACHA20_CONSTANTS[4] = {0x61707865, 0x3320646E, 0x79622D32, 0x6B206574};
 
 #define QUARTER_ROUND(A, B, C, D) \
@@ -23,10 +26,10 @@ static const uint32_t CHACHA20_CONSTANTS[4] = {0x61707865, 0x3320646E, 0x79622D3
 		B = ROTL_32(B, 12);       \
 		A += B;                   \
 		D ^= A;                   \
-		D = ROTL_32(D, 18);       \
+		D = ROTL_32(D, 8);        \
 		C += D;                   \
 		B ^= C;                   \
-		B = ROTL_32(B, 17);       \
+		B = ROTL_32(B, 7);        \
 	}
 
 #define CHACHA20_STEP(S)                         \
@@ -43,19 +46,40 @@ static const uint32_t CHACHA20_CONSTANTS[4] = {0x61707865, 0x3320646E, 0x79622D3
 		QUARTER_ROUND(S[3], S[4], S[9], S[14]);  \
 	}
 
-static inline void chacha20_block(uint32_t block[16])
+static inline void chacha20_block(uint32_t block[CHACHA20_BLOCK_WORDS])
 {
+	uint32_t temp[CHACHA20_BLOCK_WORDS];
+
+	memcpy(temp, block, sizeof(uint32_t) * CHACHA20_BLOCK_WORDS);
+
 	// Rounds 1 - 20 (Each step is 2 rounds)
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
-	CHACHA20_STEP(block);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+	CHACHA20_STEP(temp);
+
+	block[0] += temp[0];
+	block[1] += temp[1];
+	block[2] += temp[2];
+	block[3] += temp[3];
+	block[4] += temp[4];
+	block[5] += temp[5];
+	block[6] += temp[6];
+	block[7] += temp[7];
+	block[8] += temp[8];
+	block[9] += temp[9];
+	block[10] += temp[10];
+	block[11] += temp[11];
+	block[12] += temp[12];
+	block[13] += temp[13];
+	block[14] += temp[14];
+	block[15] += temp[15];
 }
 
 chacha20_key *new_chacha20_key(byte_t *key, byte_t *nonce)
@@ -89,19 +113,32 @@ void delete_chacha20_key(chacha20_key *key)
 	free(key);
 }
 
-void chacha20_encrypt(chacha20_key *key, byte_t *plaintext, byte_t *ciphertext, size_t size)
+static void chacha20_common(chacha20_key *key, uint32_t *in, uint32_t *out, size_t size)
 {
-	uint32_t block[16];
-	uint32_t *in = (uint32_t *)plaintext;
-	uint32_t *out = (uint32_t *)ciphertext;
+	uint32_t block[CHACHA20_BLOCK_WORDS];
 	uint64_t processed = 0;
 
-	for (processed = 0; processed + 64 <= size; processed += 64)
+	while (processed < size)
 	{
 		memcpy(block, key, sizeof(chacha20_key));
 		key->count++;
 
 		chacha20_block(block);
+
+		// Remaining size
+		if (size - processed < CHACHA20_BLOCK_SIZE)
+		{
+			byte_t *inp = (byte_t *)in;
+			byte_t *outp = (byte_t *)out;
+			byte_t *blockp = (byte_t *)block;
+
+			for (uint8_t i = 0; i < (size - processed); ++i)
+			{
+				*outp++ = *inp++ ^ *blockp++;
+			}
+
+			break;
+		}
 
 		*out++ = *in++ ^ block[0];
 		*out++ = *in++ ^ block[1];
@@ -119,102 +156,17 @@ void chacha20_encrypt(chacha20_key *key, byte_t *plaintext, byte_t *ciphertext, 
 		*out++ = *in++ ^ block[13];
 		*out++ = *in++ ^ block[14];
 		*out++ = *in++ ^ block[15];
+
+		processed += 64;
 	}
+}
 
-	// Remaining byte
-	if (processed < size)
-	{
-		uint32_t i = 0;
-		memcpy(block, key, sizeof(chacha20_key));
-		key->count++;
-
-		chacha20_block(block);
-
-		while (processed + 4 <= size)
-		{
-			*out++ = *in++ ^ block[i++];
-		}
-
-		// Last bytes
-		switch (size - processed)
-		{
-		case 3:
-			ciphertext[size - 3] = plaintext[size - 3] ^ ((block[i] >> 16) & 0xFF);
-			// Fallthrough
-		case 2:
-			ciphertext[size - 2] = plaintext[size - 2] ^ ((block[i] >> 8) & 0xFF);
-			// Fallthrough
-		case 1:
-			ciphertext[size - 1] = plaintext[size - 1] ^ (block[i] & 0xFF);
-			// Fallthrough
-		case 0:
-			// All bytes processed
-			break;
-		}
-	}
+void chacha20_encrypt(chacha20_key *key, byte_t *plaintext, byte_t *ciphertext, size_t size)
+{
+	chacha20_common(key, (uint32_t *)plaintext, (uint32_t *)ciphertext, size);
 }
 
 void chacha20_decrypt(chacha20_key *key, byte_t *ciphertext, byte_t *plaintext, size_t size)
 {
-		uint32_t block[16];
-	uint32_t *in = (uint32_t *)ciphertext;
-	uint32_t *out = (uint32_t *)plaintext;
-	uint64_t processed = 0;
-
-	for (processed = 0; processed + 64 <= size; processed += 64)
-	{
-		memcpy(block, key, sizeof(chacha20_key));
-		key->count++;
-
-		chacha20_block(block);
-
-		*out++ = *in++ ^ block[0];
-		*out++ = *in++ ^ block[1];
-		*out++ = *in++ ^ block[2];
-		*out++ = *in++ ^ block[3];
-		*out++ = *in++ ^ block[4];
-		*out++ = *in++ ^ block[5];
-		*out++ = *in++ ^ block[6];
-		*out++ = *in++ ^ block[7];
-		*out++ = *in++ ^ block[8];
-		*out++ = *in++ ^ block[9];
-		*out++ = *in++ ^ block[10];
-		*out++ = *in++ ^ block[11];
-		*out++ = *in++ ^ block[12];
-		*out++ = *in++ ^ block[13];
-		*out++ = *in++ ^ block[14];
-		*out++ = *in++ ^ block[15];
-	}
-
-	// Remaining byte
-	if (processed < size)
-	{
-		uint32_t i = 0;
-		memcpy(block, key, sizeof(chacha20_key));
-		key->count++;
-
-		chacha20_block(block);
-
-		while (processed + 4 <= size)
-		{
-			*out++ = *in++ ^ block[i++];
-		}
-
-		// Last bytes
-		switch (size - processed)
-		{
-		case 3:
-			ciphertext[size - 3] = plaintext[size - 3] ^ ((block[i] >> 16) & 0xFF);
-			// Fallthrough
-		case 2:
-			ciphertext[size - 2] = plaintext[size - 2] ^ ((block[i] >> 8) & 0xFF);
-			// Fallthrough
-		case 1:
-			ciphertext[size - 1] = plaintext[size - 1] ^ (block[i] & 0xFF);
-			// Fallthrough
-		case 0:
-			// All bytes processed
-			break;
-		}
-	}
+	chacha20_common(key, (uint32_t *)ciphertext, (uint32_t *)plaintext, size);
 }
