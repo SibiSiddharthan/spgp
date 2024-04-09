@@ -24,6 +24,7 @@ endfunction()
 
 crypto_cipher_tests(
 aes
+chacha20
 )
 
 crypto_hash_tests(
