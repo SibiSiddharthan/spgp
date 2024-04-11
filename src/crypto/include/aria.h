@@ -13,6 +13,10 @@
 #define ARIA_MAX_ROUNDS 16
 #define ARIA_BLOCK_SIZE 16
 
+#define ARIA128_KEY_SIZE 16
+#define ARIA192_KEY_SIZE 24
+#define ARIA256_KEY_SIZE 32
+
 typedef uint8_t aria_round_key[16];
 
 typedef enum _aria_type

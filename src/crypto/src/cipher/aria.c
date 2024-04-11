@@ -9,7 +9,13 @@
 #include <string.h>
 
 #include <aria.h>
-#include <rotate.h>
+#include <byteswap.h>
+
+// See RFC 5794: A Description of the ARIA Encryption Algorithm
+
+#define ARIA128_ROUNDS 12
+#define ARIA192_ROUNDS 14
+#define ARIA256_ROUNDS 16
 
 // Key Constants
 static const byte_t C1[16] = {0x51, 0x7c, 0xc1, 0xb7, 0x27, 0x22, 0x0a, 0x94, 0xfe, 0x13, 0xab, 0xe8, 0xfa, 0x9a, 0x6e, 0xe0};
@@ -99,25 +105,16 @@ static const byte_t SB4[256] =
 };
 // clang-format on
 
-#define XOR128(R, X, Y)        \
-	{                          \
-		R[0] = X[0] ^ Y[0];    \
-		R[1] = X[1] ^ Y[1];    \
-		R[2] = X[2] ^ Y[2];    \
-		R[3] = X[3] ^ Y[3];    \
-		R[4] = X[4] ^ Y[4];    \
-		R[5] = X[5] ^ Y[5];    \
-		R[6] = X[6] ^ Y[6];    \
-		R[7] = X[7] ^ Y[7];    \
-		R[8] = X[8] ^ Y[8];    \
-		R[9] = X[9] ^ Y[9];    \
-		R[10] = X[10] ^ Y[10]; \
-		R[11] = X[11] ^ Y[11]; \
-		R[12] = X[12] ^ Y[12]; \
-		R[13] = X[13] ^ Y[13]; \
-		R[14] = X[14] ^ Y[14]; \
-		R[15] = X[15] ^ Y[15]; \
-	}
+// r = x ^ y
+static inline void XOR128(byte_t r[16], byte_t x[16], byte_t y[16])
+{
+	uint64_t *rp = (uint64_t *)r;
+	uint64_t *xp = (uint64_t *)x;
+	uint64_t *yp = (uint64_t *)y;
+
+	rp[0] = xp[0] ^ yp[0];
+	rp[1] = xp[1] ^ yp[1];
+}
 
 #define ROTR128_19(Y, X)                 \
 	{                                    \
@@ -187,16 +184,16 @@ static const byte_t SB4[256] =
 		Y[3] = X[7] >> 1 | X[6] << 7;    \
 		Y[4] = X[8] >> 1 | X[7] << 7;    \
 		Y[5] = X[9] >> 1 | X[8] << 7;    \
-		Y[6] = X[10] >> 7 | X[9] << 1;   \
-		Y[7] = X[11] >> 7 | X[10] << 1;  \
-		Y[8] = X[12] >> 7 | X[11] << 1;  \
-		Y[9] = X[13] >> 7 | X[12] << 1;  \
-		Y[10] = X[14] >> 7 | X[13] << 1; \
-		Y[11] = X[15] >> 7 | X[14] << 1; \
-		Y[12] = X[0] >> 7 | X[15] << 1;  \
-		Y[13] = X[1] >> 7 | X[0] << 1;   \
-		Y[14] = X[2] >> 7 | X[1] << 1;   \
-		Y[15] = X[3] >> 7 | X[2] << 1;   \
+		Y[6] = X[10] >> 1 | X[9] << 7;   \
+		Y[7] = X[11] >> 1 | X[10] << 7;  \
+		Y[8] = X[12] >> 1 | X[11] << 7;  \
+		Y[9] = X[13] >> 1 | X[12] << 7;  \
+		Y[10] = X[14] >> 1 | X[13] << 7; \
+		Y[11] = X[15] >> 1 | X[14] << 7; \
+		Y[12] = X[0] >> 1 | X[15] << 7;  \
+		Y[13] = X[1] >> 1 | X[0] << 7;   \
+		Y[14] = X[2] >> 1 | X[1] << 7;   \
+		Y[15] = X[3] >> 1 | X[2] << 7;   \
 	}
 
 #define ROTL128_61(Y, X)                \
@@ -219,265 +216,391 @@ static const byte_t SB4[256] =
 		Y[15] = X[7] >> 3 | X[6] << 5;  \
 	}
 
-// R = X ^ (Y >>> 19)
-#define XOR_ROTR19(R, X, Y) \
-	{                       \
-		ROTR128_19(R, Y);   \
-		XOR128(R, R, X);    \
-	}
+#if 0
+#	define XOR_ROTR19(R, X, Y) \
+		{                       \
+			ROTR128_19(R, Y);   \
+			XOR128(R, R, X);    \
+		}
 
 // R = X ^ (Y >>> 31)
-#define XOR_ROTR31(R, X, Y) \
-	{                       \
-		ROTR128_31(R, Y);   \
-		XOR128(R, R, X);    \
-	}
+#	define XOR_ROTR31(R, X, Y) \
+		{                       \
+			ROTR128_31(R, Y);   \
+			XOR128(R, R, X);    \
+		}
 
 // R = X ^ (Y <<< 19)
-#define XOR_ROTL19(R, X, Y) \
-	{                       \
-		ROTL128_19(R, Y);   \
-		XOR128(R, R, X);    \
-	}
+#	define XOR_ROTL19(R, X, Y) \
+		{                       \
+			ROTL128_19(R, Y);   \
+			XOR128(R, R, X);    \
+		}
 
 // R = X ^ (Y <<< 31)
-#define XOR_ROTL31(R, X, Y) \
-	{                       \
-		ROTL128_31(R, Y);   \
-		XOR128(R, R, X);    \
-	}
+#	define XOR_ROTL31(R, X, Y) \
+		{                       \
+			ROTL128_31(R, Y);   \
+			XOR128(R, R, X);    \
+		}
 
 // R = X ^ (Y <<< 61)
-#define XOR_ROTL61(R, X, Y) \
-	{                       \
-		ROTL128_61(R, Y);   \
-		XOR128(R, R, X);    \
-	}
+#	define XOR_ROTL61(R, X, Y) \
+		{                       \
+			ROTL128_61(R, Y);   \
+			XOR128(R, R, X);    \
+		}
+#endif
 
-#define A(Y, X)                                                    \
-	{                                                              \
-		Y[0] = X[3] ^ X[4] ^ X[6] ^ X[8] ^ X[9] ^ X[13] ^ X[14];   \
-		Y[1] = X[2] ^ X[5] ^ X[7] ^ X[8] ^ X[9] ^ X[12] ^ X[15];   \
-		Y[2] = X[1] ^ X[4] ^ X[6] ^ X[10] ^ X[11] ^ X[12] ^ X[15]; \
-		Y[3] = X[0] ^ X[5] ^ X[7] ^ X[10] ^ X[11] ^ X[13] ^ X[14]; \
-		Y[4] = X[0] ^ X[2] ^ X[5] ^ X[8] ^ X[11] ^ X[14] ^ X[15];  \
-		Y[5] = X[1] ^ X[3] ^ X[4] ^ X[9] ^ X[10] ^ X[14] ^ X[15];  \
-		Y[6] = X[0] ^ X[2] ^ X[7] ^ X[9] ^ X[10] ^ X[12] ^ X[13];  \
-		Y[7] = X[1] ^ X[3] ^ X[6] ^ X[8] ^ X[11] ^ X[12] ^ X[13];  \
-		Y[8] = X[0] ^ X[1] ^ X[4] ^ X[7] ^ X[10] ^ X[13] ^ X[15];  \
-		Y[9] = X[0] ^ X[1] ^ X[5] ^ X[6] ^ X[11] ^ X[12] ^ X[14];  \
-		Y[10] = X[2] ^ X[3] ^ X[5] ^ X[6] ^ X[8] ^ X[13] ^ X[15];  \
-		Y[11] = X[2] ^ X[3] ^ X[4] ^ X[7] ^ X[9] ^ X[12] ^ X[14];  \
-		Y[12] = X[1] ^ X[2] ^ X[6] ^ X[7] ^ X[9] ^ X[11] ^ X[12];  \
-		Y[13] = X[0] ^ X[3] ^ X[6] ^ X[7] ^ X[8] ^ X[10] ^ X[13];  \
-		Y[14] = X[0] ^ X[3] ^ X[4] ^ X[5] ^ X[9] ^ X[11] ^ X[14];  \
-		Y[15] = X[1] ^ X[2] ^ X[4] ^ X[5] ^ X[8] ^ X[10] ^ X[15];  \
-	}
-
-#define SL1(Y, X)           \
-	{                       \
-		Y[0] = SB1[X[0]];   \
-		Y[1] = SB2[X[1]];   \
-		Y[2] = SB3[X[2]];   \
-		Y[3] = SB4[X[3]];   \
-		Y[4] = SB1[X[4]];   \
-		Y[5] = SB2[X[5]];   \
-		Y[6] = SB3[X[6]];   \
-		Y[7] = SB4[X[7]];   \
-		Y[8] = SB1[X[8]];   \
-		Y[9] = SB2[X[9]];   \
-		Y[10] = SB3[X[10]]; \
-		Y[11] = SB4[X[11]]; \
-		Y[12] = SB1[X[12]]; \
-		Y[13] = SB2[X[13]]; \
-		Y[14] = SB3[X[14]]; \
-		Y[15] = SB4[X[15]]; \
-	}
-
-#define SL2(Y, X)           \
-	{                       \
-		Y[0] = SB3[X[0]];   \
-		Y[1] = SB4[X[1]];   \
-		Y[2] = SB1[X[2]];   \
-		Y[3] = SB2[X[3]];   \
-		Y[4] = SB3[X[4]];   \
-		Y[5] = SB4[X[5]];   \
-		Y[6] = SB1[X[6]];   \
-		Y[7] = SB2[X[7]];   \
-		Y[8] = SB3[X[8]];   \
-		Y[9] = SB4[X[9]];   \
-		Y[10] = SB1[X[10]]; \
-		Y[11] = SB2[X[11]]; \
-		Y[12] = SB3[X[12]]; \
-		Y[13] = SB4[X[13]]; \
-		Y[14] = SB1[X[14]]; \
-		Y[15] = SB2[X[15]]; \
-	}
-
-#define ARIA128_ROUNDS 12
-#define ARIA192_ROUNDS 14
-#define ARIA256_ROUNDS 16
-
-static inline void FO(byte_t r[16], byte_t d[16], byte_t k[16])
+// r = x ^ (y >>> 19)
+static inline void XOR_ROTR19(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	byte_t t[16];
+	uint64_t t0, t1;
+	uint64_t *rp = (uint64_t *)r;
+	uint64_t *xp = (uint64_t *)x;
+	uint64_t *yp = (uint64_t *)y;
 
-	XOR128(t, d, k);
-	SL1(t, t);
-	A(r, t);
+	t0 = BSWAP_64(yp[0]);
+	t1 = BSWAP_64(yp[1]);
+
+	rp[0] = (t0 >> 19 | t1 << 45);
+	rp[1] = (t1 >> 19 | t0 << 45);
+
+	rp[0] = BSWAP_64(rp[0]);
+	rp[1] = BSWAP_64(rp[1]);
+
+	rp[0] ^= xp[0];
+	rp[1] ^= xp[1];
 }
 
-static inline void FE(byte_t r[16], byte_t d[16], byte_t k[16])
+// r = x ^ (y >>> 31)
+static inline void XOR_ROTR31(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	byte_t t[16];
+	uint64_t t0, t1;
+	uint64_t *rp = (uint64_t *)r;
+	uint64_t *xp = (uint64_t *)x;
+	uint64_t *yp = (uint64_t *)y;
 
-	XOR128(t, d, k);
-	SL2(t, t);
-	A(r, t);
+	t0 = BSWAP_64(yp[0]);
+	t1 = BSWAP_64(yp[1]);
+
+	rp[0] = (t0 >> 31 | t1 << 33);
+	rp[1] = (t1 >> 31 | t0 << 33);
+
+	rp[0] = BSWAP_64(rp[0]);
+	rp[1] = BSWAP_64(rp[1]);
+
+	rp[0] ^= xp[0];
+	rp[1] ^= xp[1];
 }
 
-static void aria128_encrypt_block(aria_key *key, byte_t plaintext[16], byte_t ciphertext[16])
+// r = x ^ (y <<< 19)
+static inline void XOR_ROTL19(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	byte_t t1[16], t2[16];
+	uint64_t t0, t1;
+	uint64_t *rp = (uint64_t *)r;
+	uint64_t *xp = (uint64_t *)x;
+	uint64_t *yp = (uint64_t *)y;
 
-	FO(t1, plaintext, key->encryption_round_key[0]); // Round 1
-	FE(t1, t2, key->encryption_round_key[1]);        // Round 2
-	FO(t2, t1, key->encryption_round_key[2]);        // Round 3
-	FE(t1, t2, key->encryption_round_key[3]);        // Round 4
-	FO(t2, t1, key->encryption_round_key[4]);        // Round 5
-	FE(t1, t2, key->encryption_round_key[5]);        // Round 6
-	FO(t2, t1, key->encryption_round_key[6]);        // Round 7
-	FE(t1, t2, key->encryption_round_key[7]);        // Round 8
-	FO(t2, t1, key->encryption_round_key[8]);        // Round 9
-	FE(t1, t2, key->encryption_round_key[9]);        // Round 10
-	FO(t2, t1, key->encryption_round_key[10]);       // Round 11
+	t0 = BSWAP_64(yp[0]);
+	t1 = BSWAP_64(yp[1]);
+
+	rp[0] = (t0 << 19 | t1 >> 45);
+	rp[1] = (t1 << 19 | t0 >> 45);
+
+	rp[0] = BSWAP_64(rp[0]);
+	rp[1] = BSWAP_64(rp[1]);
+
+	rp[0] ^= xp[0];
+	rp[1] ^= xp[1];
+}
+
+// r = x ^ (y <<< 31)
+static inline void XOR_ROTL31(byte_t r[16], byte_t x[16], byte_t y[16])
+{
+	uint64_t t0, t1;
+	uint64_t *rp = (uint64_t *)r;
+	uint64_t *xp = (uint64_t *)x;
+	uint64_t *yp = (uint64_t *)y;
+
+	t0 = BSWAP_64(yp[0]);
+	t1 = BSWAP_64(yp[1]);
+
+	rp[0] = (t0 << 31 | t1 >> 33);
+	rp[1] = (t1 << 31 | t0 >> 33);
+
+	rp[0] = BSWAP_64(rp[0]);
+	rp[1] = BSWAP_64(rp[1]);
+
+	rp[0] ^= xp[0];
+	rp[1] ^= xp[1];
+}
+
+// r = x ^ (y <<< 61)
+static inline void XOR_ROTL61(byte_t r[16], byte_t x[16], byte_t y[16])
+{
+	uint64_t t0, t1;
+	uint64_t *rp = (uint64_t *)r;
+	uint64_t *xp = (uint64_t *)x;
+	uint64_t *yp = (uint64_t *)y;
+
+	t0 = BSWAP_64(yp[0]);
+	t1 = BSWAP_64(yp[1]);
+
+	rp[0] = (t0 << 61 | t1 >> 3);
+	rp[1] = (t1 << 61 | t0 >> 3);
+
+	rp[0] = BSWAP_64(rp[0]);
+	rp[1] = BSWAP_64(rp[1]);
+
+	rp[0] ^= xp[0];
+	rp[1] ^= xp[1];
+}
+
+static inline void A(byte_t out[16], byte_t in[16])
+{
+	out[0] = in[3] ^ in[4] ^ in[6] ^ in[8] ^ in[9] ^ in[13] ^ in[14];
+	out[1] = in[2] ^ in[5] ^ in[7] ^ in[8] ^ in[9] ^ in[12] ^ in[15];
+	out[2] = in[1] ^ in[4] ^ in[6] ^ in[10] ^ in[11] ^ in[12] ^ in[15];
+	out[3] = in[0] ^ in[5] ^ in[7] ^ in[10] ^ in[11] ^ in[13] ^ in[14];
+	out[4] = in[0] ^ in[2] ^ in[5] ^ in[8] ^ in[11] ^ in[14] ^ in[15];
+	out[5] = in[1] ^ in[3] ^ in[4] ^ in[9] ^ in[10] ^ in[14] ^ in[15];
+	out[6] = in[0] ^ in[2] ^ in[7] ^ in[9] ^ in[10] ^ in[12] ^ in[13];
+	out[7] = in[1] ^ in[3] ^ in[6] ^ in[8] ^ in[11] ^ in[12] ^ in[13];
+	out[8] = in[0] ^ in[1] ^ in[4] ^ in[7] ^ in[10] ^ in[13] ^ in[15];
+	out[9] = in[0] ^ in[1] ^ in[5] ^ in[6] ^ in[11] ^ in[12] ^ in[14];
+	out[10] = in[2] ^ in[3] ^ in[5] ^ in[6] ^ in[8] ^ in[13] ^ in[15];
+	out[11] = in[2] ^ in[3] ^ in[4] ^ in[7] ^ in[9] ^ in[12] ^ in[14];
+	out[12] = in[1] ^ in[2] ^ in[6] ^ in[7] ^ in[9] ^ in[11] ^ in[12];
+	out[13] = in[0] ^ in[3] ^ in[6] ^ in[7] ^ in[8] ^ in[10] ^ in[13];
+	out[14] = in[0] ^ in[3] ^ in[4] ^ in[5] ^ in[9] ^ in[11] ^ in[14];
+	out[15] = in[1] ^ in[2] ^ in[4] ^ in[5] ^ in[8] ^ in[10] ^ in[15];
+}
+
+static inline void SL1(byte_t state[16])
+{
+	state[0] = SB1[state[0]];
+	state[1] = SB2[state[1]];
+	state[2] = SB3[state[2]];
+	state[3] = SB4[state[3]];
+	state[4] = SB1[state[4]];
+	state[5] = SB2[state[5]];
+	state[6] = SB3[state[6]];
+	state[7] = SB4[state[7]];
+	state[8] = SB1[state[8]];
+	state[9] = SB2[state[9]];
+	state[10] = SB3[state[10]];
+	state[11] = SB4[state[11]];
+	state[12] = SB1[state[12]];
+	state[13] = SB2[state[13]];
+	state[14] = SB3[state[14]];
+	state[15] = SB4[state[15]];
+}
+
+static inline void SL2(byte_t state[16])
+{
+	state[0] = SB3[state[0]];
+	state[1] = SB4[state[1]];
+	state[2] = SB1[state[2]];
+	state[3] = SB2[state[3]];
+	state[4] = SB3[state[4]];
+	state[5] = SB4[state[5]];
+	state[6] = SB1[state[6]];
+	state[7] = SB2[state[7]];
+	state[8] = SB3[state[8]];
+	state[9] = SB4[state[9]];
+	state[10] = SB1[state[10]];
+	state[11] = SB2[state[11]];
+	state[12] = SB3[state[12]];
+	state[13] = SB4[state[13]];
+	state[14] = SB1[state[14]];
+	state[15] = SB2[state[15]];
+}
+
+static inline void FO(byte_t out[16], byte_t in[16], byte_t key[16])
+{
+	byte_t temp[16];
+
+	XOR128(temp, in, key);
+	SL1(temp);
+	A(out, temp);
+}
+
+static inline void FE(byte_t out[16], byte_t in[16], byte_t key[16])
+{
+	byte_t temp[16];
+
+	XOR128(temp, in, key);
+	SL2(temp);
+	A(out, temp);
+}
+
+static void aria128_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
+{
+	byte_t state[ARIA_BLOCK_SIZE];
+
+	memcpy(state, plaintext, ARIA_BLOCK_SIZE);
+
+	FO(state, state, key->encryption_round_key[0]);  // Round 1
+	FE(state, state, key->encryption_round_key[1]);  // Round 2
+	FO(state, state, key->encryption_round_key[2]);  // Round 3
+	FE(state, state, key->encryption_round_key[3]);  // Round 4
+	FO(state, state, key->encryption_round_key[4]);  // Round 5
+	FE(state, state, key->encryption_round_key[5]);  // Round 6
+	FO(state, state, key->encryption_round_key[6]);  // Round 7
+	FE(state, state, key->encryption_round_key[7]);  // Round 8
+	FO(state, state, key->encryption_round_key[8]);  // Round 9
+	FE(state, state, key->encryption_round_key[9]);  // Round 10
+	FO(state, state, key->encryption_round_key[10]); // Round 11
 
 	// Round 12
-	XOR128(t2, t2, key->encryption_round_key[11]);
-	SL2(t2, t2);
-	XOR128(ciphertext, t2, key->encryption_round_key[12]);
+	XOR128(state, state, key->encryption_round_key[11]);
+	SL2(state);
+	XOR128(state, state, key->encryption_round_key[12]);
+
+	memcpy(ciphertext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria128_decrypt_block(aria_key *key, byte_t ciphertext[16], byte_t plaintext[16])
+static void aria128_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
 {
-	byte_t t1[16], t2[16];
+	byte_t state[ARIA_BLOCK_SIZE];
 
-	FO(t1, ciphertext, key->decryption_round_key[0]); // Round 1
-	FE(t1, t2, key->decryption_round_key[1]);         // Round 2
-	FO(t2, t1, key->decryption_round_key[2]);         // Round 3
-	FE(t1, t2, key->decryption_round_key[3]);         // Round 4
-	FO(t2, t1, key->decryption_round_key[4]);         // Round 5
-	FE(t1, t2, key->decryption_round_key[5]);         // Round 6
-	FO(t2, t1, key->decryption_round_key[6]);         // Round 7
-	FE(t1, t2, key->decryption_round_key[7]);         // Round 8
-	FO(t2, t1, key->decryption_round_key[8]);         // Round 9
-	FE(t1, t2, key->decryption_round_key[9]);         // Round 10
-	FO(t2, t1, key->decryption_round_key[10]);        // Round 11
+	memcpy(state, ciphertext, ARIA_BLOCK_SIZE);
+
+	FO(state, state, key->decryption_round_key[0]);  // Round 1
+	FE(state, state, key->decryption_round_key[1]);  // Round 2
+	FO(state, state, key->decryption_round_key[2]);  // Round 3
+	FE(state, state, key->decryption_round_key[3]);  // Round 4
+	FO(state, state, key->decryption_round_key[4]);  // Round 5
+	FE(state, state, key->decryption_round_key[5]);  // Round 6
+	FO(state, state, key->decryption_round_key[6]);  // Round 7
+	FE(state, state, key->decryption_round_key[7]);  // Round 8
+	FO(state, state, key->decryption_round_key[8]);  // Round 9
+	FE(state, state, key->decryption_round_key[9]);  // Round 10
+	FO(state, state, key->decryption_round_key[10]); // Round 11
 
 	// Round 12
-	XOR128(t2, t2, key->decryption_round_key[11]);
-	SL2(t2, t2);
-	XOR128(plaintext, t2, key->decryption_round_key[12]);
+	XOR128(state, state, key->decryption_round_key[11]);
+	SL2(state);
+	XOR128(state, state, key->decryption_round_key[12]);
+
+	memcpy(plaintext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria192_encrypt_block(aria_key *key, byte_t plaintext[16], byte_t ciphertext[16])
+static void aria192_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
 {
-	byte_t t1[16], t2[16];
+	byte_t state[ARIA_BLOCK_SIZE];
 
-	FO(t1, plaintext, key->encryption_round_key[0]); // Round 1
-	FE(t1, t2, key->encryption_round_key[1]);        // Round 2
-	FO(t2, t1, key->encryption_round_key[2]);        // Round 3
-	FE(t1, t2, key->encryption_round_key[3]);        // Round 4
-	FO(t2, t1, key->encryption_round_key[4]);        // Round 5
-	FE(t1, t2, key->encryption_round_key[5]);        // Round 6
-	FO(t2, t1, key->encryption_round_key[6]);        // Round 7
-	FE(t1, t2, key->encryption_round_key[7]);        // Round 8
-	FO(t2, t1, key->encryption_round_key[8]);        // Round 9
-	FE(t1, t2, key->encryption_round_key[9]);        // Round 10
-	FO(t2, t1, key->encryption_round_key[10]);       // Round 11
-	FE(t1, t2, key->encryption_round_key[11]);       // Round 12
-	FO(t2, t1, key->encryption_round_key[12]);       // Round 13
+	memcpy(state, plaintext, ARIA_BLOCK_SIZE);
+
+	FO(state, state, key->encryption_round_key[0]);  // Round 1
+	FE(state, state, key->encryption_round_key[1]);  // Round 2
+	FO(state, state, key->encryption_round_key[2]);  // Round 3
+	FE(state, state, key->encryption_round_key[3]);  // Round 4
+	FO(state, state, key->encryption_round_key[4]);  // Round 5
+	FE(state, state, key->encryption_round_key[5]);  // Round 6
+	FO(state, state, key->encryption_round_key[6]);  // Round 7
+	FE(state, state, key->encryption_round_key[7]);  // Round 8
+	FO(state, state, key->encryption_round_key[8]);  // Round 9
+	FE(state, state, key->encryption_round_key[9]);  // Round 10
+	FO(state, state, key->encryption_round_key[10]); // Round 11
+	FE(state, state, key->encryption_round_key[11]); // Round 12
+	FO(state, state, key->encryption_round_key[12]); // Round 13
 
 	// Round 14
-	XOR128(t2, t2, key->encryption_round_key[13]);
-	SL2(t2, t2);
-	XOR128(ciphertext, t2, key->encryption_round_key[14]);
+	XOR128(state, state, key->encryption_round_key[13]);
+	SL2(state);
+	XOR128(state, state, key->encryption_round_key[14]);
+
+	memcpy(ciphertext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria192_decrypt_block(aria_key *key, byte_t ciphertext[16], byte_t plaintext[16])
+static void aria192_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
 {
-	byte_t t1[16], t2[16];
+	byte_t state[ARIA_BLOCK_SIZE];
 
-	FO(t1, ciphertext, key->decryption_round_key[0]); // Round 1
-	FE(t1, t2, key->decryption_round_key[1]);         // Round 2
-	FO(t2, t1, key->decryption_round_key[2]);         // Round 3
-	FE(t1, t2, key->decryption_round_key[3]);         // Round 4
-	FO(t2, t1, key->decryption_round_key[4]);         // Round 5
-	FE(t1, t2, key->decryption_round_key[5]);         // Round 6
-	FO(t2, t1, key->decryption_round_key[6]);         // Round 7
-	FE(t1, t2, key->decryption_round_key[7]);         // Round 8
-	FO(t2, t1, key->decryption_round_key[8]);         // Round 9
-	FE(t1, t2, key->decryption_round_key[9]);         // Round 10
-	FO(t2, t1, key->decryption_round_key[10]);        // Round 11
-	FE(t1, t2, key->decryption_round_key[11]);        // Round 12
-	FO(t2, t1, key->decryption_round_key[12]);        // Round 13
+	memcpy(state, ciphertext, ARIA_BLOCK_SIZE);
+
+	FO(state, state, key->decryption_round_key[0]);  // Round 1
+	FE(state, state, key->decryption_round_key[1]);  // Round 2
+	FO(state, state, key->decryption_round_key[2]);  // Round 3
+	FE(state, state, key->decryption_round_key[3]);  // Round 4
+	FO(state, state, key->decryption_round_key[4]);  // Round 5
+	FE(state, state, key->decryption_round_key[5]);  // Round 6
+	FO(state, state, key->decryption_round_key[6]);  // Round 7
+	FE(state, state, key->decryption_round_key[7]);  // Round 8
+	FO(state, state, key->decryption_round_key[8]);  // Round 9
+	FE(state, state, key->decryption_round_key[9]);  // Round 10
+	FO(state, state, key->decryption_round_key[10]); // Round 11
+	FE(state, state, key->decryption_round_key[11]); // Round 12
+	FO(state, state, key->decryption_round_key[12]); // Round 13
 
 	// Round 14
-	XOR128(t2, t2, key->decryption_round_key[13]);
-	SL2(t2, t2);
-	XOR128(plaintext, t2, key->decryption_round_key[14]);
+	XOR128(state, state, key->decryption_round_key[13]);
+	SL2(state);
+	XOR128(state, state, key->decryption_round_key[14]);
+
+	memcpy(plaintext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria256_encrypt_block(aria_key *key, byte_t plaintext[16], byte_t ciphertext[16])
+static void aria256_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
 {
-	byte_t t1[16], t2[16];
+	byte_t state[ARIA_BLOCK_SIZE];
 
-	FO(t1, plaintext, key->encryption_round_key[0]); // Round 1
-	FE(t1, t2, key->encryption_round_key[1]);        // Round 2
-	FO(t2, t1, key->encryption_round_key[2]);        // Round 3
-	FE(t1, t2, key->encryption_round_key[3]);        // Round 4
-	FO(t2, t1, key->encryption_round_key[4]);        // Round 5
-	FE(t1, t2, key->encryption_round_key[5]);        // Round 6
-	FO(t2, t1, key->encryption_round_key[6]);        // Round 7
-	FE(t1, t2, key->encryption_round_key[7]);        // Round 8
-	FO(t2, t1, key->encryption_round_key[8]);        // Round 9
-	FE(t1, t2, key->encryption_round_key[9]);        // Round 10
-	FO(t2, t1, key->encryption_round_key[10]);       // Round 11
-	FE(t1, t2, key->encryption_round_key[11]);       // Round 12
-	FO(t2, t1, key->encryption_round_key[12]);       // Round 13
-	FE(t1, t2, key->encryption_round_key[13]);       // Round 14
-	FO(t2, t1, key->encryption_round_key[14]);       // Round 15
+	memcpy(state, plaintext, ARIA_BLOCK_SIZE);
+
+	FO(state, state, key->encryption_round_key[0]);  // Round 1
+	FE(state, state, key->encryption_round_key[1]);  // Round 2
+	FO(state, state, key->encryption_round_key[2]);  // Round 3
+	FE(state, state, key->encryption_round_key[3]);  // Round 4
+	FO(state, state, key->encryption_round_key[4]);  // Round 5
+	FE(state, state, key->encryption_round_key[5]);  // Round 6
+	FO(state, state, key->encryption_round_key[6]);  // Round 7
+	FE(state, state, key->encryption_round_key[7]);  // Round 8
+	FO(state, state, key->encryption_round_key[8]);  // Round 9
+	FE(state, state, key->encryption_round_key[9]);  // Round 10
+	FO(state, state, key->encryption_round_key[10]); // Round 11
+	FE(state, state, key->encryption_round_key[11]); // Round 12
+	FO(state, state, key->encryption_round_key[12]); // Round 13
+	FE(state, state, key->encryption_round_key[13]); // Round 14
+	FO(state, state, key->encryption_round_key[14]); // Round 15
 
 	// Round 16
-	XOR128(t2, t2, key->encryption_round_key[15]);
-	SL2(t2, t2);
-	XOR128(ciphertext, t2, key->encryption_round_key[16]);
+	XOR128(state, state, key->encryption_round_key[15]);
+	SL2(state);
+	XOR128(state, state, key->encryption_round_key[16]);
+
+	memcpy(ciphertext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria256_decrypt_block(aria_key *key, byte_t ciphertext[16], byte_t plaintext[16])
+static void aria256_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
 {
-	byte_t t1[16], t2[16];
+	byte_t state[ARIA_BLOCK_SIZE];
 
-	FO(t1, ciphertext, key->decryption_round_key[0]); // Round 1
-	FE(t1, t2, key->decryption_round_key[1]);         // Round 2
-	FO(t2, t1, key->decryption_round_key[2]);         // Round 3
-	FE(t1, t2, key->decryption_round_key[3]);         // Round 4
-	FO(t2, t1, key->decryption_round_key[4]);         // Round 5
-	FE(t1, t2, key->decryption_round_key[5]);         // Round 6
-	FO(t2, t1, key->decryption_round_key[6]);         // Round 7
-	FE(t1, t2, key->decryption_round_key[7]);         // Round 8
-	FO(t2, t1, key->decryption_round_key[8]);         // Round 9
-	FE(t1, t2, key->decryption_round_key[9]);         // Round 10
-	FO(t2, t1, key->decryption_round_key[10]);        // Round 11
-	FE(t1, t2, key->decryption_round_key[11]);        // Round 12
-	FO(t2, t1, key->decryption_round_key[12]);        // Round 13
-	FE(t1, t2, key->decryption_round_key[13]);        // Round 14
-	FO(t2, t1, key->decryption_round_key[14]);        // Round 15
+	memcpy(state, ciphertext, ARIA_BLOCK_SIZE);
+
+	FO(state, state, key->decryption_round_key[0]);  // Round 1
+	FE(state, state, key->decryption_round_key[1]);  // Round 2
+	FO(state, state, key->decryption_round_key[2]);  // Round 3
+	FE(state, state, key->decryption_round_key[3]);  // Round 4
+	FO(state, state, key->decryption_round_key[4]);  // Round 5
+	FE(state, state, key->decryption_round_key[5]);  // Round 6
+	FO(state, state, key->decryption_round_key[6]);  // Round 7
+	FE(state, state, key->decryption_round_key[7]);  // Round 8
+	FO(state, state, key->decryption_round_key[8]);  // Round 9
+	FE(state, state, key->decryption_round_key[9]);  // Round 10
+	FO(state, state, key->decryption_round_key[10]); // Round 11
+	FE(state, state, key->decryption_round_key[11]); // Round 12
+	FO(state, state, key->decryption_round_key[12]); // Round 13
+	FE(state, state, key->decryption_round_key[13]); // Round 14
+	FO(state, state, key->decryption_round_key[14]); // Round 15
 
 	// Round 16
-	XOR128(t2, t2, key->decryption_round_key[15]);
-	SL2(t2, t2);
-	XOR128(plaintext, t2, key->decryption_round_key[16]);
+	XOR128(state, state, key->decryption_round_key[15]);
+	SL2(state);
+	XOR128(state, state, key->decryption_round_key[16]);
+
+	memcpy(plaintext, state, ARIA_BLOCK_SIZE);
 }
 
 static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
@@ -528,7 +651,7 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 	XOR128(w2, w2, w0);
 
 	// W3 = FO(W2, CK3) ^ W1
-	FE(w3, w2, expanded_key->ck3);
+	FO(w3, w2, expanded_key->ck3);
 	XOR128(w3, w3, w1);
 
 	// Encryption key expansion
