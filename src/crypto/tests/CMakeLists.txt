@@ -24,6 +24,7 @@ endfunction()
 
 crypto_cipher_tests(
 aes
+aria
 camellia
 chacha20
 )
