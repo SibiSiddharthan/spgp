@@ -27,6 +27,7 @@ aes
 aria
 camellia
 chacha20
+twofish
 )
 
 crypto_hash_tests(
