@@ -14,6 +14,10 @@
 #define TWOFISH_BLOCK_SIZE 16
 #define TWOFISH_ROUND_KEYS ((TWOFISH_BLOCK_SIZE * 2) + 4 + 4)
 
+#define TWOFISH128_KEY_SIZE 16
+#define TWOFISH192_KEY_SIZE 24
+#define TWOFISH256_KEY_SIZE 32
+
 typedef uint32_t twofish_round_key;
 
 typedef enum _twofish_type
