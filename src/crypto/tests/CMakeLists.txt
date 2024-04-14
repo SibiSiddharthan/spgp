@@ -27,6 +27,7 @@ aes
 aria
 camellia
 chacha20
+des
 twofish
 )
 
