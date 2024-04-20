@@ -29,4 +29,6 @@ int32_t bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
 
+bignum_t *bignum_add(bignum_t *a, bignum_t *b);
+
 #endif

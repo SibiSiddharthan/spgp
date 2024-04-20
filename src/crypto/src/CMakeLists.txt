@@ -9,6 +9,7 @@ add_library(crypto STATIC
 #bignum
 bignum/bignum.c
 bignum/bytes.c
+bignum/add.c
 #cipher
 cipher/aes.c
 cipher/aria.c
