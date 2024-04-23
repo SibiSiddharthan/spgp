@@ -479,7 +479,7 @@ static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-aes_key *new_aes_key(aes_type type, byte_t *key)
+aes_key *aes_new_key(aes_type type, byte_t *key)
 {
 	aes_key *expanded_key = NULL;
 
@@ -501,7 +501,7 @@ aes_key *new_aes_key(aes_type type, byte_t *key)
 	return expanded_key;
 }
 
-void delete_aes_key(aes_key *key)
+void aes_delete_key(aes_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(aes_key));

@@ -22,8 +22,8 @@ typedef struct _chacha20_key
 	byte_t nonce[12];
 } chacha20_key;
 
-chacha20_key *new_chacha20_key(byte_t *key, byte_t *nonce);
-void delete_chacha20_key(chacha20_key *key);
+chacha20_key *chacha20_new_key(byte_t *key, byte_t *nonce);
+void chacha20_delete_key(chacha20_key *key);
 
 void chacha20_encrypt(chacha20_key *key, byte_t *plaintext, byte_t *ciphertext, size_t size);
 void chacha20_decrypt(chacha20_key *key, byte_t *ciphertext, byte_t *plaintext, size_t size);

@@ -560,7 +560,7 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	}
 }
 
-camellia_key *new_camellia_key(camellia_type type, byte_t *key)
+camellia_key *camellia_new_key(camellia_type type, byte_t *key)
 {
 	camellia_key *expanded_key = NULL;
 
@@ -582,7 +582,7 @@ camellia_key *new_camellia_key(camellia_type type, byte_t *key)
 	return expanded_key;
 }
 
-void delete_camellia_key(camellia_key *key)
+void camellia_delete_key(camellia_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(camellia_key));

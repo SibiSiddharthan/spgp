@@ -697,7 +697,7 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 	memcpy(expanded_key->decryption_round_key[nr], expanded_key->encryption_round_key[0], sizeof(aria_round_key));
 }
 
-aria_key *new_aria_key(aria_type type, byte_t *key)
+aria_key *aria_new_key(aria_type type, byte_t *key)
 {
 	aria_key *expanded_key = NULL;
 
@@ -739,7 +739,7 @@ aria_key *new_aria_key(aria_type type, byte_t *key)
 	return expanded_key;
 }
 
-void delete_aria_key(aria_key *key)
+void aria_delete_key(aria_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(aria_key));

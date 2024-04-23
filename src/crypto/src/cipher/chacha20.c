@@ -82,7 +82,7 @@ static inline void chacha20_block(uint32_t block[CHACHA20_BLOCK_WORDS])
 	block[15] += temp[15];
 }
 
-chacha20_key *new_chacha20_key(byte_t *key, byte_t *nonce)
+chacha20_key *chacha20_new_key(byte_t *key, byte_t *nonce)
 {
 	chacha20_key *chacha_key = (chacha20_key *)malloc(sizeof(chacha20_key));
 
@@ -106,7 +106,7 @@ chacha20_key *new_chacha20_key(byte_t *key, byte_t *nonce)
 	return chacha_key;
 }
 
-void delete_chacha20_key(chacha20_key *key)
+void chacha20_delete_key(chacha20_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(chacha20_key));

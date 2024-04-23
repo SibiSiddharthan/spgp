@@ -25,7 +25,7 @@ int32_t des_test_suite(void)
 	hex_to_block(secret, DES_KEY_SIZE, "0000000000000000");
 	hex_to_block(plaintext, DES_BLOCK_SIZE, "0000000000000000");
 
-	key = new_tdes_key(secret, secret, secret, false);
+	key = tdes_new_key(secret, secret, secret, false);
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
@@ -35,14 +35,14 @@ int32_t des_test_suite(void)
 	tdes_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, DES_BLOCK_SIZE, "0000000000000000");
 
-	delete_tdes_key(key);
+	tdes_delete_key(key);
 
 	// -------------------------------------------------------------------------
 
 	hex_to_block(secret, DES_KEY_SIZE, "133457799bbcdff1");
 	hex_to_block(plaintext, DES_BLOCK_SIZE, "0123456789abcdef");
 
-	key = new_tdes_key(secret, secret, secret, false);
+	key = tdes_new_key(secret, secret, secret, false);
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
@@ -52,14 +52,14 @@ int32_t des_test_suite(void)
 	tdes_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, DES_BLOCK_SIZE, "0123456789abcdef");
 
-	delete_tdes_key(key);
+	tdes_delete_key(key);
 
 	// -------------------------------------------------------------------------
 
 	hex_to_block(secret, DES_KEY_SIZE, "0123456789abcdef");
 	hex_to_block(plaintext, DES_BLOCK_SIZE, "1111111111111111");
 
-	key = new_tdes_key(secret, secret, secret, false);
+	key = tdes_new_key(secret, secret, secret, false);
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
@@ -69,7 +69,7 @@ int32_t des_test_suite(void)
 	tdes_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, DES_BLOCK_SIZE, "1111111111111111");
 
-	delete_tdes_key(key);
+	tdes_delete_key(key);
 
 	return status;
 }
@@ -87,7 +87,7 @@ int32_t tdes_test_suite(void)
 	hex_to_block(secret3, DES_KEY_SIZE, "fedcba9876543210");
 	hex_to_block(plaintext, DES_BLOCK_SIZE, "3736353433323120");
 
-	key = new_tdes_key(secret1, secret2, secret3, false);
+	key = tdes_new_key(secret1, secret2, secret3, false);
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
@@ -97,7 +97,7 @@ int32_t tdes_test_suite(void)
 	tdes_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, DES_BLOCK_SIZE, "3736353433323120");
 
-	delete_tdes_key(key);
+	tdes_delete_key(key);
 
 	// -------------------------------------------------------------------------
 
@@ -107,7 +107,7 @@ int32_t tdes_test_suite(void)
 
 	hex_to_block(secret1, DES_KEY_SIZE, "0123456789abcdef");
 	hex_to_block(secret2, DES_KEY_SIZE, "fedcba9876543210");
-	key = new_tdes_key(secret1, secret2, secret1, false);
+	key = tdes_new_key(secret1, secret2, secret1, false);
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
@@ -117,7 +117,7 @@ int32_t tdes_test_suite(void)
 	tdes_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, DES_BLOCK_SIZE, "3736353433323120");
 
-	delete_tdes_key(key);
+	tdes_delete_key(key);
 
 	return status;
 }

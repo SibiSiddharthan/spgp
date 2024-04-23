@@ -327,7 +327,7 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-twofish_key *new_twofish_key(twofish_type type, byte_t *key)
+twofish_key *twofish_new_key(twofish_type type, byte_t *key)
 {
 	twofish_key *expanded_key = NULL;
 
@@ -351,7 +351,7 @@ twofish_key *new_twofish_key(twofish_type type, byte_t *key)
 	return expanded_key;
 }
 
-void delete_twofish_key(twofish_key *key)
+void twofish_delete_key(twofish_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(twofish_key));

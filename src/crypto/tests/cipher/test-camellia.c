@@ -23,7 +23,7 @@ int32_t camellia128_test_suite(void)
 	hex_to_block(secret, CAMELLIA128_KEY_SIZE, "0123456789abcdeffedcba9876543210");
 	hex_to_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
-	camellia_key *key = new_camellia_key(CAMELLIA128, secret);
+	camellia_key *key = camellia_new_key(CAMELLIA128, secret);
 
 	memset(ciphertext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_encrypt_block(key, plaintext, ciphertext);
@@ -33,7 +33,7 @@ int32_t camellia128_test_suite(void)
 	camellia_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
-	delete_camellia_key(key);
+	camellia_delete_key(key);
 
 	return status;
 }
@@ -48,7 +48,7 @@ int32_t camellia192_test_suite(void)
 	hex_to_block(secret, CAMELLIA192_KEY_SIZE, "0123456789abcdeffedcba98765432100011223344556677");
 	hex_to_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
-	camellia_key *key = new_camellia_key(CAMELLIA192, secret);
+	camellia_key *key = camellia_new_key(CAMELLIA192, secret);
 
 	memset(ciphertext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_encrypt_block(key, plaintext, ciphertext);
@@ -58,7 +58,7 @@ int32_t camellia192_test_suite(void)
 	camellia_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
-	delete_camellia_key(key);
+	camellia_delete_key(key);
 
 	return status;
 }
@@ -73,7 +73,7 @@ int32_t camellia256_test_suite(void)
 	hex_to_block(secret, CAMELLIA256_KEY_SIZE, "0123456789abcdeffedcba987654321000112233445566778899aabbccddeeff");
 	hex_to_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
-	camellia_key *key = new_camellia_key(CAMELLIA256, secret);
+	camellia_key *key = camellia_new_key(CAMELLIA256, secret);
 
 	memset(ciphertext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_encrypt_block(key, plaintext, ciphertext);
@@ -83,7 +83,7 @@ int32_t camellia256_test_suite(void)
 	camellia_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
-	delete_camellia_key(key);
+	camellia_delete_key(key);
 
 	return status;
 }
