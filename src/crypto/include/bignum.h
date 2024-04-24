@@ -30,5 +30,12 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
 
 bignum_t *bignum_add(bignum_t *a, bignum_t *b);
+bignum_t *bignum_sub(bignum_t *a, bignum_t *b);
+bignum_t *bignum_mul(bignum_t *a, bignum_t *b);
+bignum_t *bignum_div(bignum_t *a, bignum_t *b);
+bignum_t *bignum_mod(bignum_t *a, bignum_t *b);
+bignum_t *bignum_modexp(bignum_t *a, bignum_t *p, bignum_t *m);
+
+void bignum_divmod(bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r);
 
 #endif
