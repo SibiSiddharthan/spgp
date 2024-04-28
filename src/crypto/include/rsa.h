@@ -8,9 +8,10 @@
 #ifndef CRYPTO_RSA_H
 #define CRYPTO_RSA_H
 
-#include <bignum.h>
 #include <types.h>
+#include <bignum.h>
 #include <buffer.h>
+#include <hash.h>
 
 typedef struct _rsa_key
 {
@@ -19,10 +20,16 @@ typedef struct _rsa_key
 	bignum_t *d, *e;
 } rsa_key;
 
+typedef struct _mgf
+{
+	hash_ctx *hash;
+	buffer_t *seed;
+} mgf;
+
 typedef struct _oaep_options
 {
-	void *hash;
-	void *mask;
+	hash_ctx *hash;
+	mgf *mask;
 } oaep_options;
 
 typedef struct _rsa_signature
