@@ -63,7 +63,7 @@ typedef struct _sha3_ctx
 {
 	uint32_t hash_size;
 	uint32_t block_size;
-	uint32_t message_size;
+	uint64_t message_size;
 	byte_t block[KECCAK1600_BLOCK_SIZE];
 	byte_t internal[KECCAK1600_BLOCK_SIZE];
 } sha3_ctx, shake128_ctx, shake256_ctx;
@@ -119,6 +119,7 @@ int32_t sha512_256_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_S
 
 sha3_ctx *sha3_init(uint32_t bits);
 void sha3_free(sha3_ctx *ctx);
+void sha3_reset(sha3_ctx *ctx);
 void sha3_update(sha3_ctx *ctx, void *data, size_t size);
 int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size);
 

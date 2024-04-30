@@ -289,6 +289,17 @@ void sha3_free(sha3_ctx *ctx)
 	free(ctx);
 }
 
+void sha3_reset(sha3_ctx *ctx)
+{
+	uint32_t hash_size = ctx->hash_size;
+	uint32_t block_size = ctx->block_size;
+
+	memset(ctx, 0, sizeof(sha3_ctx));
+
+	ctx->hash_size = hash_size;
+	ctx->block_size = block_size;
+}
+
 void sha3_update(sha3_ctx *ctx, void *data, size_t size)
 {
 	uint64_t pos = 0;
