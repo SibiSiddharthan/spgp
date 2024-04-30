@@ -227,7 +227,8 @@ void sha1_update(sha1_ctx *ctx, void *data, size_t size)
 
 	while (pos + SHA1_BLOCK_SIZE <= size)
 	{
-		sha1_hash_block(ctx, (pdata + pos));
+		memcpy(ctx->internal, pdata + pos, SHA1_BLOCK_SIZE);
+		sha1_hash_block(ctx, ctx->internal);
 
 		ctx->size += SHA1_BLOCK_SIZE;
 		pos += SHA1_BLOCK_SIZE;

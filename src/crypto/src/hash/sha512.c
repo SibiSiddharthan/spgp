@@ -252,7 +252,8 @@ static void sha512_common_update(sha512_ctx *ctx, void *data, size_t size)
 
 	while (pos + SHA512_BLOCK_SIZE <= size)
 	{
-		sha512_common_hash_block(ctx, (pdata + pos));
+		memcpy(ctx->internal, pdata + pos, SHA512_BLOCK_SIZE);
+		sha512_common_hash_block(ctx, ctx->internal);
 
 		ctx->size_high += (ctx->size_low + SHA512_BLOCK_SIZE < ctx->size_low);
 		ctx->size_low += SHA512_BLOCK_SIZE;

@@ -279,7 +279,8 @@ void ripemd160_update(ripemd160_ctx *ctx, void *data, size_t size)
 
 	while (pos + RIPEMD160_BLOCK_SIZE <= size)
 	{
-		ripemd160_hash_block(ctx, (pdata + pos));
+		memcpy(ctx->internal, pdata + pos, RIPEMD160_BLOCK_SIZE);
+		ripemd160_hash_block(ctx, ctx->internal);
 
 		ctx->size += RIPEMD160_BLOCK_SIZE;
 		pos += RIPEMD160_BLOCK_SIZE;

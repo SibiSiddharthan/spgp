@@ -194,7 +194,8 @@ void md5_update(md5_ctx *ctx, void *data, size_t size)
 
 	while (pos + MD5_BLOCK_SIZE <= size)
 	{
-		md5_hash_block(ctx, (pdata + pos));
+		memcpy(ctx->internal, pdata + pos, MD5_BLOCK_SIZE);
+		md5_hash_block(ctx, ctx->internal);
 
 		ctx->size += MD5_BLOCK_SIZE;
 		pos += MD5_BLOCK_SIZE;

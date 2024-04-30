@@ -208,7 +208,8 @@ static void sha256_common_update(sha256_ctx *ctx, void *data, size_t size)
 
 	while (pos + SHA256_BLOCK_SIZE <= size)
 	{
-		sha256_common_hash_block(ctx, (pdata + pos));
+		memcpy(ctx->internal, pdata + pos, SHA256_BLOCK_SIZE);
+		sha256_common_hash_block(ctx, ctx->internal);
 
 		ctx->size += SHA256_BLOCK_SIZE;
 		pos += SHA256_BLOCK_SIZE;
