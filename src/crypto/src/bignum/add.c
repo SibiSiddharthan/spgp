@@ -8,9 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <bignum.h>
-
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-#define MIN(a, b) ((a) <= (b) ? (a) : (b))
+#include <minmax.h>
 
 static void bignum_add_qwords(bignum_t *r, bignum_t *a, bignum_t *b)
 {
