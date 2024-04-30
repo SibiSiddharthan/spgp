@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+#define MAX_HASH_SIZE 64
+
 typedef enum _hash_algorithm
 {
 	MD5,
@@ -34,13 +36,14 @@ typedef struct _hash_ctx
 	hash_algorithm algorithm;
 	size_t hash_size;
 	size_t max_input_size;
-	byte_t hash[64];
+	byte_t hash[MAX_HASH_SIZE];
 
-	void *ctx;
+	void *_ctx;
+	void (*_free)(void *ctx);
 	void (*_reset)(void *ctx);
 	void (*_update)(void *ctx, void *data, size_t size);
-	void (*_final)(void *ctx, byte_t *hash, size_t size);
-	void (*_free)(void *ctx);
+	void (*_final)(void *ctx, byte_t *hash);
+	void (*_final_size)(void *ctx, byte_t *hash, size_t);
 
 } hash_ctx;
 
@@ -49,6 +52,6 @@ void hash_ctx_delete(hash_ctx *hctx);
 
 void hash_ctx_reset(hash_ctx *ctx);
 void hash_ctx_update(hash_ctx *ctx, void *data, size_t size);
-void hash_ctx_final(hash_ctx *ctx, byte_t *hash, size_t size);
+int32_t hash_ctx_final(hash_ctx *ctx, byte_t *hash, size_t size);
 
 #endif

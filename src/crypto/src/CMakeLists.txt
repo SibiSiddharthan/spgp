@@ -21,6 +21,7 @@ cipher/twofish.c
 hash/md5.c hash/ripemd.c
 hash/sha1.c hash/sha256.c hash/sha512.c hash/sha3.c
 hash/blake2.c
+hash/hash.c
 #public-key
 public-key/rsa.c
 )
