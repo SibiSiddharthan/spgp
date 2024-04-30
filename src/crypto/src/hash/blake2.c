@@ -218,6 +218,40 @@ void blake2b_free(blake2b_ctx *ctx)
 	free(ctx);
 }
 
+void blake2b_reset(blake2b_ctx *ctx, blake2b_param *param, void *key)
+{
+	if (!(param->digest_length <= BLAKE2B_MAX_HASH_SIZE && param->digest_length >= 1))
+	{
+		return;
+	}
+
+	if (!(param->key_length <= BLAKE2B_MAX_KEY_SIZE && param->key_length >= 0))
+	{
+		return;
+	}
+
+	memset(ctx, 0, sizeof(blake2b_ctx));
+
+	ctx->hash_size = param->digest_length;
+	ctx->key_size = param->key_length;
+
+	memcpy(ctx->state, BLAKE2B_IV, sizeof(uint64_t) * 8);
+
+	// XOR with parameter block.
+	for (int32_t i = 0; i < 8; ++i)
+	{
+		uint64_t *qword = (uint64_t *)param;
+		ctx->state[i] ^= qword[i];
+	}
+
+	// Keyed hashing.
+	if (ctx->key_size > 0)
+	{
+		memcpy(ctx->internal, key, ctx->key_size);
+		ctx->unhashed += BLAKE2B_BLOCK_SIZE;
+	}
+}
+
 void blake2b_update(blake2b_ctx *ctx, void *data, size_t size)
 {
 	uint64_t pos = 0;
@@ -359,6 +393,40 @@ blake2s_ctx *blake2s_init(blake2s_param *param, void *key)
 void blake2s_free(blake2s_ctx *ctx)
 {
 	free(ctx);
+}
+
+void blake2s_reset(blake2s_ctx *ctx, blake2s_param *param, void *key)
+{
+	if (!(param->digest_length <= BLAKE2S_MAX_HASH_SIZE && param->digest_length >= 1))
+	{
+		return;
+	}
+
+	if (!(param->key_length <= BLAKE2S_MAX_KEY_SIZE && param->key_length >= 0))
+	{
+		return;
+	}
+
+	memset(ctx, 0, sizeof(blake2s_ctx));
+
+	ctx->hash_size = param->digest_length;
+	ctx->key_size = param->key_length;
+
+	memcpy(ctx->state, BLAKE2S_IV, sizeof(uint32_t) * 8);
+
+	// XOR with parameter block.
+	for (int32_t i = 0; i < 8; ++i)
+	{
+		uint32_t *dword = (uint32_t *)param;
+		ctx->state[i] ^= dword[i];
+	}
+
+	// Keyed hashing.
+	if (ctx->key_size > 0)
+	{
+		memcpy(ctx->internal, key, ctx->key_size);
+		ctx->unhashed += BLAKE2S_BLOCK_SIZE;
+	}
 }
 
 void blake2s_update(blake2s_ctx *ctx, void *data, size_t size)
