@@ -47,11 +47,11 @@ typedef struct _hash_ctx
 
 } hash_ctx;
 
-hash_ctx *hash_ctx_new(hash_algorithm algorithm);
-void hash_ctx_delete(hash_ctx *hctx);
+hash_ctx *hash_new(hash_algorithm algorithm);
+void hash_delete(hash_ctx *hctx);
 
-void hash_ctx_reset(hash_ctx *ctx);
-void hash_ctx_update(hash_ctx *ctx, void *data, size_t size);
-int32_t hash_ctx_final(hash_ctx *ctx, byte_t *hash, size_t size);
+void hash_reset(hash_ctx *ctx);
+void hash_update(hash_ctx *ctx, void *data, size_t size);
+int32_t hash_final(hash_ctx *ctx, byte_t *hash, size_t size);
 
 #endif

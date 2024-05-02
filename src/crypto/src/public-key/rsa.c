@@ -107,10 +107,10 @@ static buffer_t *MGF(mgf *mask, size_t size)
 	{
 		counter = BSWAP_32(counter);
 
-		hash_ctx_update(hctx, mask->seed->data, mask->seed->size);
-		hash_ctx_update(hctx, &counter, 4);
-		hash_ctx_final(hctx, output->data + accumulated, output->capacity - accumulated);
-		hash_ctx_reset(hctx);
+		hash_update(hctx, mask->seed->data, mask->seed->size);
+		hash_update(hctx, &counter, 4);
+		hash_final(hctx, output->data + accumulated, output->capacity - accumulated);
+		hash_reset(hctx);
 
 		accumulated += hctx->hash_size;
 
@@ -169,8 +169,8 @@ int32_t rsa_encrypt_oaep(rsa_key *key, buffer_t *plaintext, buffer_t *label, buf
 		return -1;
 	}
 
-	hash_ctx_update(hctx, label->data, label->size);
-	hash_ctx_final(hctx, hash, hctx->hash_size);
+	hash_update(hctx, label->data, label->size);
+	hash_final(hctx, hash, hctx->hash_size);
 
 	db = (byte_t *)malloc(db_size);
 	em = (byte_t *)malloc(em_size);
@@ -293,8 +293,8 @@ int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, bu
 		return -1;
 	}
 
-	hash_ctx_update(hctx, label->data, label->size);
-	hash_ctx_final(hctx, hash, hctx->hash_size);
+	hash_update(hctx, label->data, label->size);
+	hash_final(hctx, hash, hctx->hash_size);
 
 	em = (byte_t *)malloc(em_size);
 

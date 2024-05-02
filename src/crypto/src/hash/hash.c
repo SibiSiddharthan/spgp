@@ -14,7 +14,7 @@
 #include <sha.h>
 #include <blake2.h>
 
-hash_ctx *hash_ctx_new(hash_algorithm algorithm)
+hash_ctx *hash_new(hash_algorithm algorithm)
 {
 	hash_ctx *hctx = NULL;
 
@@ -211,13 +211,13 @@ hash_ctx *hash_ctx_new(hash_algorithm algorithm)
 	return hctx;
 }
 
-void hash_ctx_delete(hash_ctx *hctx)
+void hash_delete(hash_ctx *hctx)
 {
 	hctx->_free(hctx->_ctx);
 	free(hctx);
 }
 
-void hash_ctx_reset(hash_ctx *hctx)
+void hash_reset(hash_ctx *hctx)
 {
 	if (hctx->_reset != NULL)
 	{
@@ -240,12 +240,12 @@ void hash_ctx_reset(hash_ctx *hctx)
 	}
 }
 
-void hash_ctx_update(hash_ctx *hctx, void *data, size_t size)
+void hash_update(hash_ctx *hctx, void *data, size_t size)
 {
 	hctx->_update(hctx->_ctx, data, size);
 }
 
-int32_t hash_ctx_final(hash_ctx *hctx, byte_t *hash, size_t size)
+int32_t hash_final(hash_ctx *hctx, byte_t *hash, size_t size)
 {
 	if (size < hctx->hash_size)
 	{
