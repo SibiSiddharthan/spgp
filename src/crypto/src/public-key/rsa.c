@@ -313,7 +313,7 @@ int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, bu
 	bignum_set_bytes_be(c, ciphertext->data, ciphertext->size);
 
 	p = rsa_private_decrypt(key, c);
-	bignum_set_bytes_be(p, em, em_size);
+	bignum_get_bytes_be(p, em, em_size);
 
 	if (em[0] != 0x00)
 	{
@@ -377,6 +377,177 @@ cleanup:
 	free(em);
 	free(seedm);
 	free(dbm);
+	bignum_secure_free(p);
+	bignum_secure_free(c);
+
+	return status;
+}
+
+int32_t rsa_encrypt_pkcs(rsa_key *key, buffer_t *plaintext, buffer_t *ciphertext)
+{
+	int32_t status = -1;
+	size_t key_size = key->bits / 8;
+	size_t ps_size = key_size - plaintext->size - 3;
+	size_t em_size = key_size;
+
+	byte_t *ps = NULL;
+	byte_t *em = NULL;
+
+	size_t pos = 0;
+
+	bignum_t *p = NULL, *c = NULL;
+
+	// Length checking
+	if (plaintext->size > key_size - 11)
+	{
+		return -1;
+	}
+
+	if (ciphertext->capacity < key_size)
+	{
+		return -1;
+	}
+
+	ps = (byte_t *)malloc(ps_size);
+
+	if (ps == NULL)
+	{
+		goto cleanup;
+	}
+
+	// TODO randomize ps
+	em = (byte_t *)malloc(em_size);
+
+	if (em == NULL)
+	{
+		goto cleanup;
+	}
+
+	// Construct EM
+	em[pos++] = 0x00;
+	em[pos++] = 0x02;
+
+	memcpy(em + pos, ps, ps_size);
+	pos += ps_size;
+
+	em[pos++] = 0x00;
+	memcpy(em + pos, plaintext->data, plaintext->size);
+	pos += ps_size;
+
+	// Encryption
+	p = bignum_new(em_size * 8);
+
+	if (p == NULL)
+	{
+		goto cleanup;
+	}
+
+	bignum_set_bytes_be(p, em, em_size);
+
+	c = rsa_public_encrypt(key, p);
+
+	if (c == NULL)
+	{
+		goto cleanup;
+	}
+
+	bignum_get_bytes_be(c, ciphertext->data, ciphertext->capacity);
+
+	status = 0;
+
+cleanup:
+	free(ps);
+	free(em);
+	bignum_secure_free(p);
+	bignum_secure_free(c);
+
+	return 0;
+}
+
+int32_t rsa_decrypt_pkcs(rsa_key *key, buffer_t *ciphertext, buffer_t *plaintext)
+{
+	int32_t status = -1;
+	size_t key_size = key->bits / 8;
+	size_t em_size = key_size;
+	size_t ps_size = 0;
+
+	byte_t *em = NULL;
+
+	size_t pos = 0;
+
+	bignum_t *p = NULL, *c = NULL;
+
+	// Length checking.
+	if (ciphertext->size != key_size)
+	{
+		return -1;
+	}
+
+	em = (byte_t *)malloc(em_size);
+
+	if (em == NULL)
+	{
+		return -1;
+	}
+
+	// Decryption
+	c = bignum_new(key_size);
+
+	if (c == NULL)
+	{
+		goto cleanup;
+	}
+
+	bignum_set_bytes_be(c, ciphertext->data, ciphertext->size);
+
+	p = rsa_private_decrypt(key, c);
+
+	if (p == NULL)
+	{
+		goto cleanup;
+	}
+
+	bignum_get_bytes_be(p, em, em_size);
+
+	// Verification
+	if (em[0] != 0x00 || em[1] != 0x02)
+	{
+		goto cleanup;
+	}
+
+	for (pos = 2;; ++pos)
+	{
+		if (pos == key_size)
+		{
+			goto cleanup;
+		}
+
+		if (em[pos] == 0x00)
+		{
+			++pos;
+			break;
+		}
+
+		++ps_size;
+	}
+
+	if (ps_size < 8)
+	{
+		goto cleanup;
+	}
+
+	if (plaintext->capacity < key_size - pos)
+	{
+		goto cleanup;
+	}
+
+	plaintext->size = key_size - pos;
+	memcpy(plaintext->data, em + pos, plaintext->size);
+
+	status = 0;
+
+cleanup:
+	free(em);
 	bignum_secure_free(p);
 	bignum_secure_free(c);
 
