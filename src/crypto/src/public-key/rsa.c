@@ -169,6 +169,11 @@ int32_t rsa_encrypt_oaep(rsa_key *key, buffer_t *plaintext, buffer_t *label, buf
 		return -1;
 	}
 
+	if (ciphertext->capacity < key_size)
+	{
+		return -1;
+	}
+
 	hash_update(hctx, label->data, label->size);
 	hash_final(hctx, hash, hctx->hash_size);
 
@@ -358,7 +363,13 @@ int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, bu
 		}
 	}
 
-	memcpy(plaintext->data, &dbm->data[pos], dbm->size - pos);
+	if (plaintext->capacity < (dbm->size - pos))
+	{
+		goto cleanup;
+	}
+
+	plaintext->size = dbm->size - pos;
+	memcpy(plaintext->data, &dbm->data[pos], plaintext->size);
 
 	status = 0;
 
