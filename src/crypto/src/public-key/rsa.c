@@ -235,9 +235,20 @@ int32_t rsa_encrypt_oaep(rsa_key *key, buffer_t *plaintext, buffer_t *label, buf
 
 	// Encryption
 	p = bignum_new(em_size * 8);
+
+	if (p == NULL)
+	{
+		goto cleanup;
+	}
 	bignum_set_bytes_be(p, em, em_size);
 
 	c = rsa_public_encrypt(key, p);
+
+	if (c == NULL)
+	{
+		goto cleanup;
+	}
+
 	bignum_get_bytes_be(c, ciphertext->data, ciphertext->capacity);
 
 	status = 0;
@@ -310,9 +321,21 @@ int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, bu
 
 	// Decryption
 	c = bignum_new(key_size);
+
+	if (c == NULL)
+	{
+		goto cleanup;
+	}
+
 	bignum_set_bytes_be(c, ciphertext->data, ciphertext->size);
 
 	p = rsa_private_decrypt(key, c);
+
+	if (p == NULL)
+	{
+		goto cleanup;
+	}
+
 	bignum_get_bytes_be(p, em, em_size);
 
 	if (em[0] != 0x00)
@@ -461,7 +484,7 @@ cleanup:
 	bignum_secure_free(p);
 	bignum_secure_free(c);
 
-	return 0;
+	return status;
 }
 
 int32_t rsa_decrypt_pkcs(rsa_key *key, buffer_t *ciphertext, buffer_t *plaintext)
