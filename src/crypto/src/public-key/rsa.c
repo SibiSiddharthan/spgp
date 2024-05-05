@@ -576,3 +576,107 @@ cleanup:
 
 	return status;
 }
+
+static inline rsa_pss_ctx *rsa_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size)
+{
+	rsa_pss_ctx *rctx = (rsa_pss_ctx *)malloc(sizeof(rsa_pss_ctx));
+
+	if (rctx == NULL)
+	{
+		return NULL;
+	}
+
+	rctx->key = key;
+	rctx->hctx = hctx;
+	rctx->mask = mask;
+	rctx->salt_size = salt_size;
+
+	return rctx;
+}
+
+rsa_pss_ctx *rsa_sign_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size)
+{
+	return rsa_pss_init(key, hctx, mask, salt_size);
+}
+
+void rsa_sign_pss_free(rsa_pss_ctx *rctx)
+{
+	memset(rctx, 0, sizeof(rsa_pss_ctx));
+	free(rctx);
+}
+
+void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx, mgf *mask)
+{
+	rctx->key = key;
+	rctx->hctx = hctx;
+	rctx->mask = mask;
+}
+
+void rsa_sign_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
+{
+	hash_update(rctx->hctx, message, size);
+}
+
+rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx);
+
+rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size, void *message, size_t size)
+{
+	rsa_pss_ctx *rctx = rsa_sign_pss_init(key, hctx, mask, salt_size);
+	rsa_signature *rsign = NULL;
+
+	if (rctx == NULL)
+	{
+		return NULL;
+	}
+
+	rsa_sign_pss_update(rctx, message, size);
+	rsign = rsa_sign_pss_final(rctx);
+
+	rsa_sign_pss_free(rctx);
+
+	return rsign;
+}
+
+rsa_pss_ctx *rsa_verify_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size)
+{
+	return rsa_pss_init(key, hctx, mask, salt_size);
+}
+
+void rsa_verify_pss_free(rsa_pss_ctx *rctx)
+{
+	memset(rctx, 0, sizeof(rsa_pss_ctx));
+	free(rctx);
+}
+
+void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx, mgf *mask)
+{
+	rctx->key = key;
+	rctx->hctx = hctx;
+	rctx->mask = mask;
+}
+
+void rsa_verify_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
+{
+	hash_update(rctx->hctx, message, size);
+}
+
+int32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign, rsa_signature **expected);
+
+int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size, void *message, size_t size, rsa_signature *rsign,
+					   rsa_signature **expected)
+{
+	int32_t status = -1;
+	rsa_pss_ctx *rctx = rsa_verify_pss_init(key, hctx, mask, salt_size);
+
+	if (rctx == NULL)
+	{
+		return status;
+	}
+
+	rsa_verify_pss_update(rctx, message, size);
+	status = rsa_verify_pss_final(rctx, rsign, expected);
+
+	rsa_verify_pss_free(rctx);
+
+	return status;
+}
