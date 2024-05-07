@@ -24,6 +24,8 @@ hash/blake2.c
 hash/hash.c
 #public-key
 public-key/rsa.c
+#signature
+dsa.c
 )
 
 target_include_directories(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
