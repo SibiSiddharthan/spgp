@@ -22,12 +22,14 @@ hash/md5.c hash/ripemd.c
 hash/sha1.c hash/sha256.c hash/sha512.c hash/sha3.c
 hash/blake2.c
 hash/hash.c
+#mac
+mac/hmac.c
 #public-key
 public-key/rsa.c
 # rand
-hash-drbg.c
+rand/hash-drbg.c
 #signature
-dsa.c
+signature/dsa.c
 )
 
 target_include_directories(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
