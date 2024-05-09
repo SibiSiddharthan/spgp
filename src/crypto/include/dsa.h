@@ -33,14 +33,14 @@ dsa_key *dsa_generate_key(uint32_t bits);
 void dsa_delete_key(dsa_key *key);
 
 dsa_ctx *dsa_sign_init(dsa_key *key, hash_ctx *hctx);
-dsa_signature *dsa_sign_free(dsa_ctx *dctx);
+void dsa_sign_free(dsa_ctx *dctx);
 void dsa_sign_reset(dsa_ctx *dctx, dsa_key *key, hash_ctx *hctx);
 void dsa_sign_update(dsa_ctx *dctx, void *message, size_t size);
 dsa_signature *dsa_sign_final(dsa_ctx *dctx);
 dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *message, size_t size);
 
 dsa_ctx *dsa_verify_init(dsa_key *key, hash_ctx *hctx);
-dsa_signature *dsa_verify_free(dsa_ctx *dctx);
+void dsa_verify_free(dsa_ctx *dctx);
 void dsa_verify_reset(dsa_ctx *dctx, dsa_key *key, hash_ctx *hctx);
 void dsa_verify_update(dsa_ctx *dctx, void *message, size_t size);
 int32_t dsa_verify_final(dsa_ctx *dctx, dsa_signature *dsign);

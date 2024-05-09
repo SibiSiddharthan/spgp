@@ -33,7 +33,7 @@ dsa_ctx *dsa_sign_init(dsa_key *key, hash_ctx *hctx)
 	return dctx;
 }
 
-dsa_signature *dsa_sign_free(dsa_ctx *dctx)
+void dsa_sign_free(dsa_ctx *dctx)
 {
 	dctx->key = NULL;
 	dctx->hctx = NULL;
@@ -85,7 +85,7 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx)
 	dsign->s = bignum_modmul(key->x, dsign->r, key->q);
 	dsign->s = bignum_modadd(dsign->s, z, key->q);
 	l = bignum_modinv(k, key->q);
-	dsign->s = bignum_modmull(dsign->s, l, key->q);
+	dsign->s = bignum_modmul(dsign->s, l, key->q);
 
 	bignum_secure_free(k);
 	bignum_secure_free(l);
@@ -131,7 +131,7 @@ dsa_ctx *dsa_verify_init(dsa_key *key, hash_ctx *hctx)
 	return dctx;
 }
 
-dsa_signature *dsa_verify_free(dsa_ctx *dctx)
+void dsa_verify_free(dsa_ctx *dctx)
 {
 	dctx->key = NULL;
 	dctx->hctx = NULL;
