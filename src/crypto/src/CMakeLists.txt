@@ -24,6 +24,8 @@ hash/blake2.c
 hash/hash.c
 #public-key
 public-key/rsa.c
+# rand
+hash-drbg.c
 #signature
 dsa.c
 )
