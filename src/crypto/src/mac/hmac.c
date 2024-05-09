@@ -12,6 +12,7 @@
 #include <mac.h>
 #include <hash.h>
 #include <sha.h>
+#include <md5.h>
 
 static void hmac_determine_key0(hmac_ctx *hctx, byte_t *key, size_t key_size)
 {
@@ -64,6 +65,17 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 
 	switch (algorithm)
 	{
+	case MD5:
+	{
+		hash_size = MD5_HASH_SIZE;
+		block_size = MD5_BLOCK_SIZE;
+		_ctx = md5_init();
+		_free = (void (*)(void *))md5_free;
+		_reset = (void (*)(void *))md5_reset;
+		_update = (void (*)(void *, void *, size_t))md5_update;
+		_final = (void (*)(void *, byte_t *))md5_final;
+	}
+	break;
 	case SHA1:
 	{
 		hash_size = SHA1_HASH_SIZE;
