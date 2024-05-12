@@ -29,7 +29,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 
 	switch (algorithm)
 	{
-	case MD5:
+	case HASH_MD5:
 	{
 		hash_size = 16;
 		_ctx = md5_init();
@@ -39,7 +39,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))md5_final;
 	}
 	break;
-	case RIPEMD160:
+	case HASH_RIPEMD160:
 	{
 		hash_size = 20;
 		_ctx = ripemd160_init();
@@ -49,7 +49,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))ripemd160_final;
 	}
 	break;
-	case BLAKE2B:
+	case HASH_BLAKE2B:
 	{
 		blake2b_param b2bp = {.digest_length = 64, .key_length = 0, .depth = 1, .fanout = 1};
 		hash_size = 64;
@@ -59,7 +59,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final_size = (void (*)(void *, byte_t *, size_t))blake2b_final;
 	}
 	break;
-	case BLAKE2S:
+	case HASH_BLAKE2S:
 	{
 		blake2s_param b2sp = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
 		hash_size = 32;
@@ -69,7 +69,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final_size = (void (*)(void *, byte_t *, size_t))blake2s_final;
 	}
 	break;
-	case SHA1:
+	case HASH_SHA1:
 	{
 		hash_size = 20;
 		_ctx = sha1_init();
@@ -79,7 +79,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))sha1_final;
 	}
 	break;
-	case SHA224:
+	case HASH_SHA224:
 	{
 		hash_size = 28;
 		_ctx = sha224_init();
@@ -89,7 +89,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))sha224_final;
 	}
 	break;
-	case SHA256:
+	case HASH_SHA256:
 	{
 		hash_size = 32;
 		_ctx = sha256_init();
@@ -99,7 +99,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))sha256_final;
 	}
 	break;
-	case SHA384:
+	case HASH_SHA384:
 	{
 		hash_size = 48;
 		_ctx = sha384_init();
@@ -109,7 +109,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))sha384_final;
 	}
 	break;
-	case SHA512:
+	case HASH_SHA512:
 	{
 		hash_size = 64;
 		_ctx = sha512_init();
@@ -119,7 +119,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))sha512_final;
 	}
 	break;
-	case SHA512_224:
+	case HASH_SHA512_224:
 	{
 		hash_size = 28;
 		_ctx = sha512_224_init();
@@ -129,7 +129,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))sha512_224_final;
 	}
 	break;
-	case SHA512_256:
+	case HASH_SHA512_256:
 	{
 		hash_size = 32;
 		_ctx = sha512_256_init();
@@ -139,7 +139,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final = (void (*)(void *, byte_t *))sha512_256_final;
 	}
 	break;
-	case SHA3_224:
+	case HASH_SHA3_224:
 	{
 		hash_size = 28;
 		_ctx = sha3_init(224);
@@ -149,7 +149,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
 	}
 	break;
-	case SHA3_256:
+	case HASH_SHA3_256:
 	{
 		hash_size = 32;
 		_ctx = sha3_init(224);
@@ -159,7 +159,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
 	}
 	break;
-	case SHA3_384:
+	case HASH_SHA3_384:
 	{
 		hash_size = 48;
 		_ctx = sha3_init(224);
@@ -169,7 +169,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
 	}
 	break;
-	case SHA3_512:
+	case HASH_SHA3_512:
 	{
 		hash_size = 64;
 		_ctx = sha3_init(224);
@@ -226,13 +226,13 @@ void hash_reset(hash_ctx *hctx)
 	}
 
 	// For Blake2
-	if (hctx->algorithm == BLAKE2B)
+	if (hctx->algorithm == HASH_BLAKE2B)
 	{
 		blake2b_param b2bp = {.digest_length = 64, .key_length = 0, .depth = 1, .fanout = 1};
 		blake2b_reset(hctx->_ctx, &b2bp, NULL);
 		return;
 	}
-	if (hctx->algorithm == BLAKE2S)
+	if (hctx->algorithm == HASH_BLAKE2S)
 	{
 		blake2s_param b2sp = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
 		blake2s_reset(hctx->_ctx, &b2sp, NULL);
