@@ -34,8 +34,8 @@ typedef struct _twofish_key
 	byte_t sbox0[256], sbox1[256], sbox2[256], sbox3[256];
 } twofish_key;
 
-twofish_key *twofish_new_key(twofish_type type, byte_t *key);
-void twofish_delete_key(twofish_key *key);
+twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t size);
+void twofish_key_delete(twofish_key *key);
 
 void twofish_encrypt_block(twofish_key *key, byte_t plaintext[TWOFISH_BLOCK_SIZE], byte_t ciphertext[TWOFISH_BLOCK_SIZE]);
 void twofish_decrypt_block(twofish_key *key, byte_t ciphertext[TWOFISH_BLOCK_SIZE], byte_t plaintext[TWOFISH_BLOCK_SIZE]);

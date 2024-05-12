@@ -23,7 +23,7 @@ int32_t twofish128_test_suite(void)
 	hex_to_block(secret, TWOFISH128_KEY_SIZE, "00000000000000000000000000000000");
 	hex_to_block(plaintext, TWOFISH_BLOCK_SIZE, "00000000000000000000000000000000");
 
-	twofish_key *key = twofish_new_key(TWOFISH128, secret);
+	twofish_key *key = twofish_key_new(TWOFISH128, secret, TWOFISH128_KEY_SIZE);
 
 	memset(ciphertext, 0, TWOFISH_BLOCK_SIZE);
 	twofish_encrypt_block(key, plaintext, ciphertext);
@@ -33,7 +33,7 @@ int32_t twofish128_test_suite(void)
 	twofish_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, TWOFISH_BLOCK_SIZE, "00000000000000000000000000000000");
 
-	twofish_delete_key(key);
+	twofish_key_delete(key);
 
 	return status;
 }
@@ -48,7 +48,7 @@ int32_t twofish192_test_suite(void)
 	hex_to_block(secret, TWOFISH192_KEY_SIZE, "0123456789abcdeffedcba98765432100011223344556677");
 	hex_to_block(plaintext, TWOFISH_BLOCK_SIZE, "00000000000000000000000000000000");
 
-	twofish_key *key = twofish_new_key(TWOFISH192, secret);
+	twofish_key *key = twofish_key_new(TWOFISH192, secret, TWOFISH192_KEY_SIZE);
 
 	memset(ciphertext, 0, TWOFISH_BLOCK_SIZE);
 	twofish_encrypt_block(key, plaintext, ciphertext);
@@ -58,7 +58,7 @@ int32_t twofish192_test_suite(void)
 	twofish_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, TWOFISH_BLOCK_SIZE, "00000000000000000000000000000000");
 
-	twofish_delete_key(key);
+	twofish_key_delete(key);
 
 	return status;
 }
@@ -73,7 +73,7 @@ int32_t twofish256_test_suite(void)
 	hex_to_block(secret, TWOFISH256_KEY_SIZE, "0123456789abcdeffedcba987654321000112233445566778899aabbccddeeff");
 	hex_to_block(plaintext, TWOFISH_BLOCK_SIZE, "00000000000000000000000000000000");
 
-	twofish_key *key = twofish_new_key(TWOFISH256, secret);
+	twofish_key *key = twofish_key_new(TWOFISH256, secret, TWOFISH256_KEY_SIZE);
 
 	memset(ciphertext, 0, TWOFISH_BLOCK_SIZE);
 	twofish_encrypt_block(key, plaintext, ciphertext);
@@ -83,7 +83,7 @@ int32_t twofish256_test_suite(void)
 	twofish_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, TWOFISH_BLOCK_SIZE, "00000000000000000000000000000000");
 
-	twofish_delete_key(key);
+	twofish_key_delete(key);
 
 	return status;
 }

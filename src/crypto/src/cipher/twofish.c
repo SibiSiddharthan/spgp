@@ -327,11 +327,27 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-twofish_key *twofish_new_key(twofish_type type, byte_t *key)
+twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t size)
 {
 	twofish_key *expanded_key = NULL;
+	size_t required_key_size = 0;
 
-	if (type != TWOFISH128 && type != TWOFISH192 && type != TWOFISH256)
+	switch (type)
+	{
+	case TWOFISH128:
+		required_key_size = TWOFISH128_KEY_SIZE;
+		break;
+	case TWOFISH192:
+		required_key_size = TWOFISH192_KEY_SIZE;
+		break;
+	case TWOFISH256:
+		required_key_size = TWOFISH256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (size != required_key_size)
 	{
 		return NULL;
 	}
@@ -351,7 +367,7 @@ twofish_key *twofish_new_key(twofish_type type, byte_t *key)
 	return expanded_key;
 }
 
-void twofish_delete_key(twofish_key *key)
+void twofish_key_delete(twofish_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(twofish_key));
