@@ -499,7 +499,7 @@ aes_key *aes_key_new(aes_type type, byte_t *key, size_t size)
 		return NULL;
 	}
 
-	if (size < required_key_size)
+	if (size != required_key_size)
 	{
 		return NULL;
 	}
