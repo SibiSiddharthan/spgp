@@ -560,18 +560,34 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	}
 }
 
-camellia_key *camellia_new_key(camellia_type type, byte_t *key)
+camellia_key *camellia_key_new(camellia_type type, byte_t *key, size_t size)
 {
 	camellia_key *expanded_key = NULL;
+	size_t required_key_size = 0;
 
-	if (type != CAMELLIA128 && type != CAMELLIA192 && type != CAMELLIA256)
+	switch (type)
+	{
+	case CAMELLIA128:
+		required_key_size = CAMELLIA128_KEY_SIZE;
+		break;
+	case CAMELLIA192:
+		required_key_size = CAMELLIA192_KEY_SIZE;
+		break;
+	case CAMELLIA256:
+		required_key_size = CAMELLIA256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if(size != required_key_size)
 	{
 		return NULL;
 	}
 
 	expanded_key = (camellia_key *)malloc(sizeof(camellia_key));
 
-	if (key == NULL)
+	if (expanded_key == NULL)
 	{
 		return NULL;
 	}
@@ -582,7 +598,7 @@ camellia_key *camellia_new_key(camellia_type type, byte_t *key)
 	return expanded_key;
 }
 
-void camellia_delete_key(camellia_key *key)
+void camellia_key_delete(camellia_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(camellia_key));

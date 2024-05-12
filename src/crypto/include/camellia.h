@@ -29,8 +29,8 @@ typedef struct _camellia_key
 	uint64_t k[24], ke[6], kw[4];
 } camellia_key;
 
-camellia_key *camellia_new_key(camellia_type type, byte_t *key);
-void camellia_delete_key(camellia_key *key);
+camellia_key *camellia_key_new(camellia_type type, byte_t *key, size_t size);
+void camellia_key_delete(camellia_key *key);
 
 void camellia_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE]);
 void camellia_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE]);
