@@ -50,7 +50,7 @@ static void hmac_pad(hmac_ctx *hctx)
 	}
 }
 
-hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
+hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 {
 	hmac_ctx *hctx = NULL;
 
@@ -65,7 +65,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 
 	switch (algorithm)
 	{
-	case MD5:
+	case HMAC_MD5:
 	{
 		hash_size = MD5_HASH_SIZE;
 		block_size = MD5_BLOCK_SIZE;
@@ -76,7 +76,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 		_final = (void (*)(void *, byte_t *))md5_final;
 	}
 	break;
-	case SHA1:
+	case HMAC_SHA1:
 	{
 		hash_size = SHA1_HASH_SIZE;
 		block_size = SHA1_BLOCK_SIZE;
@@ -87,7 +87,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 		_final = (void (*)(void *, byte_t *))sha1_final;
 	}
 	break;
-	case SHA224:
+	case HMAC_SHA224:
 	{
 		hash_size = SHA224_HASH_SIZE;
 		block_size = SHA256_BLOCK_SIZE;
@@ -98,7 +98,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 		_final = (void (*)(void *, byte_t *))sha224_final;
 	}
 	break;
-	case SHA256:
+	case HMAC_SHA256:
 	{
 		hash_size = SHA256_HASH_SIZE;
 		block_size = SHA256_BLOCK_SIZE;
@@ -109,7 +109,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 		_final = (void (*)(void *, byte_t *))sha256_final;
 	}
 	break;
-	case SHA384:
+	case HMAC_SHA384:
 	{
 		hash_size = SHA384_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
@@ -120,7 +120,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 		_final = (void (*)(void *, byte_t *))sha384_final;
 	}
 	break;
-	case SHA512:
+	case HMAC_SHA512:
 	{
 		hash_size = SHA512_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
@@ -131,7 +131,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 		_final = (void (*)(void *, byte_t *))sha512_final;
 	}
 	break;
-	case SHA512_224:
+	case HMAC_SHA512_224:
 	{
 		hash_size = SHA512_224_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
@@ -142,7 +142,7 @@ hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size)
 		_final = (void (*)(void *, byte_t *))sha512_224_final;
 	}
 	break;
-	case SHA512_256:
+	case HMAC_SHA512_256:
 	{
 		hash_size = SHA512_256_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;

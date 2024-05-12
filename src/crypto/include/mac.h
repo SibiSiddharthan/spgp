@@ -9,13 +9,25 @@
 #define CRYPTO_MAC_H
 
 #include <types.h>
-#include <hash.h>
 
+#define MAX_HASH_SIZE  64
 #define MAX_BLOCK_SIZE 128
+
+typedef enum _hmac_algorithm
+{
+	HMAC_MD5,
+	HMAC_SHA1,
+	HMAC_SHA224,
+	HMAC_SHA256,
+	HMAC_SHA384,
+	HMAC_SHA512,
+	HMAC_SHA512_224,
+	HMAC_SHA512_256,
+} hmac_algorithm;
 
 typedef struct _hmac_ctx
 {
-	hash_algorithm algorithm;
+	hmac_algorithm algorithm;
 	size_t hash_size;
 	size_t block_size;
 	size_t key0_size;
@@ -33,7 +45,7 @@ typedef struct _hmac_ctx
 
 } hmac_ctx;
 
-hmac_ctx *hmac_new(hash_algorithm algorithm, byte_t *key, size_t key_size);
+hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size);
 void hmac_delete(hmac_ctx *hctx);
 
 void hmac_reset(hmac_ctx *hctx, byte_t *key, size_t key_size);
