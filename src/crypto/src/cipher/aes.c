@@ -479,18 +479,34 @@ static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-aes_key *aes_new_key(aes_type type, byte_t *key)
+aes_key *aes_key_new(aes_type type, byte_t *key, size_t size)
 {
 	aes_key *expanded_key = NULL;
+	size_t required_key_size = 0;
 
-	if (type != AES128 && type != AES192 && type != AES256)
+	switch (type)
+	{
+	case AES128:
+		required_key_size = AES128_KEY_SIZE;
+		break;
+	case AES192:
+		required_key_size = AES192_KEY_SIZE;
+		break;
+	case AES256:
+		required_key_size = AES256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (size < required_key_size)
 	{
 		return NULL;
 	}
 
 	expanded_key = (aes_key *)malloc(sizeof(aes_key));
 
-	if (key == NULL)
+	if (expanded_key == NULL)
 	{
 		return NULL;
 	}
@@ -501,7 +517,7 @@ aes_key *aes_new_key(aes_type type, byte_t *key)
 	return expanded_key;
 }
 
-void aes_delete_key(aes_key *key)
+void aes_key_delete(aes_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(aes_key));
