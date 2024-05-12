@@ -34,8 +34,8 @@ typedef struct _aria_key
 	aria_round_key decryption_round_key[ARIA_MAX_ROUNDS + 1];
 } aria_key;
 
-aria_key *aria_new_key(aria_type type, byte_t *key);
-void aria_delete_key(aria_key *key);
+aria_key *aria_key_new(aria_type type, byte_t *key , size_t size);
+void aria_key_delete(aria_key *key);
 
 void aria_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE]);
 void aria_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE]);

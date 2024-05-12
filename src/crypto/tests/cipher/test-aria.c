@@ -23,7 +23,7 @@ int32_t aria128_test_suite(void)
 	hex_to_block(secret, ARIA128_KEY_SIZE, "000102030405060708090a0b0c0d0e0f");
 	hex_to_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aria_key *key = aria_new_key(ARIA128, secret);
+	aria_key *key = aria_key_new(ARIA128, secret,ARIA128_KEY_SIZE);
 
 	memset(ciphertext, 0, ARIA_BLOCK_SIZE);
 	aria_encrypt_block(key, plaintext, ciphertext);
@@ -33,7 +33,7 @@ int32_t aria128_test_suite(void)
 	aria_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aria_delete_key(key);
+	aria_key_delete(key);
 
 	return status;
 }
@@ -48,7 +48,7 @@ int32_t aria192_test_suite(void)
 	hex_to_block(secret, ARIA192_KEY_SIZE, "000102030405060708090a0b0c0d0e0f1011121314151617");
 	hex_to_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aria_key *key = aria_new_key(ARIA192, secret);
+	aria_key *key = aria_key_new(ARIA192, secret, ARIA192_KEY_SIZE);
 
 	memset(ciphertext, 0, ARIA_BLOCK_SIZE);
 	aria_encrypt_block(key, plaintext, ciphertext);
@@ -58,7 +58,7 @@ int32_t aria192_test_suite(void)
 	aria_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aria_delete_key(key);
+	aria_key_delete(key);
 
 	return status;
 }
@@ -73,7 +73,7 @@ int32_t aria256_test_suite(void)
 	hex_to_block(secret, ARIA256_KEY_SIZE, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
 	hex_to_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aria_key *key = aria_new_key(ARIA256, secret);
+	aria_key *key = aria_key_new(ARIA256, secret, ARIA256_KEY_SIZE);
 
 	memset(ciphertext, 0, ARIA_BLOCK_SIZE);
 	aria_encrypt_block(key, plaintext, ciphertext);
@@ -83,7 +83,7 @@ int32_t aria256_test_suite(void)
 	aria_decrypt_block(key, ciphertext, plaintext);
 	status += check_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aria_delete_key(key);
+	aria_key_delete(key);
 
 	return status;
 }

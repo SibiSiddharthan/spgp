@@ -697,18 +697,34 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 	memcpy(expanded_key->decryption_round_key[nr], expanded_key->encryption_round_key[0], sizeof(aria_round_key));
 }
 
-aria_key *aria_new_key(aria_type type, byte_t *key)
+aria_key *aria_key_new(aria_type type, byte_t *key, size_t size)
 {
 	aria_key *expanded_key = NULL;
+	size_t required_key_size = 0;
 
-	if (type != ARIA128 && type != ARIA192 && type != ARIA256)
+	switch (type)
+	{
+	case ARIA128:
+		required_key_size = ARIA128_KEY_SIZE;
+		break;
+	case ARIA192:
+		required_key_size = ARIA192_KEY_SIZE;
+		break;
+	case ARIA256:
+		required_key_size = ARIA256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (size < required_key_size)
 	{
 		return NULL;
 	}
 
 	expanded_key = (aria_key *)malloc(sizeof(aria_key));
 
-	if (key == NULL)
+	if (expanded_key == NULL)
 	{
 		return NULL;
 	}
@@ -739,7 +755,7 @@ aria_key *aria_new_key(aria_type type, byte_t *key)
 	return expanded_key;
 }
 
-void aria_delete_key(aria_key *key)
+void aria_key_delete(aria_key *key)
 {
 	// Zero the key for security reasons.
 	memset(key, 0, sizeof(aria_key));
