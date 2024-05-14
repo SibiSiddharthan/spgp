@@ -22,32 +22,32 @@
 #define BLAKE2S_PERSONAL_SIZE 16
 #define BLAKE2S_BLOCK_SIZE    64
 
-#define BLAKE2_PARAM_INIT(HASH_SIZE, KEY_SIZE) {.digest_length = HASH_SIZE, .key_length = KEY_SIZE, .fanout = 1, .depth = 1};
+#define BLAKE2_PARAM_INIT(HASH_SIZE, KEY_SIZE) {.digest_size = HASH_SIZE, .key_size = KEY_SIZE, .fanout = 1, .depth = 1};
 
 typedef struct _blake2s_param
 {
-	uint8_t digest_length;                   // 1
-	uint8_t key_length;                      // 2
+	uint8_t digest_size;                     // 1
+	uint8_t key_size;                        // 2
 	uint8_t fanout;                          // 3
 	uint8_t depth;                           // 4
-	uint8_t leaf_length[4];                  // 8
+	uint8_t leaf_size[4];                    // 8
 	uint8_t node_offset[6];                  // 14
 	uint8_t node_depth;                      // 15
-	uint8_t inner_length;                    // 16
+	uint8_t inner_size;                      // 16
 	uint8_t salt[BLAKE2S_SALT_SIZE];         // 24
 	uint8_t personal[BLAKE2S_PERSONAL_SIZE]; // 32
 } blake2s_param;
 
 typedef struct _blake2b_param
 {
-	uint8_t digest_length;                   // 1
-	uint8_t key_length;                      // 2
+	uint8_t digest_size;                     // 1
+	uint8_t key_size;                        // 2
 	uint8_t fanout;                          // 3
 	uint8_t depth;                           // 4
-	uint8_t leaf_length[4];                  // 8
+	uint8_t leaf_size[4];                    // 8
 	uint8_t node_offset[8];                  // 16
 	uint8_t node_depth;                      // 17
-	uint8_t inner_length;                    // 18
+	uint8_t inner_size;                      // 18
 	uint8_t reserved[14];                    // 32
 	uint8_t salt[BLAKE2B_SALT_SIZE];         // 48
 	uint8_t personal[BLAKE2B_PERSONAL_SIZE]; // 64

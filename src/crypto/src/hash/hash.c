@@ -51,7 +51,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	break;
 	case HASH_BLAKE2B:
 	{
-		blake2b_param b2bp = {.digest_length = 64, .key_length = 0, .depth = 1, .fanout = 1};
+		blake2b_param b2bp = BLAKE2_PARAM_INIT(64, 0);
 		hash_size = 64;
 		_ctx = blake2b_new(&b2bp, NULL);
 		_free = (void (*)(void *))blake2b_delete;
@@ -61,7 +61,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	break;
 	case HASH_BLAKE2S:
 	{
-		blake2s_param b2sp = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
+		blake2s_param b2sp = BLAKE2_PARAM_INIT(32, 0);
 		hash_size = 32;
 		_ctx = blake2s_new(&b2sp, NULL);
 		_free = (void (*)(void *))blake2s_delete;
@@ -228,13 +228,13 @@ void hash_reset(hash_ctx *hctx)
 	// For Blake2
 	if (hctx->algorithm == HASH_BLAKE2B)
 	{
-		blake2b_param b2bp = {.digest_length = 64, .key_length = 0, .depth = 1, .fanout = 1};
+		blake2b_param b2bp = BLAKE2_PARAM_INIT(64, 0);
 		blake2b_reset(hctx->_ctx, &b2bp, NULL);
 		return;
 	}
 	if (hctx->algorithm == HASH_BLAKE2S)
 	{
-		blake2s_param b2sp = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
+		blake2s_param b2sp = BLAKE2_PARAM_INIT(32, 0);
 		blake2s_reset(hctx->_ctx, &b2sp, NULL);
 		return;
 	}

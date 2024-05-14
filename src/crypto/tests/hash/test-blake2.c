@@ -30,7 +30,7 @@ static void selftest_sequence(uint8_t *out, size_t len, uint32_t seed)
 
 static void blake2b_hash(byte_t *out, size_t outlen, void *key, size_t keylen, void *in, size_t inlen)
 {
-	blake2b_param param = {.digest_length = outlen, .key_length = keylen, .depth = 1, .fanout = 1};
+	blake2b_param param = {.digest_size = outlen, .key_size = keylen, .depth = 1, .fanout = 1};
 	blake2b_ctx *ctx = blake2b_new(&param, key);
 
 	blake2b_update(ctx, in, inlen);
@@ -40,7 +40,7 @@ static void blake2b_hash(byte_t *out, size_t outlen, void *key, size_t keylen, v
 
 static void blake2s_hash(byte_t *out, size_t outlen, void *key, size_t keylen, void *in, size_t inlen)
 {
-	blake2s_param param = {.digest_length = outlen, .key_length = keylen, .depth = 1, .fanout = 1};
+	blake2s_param param = {.digest_size = outlen, .key_size = keylen, .depth = 1, .fanout = 1};
 	blake2s_ctx *ctx = blake2s_new(&param, key);
 
 	blake2s_update(ctx, in, inlen);
@@ -54,7 +54,7 @@ int32_t blake2b_selftest()
 	const size_t blake2b_md_len[4] = {20, 32, 48, 64};
 	const size_t blake2b_in_len[6] = {0, 3, 128, 129, 255, 1024};
 	byte_t in[1024], md[64], key[64];
-	blake2b_param param = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
+	blake2b_param param = {.digest_size = 32, .key_size = 0, .depth = 1, .fanout = 1};
 	blake2b_ctx *ctx;
 
 	// 256-bit hash for testing
@@ -87,7 +87,7 @@ int blake2s_selftest()
 	const size_t b2s_md_len[4] = {16, 20, 28, 32};
 	const size_t b2s_in_len[6] = {0, 3, 64, 65, 255, 1024};
 	byte_t in[1024], md[32], key[32];
-	blake2s_param param = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
+	blake2s_param param = {.digest_size = 32, .key_size = 0, .depth = 1, .fanout = 1};
 	blake2s_ctx *ctx;
 
 	// 256-bit hash for testing.

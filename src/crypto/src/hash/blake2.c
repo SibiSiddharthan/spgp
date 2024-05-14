@@ -178,12 +178,12 @@ blake2b_ctx *blake2b_new(blake2b_param *param, void *key)
 		param = &default_param;
 	}
 
-	if (!(param->digest_length <= BLAKE2B_MAX_HASH_SIZE && param->digest_length >= 1))
+	if (!(param->digest_size <= BLAKE2B_MAX_HASH_SIZE && param->digest_size >= 1))
 	{
 		return NULL;
 	}
 
-	if (!(param->key_length <= BLAKE2B_MAX_KEY_SIZE && param->key_length >= 0))
+	if (!(param->key_size <= BLAKE2B_MAX_KEY_SIZE && param->key_size >= 0))
 	{
 		return NULL;
 	}
@@ -197,8 +197,8 @@ blake2b_ctx *blake2b_new(blake2b_param *param, void *key)
 
 	memset(ctx, 0, sizeof(blake2b_ctx));
 
-	ctx->hash_size = param->digest_length;
-	ctx->key_size = param->key_length;
+	ctx->hash_size = param->digest_size;
+	ctx->key_size = param->key_size;
 
 	memcpy(ctx->state, BLAKE2B_IV, sizeof(uint64_t) * 8);
 
@@ -233,20 +233,20 @@ void blake2b_reset(blake2b_ctx *ctx, blake2b_param *param, void *key)
 		param = &default_param;
 	}
 
-	if (!(param->digest_length <= BLAKE2B_MAX_HASH_SIZE && param->digest_length >= 1))
+	if (!(param->digest_size <= BLAKE2B_MAX_HASH_SIZE && param->digest_size >= 1))
 	{
 		return;
 	}
 
-	if (!(param->key_length <= BLAKE2B_MAX_KEY_SIZE && param->key_length >= 0))
+	if (!(param->key_size <= BLAKE2B_MAX_KEY_SIZE && param->key_size >= 0))
 	{
 		return;
 	}
 
 	memset(ctx, 0, sizeof(blake2b_ctx));
 
-	ctx->hash_size = param->digest_length;
-	ctx->key_size = param->key_length;
+	ctx->hash_size = param->digest_size;
+	ctx->key_size = param->key_size;
 
 	memcpy(ctx->state, BLAKE2B_IV, sizeof(uint64_t) * 8);
 
@@ -368,12 +368,12 @@ blake2s_ctx *blake2s_new(blake2s_param *param, void *key)
 		param = &default_param;
 	}
 
-	if (!(param->digest_length <= BLAKE2S_MAX_HASH_SIZE && param->digest_length >= 1))
+	if (!(param->digest_size <= BLAKE2S_MAX_HASH_SIZE && param->digest_size >= 1))
 	{
 		return NULL;
 	}
 
-	if (!(param->key_length <= BLAKE2S_MAX_KEY_SIZE && param->key_length >= 0))
+	if (!(param->key_size <= BLAKE2S_MAX_KEY_SIZE && param->key_size >= 0))
 	{
 		return NULL;
 	}
@@ -387,8 +387,8 @@ blake2s_ctx *blake2s_new(blake2s_param *param, void *key)
 
 	memset(ctx, 0, sizeof(blake2s_ctx));
 
-	ctx->hash_size = param->digest_length;
-	ctx->key_size = param->key_length;
+	ctx->hash_size = param->digest_size;
+	ctx->key_size = param->key_size;
 
 	memcpy(ctx->state, BLAKE2S_IV, sizeof(uint32_t) * 8);
 
@@ -423,20 +423,20 @@ void blake2s_reset(blake2s_ctx *ctx, blake2s_param *param, void *key)
 		param = &default_param;
 	}
 
-	if (!(param->digest_length <= BLAKE2S_MAX_HASH_SIZE && param->digest_length >= 1))
+	if (!(param->digest_size <= BLAKE2S_MAX_HASH_SIZE && param->digest_size >= 1))
 	{
 		return;
 	}
 
-	if (!(param->key_length <= BLAKE2S_MAX_KEY_SIZE && param->key_length >= 0))
+	if (!(param->key_size <= BLAKE2S_MAX_KEY_SIZE && param->key_size >= 0))
 	{
 		return;
 	}
 
 	memset(ctx, 0, sizeof(blake2s_ctx));
 
-	ctx->hash_size = param->digest_length;
-	ctx->key_size = param->key_length;
+	ctx->hash_size = param->digest_size;
+	ctx->key_size = param->key_size;
 
 	memcpy(ctx->state, BLAKE2S_IV, sizeof(uint32_t) * 8);
 
