@@ -39,7 +39,7 @@ int32_t sha3_224_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_new(224);
+	sha3_ctx *ctx = sha3_new(SHA3_224);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
@@ -80,7 +80,7 @@ int32_t sha3_256_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_new(256);
+	sha3_ctx *ctx = sha3_new(SHA3_256);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
@@ -125,7 +125,7 @@ int32_t sha3_384_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_new(384);
+	sha3_ctx *ctx = sha3_new(SHA3_384);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
@@ -175,7 +175,7 @@ int32_t sha3_512_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_new(512);
+	sha3_ctx *ctx = sha3_new(SHA3_512);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);

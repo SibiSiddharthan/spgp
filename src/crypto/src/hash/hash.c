@@ -142,7 +142,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_224:
 	{
 		hash_size = 28;
-		_ctx = sha3_new(224);
+		_ctx = sha3_new(SHA3_224);
 		_free = (void (*)(void *))sha3_delete;
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
@@ -152,7 +152,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_256:
 	{
 		hash_size = 32;
-		_ctx = sha3_new(224);
+		_ctx = sha3_new(SHA3_256);
 		_free = (void (*)(void *))sha3_delete;
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
@@ -162,7 +162,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_384:
 	{
 		hash_size = 48;
-		_ctx = sha3_new(224);
+		_ctx = sha3_new(SHA3_384);
 		_free = (void (*)(void *))sha3_delete;
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
@@ -172,7 +172,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_512:
 	{
 		hash_size = 64;
-		_ctx = sha3_new(224);
+		_ctx = sha3_new(SHA3_512);
 		_free = (void (*)(void *))sha3_delete;
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;

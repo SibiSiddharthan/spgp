@@ -242,31 +242,31 @@ static void sha3_hash_block(sha3_ctx *ctx)
 	keccak1600((uint64_t *)ctx->block);
 }
 
-sha3_ctx *sha3_new(uint32_t bits)
+sha3_ctx *sha3_new(sha3_type type)
 {
 	sha3_ctx *ctx = NULL;
 	uint32_t hash_size, block_size;
 
-	switch (bits)
+	switch (type)
 	{
-	case 224:
-		hash_size = 224 / 8;
+	case SHA3_224:
+		hash_size = 28;
 		block_size = SHA3_224_BLOCK_SIZE;
 		break;
-	case 256:
-		hash_size = 256 / 8;
+	case SHA3_256:
+		hash_size = 32;
 		block_size = SHA3_256_BLOCK_SIZE;
 		break;
-	case 384:
-		hash_size = 384 / 8;
+	case SHA3_384:
+		hash_size = 48;
 		block_size = SHA3_384_BLOCK_SIZE;
 		break;
-	case 512:
-		hash_size = 512 / 8;
+	case SHA3_512:
+		hash_size = 64;
 		block_size = SHA3_512_BLOCK_SIZE;
 		break;
 	default:
-		return NULL; // Unsupported hash size
+		return NULL; // Unsupported hash
 	}
 
 	ctx = malloc(sizeof(sha3_ctx));
@@ -379,10 +379,10 @@ int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
-static int32_t sha3_common_quick_hash(int32_t bits, void *data, size_t message_size, byte_t *buffer, size_t hash_size)
+static int32_t sha3_common_quick_hash(sha3_type type, void *data, size_t message_size, byte_t *buffer, size_t hash_size)
 {
 	// Initialize the context.
-	sha3_ctx *ctx = sha3_new(bits);
+	sha3_ctx *ctx = sha3_new(type);
 
 	if (ctx == NULL)
 	{
@@ -406,22 +406,22 @@ static int32_t sha3_common_quick_hash(int32_t bits, void *data, size_t message_s
 
 int32_t sha3_224_hash(void *data, size_t size, byte_t buffer[SHA3_224_HASH_SIZE])
 {
-	return sha3_common_quick_hash(224, data, size, buffer, SHA224_HASH_SIZE);
+	return sha3_common_quick_hash(SHA3_224, data, size, buffer, SHA224_HASH_SIZE);
 }
 
 int32_t sha3_256_hash(void *data, size_t size, byte_t buffer[SHA3_256_HASH_SIZE])
 {
-	return sha3_common_quick_hash(256, data, size, buffer, SHA256_HASH_SIZE);
+	return sha3_common_quick_hash(SHA3_256, data, size, buffer, SHA256_HASH_SIZE);
 }
 
 int32_t sha3_384_hash(void *data, size_t size, byte_t buffer[SHA3_384_HASH_SIZE])
 {
-	return sha3_common_quick_hash(384, data, size, buffer, SHA384_HASH_SIZE);
+	return sha3_common_quick_hash(SHA3_384, data, size, buffer, SHA384_HASH_SIZE);
 }
 
 int32_t sha3_512_hash(void *data, size_t size, byte_t buffer[SHA3_512_HASH_SIZE])
 {
-	return sha3_common_quick_hash(512, data, size, buffer, SHA512_HASH_SIZE);
+	return sha3_common_quick_hash(SHA3_512, data, size, buffer, SHA512_HASH_SIZE);
 }
 
 static int32_t shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
