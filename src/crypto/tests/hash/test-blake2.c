@@ -31,21 +31,21 @@ static void selftest_sequence(uint8_t *out, size_t len, uint32_t seed)
 static void blake2b_hash(byte_t *out, size_t outlen, void *key, size_t keylen, void *in, size_t inlen)
 {
 	blake2b_param param = {.digest_length = outlen, .key_length = keylen, .depth = 1, .fanout = 1};
-	blake2b_ctx *ctx = blake2b_init(&param, key);
+	blake2b_ctx *ctx = blake2b_new(&param, key);
 
 	blake2b_update(ctx, in, inlen);
 	blake2b_final(ctx, out, outlen);
-	blake2b_free(ctx);
+	blake2b_delete(ctx);
 }
 
 static void blake2s_hash(byte_t *out, size_t outlen, void *key, size_t keylen, void *in, size_t inlen)
 {
 	blake2s_param param = {.digest_length = outlen, .key_length = keylen, .depth = 1, .fanout = 1};
-	blake2s_ctx *ctx = blake2s_init(&param, key);
+	blake2s_ctx *ctx = blake2s_new(&param, key);
 
 	blake2s_update(ctx, in, inlen);
 	blake2s_final(ctx, out, outlen);
-	blake2s_free(ctx);
+	blake2s_delete(ctx);
 }
 
 int32_t blake2b_selftest()
@@ -58,7 +58,7 @@ int32_t blake2b_selftest()
 	blake2b_ctx *ctx;
 
 	// 256-bit hash for testing
-	ctx = blake2b_init(&param, NULL);
+	ctx = blake2b_new(&param, NULL);
 
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -91,7 +91,7 @@ int blake2s_selftest()
 	blake2s_ctx *ctx;
 
 	// 256-bit hash for testing.
-	ctx = blake2s_init(&param, NULL);
+	ctx = blake2s_new(&param, NULL);
 
 	for (size_t i = 0; i < 4; i++)
 	{

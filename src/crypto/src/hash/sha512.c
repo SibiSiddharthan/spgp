@@ -310,7 +310,7 @@ static void sha512_quick_reset(sha512_ctx *ctx)
 	ctx->h7 = H512_7;
 }
 
-sha512_ctx *sha512_init(void)
+sha512_ctx *sha512_new(void)
 {
 	sha512_ctx *ctx = malloc(sizeof(sha512_ctx));
 
@@ -325,7 +325,7 @@ sha512_ctx *sha512_init(void)
 	return ctx;
 }
 
-void sha512_free(sha512_ctx *ctx)
+void sha512_delete(sha512_ctx *ctx)
 {
 	free(ctx);
 }
@@ -365,7 +365,7 @@ void sha512_final(sha512_ctx *ctx, byte_t buffer[SHA512_HASH_SIZE])
 int32_t sha512_hash(void *data, size_t size, byte_t buffer[SHA512_HASH_SIZE])
 {
 	// Initialize the context.
-	sha512_ctx *ctx = sha512_init();
+	sha512_ctx *ctx = sha512_new();
 
 	if (ctx == NULL)
 	{
@@ -379,7 +379,7 @@ int32_t sha512_hash(void *data, size_t size, byte_t buffer[SHA512_HASH_SIZE])
 	sha512_final(ctx, buffer);
 
 	// Free the context.
-	sha512_free(ctx);
+	sha512_delete(ctx);
 
 	return 0;
 }
@@ -396,7 +396,7 @@ static void sha384_quick_reset(sha384_ctx *ctx)
 	ctx->h7 = H384_7;
 }
 
-sha384_ctx *sha384_init(void)
+sha384_ctx *sha384_new(void)
 {
 	sha384_ctx *ctx = malloc(sizeof(sha384_ctx));
 
@@ -411,7 +411,7 @@ sha384_ctx *sha384_init(void)
 	return ctx;
 }
 
-void sha384_free(sha384_ctx *ctx)
+void sha384_delete(sha384_ctx *ctx)
 {
 	free(ctx);
 }
@@ -449,7 +449,7 @@ void sha384_final(sha384_ctx *ctx, byte_t buffer[SHA384_HASH_SIZE])
 int32_t sha384_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZE])
 {
 	// Initialize the context.
-	sha384_ctx *ctx = sha384_init();
+	sha384_ctx *ctx = sha384_new();
 
 	if (ctx == NULL)
 	{
@@ -463,7 +463,7 @@ int32_t sha384_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZE])
 	sha384_final(ctx, buffer);
 
 	// Free the context.
-	sha384_free(ctx);
+	sha384_delete(ctx);
 
 	return 0;
 }
@@ -480,7 +480,7 @@ static void sha512_224_quick_rest(sha512_224_ctx *ctx)
 	ctx->h7 = H512_224_7;
 }
 
-sha512_224_ctx *sha512_224_init(void)
+sha512_224_ctx *sha512_224_new(void)
 {
 	sha512_224_ctx *ctx = malloc(sizeof(sha512_224_ctx));
 
@@ -495,7 +495,7 @@ sha512_224_ctx *sha512_224_init(void)
 	return ctx;
 }
 
-void sha512_224_free(sha512_224_ctx *ctx)
+void sha512_224_delete(sha512_224_ctx *ctx)
 {
 	free(ctx);
 }
@@ -531,7 +531,7 @@ void sha512_224_final(sha512_224_ctx *ctx, byte_t buffer[SHA512_224_HASH_SIZE])
 int32_t sha512_224_hash(void *data, size_t size, byte_t buffer[SHA512_224_HASH_SIZE])
 {
 	// Initialize the context.
-	sha512_224_ctx *ctx = sha512_224_init();
+	sha512_224_ctx *ctx = sha512_224_new();
 
 	if (ctx == NULL)
 	{
@@ -545,7 +545,7 @@ int32_t sha512_224_hash(void *data, size_t size, byte_t buffer[SHA512_224_HASH_S
 	sha512_224_final(ctx, buffer);
 
 	// Free the context.
-	sha512_224_free(ctx);
+	sha512_224_delete(ctx);
 
 	return 0;
 }
@@ -562,7 +562,7 @@ static void sha512_256_quick_rest(sha512_256_ctx *ctx)
 	ctx->h7 = H512_256_7;
 }
 
-sha512_256_ctx *sha512_256_init(void)
+sha512_256_ctx *sha512_256_new(void)
 {
 	sha512_256_ctx *ctx = malloc(sizeof(sha512_256_ctx));
 
@@ -577,7 +577,7 @@ sha512_256_ctx *sha512_256_init(void)
 	return ctx;
 }
 
-void sha512_256_free(sha512_256_ctx *ctx)
+void sha512_256_delete(sha512_256_ctx *ctx)
 {
 	free(ctx);
 }
@@ -613,7 +613,7 @@ void sha512_256_final(sha512_256_ctx *ctx, byte_t buffer[SHA512_256_HASH_SIZE])
 int32_t sha512_256_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_SIZE])
 {
 	// Initialize the context.
-	sha512_256_ctx *ctx = sha512_256_init();
+	sha512_256_ctx *ctx = sha512_256_new();
 
 	if (ctx == NULL)
 	{
@@ -627,7 +627,7 @@ int32_t sha512_256_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_S
 	sha512_256_final(ctx, buffer);
 
 	// Free the context.
-	sha512_256_free(ctx);
+	sha512_256_delete(ctx);
 
 	return 0;
 }

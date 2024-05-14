@@ -170,7 +170,7 @@ static void sha1_quick_reset(sha1_ctx *ctx)
 	ctx->h4 = H4;
 }
 
-sha1_ctx *sha1_init(void)
+sha1_ctx *sha1_new(void)
 {
 	sha1_ctx *ctx = malloc(sizeof(sha1_ctx));
 
@@ -185,7 +185,7 @@ sha1_ctx *sha1_init(void)
 	return ctx;
 }
 
-void sha1_free(sha1_ctx *ctx)
+void sha1_delete(sha1_ctx *ctx)
 {
 	free(ctx);
 }
@@ -281,7 +281,7 @@ void sha1_final(sha1_ctx *ctx, byte_t buffer[SHA1_HASH_SIZE])
 int32_t sha1_hash(void *data, size_t size, byte_t buffer[SHA1_HASH_SIZE])
 {
 	// Initialize the context.
-	sha1_ctx *ctx = sha1_init();
+	sha1_ctx *ctx = sha1_new();
 
 	if (ctx == NULL)
 	{
@@ -295,7 +295,7 @@ int32_t sha1_hash(void *data, size_t size, byte_t buffer[SHA1_HASH_SIZE])
 	sha1_final(ctx, buffer);
 
 	// Free the context.
-	sha1_free(ctx);
+	sha1_delete(ctx);
 
 	return 0;
 }

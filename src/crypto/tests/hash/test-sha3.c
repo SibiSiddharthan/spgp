@@ -39,13 +39,13 @@ int32_t sha3_224_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_init(224);
+	sha3_ctx *ctx = sha3_new(224);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha3_final(ctx, buffer, SHA3_224_HASH_SIZE);
-	sha3_free(ctx);
+	sha3_delete(ctx);
 
 	status += check_hash(buffer, SHA3_224_HASH_SIZE, "d69335b93325192e516a912e6d19a15cb51c6ed5c15243e7a7fd653c");
 
@@ -80,13 +80,13 @@ int32_t sha3_256_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_init(256);
+	sha3_ctx *ctx = sha3_new(256);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha3_final(ctx, buffer, SHA3_256_HASH_SIZE);
-	sha3_free(ctx);
+	sha3_delete(ctx);
 
 	status += check_hash(buffer, SHA3_256_HASH_SIZE, "5c8875ae474a3634ba4fd55ec85bffd661f32aca75c6d699d0cdcb6c115891c1");
 
@@ -125,13 +125,13 @@ int32_t sha3_384_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_init(384);
+	sha3_ctx *ctx = sha3_new(384);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha3_final(ctx, buffer, SHA3_384_HASH_SIZE);
-	sha3_free(ctx);
+	sha3_delete(ctx);
 
 	status += check_hash(buffer, SHA3_384_HASH_SIZE,
 						 "eee9e24d78c1855337983451df97c8ad9eedf256c6334f8e948d252d5e0e76847aa0774ddb90a842190d2c558b4b8340");
@@ -175,13 +175,13 @@ int32_t sha3_512_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_ctx *ctx = sha3_init(512);
+	sha3_ctx *ctx = sha3_new(512);
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha3_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha3_final(ctx, buffer, SHA3_512_HASH_SIZE);
-	sha3_free(ctx);
+	sha3_delete(ctx);
 
 	status += check_hash(
 		buffer, SHA3_512_HASH_SIZE,

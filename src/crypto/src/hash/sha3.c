@@ -242,7 +242,7 @@ static void sha3_hash_block(sha3_ctx *ctx)
 	keccak1600((uint64_t *)ctx->block);
 }
 
-sha3_ctx *sha3_init(uint32_t bits)
+sha3_ctx *sha3_new(uint32_t bits)
 {
 	sha3_ctx *ctx = NULL;
 	uint32_t hash_size, block_size;
@@ -284,7 +284,7 @@ sha3_ctx *sha3_init(uint32_t bits)
 	return ctx;
 }
 
-void sha3_free(sha3_ctx *ctx)
+void sha3_delete(sha3_ctx *ctx)
 {
 	free(ctx);
 }
@@ -382,7 +382,7 @@ int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 static int32_t sha3_common_quick_hash(int32_t bits, void *data, size_t message_size, byte_t *buffer, size_t hash_size)
 {
 	// Initialize the context.
-	sha3_ctx *ctx = sha3_init(bits);
+	sha3_ctx *ctx = sha3_new(bits);
 
 	if (ctx == NULL)
 	{
@@ -399,7 +399,7 @@ static int32_t sha3_common_quick_hash(int32_t bits, void *data, size_t message_s
 	}
 
 	// Free the context.
-	sha3_free(ctx);
+	sha3_delete(ctx);
 
 	return 0;
 }
@@ -477,7 +477,7 @@ static int32_t shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
-shake128_ctx *shake128_init(uint32_t bits)
+shake128_ctx *shake128_new(uint32_t bits)
 {
 	shake128_ctx *ctx = malloc(sizeof(shake128_ctx));
 
@@ -494,7 +494,7 @@ shake128_ctx *shake128_init(uint32_t bits)
 	return ctx;
 }
 
-void shake128_free(shake128_ctx *ctx)
+void shake128_delete(shake128_ctx *ctx)
 {
 	free(ctx);
 }
@@ -509,7 +509,7 @@ int32_t shake128_final(shake128_ctx *ctx, byte_t *buffer, size_t size)
 	return shake_common_final(ctx, buffer, size);
 }
 
-shake256_ctx *shake256_init(uint32_t bits)
+shake256_ctx *shake256_new(uint32_t bits)
 {
 	shake256_ctx *ctx = malloc(sizeof(shake256_ctx));
 
@@ -526,7 +526,7 @@ shake256_ctx *shake256_init(uint32_t bits)
 	return ctx;
 }
 
-void shake256_free(shake256_ctx *ctx)
+void shake256_delete(shake256_ctx *ctx)
 {
 	free(ctx);
 }

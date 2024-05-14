@@ -69,8 +69,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = MD5_HASH_SIZE;
 		block_size = MD5_BLOCK_SIZE;
-		_ctx = md5_init();
-		_free = (void (*)(void *))md5_free;
+		_ctx = md5_new();
+		_free = (void (*)(void *))md5_delete;
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
 		_final = (void (*)(void *, byte_t *))md5_final;
@@ -80,8 +80,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA1_HASH_SIZE;
 		block_size = SHA1_BLOCK_SIZE;
-		_ctx = sha1_init();
-		_free = (void (*)(void *))sha1_free;
+		_ctx = sha1_new();
+		_free = (void (*)(void *))sha1_delete;
 		_reset = (void (*)(void *))sha1_reset;
 		_update = (void (*)(void *, void *, size_t))sha1_update;
 		_final = (void (*)(void *, byte_t *))sha1_final;
@@ -91,8 +91,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA224_HASH_SIZE;
 		block_size = SHA256_BLOCK_SIZE;
-		_ctx = sha224_init();
-		_free = (void (*)(void *))sha224_free;
+		_ctx = sha224_new();
+		_free = (void (*)(void *))sha224_delete;
 		_reset = (void (*)(void *))sha224_reset;
 		_update = (void (*)(void *, void *, size_t))sha224_update;
 		_final = (void (*)(void *, byte_t *))sha224_final;
@@ -102,8 +102,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA256_HASH_SIZE;
 		block_size = SHA256_BLOCK_SIZE;
-		_ctx = sha256_init();
-		_free = (void (*)(void *))sha256_free;
+		_ctx = sha256_new();
+		_free = (void (*)(void *))sha256_delete;
 		_reset = (void (*)(void *))sha256_reset;
 		_update = (void (*)(void *, void *, size_t))sha256_update;
 		_final = (void (*)(void *, byte_t *))sha256_final;
@@ -113,8 +113,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA384_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha384_init();
-		_free = (void (*)(void *))sha384_free;
+		_ctx = sha384_new();
+		_free = (void (*)(void *))sha384_delete;
 		_reset = (void (*)(void *))sha384_reset;
 		_update = (void (*)(void *, void *, size_t))sha384_update;
 		_final = (void (*)(void *, byte_t *))sha384_final;
@@ -124,8 +124,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA512_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_init();
-		_free = (void (*)(void *))sha512_free;
+		_ctx = sha512_new();
+		_free = (void (*)(void *))sha512_delete;
 		_reset = (void (*)(void *))sha512_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_update;
 		_final = (void (*)(void *, byte_t *))sha512_final;
@@ -135,8 +135,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA512_224_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_224_init();
-		_free = (void (*)(void *))sha512_224_free;
+		_ctx = sha512_224_new();
+		_free = (void (*)(void *))sha512_224_delete;
 		_reset = (void (*)(void *))sha512_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_224_update;
 		_final = (void (*)(void *, byte_t *))sha512_224_final;
@@ -146,8 +146,8 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA512_256_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_256_init();
-		_free = (void (*)(void *))sha512_256_free;
+		_ctx = sha512_256_new();
+		_free = (void (*)(void *))sha512_256_delete;
 		_reset = (void (*)(void *))sha512_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_256_update;
 		_final = (void (*)(void *, byte_t *))sha512_256_final;

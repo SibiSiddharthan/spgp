@@ -39,13 +39,13 @@ int32_t sha224_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha224_ctx *ctx = sha224_init();
+	sha224_ctx *ctx = sha224_new();
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha224_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha224_final(ctx, buffer);
-	sha224_free(ctx);
+	sha224_delete(ctx);
 
 	status += check_hash(buffer, SHA224_HASH_SIZE, "20794655980c91d8bbb4c1ea97618a4bf03f42581948b2ee4ee7ad67");
 
@@ -80,13 +80,13 @@ int32_t sha256_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha256_ctx *ctx = sha256_init();
+	sha256_ctx *ctx = sha256_new();
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha256_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha256_final(ctx, buffer);
-	sha256_free(ctx);
+	sha256_delete(ctx);
 
 	status += check_hash(buffer, SHA256_HASH_SIZE, "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
 
@@ -125,13 +125,13 @@ int32_t sha384_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha384_ctx *ctx = sha384_init();
+	sha384_ctx *ctx = sha384_new();
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha384_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha384_final(ctx, buffer);
-	sha384_free(ctx);
+	sha384_delete(ctx);
 
 	status += check_hash(buffer, SHA384_HASH_SIZE,
 						 "9d0e1809716474cb086e834e310a4a1ced149e9c00f248527972cec5704c2a5b07b8b3dc38ecc4ebae97ddd87f3d8985");
@@ -175,13 +175,13 @@ int32_t sha512_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha512_ctx *ctx = sha512_init();
+	sha512_ctx *ctx = sha512_new();
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha512_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha512_final(ctx, buffer);
-	sha512_free(ctx);
+	sha512_delete(ctx);
 
 	status += check_hash(
 		buffer, SHA512_HASH_SIZE,

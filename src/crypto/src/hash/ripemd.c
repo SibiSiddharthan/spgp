@@ -222,7 +222,7 @@ static void ripemd160_quick_reset(ripemd160_ctx *ctx)
 	ctx->h4 = H4;
 }
 
-ripemd160_ctx *ripemd160_init(void)
+ripemd160_ctx *ripemd160_new(void)
 {
 	ripemd160_ctx *ctx = malloc(sizeof(ripemd160_ctx));
 
@@ -237,7 +237,7 @@ ripemd160_ctx *ripemd160_init(void)
 	return ctx;
 }
 
-void ripemd160_free(ripemd160_ctx *ctx)
+void ripemd160_delete(ripemd160_ctx *ctx)
 {
 	free(ctx);
 }
@@ -328,7 +328,7 @@ void ripemd160_final(ripemd160_ctx *ctx, byte_t buffer[RIPEMD160_HASH_SIZE])
 int32_t ripemd160_hash(void *data, size_t size, byte_t buffer[RIPEMD160_HASH_SIZE])
 {
 	// Initialize the context.
-	ripemd160_ctx *ctx = ripemd160_init();
+	ripemd160_ctx *ctx = ripemd160_new();
 
 	if (ctx == NULL)
 	{
@@ -342,7 +342,7 @@ int32_t ripemd160_hash(void *data, size_t size, byte_t buffer[RIPEMD160_HASH_SIZ
 	ripemd160_final(ctx, buffer);
 
 	// Free the context.
-	ripemd160_free(ctx);
+	ripemd160_delete(ctx);
 
 	return 0;
 }

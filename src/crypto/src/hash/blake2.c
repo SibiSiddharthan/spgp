@@ -168,7 +168,7 @@ static void blake2s_hash_block(blake2s_ctx *ctx, byte_t block[BLAKE2S_BLOCK_SIZE
 	}
 }
 
-blake2b_ctx *blake2b_init(blake2b_param *param, void *key)
+blake2b_ctx *blake2b_new(blake2b_param *param, void *key)
 {
 	blake2b_ctx *ctx = NULL;
 
@@ -213,7 +213,7 @@ blake2b_ctx *blake2b_init(blake2b_param *param, void *key)
 	return ctx;
 }
 
-void blake2b_free(blake2b_ctx *ctx)
+void blake2b_delete(blake2b_ctx *ctx)
 {
 	free(ctx);
 }
@@ -303,7 +303,7 @@ int32_t blake2b_512_hash(void *data, size_t size, byte_t buffer[BLAKE2B_MAX_HASH
 {
 	// Initialize the context.
 	blake2b_param param = {.digest_length = 64, .key_length = 0, .depth = 1, .fanout = 1};
-	blake2b_ctx *ctx = blake2b_init(&param, NULL);
+	blake2b_ctx *ctx = blake2b_new(&param, NULL);
 
 	if (ctx == NULL)
 	{
@@ -317,7 +317,7 @@ int32_t blake2b_512_hash(void *data, size_t size, byte_t buffer[BLAKE2B_MAX_HASH
 	blake2b_final(ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
 
 	// Free the context.
-	blake2b_free(ctx);
+	blake2b_delete(ctx);
 
 	return 0;
 }
@@ -326,7 +326,7 @@ int32_t blake2b_512_mac(void *data, size_t size, byte_t key[BLAKE2B_MAX_KEY_SIZE
 {
 	// Initialize the context.
 	blake2b_param param = {.digest_length = 64, .key_length = 64, .depth = 1, .fanout = 1};
-	blake2b_ctx *ctx = blake2b_init(&param, key);
+	blake2b_ctx *ctx = blake2b_new(&param, key);
 
 	if (ctx == NULL)
 	{
@@ -340,12 +340,12 @@ int32_t blake2b_512_mac(void *data, size_t size, byte_t key[BLAKE2B_MAX_KEY_SIZE
 	blake2b_final(ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
 
 	// Free the context.
-	blake2b_free(ctx);
+	blake2b_delete(ctx);
 
 	return 0;
 }
 
-blake2s_ctx *blake2s_init(blake2s_param *param, void *key)
+blake2s_ctx *blake2s_new(blake2s_param *param, void *key)
 {
 	blake2s_ctx *ctx = NULL;
 
@@ -390,7 +390,7 @@ blake2s_ctx *blake2s_init(blake2s_param *param, void *key)
 	return ctx;
 }
 
-void blake2s_free(blake2s_ctx *ctx)
+void blake2s_delete(blake2s_ctx *ctx)
 {
 	free(ctx);
 }
@@ -479,7 +479,7 @@ int32_t blake2s_256_hash(void *data, size_t size, byte_t buffer[BLAKE2S_MAX_HASH
 {
 	// Initialize the context.
 	blake2s_param param = {.digest_length = 32, .key_length = 0, .depth = 1, .fanout = 1};
-	blake2s_ctx *ctx = blake2s_init(&param, NULL);
+	blake2s_ctx *ctx = blake2s_new(&param, NULL);
 
 	if (ctx == NULL)
 	{
@@ -493,7 +493,7 @@ int32_t blake2s_256_hash(void *data, size_t size, byte_t buffer[BLAKE2S_MAX_HASH
 	blake2s_final(ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
 
 	// Free the context.
-	blake2s_free(ctx);
+	blake2s_delete(ctx);
 
 	return 0;
 }
@@ -502,7 +502,7 @@ int32_t blake2s_512_mac(void *data, size_t size, byte_t key[BLAKE2S_MAX_KEY_SIZE
 {
 	// Initialize the context.
 	blake2s_param param = {.digest_length = 32, .key_length = 32, .depth = 1, .fanout = 1};
-	blake2s_ctx *ctx = blake2s_init(&param, key);
+	blake2s_ctx *ctx = blake2s_new(&param, key);
 
 	if (ctx == NULL)
 	{
@@ -516,7 +516,7 @@ int32_t blake2s_512_mac(void *data, size_t size, byte_t key[BLAKE2S_MAX_KEY_SIZE
 	blake2s_final(ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
 
 	// Free the context.
-	blake2s_free(ctx);
+	blake2s_delete(ctx);
 
 	return 0;
 }

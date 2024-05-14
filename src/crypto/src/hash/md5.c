@@ -129,7 +129,7 @@ static void md5_hash_block(md5_ctx *ctx, byte_t block[MD5_BLOCK_SIZE])
 	ctx->d += d;
 }
 
-md5_ctx *md5_init(void)
+md5_ctx *md5_new(void)
 {
 	md5_ctx *ctx = malloc(sizeof(md5_ctx));
 
@@ -148,7 +148,7 @@ md5_ctx *md5_init(void)
 	return ctx;
 }
 
-void md5_free(md5_ctx *ctx)
+void md5_delete(md5_ctx *ctx)
 {
 	free(ctx);
 }
@@ -243,7 +243,7 @@ void md5_final(md5_ctx *ctx, byte_t buffer[MD5_HASH_SIZE])
 int32_t md5_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE])
 {
 	// Initialize the context.
-	md5_ctx *ctx = md5_init();
+	md5_ctx *ctx = md5_new();
 
 	if (ctx == NULL)
 	{
@@ -257,7 +257,7 @@ int32_t md5_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE])
 	md5_final(ctx, buffer);
 
 	// Free the context.
-	md5_free(ctx);
+	md5_delete(ctx);
 
 	return 0;
 }

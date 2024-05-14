@@ -72,16 +72,16 @@ typedef struct _blake2s_ctx
 	byte_t internal[BLAKE2S_BLOCK_SIZE];
 } blake2s_ctx;
 
-blake2b_ctx *blake2b_init(blake2b_param *param, void *key);
-void blake2b_free(blake2b_ctx *ctx);
+blake2b_ctx *blake2b_new(blake2b_param *param, void *key);
+void blake2b_delete(blake2b_ctx *ctx);
 void blake2b_reset(blake2b_ctx *ctx, blake2b_param *param, void *key);
 void blake2b_update(blake2b_ctx *ctx, void *data, size_t size);
 int32_t blake2b_final(blake2b_ctx *ctx, byte_t *buffer, size_t size);
 int32_t blake2b_512_hash(void *data, size_t size, byte_t buffer[BLAKE2B_MAX_HASH_SIZE]);
 int32_t blake2b_512_mac(void *data, size_t size, byte_t key[BLAKE2B_MAX_KEY_SIZE], byte_t buffer[BLAKE2B_MAX_HASH_SIZE]);
 
-blake2s_ctx *blake2s_init(blake2s_param *param, void *key);
-void blake2s_free(blake2s_ctx *ctx);
+blake2s_ctx *blake2s_new(blake2s_param *param, void *key);
+void blake2s_delete(blake2s_ctx *ctx);
 void blake2s_reset(blake2s_ctx *ctx, blake2s_param *param, void *key);
 void blake2s_update(blake2s_ctx *ctx, void *data, size_t size);
 int32_t blake2s_final(blake2s_ctx *ctx, byte_t *buffer, size_t size);

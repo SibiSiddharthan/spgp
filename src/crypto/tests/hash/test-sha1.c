@@ -39,13 +39,13 @@ int32_t sha1_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha1_ctx *ctx = sha1_init();
+	sha1_ctx *ctx = sha1_new();
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
 		sha1_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
 	sha1_final(ctx, buffer);
-	sha1_free(ctx);
+	sha1_delete(ctx);
 
 	status += check_hash(buffer, SHA1_HASH_SIZE, "34aa973cd4c4daa4f61eeb2bdbad27316534016f");
 
