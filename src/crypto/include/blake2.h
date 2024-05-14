@@ -22,6 +22,7 @@
 #define BLAKE2S_PERSONAL_SIZE 16
 #define BLAKE2S_BLOCK_SIZE    64
 
+#define BLAKE2_PARAM_INIT(HASH_SIZE, KEY_SIZE) {.digest_length = HASH_SIZE, .key_length = KEY_SIZE, .fanout = 1, .depth = 1};
 
 typedef struct _blake2s_param
 {
