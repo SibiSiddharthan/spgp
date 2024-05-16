@@ -248,8 +248,12 @@ static void sha256_common_pre_final(sha256_ctx *ctx)
 	sha256_common_update(ctx, padding, total_padding);
 }
 
-static void sha256_quick_reset(sha256_ctx *ctx)
+static inline sha256_ctx *sha256_init_checked(void *ptr)
 {
+	sha256_ctx *ctx = (sha256_ctx *)ptr;
+
+	memset(ctx, 0, sizeof(sha256_ctx));
+
 	ctx->h0 = H256_0;
 	ctx->h1 = H256_1;
 	ctx->h2 = H256_2;
@@ -258,21 +262,30 @@ static void sha256_quick_reset(sha256_ctx *ctx)
 	ctx->h5 = H256_5;
 	ctx->h6 = H256_6;
 	ctx->h7 = H256_7;
+
+	return ctx;
+}
+
+sha256_ctx *sha256_init(void *ptr, size_t size)
+{
+	if (size < sizeof(sha256_ctx))
+	{
+		return NULL;
+	}
+
+	return sha256_init_checked(ptr);
 }
 
 sha256_ctx *sha256_new(void)
 {
-	sha256_ctx *ctx = malloc(sizeof(sha256_ctx));
+	sha256_ctx *ctx = (sha256_ctx *)malloc(sizeof(sha256_ctx));
 
 	if (ctx == NULL)
 	{
 		return NULL;
 	}
 
-	memset(ctx, 0, sizeof(sha256_ctx));
-	sha256_quick_reset(ctx);
-
-	return ctx;
+	return sha256_init_checked(ctx);
 }
 
 void sha256_delete(sha256_ctx *ctx)
@@ -282,8 +295,7 @@ void sha256_delete(sha256_ctx *ctx)
 
 void sha256_reset(sha256_ctx *ctx)
 {
-	memset(ctx, 0, sizeof(sha256_ctx));
-	sha256_quick_reset(ctx);
+	sha256_init_checked(ctx);
 }
 
 void sha256_update(sha256_ctx *ctx, void *data, size_t size)
@@ -312,30 +324,26 @@ void sha256_final(sha256_ctx *ctx, byte_t buffer[SHA256_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha256_ctx));
 }
 
-int32_t sha256_hash(void *data, size_t size, byte_t buffer[SHA256_HASH_SIZE])
+void sha256_hash(void *data, size_t size, byte_t buffer[SHA256_HASH_SIZE])
 {
-	// Initialize the context.
-	sha256_ctx *ctx = sha256_new();
+	sha256_ctx ctx;
 
-	if (ctx == NULL)
-	{
-		return -1;
-	}
+	// Initialize the context.
+	sha256_init_checked(&ctx);
 
 	// Hash the data.
-	sha256_update(ctx, data, size);
+	sha256_update(&ctx, data, size);
 
 	// Output the hash
-	sha256_final(ctx, buffer);
-
-	// Free the context.
-	sha256_delete(ctx);
-
-	return 0;
+	sha256_final(&ctx, buffer);
 }
 
-static void sha224_quick_reset(sha224_ctx *ctx)
+static inline sha224_ctx *sha224_init_checked(void *ptr)
 {
+	sha224_ctx *ctx = (sha224_ctx *)ptr;
+
+	memset(ctx, 0, sizeof(sha224_ctx));
+
 	ctx->h0 = H224_0;
 	ctx->h1 = H224_1;
 	ctx->h2 = H224_2;
@@ -344,21 +352,30 @@ static void sha224_quick_reset(sha224_ctx *ctx)
 	ctx->h5 = H224_5;
 	ctx->h6 = H224_6;
 	ctx->h7 = H224_7;
+
+	return ctx;
+}
+
+sha224_ctx *sha224_init(void *ptr, size_t size)
+{
+	if (size < sizeof(sha224_ctx))
+	{
+		return NULL;
+	}
+
+	return sha224_init_checked(ptr);
 }
 
 sha224_ctx *sha224_new(void)
 {
-	sha224_ctx *ctx = malloc(sizeof(sha224_ctx));
+	sha224_ctx *ctx = (sha224_ctx *)malloc(sizeof(sha224_ctx));
 
 	if (ctx == NULL)
 	{
 		return NULL;
 	}
 
-	memset(ctx, 0, sizeof(sha224_ctx));
-	sha224_quick_reset(ctx);
-
-	return ctx;
+	return sha224_init_checked(ctx);
 }
 
 void sha224_delete(sha224_ctx *ctx)
@@ -368,8 +385,7 @@ void sha224_delete(sha224_ctx *ctx)
 
 void sha224_reset(sha224_ctx *ctx)
 {
-	memset(ctx, 0, sizeof(sha224_ctx));
-	sha224_quick_reset(ctx);
+	sha224_init_checked(ctx);
 }
 
 void sha224_update(sha224_ctx *ctx, void *data, size_t size)
@@ -397,24 +413,16 @@ void sha224_final(sha224_ctx *ctx, byte_t buffer[SHA224_HASH_SIZE])
 	memset(ctx, 0, sizeof(sha224_ctx));
 }
 
-int32_t sha224_hash(void *data, size_t size, byte_t buffer[SHA224_HASH_SIZE])
+void sha224_hash(void *data, size_t size, byte_t buffer[SHA224_HASH_SIZE])
 {
-	// Initialize the context.
-	sha224_ctx *ctx = sha224_new();
+	sha224_ctx ctx;
 
-	if (ctx == NULL)
-	{
-		return -1;
-	}
+	// Initialize the context.
+	sha224_init_checked(&ctx);
 
 	// Hash the data.
-	sha224_update(ctx, data, size);
+	sha224_update(&ctx, data, size);
 
 	// Output the hash
-	sha224_final(ctx, buffer);
-
-	// Free the context.
-	sha224_delete(ctx);
-
-	return 0;
+	sha224_final(&ctx, buffer);
 }

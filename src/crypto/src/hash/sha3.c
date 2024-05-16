@@ -242,46 +242,67 @@ static void sha3_hash_block(sha3_ctx *ctx)
 	keccak1600((uint64_t *)ctx->block);
 }
 
-sha3_ctx *sha3_new(sha3_type type)
+static inline sha3_ctx *sha3_init_checked(void *ptr, sha3_type type)
 {
-	sha3_ctx *ctx = NULL;
-	uint32_t hash_size, block_size;
+	sha3_ctx *ctx = (sha3_ctx *)ptr;
+
+	memset(ctx, 0, sizeof(sha3_ctx));
 
 	switch (type)
 	{
 	case SHA3_224:
-		hash_size = 28;
-		block_size = SHA3_224_BLOCK_SIZE;
+		ctx->hash_size = 28;
+		ctx->block_size = SHA3_224_BLOCK_SIZE;
 		break;
 	case SHA3_256:
-		hash_size = 32;
-		block_size = SHA3_256_BLOCK_SIZE;
+		ctx->hash_size = 32;
+		ctx->block_size = SHA3_256_BLOCK_SIZE;
 		break;
 	case SHA3_384:
-		hash_size = 48;
-		block_size = SHA3_384_BLOCK_SIZE;
+		ctx->hash_size = 48;
+		ctx->block_size = SHA3_384_BLOCK_SIZE;
 		break;
 	case SHA3_512:
-		hash_size = 64;
-		block_size = SHA3_512_BLOCK_SIZE;
+		ctx->hash_size = 64;
+		ctx->block_size = SHA3_512_BLOCK_SIZE;
 		break;
-	default:
-		return NULL; // Unsupported hash
 	}
 
-	ctx = malloc(sizeof(sha3_ctx));
+	return ctx;
+}
+
+sha3_ctx *sha3_init(void *ptr, size_t size, sha3_type type)
+{
+	if (size < sizeof(sha3_ctx))
+	{
+		return NULL;
+	}
+
+	if (type != SHA3_224 && type != SHA3_256 && type != SHA3_384 && type != SHA3_512)
+	{
+		return NULL;
+	}
+
+	return sha3_init_checked(ptr, type);
+}
+
+sha3_ctx *sha3_new(sha3_type type)
+{
+	sha3_ctx *ctx = NULL;
+
+	if (type != SHA3_224 && type != SHA3_256 && type != SHA3_384 && type != SHA3_512)
+	{
+		return NULL;
+	}
+
+	ctx = (sha3_ctx *)malloc(sizeof(sha3_ctx));
 
 	if (ctx == NULL)
 	{
 		return NULL;
 	}
 
-	memset(ctx, 0, sizeof(sha3_ctx));
-
-	ctx->hash_size = hash_size;
-	ctx->block_size = block_size;
-
-	return ctx;
+	return sha3_init_checked(ctx, type);
 }
 
 void sha3_delete(sha3_ctx *ctx)
@@ -379,49 +400,38 @@ int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
-static int32_t sha3_common_quick_hash(sha3_type type, void *data, size_t message_size, byte_t *buffer, size_t hash_size)
+static void sha3_common_hash(sha3_type type, void *data, size_t message_size, byte_t *buffer)
 {
-	// Initialize the context.
-	sha3_ctx *ctx = sha3_new(type);
+	sha3_ctx ctx;
 
-	if (ctx == NULL)
-	{
-		return -1;
-	}
+	// Initialize the context.
+	sha3_init_checked(&ctx, type);
 
 	// Hash the data.
-	sha3_update(ctx, data, message_size);
+	sha3_update(&ctx, data, message_size);
 
 	// Output the hash
-	if (sha3_final(ctx, buffer, hash_size) == -1)
-	{
-		return -1;
-	}
-
-	// Free the context.
-	sha3_delete(ctx);
-
-	return 0;
+	sha3_final(&ctx, buffer, ctx.hash_size);
 }
 
-int32_t sha3_224_hash(void *data, size_t size, byte_t buffer[SHA3_224_HASH_SIZE])
+void sha3_224_hash(void *data, size_t size, byte_t buffer[SHA3_224_HASH_SIZE])
 {
-	return sha3_common_quick_hash(SHA3_224, data, size, buffer, SHA224_HASH_SIZE);
+	sha3_common_hash(SHA3_224, data, size, buffer);
 }
 
-int32_t sha3_256_hash(void *data, size_t size, byte_t buffer[SHA3_256_HASH_SIZE])
+void sha3_256_hash(void *data, size_t size, byte_t buffer[SHA3_256_HASH_SIZE])
 {
-	return sha3_common_quick_hash(SHA3_256, data, size, buffer, SHA256_HASH_SIZE);
+	sha3_common_hash(SHA3_256, data, size, buffer);
 }
 
-int32_t sha3_384_hash(void *data, size_t size, byte_t buffer[SHA3_384_HASH_SIZE])
+void sha3_384_hash(void *data, size_t size, byte_t buffer[SHA3_384_HASH_SIZE])
 {
-	return sha3_common_quick_hash(SHA3_384, data, size, buffer, SHA384_HASH_SIZE);
+	sha3_common_hash(SHA3_384, data, size, buffer);
 }
 
-int32_t sha3_512_hash(void *data, size_t size, byte_t buffer[SHA3_512_HASH_SIZE])
+void sha3_512_hash(void *data, size_t size, byte_t buffer[SHA3_512_HASH_SIZE])
 {
-	return sha3_common_quick_hash(SHA3_512, data, size, buffer, SHA512_HASH_SIZE);
+	sha3_common_hash(SHA3_512, data, size, buffer);
 }
 
 static int32_t shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
