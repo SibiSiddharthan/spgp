@@ -20,11 +20,12 @@ typedef struct _md5_ctx
 	byte_t internal[MD5_BLOCK_SIZE];
 } md5_ctx;
 
+md5_ctx *md5_init(void *ptr, size_t size);
 md5_ctx *md5_new(void);
 void md5_delete(md5_ctx *ctx);
 void md5_reset(md5_ctx *ctx);
 void md5_update(md5_ctx *ctx, void *data, size_t size);
 void md5_final(md5_ctx *ctx, byte_t buffer[MD5_HASH_SIZE]);
-int32_t md5_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE]);
+void md5_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE]);
 
 #endif
