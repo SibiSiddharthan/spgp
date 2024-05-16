@@ -168,32 +168,9 @@ static void blake2s_hash_block(blake2s_ctx *ctx, byte_t block[BLAKE2S_BLOCK_SIZE
 	}
 }
 
-blake2b_ctx *blake2b_new(blake2b_param *param, void *key)
+static inline blake2b_ctx *blake2b_init_checked(void *ptr, blake2b_param *param, void *key)
 {
-	blake2b_ctx *ctx = NULL;
-	blake2b_param default_param = BLAKE2_PARAM_INIT(BLAKE2B_MAX_HASH_SIZE, 0);
-
-	if (param == NULL)
-	{
-		param = &default_param;
-	}
-
-	if (!(param->digest_size <= BLAKE2B_MAX_HASH_SIZE && param->digest_size >= 1))
-	{
-		return NULL;
-	}
-
-	if (!(param->key_size <= BLAKE2B_MAX_KEY_SIZE && param->key_size >= 0))
-	{
-		return NULL;
-	}
-
-	ctx = malloc(sizeof(blake2b_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
+	blake2b_ctx *ctx = (blake2b_ctx *)ptr;
 
 	memset(ctx, 0, sizeof(blake2b_ctx));
 
@@ -217,6 +194,63 @@ blake2b_ctx *blake2b_new(blake2b_param *param, void *key)
 	}
 
 	return ctx;
+}
+
+blake2b_ctx *blake2b_init(void *ptr, size_t size, blake2b_param *param, void *key)
+{
+	blake2b_param default_param = BLAKE2_PARAM_INIT(BLAKE2B_MAX_HASH_SIZE, 0);
+
+	if (param == NULL)
+	{
+		param = &default_param;
+	}
+
+	if (size < sizeof(blake2b_ctx))
+	{
+		return NULL;
+	}
+
+	if (!(param->digest_size <= BLAKE2B_MAX_HASH_SIZE && param->digest_size >= 1))
+	{
+		return NULL;
+	}
+
+	if (!(param->key_size <= BLAKE2B_MAX_KEY_SIZE && param->key_size >= 0))
+	{
+		return NULL;
+	}
+
+	return blake2b_init_checked(ptr, param, key);
+}
+
+blake2b_ctx *blake2b_new(blake2b_param *param, void *key)
+{
+	blake2b_ctx *ctx = NULL;
+	blake2b_param default_param = BLAKE2_PARAM_INIT(BLAKE2B_MAX_HASH_SIZE, 0);
+
+	if (param == NULL)
+	{
+		param = &default_param;
+	}
+
+	if (!(param->digest_size <= BLAKE2B_MAX_HASH_SIZE && param->digest_size >= 1))
+	{
+		return NULL;
+	}
+
+	if (!(param->key_size <= BLAKE2B_MAX_KEY_SIZE && param->key_size >= 0))
+	{
+		return NULL;
+	}
+
+	ctx = (blake2b_ctx *)malloc(sizeof(blake2b_ctx));
+
+	if (ctx == NULL)
+	{
+		return NULL;
+	}
+
+	return blake2b_init_checked(ctx, param, key);
 }
 
 void blake2b_delete(blake2b_ctx *ctx)
@@ -243,26 +277,7 @@ void blake2b_reset(blake2b_ctx *ctx, blake2b_param *param, void *key)
 		return;
 	}
 
-	memset(ctx, 0, sizeof(blake2b_ctx));
-
-	ctx->hash_size = param->digest_size;
-	ctx->key_size = param->key_size;
-
-	memcpy(ctx->state, BLAKE2B_IV, sizeof(uint64_t) * 8);
-
-	// XOR with parameter block.
-	for (int32_t i = 0; i < 8; ++i)
-	{
-		uint64_t *qword = (uint64_t *)param;
-		ctx->state[i] ^= qword[i];
-	}
-
-	// Keyed hashing.
-	if (ctx->key_size > 0)
-	{
-		memcpy(ctx->internal, key, ctx->key_size);
-		ctx->unhashed += BLAKE2B_BLOCK_SIZE;
-	}
+	blake2b_init_checked(ctx, param, key);
 }
 
 void blake2b_update(blake2b_ctx *ctx, void *data, size_t size)
@@ -312,78 +327,39 @@ int32_t blake2b_final(blake2b_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
-int32_t blake2b_512_hash(void *data, size_t size, byte_t buffer[BLAKE2B_MAX_HASH_SIZE])
+void blake2b_512_hash(void *data, size_t size, byte_t buffer[BLAKE2B_MAX_HASH_SIZE])
 {
-	// Initialize the context.
-	blake2b_param param = BLAKE2_PARAM_INIT(64, 0);
-	blake2b_ctx *ctx = blake2b_new(&param, NULL);
+	blake2b_ctx ctx;
+	blake2b_param param = BLAKE2_PARAM_INIT(BLAKE2B_MAX_HASH_SIZE, 0);
 
-	if (ctx == NULL)
-	{
-		return -1;
-	}
+	// Initialize the context.
+	blake2b_init_checked(&ctx, &param, NULL);
 
 	// Hash the data.
-	blake2b_update(ctx, data, size);
+	blake2b_update(&ctx, data, size);
 
 	// Output the hash
-	blake2b_final(ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
-
-	// Free the context.
-	blake2b_delete(ctx);
-
-	return 0;
+	blake2b_final(&ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
 }
 
-int32_t blake2b_512_mac(void *data, size_t size, byte_t key[BLAKE2B_MAX_KEY_SIZE], byte_t buffer[BLAKE2B_MAX_HASH_SIZE])
+void blake2b_512_mac(void *data, size_t size, byte_t key[BLAKE2B_MAX_KEY_SIZE], byte_t buffer[BLAKE2B_MAX_HASH_SIZE])
 {
-	// Initialize the context.
-	blake2b_param param = BLAKE2_PARAM_INIT(64, 64);
-	blake2b_ctx *ctx = blake2b_new(&param, key);
+	blake2b_ctx ctx;
+	blake2b_param param = BLAKE2_PARAM_INIT(BLAKE2B_MAX_HASH_SIZE, BLAKE2B_MAX_KEY_SIZE);
 
-	if (ctx == NULL)
-	{
-		return -1;
-	}
+	// Initialize the context.
+	blake2b_init_checked(&ctx, &param, key);
 
 	// Hash the data.
-	blake2b_update(ctx, data, size);
+	blake2b_update(&ctx, data, size);
 
 	// Output the hash
-	blake2b_final(ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
-
-	// Free the context.
-	blake2b_delete(ctx);
-
-	return 0;
+	blake2b_final(&ctx, buffer, BLAKE2B_MAX_HASH_SIZE);
 }
 
-blake2s_ctx *blake2s_new(blake2s_param *param, void *key)
+static inline blake2s_ctx *blake2s_init_checked(void *ptr, blake2s_param *param, void *key)
 {
-	blake2s_ctx *ctx = NULL;
-	blake2s_param default_param = BLAKE2_PARAM_INIT(BLAKE2S_MAX_HASH_SIZE, 0);
-
-	if (param == NULL)
-	{
-		param = &default_param;
-	}
-
-	if (!(param->digest_size <= BLAKE2S_MAX_HASH_SIZE && param->digest_size >= 1))
-	{
-		return NULL;
-	}
-
-	if (!(param->key_size <= BLAKE2S_MAX_KEY_SIZE && param->key_size >= 0))
-	{
-		return NULL;
-	}
-
-	ctx = malloc(sizeof(blake2s_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
+	blake2s_ctx *ctx = (blake2s_ctx *)ptr;
 
 	memset(ctx, 0, sizeof(blake2s_ctx));
 
@@ -407,6 +383,63 @@ blake2s_ctx *blake2s_new(blake2s_param *param, void *key)
 	}
 
 	return ctx;
+}
+
+blake2s_ctx *blake2s_init(void *ptr, size_t size, blake2s_param *param, void *key)
+{
+	blake2s_param default_param = BLAKE2_PARAM_INIT(BLAKE2S_MAX_HASH_SIZE, 0);
+
+	if (param == NULL)
+	{
+		param = &default_param;
+	}
+
+	if (size < sizeof(blake2s_ctx))
+	{
+		return NULL;
+	}
+
+	if (!(param->digest_size <= BLAKE2S_MAX_HASH_SIZE && param->digest_size >= 1))
+	{
+		return NULL;
+	}
+
+	if (!(param->key_size <= BLAKE2S_MAX_KEY_SIZE && param->key_size >= 0))
+	{
+		return NULL;
+	}
+
+	return blake2s_init_checked(ptr, param, key);
+}
+
+blake2s_ctx *blake2s_new(blake2s_param *param, void *key)
+{
+	blake2s_ctx *ctx = NULL;
+	blake2s_param default_param = BLAKE2_PARAM_INIT(BLAKE2S_MAX_HASH_SIZE, 0);
+
+	if (param == NULL)
+	{
+		param = &default_param;
+	}
+
+	if (!(param->digest_size <= BLAKE2S_MAX_HASH_SIZE && param->digest_size >= 1))
+	{
+		return NULL;
+	}
+
+	if (!(param->key_size <= BLAKE2S_MAX_KEY_SIZE && param->key_size >= 0))
+	{
+		return NULL;
+	}
+
+	ctx = (blake2s_ctx *)malloc(sizeof(blake2s_ctx));
+
+	if (ctx == NULL)
+	{
+		return NULL;
+	}
+
+	return blake2s_init_checked(ctx, param, key);
 }
 
 void blake2s_delete(blake2s_ctx *ctx)
@@ -433,26 +466,7 @@ void blake2s_reset(blake2s_ctx *ctx, blake2s_param *param, void *key)
 		return;
 	}
 
-	memset(ctx, 0, sizeof(blake2s_ctx));
-
-	ctx->hash_size = param->digest_size;
-	ctx->key_size = param->key_size;
-
-	memcpy(ctx->state, BLAKE2S_IV, sizeof(uint32_t) * 8);
-
-	// XOR with parameter block.
-	for (int32_t i = 0; i < 8; ++i)
-	{
-		uint32_t *dword = (uint32_t *)param;
-		ctx->state[i] ^= dword[i];
-	}
-
-	// Keyed hashing.
-	if (ctx->key_size > 0)
-	{
-		memcpy(ctx->internal, key, ctx->key_size);
-		ctx->unhashed += BLAKE2S_BLOCK_SIZE;
-	}
+	blake2s_init_checked(ctx, param, key);
 }
 
 void blake2s_update(blake2s_ctx *ctx, void *data, size_t size)
@@ -501,48 +515,32 @@ int32_t blake2s_final(blake2s_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
-int32_t blake2s_256_hash(void *data, size_t size, byte_t buffer[BLAKE2S_MAX_HASH_SIZE])
+void blake2s_256_hash(void *data, size_t size, byte_t buffer[BLAKE2S_MAX_HASH_SIZE])
 {
-	// Initialize the context.
+	blake2s_ctx ctx;
 	blake2s_param param = BLAKE2_PARAM_INIT(32, 0);
-	blake2s_ctx *ctx = blake2s_new(&param, NULL);
 
-	if (ctx == NULL)
-	{
-		return -1;
-	}
+	// Initialize the context.
+	blake2s_init_checked(&ctx, &param, NULL);
 
 	// Hash the data.
-	blake2s_update(ctx, data, size);
+	blake2s_update(&ctx, data, size);
 
 	// Output the hash
-	blake2s_final(ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
-
-	// Free the context.
-	blake2s_delete(ctx);
-
-	return 0;
+	blake2s_final(&ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
 }
 
-int32_t blake2s_512_mac(void *data, size_t size, byte_t key[BLAKE2S_MAX_KEY_SIZE], byte_t buffer[BLAKE2S_MAX_HASH_SIZE])
+void blake2s_512_mac(void *data, size_t size, byte_t key[BLAKE2S_MAX_KEY_SIZE], byte_t buffer[BLAKE2S_MAX_HASH_SIZE])
 {
-	// Initialize the context.
-	blake2s_param param = BLAKE2_PARAM_INIT(32, 32);
-	blake2s_ctx *ctx = blake2s_new(&param, key);
+	blake2s_ctx ctx;
+	blake2s_param param = BLAKE2_PARAM_INIT(BLAKE2S_MAX_HASH_SIZE, BLAKE2S_MAX_KEY_SIZE);
 
-	if (ctx == NULL)
-	{
-		return -1;
-	}
+	// Initialize the context.
+	blake2s_init_checked(&ctx, &param, key);
 
 	// Hash the data.
-	blake2s_update(ctx, data, size);
+	blake2s_update(&ctx, data, size);
 
 	// Output the hash
-	blake2s_final(ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
-
-	// Free the context.
-	blake2s_delete(ctx);
-
-	return 0;
+	blake2s_final(&ctx, buffer, BLAKE2S_MAX_HASH_SIZE);
 }
