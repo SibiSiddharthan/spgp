@@ -487,14 +487,9 @@ static int32_t shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	return 0;
 }
 
-shake128_ctx *shake128_new(uint32_t bits)
+static inline shake128_ctx *shake128_init_checked(void *ptr, uint32_t bits)
 {
-	shake128_ctx *ctx = malloc(sizeof(shake128_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
+	shake128_ctx *ctx = (shake128_ctx *)ptr;
 
 	memset(ctx, 0, sizeof(shake128_ctx));
 
@@ -502,6 +497,28 @@ shake128_ctx *shake128_new(uint32_t bits)
 	ctx->block_size = SHAKE128_BLOCK_SIZE;
 
 	return ctx;
+}
+
+shake128_ctx *shake128_init(void *ptr, size_t size, uint32_t bits)
+{
+	if (size < sizeof(shake128_ctx))
+	{
+		return NULL;
+	}
+
+	return shake128_init_checked(ptr, bits);
+}
+
+shake128_ctx *shake128_new(uint32_t bits)
+{
+	shake128_ctx *ctx = (shake128_ctx *)malloc(sizeof(shake128_ctx));
+
+	if (ctx == NULL)
+	{
+		return NULL;
+	}
+
+	return shake128_init_checked(ctx, bits);
 }
 
 void shake128_delete(shake128_ctx *ctx)
@@ -519,14 +536,9 @@ int32_t shake128_final(shake128_ctx *ctx, byte_t *buffer, size_t size)
 	return shake_common_final(ctx, buffer, size);
 }
 
-shake256_ctx *shake256_new(uint32_t bits)
+static inline shake256_ctx *shake256_init_checked(void *ptr, uint32_t bits)
 {
-	shake256_ctx *ctx = malloc(sizeof(shake256_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
+	shake256_ctx *ctx = (shake256_ctx *)ptr;
 
 	memset(ctx, 0, sizeof(shake256_ctx));
 
@@ -534,6 +546,28 @@ shake256_ctx *shake256_new(uint32_t bits)
 	ctx->block_size = SHAKE256_BLOCK_SIZE;
 
 	return ctx;
+}
+
+shake256_ctx *shake256_init(void *ptr, size_t size, uint32_t bits)
+{
+	if (size < sizeof(shake256_ctx))
+	{
+		return NULL;
+	}
+
+	return shake256_init_checked(ptr, bits);
+}
+
+shake256_ctx *shake256_new(uint32_t bits)
+{
+	shake256_ctx *ctx = (shake256_ctx *)malloc(sizeof(shake256_ctx));
+
+	if (ctx == NULL)
+	{
+		return NULL;
+	}
+
+	return shake256_init_checked(ctx, bits);
 }
 
 void shake256_delete(shake256_ctx *ctx)
