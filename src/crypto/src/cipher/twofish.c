@@ -327,7 +327,50 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t size)
+static inline twofish_key *twofish_key_init_checked(void *ptr, twofish_type type, byte_t *key)
+{
+	twofish_key *expanded_key = (twofish_key *)ptr;
+
+	memset(expanded_key, 0, sizeof(twofish_key));
+	expanded_key->type = type;
+	twofish_key_expansion(expanded_key, key);
+
+	return expanded_key;
+}
+
+twofish_key *twofish_key_init(void *ptr, size_t size, twofish_type type, byte_t *key, size_t key_size)
+{
+	size_t required_key_size = 0;
+
+	if (size < sizeof(twofish_key))
+	{
+		return NULL;
+	}
+
+	switch (type)
+	{
+	case TWOFISH128:
+		required_key_size = TWOFISH128_KEY_SIZE;
+		break;
+	case TWOFISH192:
+		required_key_size = TWOFISH192_KEY_SIZE;
+		break;
+	case TWOFISH256:
+		required_key_size = TWOFISH256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (key_size != required_key_size)
+	{
+		return NULL;
+	}
+
+	return twofish_key_init_checked(ptr, type, key);
+}
+
+twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t key_size)
 {
 	twofish_key *expanded_key = NULL;
 	size_t required_key_size = 0;
@@ -347,7 +390,7 @@ twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t size)
 		return NULL;
 	}
 
-	if (size != required_key_size)
+	if (key_size != required_key_size)
 	{
 		return NULL;
 	}
@@ -359,12 +402,7 @@ twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t size)
 		return NULL;
 	}
 
-	memset(expanded_key, 0, sizeof(twofish_key));
-
-	expanded_key->type = type;
-	twofish_key_expansion(expanded_key, key);
-
-	return expanded_key;
+	return twofish_key_init_checked(expanded_key, type, key);
 }
 
 void twofish_key_delete(twofish_key *key)

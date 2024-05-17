@@ -10,7 +10,7 @@
 
 #include <types.h>
 
-#define TWOFISH_ROUNDS 16
+#define TWOFISH_ROUNDS     16
 #define TWOFISH_BLOCK_SIZE 16
 #define TWOFISH_ROUND_KEYS ((TWOFISH_BLOCK_SIZE * 2) + 4 + 4)
 
@@ -34,7 +34,8 @@ typedef struct _twofish_key
 	byte_t sbox0[256], sbox1[256], sbox2[256], sbox3[256];
 } twofish_key;
 
-twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t size);
+twofish_key *twofish_key_init(void *ptr, size_t size, twofish_type type, byte_t *key, size_t key_size);
+twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t key_size);
 void twofish_key_delete(twofish_key *key);
 
 void twofish_encrypt_block(twofish_key *key, byte_t plaintext[TWOFISH_BLOCK_SIZE], byte_t ciphertext[TWOFISH_BLOCK_SIZE]);
