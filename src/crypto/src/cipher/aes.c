@@ -479,7 +479,50 @@ static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-aes_key *aes_key_new(aes_type type, byte_t *key, size_t size)
+static inline aes_key *aes_key_init_checked(void *ptr, aes_type type, byte_t *key)
+{
+	aes_key *expanded_key = (aes_key *)ptr;
+
+	memset(expanded_key, 0, sizeof(aes_key));
+	expanded_key->type = type;
+	rijndael_key_expansion(expanded_key, key);
+
+	return expanded_key;
+}
+
+aes_key *aes_key_init(void *ptr, size_t size, aes_type type, byte_t *key, size_t key_size)
+{
+	size_t required_key_size = 0;
+
+	if (size < sizeof(aes_key))
+	{
+		return NULL;
+	}
+
+	switch (type)
+	{
+	case AES128:
+		required_key_size = AES128_KEY_SIZE;
+		break;
+	case AES192:
+		required_key_size = AES192_KEY_SIZE;
+		break;
+	case AES256:
+		required_key_size = AES256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (key_size != required_key_size)
+	{
+		return NULL;
+	}
+
+	return aes_key_init_checked(ptr, type, key);
+}
+
+aes_key *aes_key_new(aes_type type, byte_t *key, size_t key_size)
 {
 	aes_key *expanded_key = NULL;
 	size_t required_key_size = 0;
@@ -499,7 +542,7 @@ aes_key *aes_key_new(aes_type type, byte_t *key, size_t size)
 		return NULL;
 	}
 
-	if (size != required_key_size)
+	if (key_size != required_key_size)
 	{
 		return NULL;
 	}
@@ -511,10 +554,7 @@ aes_key *aes_key_new(aes_type type, byte_t *key, size_t size)
 		return NULL;
 	}
 
-	expanded_key->type = type;
-	rijndael_key_expansion(expanded_key, key);
-
-	return expanded_key;
+	return aes_key_init_checked(expanded_key, type, key);
 }
 
 void aes_key_delete(aes_key *key)

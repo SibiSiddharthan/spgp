@@ -32,7 +32,8 @@ typedef struct _aes_key
 	aes_round_key round_key[AES_MAX_ROUNDS + 1];
 } aes_key;
 
-aes_key *aes_key_new(aes_type type, byte_t *key, size_t size);
+aes_key *aes_key_init(void *ptr, size_t size, aes_type type, byte_t *key, size_t key_size);
+aes_key *aes_key_new(aes_type type, byte_t *key, size_t key_size);
 void aes_key_delete(aes_key *key);
 
 void aes_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE]);
