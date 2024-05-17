@@ -34,12 +34,12 @@ typedef enum _hash_algorithm
 typedef struct _hash_ctx
 {
 	hash_algorithm algorithm;
+	size_t ctx_size;
 	size_t hash_size;
 	size_t max_input_size;
 	byte_t hash[MAX_HASH_SIZE];
 
 	void *_ctx;
-	void (*_free)(void *ctx);
 	void (*_reset)(void *ctx);
 	void (*_update)(void *ctx, void *data, size_t size);
 	void (*_final)(void *ctx, byte_t *hash);
@@ -47,6 +47,7 @@ typedef struct _hash_ctx
 
 } hash_ctx;
 
+hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm);
 hash_ctx *hash_new(hash_algorithm algorithm);
 void hash_delete(hash_ctx *hctx);
 

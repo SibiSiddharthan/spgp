@@ -14,26 +14,61 @@
 #include <sha.h>
 #include <blake2.h>
 
-hash_ctx *hash_new(hash_algorithm algorithm)
+static inline size_t get_ctx_size(hash_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case HASH_MD5:
+		return sizeof(md5_ctx);
+	case HASH_RIPEMD160:
+		return sizeof(ripemd160_ctx);
+	case HASH_BLAKE2B:
+		return sizeof(blake2b_ctx);
+	case HASH_BLAKE2S:
+		return sizeof(blake2s_ctx);
+	case HASH_SHA1:
+		return sizeof(sha1_ctx);
+	case HASH_SHA224:
+	case HASH_SHA256:
+		return sizeof(sha256_ctx);
+	case HASH_SHA384:
+	case HASH_SHA512:
+	case HASH_SHA512_224:
+	case HASH_SHA512_256:
+		return sizeof(sha512_ctx);
+	case HASH_SHA3_224:
+	case HASH_SHA3_256:
+	case HASH_SHA3_384:
+	case HASH_SHA3_512:
+		return sizeof(sha3_ctx);
+	default:
+		return 0;
+	}
+}
+
+static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t ctx_size)
 {
 	hash_ctx *hctx = NULL;
-
 	size_t hash_size = 0;
 	size_t max_input_size = 0xFFFFFFFFFFFFFFFF;
+
 	void *_ctx = NULL;
-	void (*_free)(void *ctx) = NULL;
 	void (*_reset)(void *ctx) = NULL;
 	void (*_update)(void *ctx, void *data, size_t size) = NULL;
 	void (*_final)(void *ctx, byte_t *hash) = NULL;
 	void (*_final_size)(void *ctx, byte_t *hash, size_t size) = NULL;
+
+	hctx = (hash_ctx *)ptr;
+	memset(hctx, 0, sizeof(hash_ctx) + ctx_size);
+
+	_ctx = (void *)((byte_t *)hctx + sizeof(hash_ctx));
 
 	switch (algorithm)
 	{
 	case HASH_MD5:
 	{
 		hash_size = 16;
-		_ctx = md5_new();
-		_free = (void (*)(void *))md5_delete;
+		_ctx = md5_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
 		_final = (void (*)(void *, byte_t *))md5_final;
@@ -42,8 +77,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_RIPEMD160:
 	{
 		hash_size = 20;
-		_ctx = ripemd160_new();
-		_free = (void (*)(void *))ripemd160_delete;
+		_ctx = ripemd160_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))ripemd160_reset;
 		_update = (void (*)(void *, void *, size_t))ripemd160_update;
 		_final = (void (*)(void *, byte_t *))ripemd160_final;
@@ -53,8 +87,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	{
 		blake2b_param b2bp = BLAKE2_PARAM_INIT(64, 0);
 		hash_size = 64;
-		_ctx = blake2b_new(&b2bp, NULL);
-		_free = (void (*)(void *))blake2b_delete;
+		_ctx = blake2b_init(_ctx, ctx_size, &b2bp, NULL);
 		_update = (void (*)(void *, void *, size_t))blake2b_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))blake2b_final;
 	}
@@ -63,8 +96,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	{
 		blake2s_param b2sp = BLAKE2_PARAM_INIT(32, 0);
 		hash_size = 32;
-		_ctx = blake2s_new(&b2sp, NULL);
-		_free = (void (*)(void *))blake2s_delete;
+		_ctx = blake2s_init(_ctx, ctx_size, &b2sp, NULL);
 		_update = (void (*)(void *, void *, size_t))blake2s_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))blake2s_final;
 	}
@@ -72,8 +104,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA1:
 	{
 		hash_size = 20;
-		_ctx = sha1_new();
-		_free = (void (*)(void *))sha1_delete;
+		_ctx = sha1_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha1_reset;
 		_update = (void (*)(void *, void *, size_t))sha1_update;
 		_final = (void (*)(void *, byte_t *))sha1_final;
@@ -82,8 +113,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA224:
 	{
 		hash_size = 28;
-		_ctx = sha224_new();
-		_free = (void (*)(void *))sha224_delete;
+		_ctx = sha224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha224_reset;
 		_update = (void (*)(void *, void *, size_t))sha224_update;
 		_final = (void (*)(void *, byte_t *))sha224_final;
@@ -92,8 +122,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA256:
 	{
 		hash_size = 32;
-		_ctx = sha256_new();
-		_free = (void (*)(void *))sha256_delete;
+		_ctx = sha256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha256_reset;
 		_update = (void (*)(void *, void *, size_t))sha256_update;
 		_final = (void (*)(void *, byte_t *))sha256_final;
@@ -102,8 +131,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA384:
 	{
 		hash_size = 48;
-		_ctx = sha384_new();
-		_free = (void (*)(void *))sha384_delete;
+		_ctx = sha384_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha384_reset;
 		_update = (void (*)(void *, void *, size_t))sha384_update;
 		_final = (void (*)(void *, byte_t *))sha384_final;
@@ -112,8 +140,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA512:
 	{
 		hash_size = 64;
-		_ctx = sha512_new();
-		_free = (void (*)(void *))sha512_delete;
+		_ctx = sha512_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_update;
 		_final = (void (*)(void *, byte_t *))sha512_final;
@@ -122,8 +149,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA512_224:
 	{
 		hash_size = 28;
-		_ctx = sha512_224_new();
-		_free = (void (*)(void *))sha512_224_delete;
+		_ctx = sha512_224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_224_update;
 		_final = (void (*)(void *, byte_t *))sha512_224_final;
@@ -132,8 +158,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA512_256:
 	{
 		hash_size = 32;
-		_ctx = sha512_256_new();
-		_free = (void (*)(void *))sha512_256_delete;
+		_ctx = sha512_256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_256_update;
 		_final = (void (*)(void *, byte_t *))sha512_256_final;
@@ -142,8 +167,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_224:
 	{
 		hash_size = 28;
-		_ctx = sha3_new(SHA3_224);
-		_free = (void (*)(void *))sha3_delete;
+		_ctx = sha3_init(_ctx, ctx_size, SHA3_224);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
@@ -152,8 +176,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_256:
 	{
 		hash_size = 32;
-		_ctx = sha3_new(SHA3_256);
-		_free = (void (*)(void *))sha3_delete;
+		_ctx = sha3_init(_ctx, ctx_size, SHA3_256);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
@@ -162,8 +185,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_384:
 	{
 		hash_size = 48;
-		_ctx = sha3_new(SHA3_384);
-		_free = (void (*)(void *))sha3_delete;
+		_ctx = sha3_init(_ctx, ctx_size, SHA3_384);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
@@ -172,37 +194,20 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	case HASH_SHA3_512:
 	{
 		hash_size = 64;
-		_ctx = sha3_new(SHA3_512);
-		_free = (void (*)(void *))sha3_delete;
+		_ctx = sha3_init(_ctx, ctx_size, SHA3_512);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
 	}
 	break;
-	default:
-		return NULL;
 	}
-
-	if (_ctx == NULL)
-	{
-		return NULL;
-	}
-
-	hctx = (hash_ctx *)malloc(sizeof(hash_ctx));
-
-	if (hctx == NULL)
-	{
-		return NULL;
-	}
-
-	memset(hctx, 0, sizeof(hash_ctx));
 
 	hctx->algorithm = algorithm;
+	hctx->ctx_size = ctx_size;
 	hctx->hash_size = hash_size;
 	hctx->max_input_size = max_input_size;
 
 	hctx->_ctx = _ctx;
-	hctx->_free = _free;
 	hctx->_reset = _reset;
 	hctx->_update = _update;
 	hctx->_final = _final;
@@ -211,9 +216,49 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 	return hctx;
 }
 
+hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
+{
+	size_t ctx_size = get_ctx_size(algorithm);
+	size_t required_size = sizeof(hash_ctx) + ctx_size;
+
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
+
+	if (size < required_size)
+	{
+		return NULL;
+	}
+
+	return hash_init_checked(ptr, algorithm, ctx_size);
+}
+
+hash_ctx *hash_new(hash_algorithm algorithm)
+{
+	hash_ctx *hctx = NULL;
+	size_t ctx_size = get_ctx_size(algorithm);
+	size_t required_size = sizeof(hash_ctx) + ctx_size;
+
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
+
+	hctx = (hash_ctx *)malloc(required_size);
+
+	if (hctx == NULL)
+	{
+		return NULL;
+	}
+
+	return hash_init_checked(hctx, algorithm, ctx_size);
+}
+
 void hash_delete(hash_ctx *hctx)
 {
-	hctx->_free(hctx->_ctx);
+	// Zero the memory region belonging to ctx.
+	memset(hctx->_ctx, 0, hctx->ctx_size);
 	free(hctx);
 }
 
