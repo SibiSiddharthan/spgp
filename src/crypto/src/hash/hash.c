@@ -67,7 +67,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	{
 	case HASH_MD5:
 	{
-		hash_size = 16;
+		hash_size = MD5_HASH_SIZE;
 		_ctx = md5_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
@@ -76,7 +76,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_RIPEMD160:
 	{
-		hash_size = 20;
+		hash_size = RIPEMD160_HASH_SIZE;
 		_ctx = ripemd160_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))ripemd160_reset;
 		_update = (void (*)(void *, void *, size_t))ripemd160_update;
@@ -86,7 +86,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	case HASH_BLAKE2B:
 	{
 		blake2b_param b2bp = BLAKE2_PARAM_INIT(64, 0);
-		hash_size = 64;
+		hash_size = BLAKE2B_MAX_HASH_SIZE;
 		_ctx = blake2b_init(_ctx, ctx_size, &b2bp, NULL);
 		_update = (void (*)(void *, void *, size_t))blake2b_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))blake2b_final;
@@ -95,7 +95,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	case HASH_BLAKE2S:
 	{
 		blake2s_param b2sp = BLAKE2_PARAM_INIT(32, 0);
-		hash_size = 32;
+		hash_size = BLAKE2S_MAX_HASH_SIZE;
 		_ctx = blake2s_init(_ctx, ctx_size, &b2sp, NULL);
 		_update = (void (*)(void *, void *, size_t))blake2s_update;
 		_final_size = (void (*)(void *, byte_t *, size_t))blake2s_final;
@@ -103,7 +103,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA1:
 	{
-		hash_size = 20;
+		hash_size = SHA1_HASH_SIZE;
 		_ctx = sha1_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha1_reset;
 		_update = (void (*)(void *, void *, size_t))sha1_update;
@@ -112,7 +112,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA224:
 	{
-		hash_size = 28;
+		hash_size = SHA224_HASH_SIZE;
 		_ctx = sha224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha224_reset;
 		_update = (void (*)(void *, void *, size_t))sha224_update;
@@ -121,7 +121,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA256:
 	{
-		hash_size = 32;
+		hash_size = SHA256_HASH_SIZE;
 		_ctx = sha256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha256_reset;
 		_update = (void (*)(void *, void *, size_t))sha256_update;
@@ -130,7 +130,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA384:
 	{
-		hash_size = 48;
+		hash_size = SHA384_HASH_SIZE;
 		_ctx = sha384_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha384_reset;
 		_update = (void (*)(void *, void *, size_t))sha384_update;
@@ -139,7 +139,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA512:
 	{
-		hash_size = 64;
+		hash_size = SHA512_HASH_SIZE;
 		_ctx = sha512_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_update;
@@ -148,7 +148,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA512_224:
 	{
-		hash_size = 28;
+		hash_size = SHA512_224_HASH_SIZE;
 		_ctx = sha512_224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_224_update;
@@ -157,7 +157,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA512_256:
 	{
-		hash_size = 32;
+		hash_size = SHA512_256_HASH_SIZE;
 		_ctx = sha512_256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_256_update;
@@ -166,7 +166,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA3_224:
 	{
-		hash_size = 28;
+		hash_size = SHA3_224_HASH_SIZE;
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_224);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
@@ -175,7 +175,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA3_256:
 	{
-		hash_size = 32;
+		hash_size = SHA3_256_HASH_SIZE;
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_256);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
@@ -184,7 +184,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA3_384:
 	{
-		hash_size = 48;
+		hash_size = SHA3_384_HASH_SIZE;
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_384);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
@@ -193,7 +193,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	break;
 	case HASH_SHA3_512:
 	{
-		hash_size = 64;
+		hash_size = SHA3_512_HASH_SIZE;
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_512);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
