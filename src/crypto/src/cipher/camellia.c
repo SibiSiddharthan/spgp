@@ -560,7 +560,50 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	}
 }
 
-camellia_key *camellia_key_new(camellia_type type, byte_t *key, size_t size)
+static inline camellia_key *camellia_key_init_checked(void *ptr, camellia_type type, byte_t *key)
+{
+	camellia_key *expanded_key = (camellia_key *)ptr;
+
+	memset(expanded_key, 0, sizeof(camellia_key));
+	expanded_key->type = type;
+	camellia_key_expansion(expanded_key, key);
+
+	return expanded_key;
+}
+
+camellia_key *camellia_key_init(void *ptr, size_t size, camellia_type type, byte_t *key, size_t key_size)
+{
+	size_t required_key_size = 0;
+
+	if (size < sizeof(camellia_key))
+	{
+		return NULL;
+	}
+
+	switch (type)
+	{
+	case CAMELLIA128:
+		required_key_size = CAMELLIA128_KEY_SIZE;
+		break;
+	case CAMELLIA192:
+		required_key_size = CAMELLIA192_KEY_SIZE;
+		break;
+	case CAMELLIA256:
+		required_key_size = CAMELLIA256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (key_size != required_key_size)
+	{
+		return NULL;
+	}
+
+	return camellia_key_init_checked(ptr, type, key);
+}
+
+camellia_key *camellia_key_new(camellia_type type, byte_t *key, size_t key_size)
 {
 	camellia_key *expanded_key = NULL;
 	size_t required_key_size = 0;
@@ -580,7 +623,7 @@ camellia_key *camellia_key_new(camellia_type type, byte_t *key, size_t size)
 		return NULL;
 	}
 
-	if(size != required_key_size)
+	if (key_size != required_key_size)
 	{
 		return NULL;
 	}
@@ -592,10 +635,7 @@ camellia_key *camellia_key_new(camellia_type type, byte_t *key, size_t size)
 		return NULL;
 	}
 
-	expanded_key->type = type;
-	camellia_key_expansion(expanded_key, key);
-
-	return expanded_key;
+	return camellia_key_init_checked(expanded_key, type, key);
 }
 
 void camellia_key_delete(camellia_key *key)
