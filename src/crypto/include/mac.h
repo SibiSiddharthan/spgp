@@ -28,6 +28,7 @@ typedef enum _hmac_algorithm
 typedef struct _hmac_ctx
 {
 	hmac_algorithm algorithm;
+	size_t ctx_size;
 	size_t hash_size;
 	size_t block_size;
 	size_t key0_size;
@@ -38,13 +39,13 @@ typedef struct _hmac_ctx
 	byte_t opad[MAX_BLOCK_SIZE];
 
 	void *_ctx;
-	void (*_free)(void *ctx);
 	void (*_reset)(void *ctx);
 	void (*_update)(void *ctx, void *data, size_t size);
 	void (*_final)(void *ctx, byte_t *hash);
 
 } hmac_ctx;
 
+hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, byte_t *key, size_t key_size);
 hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size);
 void hmac_delete(hmac_ctx *hctx);
 

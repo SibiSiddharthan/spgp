@@ -10,9 +10,29 @@
 
 #include <minmax.h>
 #include <mac.h>
-#include <hash.h>
 #include <sha.h>
 #include <md5.h>
+
+static inline size_t get_ctx_size(hmac_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case HMAC_MD5:
+		return sizeof(md5_ctx);
+	case HMAC_SHA1:
+		return sizeof(sha1_ctx);
+	case HMAC_SHA224:
+	case HMAC_SHA256:
+		return sizeof(sha256_ctx);
+	case HMAC_SHA384:
+	case HMAC_SHA512:
+	case HMAC_SHA512_224:
+	case HMAC_SHA512_256:
+		return sizeof(sha512_ctx);
+	default:
+		return 0;
+	}
+}
 
 static void hmac_determine_key0(hmac_ctx *hctx, byte_t *key, size_t key_size)
 {
@@ -50,7 +70,7 @@ static void hmac_pad(hmac_ctx *hctx)
 	}
 }
 
-hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
+static hmac_ctx *hmac_init_checked(void *ptr, hmac_algorithm algorithm, size_t ctx_size, byte_t *key, size_t key_size)
 {
 	hmac_ctx *hctx = NULL;
 
@@ -58,10 +78,14 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	size_t block_size = 0;
 
 	void *_ctx = NULL;
-	void (*_free)(void *ctx) = NULL;
 	void (*_reset)(void *ctx) = NULL;
 	void (*_update)(void *ctx, void *data, size_t size) = NULL;
 	void (*_final)(void *ctx, byte_t *hash) = NULL;
+
+	hctx = (hmac_ctx *)ptr;
+	memset(hctx, 0, sizeof(hmac_ctx) + ctx_size);
+
+	_ctx = (void *)((byte_t *)hctx + sizeof(hmac_ctx));
 
 	switch (algorithm)
 	{
@@ -69,8 +93,7 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = MD5_HASH_SIZE;
 		block_size = MD5_BLOCK_SIZE;
-		_ctx = md5_new();
-		_free = (void (*)(void *))md5_delete;
+		_ctx = md5_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
 		_final = (void (*)(void *, byte_t *))md5_final;
@@ -80,8 +103,7 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA1_HASH_SIZE;
 		block_size = SHA1_BLOCK_SIZE;
-		_ctx = sha1_new();
-		_free = (void (*)(void *))sha1_delete;
+		_ctx = sha1_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha1_reset;
 		_update = (void (*)(void *, void *, size_t))sha1_update;
 		_final = (void (*)(void *, byte_t *))sha1_final;
@@ -91,8 +113,7 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA224_HASH_SIZE;
 		block_size = SHA256_BLOCK_SIZE;
-		_ctx = sha224_new();
-		_free = (void (*)(void *))sha224_delete;
+		_ctx = sha224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha224_reset;
 		_update = (void (*)(void *, void *, size_t))sha224_update;
 		_final = (void (*)(void *, byte_t *))sha224_final;
@@ -102,8 +123,7 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA256_HASH_SIZE;
 		block_size = SHA256_BLOCK_SIZE;
-		_ctx = sha256_new();
-		_free = (void (*)(void *))sha256_delete;
+		_ctx = sha256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha256_reset;
 		_update = (void (*)(void *, void *, size_t))sha256_update;
 		_final = (void (*)(void *, byte_t *))sha256_final;
@@ -113,8 +133,7 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA384_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha384_new();
-		_free = (void (*)(void *))sha384_delete;
+		_ctx = sha384_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha384_reset;
 		_update = (void (*)(void *, void *, size_t))sha384_update;
 		_final = (void (*)(void *, byte_t *))sha384_final;
@@ -124,8 +143,7 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA512_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_new();
-		_free = (void (*)(void *))sha512_delete;
+		_ctx = sha512_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_update;
 		_final = (void (*)(void *, byte_t *))sha512_final;
@@ -135,8 +153,7 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA512_224_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_224_new();
-		_free = (void (*)(void *))sha512_224_delete;
+		_ctx = sha512_224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_224_update;
 		_final = (void (*)(void *, byte_t *))sha512_224_final;
@@ -146,37 +163,20 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	{
 		hash_size = SHA512_256_HASH_SIZE;
 		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_256_new();
-		_free = (void (*)(void *))sha512_256_delete;
+		_ctx = sha512_256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_256_update;
 		_final = (void (*)(void *, byte_t *))sha512_256_final;
 	}
 	break;
-	default:
-		return NULL;
 	}
-
-	if (_ctx == NULL)
-	{
-		return NULL;
-	}
-
-	hctx = (hmac_ctx *)malloc(sizeof(hmac_ctx));
-
-	if (hctx == NULL)
-	{
-		return NULL;
-	}
-
-	memset(hctx, 0, sizeof(hmac_ctx));
 
 	hctx->algorithm = algorithm;
+	hctx->ctx_size = ctx_size;
 	hctx->hash_size = hash_size;
 	hctx->block_size = block_size;
 
 	hctx->_ctx = _ctx;
-	hctx->_free = _free;
 	hctx->_reset = _reset;
 	hctx->_update = _update;
 	hctx->_final = _final;
@@ -189,9 +189,49 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 	return hctx;
 }
 
+hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, byte_t *key, size_t key_size)
+{
+	size_t ctx_size = get_ctx_size(algorithm);
+	size_t required_size = sizeof(hmac_ctx) + ctx_size;
+
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
+
+	if (size < required_size)
+	{
+		return NULL;
+	}
+
+	return hmac_init_checked(ptr, algorithm, ctx_size, key, key_size);
+}
+
+hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
+{
+	hmac_ctx *hctx = NULL;
+	size_t ctx_size = get_ctx_size(algorithm);
+	size_t required_size = sizeof(hmac_ctx) + ctx_size;
+
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
+
+	hctx = (hmac_ctx *)malloc(required_size);
+
+	if (hctx == NULL)
+	{
+		return NULL;
+	}
+
+	return hmac_init_checked(hctx, algorithm, ctx_size, key, key_size);
+}
+
 void hmac_delete(hmac_ctx *hctx)
 {
-	hctx->_free(hctx->_ctx);
+	// Zero the memory region belonging to ctx.
+	memset(hctx->_ctx, 0, hctx->ctx_size);
 	free(hctx);
 }
 
