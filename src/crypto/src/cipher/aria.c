@@ -697,38 +697,11 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 	memcpy(expanded_key->decryption_round_key[nr], expanded_key->encryption_round_key[0], sizeof(aria_round_key));
 }
 
-aria_key *aria_key_new(aria_type type, byte_t *key, size_t size)
+static inline aria_key *aria_key_init_checked(void *ptr, aria_type type, byte_t *key)
 {
-	aria_key *expanded_key = NULL;
-	size_t required_key_size = 0;
+	aria_key *expanded_key = (aria_key *)ptr;
 
-	switch (type)
-	{
-	case ARIA128:
-		required_key_size = ARIA128_KEY_SIZE;
-		break;
-	case ARIA192:
-		required_key_size = ARIA192_KEY_SIZE;
-		break;
-	case ARIA256:
-		required_key_size = ARIA256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (size != required_key_size)
-	{
-		return NULL;
-	}
-
-	expanded_key = (aria_key *)malloc(sizeof(aria_key));
-
-	if (expanded_key == NULL)
-	{
-		return NULL;
-	}
-
+	memset(expanded_key, 0, sizeof(aria_key));
 	expanded_key->type = type;
 
 	switch (type)
@@ -753,6 +726,73 @@ aria_key *aria_key_new(aria_type type, byte_t *key, size_t size)
 	aria_key_expansion(expanded_key, key);
 
 	return expanded_key;
+}
+
+aria_key *aria_key_init(void *ptr, size_t size, aria_type type, byte_t *key, size_t key_size)
+{
+	size_t required_key_size = 0;
+
+	if (size < sizeof(aria_key))
+	{
+		return NULL;
+	}
+
+	switch (type)
+	{
+	case ARIA128:
+		required_key_size = ARIA128_KEY_SIZE;
+		break;
+	case ARIA192:
+		required_key_size = ARIA192_KEY_SIZE;
+		break;
+	case ARIA256:
+		required_key_size = ARIA256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (key_size != required_key_size)
+	{
+		return NULL;
+	}
+
+	return aria_key_init_checked(ptr, type, key);
+}
+
+aria_key *aria_key_new(aria_type type, byte_t *key, size_t key_size)
+{
+	aria_key *expanded_key = NULL;
+	size_t required_key_size = 0;
+
+	switch (type)
+	{
+	case ARIA128:
+		required_key_size = ARIA128_KEY_SIZE;
+		break;
+	case ARIA192:
+		required_key_size = ARIA192_KEY_SIZE;
+		break;
+	case ARIA256:
+		required_key_size = ARIA256_KEY_SIZE;
+		break;
+	default:
+		return NULL;
+	}
+
+	if (key_size != required_key_size)
+	{
+		return NULL;
+	}
+
+	expanded_key = (aria_key *)malloc(sizeof(aria_key));
+
+	if (expanded_key == NULL)
+	{
+		return NULL;
+	}
+
+	return aria_key_init_checked(expanded_key, type, key);
 }
 
 void aria_key_delete(aria_key *key)
