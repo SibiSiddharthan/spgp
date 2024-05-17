@@ -432,6 +432,42 @@ static void des_key_expansion(des_round_key rk[DES_ROUNDS], byte_t k[DES_KEY_SIZ
 	}
 }
 
+static inline tdes_key *tdes_key_init_checked(void *ptr, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
+{
+	tdes_key *key = (tdes_key *)ptr;
+
+	memset(key, 0, sizeof(tdes_key));
+
+	des_key_expansion(key->rk1, k1);
+	des_key_expansion(key->rk2, k2);
+	des_key_expansion(key->rk3, k3);
+
+	return key;
+}
+
+tdes_key *tdes_key_init(void *ptr, size_t size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE], bool check)
+{
+	if (size < sizeof(tdes_key))
+	{
+		return NULL;
+	}
+
+	if (k1 == NULL || k2 == NULL || k3 == NULL)
+	{
+		return NULL;
+	}
+
+	if (check)
+	{
+		if (!check_des_key(k1) || !check_des_key(k2) || !check_des_key(k3))
+		{
+			return NULL;
+		}
+	}
+
+	return tdes_key_init_checked(ptr, k1, k2, k3);
+}
+
 tdes_key *tdes_key_new(byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE], bool check)
 {
 	tdes_key *key = NULL;
@@ -456,13 +492,7 @@ tdes_key *tdes_key_new(byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t 
 		return NULL;
 	}
 
-	memset(key, 0, sizeof(tdes_key));
-
-	des_key_expansion(key->rk1, k1);
-	des_key_expansion(key->rk2, k2);
-	des_key_expansion(key->rk3, k3);
-
-	return key;
+	return tdes_key_init_checked(key, k1, k2, k3);
 }
 
 void tdes_key_delete(tdes_key *key)
