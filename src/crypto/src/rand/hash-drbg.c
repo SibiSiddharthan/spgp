@@ -58,7 +58,12 @@ static int32_t hash_drbg_init_state(hash_drbg *hdrbg, byte_t *personalization, s
 	return 0;
 }
 
-hash_drbg *hash_drbg_init(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+{
+
+}
+
+hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
 {
 	hash_drbg *hdrbg = NULL;
 	hash_ctx *hctx = NULL;
@@ -138,7 +143,7 @@ hash_drbg *hash_drbg_init(hash_algorithm algorithm, uint32_t reseed_interval, by
 	return hdrbg;
 }
 
-void hash_drbg_free(hash_drbg *hdrbg)
+void hash_drbg_delete(hash_drbg *hdrbg)
 {
 	hash_delete(hdrbg->hctx);
 	memset(hdrbg, 0, sizeof(hash_drbg));

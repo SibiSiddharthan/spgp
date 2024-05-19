@@ -60,8 +60,10 @@ void drbg_free(drbg *drbg);
 void drbg_reseed(drbg *drbg);
 void drbg_generate(drbg *drbg, void *buffer, size_t size);
 
-hash_drbg *hash_drbg_init(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
-void hash_drbg_free(hash_drbg *hdrbg);
+hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
+						  size_t personalization_size);
+hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
+void hash_drbg_delete(hash_drbg *hdrbg);
 int32_t hash_drbg_reseed(hash_drbg *hdrbg, byte_t *additional_input, size_t input_size);
 void hash_drbg_generate(hash_drbg *hdrbg, void *buffer, size_t size);
 
