@@ -47,6 +47,8 @@ typedef struct _hash_ctx
 
 } hash_ctx;
 
+size_t hash_ctx_size(hash_algorithm algorithm);
+
 hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm);
 hash_ctx *hash_new(hash_algorithm algorithm);
 void hash_delete(hash_ctx *hctx);

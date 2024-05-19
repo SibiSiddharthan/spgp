@@ -45,6 +45,8 @@ typedef struct _hmac_ctx
 
 } hmac_ctx;
 
+size_t hmac_ctx_size(hmac_algorithm algorithm);
+
 hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, byte_t *key, size_t key_size);
 hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size);
 void hmac_delete(hmac_ctx *hctx);

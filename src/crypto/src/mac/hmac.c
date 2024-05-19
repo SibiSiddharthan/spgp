@@ -70,6 +70,11 @@ static void hmac_pad(hmac_ctx *hctx)
 	}
 }
 
+size_t hmac_ctx_size(hmac_algorithm algorithm)
+{
+	return sizeof(hmac_ctx) + get_ctx_size(algorithm);
+}
+
 static hmac_ctx *hmac_init_checked(void *ptr, hmac_algorithm algorithm, size_t ctx_size, byte_t *key, size_t key_size)
 {
 	hmac_ctx *hctx = NULL;

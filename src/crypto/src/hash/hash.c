@@ -46,6 +46,11 @@ static inline size_t get_ctx_size(hash_algorithm algorithm)
 	}
 }
 
+size_t hash_ctx_size(hash_algorithm algorithm)
+{
+	return sizeof(hash_ctx) + get_ctx_size(algorithm);
+}
+
 static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t ctx_size)
 {
 	hash_ctx *hctx = NULL;
