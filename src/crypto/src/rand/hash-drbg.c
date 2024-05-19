@@ -9,6 +9,11 @@
 #include <string.h>
 
 #include <drbg.h>
+#include <round.h>
+#include <minmax.h>
+#include <byteswap.h>
+#include <hash.h>
+#include <sha.h>
 
 #define MAX_ENTROPY_SIZE 128
 #define MAX_NONCE_SIZE   128
@@ -16,28 +21,122 @@
 int32_t get_entropy(byte_t *buffer, size_t size);
 int32_t get_nonce(byte_t *buffer, size_t size);
 
-static void hash_df(byte_t *seed_material, size_t seed_material_size, byte_t *seed, size_t seed_size);
+static inline size_t get_approved_hash_ctx_size(hash_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case HASH_SHA1:
+		return sizeof(sha1_ctx);
+	case HASH_SHA224:
+	case HASH_SHA256:
+		return sizeof(sha256_ctx);
+	case HASH_SHA384:
+	case HASH_SHA512:
+	case HASH_SHA512_224:
+	case HASH_SHA512_256:
+		return sizeof(sha512_ctx);
+	default:
+		return 0;
+	}
+}
+
+static void add_bytes_be(void *a, size_t sa, void *c, size_t sc);
+static void increment_be(void *a, size_t s);
+
+static void hash_df(hash_ctx *hctx, byte_t *seed_material, size_t seed_material_size, byte_t *output, size_t output_size)
+{
+	size_t hash_size = hctx->hash_size;
+	uint32_t output_bits = BSWAP_32((uint32_t)(output_size << 3));
+	size_t output_count = 0;
+	byte_t counter = 1;
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	while ((output_count + hash_size) <= output_size)
+	{
+		hash_update(hctx, &counter, 1);
+		hash_update(hctx, &output_bits, 4);
+		hash_update(hctx, seed_material, seed_material_size);
+		hash_final(hctx, output + output_count, hash_size);
+		hash_reset(hctx);
+
+		output_count += hash_size;
+		counter++;
+	}
+
+	if ((output_size - output_count) != 0)
+	{
+		hash_update(hctx, &counter, 1);
+		hash_update(hctx, &output_bits, 4);
+		hash_update(hctx, seed_material, seed_material_size);
+		hash_final(hctx, hash, hash_size);
+		hash_reset(hctx);
+
+		memcpy(output + output_count, hash, output_size - output_count);
+	}
+}
+
+static void hash_gen(hash_drbg *hdrbg, void *output, size_t output_size)
+{
+	byte_t *op = (byte_t *)output;
+	size_t count = 0;
+
+	hash_ctx *hctx = hdrbg->hctx;
+	size_t hash_size = hctx->hash_size;
+
+	byte_t data[MAX_SEED_SIZE] = {0};
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	memcpy(data, hdrbg->seed, hdrbg->seed_size);
+
+	while ((count + hash_size) <= output_size)
+	{
+		hash_update(hctx, data, hdrbg->seed_size);
+		hash_final(hctx, op + count, hash_size);
+		hash_reset(hctx);
+
+		increment_be(data, hdrbg->seed_size);
+
+		count += hash_size;
+	}
+
+	if ((output_size - count) != 0)
+	{
+		hash_update(hctx, data, hdrbg->seed_size);
+		hash_final(hctx, hash, hash_size);
+		hash_reset(hctx);
+
+		memcpy(op + count, hash, output_size - count);
+	}
+}
 
 static int32_t hash_drbg_init_state(hash_drbg *hdrbg, byte_t *personalization, size_t personalization_size)
 {
 	int32_t status = -1;
-	size_t security = hdrbg->security_strength / 8;
-	size_t seed_material_size = (2 * security) + personalization_size;
+	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
+	size_t seed_material_size = MAX((2 * security), (1 + hdrbg->seed_size)) + personalization_size;
 
-	byte_t seed_material[MAX_ENTROPY_SIZE + MAX_NONCE_SIZE + MAX_PERSONALIZATION_SIZE] = {0};
+	byte_t *seed_material = NULL;
+
+	seed_material = (byte_t *)malloc(seed_material_size);
+
+	if (seed_material == NULL)
+	{
+		return status;
+	}
 
 	status = get_entropy(seed_material, security);
 
 	if (status != 0)
 	{
-		return -1;
+		goto end;
 	}
 
 	status = get_nonce(seed_material + security, security);
 
 	if (status != 0)
 	{
-		return -1;
+		goto end;
 	}
 
 	if (personalization != NULL)
@@ -45,108 +144,146 @@ static int32_t hash_drbg_init_state(hash_drbg *hdrbg, byte_t *personalization, s
 		memcpy(seed_material + (2 * security), personalization, personalization_size);
 	}
 
-	hash_df(seed_material, seed_material_size, hdrbg->seed, hdrbg->seed_size);
+	hash_df(hdrbg->hctx, seed_material, seed_material_size, hdrbg->seed, hdrbg->seed_size);
 
 	// Reuse the same buffer
 	seed_material[0] = 0x00;
 	memcpy(seed_material + 1, hdrbg->seed, hdrbg->seed_size);
 
-	hash_df(seed_material, hdrbg->seed_size + 1, hdrbg->constant, hdrbg->seed_size);
+	hash_df(hdrbg->hctx, seed_material, hdrbg->seed_size + 1, hdrbg->constant, hdrbg->seed_size);
 
 	hdrbg->reseed_counter = 1;
 
-	return 0;
+	status = 0;
+
+end:
+	free(seed_material);
+	return status;
 }
 
-hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, hash_algorithm algorithm, uint32_t reseed_interval,
+										 byte_t *personalization, size_t personalization_size)
 {
-
-}
-
-hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
-{
-	hash_drbg *hdrbg = NULL;
-	hash_ctx *hctx = NULL;
+	hash_drbg *hdrbg = (hash_drbg *)ptr;
 
 	uint16_t seed_size;
 	uint16_t security_strength;
 
-	if (personalization_size > MAX_PERSONALIZATION_SIZE)
-	{
-		return NULL;
-	}
-
 	switch (algorithm)
 	{
-	case SHA1:
+	case HASH_SHA1:
 		seed_size = 55;
 		security_strength = 160;
 		break;
 
-	case SHA224:
-	case SHA512_224:
+	case HASH_SHA224:
+	case HASH_SHA512_224:
 		seed_size = 55;
 		security_strength = 224;
 		break;
 
-	case SHA256:
-	case SHA512_256:
+	case HASH_SHA256:
+	case HASH_SHA512_256:
 		seed_size = 55;
 		security_strength = 256;
 		break;
 
-	case SHA384:
+	case HASH_SHA384:
 		seed_size = 111;
 		security_strength = 384;
 		break;
 
-	case SHA512:
+	case HASH_SHA512:
 		seed_size = 111;
 		security_strength = 512;
 		break;
-
-	default:
-		return NULL;
-	}
-
-	hdrbg = (hash_drbg *)malloc(sizeof(hash_drbg));
-
-	if (hdrbg == NULL)
-	{
-		return NULL;
-	}
-
-	hctx = hash_new(algorithm);
-
-	if (hctx == NULL)
-	{
-		free(hdrbg);
+	default: // Prevent -Wswitch
 		return NULL;
 	}
 
 	memset(hdrbg, 0, sizeof(hash_drbg));
 
-	hdrbg->hctx = hctx;
+	hdrbg->hctx = (hash_ctx *)((byte_t *)hdrbg + sizeof(hash_drbg));
+	hdrbg->drbg_size = sizeof(hash_drbg) + sizeof(hash_ctx) + ctx_size;
 	hdrbg->reseed_interval = reseed_interval;
 	hdrbg->seed_size = seed_size;
 	hdrbg->security_strength = security_strength;
 
+	hash_init(hdrbg->hctx, sizeof(hash_ctx) + ctx_size, algorithm);
+
 	if (hash_drbg_init_state(hdrbg, personalization, personalization_size) != 0)
 	{
-		hash_delete(hdrbg->hctx);
-		memset(hdrbg, 0, sizeof(hash_drbg));
-		free(hdrbg);
-
+		memset(hdrbg, 0, hdrbg->drbg_size);
 		return NULL;
 	}
 
 	return hdrbg;
 }
 
+hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
+						  size_t personalization_size)
+{
+
+	size_t ctx_size = get_approved_hash_ctx_size(algorithm);
+	size_t required_size = sizeof(hash_drbg) + sizeof(hash_ctx) + ctx_size;
+
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
+
+	if (size < required_size)
+	{
+		return NULL;
+	}
+
+	if (personalization_size > MAX_PERSONALIZATION_SIZE)
+	{
+		return NULL;
+	}
+
+	return hash_drbg_init_checked(ptr, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+}
+
+hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+{
+	hash_drbg *hdrbg = NULL;
+	hash_drbg *result = NULL;
+
+	size_t ctx_size = get_approved_hash_ctx_size(algorithm);
+	size_t required_size = sizeof(hash_drbg) + sizeof(hash_ctx) + ctx_size;
+
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
+
+	if (personalization_size > MAX_PERSONALIZATION_SIZE)
+	{
+		return NULL;
+	}
+
+	hdrbg = (hash_drbg *)malloc(required_size);
+
+	if (hdrbg == NULL)
+	{
+		return NULL;
+	}
+
+	result = hash_drbg_init_checked(hdrbg, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+
+	if (result == NULL)
+	{
+		free(hdrbg);
+		return NULL;
+	}
+
+	return result;
+}
+
 void hash_drbg_delete(hash_drbg *hdrbg)
 {
-	hash_delete(hdrbg->hctx);
-	memset(hdrbg, 0, sizeof(hash_drbg));
+	memset(hdrbg, 0, hdrbg->drbg_size);
 	free(hdrbg);
 }
 
@@ -154,10 +291,17 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, byte_t *additional_input, size_t inpu
 {
 	int32_t status = -1;
 	size_t pos = 0;
-	size_t security = hdrbg->security_strength / 8;
+	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
 	size_t seed_material_size = 1 + hdrbg->seed_size + security + input_size;
 
-	byte_t seed_material[1 + MAX_ENTROPY_SIZE + MAX_SEED_SIZE + MAX_ADDITIONAL_INPUT_SIZE] = {0};
+	byte_t *seed_material = NULL;
+
+	seed_material = (byte_t *)malloc(seed_material_size);
+
+	if (seed_material == NULL)
+	{
+		return -1;
+	}
 
 	seed_material[pos++] = 0x01;
 
@@ -169,6 +313,7 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, byte_t *additional_input, size_t inpu
 
 	if (status != 0)
 	{
+		free(seed_material);
 		return -1;
 	}
 
@@ -177,17 +322,69 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, byte_t *additional_input, size_t inpu
 		memcpy(seed_material + pos, additional_input, input_size);
 	}
 
-	hash_df(seed_material, seed_material_size, hdrbg->seed, hdrbg->seed_size);
+	hash_df(hdrbg->hctx, seed_material, seed_material_size, hdrbg->seed, hdrbg->seed_size);
 
 	// Reuse the same buffer
 	seed_material[0] = 0x00;
 	memcpy(seed_material + 1, hdrbg->seed, hdrbg->seed_size);
 
-	hash_df(seed_material, hdrbg->seed_size + 1, hdrbg->constant, hdrbg->seed_size);
+	hash_df(hdrbg->hctx, seed_material, hdrbg->seed_size + 1, hdrbg->constant, hdrbg->seed_size);
 
 	hdrbg->reseed_counter = 1;
 
+	free(seed_material);
 	return 0;
 }
 
-void hash_drbg_generate(hash_drbg *drbg, void *buffer, size_t size);
+int32_t hash_drbg_generate(hash_drbg *hdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size)
+{
+	int32_t status = 0;
+	hash_ctx *hctx = hdrbg->hctx;
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	// Check requested size
+	if (output_size > MAX_DRBG_OUTPUT_SIZE)
+	{
+		return -1;
+	}
+
+	// Reseed
+	if (hdrbg->reseed_counter == hdrbg->reseed_interval)
+	{
+		status = hash_drbg_reseed(hdrbg, NULL, 0);
+
+		if (status == -1)
+		{
+			return -1;
+		}
+	}
+
+	if (additional_input != NULL && input_size > 0)
+	{
+		hash_update(hctx, "\x02", 1);
+		hash_update(hctx, hdrbg->seed, hdrbg->seed_size);
+		hash_update(hctx, additional_input, input_size);
+
+		hash_final(hctx, hash, MAX_HASH_SIZE);
+		hash_reset(hctx);
+
+		add_bytes_be(hdrbg->seed, hdrbg->seed_size, hash, hctx->hash_size);
+	}
+
+	hash_gen(hdrbg, output, output_size);
+
+	hash_update(hctx, "\x03", 1);
+	hash_update(hctx, hdrbg->seed, hdrbg->seed_size);
+
+	hash_final(hctx, hash, MAX_HASH_SIZE);
+	hash_reset(hctx);
+
+	add_bytes_be(hdrbg->seed, hdrbg->seed_size, hash, hctx->hash_size);
+	add_bytes_be(hdrbg->seed, hdrbg->seed_size, hdrbg->constant, hdrbg->seed_size);
+	add_bytes_be(hdrbg->seed, hdrbg->seed_size, &hdrbg->reseed_counter, sizeof(hdrbg->reseed_counter));
+
+	hdrbg->reseed_counter++;
+
+	return 0;
+}

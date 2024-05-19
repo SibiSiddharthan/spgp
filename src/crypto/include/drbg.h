@@ -12,20 +12,22 @@
 #include <hash.h>
 
 #define MAX_SEED_SIZE             128
-#define MAX_PERSONALIZATION_SIZE  1024
-#define MAX_ADDITIONAL_INPUT_SIZE 1024
+#define MAX_PERSONALIZATION_SIZE  (1ull << 32)
+#define MAX_ADDITIONAL_INPUT_SIZE (1ull << 32)
+#define MAX_DRBG_OUTPUT_SIZE      (1ull << 16)
 
 #define DEFAULT_RESEED_INTERVAL (1u << 16)
 
 typedef struct _hash_drbg
 {
 	hash_ctx *hctx;
+	size_t drbg_size;
 	byte_t seed[MAX_SEED_SIZE];
 	byte_t constant[MAX_SEED_SIZE];
 	uint16_t seed_size;
 	uint16_t security_strength;
-	uint32_t reseed_interval;
-	uint32_t reseed_counter;
+	uint64_t reseed_interval;
+	uint64_t reseed_counter;
 } hash_drbg;
 
 typedef struct _hmac_drbg
@@ -65,7 +67,7 @@ hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint
 hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
 void hash_drbg_delete(hash_drbg *hdrbg);
 int32_t hash_drbg_reseed(hash_drbg *hdrbg, byte_t *additional_input, size_t input_size);
-void hash_drbg_generate(hash_drbg *hdrbg, void *buffer, size_t size);
+int32_t hash_drbg_generate(hash_drbg *hdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size);
 
 hmac_drbg *hmac_drbg_init(void);
 void hmac_drbg_free(hmac_drbg *drbg);
