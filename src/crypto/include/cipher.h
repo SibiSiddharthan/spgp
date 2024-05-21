@@ -12,10 +12,17 @@
 
 typedef enum _cipher_mode
 {
+	MODE_NONE,
 	MODE_ECB,
 	MODE_CBC,
 	MODE_CTR
 } cipher_mode;
+
+typedef enum _cipher_type
+{
+	CIPHER_STREAM,
+	CIPHER_BLOCK
+} cipher_type;
 
 typedef enum _cipher_algorithm
 {
@@ -31,6 +38,8 @@ typedef enum _cipher_algorithm
 	CIPHER_CAMELLIA128,
 	CIPHER_CAMELLIA192,
 	CIPHER_CAMELLIA256,
+	// CHACHA
+	CIPHER_CHACHA20,
 	// TDES
 	CIPHER_TDES,
 	// TWOFISH
@@ -43,15 +52,21 @@ typedef struct _cipher_ctx
 {
 	cipher_algorithm algorithm;
 	cipher_mode mode;
+	cipher_type type;
 	uint32_t block_size;
+	size_t ctx_size;
 
 	void *_ctx;
-	void (*_delete)(void *);
 	void (*_encrypt_block)(void *, void *, void *);
 	void (*_decrypt_block)(void *, void *, void *);
+	void (*_encrypt_stream)(void *, void *, void *);
+	void (*_decrypt_stream)(void *, void *, void *);
 } cipher_ctx;
 
-cipher_ctx *cipher_new(cipher_algorithm algorithm, cipher_mode mode, byte_t *key, size_t size);
+size_t cipher_ctx_size(cipher_algorithm algorithm);
+
+cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, cipher_mode mode, byte_t *key, size_t key_size);
+cipher_ctx *cipher_new(cipher_algorithm algorithm, cipher_mode mode, byte_t *key, size_t key_size);
 void cipher_delete(cipher_ctx *cctx);
 void cipher_reset(cipher_ctx *cctx, cipher_mode mode);
 
