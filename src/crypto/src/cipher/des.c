@@ -432,6 +432,35 @@ static void des_key_expansion(des_round_key rk[DES_ROUNDS], byte_t k[DES_KEY_SIZ
 	}
 }
 
+int32_t tdes_decode_key(byte_t *key, size_t key_size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
+{
+	switch (key_size)
+	{
+	case DES_KEY_SIZE:
+		// 64(56) bit key. k1 = k2 = k3.
+		memcpy(k1, key, DES_KEY_SIZE);
+		memcpy(k2, key, DES_KEY_SIZE);
+		memcpy(k3, key, DES_KEY_SIZE);
+		break;
+	case DES_KEY_SIZE * 2:
+		// 128(112) bit key. k1 = k3.
+		memcpy(k1, key, DES_KEY_SIZE);
+		memcpy(k2, key + DES_KEY_SIZE, DES_KEY_SIZE);
+		memcpy(k3, key, DES_KEY_SIZE);
+		break;
+	case DES_KEY_SIZE * 3:
+		// 192(168) bit key.
+		memcpy(k1, key, DES_KEY_SIZE);
+		memcpy(k2, key + DES_KEY_SIZE, DES_KEY_SIZE);
+		memcpy(k3, key + DES_KEY_SIZE + DES_KEY_SIZE, DES_KEY_SIZE);
+		break;
+	default:
+		return -1;
+	}
+
+	return 0;
+}
+
 static inline tdes_key *tdes_key_init_checked(void *ptr, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
 {
 	tdes_key *key = (tdes_key *)ptr;
