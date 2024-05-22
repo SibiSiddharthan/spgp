@@ -249,7 +249,7 @@ static inline void rijndael_decrypt_step(aes_round_key key, byte_t state[AES_BLO
 	invsub_bytes(state);
 }
 
-static void rijndael128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
+void aes128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
 	byte_t state[AES_BLOCK_SIZE];
 
@@ -277,7 +277,7 @@ static void rijndael128_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_S
 	block_transpose(ciphertext, state);
 }
 
-static void rijndael128_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
+void aes128_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
 	byte_t state[AES_BLOCK_SIZE];
 
@@ -305,7 +305,7 @@ static void rijndael128_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_
 	block_transpose(plaintext, state);
 }
 
-static void rijndael192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
+void aes192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
 	byte_t state[AES_BLOCK_SIZE];
 
@@ -335,7 +335,7 @@ static void rijndael192_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_S
 	block_transpose(ciphertext, state);
 }
 
-static void rijndael192_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
+void aes192_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
 	byte_t state[AES_BLOCK_SIZE];
 
@@ -365,7 +365,7 @@ static void rijndael192_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_
 	block_transpose(plaintext, state);
 }
 
-static void rijndael256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
+void aes256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
 {
 	byte_t state[AES_BLOCK_SIZE];
 
@@ -397,7 +397,7 @@ static void rijndael256_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_S
 	block_transpose(ciphertext, state);
 }
 
-static void rijndael256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
+void aes256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
 {
 	byte_t state[AES_BLOCK_SIZE];
 
@@ -569,11 +569,11 @@ void aes_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ci
 	switch (key->type)
 	{
 	case AES128:
-		return rijndael128_encrypt_block(key, plaintext, ciphertext);
+		return aes128_encrypt_block(key, plaintext, ciphertext);
 	case AES192:
-		return rijndael192_encrypt_block(key, plaintext, ciphertext);
+		return aes192_encrypt_block(key, plaintext, ciphertext);
 	case AES256:
-		return rijndael256_encrypt_block(key, plaintext, ciphertext);
+		return aes256_encrypt_block(key, plaintext, ciphertext);
 	}
 }
 
@@ -582,10 +582,10 @@ void aes_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t p
 	switch (key->type)
 	{
 	case AES128:
-		return rijndael128_decrypt_block(key, ciphertext, plaintext);
+		return aes128_decrypt_block(key, ciphertext, plaintext);
 	case AES192:
-		return rijndael192_decrypt_block(key, ciphertext, plaintext);
+		return aes192_decrypt_block(key, ciphertext, plaintext);
 	case AES256:
-		return rijndael256_decrypt_block(key, ciphertext, plaintext);
+		return aes256_decrypt_block(key, ciphertext, plaintext);
 	}
 }
