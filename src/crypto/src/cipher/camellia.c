@@ -198,7 +198,7 @@ static inline uint64_t FLINV(uint64_t in, uint64_t k)
 	return out;
 }
 
-static void camellia128_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE])
+void camellia128_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE])
 {
 	uint64_t d1, d2;
 	uint64_t *p;
@@ -247,7 +247,7 @@ static void camellia128_encrypt_block(camellia_key *key, byte_t plaintext[CAMELL
 	p[1] = d1;
 }
 
-static void camellia128_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE])
+void camellia128_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE])
 {
 	uint64_t d1, d2;
 	uint64_t *p;
@@ -296,7 +296,17 @@ static void camellia128_decrypt_block(camellia_key *key, byte_t ciphertext[CAMEL
 	p[1] = d1;
 }
 
-static void camellia256_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE])
+void camellia192_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE])
+{
+	return camellia256_encrypt_block(key, plaintext, ciphertext);
+}
+
+void camellia192_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE])
+{
+	return camellia256_decrypt_block(key, ciphertext, plaintext);
+}
+
+void camellia256_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE])
 {
 	uint64_t d1, d2;
 	uint64_t *p;
@@ -355,7 +365,7 @@ static void camellia256_encrypt_block(camellia_key *key, byte_t plaintext[CAMELL
 	p[1] = d1;
 }
 
-static void camellia256_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE])
+void camellia256_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE])
 {
 	uint64_t d1, d2;
 	uint64_t *p;
