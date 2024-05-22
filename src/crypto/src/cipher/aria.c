@@ -435,7 +435,7 @@ static inline void FE(byte_t out[16], byte_t in[16], byte_t key[16])
 	A(out, temp);
 }
 
-static void aria128_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
+void aria128_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
 {
 	byte_t state[ARIA_BLOCK_SIZE];
 
@@ -461,7 +461,7 @@ static void aria128_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZ
 	memcpy(ciphertext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria128_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
+void aria128_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
 {
 	byte_t state[ARIA_BLOCK_SIZE];
 
@@ -487,7 +487,7 @@ static void aria128_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SI
 	memcpy(plaintext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria192_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
+void aria192_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
 {
 	byte_t state[ARIA_BLOCK_SIZE];
 
@@ -515,7 +515,7 @@ static void aria192_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZ
 	memcpy(ciphertext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria192_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
+void aria192_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
 {
 	byte_t state[ARIA_BLOCK_SIZE];
 
@@ -543,7 +543,7 @@ static void aria192_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SI
 	memcpy(plaintext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria256_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
+void aria256_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
 {
 	byte_t state[ARIA_BLOCK_SIZE];
 
@@ -573,7 +573,7 @@ static void aria256_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZ
 	memcpy(ciphertext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria256_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
+void aria256_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
 {
 	byte_t state[ARIA_BLOCK_SIZE];
 
