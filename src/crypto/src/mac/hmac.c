@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include <minmax.h>
-#include <mac.h>
+#include <hmac.h>
 #include <sha.h>
 #include <md5.h>
 
