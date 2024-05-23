@@ -29,6 +29,7 @@ mac/hmac.c
 public-key/rsa.c
 # rand
 rand/hash-drbg.c
+rand/hmac-drbg.c
 #signature
 signature/dsa.c
 )
