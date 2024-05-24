@@ -33,9 +33,6 @@
 #define SHA3_384_HASH_SIZE 48
 #define SHA3_512_HASH_SIZE 64
 
-#define SHAKE128_BLOCK_SIZE 168
-#define SHAKE256_BLOCK_SIZE 136
-
 #define KECCAK1600_BLOCK_SIZE 200
 
 typedef struct _sha1_ctx

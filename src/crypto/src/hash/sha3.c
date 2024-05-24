@@ -251,19 +251,19 @@ static inline sha3_ctx *sha3_init_checked(void *ptr, sha3_type type)
 	switch (type)
 	{
 	case SHA3_224:
-		ctx->hash_size = 28;
+		ctx->hash_size = SHA3_224_HASH_SIZE;
 		ctx->block_size = SHA3_224_BLOCK_SIZE;
 		break;
 	case SHA3_256:
-		ctx->hash_size = 32;
+		ctx->hash_size = SHA3_256_HASH_SIZE;
 		ctx->block_size = SHA3_256_BLOCK_SIZE;
 		break;
 	case SHA3_384:
-		ctx->hash_size = 48;
+		ctx->hash_size = SHA3_384_HASH_SIZE;
 		ctx->block_size = SHA3_384_BLOCK_SIZE;
 		break;
 	case SHA3_512:
-		ctx->hash_size = 64;
+		ctx->hash_size = SHA3_512_HASH_SIZE;
 		ctx->block_size = SHA3_512_BLOCK_SIZE;
 		break;
 	}
