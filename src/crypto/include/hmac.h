@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef CRYPTO_MAC_H
-#define CRYPTO_MAC_H
+#ifndef CRYPTO_HMAC_H
+#define CRYPTO_HMAC_H
 
 #include <types.h>
 
