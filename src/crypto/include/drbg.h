@@ -12,6 +12,7 @@
 #include <cipher.h>
 #include <hash.h>
 #include <hmac.h>
+#include <aes.h>
 
 #define MAX_SEED_SIZE             128
 #define MAX_KEY_SIZE              128
@@ -47,18 +48,23 @@ typedef struct _hmac_drbg
 
 typedef struct _ctr_drbg
 {
-	void *x;
-} ctr_drbg;
-
-typedef struct _drbg
-{
-	void *context;
-	byte_t seed[MAX_SEED_SIZE];
+	size_t drbg_size;
+	byte_t key[AES256_KEY_SIZE];
+	byte_t block[AES_BLOCK_SIZE];
+	uint16_t key_size;
+	uint16_t block_size;
 	uint16_t seed_size;
 	uint16_t security_strength;
 	uint32_t reseed_interval;
 	uint32_t reseed_counter;
-} drbg;
+
+	void *_ctx;
+	void *_dfctx;
+	size_t _size;
+	int32_t _algorithm;
+	void (*_init)(void *, size_t, int32_t, void *, size_t);
+	void (*_encrypt)(void *, void *, void *);
+} ctr_drbg;
 
 typedef enum _drbg_type
 {
@@ -66,11 +72,6 @@ typedef enum _drbg_type
 	HMAC_DRBG,
 	CTR_DRBG
 } drbg_type;
-
-drbg *drbg_init(drbg_type type, byte_t *personalization, size_t size);
-void drbg_free(drbg *drbg);
-void drbg_reseed(drbg *drbg);
-void drbg_generate(drbg *drbg, void *buffer, size_t size);
 
 hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
 						  size_t personalization_size);
@@ -86,9 +87,11 @@ void hmac_drbg_delete(hmac_drbg *hdrbg);
 int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, byte_t *additional_input, size_t input_size);
 int32_t hmac_drbg_generate(hmac_drbg *hdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size);
 
-ctr_drbg *ctr_drbg_init(void);
-void ctr_drbg_free(ctr_drbg *drbg);
-void ctr_drbg_reseed(ctr_drbg *drbg);
-void ctr_drbg_generate(ctr_drbg *drbg, void *buffer, size_t size);
+ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
+						  size_t personalization_size);
+ctr_drbg *ctr_drbg_new(cipher_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
+void ctr_drbg_delete(ctr_drbg *cdrbg);
+int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_size);
+int32_t ctr_drbg_generate(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size);
 
 #endif
