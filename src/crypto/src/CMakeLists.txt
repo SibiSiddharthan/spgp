@@ -26,6 +26,7 @@ hash/blake2.c
 hash/hash.c
 #mac
 mac/hmac.c
+mac/kmac.c
 #public-key
 public-key/rsa.c
 # rand

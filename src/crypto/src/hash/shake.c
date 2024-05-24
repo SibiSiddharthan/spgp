@@ -241,7 +241,7 @@ uint64_t encode_string(byte_t *str, size_t str_size, byte_t *output)
 	return pos;
 }
 
-static void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
+void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 {
 	uint64_t unhashed = ctx->message_size % ctx->block_size;
 	uint64_t shake_length = 0;
@@ -287,7 +287,7 @@ static void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	memset(ctx, 0, sizeof(sha3_ctx));
 }
 
-static sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
 {
 	byte_t pad[16] = {0};
 	uint64_t pos = 0;
@@ -296,20 +296,19 @@ static sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_siz
 	pos = left_encode(ctx->block_size, pad);
 	sha3_update(ctx, pad, pos);
 
+	pos = left_encode(name_size, pad);
+	sha3_update(ctx, pad, pos);
+
 	if (name != NULL)
 	{
-		pos = left_encode(name_size, pad);
-		sha3_update(ctx, pad, pos);
-
 		sha3_update(ctx, name, name_size);
 	}
 
+	pos = left_encode(custom_size, pad);
+	sha3_update(ctx, pad, pos);
+
 	if (custom != NULL)
 	{
-
-		pos = left_encode(custom_size, pad);
-		sha3_update(ctx, pad, pos);
-
 		sha3_update(ctx, custom, custom_size);
 	}
 
@@ -324,8 +323,7 @@ static sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_siz
 	return ctx;
 }
 
-static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom,
-											size_t custom_size)
+static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
 {
 	shake128_ctx *ctx = (shake128_ctx *)ptr;
 
