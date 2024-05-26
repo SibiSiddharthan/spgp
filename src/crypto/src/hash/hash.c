@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <minmax.h>
 #include <hash.h>
 #include <md5.h>
 #include <ripemd.h>
@@ -55,7 +56,6 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 {
 	hash_ctx *hctx = NULL;
 	size_t hash_size = 0;
-	size_t max_input_size = 0xFFFFFFFFFFFFFFFF;
 
 	void *_ctx = NULL;
 	void (*_reset)(void *ctx) = NULL;
@@ -210,7 +210,6 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	hctx->algorithm = algorithm;
 	hctx->ctx_size = ctx_size;
 	hctx->hash_size = hash_size;
-	hctx->max_input_size = max_input_size;
 
 	hctx->_ctx = _ctx;
 	hctx->_reset = _reset;
@@ -297,11 +296,6 @@ void hash_update(hash_ctx *hctx, void *data, size_t size)
 
 int32_t hash_final(hash_ctx *hctx, byte_t *hash, size_t size)
 {
-	if (size < hctx->hash_size)
-	{
-		return -1;
-	}
-
 	// Copy to internal buffer first.
 	// Check which function to use.
 	if (hctx->_final != NULL)
@@ -310,10 +304,14 @@ int32_t hash_final(hash_ctx *hctx, byte_t *hash, size_t size)
 	}
 	else
 	{
-		hctx->_final_size(hctx->_ctx, hctx->hash, MAX_HASH_SIZE);
+		hctx->_final_size(hctx->_ctx, hctx->hash, hctx->hash_size);
 	}
 
-	memcpy(hash, hctx->hash, hctx->hash_size);
+	// Truncate hash if necessary.
+	if (hash != NULL)
+	{
+		memcpy(hash, hctx->hash, MIN(hctx->hash_size, size));
+	}
 
 	return 0;
 }

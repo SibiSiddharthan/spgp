@@ -36,12 +36,11 @@ typedef struct _hash_ctx
 	hash_algorithm algorithm;
 	size_t ctx_size;
 	size_t hash_size;
-	size_t max_input_size;
 	byte_t hash[MAX_HASH_SIZE];
 
 	void *_ctx;
 	void (*_reset)(void *ctx);
-	void (*_update)(void *ctx, void *data, size_t size);
+	void (*_update)(void *ctx, void *data, size_t);
 	void (*_final)(void *ctx, byte_t *hash);
 	void (*_final_size)(void *ctx, byte_t *hash, size_t);
 

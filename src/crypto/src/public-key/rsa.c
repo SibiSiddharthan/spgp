@@ -164,11 +164,6 @@ int32_t rsa_encrypt_oaep(rsa_key *key, buffer_t *plaintext, buffer_t *label, buf
 		return -1;
 	}
 
-	if (label->size > options->hash->max_input_size)
-	{
-		return -1;
-	}
-
 	if (ciphertext->capacity < key_size)
 	{
 		return -1;
@@ -300,11 +295,6 @@ int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, bu
 	}
 
 	if (key_size < (2 * hash_size + 2))
-	{
-		return -1;
-	}
-
-	if (label->size > options->hash->max_input_size)
 	{
 		return -1;
 	}
