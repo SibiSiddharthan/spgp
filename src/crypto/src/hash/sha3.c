@@ -11,7 +11,7 @@
 #include <rotate.h>
 #include <sha.h>
 
-// See FIPS 202 : SHA-3 Standard
+// See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
 
 #define THETA_STEP_1(C, A, X) C[X] = A[X + 0 * 5] ^ A[X + 1 * 5] ^ A[X + 2 * 5] ^ A[X + 3 * 5] ^ A[X + 4 * 5];
 #define THETA_STEP_2(D, C, X) D[X] = C[((5 + X) - 1) % 5] ^ ROTL_64(C[(X + 1) % 5], 1);

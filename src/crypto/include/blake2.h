@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See RFC 7693 : The BLAKE2 Cryptographic Hash and Message Authentication Code
+
 #define BLAKE2B_MAX_HASH_SIZE 64
 #define BLAKE2B_MAX_KEY_SIZE  64
 #define BLAKE2B_SALT_SIZE     32

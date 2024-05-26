@@ -10,6 +10,9 @@
 
 #include <sha.h>
 
+// See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
+// See NIST SP 800-185: SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash
+
 #define SHAKE128_BLOCK_SIZE 168
 #define SHAKE256_BLOCK_SIZE 136
 

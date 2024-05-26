@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See RFC 1321 : The MD5 Message-Digest Algorithm
+
 #define MD5_HASH_SIZE  16
 #define MD5_BLOCK_SIZE 64
 

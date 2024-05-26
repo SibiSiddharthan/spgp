@@ -12,8 +12,8 @@
 #include <rotate.h>
 #include <sha.h>
 
+// See NIST FIPS 180-4 : Secure Hash Standard (SHS)
 // See RFC 3174 : The Secure Hash Algorithm (SHA1)
-// See FIPS 180-4 : Secure Hash Standard
 
 // Initialization vectors
 static const uint32_t H0 = 0x67452301;

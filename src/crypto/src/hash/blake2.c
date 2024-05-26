@@ -42,6 +42,7 @@ static const uint8_t SIGMA[12][16] =
 
 // clang-format on
 
+// BLAKE2b Mixing Function G
 #define B2B_G(V, A, B, C, D, SX, SY)     \
 	{                                    \
 		V[A] = V[A] + V[B] + SX;         \
@@ -54,6 +55,7 @@ static const uint8_t SIGMA[12][16] =
 		V[B] = ROTR_64(V[B] ^ V[C], 63); \
 	}
 
+// BLAKE2s Mixing Function G
 #define B2S_G(V, A, B, C, D, SX, SY)     \
 	{                                    \
 		V[A] = V[A] + V[B] + SX;         \

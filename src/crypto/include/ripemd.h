@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See RIPEMD-160: A Strengthened Version of RIPEMD
+
 #define RIPEMD160_HASH_SIZE  20
 #define RIPEMD160_BLOCK_SIZE 64
 

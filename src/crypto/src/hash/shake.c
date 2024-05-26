@@ -10,6 +10,9 @@
 
 #include <shake.h>
 
+// See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
+// See NIST SP 800-185: SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash
+
 // From sha3.c
 void keccak1600(uint64_t A[25]);
 void sha3_hash_block(sha3_ctx *ctx);

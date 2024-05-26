@@ -12,7 +12,7 @@
 #include <rotate.h>
 #include <sha.h>
 
-// See FIPS 180-4 : Secure Hash Standard
+// See NIST FIPS 180-4 : Secure Hash Standard (SHS)
 
 // Initialization vectors
 // SHA-224

@@ -10,6 +10,9 @@
 
 #include <types.h>
 
+// See NIST FIPS 180-4 : Secure Hash Standard (SHS)
+// See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
+
 #define SHA1_HASH_SIZE  20
 #define SHA1_BLOCK_SIZE 64
 
