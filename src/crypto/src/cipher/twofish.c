@@ -114,6 +114,7 @@ static inline byte_t rs_xtime(byte_t x)
 #define RS_GFF3TIME(A) (RS_X7TIME(A) ^ RS_X6TIME(A) ^ RS_X5TIME(A) ^ RS_X4TIME(A) ^ RS_XTIME(A) ^ (A))
 #define RS_GFFCTIME(A) (RS_X7TIME(A) ^ RS_X6TIME(A) ^ RS_X5TIME(A) ^ RS_X4TIME(A) ^ RS_X3TIME(A) ^ RS_X2TIME(A))
 
+// Reed Solomon Code
 static uint32_t RS(uint64_t k)
 {
 	uint32_t o;
@@ -132,6 +133,7 @@ static uint32_t RS(uint64_t k)
 	return o;
 }
 
+// Maximum Distance Separable Code
 static inline uint32_t MDS(uint32_t k)
 {
 	uint32_t o;
@@ -146,6 +148,8 @@ static inline uint32_t MDS(uint32_t k)
 	return o;
 }
 
+// NOTE: In the paper H(...) = MDS(H(...))
+// This is more simple.
 static uint32_t H(twofish_type type, uint32_t x, uint32_t s[4])
 {
 	byte_t *in = (byte_t *)&x;

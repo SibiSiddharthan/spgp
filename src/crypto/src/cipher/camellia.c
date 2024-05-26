@@ -468,6 +468,7 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	d2 = d2 ^ kl[1];
 	d2 = d2 ^ F(d1, BSWAP_64(SIGMA_3));
 	d1 = d1 ^ F(d2, BSWAP_64(SIGMA_4));
+
 	ka[0] = d1;
 	ka[1] = d2;
 
@@ -477,6 +478,7 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 		d2 = ka[1] ^ kr[1];
 		d2 = d2 ^ F(d1, BSWAP_64(SIGMA_5));
 		d1 = d1 ^ F(d2, BSWAP_64(SIGMA_6));
+
 		kb[0] = d1;
 		kb[1] = d2;
 	}

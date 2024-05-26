@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See RFC 3713: A Description of the Camellia Encryption Algorithm
+
 #define CAMELLIA_BLOCK_SIZE 16
 
 #define CAMELLIA128_KEY_SIZE 16

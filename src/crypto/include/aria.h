@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See RFC 5794: A Description of the ARIA Encryption Algorithm
+
 #define ARIA_MAX_ROUNDS 16
 #define ARIA_BLOCK_SIZE 16
 

@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See Twofish: A 128-Bit Block Cipher
+
 #define TWOFISH_ROUNDS     16
 #define TWOFISH_BLOCK_SIZE 16
 #define TWOFISH_ROUND_KEYS ((TWOFISH_BLOCK_SIZE * 2) + 4 + 4)

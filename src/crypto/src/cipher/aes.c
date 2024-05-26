@@ -11,7 +11,7 @@
 #include <aes.h>
 #include <rotate.h>
 
-// See NIST FIPS-197 ADVANCED ENCRYPTION STANDARD (AES)
+// See NIST FIPS-197 Advanced Encryption Standard (AES)
 
 // clang-format off
 // S-box data

@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See RFC 8439: ChaCha20 and Poly1305 for IETF Protocols
+
 #define CHACHA20_BLOCK_SIZE 64
 #define CHACHA20_KEY_SIZE   32
 #define CHACHA20_NONCE_SIZE 12

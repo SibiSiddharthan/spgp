@@ -12,6 +12,7 @@
 #include <rotate.h>
 
 // See RFC 8439: ChaCha20 and Poly1305 for IETF Protocols
+
 #define CHACHA20_BLOCK_WORDS 16
 
 static const uint32_t CHACHA20_CONSTANTS[4] = {0x61707865, 0x3320646E, 0x79622D32, 0x6B206574};

@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See NIST FIPS-197 Advanced Encryption Standard (AES)
+
 #define AES_MAX_ROUNDS 14
 #define AES_BLOCK_SIZE 16
 

@@ -12,7 +12,7 @@
 #include <des.h>
 #include <byteswap.h>
 
-// See NIST FIPS 46-3 DATA ENCRYPTION STANDARD (DES)
+// See NIST FIPS 46-3 Data Encryption Standard (DES)
 
 // clang-format off
 // Permutation data

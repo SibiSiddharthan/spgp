@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <types.h>
 
+// See NIST FIPS 46-3 Data Encryption Standard (DES)
+
 #define DES_ROUNDS     16
 #define DES_BLOCK_SIZE 8
 #define DES_KEY_SIZE   8
