@@ -11,9 +11,7 @@
 #include <shake.h>
 #include <kmac.h>
 
-// From sha3.c
-void keccak1600(uint64_t A[25]);
-void sha3_hash_block(sha3_ctx *ctx);
+// See NIST SP 800-185: SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash
 
 // From shake.c
 uint8_t left_encode(uint64_t x, byte_t *o);
@@ -101,6 +99,11 @@ void kmac128_delete(kmac128_ctx *ctx)
 	free(ctx);
 }
 
+void kmac128_reset(kmac128_ctx *ctx, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+{
+	kmac128_init_checked(ctx, bits, key, key_size, custom, custom_size);
+}
+
 void kmac128_update(kmac128_ctx *ctx, void *data, size_t size)
 {
 	sha3_update(ctx, data, size);
@@ -148,6 +151,11 @@ kmac256_ctx *kmac256_new(uint32_t bits, byte_t *key, size_t key_size, byte_t *cu
 void kmac256_delete(kmac256_ctx *ctx)
 {
 	free(ctx);
+}
+
+void kmac256_reset(kmac256_ctx *ctx, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+{
+	kmac256_init_checked(ctx, bits, key, key_size, custom, custom_size);
 }
 
 void kmac256_update(kmac256_ctx *ctx, void *data, size_t size)
