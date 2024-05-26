@@ -10,6 +10,8 @@
 
 #include <types.h>
 
+// See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (HMAC)
+
 #define MAX_HASH_SIZE  64
 #define MAX_BLOCK_SIZE 128
 

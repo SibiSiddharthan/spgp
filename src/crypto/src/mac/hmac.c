@@ -13,8 +13,11 @@
 #include <sha.h>
 #include <md5.h>
 
+// See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (HMAC)
+
 static inline size_t get_ctx_size(hmac_algorithm algorithm)
 {
+	// These are the only supported algorithms for HMAC currently.
 	switch (algorithm)
 	{
 	case HMAC_MD5:
@@ -30,12 +33,15 @@ static inline size_t get_ctx_size(hmac_algorithm algorithm)
 	case HMAC_SHA512_256:
 		return sizeof(sha512_ctx);
 	default:
+		// Invalid hmac specifier.
 		return 0;
 	}
 }
 
 static void hmac_determine_key0(hmac_ctx *hctx, byte_t *key, size_t key_size)
 {
+	// Determine the initial key based on its size.
+
 	if (key_size == hctx->block_size)
 	{
 		memcpy(hctx->key0, key, key_size);
@@ -55,7 +61,7 @@ static void hmac_determine_key0(hmac_ctx *hctx, byte_t *key, size_t key_size)
 	}
 }
 
-static void hmac_pad(hmac_ctx *hctx)
+static void hmac_determine_pad(hmac_ctx *hctx)
 {
 	// ipad
 	for (size_t i = 0; i < hctx->block_size; ++i)
@@ -75,9 +81,11 @@ size_t hmac_ctx_size(hmac_algorithm algorithm)
 	return sizeof(hmac_ctx) + get_ctx_size(algorithm);
 }
 
-static hmac_ctx *hmac_init_checked(void *ptr, hmac_algorithm algorithm, size_t ctx_size, byte_t *key, size_t key_size)
+hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, byte_t *key, size_t key_size)
 {
-	hmac_ctx *hctx = NULL;
+	hmac_ctx *hctx = (hmac_ctx *)ptr;
+	size_t ctx_size = get_ctx_size(algorithm);
+	size_t required_size = sizeof(hmac_ctx) + ctx_size;
 
 	size_t hash_size = 0;
 	size_t block_size = 0;
@@ -87,9 +95,21 @@ static hmac_ctx *hmac_init_checked(void *ptr, hmac_algorithm algorithm, size_t c
 	void (*_update)(void *ctx, void *data, size_t size) = NULL;
 	void (*_final)(void *ctx, byte_t *hash) = NULL;
 
-	hctx = (hmac_ctx *)ptr;
-	memset(hctx, 0, sizeof(hmac_ctx) + ctx_size);
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
 
+	if (size < required_size)
+	{
+		return NULL;
+	}
+
+	// Zero the memory for hmac_ctx only, the memory for the actual hash contexts will be
+	// zeroed when they are initialized.
+	memset(hctx, 0, sizeof(hmac_ctx));
+
+	// The actual hash context will be stored after hmac_ctx.
 	_ctx = (void *)((byte_t *)hctx + sizeof(hmac_ctx));
 
 	switch (algorithm)
@@ -177,7 +197,7 @@ static hmac_ctx *hmac_init_checked(void *ptr, hmac_algorithm algorithm, size_t c
 	}
 
 	hctx->algorithm = algorithm;
-	hctx->ctx_size = ctx_size;
+	hctx->ctx_size = required_size;
 	hctx->hash_size = hash_size;
 	hctx->block_size = block_size;
 
@@ -186,30 +206,16 @@ static hmac_ctx *hmac_init_checked(void *ptr, hmac_algorithm algorithm, size_t c
 	hctx->_update = _update;
 	hctx->_final = _final;
 
+	// Determine the initial key.
 	hmac_determine_key0(hctx, key, key_size);
-	hmac_pad(hctx);
 
+	// Determine ipad and opad.
+	hmac_determine_pad(hctx);
+
+	// H(K0 ^ ipad)
 	hctx->_update(hctx->_ctx, hctx->ipad, hctx->block_size);
 
 	return hctx;
-}
-
-hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, byte_t *key, size_t key_size)
-{
-	size_t ctx_size = get_ctx_size(algorithm);
-	size_t required_size = sizeof(hmac_ctx) + ctx_size;
-
-	if (ctx_size == 0)
-	{
-		return NULL;
-	}
-
-	if (size < required_size)
-	{
-		return NULL;
-	}
-
-	return hmac_init_checked(ptr, algorithm, ctx_size, key, key_size);
 }
 
 hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
@@ -230,12 +236,12 @@ hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
 		return NULL;
 	}
 
-	return hmac_init_checked(hctx, algorithm, ctx_size, key, key_size);
+	return hmac_init(hctx, required_size, algorithm, key, key_size);
 }
 
 void hmac_delete(hmac_ctx *hctx)
 {
-	// Zero the memory region belonging to ctx.
+	// Zero the total memory region belonging to ctx.
 	memset(hctx->_ctx, 0, hctx->ctx_size);
 	free(hctx);
 }
@@ -244,8 +250,17 @@ void hmac_reset(hmac_ctx *hctx, byte_t *key, size_t key_size)
 {
 	hctx->_reset(hctx->_ctx);
 
-	hmac_determine_key0(hctx, key, key_size);
-	hmac_pad(hctx);
+	// If a new key is given, reset key0, ipad, opad.
+	// For key reuse we can skip this step.
+	if (key != NULL)
+	{
+		memset(hctx->key0, 0, MAX_BLOCK_SIZE);
+		memset(hctx->ipad, 0, MAX_BLOCK_SIZE);
+		memset(hctx->opad, 0, MAX_BLOCK_SIZE);
+
+		hmac_determine_key0(hctx, key, key_size);
+		hmac_determine_pad(hctx);
+	}
 
 	hctx->_update(hctx->_ctx, hctx->ipad, hctx->block_size);
 }
@@ -257,11 +272,15 @@ void hmac_update(hmac_ctx *hctx, void *data, size_t size)
 
 int32_t hmac_final(hmac_ctx *hctx, byte_t *mac, size_t size)
 {
+	// H ((K0 ^ ipad) || text)
 	hctx->_final(hctx->_ctx, hctx->ihash);
 	hctx->_reset(hctx->_ctx);
+
+	// H((K0 ^ opad) || H((K0 ^ ipad) || text))
 	hctx->_update(hctx->_ctx, hctx->opad, hctx->block_size);
 	hctx->_update(hctx->_ctx, hctx->ihash, hctx->hash_size);
 	hctx->_final(hctx->_ctx, hctx->ihash);
+	hctx->_reset(hctx->_ctx);
 
 	// Truncate if necessary
 	memcpy(mac, hctx->ihash, MIN(hctx->hash_size, size));
