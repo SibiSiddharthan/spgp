@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <shake.h>
+#include <minmax.h>
 
 // See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
 // See NIST SP 800-185: SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash
@@ -17,10 +18,51 @@
 void keccak1600(uint64_t A[25]);
 void sha3_hash_block(sha3_ctx *ctx);
 
+static void XOF(sha3_ctx *ctx, byte_t *buffer, size_t output_size)
+{
+	uint64_t shake_size = 0;
+
+	while (1)
+	{
+		if (shake_size + ctx->block_size <= output_size)
+		{
+			memcpy(buffer + shake_size, ctx->block, ctx->block_size);
+			shake_size += ctx->block_size;
+
+			if (shake_size == output_size)
+			{
+				// Last iteration
+				break;
+			}
+
+			// Next hash
+			keccak1600((uint64_t *)ctx->block);
+		}
+		else
+		{
+			// Last iteration
+			memcpy(buffer + shake_size, ctx->block, output_size - shake_size);
+			break;
+		}
+	}
+
+	return;
+}
+
 static void shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 {
 	uint64_t unhashed = ctx->message_size % ctx->block_size;
-	uint64_t shake_length = 0;
+	uint64_t output_size = 0;
+
+	// If 0 bits was given during init, implies XOF.
+	if (ctx->hash_size == 0)
+	{
+		output_size = size;
+	}
+	else
+	{
+		output_size = MIN(size, ctx->hash_size);
+	}
 
 	// First zero the internal buffer after unhashed input
 	memset(&ctx->internal[unhashed], 0, ctx->block_size - unhashed);
@@ -35,29 +77,7 @@ static void shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	sha3_hash_block(ctx);
 
 	// Extend output
-	while (1)
-	{
-		if (shake_length + ctx->block_size <= size)
-		{
-			memcpy(buffer + shake_length, ctx->block, ctx->block_size);
-			shake_length += ctx->block_size;
-
-			if (shake_length == size)
-			{
-				// Last iteration
-				break;
-			}
-
-			// Next hash
-			keccak1600((uint64_t *)ctx->block);
-		}
-		else
-		{
-			// Last iteration
-			memcpy(buffer + shake_length, ctx->block, size - shake_length);
-			break;
-		}
-	}
+	XOF(ctx, buffer, output_size);
 
 	// Zero the context for security reasons.
 	memset(ctx, 0, sizeof(sha3_ctx));
@@ -177,10 +197,12 @@ void shake256_final(shake256_ctx *ctx, byte_t *buffer, size_t size)
 	return shake_common_final(ctx, buffer, size);
 }
 
+// Get the index of most significant non zero byte.
 static uint8_t leading(uint64_t x)
 {
 	byte_t *p = (byte_t *)&x;
 
+	// Shortcut for zero.
 	if (x == 0)
 	{
 		return 1;
@@ -194,9 +216,11 @@ static uint8_t leading(uint64_t x)
 		}
 	}
 
+	// Should be unreachable.
 	return 1;
 }
 
+// leading(x) || BE(x)
 uint8_t left_encode(uint64_t x, byte_t *o)
 {
 	uint8_t p = 0;
@@ -212,6 +236,7 @@ uint8_t left_encode(uint64_t x, byte_t *o)
 	return p;
 }
 
+// BE(x) || leading(x)
 uint8_t right_encode(uint64_t x, byte_t *o)
 {
 	uint8_t p = 0;
@@ -263,7 +288,17 @@ uint64_t encode_string(byte_t *str, size_t str_size, byte_t *output)
 void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 {
 	uint64_t unhashed = ctx->message_size % ctx->block_size;
-	uint64_t shake_length = 0;
+	uint64_t output_size = 0;
+
+	// If 0 bits was given during init, implies XOF.
+	if (ctx->hash_size == 0)
+	{
+		output_size = size;
+	}
+	else
+	{
+		output_size = MIN(size, ctx->hash_size);
+	}
 
 	// First zero the internal buffer after unhashed input
 	memset(&ctx->internal[unhashed], 0, ctx->block_size - unhashed);
@@ -278,29 +313,7 @@ void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	sha3_hash_block(ctx);
 
 	// Extend output
-	while (1)
-	{
-		if (shake_length + ctx->block_size <= size)
-		{
-			memcpy(buffer + shake_length, ctx->block, ctx->block_size);
-			shake_length += ctx->block_size;
-
-			if (shake_length == size)
-			{
-				// Last iteration
-				break;
-			}
-
-			// Next hash
-			keccak1600((uint64_t *)ctx->block);
-		}
-		else
-		{
-			// Last iteration
-			memcpy(buffer + shake_length, ctx->block, size - shake_length);
-			break;
-		}
-	}
+	XOF(ctx, buffer, output_size);
 
 	// Zero the context for security reasons.
 	memset(ctx, 0, sizeof(sha3_ctx));
@@ -311,6 +324,12 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_size, byte
 	byte_t pad[16] = {0};
 	uint64_t pos = 0;
 	uint64_t zero_pad = 0;
+
+	// cSHAKE128(X, L, N, S) = KECCAK[256](bytepad(encode_string(N) || encode_string(S), 168) || X || 00, L)
+	// cSHAKE256(X, L, N, S) = KECCAK[256](bytepad(encode_string(N) || encode_string(S), 136) || X || 00, L)
+
+	// Expansion of (bytepad(encode_string(N) || encode_string(S), B))
+	// left_encode(B) || left_encode(N.size) || N || left_encode(S.size) || S || padding
 
 	pos = left_encode(ctx->block_size, pad);
 	sha3_update(ctx, pad, pos);
@@ -337,6 +356,8 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_size, byte
 	{
 		memset(&ctx->internal[zero_pad], 0, ctx->block_size - zero_pad);
 		ctx->message_size += zero_pad;
+
+		sha3_hash_block(ctx);
 	}
 
 	return ctx;
@@ -346,6 +367,7 @@ static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, byte_t *na
 {
 	shake128_ctx *ctx = (shake128_ctx *)ptr;
 
+	// Same as shake128
 	if (name == NULL && custom == NULL)
 	{
 		return shake128_init_checked(ptr, bits);
@@ -405,6 +427,7 @@ static shake256_ctx *cshake256_init_checked(void *ptr, uint32_t bits, byte_t *na
 {
 	shake256_ctx *ctx = (shake256_ctx *)ptr;
 
+	// Same as shake256
 	if (name == NULL && custom == NULL)
 	{
 		return shake256_init_checked(ptr, bits);

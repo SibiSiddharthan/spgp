@@ -25,6 +25,9 @@ static sha3_ctx *kmac_init_common(sha3_ctx *ctx, byte_t *key, size_t key_size, b
 	uint64_t pos = 0;
 	uint64_t zero_pad = 0;
 
+	// X = bytepad(encode_string(K), B) || X || right_encode(L)
+	// left_encode(B) || left_encode(K) || K || padding
+
 	ctx = cshake_init_common(ctx, (byte_t *)"KMAC", 4, custom, custom_size);
 
 	pos = left_encode(ctx->block_size, pad);
@@ -53,6 +56,8 @@ static void kmac_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 {
 	byte_t pad[16] = {0};
 	byte_t pos = 0;
+
+	// Append right_encode(L)
 
 	pos = right_encode(ctx->hash_size * 8, pad);
 	sha3_update(ctx, pad, pos);
