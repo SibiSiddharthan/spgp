@@ -43,6 +43,7 @@ static inline size_t get_ctx_size(hash_algorithm algorithm)
 	case HASH_SHA3_512:
 		return sizeof(sha3_ctx);
 	default:
+		// Invalid hash specifier.
 		return 0;
 	}
 }
@@ -52,9 +53,12 @@ size_t hash_ctx_size(hash_algorithm algorithm)
 	return sizeof(hash_ctx) + get_ctx_size(algorithm);
 }
 
-static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t ctx_size)
+hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 {
-	hash_ctx *hctx = NULL;
+	hash_ctx *hctx = (hash_ctx *)ptr;
+	size_t ctx_size = get_ctx_size(algorithm);
+	size_t required_size = sizeof(hash_ctx) + ctx_size;
+
 	size_t hash_size = 0;
 
 	void *_ctx = NULL;
@@ -63,9 +67,21 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	void (*_final)(void *ctx, byte_t *hash) = NULL;
 	void (*_final_size)(void *ctx, byte_t *hash, size_t size) = NULL;
 
-	hctx = (hash_ctx *)ptr;
-	memset(hctx, 0, sizeof(hash_ctx) + ctx_size);
+	if (ctx_size == 0)
+	{
+		return NULL;
+	}
 
+	if (size < required_size)
+	{
+		return NULL;
+	}
+
+	// Zero the memory for hash_ctx only, the memory for the actual hash contexts will be
+	// zeroed when they are initialized.
+	memset(hctx, 0, sizeof(hash_ctx));
+
+	// The actual hash context will be stored after hash_ctx.
 	_ctx = (void *)((byte_t *)hctx + sizeof(hash_ctx));
 
 	switch (algorithm)
@@ -208,7 +224,7 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	}
 
 	hctx->algorithm = algorithm;
-	hctx->ctx_size = ctx_size;
+	hctx->ctx_size = required_size;
 	hctx->hash_size = hash_size;
 
 	hctx->_ctx = _ctx;
@@ -218,24 +234,6 @@ static hash_ctx *hash_init_checked(void *ptr, hash_algorithm algorithm, size_t c
 	hctx->_final_size = _final_size;
 
 	return hctx;
-}
-
-hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
-{
-	size_t ctx_size = get_ctx_size(algorithm);
-	size_t required_size = sizeof(hash_ctx) + ctx_size;
-
-	if (ctx_size == 0)
-	{
-		return NULL;
-	}
-
-	if (size < required_size)
-	{
-		return NULL;
-	}
-
-	return hash_init_checked(ptr, algorithm, ctx_size);
 }
 
 hash_ctx *hash_new(hash_algorithm algorithm)
@@ -256,12 +254,12 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		return NULL;
 	}
 
-	return hash_init_checked(hctx, algorithm, ctx_size);
+	return hash_init(hctx, required_size, algorithm);
 }
 
 void hash_delete(hash_ctx *hctx)
 {
-	// Zero the memory region belonging to ctx.
+	// Zero the total memory region belonging to ctx.
 	memset(hctx->_ctx, 0, hctx->ctx_size);
 	free(hctx);
 }
