@@ -19,7 +19,7 @@ uint8_t right_encode(uint64_t x, byte_t *o);
 sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size);
 void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size);
 
-static sha3_ctx *kmac_init_common(sha3_ctx *ctx, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+static sha3_ctx *kmac_init_common(sha3_ctx *ctx, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	byte_t pad[16] = {0};
 	uint64_t pos = 0;
@@ -65,7 +65,7 @@ static void kmac_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	cshake_common_final(ctx, buffer, size);
 }
 
-kmac128_ctx *kmac128_init_checked(void *ptr, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+kmac128_ctx *kmac128_init_checked(void *ptr, uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	kmac128_ctx *ctx = (kmac128_ctx *)ptr;
 
@@ -77,7 +77,7 @@ kmac128_ctx *kmac128_init_checked(void *ptr, uint32_t bits, byte_t *key, size_t 
 	return kmac_init_common(ctx, key, key_size, custom, custom_size);
 }
 
-kmac128_ctx *kmac128_init(void *ptr, size_t size, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+kmac128_ctx *kmac128_init(void *ptr, size_t size, uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	if (size < sizeof(kmac128_ctx))
 	{
@@ -87,7 +87,7 @@ kmac128_ctx *kmac128_init(void *ptr, size_t size, uint32_t bits, byte_t *key, si
 	return kmac128_init_checked(ptr, bits, key, key_size, custom, custom_size);
 }
 
-kmac128_ctx *kmac128_new(uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+kmac128_ctx *kmac128_new(uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	kmac128_ctx *ctx = (kmac128_ctx *)malloc(sizeof(kmac128_ctx));
 
@@ -104,7 +104,7 @@ void kmac128_delete(kmac128_ctx *ctx)
 	free(ctx);
 }
 
-void kmac128_reset(kmac128_ctx *ctx, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+void kmac128_reset(kmac128_ctx *ctx, uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	kmac128_init_checked(ctx, bits, key, key_size, custom, custom_size);
 }
@@ -147,7 +147,7 @@ void kmacxof128(void *key, size_t key_size, void *custom, size_t custom_size, vo
 	kmac128_final(&ctx, xof, xof_size);
 }
 
-kmac256_ctx *kmac256_init_checked(void *ptr, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+kmac256_ctx *kmac256_init_checked(void *ptr, uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	kmac256_ctx *ctx = (kmac256_ctx *)ptr;
 
@@ -159,7 +159,7 @@ kmac256_ctx *kmac256_init_checked(void *ptr, uint32_t bits, byte_t *key, size_t 
 	return kmac_init_common(ctx, key, key_size, custom, custom_size);
 }
 
-kmac256_ctx *kmac256_init(void *ptr, size_t size, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+kmac256_ctx *kmac256_init(void *ptr, size_t size, uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	if (size < sizeof(kmac256_ctx))
 	{
@@ -169,7 +169,7 @@ kmac256_ctx *kmac256_init(void *ptr, size_t size, uint32_t bits, byte_t *key, si
 	return kmac256_init_checked(ptr, bits, key, key_size, custom, custom_size);
 }
 
-kmac256_ctx *kmac256_new(uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+kmac256_ctx *kmac256_new(uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	kmac256_ctx *ctx = (kmac256_ctx *)malloc(sizeof(kmac256_ctx));
 
@@ -186,7 +186,7 @@ void kmac256_delete(kmac256_ctx *ctx)
 	free(ctx);
 }
 
-void kmac256_reset(kmac256_ctx *ctx, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
+void kmac256_reset(kmac256_ctx *ctx, uint32_t bits, void *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	kmac256_init_checked(ctx, bits, key, key_size, custom, custom_size);
 }

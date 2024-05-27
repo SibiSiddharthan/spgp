@@ -331,7 +331,7 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-static inline twofish_key *twofish_key_init_checked(void *ptr, twofish_type type, byte_t *key)
+static inline twofish_key *twofish_key_init_checked(void *ptr, twofish_type type, void *key)
 {
 	twofish_key *expanded_key = (twofish_key *)ptr;
 
@@ -342,7 +342,7 @@ static inline twofish_key *twofish_key_init_checked(void *ptr, twofish_type type
 	return expanded_key;
 }
 
-twofish_key *twofish_key_init(void *ptr, size_t size, twofish_type type, byte_t *key, size_t key_size)
+twofish_key *twofish_key_init(void *ptr, size_t size, twofish_type type, void *key, size_t key_size)
 {
 	size_t required_key_size = 0;
 
@@ -374,7 +374,7 @@ twofish_key *twofish_key_init(void *ptr, size_t size, twofish_type type, byte_t 
 	return twofish_key_init_checked(ptr, type, key);
 }
 
-twofish_key *twofish_key_new(twofish_type type, byte_t *key, size_t key_size)
+twofish_key *twofish_key_new(twofish_type type, void *key, size_t key_size)
 {
 	twofish_key *expanded_key = NULL;
 	size_t required_key_size = 0;

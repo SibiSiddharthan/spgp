@@ -179,12 +179,12 @@ static void chacha20_common(chacha20_key *key, uint32_t *in, uint32_t *out, size
 	}
 }
 
-void chacha20_encrypt(chacha20_key *key, byte_t *plaintext, byte_t *ciphertext, size_t size)
+void chacha20_encrypt(chacha20_key *key, void *plaintext, void *ciphertext, size_t size)
 {
 	chacha20_common(key, (uint32_t *)plaintext, (uint32_t *)ciphertext, size);
 }
 
-void chacha20_decrypt(chacha20_key *key, byte_t *ciphertext, byte_t *plaintext, size_t size)
+void chacha20_decrypt(chacha20_key *key, void *ciphertext, void *plaintext, size_t size)
 {
 	chacha20_common(key, (uint32_t *)ciphertext, (uint32_t *)plaintext, size);
 }

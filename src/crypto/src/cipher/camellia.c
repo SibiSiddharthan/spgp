@@ -572,7 +572,7 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	}
 }
 
-static inline camellia_key *camellia_key_init_checked(void *ptr, camellia_type type, byte_t *key)
+static inline camellia_key *camellia_key_init_checked(void *ptr, camellia_type type, void *key)
 {
 	camellia_key *expanded_key = (camellia_key *)ptr;
 
@@ -583,7 +583,7 @@ static inline camellia_key *camellia_key_init_checked(void *ptr, camellia_type t
 	return expanded_key;
 }
 
-camellia_key *camellia_key_init(void *ptr, size_t size, camellia_type type, byte_t *key, size_t key_size)
+camellia_key *camellia_key_init(void *ptr, size_t size, camellia_type type, void *key, size_t key_size)
 {
 	size_t required_key_size = 0;
 
@@ -615,7 +615,7 @@ camellia_key *camellia_key_init(void *ptr, size_t size, camellia_type type, byte
 	return camellia_key_init_checked(ptr, type, key);
 }
 
-camellia_key *camellia_key_new(camellia_type type, byte_t *key, size_t key_size)
+camellia_key *camellia_key_new(camellia_type type, void *key, size_t key_size)
 {
 	camellia_key *expanded_key = NULL;
 	size_t required_key_size = 0;

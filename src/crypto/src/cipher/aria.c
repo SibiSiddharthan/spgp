@@ -697,7 +697,7 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 	memcpy(expanded_key->decryption_round_key[nr], expanded_key->encryption_round_key[0], sizeof(aria_round_key));
 }
 
-static inline aria_key *aria_key_init_checked(void *ptr, aria_type type, byte_t *key)
+static inline aria_key *aria_key_init_checked(void *ptr, aria_type type, void *key)
 {
 	aria_key *expanded_key = (aria_key *)ptr;
 
@@ -728,7 +728,7 @@ static inline aria_key *aria_key_init_checked(void *ptr, aria_type type, byte_t 
 	return expanded_key;
 }
 
-aria_key *aria_key_init(void *ptr, size_t size, aria_type type, byte_t *key, size_t key_size)
+aria_key *aria_key_init(void *ptr, size_t size, aria_type type, void *key, size_t key_size)
 {
 	size_t required_key_size = 0;
 
@@ -760,7 +760,7 @@ aria_key *aria_key_init(void *ptr, size_t size, aria_type type, byte_t *key, siz
 	return aria_key_init_checked(ptr, type, key);
 }
 
-aria_key *aria_key_new(aria_type type, byte_t *key, size_t key_size)
+aria_key *aria_key_new(aria_type type, void *key, size_t key_size)
 {
 	aria_key *expanded_key = NULL;
 	size_t required_key_size = 0;

@@ -28,7 +28,7 @@ chacha20_key *chacha20_key_init(void *ptr, size_t size, byte_t key[CHACHA20_KEY_
 chacha20_key *chacha20_key_new(byte_t key[CHACHA20_KEY_SIZE], byte_t nonce[CHACHA20_NONCE_SIZE]);
 void chacha20_key_delete(chacha20_key *key);
 
-void chacha20_encrypt(chacha20_key *key, byte_t *plaintext, byte_t *ciphertext, size_t size);
-void chacha20_decrypt(chacha20_key *key, byte_t *ciphertext, byte_t *plaintext, size_t size);
+void chacha20_encrypt(chacha20_key *key, void *plaintext, void *ciphertext, size_t size);
+void chacha20_decrypt(chacha20_key *key, void *ciphertext, void *plaintext, size_t size);
 
 #endif

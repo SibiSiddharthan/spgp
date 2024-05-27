@@ -429,7 +429,7 @@ void aes256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_
 	block_transpose(plaintext, state);
 }
 
-static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
+static void rijndael_key_expansion(aes_key *expanded_key, void *actual_key)
 {
 	const uint8_t nb = 4;
 	uint8_t nk, nr;
@@ -479,7 +479,7 @@ static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-static inline aes_key *aes_key_init_checked(void *ptr, aes_type type, byte_t *key)
+static inline aes_key *aes_key_init_checked(void *ptr, aes_type type, void *key)
 {
 	aes_key *expanded_key = (aes_key *)ptr;
 
@@ -490,7 +490,7 @@ static inline aes_key *aes_key_init_checked(void *ptr, aes_type type, byte_t *ke
 	return expanded_key;
 }
 
-aes_key *aes_key_init(void *ptr, size_t size, aes_type type, byte_t *key, size_t key_size)
+aes_key *aes_key_init(void *ptr, size_t size, aes_type type, void *key, size_t key_size)
 {
 	size_t required_key_size = 0;
 
@@ -522,7 +522,7 @@ aes_key *aes_key_init(void *ptr, size_t size, aes_type type, byte_t *key, size_t
 	return aes_key_init_checked(ptr, type, key);
 }
 
-aes_key *aes_key_new(aes_type type, byte_t *key, size_t key_size)
+aes_key *aes_key_new(aes_type type, void *key, size_t key_size)
 {
 	aes_key *expanded_key = NULL;
 	size_t required_key_size = 0;

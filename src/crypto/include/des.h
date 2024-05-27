@@ -24,7 +24,7 @@ typedef struct _tdes_key
 	des_round_key rk1[DES_ROUNDS], rk2[DES_ROUNDS], rk3[DES_ROUNDS];
 } tdes_key;
 
-int32_t tdes_decode_key(byte_t *key, size_t key_size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE]);
+int32_t tdes_decode_key(void *key, size_t key_size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE]);
 
 tdes_key *tdes_key_init(void *ptr, size_t size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE], bool check);
 tdes_key *tdes_key_new(byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE], bool check);

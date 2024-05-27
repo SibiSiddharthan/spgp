@@ -432,7 +432,7 @@ static void des_key_expansion(des_round_key rk[DES_ROUNDS], byte_t k[DES_KEY_SIZ
 	}
 }
 
-int32_t tdes_decode_key(byte_t *key, size_t key_size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
+int32_t tdes_decode_key(void *key, size_t key_size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
 {
 	switch (key_size)
 	{

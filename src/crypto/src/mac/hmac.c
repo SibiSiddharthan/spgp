@@ -38,7 +38,7 @@ static inline size_t get_ctx_size(hmac_algorithm algorithm)
 	}
 }
 
-static void hmac_determine_key0(hmac_ctx *hctx, byte_t *key, size_t key_size)
+static void hmac_determine_key0(hmac_ctx *hctx, void *key, size_t key_size)
 {
 	// Determine the initial key based on its size.
 
@@ -81,7 +81,7 @@ size_t hmac_ctx_size(hmac_algorithm algorithm)
 	return sizeof(hmac_ctx) + get_ctx_size(algorithm);
 }
 
-hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, byte_t *key, size_t key_size)
+hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key, size_t key_size)
 {
 	hmac_ctx *hctx = (hmac_ctx *)ptr;
 	size_t ctx_size = get_ctx_size(algorithm);
@@ -218,7 +218,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, byte_t *ke
 	return hctx;
 }
 
-hmac_ctx *hmac_new(hmac_algorithm algorithm, byte_t *key, size_t key_size)
+hmac_ctx *hmac_new(hmac_algorithm algorithm, void *key, size_t key_size)
 {
 	hmac_ctx *hctx = NULL;
 	size_t ctx_size = get_ctx_size(algorithm);
@@ -246,7 +246,7 @@ void hmac_delete(hmac_ctx *hctx)
 	free(hctx);
 }
 
-void hmac_reset(hmac_ctx *hctx, byte_t *key, size_t key_size)
+void hmac_reset(hmac_ctx *hctx, void *key, size_t key_size)
 {
 	hctx->_reset(hctx->_ctx);
 
