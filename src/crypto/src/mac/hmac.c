@@ -93,7 +93,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 	void *_ctx = NULL;
 	void (*_reset)(void *ctx) = NULL;
 	void (*_update)(void *ctx, void *data, size_t size) = NULL;
-	void (*_final)(void *ctx, byte_t *hash) = NULL;
+	void (*_final)(void *ctx, void *hash) = NULL;
 
 	if (ctx_size == 0)
 	{
@@ -121,7 +121,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = md5_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
-		_final = (void (*)(void *, byte_t *))md5_final;
+		_final = (void (*)(void *, void *))md5_final;
 	}
 	break;
 	case HMAC_SHA1:
@@ -131,7 +131,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = sha1_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha1_reset;
 		_update = (void (*)(void *, void *, size_t))sha1_update;
-		_final = (void (*)(void *, byte_t *))sha1_final;
+		_final = (void (*)(void *, void *))sha1_final;
 	}
 	break;
 	case HMAC_SHA224:
@@ -141,7 +141,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = sha224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha224_reset;
 		_update = (void (*)(void *, void *, size_t))sha224_update;
-		_final = (void (*)(void *, byte_t *))sha224_final;
+		_final = (void (*)(void *, void *))sha224_final;
 	}
 	break;
 	case HMAC_SHA256:
@@ -151,7 +151,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = sha256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha256_reset;
 		_update = (void (*)(void *, void *, size_t))sha256_update;
-		_final = (void (*)(void *, byte_t *))sha256_final;
+		_final = (void (*)(void *, void *))sha256_final;
 	}
 	break;
 	case HMAC_SHA384:
@@ -161,7 +161,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = sha384_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha384_reset;
 		_update = (void (*)(void *, void *, size_t))sha384_update;
-		_final = (void (*)(void *, byte_t *))sha384_final;
+		_final = (void (*)(void *, void *))sha384_final;
 	}
 	break;
 	case HMAC_SHA512:
@@ -171,7 +171,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = sha512_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_update;
-		_final = (void (*)(void *, byte_t *))sha512_final;
+		_final = (void (*)(void *, void *))sha512_final;
 	}
 	break;
 	case HMAC_SHA512_224:
@@ -181,7 +181,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = sha512_224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_224_update;
-		_final = (void (*)(void *, byte_t *))sha512_224_final;
+		_final = (void (*)(void *, void *))sha512_224_final;
 	}
 	break;
 	case HMAC_SHA512_256:
@@ -191,7 +191,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_ctx = sha512_256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_256_update;
-		_final = (void (*)(void *, byte_t *))sha512_256_final;
+		_final = (void (*)(void *, void *))sha512_256_final;
 	}
 	break;
 	}
@@ -270,7 +270,7 @@ void hmac_update(hmac_ctx *hctx, void *data, size_t size)
 	hctx->_update(hctx->_ctx, data, size);
 }
 
-void hmac_final(hmac_ctx *hctx, byte_t *mac, size_t size)
+void hmac_final(hmac_ctx *hctx, void *mac, size_t size)
 {
 	// H ((K0 ^ ipad) || text)
 	hctx->_final(hctx->_ctx, hctx->ihash);

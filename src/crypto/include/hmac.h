@@ -43,7 +43,7 @@ typedef struct _hmac_ctx
 	void *_ctx;
 	void (*_reset)(void *ctx);
 	void (*_update)(void *ctx, void *data, size_t size);
-	void (*_final)(void *ctx, byte_t *hash);
+	void (*_final)(void *ctx, void *hash);
 
 } hmac_ctx;
 
@@ -55,7 +55,7 @@ void hmac_delete(hmac_ctx *hctx);
 
 void hmac_reset(hmac_ctx *hctx, void *key, size_t key_size);
 void hmac_update(hmac_ctx *hctx, void *data, size_t size);
-void hmac_final(hmac_ctx *hctx, byte_t *mac, size_t size);
+void hmac_final(hmac_ctx *hctx, void *mac, size_t size);
 
 void hmac_md5(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
 void hmac_sha1(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);

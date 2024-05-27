@@ -64,8 +64,8 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 	void *_ctx = NULL;
 	void (*_reset)(void *ctx) = NULL;
 	void (*_update)(void *ctx, void *data, size_t size) = NULL;
-	void (*_final)(void *ctx, byte_t *hash) = NULL;
-	void (*_final_size)(void *ctx, byte_t *hash, size_t size) = NULL;
+	void (*_final)(void *ctx, void *hash) = NULL;
+	void (*_final_size)(void *ctx, void *hash, size_t size) = NULL;
 
 	if (ctx_size == 0)
 	{
@@ -92,7 +92,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = md5_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
-		_final = (void (*)(void *, byte_t *))md5_final;
+		_final = (void (*)(void *, void *))md5_final;
 	}
 	break;
 	case HASH_RIPEMD160:
@@ -101,7 +101,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = ripemd160_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))ripemd160_reset;
 		_update = (void (*)(void *, void *, size_t))ripemd160_update;
-		_final = (void (*)(void *, byte_t *))ripemd160_final;
+		_final = (void (*)(void *, void *))ripemd160_final;
 	}
 	break;
 	case HASH_BLAKE2B:
@@ -110,7 +110,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		hash_size = BLAKE2B_MAX_HASH_SIZE;
 		_ctx = blake2b_init(_ctx, ctx_size, &b2bp, NULL);
 		_update = (void (*)(void *, void *, size_t))blake2b_update;
-		_final_size = (void (*)(void *, byte_t *, size_t))blake2b_final;
+		_final_size = (void (*)(void *, void *, size_t))blake2b_final;
 	}
 	break;
 	case HASH_BLAKE2S:
@@ -119,7 +119,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		hash_size = BLAKE2S_MAX_HASH_SIZE;
 		_ctx = blake2s_init(_ctx, ctx_size, &b2sp, NULL);
 		_update = (void (*)(void *, void *, size_t))blake2s_update;
-		_final_size = (void (*)(void *, byte_t *, size_t))blake2s_final;
+		_final_size = (void (*)(void *, void *, size_t))blake2s_final;
 	}
 	break;
 	case HASH_SHA1:
@@ -128,7 +128,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha1_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha1_reset;
 		_update = (void (*)(void *, void *, size_t))sha1_update;
-		_final = (void (*)(void *, byte_t *))sha1_final;
+		_final = (void (*)(void *, void *))sha1_final;
 	}
 	break;
 	case HASH_SHA224:
@@ -137,7 +137,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha224_reset;
 		_update = (void (*)(void *, void *, size_t))sha224_update;
-		_final = (void (*)(void *, byte_t *))sha224_final;
+		_final = (void (*)(void *, void *))sha224_final;
 	}
 	break;
 	case HASH_SHA256:
@@ -146,7 +146,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha256_reset;
 		_update = (void (*)(void *, void *, size_t))sha256_update;
-		_final = (void (*)(void *, byte_t *))sha256_final;
+		_final = (void (*)(void *, void *))sha256_final;
 	}
 	break;
 	case HASH_SHA384:
@@ -155,7 +155,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha384_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha384_reset;
 		_update = (void (*)(void *, void *, size_t))sha384_update;
-		_final = (void (*)(void *, byte_t *))sha384_final;
+		_final = (void (*)(void *, void *))sha384_final;
 	}
 	break;
 	case HASH_SHA512:
@@ -164,7 +164,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha512_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_update;
-		_final = (void (*)(void *, byte_t *))sha512_final;
+		_final = (void (*)(void *, void *))sha512_final;
 	}
 	break;
 	case HASH_SHA512_224:
@@ -173,7 +173,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha512_224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_224_update;
-		_final = (void (*)(void *, byte_t *))sha512_224_final;
+		_final = (void (*)(void *, void *))sha512_224_final;
 	}
 	break;
 	case HASH_SHA512_256:
@@ -182,7 +182,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha512_256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_256_update;
-		_final = (void (*)(void *, byte_t *))sha512_256_final;
+		_final = (void (*)(void *, void *))sha512_256_final;
 	}
 	break;
 	case HASH_SHA3_224:
@@ -191,7 +191,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_224);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
+		_final_size = (void (*)(void *, void *, size_t))sha3_final;
 	}
 	break;
 	case HASH_SHA3_256:
@@ -200,7 +200,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_256);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
+		_final_size = (void (*)(void *, void *, size_t))sha3_final;
 	}
 	break;
 	case HASH_SHA3_384:
@@ -209,7 +209,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_384);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
+		_final_size = (void (*)(void *, void *, size_t))sha3_final;
 	}
 	break;
 	case HASH_SHA3_512:
@@ -218,7 +218,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 		_ctx = sha3_init(_ctx, ctx_size, SHA3_512);
 		_reset = (void (*)(void *))sha3_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, byte_t *, size_t))sha3_final;
+		_final_size = (void (*)(void *, void *, size_t))sha3_final;
 	}
 	break;
 	}
@@ -292,7 +292,7 @@ void hash_update(hash_ctx *hctx, void *data, size_t size)
 	hctx->_update(hctx->_ctx, data, size);
 }
 
-int32_t hash_final(hash_ctx *hctx, byte_t *hash, size_t size)
+int32_t hash_final(hash_ctx *hctx, void *hash, size_t size)
 {
 	// Copy to internal buffer first.
 	// Check which function to use.
