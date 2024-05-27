@@ -119,6 +119,34 @@ void kmac128_final(kmac128_ctx *ctx, byte_t *buffer, size_t size)
 	return kmac_common_final(ctx, buffer, size);
 }
 
+void kmac128(void *key, size_t key_size, void *custom, size_t custom_size, void *data, size_t data_size, byte_t *mac, size_t mac_size)
+{
+	kmac128_ctx ctx;
+
+	// Initialize the context.
+	kmac128_init_checked(&ctx, mac_size * 8, key, key_size, custom, custom_size);
+
+	// Hash the data.
+	kmac128_update(&ctx, data, data_size);
+
+	// Output the mac.
+	kmac128_final(&ctx, mac, mac_size);
+}
+
+void kmacxof128(void *key, size_t key_size, void *custom, size_t custom_size, void *data, size_t data_size, byte_t *xof, size_t xof_size)
+{
+	kmac128_ctx ctx;
+
+	// Initialize the context.
+	kmac128_init_checked(&ctx, 0, key, key_size, custom, custom_size);
+
+	// Hash the data.
+	kmac128_update(&ctx, data, data_size);
+
+	// Output the XOF mac.
+	kmac128_final(&ctx, xof, xof_size);
+}
+
 kmac256_ctx *kmac256_init_checked(void *ptr, uint32_t bits, byte_t *key, size_t key_size, byte_t *custom, size_t custom_size)
 {
 	kmac256_ctx *ctx = (kmac256_ctx *)ptr;
@@ -171,4 +199,32 @@ void kmac256_update(kmac256_ctx *ctx, void *data, size_t size)
 void kmac256_final(kmac256_ctx *ctx, byte_t *buffer, size_t size)
 {
 	return kmac_common_final(ctx, buffer, size);
+}
+
+void kmac256(void *key, size_t key_size, void *custom, size_t custom_size, void *data, size_t data_size, byte_t *mac, size_t mac_size)
+{
+	kmac256_ctx ctx;
+
+	// Initialize the context.
+	kmac256_init_checked(&ctx, mac_size * 8, key, key_size, custom, custom_size);
+
+	// Hash the data.
+	kmac256_update(&ctx, data, data_size);
+
+	// Output the mac.
+	kmac256_final(&ctx, mac, mac_size);
+}
+
+void kmacxof256(void *key, size_t key_size, void *custom, size_t custom_size, void *data, size_t data_size, byte_t *xof, size_t xof_size)
+{
+	kmac256_ctx ctx;
+
+	// Initialize the context.
+	kmac256_init_checked(&ctx, 0, key, key_size, custom, custom_size);
+
+	// Hash the data.
+	kmac256_update(&ctx, data, data_size);
+
+	// Output the XOF mac.
+	kmac256_final(&ctx, xof, xof_size);
 }
