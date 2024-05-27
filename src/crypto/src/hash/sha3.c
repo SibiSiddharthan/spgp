@@ -370,7 +370,7 @@ void sha3_update(sha3_ctx *ctx, void *data, size_t size)
 	}
 }
 
-int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
+int32_t sha3_final(sha3_ctx *ctx, void *buffer, size_t size)
 {
 	uint64_t unhashed = ctx->message_size % ctx->block_size;
 

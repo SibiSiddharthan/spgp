@@ -307,7 +307,7 @@ void blake2b_update(blake2b_ctx *ctx, void *data, size_t size)
 	}
 }
 
-int32_t blake2b_final(blake2b_ctx *ctx, byte_t *buffer, size_t size)
+int32_t blake2b_final(blake2b_ctx *ctx, void *buffer, size_t size)
 {
 	if (size < ctx->hash_size)
 	{
@@ -495,7 +495,7 @@ void blake2s_update(blake2s_ctx *ctx, void *data, size_t size)
 	}
 }
 
-int32_t blake2s_final(blake2s_ctx *ctx, byte_t *buffer, size_t size)
+int32_t blake2s_final(blake2s_ctx *ctx, void *buffer, size_t size)
 {
 	if (size < ctx->hash_size)
 	{

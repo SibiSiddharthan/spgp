@@ -137,7 +137,7 @@ sha3_ctx *sha3_new(sha3_type type);
 void sha3_delete(sha3_ctx *ctx);
 void sha3_reset(sha3_ctx *ctx);
 void sha3_update(sha3_ctx *ctx, void *data, size_t size);
-int32_t sha3_final(sha3_ctx *ctx, byte_t *buffer, size_t size);
+int32_t sha3_final(sha3_ctx *ctx, void *buffer, size_t size);
 
 void sha3_224_hash(void *data, size_t size, byte_t buffer[SHA3_224_HASH_SIZE]);
 void sha3_256_hash(void *data, size_t size, byte_t buffer[SHA3_256_HASH_SIZE]);
