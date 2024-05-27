@@ -49,7 +49,7 @@ static void XOF(sha3_ctx *ctx, byte_t *buffer, size_t output_size)
 	return;
 }
 
-static void shake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
+static void shake_common_final(sha3_ctx *ctx, void *buffer, size_t size)
 {
 	uint64_t unhashed = ctx->message_size % ctx->block_size;
 	uint64_t output_size = 0;
@@ -135,7 +135,7 @@ void shake128_update(shake128_ctx *ctx, void *data, size_t size)
 	return sha3_update(ctx, data, size);
 }
 
-void shake128_final(shake128_ctx *ctx, byte_t *buffer, size_t size)
+void shake128_final(shake128_ctx *ctx, void *buffer, size_t size)
 {
 	return shake_common_final(ctx, buffer, size);
 }
@@ -206,7 +206,7 @@ void shake256_update(shake256_ctx *ctx, void *data, size_t size)
 	return sha3_update(ctx, data, size);
 }
 
-void shake256_final(shake256_ctx *ctx, byte_t *buffer, size_t size)
+void shake256_final(shake256_ctx *ctx, void *buffer, size_t size)
 {
 	return shake_common_final(ctx, buffer, size);
 }
@@ -313,7 +313,7 @@ uint64_t encode_string(byte_t *str, size_t str_size, byte_t *output)
 	return pos;
 }
 
-void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
+void cshake_common_final(sha3_ctx *ctx, void *buffer, size_t size)
 {
 	uint64_t unhashed = ctx->message_size % ctx->block_size;
 	uint64_t output_size = 0;
@@ -347,7 +347,7 @@ void cshake_common_final(sha3_ctx *ctx, byte_t *buffer, size_t size)
 	memset(ctx, 0, sizeof(sha3_ctx));
 }
 
-sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	byte_t pad[16] = {0};
 	uint64_t pos = 0;
@@ -391,7 +391,7 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, byte_t *name, size_t name_size, byte
 	return ctx;
 }
 
-static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	shake128_ctx *ctx = (shake128_ctx *)ptr;
 
@@ -409,7 +409,7 @@ static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, byte_t *na
 	return cshake_init_common(ctx, name, name_size, custom, custom_size);
 }
 
-shake128_ctx *cshake128_init(void *ptr, size_t size, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+shake128_ctx *cshake128_init(void *ptr, size_t size, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	if (size < sizeof(shake128_ctx))
 	{
@@ -419,7 +419,7 @@ shake128_ctx *cshake128_init(void *ptr, size_t size, uint32_t bits, byte_t *name
 	return cshake128_init_checked(ptr, bits, name, name_size, custom, custom_size);
 }
 
-shake128_ctx *cshake128_new(uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+shake128_ctx *cshake128_new(uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	shake128_ctx *ctx = (shake128_ctx *)malloc(sizeof(shake128_ctx));
 
@@ -436,7 +436,7 @@ void cshake128_delete(shake128_ctx *ctx)
 	free(ctx);
 }
 
-void cshake128_reset(shake128_ctx *ctx, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+void cshake128_reset(shake128_ctx *ctx, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	cshake128_init_checked(ctx, bits, name, name_size, custom, custom_size);
 }
@@ -446,12 +446,12 @@ void cshake128_update(shake128_ctx *ctx, void *data, size_t size)
 	return sha3_update(ctx, data, size);
 }
 
-void cshake128_final(shake128_ctx *ctx, byte_t *buffer, size_t size)
+void cshake128_final(shake128_ctx *ctx, void *buffer, size_t size)
 {
 	return cshake_common_final(ctx, buffer, size);
 }
 
-static shake256_ctx *cshake256_init_checked(void *ptr, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+static shake256_ctx *cshake256_init_checked(void *ptr, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	shake256_ctx *ctx = (shake256_ctx *)ptr;
 
@@ -469,7 +469,7 @@ static shake256_ctx *cshake256_init_checked(void *ptr, uint32_t bits, byte_t *na
 	return cshake_init_common(ctx, name, name_size, custom, custom_size);
 }
 
-shake256_ctx *cshake256_init(void *ptr, size_t size, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+shake256_ctx *cshake256_init(void *ptr, size_t size, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	if (size < sizeof(shake256_ctx))
 	{
@@ -479,7 +479,7 @@ shake256_ctx *cshake256_init(void *ptr, size_t size, uint32_t bits, byte_t *name
 	return cshake256_init_checked(ptr, bits, name, name_size, custom, custom_size);
 }
 
-shake256_ctx *cshake256_new(uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+shake256_ctx *cshake256_new(uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	shake256_ctx *ctx = (shake256_ctx *)malloc(sizeof(shake256_ctx));
 
@@ -496,7 +496,7 @@ void cshake256_delete(shake256_ctx *ctx)
 	free(ctx);
 }
 
-void cshake256_reset(shake256_ctx *ctx, uint32_t bits, byte_t *name, size_t name_size, byte_t *custom, size_t custom_size)
+void cshake256_reset(shake256_ctx *ctx, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	cshake256_init_checked(ctx, bits, name, name_size, custom, custom_size);
 }
@@ -506,7 +506,7 @@ void cshake256_update(shake256_ctx *ctx, void *data, size_t size)
 	return sha3_update(ctx, data, size);
 }
 
-void cshake256_final(shake256_ctx *ctx, byte_t *buffer, size_t size)
+void cshake256_final(shake256_ctx *ctx, void *buffer, size_t size)
 {
 	return cshake_common_final(ctx, buffer, size);
 }
