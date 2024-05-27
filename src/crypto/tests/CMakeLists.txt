@@ -22,6 +22,15 @@ function(crypto_hash_tests ...)
 	endforeach()
 endfunction()
 
+function(crypto_mac_tests ...)
+	foreach(test ${ARGV})
+		add_executable(test-${test} mac/test-${test}.c)
+		target_link_libraries(test-${test} crypto)
+		add_test(NAME test-${test} COMMAND test-${test} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	endforeach()
+endfunction()
+
+
 crypto_cipher_tests(
 aes
 aria
@@ -38,4 +47,8 @@ ripemd
 sha1
 sha2
 sha3
+)
+
+crypto_mac_tests(
+hmac
 )
