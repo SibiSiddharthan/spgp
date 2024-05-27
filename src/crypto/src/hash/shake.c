@@ -140,6 +140,20 @@ void shake128_final(shake128_ctx *ctx, byte_t *buffer, size_t size)
 	return shake_common_final(ctx, buffer, size);
 }
 
+void shake128_xof(void *data, size_t data_size, void *xof, size_t xof_size)
+{
+	shake128_ctx ctx;
+
+	// Initialize the context.
+	shake128_init_checked(&ctx, xof_size * 8);
+
+	// Hash the data.
+	shake128_update(&ctx, data, data_size);
+
+	// Output the XOF.
+	shake128_final(&ctx, xof, xof_size);
+}
+
 static inline shake256_ctx *shake256_init_checked(void *ptr, uint32_t bits)
 {
 	shake256_ctx *ctx = (shake256_ctx *)ptr;
@@ -195,6 +209,20 @@ void shake256_update(shake256_ctx *ctx, void *data, size_t size)
 void shake256_final(shake256_ctx *ctx, byte_t *buffer, size_t size)
 {
 	return shake_common_final(ctx, buffer, size);
+}
+
+void shake256_xof(void *data, size_t data_size, void *xof, size_t xof_size)
+{
+	shake256_ctx ctx;
+
+	// Initialize the context.
+	shake256_init_checked(&ctx, xof_size * 8);
+
+	// Hash the data.
+	shake256_update(&ctx, data, data_size);
+
+	// Output the XOF.
+	shake256_final(&ctx, xof, xof_size);
 }
 
 // Get the index of most significant non zero byte.
