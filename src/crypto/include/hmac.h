@@ -18,6 +18,7 @@
 typedef enum _hmac_algorithm
 {
 	HMAC_MD5,
+	HMAC_RIPEMD160,
 	HMAC_SHA1,
 	HMAC_SHA224,
 	HMAC_SHA256,
@@ -58,6 +59,7 @@ void hmac_update(hmac_ctx *hctx, void *data, size_t size);
 void hmac_final(hmac_ctx *hctx, void *mac, size_t size);
 
 void hmac_md5(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+void hmac_ripemd160(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
 void hmac_sha1(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
 void hmac_sha224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
 void hmac_sha256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);

@@ -12,6 +12,7 @@
 #include <hmac.h>
 #include <sha.h>
 #include <md5.h>
+#include <ripemd.h>
 
 // See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (HMAC)
 
@@ -22,6 +23,8 @@ static inline size_t get_ctx_size(hmac_algorithm algorithm)
 	{
 	case HMAC_MD5:
 		return sizeof(md5_ctx);
+	case HMAC_RIPEMD160:
+		return sizeof(ripemd160_ctx);
 	case HMAC_SHA1:
 		return sizeof(sha1_ctx);
 	case HMAC_SHA224:
@@ -122,6 +125,16 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
 		_final = (void (*)(void *, void *))md5_final;
+	}
+	break;
+	case HMAC_RIPEMD160:
+	{
+		hash_size = RIPEMD160_HASH_SIZE;
+		block_size = RIPEMD160_BLOCK_SIZE;
+		_ctx = ripemd160_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))ripemd160_reset;
+		_update = (void (*)(void *, void *, size_t))ripemd160_update;
+		_final = (void (*)(void *, void *))ripemd160_final;
 	}
 	break;
 	case HMAC_SHA1:
@@ -302,6 +315,11 @@ static void hmac_common(hmac_algorithm algorithm, void *key, size_t key_size, vo
 void hmac_md5(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_MD5, key, key_size, data, data_size, mac, mac_size);
+}
+
+void hmac_ripemd160(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return hmac_common(HMAC_RIPEMD160, key, key_size, data, data_size, mac, mac_size);
 }
 
 void hmac_sha1(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)

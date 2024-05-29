@@ -10,11 +10,13 @@
 
 #include <hmac.h>
 #include <md5.h>
+#include <ripemd.h>
 #include <sha.h>
 
 #include "test.h"
 
 // RFC 2202 : Test Cases for HMAC-MD5 and HMAC-SHA-1
+// RFC 2286 : Test Cases for HMAC-RIPEMD160 and HMAC-RIPEMD128
 // RFC 4231 : Identifiers and Test Vectors for HMAC-SHA-224, HMAC-SHA-256, HMAC-SHA-384, and HMAC-SHA-512
 
 int32_t hmac_md5_test_suite(void)
@@ -105,6 +107,96 @@ int32_t hmac_md5_test_suite(void)
 
 	return status;
 }
+
+int32_t hmac_ripemd160_test_suite(void)
+{
+	int32_t status = 0;
+
+	size_t key_size = 0;
+	byte_t key[128];
+	byte_t data[128];
+	byte_t mac[RIPEMD160_HASH_SIZE];
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 128);
+	memset(mac, 0, RIPEMD160_HASH_SIZE);
+
+	key_size = 20;
+	hex_to_block(key, key_size, "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b");
+	hmac_ripemd160(key, key_size, "Hi There", 8, mac, RIPEMD160_HASH_SIZE);
+
+	status += check_mac(mac, RIPEMD160_HASH_SIZE, "24cb4bd67d20fc1a5d2ed7732dcc39377f0a5668");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 128);
+	memset(mac, 0, RIPEMD160_HASH_SIZE);
+
+	key_size = 4;
+	hex_to_block(key, key_size, "4a656665"); // "Jefe"
+	hmac_ripemd160(key, key_size, "what do ya want for nothing?", 28, mac, RIPEMD160_HASH_SIZE);
+
+	status += check_mac(mac, RIPEMD160_HASH_SIZE, "dda6c0213a485a9e24f4742064a7f033b43c4069");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 128);
+	memset(mac, 0, RIPEMD160_HASH_SIZE);
+	memset(data, 0xdd, 50);
+
+	key_size = 20;
+	hex_to_block(key, key_size, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+	hmac_ripemd160(key, key_size, data, 50, mac, RIPEMD160_HASH_SIZE);
+
+	status += check_mac(mac, RIPEMD160_HASH_SIZE, "b0b105360de759960ab4f35298e116e295d8e7c1");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 128);
+	memset(mac, 0, RIPEMD160_HASH_SIZE);
+	memset(data, 0xcd, 50);
+
+	key_size = 25;
+	hex_to_block(key, key_size, "0102030405060708090a0b0c0d0e0f10111213141516171819");
+	hmac_ripemd160(key, key_size, data, 50, mac, RIPEMD160_HASH_SIZE);
+
+	status += check_mac(mac, RIPEMD160_HASH_SIZE, "d5ca862f4d21d5e610e18b4cf1beb97a4365ecf4");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 128);
+	memset(mac, 0, RIPEMD160_HASH_SIZE);
+
+	key_size = 20;
+	hex_to_block(key, key_size, "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c");
+	hmac_ripemd160(key, key_size, "Test With Truncation", 20, mac, 12);
+
+	status += check_mac(mac, 12, "7619693978f91d90539ae786");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(mac, 0, RIPEMD160_HASH_SIZE);
+
+	key_size = 80;
+	memset(key, 0xaa, key_size);
+	hmac_ripemd160(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac, RIPEMD160_HASH_SIZE);
+
+	status += check_mac(mac, RIPEMD160_HASH_SIZE, "6466ca07ac5eac29e1bd523e5ada7605b791fd8b");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(mac, 0, RIPEMD160_HASH_SIZE);
+
+	key_size = 80;
+	memset(key, 0xaa, key_size);
+	hmac_ripemd160(key, key_size, "Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data", 73, mac, RIPEMD160_HASH_SIZE);
+
+	status += check_mac(mac, RIPEMD160_HASH_SIZE, "69ea60798d71616cce5fd0871e23754cd75d5a0a");
+
+	return status;
+}
+
 
 int32_t hmac_sha1_test_suite(void)
 {
@@ -391,5 +483,5 @@ int32_t hmac_sha2_test_suite(void)
 
 int main()
 {
-	return hmac_md5_test_suite() + hmac_sha1_test_suite() + hmac_sha2_test_suite();
+	return hmac_md5_test_suite() + hmac_ripemd160_test_suite() + hmac_sha1_test_suite() + hmac_sha2_test_suite();
 }
