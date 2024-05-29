@@ -200,8 +200,8 @@ int32_t hmac_sha2_test_suite(void)
 	int32_t status = 0;
 
 	size_t key_size = 0;
-	byte_t key[128];
-	byte_t data[128];
+	byte_t key[256];
+	byte_t data[256];
 	byte_t mac_sha224[SHA224_HASH_SIZE];
 	byte_t mac_sha256[SHA256_HASH_SIZE];
 	byte_t mac_sha384[SHA384_HASH_SIZE];
@@ -209,7 +209,7 @@ int32_t hmac_sha2_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------
 
-	memset(key, 0, 128);
+	memset(key, 0, 256);
 	memset(mac_sha224, 0, SHA224_HASH_SIZE);
 	memset(mac_sha256, 0, SHA256_HASH_SIZE);
 	memset(mac_sha384, 0, SHA384_HASH_SIZE);
@@ -233,7 +233,7 @@ int32_t hmac_sha2_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------
 
-	memset(key, 0, 128);
+	memset(key, 0, 256);
 	memset(mac_sha224, 0, SHA224_HASH_SIZE);
 	memset(mac_sha256, 0, SHA256_HASH_SIZE);
 	memset(mac_sha384, 0, SHA384_HASH_SIZE);
@@ -257,7 +257,7 @@ int32_t hmac_sha2_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------
 
-	memset(key, 0, 128);
+	memset(key, 0, 256);
 	memset(data, 0xdd, 50);
 	memset(mac_sha224, 0, SHA224_HASH_SIZE);
 	memset(mac_sha256, 0, SHA256_HASH_SIZE);
@@ -282,7 +282,7 @@ int32_t hmac_sha2_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------
 
-	memset(key, 0, 128);
+	memset(key, 0, 256);
 	memset(data, 0xcd, 50);
 	memset(mac_sha224, 0, SHA224_HASH_SIZE);
 	memset(mac_sha256, 0, SHA256_HASH_SIZE);
@@ -307,7 +307,7 @@ int32_t hmac_sha2_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------
 
-	memset(key, 0, 128);
+	memset(key, 0, 256);
 	memset(mac_sha224, 0, SHA224_HASH_SIZE);
 	memset(mac_sha256, 0, SHA256_HASH_SIZE);
 	memset(mac_sha384, 0, SHA384_HASH_SIZE);
@@ -328,7 +328,7 @@ int32_t hmac_sha2_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------
 
-	memset(key, 0, 128);
+	memset(key, 0, 256);
 	memset(mac_sha224, 0, SHA224_HASH_SIZE);
 	memset(mac_sha256, 0, SHA256_HASH_SIZE);
 	memset(mac_sha384, 0, SHA384_HASH_SIZE);
@@ -352,7 +352,7 @@ int32_t hmac_sha2_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------
 
-	memset(key, 0, 128);
+	memset(key, 0, 256);
 	memset(mac_sha224, 0, SHA224_HASH_SIZE);
 	memset(mac_sha256, 0, SHA256_HASH_SIZE);
 	memset(mac_sha384, 0, SHA384_HASH_SIZE);
