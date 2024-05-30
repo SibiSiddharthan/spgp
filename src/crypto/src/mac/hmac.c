@@ -207,6 +207,46 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 		_final = (void (*)(void *, void *))sha512_256_final;
 	}
 	break;
+	case HMAC_SHA3_224:
+	{
+		hash_size = SHA3_224_HASH_SIZE;
+		block_size = SHA3_224_BLOCK_SIZE;
+		_ctx = sha3_224_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_224_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_224_update;
+		_final = (void (*)(void *, void *))sha3_224_final;
+	}
+	break;
+	case HMAC_SHA3_256:
+	{
+		hash_size = SHA3_256_HASH_SIZE;
+		block_size = SHA3_256_BLOCK_SIZE;
+		_ctx = sha3_256_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_256_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_256_update;
+		_final = (void (*)(void *, void *))sha3_256_final;
+	}
+	break;
+	case HMAC_SHA3_384:
+	{
+		hash_size = SHA3_384_HASH_SIZE;
+		block_size = SHA3_384_BLOCK_SIZE;
+		_ctx = sha3_384_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_384_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_384_update;
+		_final = (void (*)(void *, void *))sha3_384_final;
+	}
+	break;
+	case HMAC_SHA3_512:
+	{
+		hash_size = SHA3_512_HASH_SIZE;
+		block_size = SHA3_512_BLOCK_SIZE;
+		_ctx = sha3_512_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_512_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_512_update;
+		_final = (void (*)(void *, void *))sha3_512_final;
+	}
+	break;
 	}
 
 	hctx->algorithm = algorithm;
@@ -355,4 +395,24 @@ void hmac_sha512_224(void *key, size_t key_size, void *data, size_t data_size, v
 void hmac_sha512_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA512_256, key, key_size, data, data_size, mac, mac_size);
+}
+
+void hmac_sha3_224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return hmac_common(HMAC_SHA3_224, key, key_size, data, data_size, mac, mac_size);
+}
+
+void hmac_sha3_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return hmac_common(HMAC_SHA3_256, key, key_size, data, data_size, mac, mac_size);
+}
+
+void hmac_sha3_384(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return hmac_common(HMAC_SHA3_384, key, key_size, data, data_size, mac, mac_size);
+}
+
+void hmac_sha3_512(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return hmac_common(HMAC_SHA3_512, key, key_size, data, data_size, mac, mac_size);
 }

@@ -26,6 +26,10 @@ typedef enum _hmac_algorithm
 	HMAC_SHA512,
 	HMAC_SHA512_224,
 	HMAC_SHA512_256,
+	HMAC_SHA3_224,
+	HMAC_SHA3_256,
+	HMAC_SHA3_384,
+	HMAC_SHA3_512
 } hmac_algorithm;
 
 typedef struct _hmac_ctx
@@ -67,5 +71,9 @@ void hmac_sha384(void *key, size_t key_size, void *data, size_t data_size, void 
 void hmac_sha512(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
 void hmac_sha512_224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
 void hmac_sha512_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+void hmac_sha3_224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+void hmac_sha3_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+void hmac_sha3_384(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+void hmac_sha3_512(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
 
 #endif
