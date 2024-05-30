@@ -16,6 +16,8 @@
 #define SHAKE128_BLOCK_SIZE 168
 #define SHAKE256_BLOCK_SIZE 136
 
+typedef sha3_ctx shake128_ctx, shake256_ctx;
+
 shake128_ctx *shake128_init(void *ptr, size_t size, uint32_t bits);
 shake128_ctx *shake128_new(uint32_t bits);
 void shake128_delete(shake128_ctx *ctx);
