@@ -417,7 +417,7 @@ static void sha3_common_hash(size_t hash_size, size_t block_size, void *data, si
 	sha3_ctx ctx;
 
 	// Initialize the context.
-	sha3_init_checked_ex(&ctx, block_size, hash_size);
+	sha3_init_checked_ex(&ctx, hash_size, block_size);
 
 	// Hash the data.
 	sha3_update(&ctx, data, message_size);
@@ -465,7 +465,7 @@ void sha3_224_reset(sha3_224_ctx *ctx)
 
 void sha3_224_update(sha3_224_ctx *ctx, void *data, size_t size)
 {
-	return sha3_update(ctx, data, size);
+	sha3_update(ctx, data, size);
 }
 
 void sha3_224_final(sha3_224_ctx *ctx, byte_t buffer[SHA3_224_HASH_SIZE])
@@ -517,7 +517,7 @@ void sha3_256_reset(sha3_256_ctx *ctx)
 
 void sha3_256_update(sha3_256_ctx *ctx, void *data, size_t size)
 {
-	return sha3_update(ctx, data, size);
+	sha3_update(ctx, data, size);
 }
 
 void sha3_256_final(sha3_256_ctx *ctx, byte_t buffer[SHA3_256_HASH_SIZE])
@@ -569,7 +569,7 @@ void sha3_384_reset(sha3_384_ctx *ctx)
 
 void sha3_384_update(sha3_384_ctx *ctx, void *data, size_t size)
 {
-	return sha3_update(ctx, data, size);
+	sha3_update(ctx, data, size);
 }
 
 void sha3_384_final(sha3_384_ctx *ctx, byte_t buffer[SHA3_384_HASH_SIZE])
@@ -621,7 +621,7 @@ void sha3_512_reset(sha3_512_ctx *ctx)
 
 void sha3_512_update(sha3_512_ctx *ctx, void *data, size_t size)
 {
-	return sha3_update(ctx, data, size);
+	sha3_update(ctx, data, size);
 }
 
 void sha3_512_final(sha3_512_ctx *ctx, byte_t buffer[SHA3_512_HASH_SIZE])

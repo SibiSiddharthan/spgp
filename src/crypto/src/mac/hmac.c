@@ -35,6 +35,11 @@ static inline size_t get_ctx_size(hmac_algorithm algorithm)
 	case HMAC_SHA512_224:
 	case HMAC_SHA512_256:
 		return sizeof(sha512_ctx);
+	case HMAC_SHA3_224:
+	case HMAC_SHA3_256:
+	case HMAC_SHA3_384:
+	case HMAC_SHA3_512:
+		return sizeof(sha3_ctx);
 	default:
 		// Invalid hmac specifier.
 		return 0;
@@ -343,9 +348,9 @@ static void hmac_common(hmac_algorithm algorithm, void *key, size_t key_size, vo
 {
 	// A big enough buffer for the hash_ctx.
 	hmac_ctx *hctx = NULL;
-	byte_t buffer[1024];
+	byte_t buffer[1536];
 
-	hctx = hmac_init(buffer, 1024, algorithm, key, key_size);
+	hctx = hmac_init(buffer, 1536, algorithm, key, key_size);
 
 	// Compute the mac.
 	hmac_update(hctx, data, data_size);

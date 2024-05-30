@@ -190,13 +190,13 @@ int32_t hmac_ripemd160_test_suite(void)
 
 	key_size = 80;
 	memset(key, 0xaa, key_size);
-	hmac_ripemd160(key, key_size, "Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data", 73, mac, RIPEMD160_HASH_SIZE);
+	hmac_ripemd160(key, key_size, "Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data", 73, mac,
+				   RIPEMD160_HASH_SIZE);
 
 	status += check_mac(mac, RIPEMD160_HASH_SIZE, "69ea60798d71616cce5fd0871e23754cd75d5a0a");
 
 	return status;
 }
-
 
 int32_t hmac_sha1_test_suite(void)
 {
@@ -481,7 +481,261 @@ int32_t hmac_sha2_test_suite(void)
 	return status;
 }
 
+int32_t hmac_sha3_test_suite(void)
+{
+	int32_t status = 0;
+
+	size_t key_size = 0;
+	byte_t key[256];
+	byte_t data[256];
+	byte_t mac_sha3_224[SHA3_224_HASH_SIZE];
+	byte_t mac_sha3_256[SHA3_256_HASH_SIZE];
+	byte_t mac_sha3_384[SHA3_384_HASH_SIZE];
+	byte_t mac_sha3_512[SHA3_512_HASH_SIZE];
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 20;
+	hex_to_block(key, key_size, "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b");
+
+	hmac_sha3_224(key, key_size, "Hi There", 8, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size, "Hi There", 8, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size, "Hi There", 8, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size, "Hi There", 8, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "3b16546bbc7be2706a031dcafd56373d9884367641d8c59af3c860f7");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "ba85192310dffa96e2a3a40e69774351140bb7185e1202cdcc917589f95e16bb");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"68d2dcf7fd4ddd0a2240c8a437305f61fb7334cfb5d0226e1bc27dc10a2e723a20d370b47743130e26ac7e3d532886bd");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"eb3fbd4b2eaab8f5c504bd3a41465aacec15770a7cabac531e482f860b5ec7ba47ccb2c6f2afce8f88d22b6dc61380f23a668fd3888bb80537c0a0b86407689e");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 4;
+	hex_to_block(key, key_size, "4a656665"); // "Jefe"
+
+	hmac_sha3_224(key, key_size, "what do ya want for nothing?", 28, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size, "what do ya want for nothing?", 28, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size, "what do ya want for nothing?", 28, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size, "what do ya want for nothing?", 28, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "7fdb8dd88bd2f60d1b798634ad386811c2cfc85bfaf5d52bbace5e66");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "c7d4072e788877ae3596bbb0da73b887c9171f93095b294ae857fbe2645e1ba5");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"f1101f8cbf9766fd6764d2ed61903f21ca9b18f57cf3e1a23ca13508a93243ce48c045dc007f26a21b3f5e0e9df4c20a");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"5a4bfeab6166427c7a3647b747292b8384537cdb89afb3bf5665e4c5e709350b287baec921fd7ca0ee7a0c31d022a95e1fc92ba9d77df883960275beb4e62024");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(data, 0xdd, 50);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 20;
+	hex_to_block(key, key_size, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+	hmac_sha3_224(key, key_size, data, 50, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size, data, 50, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size, data, 50, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size, data, 50, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "676cfc7d16153638780390692be142d2df7ce924b909c0c08dbfdc1a");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "84ec79124a27107865cedd8bd82da9965e5ed8c37b0ac98005a7f39ed58a4207");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"275cd0e661bb8b151c64d288f1f782fb91a8abd56858d72babb2d476f0458373b41b6ab5bf174bec422e53fc3135ac6e");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"309e99f9ec075ec6c6d475eda1180687fcf1531195802a99b5677449a8625182851cb332afb6a89c411325fbcbcd42afcb7b6e5aab7ea42c660f97fd8584bf03");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(data, 0xcd, 50);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 25;
+	hex_to_block(key, key_size, "0102030405060708090a0b0c0d0e0f10111213141516171819");
+
+	hmac_sha3_224(key, key_size, data, 50, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size, data, 50, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size, data, 50, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size, data, 50, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "a9d7685a19c4e0dbd9df2556cc8a7d2a7733b67625ce594c78270eeb");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "57366a45e2305321a4bc5aa5fe2ef8a921f6af8273d7fe7be6cfedb3f0aea6d7");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"3a5d7a879702c086bc96d1dd8aa15d9c46446b95521311c606fdc4e308f4b984da2d0f9449b3ba8425ec7fb8c31bc136");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"b27eab1d6e8d87461c29f7f5739dd58e98aa35f8e823ad38c5492a2088fa0281993bbfff9a0e9c6bf121ae9ec9bb09d84a5ebac817182ea974673fb133ca0d1d");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 20;
+	hex_to_block(key, key_size, "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c");
+
+	hmac_sha3_224(key, key_size, "Test With Truncation", 20, mac_sha3_224, 16);
+	hmac_sha3_256(key, key_size, "Test With Truncation", 20, mac_sha3_256, 16);
+	hmac_sha3_384(key, key_size, "Test With Truncation", 20, mac_sha3_384, 16);
+	hmac_sha3_512(key, key_size, "Test With Truncation", 20, mac_sha3_512, 16);
+
+	status += check_mac(mac_sha3_224, 16, "49fdd3abd005ebb8ae63fea946d1883c");
+	status += check_mac(mac_sha3_256, 16, "6e02c64537fb118057abb7fb66a23b3c");
+	status += check_mac(mac_sha3_384, 16, "47c51ace1ffacffd7494724682615783");
+	status += check_mac(mac_sha3_512, 16, "0fa7475948f43f48ca0516671e18978c");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 131;
+	memset(key, 0xaa, key_size);
+
+	hmac_sha3_224(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "b4a1f04c00287a9b7f6075b313d279b833bc8f75124352d05fb9995f");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "ed73a374b96c005235f948032f09674a58c0ce555cfc1f223b02356560312c3b");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"0fc19513bf6bd878037016706a0e57bc528139836b9a42c3d419e498e0e1fb9616fd669138d33a1105e07c72b6953bcc");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"00f751a9e50695b090ed6911a4b65524951cdc15a73a5d58bb55215ea2cd839ac79d2b44a39bafab27e83fde9e11f6340b11d991b1b91bf2eee7fc872426c3a4");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 147;
+	memset(key, 0xaa, key_size);
+
+	hmac_sha3_224(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size, "Test Using Larger Than Block-Size Key - Hash Key First", 54, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "b96d730c148c2daad8649d83defaa3719738d34775397b7571c38515");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "a6072f86de52b38bb349fe84cd6d97fb6a37c4c0f62aae93981193a7229d3467");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"713dff0302c85086ec5ad0768dd65a13ddd79068d8d4c6212b712e41649449111480230044185a99103ed82004ddbfcc");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"b14835c819a290efb010ace6d8568dc6b84de60bc49b004c3b13eda763589451e5dd74292884d1bdce64e6b919dd61dc9c56a282a81c0bd14f1f365b49b83a5b");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 131;
+	memset(key, 0xaa, key_size);
+
+	hmac_sha3_224(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "05d8cd6d00faea8d1eb68ade28730bbd3cbab6929f0a086b29cd62a0");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "65c5b06d4c3de32a7aef8763261e49adb6e2293ec8e7c61e8de61701fc63e123");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"026fdf6b50741e373899c9f7d5406d4eb09fc6665636fc1a530029ddf5cf3ca5a900edce01f5f61e2f408cdf2fd3e7e8");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"38a456a004bd10d32c9ab8336684112862c3db61adcca31829355eaf46fd5c73d06a1f0d13fec9a652fb3811b577b1b1d1b9789f97ae5b83c6f44dfcf1d67eba");
+
+	// ----------------------------------------------------------------------------------------------
+
+	memset(key, 0, 256);
+	memset(mac_sha3_224, 0, SHA3_224_HASH_SIZE);
+	memset(mac_sha3_256, 0, SHA3_256_HASH_SIZE);
+	memset(mac_sha3_384, 0, SHA3_384_HASH_SIZE);
+	memset(mac_sha3_512, 0, SHA3_512_HASH_SIZE);
+
+	key_size = 147;
+	memset(key, 0xaa, key_size);
+
+	hmac_sha3_224(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_224, SHA3_224_HASH_SIZE);
+	hmac_sha3_256(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_256, SHA3_256_HASH_SIZE);
+	hmac_sha3_384(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_384, SHA3_384_HASH_SIZE);
+	hmac_sha3_512(key, key_size,
+				  "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before "
+				  "being used by the HMAC algorithm.",
+				  152, mac_sha3_512, SHA3_512_HASH_SIZE);
+
+	status += check_mac(mac_sha3_224, SHA3_224_HASH_SIZE, "c79c9b093424e588a9878bbcb089e018270096e9b4b1a9e8220c866a");
+	status += check_mac(mac_sha3_256, SHA3_256_HASH_SIZE, "e6a36d9b915f86a093cac7d110e9e04cf1d6100d30475509c2475f571b758b5a");
+	status += check_mac(mac_sha3_384, SHA3_384_HASH_SIZE,
+						"cad18a8ff6c4cc3ad487b95f9769e9b61c062aefd6952569e6e6421897054cfc70b5fdc6605c18457112fc6aaad45585");
+	status += check_mac(
+		mac_sha3_512, SHA3_512_HASH_SIZE,
+		"dc030ee7887034f32cf402df34622f311f3e6cf04860c6bbd7fa488674782b4659fdbdf3fd877852885cfe6e22185fe7b2ee952043629bc9d5f3298a41d02c66");
+
+	return status;
+}
+
 int main()
 {
-	return hmac_md5_test_suite() + hmac_ripemd160_test_suite() + hmac_sha1_test_suite() + hmac_sha2_test_suite();
+	return hmac_md5_test_suite() + hmac_ripemd160_test_suite() + hmac_sha1_test_suite() + hmac_sha2_test_suite() + hmac_sha3_test_suite();
 }
