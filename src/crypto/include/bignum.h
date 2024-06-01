@@ -11,13 +11,17 @@
 #include <stdint.h>
 #include <types.h>
 
+#define BIGNUM_WORD_SIZE 8
+
 typedef struct _bignum
 {
 	uint32_t bits;
-	uint32_t size;
+	int16_t sign;
+	int16_t resize;
 	uint64_t *qwords;
 } bignum_t;
 
+bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits);
 bignum_t *bignum_new(uint32_t bits);
 bignum_t *bignum_new_rand(uint32_t bits);
 void bignum_free(bignum_t *bn);
@@ -29,6 +33,9 @@ int32_t bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
+
+int32_t bignum_set_hex(bignum_t *bn, char *hex, size_t size);
+int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size);
 
 int32_t bignum_cmp(bignum_t *a, bignum_t *b);
 
