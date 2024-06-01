@@ -14,6 +14,8 @@
 #include <hash.h>
 #include <dsa.h>
 
+#if 0
+
 dsa_ctx *dsa_sign_init(dsa_key *key, hash_ctx *hctx)
 {
 	dsa_ctx *dctx = NULL;
@@ -223,3 +225,5 @@ int32_t dsa_verify(dsa_key *key, hash_ctx *hctx, void *message, size_t size, dsa
 
 	return status;
 }
+
+#endif

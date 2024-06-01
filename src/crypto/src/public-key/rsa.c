@@ -12,6 +12,8 @@
 #include <bignum.h>
 #include <rsa.h>
 
+#if 0
+
 bignum_t *rsa_public_encrypt(rsa_key *key, bignum_t *plain)
 {
 	if (key->bits < plain->bits)
@@ -934,3 +936,5 @@ int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size
 
 	return status;
 }
+
+#endif
