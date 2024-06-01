@@ -10,12 +10,13 @@
 
 #include <bignum.h>
 #include <byteswap.h>
-
-#define ROUNDUP(x, y) ((((x) + ((y)-1)) / (y)) * (y))
+#include <round.h>
 
 int32_t bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {
-	if (bn->size < size)
+	size_t required_size = ROUND_UP(bn->bits, 8) / 8;
+
+	if (required_size < size)
 	{
 		return -1;
 	}
@@ -28,10 +29,11 @@ int32_t bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 int32_t bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	uint64_t *qword = (uint64_t *)bytes;
-	size_t count = ROUNDUP(size, 8) / 8;
+	size_t count = ROUND_UP(size, 8) / 8;
+	size_t required_size = ROUND_UP(bn->bits, 8) / 8;
 	int32_t pos = 0;
 
-	if (bn->size < size)
+	if (required_size < size)
 	{
 		return -1;
 	}
@@ -81,7 +83,9 @@ int32_t bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 
 int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {
-	if (size < bn->size)
+	size_t required_size = ROUND_UP(bn->bits, 8) / 8;
+
+	if (required_size < size)
 	{
 		return -1;
 	}
@@ -94,9 +98,10 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	uint64_t *qword = (uint64_t *)bytes;
-	size_t count = bn->size / 8;
+	size_t count = ROUND_UP(bn->bits, BIGNUM_WORD_SIZE) / BIGNUM_WORD_SIZE;
+	size_t required_size = ROUND_UP(bn->bits, 8) / 8;
 
-	if (size < bn->size)
+	if (required_size < size)
 	{
 		return -1;
 	}
