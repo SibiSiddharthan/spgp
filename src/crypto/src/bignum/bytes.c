@@ -25,13 +25,17 @@ bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 	}
 	else
 	{
-		if (ROUND_UP(bn->bits, 8) / 8 < size)
+		if ((bn->count / BIGNUM_WORD_SIZE) < size)
 		{
 			return NULL;
 		}
 	}
 
-	memcpy(bn->qwords, bytes, size);
+	// Just copy the bytes straight to the word buffer.
+	memcpy(bn->words, bytes, size);
+
+	// Update bitcount.
+	bn->bits = bignum_bitcount(bn);
 
 	return bn;
 }
@@ -39,8 +43,7 @@ bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	uint64_t *qword = (uint64_t *)bytes;
-	size_t count = ROUND_UP(size, 8) / 8;
-	size_t required_size = ROUND_UP(bn->bits, 8) / 8;
+	size_t count = ROUND_UP(size, BIGNUM_WORD_SIZE) / BIGNUM_WORD_SIZE;
 	int32_t pos = 0;
 
 	if (bn == NULL)
@@ -54,51 +57,55 @@ bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 	}
 	else
 	{
-		if (ROUND_UP(bn->bits, 8) / 8 < size)
+		if ((bn->count / BIGNUM_WORD_SIZE) < size)
 		{
 			return NULL;
 		}
 	}
 
+	// Copy 64-bit words at a time, BSWAP'd.
 	for (size_t i = 0; i < count - 1; ++i)
 	{
-		bn->qwords[i] = BSWAP_64(qword[count - i - 1]);
+		bn->words[i] = BSWAP_64(qword[count - i - 1]);
 	}
 
-	bn->qwords[count - 1] = 0;
+	bn->words[count - 1] = 0;
 
 	switch (size % 8)
 	{
 	case 0:
-		bn->qwords[count - 1] = BSWAP_64(qword[0]);
+		bn->words[count - 1] = BSWAP_64(qword[0]);
 		break;
 	case 7:
-		bn->qwords[count - 1] = bytes[pos++];
-		bn->qwords[count - 1] <<= 8;
+		bn->words[count - 1] = bytes[pos++];
+		bn->words[count - 1] <<= 8;
 		// Fallthrough
 	case 6:
-		bn->qwords[count - 1] += bytes[pos++];
-		bn->qwords[count - 1] <<= 8;
+		bn->words[count - 1] += bytes[pos++];
+		bn->words[count - 1] <<= 8;
 		// Fallthrough
 	case 5:
-		bn->qwords[count - 1] += bytes[pos++];
-		bn->qwords[count - 1] <<= 8;
+		bn->words[count - 1] += bytes[pos++];
+		bn->words[count - 1] <<= 8;
 		// Fallthrough
 	case 4:
-		bn->qwords[count - 1] += bytes[pos++];
-		bn->qwords[count - 1] <<= 8;
+		bn->words[count - 1] += bytes[pos++];
+		bn->words[count - 1] <<= 8;
 		// Fallthrough
 	case 3:
-		bn->qwords[count - 1] += bytes[pos++];
-		bn->qwords[count - 1] <<= 8;
+		bn->words[count - 1] += bytes[pos++];
+		bn->words[count - 1] <<= 8;
 		// Fallthrough
 	case 2:
-		bn->qwords[count - 1] += bytes[pos++];
-		bn->qwords[count - 1] <<= 8;
+		bn->words[count - 1] += bytes[pos++];
+		bn->words[count - 1] <<= 8;
 		// Fallthrough
 	case 1:
-		bn->qwords[count - 1] += bytes[pos++];
+		bn->words[count - 1] += bytes[pos++];
 	}
+
+	// Update bitcount.
+	bn->bits = bignum_bitcount(bn);
 
 	return bn;
 }
@@ -112,7 +119,7 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 		return -1;
 	}
 
-	memcpy(bytes, bn->qwords, size);
+	memcpy(bytes, bn->words, size);
 
 	return 0;
 }
@@ -130,7 +137,7 @@ int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 
 	for (size_t i = 0; i < count; ++i)
 	{
-		qword[i] = BSWAP_64(bn->qwords[count - i - 1]);
+		qword[i] = BSWAP_64(bn->words[count - i - 1]);
 	}
 
 	return 0;

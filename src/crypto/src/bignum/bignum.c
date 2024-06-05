@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <bignum.h>
+#include <bitscan.h>
 #include <round.h>
 
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
@@ -16,7 +17,7 @@ bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 	bignum_t *bn = (bignum_t *)ptr;
 	size_t required_size = sizeof(bignum_t);
 
-	bits = ROUND_UP(bits, 64);
+	bits = ROUND_UP(bits, BIGNUM_BITS_PER_WORD);
 	required_size += bits / 8;
 
 	if (size < required_size)
@@ -28,8 +29,9 @@ bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 
 	if (bits > 0)
 	{
-		bn->bits = bits;
-		bn->qwords = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
+		bn->bits = 0;
+		bn->count = bits / BIGNUM_BITS_PER_WORD;
+		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
 	}
 
 	return bn;
@@ -40,7 +42,7 @@ bignum_t *bignum_new(uint32_t bits)
 	bignum_t *bn = NULL;
 	size_t size = sizeof(bignum_t);
 
-	bits = ROUND_UP(bits, 64);
+	bits = ROUND_UP(bits, BIGNUM_BITS_PER_WORD);
 	size += bits / 8;
 
 	bn = (bignum_t *)malloc(size);
@@ -54,8 +56,9 @@ bignum_t *bignum_new(uint32_t bits)
 
 	if (bits > 0)
 	{
-		bn->bits = bits;
-		bn->qwords = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
+		bn->bits = 0;
+		bn->count = bits / BIGNUM_BITS_PER_WORD;
+		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
 	}
 
 	return bn;
@@ -70,7 +73,7 @@ void bignum_free(bignum_t *bn)
 
 	if (bn->resize)
 	{
-		free(bn->qwords);
+		free(bn->words);
 	}
 
 	free(bn);
@@ -85,13 +88,26 @@ void bignum_secure_free(bignum_t *bn)
 
 	if (bn->resize)
 	{
-		free(bn->qwords);
+		free(bn->words);
 	}
 
 	free(bn);
 }
 
-void bignum_set(bignum_t *bn, uint64_t value)
+uint32_t bignum_bitcount(bignum_t *bn)
 {
-	bn->qwords[0] = value;
+	for (uint32_t i = bn->count - 1; i > 0; --i)
+	{
+		if (bn->words[i] != 0)
+		{
+			return (i * BIGNUM_BITS_PER_WORD) + bsr_64(bn->words[i]);
+		}
+	}
+
+	return bsr_64(bn->words[0]);
+}
+
+void bignum_set(bignum_t *bn, bn_word_t value)
+{
+	bn->words[0] = value;
 }
