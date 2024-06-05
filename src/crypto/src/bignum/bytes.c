@@ -12,30 +12,52 @@
 #include <byteswap.h>
 #include <round.h>
 
-int32_t bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
+bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {
-	size_t required_size = ROUND_UP(bn->bits, 8) / 8;
-
-	if (required_size < size)
+	if (bn == NULL)
 	{
-		return -1;
+		bn = bignum_new(size * 8);
+
+		if (bn == NULL)
+		{
+			return NULL;
+		}
+	}
+	else
+	{
+		if (ROUND_UP(bn->bits, 8) / 8 < size)
+		{
+			return NULL;
+		}
 	}
 
 	memcpy(bn->qwords, bytes, size);
 
-	return 0;
+	return bn;
 }
 
-int32_t bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
+bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	uint64_t *qword = (uint64_t *)bytes;
 	size_t count = ROUND_UP(size, 8) / 8;
 	size_t required_size = ROUND_UP(bn->bits, 8) / 8;
 	int32_t pos = 0;
 
-	if (required_size < size)
+	if (bn == NULL)
 	{
-		return -1;
+		bn = bignum_new(size * 8);
+
+		if (bn == NULL)
+		{
+			return NULL;
+		}
+	}
+	else
+	{
+		if (ROUND_UP(bn->bits, 8) / 8 < size)
+		{
+			return NULL;
+		}
 	}
 
 	for (size_t i = 0; i < count - 1; ++i)
@@ -78,7 +100,7 @@ int32_t bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 		bn->qwords[count - 1] += bytes[pos++];
 	}
 
-	return 0;
+	return bn;
 }
 
 int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
