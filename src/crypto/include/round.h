@@ -11,4 +11,7 @@
 #define ROUND_UP(x, y)   ((((x) + ((y) - 1)) / (y)) * (y))
 #define ROUND_DOWN(x, y) (((x) / (y)) * (y))
 
+#define CEIL_DIV(x, y)  (((x) + (y) - 1) / (y))
+#define FLOOR_DIV(x, y) ((x) / (y))
+
 #endif

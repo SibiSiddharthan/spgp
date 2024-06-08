@@ -30,7 +30,7 @@ bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 	if (bits > 0)
 	{
 		bn->bits = 0;
-		bn->count = bits / BIGNUM_BITS_PER_WORD;
+		bn->size = CEIL_DIV(bits, 8);
 		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
 	}
 
@@ -57,7 +57,7 @@ bignum_t *bignum_new(uint32_t bits)
 	if (bits > 0)
 	{
 		bn->bits = 0;
-		bn->count = bits / BIGNUM_BITS_PER_WORD;
+		bn->size = CEIL_DIV(bits, 8);
 		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
 	}
 
@@ -79,24 +79,12 @@ void bignum_free(bignum_t *bn)
 	free(bn);
 }
 
-void bignum_secure_free(bignum_t *bn)
-{
-	if (bn == NULL)
-	{
-		return;
-	}
-
-	if (bn->resize)
-	{
-		free(bn->words);
-	}
-
-	free(bn);
-}
-
 uint32_t bignum_bitcount(bignum_t *bn)
 {
-	for (uint32_t i = bn->count - 1; i > 0; --i)
+	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
+
+	// NOTE : The loop skips the last word.
+	for (uint32_t i = count - 1; i > 0; --i)
 	{
 		if (bn->words[i] != 0)
 		{
@@ -104,6 +92,7 @@ uint32_t bignum_bitcount(bignum_t *bn)
 		}
 	}
 
+	// Last word.
 	return bsr_64(bn->words[0]);
 }
 
