@@ -44,8 +44,8 @@ bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 
 bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 {
-	uint64_t *word = (uint64_t *)bytes;
-	size_t count = ROUND_UP(size, BIGNUM_WORD_SIZE) / BIGNUM_WORD_SIZE;
+	bn_word_t word = 0;
+	size_t count = CEIL_DIV(size, BIGNUM_WORD_SIZE);
 	int32_t pos = 0;
 
 	if (bn == NULL)
@@ -65,19 +65,20 @@ bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 		}
 	}
 
-	// Copy 64-bit words at a time, BSWAP'd.
-	for (size_t i = 0; i < count - 1; ++i)
+	while (size >= BIGNUM_WORD_SIZE)
 	{
-		bn->words[i] = BSWAP_64(word[count - i - 1]);
+		memcpy(&word, bytes + size - BIGNUM_WORD_SIZE, BIGNUM_WORD_SIZE);
+		bn->words[pos++] = BSWAP_64(word);
+
+		size -= BIGNUM_WORD_SIZE;
 	}
 
 	bn->words[count - 1] = 0;
+	pos = 0;
 
+	// Most significant word
 	switch (size % 8)
 	{
-	case 0:
-		bn->words[count - 1] = BSWAP_64(word[0]);
-		break;
 	case 7:
 		bn->words[count - 1] = bytes[pos++];
 		bn->words[count - 1] <<= 8;
@@ -123,26 +124,57 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 
 	memcpy(bytes, bn->words, required_size);
 
-	return 0;
+	return required_size;
 }
 
 int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 {
-	uint64_t *word = (uint64_t *)bytes;
-	size_t count = ROUND_UP(bn->bits, BIGNUM_WORD_SIZE) / BIGNUM_WORD_SIZE;
+	bn_word_t word = 0;
+	size_t count = CEIL_DIV(bn->bits, BIGNUM_BITS_PER_WORD);
 	size_t required_size = CEIL_DIV(bn->bits, 8);
+	size_t pos = 0;
+	size_t spill = 0;
 
-	if (required_size < size)
+	if (size < required_size)
 	{
 		return -1;
 	}
 
-	for (size_t i = 0; i < count; ++i)
+	// Most significant word
+	spill = required_size % BIGNUM_WORD_SIZE;
+	word = BSWAP_64(bn->words[count - 1]);
+
+	if (spill == 0)
 	{
-		word[i] = BSWAP_64(bn->words[count - i - 1]);
+		memcpy(bytes, &word, BIGNUM_WORD_SIZE);
+		pos += BIGNUM_WORD_SIZE;
+	}
+	else
+	{
+		memcpy(bytes, (byte_t *)&word + BIGNUM_WORD_SIZE - spill, spill);
+		pos += required_size % BIGNUM_WORD_SIZE;
 	}
 
-	return 0;
+	size_t i = count - 2;
+
+	while (1)
+	{
+		// If required_size is not multiple of BIGNUM_WORD_SIZE, a lot of unaligned accesses will happen.
+		// Just call memcpy to deal with it.
+		word = BSWAP_64(bn->words[i]);
+		memcpy(bytes + pos, &word, BIGNUM_WORD_SIZE);
+
+		pos += BIGNUM_WORD_SIZE;
+
+		if (i == 0)
+		{
+			break;
+		}
+
+		--i;
+	}
+
+	return required_size;
 }
 
 static const char nibble_to_hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
