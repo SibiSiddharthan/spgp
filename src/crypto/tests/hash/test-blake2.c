@@ -9,7 +9,7 @@
 #include <string.h>
 #include <blake2.h>
 
-#include "test.h"
+#include <test.h>
 
 // See RFC 7693 : The BLAKE2 Cryptographic Hash and Message Authentication Code, Appendix E
 
@@ -78,7 +78,7 @@ int32_t blake2b_selftest()
 
 	// Compute and compare the hash of hashes
 	blake2b_final(ctx, md, 32);
-	return check_hash(md, 32, "c23a7800d98123bd10f506c61e29da5603d763b8bbad2e737f5e765a7bccd475");
+	return CHECK_HASH(md, 32, "c23a7800d98123bd10f506c61e29da5603d763b8bbad2e737f5e765a7bccd475");
 }
 
 int blake2s_selftest()
@@ -110,7 +110,7 @@ int blake2s_selftest()
 
 	// Compute and compare the hash of hashes.
 	blake2s_final(ctx, md, 32);
-	return check_hash(md, 32, "6a411f08ce25adcdfb02aba641451cec53c598b24f4fc787fbdc88797f4c1dfe");
+	return CHECK_HASH(md, 32, "6a411f08ce25adcdfb02aba641451cec53c598b24f4fc787fbdc88797f4c1dfe");
 }
 
 int main()
