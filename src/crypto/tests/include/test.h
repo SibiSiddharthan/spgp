@@ -14,7 +14,7 @@
 
 static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-static byte_t hex_value(char ch)
+byte_t hex_value(char ch)
 {
 	switch (ch)
 	{
@@ -55,7 +55,7 @@ static byte_t hex_value(char ch)
 	return 255;
 }
 
-static void hex_to_block(byte_t *block, size_t size, char *hex)
+void hex_to_block(byte_t *block, size_t size, char *hex)
 {
 	uint64_t i = 0, j = 0;
 
@@ -65,7 +65,7 @@ static void hex_to_block(byte_t *block, size_t size, char *hex)
 	}
 }
 
-static void block_to_hex(byte_t *block, size_t in, char *hex, size_t out)
+void block_to_hex(const byte_t *block, size_t in, char *hex, size_t out)
 {
 	uint64_t i = 0, j = 0;
 
@@ -81,7 +81,7 @@ static void block_to_hex(byte_t *block, size_t in, char *hex, size_t out)
 	}
 }
 
-static int32_t check_block(byte_t *block, size_t size, char *expected, char *function, char *line)
+int32_t check_block(const byte_t *block, size_t size, const char *expected, const char *function, int32_t line)
 {
 	int32_t status;
 	char hex[1025] = {0};
@@ -95,7 +95,7 @@ static int32_t check_block(byte_t *block, size_t size, char *expected, char *fun
 		return 0;
 	}
 
-	printf("Block does not match in %s:%s.\nExpected: %s\nGot:      %s\n", function, line, expected, hex);
+	printf("Block does not match in %s:%d.\nExpected: %s\nGot:      %s\n", function, line, expected, hex);
 
 	return 1;
 }
