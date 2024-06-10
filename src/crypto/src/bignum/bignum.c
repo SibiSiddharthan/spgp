@@ -82,18 +82,24 @@ void bignum_free(bignum_t *bn)
 uint32_t bignum_bitcount(bignum_t *bn)
 {
 	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
+	uint32_t i = count - 1;
 
-	// NOTE : The loop skips the last word.
-	for (uint32_t i = count - 1; i > 0; --i)
+	while (1)
 	{
 		if (bn->words[i] != 0)
 		{
-			return (i * BIGNUM_BITS_PER_WORD) + bsr_64(bn->words[i]);
+			// bsr returns index starting from 0.
+			return (i * BIGNUM_BITS_PER_WORD) + bsr_64(bn->words[i]) + 1;
 		}
-	}
 
-	// Last word.
-	return bsr_64(bn->words[0]);
+		// All words of bn are zero.
+		if (i == 0)
+		{
+			return 0;
+		}
+
+		--i;
+	}
 }
 
 void bignum_set(bignum_t *bn, bn_word_t value)
