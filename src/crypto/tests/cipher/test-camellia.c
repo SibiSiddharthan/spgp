@@ -9,7 +9,7 @@
 #include <string.h>
 #include <camellia.h>
 
-#include "test.h"
+#include <test.h>
 
 // See RFC 5794: A Description of the CAMELLIA Encryption Algorithm, Appendix A for test vectors
 
@@ -27,11 +27,11 @@ int32_t camellia128_test_suite(void)
 
 	memset(ciphertext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, CAMELLIA_BLOCK_SIZE, "67673138549669730857065648eabe43");
+	status += CHECK_BLOCK(ciphertext, CAMELLIA_BLOCK_SIZE, "67673138549669730857065648eabe43");
 
 	memset(plaintext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
+	status += CHECK_BLOCK(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
 	camellia_key_delete(key);
 
@@ -52,11 +52,11 @@ int32_t camellia192_test_suite(void)
 
 	memset(ciphertext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, CAMELLIA_BLOCK_SIZE, "b4993401b3e996f84ee5cee7d79b09b9");
+	status += CHECK_BLOCK(ciphertext, CAMELLIA_BLOCK_SIZE, "b4993401b3e996f84ee5cee7d79b09b9");
 
 	memset(plaintext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
+	status += CHECK_BLOCK(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
 	camellia_key_delete(key);
 
@@ -77,11 +77,11 @@ int32_t camellia256_test_suite(void)
 
 	memset(ciphertext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, CAMELLIA_BLOCK_SIZE, "9acc237dff16d76c20ef7c919e3a7509");
+	status += CHECK_BLOCK(ciphertext, CAMELLIA_BLOCK_SIZE, "9acc237dff16d76c20ef7c919e3a7509");
 
 	memset(plaintext, 0, CAMELLIA_BLOCK_SIZE);
 	camellia_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
+	status += CHECK_BLOCK(plaintext, CAMELLIA_BLOCK_SIZE, "0123456789abcdeffedcba9876543210");
 
 	camellia_key_delete(key);
 

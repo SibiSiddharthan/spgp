@@ -9,7 +9,7 @@
 #include <string.h>
 #include <aria.h>
 
-#include "test.h"
+#include <test.h>
 
 // See RFC 5794: A Description of the ARIA Encryption Algorithm, Appendix A for test vectors
 
@@ -27,11 +27,11 @@ int32_t aria128_test_suite(void)
 
 	memset(ciphertext, 0, ARIA_BLOCK_SIZE);
 	aria_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, ARIA_BLOCK_SIZE, "d718fbd6ab644c739da95f3be6451778");
+	status += CHECK_BLOCK(ciphertext, ARIA_BLOCK_SIZE, "d718fbd6ab644c739da95f3be6451778");
 
 	memset(plaintext, 0, ARIA_BLOCK_SIZE);
 	aria_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
+	status += CHECK_BLOCK(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
 	aria_key_delete(key);
 
@@ -52,11 +52,11 @@ int32_t aria192_test_suite(void)
 
 	memset(ciphertext, 0, ARIA_BLOCK_SIZE);
 	aria_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, ARIA_BLOCK_SIZE, "26449c1805dbe7aa25a468ce263a9e79");
+	status += CHECK_BLOCK(ciphertext, ARIA_BLOCK_SIZE, "26449c1805dbe7aa25a468ce263a9e79");
 
 	memset(plaintext, 0, ARIA_BLOCK_SIZE);
 	aria_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
+	status += CHECK_BLOCK(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
 	aria_key_delete(key);
 
@@ -77,11 +77,11 @@ int32_t aria256_test_suite(void)
 
 	memset(ciphertext, 0, ARIA_BLOCK_SIZE);
 	aria_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, ARIA_BLOCK_SIZE, "f92bd7c79fb72e2f2b8f80c1972d24fc");
+	status += CHECK_BLOCK(ciphertext, ARIA_BLOCK_SIZE, "f92bd7c79fb72e2f2b8f80c1972d24fc");
 
 	memset(plaintext, 0, ARIA_BLOCK_SIZE);
 	aria_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
+	status += CHECK_BLOCK(plaintext, ARIA_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
 	aria_key_delete(key);
 

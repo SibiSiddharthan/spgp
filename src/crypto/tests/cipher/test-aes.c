@@ -9,7 +9,7 @@
 #include <string.h>
 #include <aes.h>
 
-#include "test.h"
+#include <test.h>
 
 // See NIST FIPS-197 ADVANCED ENCRYPTION STANDARD (AES), Appendix C
 
@@ -27,11 +27,11 @@ int32_t aes128_test_suite(void)
 
 	memset(ciphertext, 0, AES_BLOCK_SIZE);
 	aes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, AES_BLOCK_SIZE, "69c4e0d86a7b0430d8cdb78070b4c55a");
+	status += CHECK_BLOCK(ciphertext, AES_BLOCK_SIZE, "69c4e0d86a7b0430d8cdb78070b4c55a");
 
 	memset(plaintext, 0, AES_BLOCK_SIZE);
 	aes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
+	status += CHECK_BLOCK(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
 	aes_key_delete(key);
 
@@ -52,11 +52,11 @@ int32_t aes192_test_suite(void)
 
 	memset(ciphertext, 0, AES_BLOCK_SIZE);
 	aes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, AES_BLOCK_SIZE, "dda97ca4864cdfe06eaf70a0ec0d7191");
+	status += CHECK_BLOCK(ciphertext, AES_BLOCK_SIZE, "dda97ca4864cdfe06eaf70a0ec0d7191");
 
 	memset(plaintext, 0, AES_BLOCK_SIZE);
 	aes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
+	status += CHECK_BLOCK(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
 	aes_key_delete(key);
 
@@ -77,11 +77,11 @@ int32_t aes256_test_suite(void)
 
 	memset(ciphertext, 0, AES_BLOCK_SIZE);
 	aes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, AES_BLOCK_SIZE, "8ea2b7ca516745bfeafc49904b496089");
+	status += CHECK_BLOCK(ciphertext, AES_BLOCK_SIZE, "8ea2b7ca516745bfeafc49904b496089");
 
 	memset(plaintext, 0, AES_BLOCK_SIZE);
 	aes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
+	status += CHECK_BLOCK(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
 	aes_key_delete(key);
 

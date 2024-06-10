@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <des.h>
 
-#include "test.h"
+#include <test.h>
 
 // See openssl tests for des
 
@@ -29,11 +29,11 @@ int32_t des_test_suite(void)
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, DES_BLOCK_SIZE, "8ca64de9c1b123a7");
+	status += CHECK_BLOCK(ciphertext, DES_BLOCK_SIZE, "8ca64de9c1b123a7");
 
 	memset(plaintext, 0, DES_BLOCK_SIZE);
 	tdes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, DES_BLOCK_SIZE, "0000000000000000");
+	status += CHECK_BLOCK(plaintext, DES_BLOCK_SIZE, "0000000000000000");
 
 	tdes_key_delete(key);
 
@@ -46,11 +46,11 @@ int32_t des_test_suite(void)
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, DES_BLOCK_SIZE, "85e813540f0ab405");
+	status += CHECK_BLOCK(ciphertext, DES_BLOCK_SIZE, "85e813540f0ab405");
 
 	memset(plaintext, 0, DES_BLOCK_SIZE);
 	tdes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, DES_BLOCK_SIZE, "0123456789abcdef");
+	status += CHECK_BLOCK(plaintext, DES_BLOCK_SIZE, "0123456789abcdef");
 
 	tdes_key_delete(key);
 
@@ -63,11 +63,11 @@ int32_t des_test_suite(void)
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, DES_BLOCK_SIZE, "17668dfc7292532d");
+	status += CHECK_BLOCK(ciphertext, DES_BLOCK_SIZE, "17668dfc7292532d");
 
 	memset(plaintext, 0, DES_BLOCK_SIZE);
 	tdes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, DES_BLOCK_SIZE, "1111111111111111");
+	status += CHECK_BLOCK(plaintext, DES_BLOCK_SIZE, "1111111111111111");
 
 	tdes_key_delete(key);
 
@@ -91,11 +91,11 @@ int32_t tdes_test_suite(void)
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, DES_BLOCK_SIZE, "62c10cc9efbf15aa");
+	status += CHECK_BLOCK(ciphertext, DES_BLOCK_SIZE, "62c10cc9efbf15aa");
 
 	memset(plaintext, 0, DES_BLOCK_SIZE);
 	tdes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, DES_BLOCK_SIZE, "3736353433323120");
+	status += CHECK_BLOCK(plaintext, DES_BLOCK_SIZE, "3736353433323120");
 
 	tdes_key_delete(key);
 
@@ -111,11 +111,11 @@ int32_t tdes_test_suite(void)
 
 	memset(ciphertext, 0, DES_BLOCK_SIZE);
 	tdes_encrypt_block(key, plaintext, ciphertext);
-	status += check_block(ciphertext, DES_BLOCK_SIZE, "4d1332e49f380e23");
+	status += CHECK_BLOCK(ciphertext, DES_BLOCK_SIZE, "4d1332e49f380e23");
 
 	memset(plaintext, 0, DES_BLOCK_SIZE);
 	tdes_decrypt_block(key, ciphertext, plaintext);
-	status += check_block(plaintext, DES_BLOCK_SIZE, "3736353433323120");
+	status += CHECK_BLOCK(plaintext, DES_BLOCK_SIZE, "3736353433323120");
 
 	tdes_key_delete(key);
 
