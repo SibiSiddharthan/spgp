@@ -186,10 +186,10 @@ static const byte_t hex_to_nibble_table[256] =
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255, 255, 255, 255, 255,                       // 0 - 9
-	10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // A - F
+	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // A - F
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // a - f
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // a - f
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -230,6 +230,12 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 		}
 	}
 
+	// Require full byte.
+	if (size % 2 != 0)
+	{
+		return NULL;
+	}
+
 	if (bn == NULL)
 	{
 		bn = bignum_new(size * 8);
@@ -241,7 +247,7 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 	}
 	else
 	{
-		if (bn->size < size)
+		if (bn->size < (size / 2))
 		{
 			return NULL;
 		}
@@ -252,7 +258,7 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 
 	while (1)
 	{
-		bn->words[j / 16] += hex_to_nibble_table[(byte_t)hex[i]] << (((j + 1) % 16) * 4);
+		bn->words[j / 16] += (bn_word_t)hex_to_nibble_table[(byte_t)hex[i]] << ((j % 16) * 4);
 
 		if (i == 0)
 		{
@@ -295,7 +301,7 @@ int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size)
 	hex[result++] = '0';
 	hex[result++] = 'x';
 
-	for (int32_t i = count - 1; i >= 0; i -= 2)
+	for (int32_t i = count - 1; i >= 0; --i)
 	{
 		hex[result++] = nibble_to_hex_table[bytes[i] >> 4];
 		hex[result++] = nibble_to_hex_table[bytes[i] & 0xF];
