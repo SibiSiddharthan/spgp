@@ -31,6 +31,9 @@ bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 		{
 			return NULL;
 		}
+
+		// Zero the words.
+		memset(bn->words, 0, bn->size);
 	}
 
 	// Just copy the bytes straight to the word buffer.
@@ -63,6 +66,9 @@ bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 		{
 			return NULL;
 		}
+
+		// Zero the words.
+		memset(bn->words, 0, bn->size);
 	}
 
 	while (size >= BIGNUM_WORD_SIZE)
@@ -230,12 +236,6 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 		}
 	}
 
-	// Require full byte.
-	if (size % 2 != 0)
-	{
-		return NULL;
-	}
-
 	if (bn == NULL)
 	{
 		bn = bignum_new(size * 8);
@@ -247,10 +247,13 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 	}
 	else
 	{
-		if (bn->size < (size / 2))
+		if (bn->size < CEIL_DIV(size, 2))
 		{
 			return NULL;
 		}
+
+		// Zero the words.
+		memset(bn->words, 0, bn->size);
 	}
 
 	size_t i = size - 1;
@@ -301,7 +304,17 @@ int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size)
 	hex[result++] = '0';
 	hex[result++] = 'x';
 
-	for (int32_t i = count - 1; i >= 0; --i)
+	// Most significant byte
+	if ((bytes[count - 1] >> 4) != 0)
+	{
+		// Only print the nibble if it is not zero.
+		// Most bignumber implementations do this.
+		hex[result++] = nibble_to_hex_table[bytes[count - 1] >> 4];
+	}
+
+	hex[result++] = nibble_to_hex_table[bytes[count - 1] & 0xF];
+
+	for (int32_t i = count - 2; i >= 0; --i)
 	{
 		hex[result++] = nibble_to_hex_table[bytes[i] >> 4];
 		hex[result++] = nibble_to_hex_table[bytes[i] & 0xF];

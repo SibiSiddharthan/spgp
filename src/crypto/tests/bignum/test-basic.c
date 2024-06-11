@@ -72,7 +72,7 @@ int32_t bignum_hex_tests(void)
 
 	char buffer[64] = {0};
 	char *hex1 = "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa";
-	char *hex2 = "-00102030405060708090A0B0C0D0E0F0FFEEDDCCBBAA";
+	char *hex2 = "-0012030405060708090A0B0C0D0E0F0FFEEDDCCBBAA";
 
 	// --------------------------------------------------------------------------------------
 
@@ -90,14 +90,14 @@ int32_t bignum_hex_tests(void)
 
 	// --------------------------------------------------------------------------------------
 
-	bn = bignum_set_hex(NULL, hex2, 45);
+	bn = bignum_set_hex(NULL, hex2, 44);
 
 	memset(buffer, 0, 64);
 	result = bignum_get_hex(bn, buffer, 64);
 
 	// The first 00 should be trucated.
-	status += CHECK_HEX(buffer, "-0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 45);
-	status += CHECK_VALUE(result, 45);
+	status += CHECK_HEX(buffer, "-0x12030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	status += CHECK_VALUE(result, 44);
 
 	bignum_free(bn);
 	bn = NULL;
