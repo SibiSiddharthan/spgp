@@ -100,9 +100,38 @@ int32_t check_block(const byte_t *block, size_t size, const char *expected, cons
 	return 1;
 }
 
+int32_t check_hex(const char *actual, const char *expected, size_t size, const char *function, int32_t line)
+{
+	int32_t status;
+
+	status = memcmp(actual, expected, size);
+
+	if (status == 0)
+	{
+		return 0;
+	}
+
+	printf("Block does not match in %s:%d.\nExpected: %s\nGot:      %s\n", function, line, expected, actual);
+	return 1;
+}
+
+int32_t check_value(intmax_t actual, intmax_t expected, const char *expression, const char *function, int32_t line)
+{
+	if (actual != expected)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%lld == %lld)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
 // Macros that are used.
 #define CHECK_BLOCK(BLOCK, SIZE, EXPECT) check_block(BLOCK, SIZE, EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_HASH(BLOCK, SIZE, EXPECT)  check_block(BLOCK, SIZE, EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_MAC(BLOCK, SIZE, EXPECT)   check_block(BLOCK, SIZE, EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_HEX(ACTUAL, EXPECT, SIZE)  check_hex(ACTUAL, EXPECT, SIZE, __FUNCTION__, __LINE__)
+
+#define CHECK_VALUE(ACTUAL, EXPECT) check_value(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 
 #endif
