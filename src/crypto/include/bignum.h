@@ -41,6 +41,8 @@ void bignum_set(bignum_t *bn, bn_word_t value);
 uint32_t bignum_bitcount(bignum_t *bn);
 
 int32_t bignum_cmp(bignum_t *a, bignum_t *b);
+int32_t bignum_cmp_abs(bignum_t *a, bignum_t *b);
+
 bignum_t *bignum_rand(bignum_t *bn, uint32_t bits);
 
 bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b);
