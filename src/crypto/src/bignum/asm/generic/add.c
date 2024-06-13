@@ -6,8 +6,9 @@
 */
 
 #include <stdint.h>
+#include <bignum.h>
 
-uint8_t bignum_add_words(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count)
+uint8_t bignum_add_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count)
 {
 	uint8_t carry = 0;
 
@@ -16,7 +17,7 @@ uint8_t bignum_add_words(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count)
 		// We only need to check one of the values if there is a carry.
 		// *r < *a, *r < *b
 		*r = *a + *b + carry;
-		carry = (*r < *a); 
+		carry = (*r < *a);
 
 		a++;
 		b++;
@@ -24,4 +25,20 @@ uint8_t bignum_add_words(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count)
 	}
 
 	return carry;
+}
+
+void bignum_increment(bn_word_t *r, uint32_t count)
+{
+	for (uint32_t pos = 0; pos < count; ++pos)
+	{
+		++(*r);
+
+		// If there is no carry, return.
+		if (*r == 0)
+		{
+			return;
+		}
+
+		r++;
+	}
 }
