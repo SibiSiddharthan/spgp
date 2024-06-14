@@ -104,6 +104,19 @@ int32_t bignum_hex_tests(void)
 
 	// --------------------------------------------------------------------------------------
 
+	bn = bignum_set_hex(NULL, "-0x00000", 8);
+
+	memset(buffer, 0, 64);
+	result = bignum_get_hex(bn, buffer, 64);
+
+	status += CHECK_HEX(buffer, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_free(bn);
+	bn = NULL;
+
+	// --------------------------------------------------------------------------------------
+
 	return status;
 }
 
@@ -115,12 +128,47 @@ int32_t bignum_bitcount_tests(void)
 	bignum_t *bn = NULL;
 	char *hex = "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa";
 
+	// --------------------------------------------------------------------------------------
+
 	bn = bignum_set_hex(bn, hex, 44);
 	bits = bignum_bitcount(bn);
 
 	status += CHECK_VALUE(bits, 165);
 
 	bignum_free(bn);
+	bn = NULL;
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(bn, "0x2", 3);
+	bits = bignum_bitcount(bn);
+
+	status += CHECK_VALUE(bits, 2);
+
+	bignum_free(bn);
+	bn = NULL;
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(bn, "0x00", 4);
+	bits = bignum_bitcount(bn);
+
+	status += CHECK_VALUE(bits, 0);
+
+	bignum_free(bn);
+	bn = NULL;
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(bn, "-0x00", 5);
+	bits = bignum_bitcount(bn);
+
+	status += CHECK_VALUE(bits, 0);
+
+	bignum_free(bn);
+	bn = NULL;
+
+	// --------------------------------------------------------------------------------------
 
 	return status;
 }
