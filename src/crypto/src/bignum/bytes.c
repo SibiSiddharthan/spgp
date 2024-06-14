@@ -123,9 +123,21 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	size_t required_size = CEIL_DIV(bn->bits, 8);
 
-	if (size < required_size)
+	// If bn is zero output atleast 1 byte.
+	if (bn->bits == 0)
 	{
-		return -1;
+		if (size == 0)
+		{
+			return -1;
+		}
+
+		bytes[0] = 0x00;
+		return 1;
+	}
+
+	if (required_size == 0)
+	{
+		required_size = 1;
 	}
 
 	memcpy(bytes, bn->words, required_size);
@@ -140,6 +152,18 @@ int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 	size_t required_size = CEIL_DIV(bn->bits, 8);
 	size_t pos = 0;
 	size_t spill = 0;
+
+	// If bn is zero output atleast 1 byte.
+	if (bn->bits == 0)
+	{
+		if (size == 0)
+		{
+			return -1;
+		}
+
+		bytes[0] = 0x00;
+		return 1;
+	}
 
 	if (size < required_size)
 	{
@@ -275,6 +299,11 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 	bn->sign = sign;
 	bn->bits = bignum_bitcount(bn);
 
+	if (bn->bits == 0)
+	{
+		bn->sign = 1;
+	}
+
 	return bn;
 }
 
@@ -285,6 +314,20 @@ int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size)
 	size_t required_size = 2 + CEIL_DIV(bn->bits, 8);
 	uint32_t count = CEIL_DIV(bn->bits, 8);
 	byte_t *bytes = (byte_t *)bn->words;
+
+	if (bn->bits == 0)
+	{
+		if (size < 3)
+		{
+			return -1;
+		}
+
+		hex[result++] = '0';
+		hex[result++] = 'x';
+		hex[result++] = '0';
+
+		return result;
+	}
 
 	if (bn->sign < 0)
 	{
