@@ -34,7 +34,7 @@ void bignum_increment(bn_word_t *r, uint32_t count)
 		++(*r);
 
 		// If there is no carry, return.
-		if (*r == 0)
+		if (*r != 0)
 		{
 			return;
 		}

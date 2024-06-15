@@ -6,15 +6,18 @@
 */
 
 #include <stdint.h>
+#include <bignum.h>
 
-uint8_t bignum_sub_words(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count)
+void bignum_increment(bn_word_t *r, uint32_t count);
+
+uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count)
 {
 	uint8_t borrow = 0;
 
 	for (uint32_t pos = 0; pos < count; ++pos)
 	{
 		*r = *a - *b - borrow;
-		borrow = (*r > *a); 
+		borrow = (*r > *a);
 
 		a++;
 		b++;
@@ -22,4 +25,17 @@ uint8_t bignum_sub_words(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count)
 	}
 
 	return borrow;
+}
+
+void bignum_2complement(bn_word_t *r, uint32_t count)
+{
+	// Invert
+	for (uint32_t pos = 0; pos < count; ++pos)
+	{
+		*r = ~(*r);
+		r++;
+	}
+
+	// Add one
+	bignum_increment(r, count);
 }
