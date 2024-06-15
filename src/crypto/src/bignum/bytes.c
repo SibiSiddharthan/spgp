@@ -236,9 +236,9 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 	int16_t sign = 1;
 
 	// Check for negative sign
-	if (hex[0] == '-')
+	if (hex[0] == '-' || hex[0] == '+')
 	{
-		sign = -1;
+		sign = hex[0] == '-' ? -1 : 1;
 
 		hex += 1;
 		size -= 1;
