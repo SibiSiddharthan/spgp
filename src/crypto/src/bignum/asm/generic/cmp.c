@@ -19,7 +19,7 @@ int32_t bignum_cmp_words(bn_word_t *a, bn_word_t *b, uint32_t count)
 	a += (count - 1);
 	b += (count - 1);
 
-	for (int32_t pos = 0; pos < count; ++pos)
+	for (uint32_t pos = 0; pos < count; ++pos)
 	{
 		result = *a - *b;
 

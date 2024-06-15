@@ -5,11 +5,20 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
+set(bignum_asm 
+bignum/asm/generic/add.c
+bignum/asm/generic/cmp.c
+bignum/asm/generic/mul.c
+bignum/asm/generic/sub.c
+)
+
 add_library(crypto STATIC
 #bignum
 bignum/bignum.c
 bignum/bytes.c
 bignum/add.c
+bignum/cmp.c
+${bignum_asm}
 #cipher
 cipher/aes.c
 cipher/aria.c
