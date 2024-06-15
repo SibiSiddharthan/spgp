@@ -16,8 +16,9 @@ add_library(crypto STATIC
 #bignum
 bignum/bignum.c
 bignum/bytes.c
-bignum/add.c
 bignum/cmp.c
+bignum/add.c
+bignum/sub.c
 ${bignum_asm}
 #cipher
 cipher/aes.c
