@@ -29,11 +29,13 @@ uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t coun
 
 void bignum_2complement(bn_word_t *r, uint32_t count)
 {
+	bn_word_t *t = r;
+
 	// Invert
 	for (uint32_t pos = 0; pos < count; ++pos)
 	{
-		*r = ~(*r);
-		r++;
+		*t = ~(*t);
+		t++;
 	}
 
 	// Add one

@@ -62,7 +62,7 @@ bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
 
 		if (carry)
 		{
-			bignum_increment(r->words + min_words, CEIL_DIV(a->bits - b->bits, BIGNUM_BITS_PER_WORD));
+			bignum_increment(r->words + min_words, CEIL_DIV(1 + a->bits - b->bits, BIGNUM_BITS_PER_WORD));
 		}
 
 		r->sign = a->sign;
@@ -84,6 +84,8 @@ bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
 			r->sign = swap == NULL ? a->sign : b->sign;
 		}
 	}
+
+	r->bits = bignum_bitcount(r);
 
 	return r;
 }
