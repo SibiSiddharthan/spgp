@@ -43,6 +43,7 @@ function(crypto_mac_tests ...)
 endfunction()
 
 crypto_bignum_tests(
+arithmetic
 basic
 )
 

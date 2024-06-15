@@ -19,7 +19,7 @@ int32_t bignum_cmp_words(bn_word_t *a, bn_word_t *b, uint32_t count)
 	a += (count - 1);
 	b += (count - 1);
 
-	for (uint32_t pos = 0; pos < count; ++pos)
+	for (uint32_t pos = 0; pos < count; ++pos, --a, --b)
 	{
 		result = *a - *b;
 
@@ -28,19 +28,16 @@ int32_t bignum_cmp_words(bn_word_t *a, bn_word_t *b, uint32_t count)
 			continue;
 		}
 
-		// a > b
-		if (result <= *a)
-		{
-			return 1;
-		}
 		// a < b
-		else
+		if (result > *a)
 		{
 			return -1;
 		}
-
-		--a;
-		--b;
+		// a > b
+		else
+		{
+			return 1;
+		}
 	}
 
 	// a = b
