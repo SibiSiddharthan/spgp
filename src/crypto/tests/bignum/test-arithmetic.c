@@ -148,6 +148,22 @@ int32_t bignum_add_tests(void)
 
 	// ------------------------------------------------------------------------
 
+	a = bignum_set_hex(NULL, "a00000fd00000000fd000000fd000000", 32);
+	b = bignum_set_hex(NULL, "fd000000fd000000", 16);
+	c = bignum_add(NULL, a, b);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "0xa00000fd00000001fa000001fa000000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
 	a = bignum_set_hex(NULL, "-a00000fd00000000fd000000fd000000", 33);
 	b = bignum_set_hex(NULL, "-b00000fd00000000fd000000fd000000", 33);
 	c = bignum_add(NULL, a, b);

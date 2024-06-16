@@ -37,7 +37,7 @@ static void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_word
 	return;
 }
 
-static void bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
+static int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
 {
 	uint8_t borrow;
 
@@ -53,10 +53,10 @@ static void bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_word
 	if (borrow)
 	{
 		bignum_2complement(r->words, total_words);
-		r->sign = -1 * r->sign;
+		return -1;
 	}
 
-	return;
+	return 1;
 }
 
 bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
@@ -108,19 +108,8 @@ bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
 	else
 	{
 		// Different sign, subract b from a.
-		uint8_t borrow = bignum_sub_words(r->words, a->words, b->words, min_words);
-
-		if (borrow)
-		{
-			// This should only happen if (a < b) and (a->bits == bits).
-			bignum_2complement(r->words, min_words);
-
-			r->sign = swap == NULL ? b->sign : a->sign;
-		}
-		else
-		{
-			r->sign = swap == NULL ? a->sign : b->sign;
-		}
+		int32_t sign = bignum_usub(r, a, b, min_words, total_words);
+		r->sign = sign * (swap == NULL ? a->sign : b->sign);
 	}
 
 	r->bits = bignum_bitcount(r);
@@ -173,23 +162,12 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	if (a->sign == b->sign)
 	{
-		// Subract b from a.
-		uint8_t borrow = bignum_sub_words(r->words, a->words, b->words, min_words);
-
-		if (borrow)
-		{
-			// This should only happen if (a < b) and (a->bits == bits).
-			bignum_2complement(r->words, min_words);
-
-			r->sign = swap == NULL ? b->sign : a->sign;
-		}
-		else
-		{
-			r->sign = swap == NULL ? a->sign : b->sign;
-		}
+		sign = bignum_usub(r, a, b, min_words, total_words);
+		r->sign = a->sign * sign;
 	}
 	else
 	{
+		// Different sign, add a,b.
 		bignum_uadd(r, a, b, min_words, total_words);
 		r->sign = sign;
 	}
