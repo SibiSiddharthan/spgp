@@ -27,6 +27,22 @@ uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t coun
 	return borrow;
 }
 
+void bignum_decrement(bn_word_t *r, uint32_t count)
+{
+	for (uint32_t pos = 0; pos < count; ++pos)
+	{
+		--(*r);
+
+		// If there is no carry, return.
+		if (*r != (bn_word_t)-1)
+		{
+			return;
+		}
+
+		r++;
+	}
+}
+
 void bignum_2complement(bn_word_t *r, uint32_t count)
 {
 	bn_word_t *t = r;

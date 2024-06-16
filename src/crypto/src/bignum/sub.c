@@ -16,6 +16,30 @@ uint8_t bignum_sub_words(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count);
 void bignum_increment(bn_word_t *r, uint32_t count);
 void bignum_2complement(bn_word_t *r, uint32_t count);
 
+void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words);
+
+void bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
+{
+	uint8_t borrow;
+
+	borrow = bignum_sub_words(r->words, a->words, b->words, min_words);
+
+	for (uint32_t pos = min_words; pos < total_words; ++pos)
+	{
+		r->words[pos] = a->words[pos] - borrow;
+		borrow = (r->words[pos] == (bn_word_t)-1);
+	}
+
+	// This should only happen if (a < b) and (a->bits == bits).
+	if (borrow)
+	{
+		bignum_2complement(r->words, total_words);
+		r->sign = -1 * r->sign;
+	}
+
+	return;
+}
+
 bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	bignum_t *swap = NULL;
@@ -78,19 +102,7 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 	}
 	else
 	{
-		// Different sign -> add a and b, and set sign.
-		uint8_t carry = bignum_add_words(r->words, a->words, b->words, min_words);
-
-		if (total_words - min_words > 0)
-		{
-			memcpy(r->words + min_words, a->words + min_words, total_words - min_words);
-		}
-
-		if (carry)
-		{
-			bignum_increment(r->words + min_words, CEIL_DIV(1 + a->bits - b->bits, BIGNUM_BITS_PER_WORD));
-		}
-
+		bignum_uadd(r, a, b, min_words, total_words);
 		r->sign = sign;
 	}
 

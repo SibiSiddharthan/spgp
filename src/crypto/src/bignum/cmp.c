@@ -31,7 +31,7 @@ int32_t bignum_cmp(bignum_t *a, bignum_t *b)
 	else
 	{
 		// a is positive, b is negative
-		if (a->sign > 0)
+		if (a->sign >= 0)
 		{
 			return 1;
 		}
