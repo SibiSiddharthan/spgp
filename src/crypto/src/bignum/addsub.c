@@ -121,6 +121,7 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	bignum_t *swap = NULL;
 	int32_t sign = a->sign;
+	int32_t sign2 = sign;
 
 	uint32_t required_bits = 0;
 	uint32_t min_words = 0;
@@ -132,6 +133,8 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 		swap = a;
 		a = b;
 		b = swap;
+
+		sign2 = -1 * sign2;
 	}
 
 	required_bits = a->bits;
@@ -162,8 +165,8 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	if (a->sign == b->sign)
 	{
-		sign = bignum_usub(r, a, b, min_words, total_words);
-		r->sign = a->sign * sign;
+		int32_t sign3 = bignum_usub(r, a, b, min_words, total_words);
+		r->sign = sign3 * sign2;
 	}
 	else
 	{

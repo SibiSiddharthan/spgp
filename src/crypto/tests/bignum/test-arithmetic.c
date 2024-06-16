@@ -247,7 +247,132 @@ int32_t bignum_add_tests(void)
 	return status;
 }
 
+int32_t bignum_sub_tests(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	bignum_t *a = NULL, *b = NULL, *c = NULL;
+	char hex[64] = {0};
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "100000fd00000000fd000000fd000000", 32);
+	b = bignum_set_hex(NULL, "200000fd00000000fd000000fd000000", 32);
+	c = bignum_sub(NULL, a, b);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "-0x10000000000000000000000000000000", 35);
+	status += CHECK_VALUE(result, 35);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "100000fd00000000fd000000fd000000", 32);
+	b = bignum_set_hex(NULL, "100000fd00000000fd000000fd000004", 32);
+	c = bignum_sub(NULL, a, b);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "-0x4", 4);
+	status += CHECK_VALUE(result, 4);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "-100000fd00000000fd000000fd000000", 33);
+	b = bignum_set_hex(NULL, "-100000fd00000000fd000000fd000004", 33);
+	c = bignum_sub(NULL, a, b);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "0x4", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "a00000fd00000000fd000000fd000000", 32);
+	b = bignum_set_hex(NULL, "fd000000fd000000", 16);
+	c = bignum_sub(NULL, a, b);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "0xa00000fd000000000000000000000000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "a00000fd00000000fd000000fd000000", 32);
+	b = bignum_set_hex(NULL, "fd000000fd000000", 16);
+	c = bignum_sub(NULL, b, a);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "-0xa00000fd000000000000000000000000", 35);
+	status += CHECK_VALUE(result, 35);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "-a00000fd00000000fd000000fd000000", 33);
+	b = bignum_set_hex(NULL, "-fd000000fd000000", 17);
+	c = bignum_sub(NULL, a, b);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "-0xa00000fd000000000000000000000000", 35);
+	status += CHECK_VALUE(result, 35);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "a00000fd00000000fd000000fd000000", 32);
+	b = bignum_set_hex(NULL, "-fd000000fd000000", 17);
+	c = bignum_sub(NULL, a, b);
+
+	memset(hex, 0, 64);
+	result = bignum_get_hex(c, hex, 64);
+
+	status += CHECK_HEX(hex, "0xa00000fd00000001fa000001fa000000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(a);
+	bignum_free(b);
+	bignum_free(c);
+
+	// ------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return bignum_cmp_tests() + bignum_add_tests();
+	return bignum_cmp_tests() + bignum_add_tests() + bignum_sub_tests();
 }
