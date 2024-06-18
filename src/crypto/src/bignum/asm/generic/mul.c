@@ -6,29 +6,28 @@
 */
 
 #include <stdint.h>
+#include <bignum.h>
 
-static void basecase_multiply(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count)
+static void basecase_multiply(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words, uint32_t b_words)
 {
-	uint64_t temp = 0;
-	uint64_t carry = 0;
-	uint64_t high = 0;
-	uint64_t low = 0;
+	bn_word_t temp = 0;
+	bn_word_t carry = 0;
+	bn_word_t high = 0;
+	bn_word_t low = 0;
 
 	uint32_t *a32 = (uint32_t *)a;
 	uint32_t *b32 = (uint32_t *)b;
 	uint32_t *r32 = (uint32_t *)r;
 
-	count *= 2;
-
-	// Iterations go from r32[0 ... 2*count - 2]
-	for (uint32_t i = 0; i < count; ++i)
+	// Iterations go from r32[0 ... 2*a_words + 2*b_words - 2]
+	for (uint32_t i = 0; i < a_words * 2; ++i)
 	{
-		for (uint32_t j = 0; j < count; ++j)
+		for (uint32_t j = 0; j < b_words * 2; ++j)
 		{
 			// Multiply 2 32-bit words to form a 64 bit product.
 			// The high part is the carry for the next multiplication
 			// The low part is added with the carry from previous multiplication to r32.
-			temp = (uint64_t)a32[j] * (uint64_t)b32[i];
+			temp = (bn_word_t)a32[j] * (bn_word_t)b32[i];
 			high = temp >> 32;
 			low = temp & 0xFFFFFFFF;
 
@@ -41,5 +40,10 @@ static void basecase_multiply(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t co
 	}
 
 	// Last 32-bit word.
-	r32[2 * count - 1] = (uint32_t)(carry & 0xFFFFFFFF);
+	r32[(2 * a_words) + (2 * b_words) - 1] = (uint32_t)(carry & 0xFFFFFFFF);
+}
+
+void bignum_mul_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words, uint32_t b_words)
+{
+	return basecase_multiply(r, a, b, a_words, b_words);
 }
