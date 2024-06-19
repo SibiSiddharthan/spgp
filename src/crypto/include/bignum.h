@@ -27,6 +27,8 @@ typedef struct _bignum_t
 
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits);
 bignum_t *bignum_new(uint32_t bits);
+bignum_t *bignum_copy(void *ptr, size_t size, bignum_t *bn);
+bignum_t *bignum_dup(bignum_t *bn);
 void bignum_free(bignum_t *bn);
 
 bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);

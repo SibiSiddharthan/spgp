@@ -83,6 +83,40 @@ void bignum_free(bignum_t *bn)
 	free(bn);
 }
 
+bignum_t *bignum_copy(void *ptr, size_t size, bignum_t *bn)
+{
+	bignum_t *bn2 = ptr;
+
+	if (size < (sizeof(bignum_t) + bn->size))
+	{
+		return NULL;
+	}
+
+	memcpy(bn2->words, bn->words, bn2->size);
+
+	bn2->bits = bn->bits;
+	bn2->sign = bn->sign;
+
+	return bn2;
+}
+
+bignum_t *bignum_dup(bignum_t *bn)
+{
+	bignum_t *bn2 = bignum_new(bn->bits);
+
+	if (bn2 == NULL)
+	{
+		return NULL;
+	}
+
+	memcpy(bn2->words, bn->words, bn2->size);
+
+	bn2->bits = bn->bits;
+	bn2->sign = bn->sign;
+
+	return bn2;
+}
+
 uint32_t bignum_bitcount(bignum_t *bn)
 {
 	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
