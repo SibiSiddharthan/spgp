@@ -6,10 +6,11 @@
 ]]
 
 set(bignum_asm 
-bignum/asm/generic/add.c
 bignum/asm/generic/cmp.c
-bignum/asm/generic/mul.c
+bignum/asm/generic/add.c
 bignum/asm/generic/sub.c
+bignum/asm/generic/mul.c
+bignum/asm/generic/div.c
 )
 
 add_library(crypto STATIC
@@ -19,6 +20,7 @@ bignum/bytes.c
 bignum/cmp.c
 bignum/addsub.c
 bignum/mul.c
+bignum/divmod.c
 ${bignum_asm}
 #cipher
 cipher/aes.c
