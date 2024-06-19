@@ -113,6 +113,11 @@ bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	r->bits = bignum_bitcount(r);
 
+	if (r->bits == 0)
+	{
+		r->sign = 1;
+	}
+
 	return r;
 }
 
@@ -175,6 +180,11 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 	}
 
 	r->bits = bignum_bitcount(r);
+
+	if (r->bits == 0)
+	{
+		r->sign = 1;
+	}
 
 	return r;
 }

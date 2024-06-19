@@ -16,6 +16,12 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	uint32_t required_bits = a->bits + b->bits;
 
+	// Handle zero
+	if (a->bits == 0 || b->bits == 0)
+	{
+		required_bits = 0;
+	}
+
 	if (r == NULL)
 	{
 		r = bignum_new(required_bits);
@@ -33,15 +39,9 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 	}
 
-	// Handle zero
 	if (a->bits == 0 || b->bits == 0)
 	{
-		bignum_t *bn_nz = b->bits == 0 ? a : b;
-
-		r = bignum_copy(r, sizeof(bignum_t) + r->size, bn_nz);
-		r->bits = bn_nz->bits;
-		r->sign = bn_nz->sign;
-
+		bignum_zero(r);
 		return r;
 	}
 
