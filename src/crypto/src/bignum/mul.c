@@ -42,7 +42,9 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 	}
 
 	bignum_mul_words(r->words, a->words, b->words, CEIL_DIV(a->bits, BIGNUM_BITS_PER_WORD), CEIL_DIV(b->bits, BIGNUM_BITS_PER_WORD));
+	
 	r->sign = a->sign * b->sign;
+	r->bits = bignum_bitcount(r);
 
 	return r;
 }
