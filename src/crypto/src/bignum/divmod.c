@@ -62,7 +62,7 @@ int32_t bignum_divmod(bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r)
 	}
 	else
 	{
-		if ((*q)->bits < quotient_bits)
+		if (((*q)->size * 8) < quotient_bits)
 		{
 			return -1;
 		}
@@ -80,7 +80,7 @@ int32_t bignum_divmod(bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r)
 	}
 	else
 	{
-		if ((*r)->bits < remainder_bits)
+		if (((*r)->size * 8) < remainder_bits)
 		{
 			return -1;
 		}

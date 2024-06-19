@@ -33,7 +33,7 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 	}
 	else
 	{
-		if (r->bits < required_bits)
+		if ((r->size * 8) < required_bits)
 		{
 			return NULL;
 		}
