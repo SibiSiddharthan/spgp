@@ -33,6 +33,18 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 	}
 
+	// Handle zero
+	if (a->bits == 0 || b->bits == 0)
+	{
+		bignum_t *bn_nz = b->bits == 0 ? a : b;
+
+		r = bignum_copy(r, sizeof(bignum_t) + r->size, bn_nz);
+		r->bits = bn_nz->bits;
+		r->sign = bn_nz->sign;
+
+		return r;
+	}
+
 	if (a->bits < b->bits)
 	{
 		// Swap a,b such that |a| > |b|.
