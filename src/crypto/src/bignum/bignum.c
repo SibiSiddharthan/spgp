@@ -12,6 +12,11 @@
 #include <bitscan.h>
 #include <round.h>
 
+size_t bignum_size(uint32_t bits)
+{
+	return sizeof(bignum_t) + CEIL_DIV(bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE;
+}
+
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 {
 	bignum_t *bn = (bignum_t *)ptr;
@@ -87,7 +92,7 @@ bignum_t *bignum_copy(void *ptr, size_t size, bignum_t *bn)
 {
 	bignum_t *bn2 = ptr;
 
-	if (size < (sizeof(bignum_t) + bn->size))
+	if (size < bignum_size(bn->bits))
 	{
 		return NULL;
 	}

@@ -25,6 +25,8 @@ typedef struct _bignum_t
 	bn_word_t *words;
 } bignum_t;
 
+size_t bignum_size(uint32_t bits);
+
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits);
 bignum_t *bignum_new(uint32_t bits);
 bignum_t *bignum_copy(void *ptr, size_t size, bignum_t *bn);
