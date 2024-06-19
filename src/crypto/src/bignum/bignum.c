@@ -27,9 +27,11 @@ bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 
 	memset(bn, 0, required_size);
 
+	bn->bits = 0;
+	bn->sign = 1;
+
 	if (bits > 0)
 	{
-		bn->bits = 0;
 		bn->size = CEIL_DIV(bits, 8);
 		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
 	}
@@ -54,9 +56,11 @@ bignum_t *bignum_new(uint32_t bits)
 
 	memset(bn, 0, size);
 
+	bn->bits = 0;
+	bn->sign = 1;
+
 	if (bits > 0)
 	{
-		bn->bits = 0;
 		bn->size = CEIL_DIV(bits, 8);
 		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
 	}
@@ -100,6 +104,15 @@ uint32_t bignum_bitcount(bignum_t *bn)
 
 		--i;
 	}
+}
+
+void bignum_zero(bignum_t *bn)
+{
+	// Zero the words and reset the struct.
+	memset(bn->words, 0, bn->size);
+
+	bn->bits = 0;
+	bn->sign = 1;
 }
 
 void bignum_set(bignum_t *bn, bn_word_t value)

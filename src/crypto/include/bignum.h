@@ -37,6 +37,7 @@ int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
 bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size);
 int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size);
 
+void bignum_zero(bignum_t *bn);
 void bignum_set(bignum_t *bn, bn_word_t value);
 uint32_t bignum_bitcount(bignum_t *bn);
 
