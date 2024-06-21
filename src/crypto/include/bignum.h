@@ -55,6 +55,10 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b);
+
+bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift);
+bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift);
+
 bignum_t *bignum_modadd(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
 bignum_t *bignum_modmul(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
 bignum_t *bignum_modexp(bignum_t *r, bignum_t *a, bignum_t *p, bignum_t *m);
