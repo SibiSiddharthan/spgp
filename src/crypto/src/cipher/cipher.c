@@ -56,7 +56,7 @@ size_t cipher_ctx_size(cipher_algorithm algorithm)
 	return sizeof(cipher_ctx) + get_ctx_size(algorithm);
 }
 
-cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, cipher_mode mode, byte_t *key, size_t key_size)
+cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, cipher_mode mode, void *key, size_t key_size)
 {
 	cipher_ctx *cctx = (cipher_ctx *)ptr;
 
@@ -195,7 +195,7 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, ciph
 	return _ctx;
 }
 
-cipher_ctx *cipher_new(cipher_algorithm algorithm, cipher_mode mode, byte_t *key, size_t key_size)
+cipher_ctx *cipher_new(cipher_algorithm algorithm, cipher_mode mode, void *key, size_t key_size)
 {
 	cipher_ctx *cctx = NULL;
 	cipher_ctx *result = NULL;
@@ -235,8 +235,8 @@ void cipher_reset(cipher_ctx *cctx, cipher_mode mode)
 	cctx->mode = mode;
 }
 
-void cipher_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-void cipher_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-
-void cipher_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
-void cipher_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
+//void cipher_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+//void cipher_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+//
+//void cipher_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
+//void cipher_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
