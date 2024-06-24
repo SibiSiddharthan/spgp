@@ -66,9 +66,6 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 	uint32_t q32_words = 0;
 	uint32_t r32_words = 0;
 
-	uint32_t dv_high;
-	uint32_t shift = 0;
-
 	// Get the correct word count.
 	if (dd32[dd32_words - 1] == 0)
 	{
@@ -84,8 +81,8 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 	r32_words = dv32_words;
 
 	// Normalize the divisor, dividend
-	dv_high = dv32[dv32_words - 1];
-	shift = 31 - bsr_32(dv_high);
+	uint32_t dv_high = dv32[dv32_words - 1];
+	uint32_t shift = 31 - bsr_32(dv_high);
 
 	dv_high <<= shift;
 
@@ -124,9 +121,6 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 	// The dividend will always be extended by one word.
 	++dd32_words;
 
-	// First division
-	// div_4_words()
-
 	for (int32_t i = q32_words - 1; i >= 0; --i)
 	{
 		uint8_t carry = 0, borrow = 0;
@@ -135,6 +129,13 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 
 		// Estimate a quotient
 		qe = div_3_words(((bn_word_t)dd32_norm[i + dv32_words] << 32) + (bn_word_t)dd32_norm[i + dv32_words - 1], dv_high);
+
+		if (qe == 0)
+		{
+			// Zero shortcut
+			q32[i] = qe;
+			continue;
+		}
 
 		// Calculate q*dv
 		memset(temp, 0, (dd32_words + 1) * sizeof(uint32_t)); // For safety.
