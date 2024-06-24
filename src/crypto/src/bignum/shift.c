@@ -33,12 +33,9 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 		}
 	}
 
-	if (word_shift > 0)
-	{
-		// Use memmove here as a,r can be the same.
-		memset(r->words, 0, word_shift * BIGNUM_WORD_SIZE);
-		memmove((byte_t *)r->words + (word_shift * BIGNUM_WORD_SIZE), a->words, CEIL_DIV(a->bits, 8));
-	}
+	// Use memmove here as a,r can be the same.
+	memset(r->words, 0, word_shift * BIGNUM_WORD_SIZE);
+	memmove((byte_t *)r->words + (word_shift * BIGNUM_WORD_SIZE), a->words, CEIL_DIV(a->bits, 8));
 
 	if (bit_shift > 0)
 	{
@@ -83,11 +80,8 @@ bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 		}
 	}
 
-	if (word_shift > 0)
-	{
-		// Use memmove here as a,r can be the same.
-		memmove(r->words, (byte_t *)a->words + (word_shift * BIGNUM_WORD_SIZE), a->size - (word_shift * BIGNUM_WORD_SIZE));
-	}
+	// Use memmove here as a,r can be the same.
+	memmove(r->words, (byte_t *)a->words + (word_shift * BIGNUM_WORD_SIZE), a->size - (word_shift * BIGNUM_WORD_SIZE));
 
 	if (bit_shift > 0)
 	{
