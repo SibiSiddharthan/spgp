@@ -8,26 +8,22 @@
 #include <stdint.h>
 #include <bignum.h>
 
-static void basecase_multiply(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words, uint32_t b_words, uint32_t r_words)
+static void basecase_multiply(uint32_t *r32, uint32_t *a32, uint32_t *b32, uint32_t a32_words, uint32_t b32_words, uint32_t r32_words)
 {
 	bn_word_t temp = 0;
 	bn_word_t carry = 0;
 	bn_word_t high = 0;
 	bn_word_t low = 0;
 
-	uint32_t *a32 = (uint32_t *)a;
-	uint32_t *b32 = (uint32_t *)b;
-	uint32_t *r32 = (uint32_t *)r;
-
-	// Iterations go from r32[0 ... 2*a_words + 2*b_words - 2]
-	for (uint32_t i = 0; i < a_words * 2; ++i)
+	// Iterations go from r32[0 ... a32_words + b32_words - 2]
+	for (uint32_t i = 0; i < a32_words; ++i)
 	{
 		carry = 0;
 
-		for (uint32_t j = 0; j < b_words * 2; ++j)
+		for (uint32_t j = 0; j < b32_words; ++j)
 		{
 			// Skip iterations where zero words would be accessed.
-			if ((i + j) >= (r_words * 2))
+			if ((i + j) >= r32_words)
 			{
 				continue;
 			}
@@ -46,16 +42,35 @@ static void basecase_multiply(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t
 			carry = high;
 		}
 
-		if ((i + (2 * b_words)) >= (r_words * 2))
+		if ((i + b32_words) >= r32_words)
 		{
 			continue;
 		}
 
-		r32[i + (2 * b_words)] = (uint32_t)(carry & 0xFFFFFFFF);
+		r32[i + b32_words] = (uint32_t)(carry & 0xFFFFFFFF);
 	}
 }
 
 void bignum_mul_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words, uint32_t b_words, uint32_t r_words)
 {
-	return basecase_multiply(r, a, b, a_words, b_words, r_words);
+	uint32_t *a32 = (uint32_t *)a;
+	uint32_t *b32 = (uint32_t *)b;
+	uint32_t *r32 = (uint32_t *)r;
+
+	uint32_t a32_words = a_words * 2;
+	uint32_t b32_words = b_words * 2;
+	uint32_t r32_words = r_words * 2;
+
+	// Calculate the correct word count.
+	if (a32[a32_words - 1] == 0)
+	{
+		--a32_words;
+	}
+
+	if (b32[b32_words - 1] == 0)
+	{
+		--b32_words;
+	}
+
+	return basecase_multiply(r32, a32, b32, a32_words, b32_words, r32_words);
 }
