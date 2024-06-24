@@ -13,12 +13,15 @@
 #include <round.h>
 
 uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
-void bignum_div_words(bn_word_t *dd, bn_word_t *dv, bn_word_t *q, bn_word_t *r, uint32_t dd_words, uint32_t dv_words);
+void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q, bn_word_t *r, uint32_t dd_words, uint32_t dv_words);
 
-int32_t bignum_divmod(bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r)
+int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r)
 {
 	bool quotient_needed = true;
 	bool remainder_needed = true;
+	bool free_scratch = false;
+
+	size_t required_scratch_size = 0;
 
 	uint32_t quotient_bits = dd->bits - dv->bits;
 	uint32_t remainder_bits = dv->bits;
@@ -139,7 +142,28 @@ int32_t bignum_divmod(bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r)
 	}
 
 	// General case long division.
-	bignum_div_words(dd->words, dv->words, (*q)->words, (*r)->words, CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD),
+	// For normalized dividend, normalized divsor, multiplication scratch.
+	required_scratch_size = (CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3;
+
+	if (scratch == NULL)
+	{
+		free_scratch = true;
+		scratch = malloc(required_scratch_size);
+
+		if (scratch == NULL)
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		if (scratch_size < required_scratch_size)
+		{
+			return -1;
+		}
+	}
+
+	bignum_div_words(scratch, dd->words, dv->words, (*q)->words, (*r)->words, CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD),
 					 CEIL_DIV(dv->bits, BIGNUM_BITS_PER_WORD));
 
 	(*q)->bits = bignum_bitcount(*q);
@@ -160,12 +184,17 @@ finalize:
 		bignum_free(remainder);
 	}
 
+	if (free_scratch)
+	{
+		free(scratch);
+	}
+
 	return 0;
 }
 
 bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 {
-	int32_t status = bignum_divmod(a, b, &r, NULL);
+	int32_t status = bignum_divmod(NULL, 0, a, b, &r, NULL);
 
 	if (status == -1)
 	{
@@ -177,7 +206,7 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 
 bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
 {
-	int32_t status = bignum_divmod(a, b, NULL, &r);
+	int32_t status = bignum_divmod(NULL, 0, a, b, NULL, &r);
 
 	if (status == -1)
 	{
