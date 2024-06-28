@@ -8,11 +8,13 @@
 #ifndef CRYPTO_BIGNUM_H
 #define CRYPTO_BIGNUM_H
 
-#include <stdint.h>
 #include <types.h>
+#include <round.h>
 
 #define BIGNUM_WORD_SIZE     8
 #define BIGNUM_BITS_PER_WORD (8 * BIGNUM_WORD_SIZE)
+
+#define BIGNUM_WORD_COUNT(BN) (CEIL_DIV((BN)->bits, BIGNUM_BITS_PER_WORD))
 
 typedef uint64_t bn_word_t;
 
