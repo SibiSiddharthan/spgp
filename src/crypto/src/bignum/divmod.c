@@ -12,8 +12,12 @@
 #include <bignum.h>
 #include <round.h>
 
-uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
+void bignum_increment(bn_word_t *r, uint32_t count);
+void bignum_2complement(bn_word_t *r, uint32_t count);
 void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q, bn_word_t *r, uint32_t dd_words, uint32_t dv_words);
+
+uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
+int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words);
 
 int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r)
 {
@@ -25,6 +29,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 
 	uint32_t quotient_bits = dd->bits - dv->bits + 1;
 	uint32_t remainder_bits = dv->bits;
+	int32_t quotient_sign = dd->sign * dv->sign;
 
 	bignum_t *quotient = NULL;
 	bignum_t *remainder = NULL;
@@ -35,7 +40,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 		return -1;
 	}
 
-	if (dv->sign < 0)
+	if (quotient_sign < 0)
 	{
 		++quotient_bits;
 	}
@@ -112,38 +117,26 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	}
 
 	// Divisor is greater than dividend
-	if (dv->bits >= dd->bits)
+	if (dv->bits > dd->bits)
 	{
-		if (dv->bits == dd->bits)
+		if (quotient_sign > 0)
 		{
-			// Divisor may be greater than dividend. Subract divisor from dividend,
-			// if remainder is negative jump to else. Otherwise quotient must be 1.
-			uint8_t borrow = bignum_sub_words((*r)->words, dd->words, dv->words, CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD));
-
-			if (borrow)
-			{
-				goto zero_quotient;
-			}
-
-			// Set quotient to 1.
-			(*q)->words[0] = 1;
-			(*q)->bits = 1;
-			(*q)->sign = dd->sign * dv->sign;
-
-			(*r)->bits = bignum_bitcount(*r);
-			(*r)->sign = dv->sign;
-
-			goto finalize;
+			bignum_zero(*q);
+			bignum_copy(*r, sizeof(bignum_t) + (*r)->size, dv);
 		}
 		else
 		{
+			(*q)->words[0] = 1;
+			(*q)->sign = -1;
+			(*q)->bits = 1;
 
-		zero_quotient:
-			bignum_zero(*q);
-			bignum_copy(*r, sizeof(bignum_t) + (*r)->size, dv);
+			bignum_usub(*r, dv, dd, CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD), CEIL_DIV(dv->bits, BIGNUM_BITS_PER_WORD));
 
-			goto finalize;
+			(*r)->sign = dv->sign;
+			(*r)->bits = bignum_bitcount(*r);
 		}
+
+		goto finalize;
 	}
 
 	// General case long division.
@@ -171,12 +164,22 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	bignum_div_words(scratch, dd->words, dv->words, (*q)->words, (*r)->words, CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD),
 					 CEIL_DIV(dv->bits, BIGNUM_BITS_PER_WORD));
 
+	// The sign of the remainder will be same as that of the divisor.
+	(*q)->sign = quotient_sign;
+	(*r)->sign = dv->sign;
+
+	if (quotient_sign < 0)
+	{
+		// Increase quotient by 1.
+		bignum_increment((*q)->words, CEIL_DIV(quotient_bits, BIGNUM_BITS_PER_WORD));
+
+		// Subract divisor from remainder and take 2's complement.
+		bignum_sub_words((*r)->words, (*r)->words, dv->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+		bignum_2complement((*r)->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+	}
+
 	(*q)->bits = bignum_bitcount(*q);
 	(*r)->bits = bignum_bitcount(*r);
-
-	// The sign of the remainder will be same as that of the divisor.
-	(*q)->sign = dd->sign * dv->sign;
-	(*r)->sign = dv->sign;
 
 finalize:
 	if (!quotient_needed)

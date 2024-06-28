@@ -15,7 +15,7 @@ uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t coun
 
 void bignum_2complement(bn_word_t *r, uint32_t count);
 
-static void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
+void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
 {
 	uint8_t carry;
 
@@ -36,7 +36,7 @@ static void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_word
 	return;
 }
 
-static int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
+int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
 {
 	uint8_t borrow;
 
