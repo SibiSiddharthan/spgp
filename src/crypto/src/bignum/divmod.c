@@ -23,7 +23,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 
 	size_t required_scratch_size = 0;
 
-	uint32_t quotient_bits = dd->bits - dv->bits;
+	uint32_t quotient_bits = dd->bits - dv->bits + 1;
 	uint32_t remainder_bits = dv->bits;
 
 	bignum_t *quotient = NULL;
@@ -33,6 +33,11 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	if (dv->bits == 0)
 	{
 		return -1;
+	}
+
+	if (dv->sign < 0)
+	{
+		++quotient_bits;
 	}
 
 	if (q == NULL)
