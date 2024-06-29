@@ -24,7 +24,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	bool free_scratch = false;
 	size_t required_scratch_size = 0;
 
-	uint32_t quotient_bits = dd->bits - dv->bits + 1;
+	uint32_t quotient_bits = (dd->bits >= dv->bits) ? dd->bits - dv->bits + 1 : 1;
 	uint32_t remainder_bits = dv->bits;
 	int32_t quotient_sign = dd->sign * dv->sign;
 
@@ -126,7 +126,7 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	int32_t status;
 
-	uint32_t quotient_bits = a->bits - b->bits + 1;
+	uint32_t quotient_bits = (a->bits >= b->bits) ? a->bits - b->bits + 1 : 1;
 	uint32_t remainder_bits = b->bits;
 	int32_t quotient_sign = a->sign * b->sign;
 
@@ -178,7 +178,7 @@ bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	int32_t status;
 
-	uint32_t quotient_bits = a->bits - b->bits + 1;
+	uint32_t quotient_bits = (a->bits >= b->bits) ? a->bits - b->bits + 1 : 1;
 	uint32_t remainder_bits = b->bits;
 	int32_t quotient_sign = a->sign * b->sign;
 
