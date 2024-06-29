@@ -66,6 +66,6 @@ bignum_t *bignum_modmul(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
 bignum_t *bignum_modexp(bignum_t *r, bignum_t *a, bignum_t *p, bignum_t *m);
 bignum_t *bignum_modinv(bignum_t *r, bignum_t *a, bignum_t *p);
 
-int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r);
+int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r);
 
 #endif

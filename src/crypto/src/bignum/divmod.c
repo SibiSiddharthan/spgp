@@ -19,20 +19,14 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
 int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words);
 
-int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t **q, bignum_t **r)
+int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r)
 {
-	bool quotient_needed = true;
-	bool remainder_needed = true;
 	bool free_scratch = false;
-
 	size_t required_scratch_size = 0;
 
 	uint32_t quotient_bits = dd->bits - dv->bits + 1;
 	uint32_t remainder_bits = dv->bits;
 	int32_t quotient_sign = dd->sign * dv->sign;
-
-	bignum_t *quotient = NULL;
-	bignum_t *remainder = NULL;
 
 	// Zero divisor, error.
 	if (dv->bits == 0)
@@ -45,73 +39,11 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 		++quotient_bits;
 	}
 
-	if (q == NULL)
-	{
-		quotient_needed = false;
-		q = &quotient;
-	}
-
-	if (r == NULL)
-	{
-		remainder_needed = false;
-		r = &remainder;
-	}
-
-	// What is the point of going further?
-	if (!quotient_needed && !remainder_needed)
-	{
-		return -1;
-	}
-
-	// Initialize the quotient
-	if (*q == NULL)
-	{
-		*q = bignum_new(quotient_bits);
-
-		if (*q == NULL)
-		{
-			return -1;
-		}
-	}
-	else
-	{
-		if (((*q)->size * 8) < quotient_bits)
-		{
-			return -1;
-		}
-	}
-
-	// Initialize the remainder
-	if (*r == NULL)
-	{
-		*r = bignum_new(remainder_bits);
-
-		if (*r == NULL)
-		{
-			return -1;
-		}
-	}
-	else
-	{
-		if (((*r)->size * 8) < remainder_bits)
-		{
-			return -1;
-		}
-	}
-
-	if (*q == NULL || *r == NULL)
-	{
-		bignum_free(*q);
-		bignum_free(*r);
-
-		return -1;
-	}
-
 	// Zero dividend
 	if (dd->bits == 0)
 	{
-		bignum_zero(*q);
-		bignum_zero(*r);
+		bignum_zero(q);
+		bignum_zero(r);
 
 		goto finalize;
 	}
@@ -121,19 +53,19 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	{
 		if (quotient_sign > 0)
 		{
-			bignum_zero(*q);
-			bignum_copy(*r, sizeof(bignum_t) + (*r)->size, dv);
+			bignum_zero(q);
+			bignum_copy(r, sizeof(bignum_t) + r->size, dv);
 		}
 		else
 		{
-			(*q)->words[0] = 1;
-			(*q)->sign = -1;
-			(*q)->bits = 1;
+			q->words[0] = 1;
+			q->sign = -1;
+			q->bits = 1;
 
-			bignum_usub(*r, dv, dd, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
+			bignum_usub(r, dv, dd, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
 
-			(*r)->sign = dv->sign;
-			(*r)->bits = bignum_bitcount(*r);
+			r->sign = dv->sign;
+			r->bits = bignum_bitcount(r);
 		}
 
 		goto finalize;
@@ -161,35 +93,26 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 		}
 	}
 
-	bignum_div_words(scratch, dd->words, dv->words, (*q)->words, (*r)->words, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
+	bignum_div_words(scratch, dd->words, dv->words, q->words, r->words, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
 
 	// The sign of the remainder will be same as that of the divisor.
-	(*q)->sign = quotient_sign;
-	(*r)->sign = dv->sign;
+	q->sign = quotient_sign;
+	r->sign = dv->sign;
 
 	if (quotient_sign < 0)
 	{
 		// Increase quotient by 1.
-		bignum_increment((*q)->words, CEIL_DIV(quotient_bits, BIGNUM_BITS_PER_WORD));
+		bignum_increment(q->words, CEIL_DIV(quotient_bits, BIGNUM_BITS_PER_WORD));
 
 		// Subract divisor from remainder and take 2's complement.
-		bignum_sub_words((*r)->words, (*r)->words, dv->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
-		bignum_2complement((*r)->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+		bignum_sub_words(r->words, r->words, dv->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+		bignum_2complement(r->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
 	}
 
-	(*q)->bits = bignum_bitcount(*q);
-	(*r)->bits = bignum_bitcount(*r);
+	q->bits = bignum_bitcount(q);
+	r->bits = bignum_bitcount(r);
 
 finalize:
-	if (!quotient_needed)
-	{
-		bignum_free(quotient);
-	}
-
-	if (!remainder_needed)
-	{
-		bignum_free(remainder);
-	}
 
 	if (free_scratch)
 	{
@@ -201,7 +124,47 @@ finalize:
 
 bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 {
-	int32_t status = bignum_divmod(NULL, 0, a, b, &r, NULL);
+	int32_t status;
+
+	uint32_t quotient_bits = a->bits - b->bits + 1;
+	uint32_t remainder_bits = b->bits;
+	int32_t quotient_sign = a->sign * b->sign;
+
+	bignum_t *quotient = r;
+	bignum_t *remainder = NULL;
+
+	if (quotient_sign < 0)
+	{
+		++quotient_bits;
+	}
+
+	if (quotient == NULL)
+	{
+		quotient = bignum_new(quotient_bits);
+
+		if (quotient == NULL)
+		{
+			return NULL;
+		}
+	}
+	else
+	{
+		if ((quotient->size * 8) < quotient_bits)
+		{
+			return NULL;
+		}
+	}
+
+	remainder = bignum_new(remainder_bits);
+
+	if (remainder == NULL)
+	{
+		return NULL;
+	}
+
+	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
+
+	bignum_free(remainder);
 
 	if (status == -1)
 	{
@@ -213,7 +176,47 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 
 bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
 {
-	int32_t status = bignum_divmod(NULL, 0, a, b, NULL, &r);
+	int32_t status;
+
+	uint32_t quotient_bits = a->bits - b->bits + 1;
+	uint32_t remainder_bits = b->bits;
+	int32_t quotient_sign = a->sign * b->sign;
+
+	bignum_t *quotient = NULL;
+	bignum_t *remainder = r;
+
+	if (quotient_sign < 0)
+	{
+		++quotient_bits;
+	}
+
+	if (remainder == NULL)
+	{
+		remainder = bignum_new(remainder_bits);
+
+		if (remainder == NULL)
+		{
+			return NULL;
+		}
+	}
+	else
+	{
+		if ((remainder->size * 8) < remainder_bits)
+		{
+			return NULL;
+		}
+	}
+
+	quotient = bignum_new(quotient_bits);
+
+	if (quotient == NULL)
+	{
+		return NULL;
+	}
+
+	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
+
+	bignum_free(quotient);
 
 	if (status == -1)
 	{
