@@ -59,7 +59,7 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 
 bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 {
-	uint32_t required_bits = a->bits - shift;
+	uint32_t required_bits = (shift < a->bits) ? a->bits - shift : 0;
 	uint32_t word_shift = shift / BIGNUM_BITS_PER_WORD;
 	uint32_t bit_shift = shift % BIGNUM_BITS_PER_WORD;
 
@@ -78,6 +78,12 @@ bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 		{
 			return NULL;
 		}
+	}
+
+	if (required_bits == 0)
+	{
+		bignum_zero(r);
+		return r;
 	}
 
 	// Use memmove here as a,r can be the same.
