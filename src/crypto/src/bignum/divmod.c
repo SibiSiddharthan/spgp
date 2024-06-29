@@ -130,7 +130,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 			(*q)->sign = -1;
 			(*q)->bits = 1;
 
-			bignum_usub(*r, dv, dd, CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD), CEIL_DIV(dv->bits, BIGNUM_BITS_PER_WORD));
+			bignum_usub(*r, dv, dd, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
 
 			(*r)->sign = dv->sign;
 			(*r)->bits = bignum_bitcount(*r);
@@ -161,8 +161,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 		}
 	}
 
-	bignum_div_words(scratch, dd->words, dv->words, (*q)->words, (*r)->words, CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD),
-					 CEIL_DIV(dv->bits, BIGNUM_BITS_PER_WORD));
+	bignum_div_words(scratch, dd->words, dv->words, (*q)->words, (*r)->words, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
 
 	// The sign of the remainder will be same as that of the divisor.
 	(*q)->sign = quotient_sign;

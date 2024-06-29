@@ -53,7 +53,7 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 		b = swap;
 	}
 
-	bignum_mul_words(r->words, a->words, b->words, CEIL_DIV(a->bits, BIGNUM_BITS_PER_WORD), CEIL_DIV(b->bits, BIGNUM_BITS_PER_WORD),
+	bignum_mul_words(r->words, a->words, b->words, BIGNUM_WORD_COUNT(a), BIGNUM_WORD_COUNT(b),
 					 CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD));
 
 	r->sign = a->sign * b->sign;

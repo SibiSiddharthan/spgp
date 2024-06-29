@@ -74,8 +74,8 @@ bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
 	}
 
 	required_bits = a->bits;
-	min_words = CEIL_DIV(b->bits, BIGNUM_BITS_PER_WORD);
-	total_words = CEIL_DIV(a->bits, BIGNUM_BITS_PER_WORD);
+	min_words = BIGNUM_WORD_COUNT(b);
+	total_words = BIGNUM_WORD_COUNT(a);
 
 	if (a->sign == b->sign)
 	{
@@ -142,8 +142,8 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 	}
 
 	required_bits = a->bits;
-	min_words = CEIL_DIV(b->bits, BIGNUM_BITS_PER_WORD);
-	total_words = CEIL_DIV(a->bits, BIGNUM_BITS_PER_WORD);
+	min_words = BIGNUM_WORD_COUNT(b);
+	total_words = BIGNUM_WORD_COUNT(a);
 
 	if (a->sign != b->sign)
 	{
