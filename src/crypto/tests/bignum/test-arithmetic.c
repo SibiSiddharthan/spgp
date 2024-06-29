@@ -417,7 +417,90 @@ int32_t bignum_mul_tests(void)
 	return status;
 }
 
+int32_t bignum_shift_tests(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	bignum_t *a = NULL;
+	char hex[128] = {0};
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
+	a = bignum_lshift(a, a, 5);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x200000020000000002000000020000000", 35);
+	status += CHECK_VALUE(result, 35);
+
+	bignum_free(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
+	a = bignum_lshift(a, a, 79);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x800000080000000008000000080000000000000000000000000", 53);
+	status += CHECK_VALUE(result, 53);
+
+	bignum_free(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
+	a = bignum_rshift(a, a, 5);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x800000080000000008000000080000", 32);
+	status += CHECK_VALUE(result, 32);
+
+	bignum_free(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
+	a = bignum_rshift(a, a, 79);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x200000020000", 14);
+	status += CHECK_VALUE(result, 14);
+
+	bignum_free(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
+	a = bignum_rshift(a, a, 150);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_free(a);
+
+	// ------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return bignum_cmp_tests() + bignum_add_tests() + bignum_sub_tests() + bignum_mul_tests();
+	return bignum_cmp_tests() + bignum_add_tests() + bignum_sub_tests() + bignum_mul_tests() + bignum_shift_tests();
 }
