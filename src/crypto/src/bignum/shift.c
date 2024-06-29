@@ -10,6 +10,8 @@
 #include <bignum.h>
 #include <round.h>
 
+// NOTE: These routines should also work when r,a point to the same location.
+
 bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 {
 	uint32_t required_bits = a->bits + shift;
@@ -33,22 +35,20 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 		}
 	}
 
-	// Use memmove here as a,r can be the same.
-	memset(r->words, 0, word_shift * BIGNUM_WORD_SIZE);
-	memmove((byte_t *)r->words + (word_shift * BIGNUM_WORD_SIZE), a->words, CEIL_DIV(a->bits, 8));
+	uint32_t r_words = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
 
-	if (bit_shift > 0)
+	for (uint32_t i = r_words - 1; i > word_shift; --i)
 	{
-		uint32_t r_words_count = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
-		bn_word_t carry = 0;
-		bn_word_t temp = 0;
+		r->words[i] = (a->words[i - word_shift] << bit_shift) | (a->words[i - 1 - word_shift] >> (BIGNUM_BITS_PER_WORD - bit_shift));
+	}
 
-		for (uint32_t i = 0; i < r_words_count; ++i)
-		{
-			temp = r->words[i];
-			r->words[i] = (r->words[i] << bit_shift) | carry;
-			carry = temp >> (BIGNUM_BITS_PER_WORD - bit_shift); // Carry for the next word.
-		}
+	// First word after zeroes
+	r->words[word_shift] = a->words[0] << bit_shift;
+
+	// Zero start of the bignum
+	for (uint32_t i = 0; i < word_shift; ++i)
+	{
+		r->words[i] = 0;
 	}
 
 	r->bits = bignum_bitcount(r);
@@ -86,20 +86,22 @@ bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 		return r;
 	}
 
-	// Use memmove here as a,r can be the same.
-	memmove(r->words, (byte_t *)a->words + (word_shift * BIGNUM_WORD_SIZE), a->size - (word_shift * BIGNUM_WORD_SIZE));
+	uint32_t r_words = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
+	uint32_t a_words = BIGNUM_WORD_COUNT(a);
 
-	if (bit_shift > 0)
+	for (uint32_t i = 0; i < r_words - 1; ++i)
 	{
-		uint32_t r_words_count = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
+		r->words[i] = (a->words[i + word_shift] >> bit_shift) | (a->words[i + 1 + word_shift] << (BIGNUM_BITS_PER_WORD - bit_shift));
+	}
 
-		for (uint32_t i = 0; i < r_words_count - 1; ++i)
-		{
-			r->words[i] = (r->words[i] >> bit_shift) | (r->words[i + 1] << (BIGNUM_BITS_PER_WORD - bit_shift));
-		}
+	// Last word
+	r->words[r_words - 1] = (a->words[r_words - 1 + word_shift] >> bit_shift);
+	r->words[r_words - 1] |= ((r_words + word_shift) >= a_words) ? 0 : (a->words[a_words - 1] << (BIGNUM_BITS_PER_WORD - bit_shift));
 
-		// Last word
-		r->words[r_words_count - 1] = (r->words[r_words_count] >> bit_shift);
+	// Zero rest of the bignum
+	for (uint32_t i = r_words; i < CEIL_DIV(r->size, BIGNUM_WORD_SIZE); ++i)
+	{
+		r->words[i] = 0;
 	}
 
 	r->bits = bignum_bitcount(r);
