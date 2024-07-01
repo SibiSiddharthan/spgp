@@ -796,6 +796,20 @@ int32_t bignum_shift_tests(void)
 
 	a = bignum_new(256);
 	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
+	a = bignum_lshift(a, a, 64);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x100000010000000001000000010000000000000000000000", 50);
+	status += CHECK_VALUE(result, 50);
+
+	bignum_free(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
 	a = bignum_rshift(a, a, 5);
 
 	memset(hex, 0, 128);
@@ -817,6 +831,20 @@ int32_t bignum_shift_tests(void)
 
 	status += CHECK_HEX(hex, "0x200000020000", 14);
 	status += CHECK_VALUE(result, 14);
+
+	bignum_free(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
+	a = bignum_rshift(a, a, 64);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x1000000100000000", 18);
+	status += CHECK_VALUE(result, 18);
 
 	bignum_free(a);
 
