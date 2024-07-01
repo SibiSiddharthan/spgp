@@ -83,7 +83,7 @@ void bignum_mul32(uint32_t *r32, uint32_t *a32, uint32_t a32_words, uint32_t w)
 	{
 		bn_word_t temp = (bn_word_t)a32[i] * w;
 		bn_word_t high = temp >> 32;
-		bn_word_t low = temp & 0xFFFFFFFF;
+		bn_word_t low = (temp & 0xFFFFFFFF) + carry;
 
 		r32[i] = (uint32_t)(low & 0xFFFFFFFF);
 
