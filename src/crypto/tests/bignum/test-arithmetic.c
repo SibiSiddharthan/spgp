@@ -417,6 +417,345 @@ int32_t bignum_mul_tests(void)
 	return status;
 }
 
+int32_t bignum_div_tests(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	bignum_t *dd = NULL, *dv = NULL, *q = NULL, *r = NULL;
+	char qhex[128] = {0};
+	char rhex[128] = {0};
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "0", 1);
+	dv = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
+	dv = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "0x1", 3);
+	status += CHECK_VALUE(result, 3);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "10000001000000000100000001000001", 32);
+	dv = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "0x1", 3);
+	status += CHECK_VALUE(result, 3);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x1", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "-10000001000000000100000001000000", 33);
+	dv = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "-0x1", 4);
+	status += CHECK_VALUE(result, 4);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "-10000001000000000100000001000001", 33);
+	dv = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "-0x2", 4);
+	status += CHECK_VALUE(result, 4);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x10000001000000000100000000ffffff", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "10000001000000000100000001000001", 32);
+	dv = bignum_set_hex(NULL, "-10000001000000000100000001000000", 33);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "-0x2", 4);
+	status += CHECK_VALUE(result, 4);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "-0x10000001000000000100000000ffffff", 35);
+	status += CHECK_VALUE(result, 35);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "10000001000000000100000001000001", 32);
+	dv = bignum_set_hex(NULL, "-10000001000000000100000001000000", 33);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "-0x2", 4);
+	status += CHECK_VALUE(result, 4);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "-0x10000001000000000100000000ffffff", 35);
+	status += CHECK_VALUE(result, 35);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "-10000001000000000100000001000001", 33);
+	dv = bignum_set_hex(NULL, "-10000001000000000100000001000000", 33);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "0x1", 3);
+	status += CHECK_VALUE(result, 3);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "-0x1", 4);
+	status += CHECK_VALUE(result, 4);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
+	dv = bignum_set_hex(NULL, "20000001000000000100000001000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x10000001000000000100000001000000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "-10000001000000000100000001000000", 33);
+	dv = bignum_set_hex(NULL, "20000001000000000100000001000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "-0x1", 4);
+	status += CHECK_VALUE(result, 4);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x10000000000000000000000000000000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "2b000002b000000002b0000002b0000010000001000000000100000001000000", 64);
+	dv = bignum_set_hex(NULL, "a000000a000000000a0000000a000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "0x44cccccccccccccccccccccccccccccc", 34);
+	status += CHECK_VALUE(result, 34);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x90000009000000000900000009000000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "-2b000002b000000002b0000002b0000010000001000000000100000001000000", 65);
+	dv = bignum_set_hex(NULL, "a000000a000000000a0000000a000000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "-0x44cccccccccccccccccccccccccccccd", 35);
+	status += CHECK_VALUE(result, 35);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0x10000001000000000100000001000000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	dd = bignum_set_hex(NULL, "-2b000002b000000002b0000002b0000010000001000000000100000001000000", 65);
+	dv = bignum_set_hex(NULL, "ff00000ff00000000ff000000ff00000", 32);
+	q = bignum_new(256);
+	r = bignum_new(256);
+
+	bignum_divmod(NULL, 0, dd, dv, q, r);
+
+	memset(qhex, 0, 128);
+	memset(rhex, 0, 128);
+
+	result = bignum_get_hex(q, qhex, 128);
+	status += CHECK_HEX(qhex, "-0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2c", 35);
+	status += CHECK_VALUE(result, 35);
+
+	result = bignum_get_hex(r, rhex, 128);
+	status += CHECK_HEX(rhex, "0xc400000c400000000c4000000c400000", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_free(dd);
+	bignum_free(dv);
+	bignum_free(q);
+	bignum_free(r);
+
+	// ------------------------------------------------------------------------
+
+	return status;
+}
+
 int32_t bignum_shift_tests(void)
 {
 	int32_t status = 0;
@@ -502,5 +841,5 @@ int32_t bignum_shift_tests(void)
 
 int main()
 {
-	return bignum_cmp_tests() + bignum_add_tests() + bignum_sub_tests() + bignum_mul_tests() + bignum_shift_tests();
+	return bignum_cmp_tests() + bignum_add_tests() + bignum_sub_tests() + bignum_mul_tests() + bignum_div_tests() + bignum_shift_tests();
 }
