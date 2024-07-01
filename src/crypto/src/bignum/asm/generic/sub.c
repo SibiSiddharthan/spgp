@@ -13,11 +13,13 @@ void bignum_increment(bn_word_t *r, uint32_t count);
 uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count)
 {
 	uint8_t borrow = 0;
+	bn_word_t temp = 0;
 
 	for (uint32_t pos = 0; pos < count; ++pos)
 	{
-		*r = *a - *b - borrow;
-		borrow = (*r > *a);
+		temp = *a;
+		*r = temp - *b - borrow;
+		borrow = (*r > temp);
 
 		a++;
 		b++;

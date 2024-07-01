@@ -11,13 +11,15 @@
 uint8_t bignum_add_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count)
 {
 	uint8_t carry = 0;
+	bn_word_t temp = 0;
 
 	for (uint32_t pos = 0; pos < count; ++pos)
 	{
 		// We only need to check one of the values if there is a carry.
 		// *r < *a, *r < *b
-		*r = *a + *b + carry;
-		carry = (*r < *a);
+		temp = *a;
+		*r = temp + *b + carry;
+		carry = (*r < temp);
 
 		a++;
 		b++;
