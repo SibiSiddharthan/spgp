@@ -54,7 +54,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 		if (quotient_sign > 0)
 		{
 			bignum_zero(q);
-			bignum_copy(r, sizeof(bignum_t) + r->size, dv);
+			bignum_copy(r, sizeof(bignum_t) + r->size, dd);
 		}
 		else
 		{
@@ -99,14 +99,17 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	q->sign = quotient_sign;
 	r->sign = dv->sign;
 
-	if (quotient_sign < 0)
+	if (bignum_bitcount(r) != 0)
 	{
-		// Increase quotient by 1.
-		bignum_increment(q->words, CEIL_DIV(quotient_bits, BIGNUM_BITS_PER_WORD));
+		if (quotient_sign < 0)
+		{
+			// Increase quotient by 1.
+			bignum_increment(q->words, CEIL_DIV(quotient_bits, BIGNUM_BITS_PER_WORD));
 
-		// Subract divisor from remainder and take 2's complement.
-		bignum_sub_words(r->words, r->words, dv->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
-		bignum_2complement(r->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+			// Subract divisor from remainder and take 2's complement.
+			bignum_sub_words(r->words, r->words, dv->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+			bignum_2complement(r->words, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+		}
 	}
 
 	q->bits = bignum_bitcount(q);
