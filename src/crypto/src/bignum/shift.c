@@ -39,7 +39,8 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 
 	for (uint32_t i = r_words - 1; i > word_shift; --i)
 	{
-		r->words[i] = (a->words[i - word_shift] << bit_shift) | (a->words[i - 1 - word_shift] >> (BIGNUM_BITS_PER_WORD - bit_shift));
+		r->words[i] = (a->words[i - word_shift] << bit_shift);
+		r->words[i] |= (bit_shift != 0) ? (a->words[i - 1 - word_shift] >> (BIGNUM_BITS_PER_WORD - bit_shift)) : 0;
 	}
 
 	// First word after zeroes
@@ -91,7 +92,8 @@ bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 
 	for (uint32_t i = 0; i < r_words - 1; ++i)
 	{
-		r->words[i] = (a->words[i + word_shift] >> bit_shift) | (a->words[i + 1 + word_shift] << (BIGNUM_BITS_PER_WORD - bit_shift));
+		r->words[i] = (a->words[i + word_shift] >> bit_shift);
+		r->words[i] |= (bit_shift != 0) ? (a->words[i + 1 + word_shift] << (BIGNUM_BITS_PER_WORD - bit_shift)) : 0;
 	}
 
 	// Last word
