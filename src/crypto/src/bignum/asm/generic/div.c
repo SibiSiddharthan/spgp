@@ -16,19 +16,23 @@ uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t coun
 
 void bignum_mul32(uint32_t *r32, uint32_t *a32, uint32_t a32_words, uint32_t w);
 
+// See Knuth - Seminumerical Algorithms.
+
 // Perform division with a 64 bit dividend with a 32 bit divisor.
 static uint32_t div_3_words(uint64_t dd, uint32_t dv_high)
 {
-	const uint32_t maxq = (1u << 31);
+	// const uint32_t maxq = 0xFFFFFFFF;
 
-	uint32_t r = 0;
+	//	uint32_t r = 0;
 	uint32_t q = 0;
 
 	// Assume dv_high >= (1 << 31) i.e normalized
 	q = dd / dv_high;
-	r = dd % dv_high;
+	//	r = dd % dv_high;
 
 	// Find a good quotient.
+#if 0
+	// Do we need this if the divisor is normalized?.
 	while (1)
 	{
 		if (q >= maxq)
@@ -44,6 +48,7 @@ static uint32_t div_3_words(uint64_t dd, uint32_t dv_high)
 
 		break;
 	}
+#endif
 
 	return q;
 }
@@ -77,7 +82,7 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 		--dv32_words;
 	}
 
-	q32_words = dd32_words - dv32_words;
+	q32_words = dd32_words - dv32_words + 1;
 	r32_words = dv32_words;
 
 	// Normalize the divisor, dividend
@@ -96,7 +101,7 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 		for (uint32_t i = 0; i < dd32_words; ++i)
 		{
 			dd32_norm[i] = (dd32[i] << shift) | carry;
-			carry = dd32[i] >> (BIGNUM_BITS_PER_WORD - shift);
+			carry = dd32[i] >> (32 - shift);
 		}
 
 		dd32_norm[dd32_words] = carry;
@@ -107,7 +112,7 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 		for (uint32_t i = 0; i < dv32_words; ++i)
 		{
 			dv32_norm[i] = (dv32[i] << shift) | carry;
-			carry = dv32[i] >> (BIGNUM_BITS_PER_WORD - shift);
+			carry = dv32[i] >> (32 - shift);
 
 			// NOTE : Last carry should be zero.
 		}
@@ -116,6 +121,8 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 	{
 		memcpy(dd32_norm, dd, dd32_words * sizeof(uint32_t));
 		dd32_norm[dd32_words] = 0;
+
+		dv32_norm = (uint32_t *)dv;
 	}
 
 	// The dividend will always be extended by one word.
@@ -157,8 +164,15 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 	}
 
 	// Unnormalize the remainder.
-	for (uint32_t i = 0; i < r32_words; ++i)
+	if (shift != 0)
 	{
-		r32[i] = (dd32_norm[i] >> shift) | (dd32_norm[i + 1] << (32 - shift));
+		for (uint32_t i = 0; i < r32_words; ++i)
+		{
+			r32[i] = (dd32_norm[i] >> shift) | (dd32_norm[i + 1] << (32 - shift));
+		}
+	}
+	else
+	{
+		memcpy(r32, dd32_norm, r32_words * sizeof(uint32_t));
 	}
 }
