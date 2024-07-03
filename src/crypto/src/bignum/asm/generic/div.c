@@ -19,38 +19,12 @@ void bignum_mul32(uint32_t *r32, uint32_t *a32, uint32_t a32_words, uint32_t w);
 // See Knuth - Seminumerical Algorithms.
 
 // Perform division with a 64 bit dividend with a 32 bit divisor.
-static uint32_t div_3_words(uint64_t dd, uint32_t dv_high)
+static inline uint32_t div_3_words(uint64_t dd, uint32_t dv_high)
 {
-	// const uint32_t maxq = 0xFFFFFFFF;
-
-	//	uint32_t r = 0;
-	uint32_t q = 0;
-
-	// Assume dv_high >= (1 << 31) i.e normalized
-	q = dd / dv_high;
-	//	r = dd % dv_high;
-
-	// Find a good quotient.
-#if 0
-	// Do we need this if the divisor is normalized?.
-	while (1)
-	{
-		if (q >= maxq)
-		{
-			q -= 1;
-			r += dv_high;
-
-			if (r < dv_high)
-			{
-				continue;
-			}
-		}
-
-		break;
-	}
-#endif
-
-	return q;
+	// NOTE: This will work.
+	// Since dv_high is normalized (i.e >= UINT32_MAX/2) and dd has conditional padding,
+	// the quotient will always be <= UINT32_MAX.
+	return dd / dv_high;
 }
 
 void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q, bn_word_t *r, uint32_t dd_words, uint32_t dv_words)
