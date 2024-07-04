@@ -27,6 +27,12 @@ typedef struct _bignum_t
 	bn_word_t *words;
 } bignum_t;
 
+typedef struct _bignum_ctx
+{
+	size_t size;
+	void *arena;
+} bignum_ctx;
+
 size_t bignum_size(uint32_t bits);
 
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits);
