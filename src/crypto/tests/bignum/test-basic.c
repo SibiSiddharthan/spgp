@@ -37,7 +37,7 @@ int32_t bignum_byte_tests(void)
 	status += CHECK_BLOCK(buffer, 20, "1e1a15100f0e0d0c0b0a09080706050403020100");
 	status += CHECK_VALUE(result, 20);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ int32_t bignum_byte_tests(void)
 	status += CHECK_BLOCK(buffer, 19, "0102030405060708090a0b0c0d0e0f10151a1e");
 	status += CHECK_VALUE(result, 19);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ int32_t bignum_hex_tests(void)
 	status += CHECK_HEX(buffer, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
 	status += CHECK_VALUE(result, 44);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ int32_t bignum_hex_tests(void)
 	status += CHECK_HEX(buffer, "-0x12030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
 	status += CHECK_VALUE(result, 44);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ int32_t bignum_hex_tests(void)
 	status += CHECK_HEX(buffer, "0x0", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ int32_t bignum_bitcount_tests(void)
 
 	status += CHECK_VALUE(bits, 165);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ int32_t bignum_bitcount_tests(void)
 
 	status += CHECK_VALUE(bits, 2);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ int32_t bignum_bitcount_tests(void)
 
 	status += CHECK_VALUE(bits, 0);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ int32_t bignum_bitcount_tests(void)
 
 	status += CHECK_VALUE(bits, 0);
 
-	bignum_free(bn);
+	bignum_delete(bn);
 	bn = NULL;
 
 	// --------------------------------------------------------------------------------------

@@ -167,7 +167,7 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
 
-	bignum_free(remainder);
+	bignum_delete(remainder);
 
 	if (status == -1)
 	{
@@ -219,7 +219,7 @@ bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
 
-	bignum_free(quotient);
+	bignum_delete(quotient);
 
 	if (status == -1)
 	{

@@ -30,8 +30,8 @@ int32_t bignum_cmp_tests(void)
 	result = bignum_cmp(a, a);
 	status += CHECK_VALUE(result, 0);
 
-	bignum_free(a);
-	bignum_free(b);
+	bignum_delete(a);
+	bignum_delete(b);
 
 	// ------------------------------------------------------------------------
 
@@ -50,8 +50,8 @@ int32_t bignum_cmp_tests(void)
 	result = bignum_cmp_abs(b, a);
 	status += CHECK_VALUE(result, 1);
 
-	bignum_free(a);
-	bignum_free(b);
+	bignum_delete(a);
+	bignum_delete(b);
 
 	// ------------------------------------------------------------------------
 
@@ -70,8 +70,8 @@ int32_t bignum_cmp_tests(void)
 	result = bignum_cmp_abs(b, a);
 	status += CHECK_VALUE(result, 1);
 
-	bignum_free(a);
-	bignum_free(b);
+	bignum_delete(a);
+	bignum_delete(b);
 
 	// ------------------------------------------------------------------------
 
@@ -84,8 +84,8 @@ int32_t bignum_cmp_tests(void)
 	result = bignum_cmp(b, a);
 	status += CHECK_VALUE(result, -1);
 
-	bignum_free(a);
-	bignum_free(b);
+	bignum_delete(a);
+	bignum_delete(b);
 
 	// ------------------------------------------------------------------------
 
@@ -98,8 +98,8 @@ int32_t bignum_cmp_tests(void)
 	result = bignum_cmp(b, a);
 	status += CHECK_VALUE(result, 0);
 
-	bignum_free(a);
-	bignum_free(b);
+	bignum_delete(a);
+	bignum_delete(b);
 
 	// ------------------------------------------------------------------------
 
@@ -126,9 +126,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "0x300001fa00000001fa000001fa000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -142,9 +142,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "0x1500001fa00000001fa000001fa000000", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -158,9 +158,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "0xa00000fd00000001fa000001fa000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -174,9 +174,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "-0x1500001fa00000001fa000001fa000000", 36);
 	status += CHECK_VALUE(result, 36);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -190,9 +190,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "0x10000000000000000000000000000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -206,9 +206,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "-0x10000000000000000000000000000000", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -222,9 +222,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "0x0", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -238,9 +238,9 @@ int32_t bignum_add_tests(void)
 	status += CHECK_HEX(hex, "-0x1", 4);
 	status += CHECK_VALUE(result, 4);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -267,9 +267,9 @@ int32_t bignum_sub_tests(void)
 	status += CHECK_HEX(hex, "-0x10000000000000000000000000000000", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -283,9 +283,9 @@ int32_t bignum_sub_tests(void)
 	status += CHECK_HEX(hex, "-0x4", 4);
 	status += CHECK_VALUE(result, 4);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -299,9 +299,9 @@ int32_t bignum_sub_tests(void)
 	status += CHECK_HEX(hex, "0x4", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -315,9 +315,9 @@ int32_t bignum_sub_tests(void)
 	status += CHECK_HEX(hex, "0xa00000fd000000000000000000000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -331,9 +331,9 @@ int32_t bignum_sub_tests(void)
 	status += CHECK_HEX(hex, "-0xa00000fd000000000000000000000000", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -347,9 +347,9 @@ int32_t bignum_sub_tests(void)
 	status += CHECK_HEX(hex, "-0xa00000fd000000000000000000000000", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -363,9 +363,9 @@ int32_t bignum_sub_tests(void)
 	status += CHECK_HEX(hex, "0xa00000fd00000001fa000001fa000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -392,9 +392,9 @@ int32_t bignum_mul_tests(void)
 	status += CHECK_HEX(hex, "0xf000001e000000f01e000001fe000001e0f0000001e0000000f000000000000", 65);
 	status += CHECK_VALUE(result, 65);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -408,9 +408,9 @@ int32_t bignum_mul_tests(void)
 	status += CHECK_HEX(hex, "-0x88ef00000917df00009a0ce00011266ef000111de000088ef000000000000", 64);
 	status += CHECK_VALUE(result, 64);
 
-	bignum_free(a);
-	bignum_free(b);
-	bignum_free(c);
+	bignum_delete(a);
+	bignum_delete(b);
+	bignum_delete(c);
 
 	// ------------------------------------------------------------------------
 
@@ -446,10 +446,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x0", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -471,10 +471,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x0", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -496,10 +496,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x1", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -521,10 +521,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x0", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -546,10 +546,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x10000001000000000100000000ffffff", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -571,10 +571,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "-0x10000001000000000100000000ffffff", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -596,10 +596,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "-0x10000001000000000100000000ffffff", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -621,10 +621,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "-0x1", 4);
 	status += CHECK_VALUE(result, 4);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -646,10 +646,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x10000001000000000100000001000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -671,10 +671,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x10000000000000000000000000000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -696,10 +696,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x90000009000000000900000009000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -721,10 +721,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0x10000001000000000100000001000000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -746,10 +746,10 @@ int32_t bignum_div_tests(void)
 	status += CHECK_HEX(rhex, "0xc400000c400000000c4000000c400000", 34);
 	status += CHECK_VALUE(result, 34);
 
-	bignum_free(dd);
-	bignum_free(dv);
-	bignum_free(q);
-	bignum_free(r);
+	bignum_delete(dd);
+	bignum_delete(dv);
+	bignum_delete(q);
+	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
 
@@ -776,7 +776,7 @@ int32_t bignum_shift_tests(void)
 	status += CHECK_HEX(hex, "0x200000020000000002000000020000000", 35);
 	status += CHECK_VALUE(result, 35);
 
-	bignum_free(a);
+	bignum_delete(a);
 
 	// ------------------------------------------------------------------------
 
@@ -790,7 +790,7 @@ int32_t bignum_shift_tests(void)
 	status += CHECK_HEX(hex, "0x800000080000000008000000080000000000000000000000000", 53);
 	status += CHECK_VALUE(result, 53);
 
-	bignum_free(a);
+	bignum_delete(a);
 
 	// ------------------------------------------------------------------------
 
@@ -804,7 +804,7 @@ int32_t bignum_shift_tests(void)
 	status += CHECK_HEX(hex, "0x100000010000000001000000010000000000000000000000", 50);
 	status += CHECK_VALUE(result, 50);
 
-	bignum_free(a);
+	bignum_delete(a);
 
 	// ------------------------------------------------------------------------
 
@@ -818,7 +818,7 @@ int32_t bignum_shift_tests(void)
 	status += CHECK_HEX(hex, "0x800000080000000008000000080000", 32);
 	status += CHECK_VALUE(result, 32);
 
-	bignum_free(a);
+	bignum_delete(a);
 
 	// ------------------------------------------------------------------------
 
@@ -832,7 +832,7 @@ int32_t bignum_shift_tests(void)
 	status += CHECK_HEX(hex, "0x200000020000", 14);
 	status += CHECK_VALUE(result, 14);
 
-	bignum_free(a);
+	bignum_delete(a);
 
 	// ------------------------------------------------------------------------
 
@@ -846,7 +846,7 @@ int32_t bignum_shift_tests(void)
 	status += CHECK_HEX(hex, "0x1000000100000000", 18);
 	status += CHECK_VALUE(result, 18);
 
-	bignum_free(a);
+	bignum_delete(a);
 
 	// ------------------------------------------------------------------------
 
@@ -860,7 +860,7 @@ int32_t bignum_shift_tests(void)
 	status += CHECK_HEX(hex, "0x0", 3);
 	status += CHECK_VALUE(result, 3);
 
-	bignum_free(a);
+	bignum_delete(a);
 
 	// ------------------------------------------------------------------------
 

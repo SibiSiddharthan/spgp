@@ -73,7 +73,7 @@ bignum_t *bignum_new(uint32_t bits)
 	return bn;
 }
 
-void bignum_free(bignum_t *bn)
+void bignum_delete(bignum_t *bn)
 {
 	if (bn == NULL)
 	{
