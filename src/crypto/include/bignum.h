@@ -55,13 +55,18 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size);
 int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size);
 
 void bignum_zero(bignum_t *bn);
-void bignum_set(bignum_t *bn, bn_word_t value);
+void bignum_set_word(bignum_t *bn, bn_word_t value);
+void bignum_set_sign(bignum_t *bn, int8_t sign);
+void bignum_set_flags(bignum_t *bn, int16_t flags);
 uint32_t bignum_bitcount(bignum_t *bn);
 
 int32_t bignum_cmp(bignum_t *a, bignum_t *b);
 int32_t bignum_cmp_abs(bignum_t *a, bignum_t *b);
 
 bignum_t *bignum_rand(bignum_t *bn, uint32_t bits);
+bignum_t *bignum_prime(bignum_t *bn, uint32_t bits);
+
+int32_t bignum_is_probable_prime(bignum_t *bn);
 
 bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b);
@@ -79,6 +84,16 @@ bignum_t *bignum_modinv(bignum_t *r, bignum_t *a, bignum_t *p);
 
 bignum_t *bignum_gcd(bignum_t *r, bignum_t *a, bignum_t *b);
 
+int32_t bignum_gcdex(bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b);
 int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r);
+
+// Functions for bignum_ctx.
+
+bignum_ctx *bignum_ctx_init(void *ptr, size_t size, size_t initial_size);
+bignum_ctx *bignum_ctx_new(size_t initial_size);
+void bignum_ctx_delete(bignum_ctx *bctx);
+
+bignum_t *bignum_ctx_allocate(bignum_ctx *bctx, uint32_t bits);
+void bignum_ctx_release(bignum_ctx *bctx, bignum_t *bn);
 
 #endif
