@@ -12,8 +12,6 @@
 #include <bitscan.h>
 #include <round.h>
 
-#define BIGNUM_EXTRA_WORD 1
-
 size_t bignum_size(uint32_t bits)
 {
 	return sizeof(bignum_t) + CEIL_DIV(bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE;
@@ -139,13 +137,19 @@ bignum_t *bignum_resize(bignum_t *bn, uint32_t bits)
 	}
 
 	// Bignum is already big enough just return.
-	if ((bn->sign * 8) >= bits)
+	if ((bn->size * 8) >= bits)
 	{
 		return bn;
 	}
 
+	if (bn->flags & BIGNUM_FLAG_NO_RESIZE)
+	{
+		return NULL;
+	}
+
 	// Expand it.
 	ptr = malloc(new_size);
+	memset(ptr, 0, new_size);
 
 	if (ptr == NULL)
 	{
