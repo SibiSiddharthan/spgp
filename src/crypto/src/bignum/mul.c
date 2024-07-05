@@ -22,21 +22,11 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 		required_bits = 0;
 	}
 
+	r = bignum_resize(r, required_bits);
+
 	if (r == NULL)
 	{
-		r = bignum_new(required_bits);
-
-		if (r == NULL)
-		{
-			return NULL;
-		}
-	}
-	else
-	{
-		if ((r->size * 8) < required_bits)
-		{
-			return NULL;
-		}
+		return NULL;
 	}
 
 	if (a->bits == 0 || b->bits == 0)

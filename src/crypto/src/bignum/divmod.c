@@ -141,21 +141,11 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 		++quotient_bits;
 	}
 
+	quotient = bignum_resize(quotient, quotient_bits);
+
 	if (quotient == NULL)
 	{
-		quotient = bignum_new(quotient_bits);
-
-		if (quotient == NULL)
-		{
-			return NULL;
-		}
-	}
-	else
-	{
-		if ((quotient->size * 8) < quotient_bits)
-		{
-			return NULL;
-		}
+		return NULL;
 	}
 
 	remainder = bignum_new(remainder_bits);
@@ -193,21 +183,11 @@ bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
 		++quotient_bits;
 	}
 
+	remainder = bignum_resize(remainder, remainder_bits);
+
 	if (remainder == NULL)
 	{
-		remainder = bignum_new(remainder_bits);
-
-		if (remainder == NULL)
-		{
-			return NULL;
-		}
-	}
-	else
-	{
-		if ((remainder->size * 8) < remainder_bits)
-		{
-			return NULL;
-		}
+		return NULL;
 	}
 
 	quotient = bignum_new(quotient_bits);

@@ -82,21 +82,11 @@ bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
 		++required_bits; // For overflow
 	}
 
+	r = bignum_resize(r, required_bits);
+
 	if (r == NULL)
 	{
-		r = bignum_new(required_bits);
-
-		if (r == NULL)
-		{
-			return NULL;
-		}
-	}
-	else
-	{
-		if ((r->size * 8) < required_bits)
-		{
-			return NULL;
-		}
+		return NULL;
 	}
 
 	if (a->sign == b->sign)
@@ -150,21 +140,11 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 		++required_bits; // For overflow
 	}
 
+	r = bignum_resize(r, required_bits);
+
 	if (r == NULL)
 	{
-		r = bignum_new(required_bits);
-
-		if (r == NULL)
-		{
-			return NULL;
-		}
-	}
-	else
-	{
-		if ((r->size * 8) < required_bits)
-		{
-			return NULL;
-		}
+		return NULL;
 	}
 
 	if (a->sign == b->sign)
