@@ -122,6 +122,43 @@ bignum_t *bignum_dup(bignum_t *bn)
 	return bn2;
 }
 
+bignum_t *bignum_resize(bignum_t *bn, uint32_t bits)
+{
+	size_t new_size = 0;
+	void *ptr = NULL;
+
+	bits = ROUND_UP(bits, BIGNUM_BITS_PER_WORD);
+	new_size = bits / 8;
+
+	// Create a new bignum_t.
+	if (bn == NULL)
+	{
+		return bignum_new(bits);
+	}
+
+	// Bignum is already big enough just return.
+	if ((bn->sign * 8) >= bits)
+	{
+		return bn;
+	}
+
+	// Expand it.
+	ptr = malloc(new_size);
+
+	if (ptr == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy old stuff
+	memcpy(ptr, bn->words, CEIL_DIV(bn->bits, 8));
+
+	bn->size = new_size;
+	bn->words = ptr;
+
+	return bn;
+}
+
 uint32_t bignum_bitcount(bignum_t *bn)
 {
 	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
