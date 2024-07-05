@@ -12,6 +12,8 @@
 #include <bitscan.h>
 #include <round.h>
 
+#define BIGNUM_EXTRA_WORD 1
+
 size_t bignum_size(uint32_t bits)
 {
 	return sizeof(bignum_t) + CEIL_DIV(bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE;
@@ -191,7 +193,18 @@ void bignum_zero(bignum_t *bn)
 	bn->sign = 1;
 }
 
-void bignum_set(bignum_t *bn, bn_word_t value)
+void bignum_set_word(bignum_t *bn, bn_word_t value)
 {
+	// Set the least significant word.
 	bn->words[0] = value;
+}
+
+void bignum_set_sign(bignum_t *bn, int8_t sign)
+{
+	bn->sign = sign >= 0 ? 1 : -1;
+}
+
+void bignum_set_flags(bignum_t *bn, int16_t flags)
+{
+	bn->flags = flags & BIGNUM_FLAG_MASK;
 }

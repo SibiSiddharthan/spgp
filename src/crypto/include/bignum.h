@@ -16,14 +16,18 @@
 
 #define BIGNUM_WORD_COUNT(BN) (CEIL_DIV((BN)->bits, BIGNUM_BITS_PER_WORD))
 
+#define BIGNUM_FLAG_NO_RESIZE 0x1
+#define BIGNUM_FLAG_MASK      0x1
+
 typedef uint64_t bn_word_t;
 
 typedef struct _bignum_t
 {
 	uint32_t bits;
 	uint32_t size;
-	int16_t sign;
-	int16_t resize;
+	int8_t sign;
+	int8_t resize;
+	int16_t flags;
 	bn_word_t *words;
 } bignum_t;
 
