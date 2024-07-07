@@ -71,6 +71,7 @@ int32_t bignum_is_probable_prime(bignum_t *bn);
 bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b);
+bignum_t *bignum_sqr(bignum_t *r, bignum_t *a);
 bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b);
 
@@ -78,7 +79,10 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift);
 bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift);
 
 bignum_t *bignum_modadd(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
+bignum_t *bignum_modsub(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
 bignum_t *bignum_modmul(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
+bignum_t *bignum_modsqr(bignum_t *r, bignum_t *a, bignum_t *m);
+bignum_t *bignum_modsqrt(bignum_t *r, bignum_t *a, bignum_t *m);
 bignum_t *bignum_modexp(bignum_t *r, bignum_t *a, bignum_t *p, bignum_t *m);
 bignum_t *bignum_modinv(bignum_t *r, bignum_t *a, bignum_t *p);
 
