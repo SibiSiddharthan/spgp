@@ -5,40 +5,39 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <stdint.h>
 #include <intrin.h>
-#include <bignum.h>
-#include <minmax.h>
 
-void bignum_add_words(bignum_t *r, bignum_t *a, bignum_t *b)
+uint8_t bignum_add_words(uint64_t *r, uint64_t *a, uint64_t *b, uint32_t count)
 {
-	uint64_t count = MIN(a->bits, b->bits) / 64;
-	uint64_t pos = 0;
 	uint8_t carry = 0;
-	bignum_t *c = NULL;
 
-	for (pos = 0; pos < count; ++pos)
+	for (uint32_t pos = 0; pos < count; ++pos)
 	{
-		carry = _addcarryx_u64(carry, a->qwords[pos], b->qwords[pos], r->qwords[pos]);
+		carry = _addcarry_u64(carry, *a, *b, *r);
+
+		a++;
+		b++;
+		r++;
 	}
 
-	count = MAX(a->bits, b->bits) / 64;
+	return carry;
+}
 
-	if (a->bits >= b->bits)
-	{
-		c = a;
-	}
-	else
-	{
-		c = b;
-	}
+void bignum_increment(uint64_t *r, uint32_t count)
+{
+	uint8_t carry = 0;
 
-	for (; pos < count; ++pos)
+	for (uint32_t pos = 0; pos < count; ++pos)
 	{
-		carry = _addcarryx_u64(0, c->qwords[pos], carry, r->qwords[pos]);
-	}
+		carry = _addcarry_u64(carry, *r, 1, *r);
 
-	if(carry)
-	{
-		r->qwords[count] = 1;
+		// If there is no carry, return.
+		if (carry == 0)
+		{
+			return;
+		}
+
+		r++;
 	}
 }
