@@ -97,7 +97,10 @@ bignum_ctx *bignum_ctx_init(void *ptr, size_t size, size_t initial_size);
 bignum_ctx *bignum_ctx_new(size_t initial_size);
 void bignum_ctx_delete(bignum_ctx *bctx);
 
-bignum_t *bignum_ctx_allocate(bignum_ctx *bctx, uint32_t bits);
-void bignum_ctx_release(bignum_ctx *bctx, bignum_t *bn);
+bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+void bignum_ctx_release_bignum(bignum_ctx *bctx, bignum_t *bn);
+
+void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size);
+void bignum_ctx_release_raw(bignum_ctx *bctx, void *ptr);
 
 #endif
