@@ -159,8 +159,15 @@ bignum_t *bignum_resize(bignum_t *bn, uint32_t bits)
 	// Copy old stuff
 	memcpy(ptr, bn->words, CEIL_DIV(bn->bits, 8));
 
+	// Free old words if it was allocated by another malloc.
+	if (bn->resize)
+	{
+		free(bn->words);
+	}
+
 	bn->size = new_size;
 	bn->words = ptr;
+	bn->resize = 1;
 
 	return bn;
 }
