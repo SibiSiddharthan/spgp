@@ -20,6 +20,7 @@ bignum/bytes.c
 bignum/cmp.c
 bignum/addsub.c
 bignum/mul.c
+bignum/mod.c
 bignum/divmod.c
 bignum/shift.c
 ${bignum_asm}
