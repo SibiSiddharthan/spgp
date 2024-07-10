@@ -1,0 +1,90 @@
+/*
+   Copyright (c) 2024 Sibi Siddharthan
+
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
+*/
+
+#include <stdlib.h>
+#include <string.h>
+
+#include <bignum.h>
+#include <minmax.h>
+#include <round.h>
+
+typedef struct _chunk
+{
+	void *ptr;
+	size_t size;
+} chunk;
+
+struct _bignum_ctx
+{
+	void *next;
+	chunk free_chunks[8];
+	size_t total_size;
+	size_t usable_size;
+	size_t free_size;
+};
+
+#if 0
+bignum_ctx *bignum_ctx_init(void *ptr, size_t size)
+{
+	bignum_ctx *bctx = ptr;
+	size_t usable_size = size - sizeof(bignum_ctx);
+
+	if (size < sizeof(bignum_ctx))
+	{
+		return NULL;
+	}
+
+	memset(bctx, 0, size);
+
+	return bctx;
+}
+#endif
+
+bignum_ctx *bignum_ctx_new(size_t size)
+{
+	bignum_ctx *bctx = NULL;
+	size_t total_size = sizeof(bignum_ctx);
+
+	// Make sure we allocate atleast 128 bytes for the chunks.
+	size = ROUND_UP(MAX(size, 128), 64);
+	total_size += size;
+
+	bctx = malloc(total_size);
+
+	if (bctx == NULL)
+	{
+		return NULL;
+	}
+
+	memset(bctx, 0, total_size);
+
+	bctx->total_size = total_size;
+	bctx->usable_size = total_size - sizeof(bignum_ctx);
+	bctx->free_size = ROUND_UP(MAX(size, 128), 64);
+
+	return bctx;
+}
+
+void bignum_ctx_delete(bignum_ctx *bctx)
+{
+	bignum_ctx *temp = NULL;
+
+	while (temp = bctx)
+	{
+		bctx = bctx->next;
+
+		// Zero contents before freeing.
+		memset(temp, 0, temp->total_size);
+		free(temp);
+	}
+}
+
+bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+void bignum_ctx_release_bignum(bignum_ctx *bctx, bignum_t *bn);
+
+void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size);
+void bignum_ctx_release_raw(bignum_ctx *bctx, void *ptr);
