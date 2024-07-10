@@ -31,11 +31,7 @@ typedef struct _bignum_t
 	bn_word_t *words;
 } bignum_t;
 
-typedef struct _bignum_ctx
-{
-	size_t size;
-	void *arena;
-} bignum_ctx;
+typedef struct _bignum_ctx bignum_ctx;
 
 size_t bignum_size(uint32_t bits);
 
@@ -93,14 +89,7 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 
 // Functions for bignum_ctx.
 
-bignum_ctx *bignum_ctx_init(void *ptr, size_t size, size_t initial_size);
-bignum_ctx *bignum_ctx_new(size_t initial_size);
+bignum_ctx *bignum_ctx_new(size_t size);
 void bignum_ctx_delete(bignum_ctx *bctx);
-
-bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
-void bignum_ctx_release_bignum(bignum_ctx *bctx, bignum_t *bn);
-
-void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size);
-void bignum_ctx_release_raw(bignum_ctx *bctx, void *ptr);
 
 #endif
