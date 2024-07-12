@@ -94,8 +94,28 @@ void bignum_ctx_delete(bignum_ctx *bctx)
 	}
 }
 
-bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
-void bignum_ctx_release_bignum(bignum_ctx *bctx, bignum_t *bn);
-
 void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size);
 void bignum_ctx_release_raw(bignum_ctx *bctx, void *ptr);
+
+bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits)
+{
+	size_t required_size = bignum_size(bits);
+	void *ptr = bignum_ctx_allocate_raw(bctx, required_size);
+	bignum_t *bn = NULL;
+
+	if (ptr == NULL)
+	{
+		return NULL;
+	}
+
+	// Bignums allocated in ctx should not be resized.
+	bn = bignum_init(ptr, required_size, bits);
+	bn->flags |= BIGNUM_FLAG_NO_RESIZE;
+
+	return bn;
+}
+
+void bignum_ctx_release_bignum(bignum_ctx *bctx, bignum_t *bn)
+{
+	bignum_ctx_release_raw(bctx, bn);
+}
