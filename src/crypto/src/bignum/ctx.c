@@ -14,6 +14,7 @@
 
 typedef struct _chunk
 {
+	void *next;
 	void *ptr;
 	size_t size;
 } chunk;
@@ -21,7 +22,8 @@ typedef struct _chunk
 struct _bignum_ctx
 {
 	void *next;
-	chunk free_chunks[8];
+	chunk *head;
+	chunk chunks[8];
 	size_t total_size;
 	size_t usable_size;
 	size_t free_size;
@@ -65,6 +67,15 @@ bignum_ctx *bignum_ctx_new(size_t size)
 	bctx->total_size = total_size;
 	bctx->usable_size = size;
 	bctx->free_size = size;
+
+	// Setup the linked list of chunks.
+	bctx->head = &bctx->chunks[0];
+	bctx->chunks[7].next = NULL;
+
+	for (uint8_t i = 0; i <= 6; ++i)
+	{
+		bctx->chunks[i].next = &bctx->chunks[i + 1];
+	}
 
 	return bctx;
 }
