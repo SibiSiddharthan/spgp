@@ -94,8 +94,15 @@ void bignum_ctx_delete(bignum_ctx *bctx)
 	}
 }
 
-void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size);
-void bignum_ctx_release_raw(bignum_ctx *bctx, void *ptr);
+void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size)
+{
+	return allocate_memory(bctx, size);
+}
+
+void bignum_ctx_release_raw(bignum_ctx *bctx, void *ptr)
+{
+	return free_memory(bctx, ptr);
+}
 
 bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits)
 {
