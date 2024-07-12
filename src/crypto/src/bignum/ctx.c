@@ -63,8 +63,8 @@ bignum_ctx *bignum_ctx_new(size_t size)
 	memset(bctx, 0, total_size);
 
 	bctx->total_size = total_size;
-	bctx->usable_size = total_size - sizeof(bignum_ctx);
-	bctx->free_size = ROUND_UP(MAX(size, 128), 64);
+	bctx->usable_size = size;
+	bctx->free_size = size;
 
 	return bctx;
 }
@@ -73,7 +73,7 @@ void bignum_ctx_delete(bignum_ctx *bctx)
 {
 	bignum_ctx *temp = NULL;
 
-	while (temp = bctx)
+	while ((temp = bctx))
 	{
 		bctx = bctx->next;
 
