@@ -17,6 +17,24 @@ size_t bignum_size(uint32_t bits)
 	return sizeof(bignum_t) + CEIL_DIV(bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE;
 }
 
+bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits)
+{
+	bignum_t *bn = (bignum_t *)ptr;
+
+	memset(bn, 0, bn_size);
+
+	bn->bits = 0;
+	bn->sign = 1;
+
+	if (bits > 0)
+	{
+		bn->size = CEIL_DIV(bits, 8);
+		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
+	}
+
+	return bn;
+}
+
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 {
 	bignum_t *bn = (bignum_t *)ptr;
@@ -30,18 +48,7 @@ bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 		return NULL;
 	}
 
-	memset(bn, 0, required_size);
-
-	bn->bits = 0;
-	bn->sign = 1;
-
-	if (bits > 0)
-	{
-		bn->size = CEIL_DIV(bits, 8);
-		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
-	}
-
-	return bn;
+	return bignum_init_checked(ptr, required_size, bits);
 }
 
 bignum_t *bignum_new(uint32_t bits)
@@ -59,18 +66,7 @@ bignum_t *bignum_new(uint32_t bits)
 		return NULL;
 	}
 
-	memset(bn, 0, size);
-
-	bn->bits = 0;
-	bn->sign = 1;
-
-	if (bits > 0)
-	{
-		bn->size = CEIL_DIV(bits, 8);
-		bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
-	}
-
-	return bn;
+	return bignum_init_checked(bn, size, bits);
 }
 
 void bignum_delete(bignum_t *bn)
