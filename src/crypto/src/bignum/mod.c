@@ -11,7 +11,7 @@
 #include <round.h>
 #include <minmax.h>
 
-bignum_t *bignum_modadd(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
+bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
 {
 	bignum_t *temp = NULL;
 	uint32_t required_bits = m->bits;
@@ -42,7 +42,7 @@ bignum_t *bignum_modadd(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
 	return r;
 }
 
-bignum_t *bignum_modsub(bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
+bignum_t *bignum_modsub(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
 {
 	bignum_t *temp = NULL;
 	uint32_t required_bits = m->bits;
