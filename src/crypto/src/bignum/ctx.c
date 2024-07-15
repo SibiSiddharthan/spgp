@@ -137,11 +137,6 @@ void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size)
 	return allocate_memory(bctx, size);
 }
 
-void bignum_ctx_release_raw(bignum_ctx *bctx, void *ptr)
-{
-	return free_memory(bctx, ptr);
-}
-
 bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits)
 {
 	size_t required_size = bignum_size((bits = ROUND_UP(bits, BIGNUM_BITS_PER_WORD)));
@@ -158,9 +153,4 @@ bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits)
 	bn->flags |= BIGNUM_FLAG_NO_RESIZE;
 
 	return bn;
-}
-
-void bignum_ctx_release_bignum(bignum_ctx *bctx, bignum_t *bn)
-{
-	bignum_ctx_release_raw(bctx, bn);
 }
