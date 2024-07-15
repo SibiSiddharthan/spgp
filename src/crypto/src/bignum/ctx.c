@@ -12,21 +12,34 @@
 #include <minmax.h>
 #include <round.h>
 
-typedef struct _chunk
-{
-	void *next;
-	void *ptr;
-	size_t size;
-} chunk;
+#define BIGNUM_CTX_STACK_DEPTH 8
 
-struct _bignum_ctx
+bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits);
+
+typedef struct _block
 {
+	void *base;
 	void *next;
-	chunk *head;
-	chunk chunks[8];
 	size_t total_size;
 	size_t usable_size;
 	size_t free_size;
+} block;
+
+typedef struct _stack
+{
+	void *start;
+	void *end;
+	void *ptr;
+	size_t size;
+} stack;
+
+struct _bignum_ctx
+{
+	block *blocks;
+	stack *top;
+	int8_t block_count;
+	int8_t stack_count;
+	stack stacks[BIGNUM_CTX_STACK_DEPTH];
 };
 
 #if 0
@@ -49,10 +62,11 @@ bignum_ctx *bignum_ctx_init(void *ptr, size_t size)
 bignum_ctx *bignum_ctx_new(size_t size)
 {
 	bignum_ctx *bctx = NULL;
-	size_t total_size = sizeof(bignum_ctx);
+	block *first_block = NULL;
+	size_t total_size = sizeof(bignum_ctx) + sizeof(block);
 
-	// Make sure we allocate atleast 128 bytes for the chunks.
-	size = ROUND_UP(MAX(size, 128), 64);
+	// Make sure we allocate atleast 256 bytes for the stacks.
+	size = ROUND_UP(MAX(size, 256), 64);
 	total_size += size;
 
 	bctx = malloc(total_size);
@@ -64,18 +78,42 @@ bignum_ctx *bignum_ctx_new(size_t size)
 
 	memset(bctx, 0, total_size);
 
-	bctx->total_size = total_size;
-	bctx->usable_size = size;
-	bctx->free_size = size;
+	// Initialize the first block. The first block will contain the entire bignum_ctx structure.
+	first_block = (block *)((byte_t *)bctx + sizeof(bignum_ctx));
 
-	// Setup the linked list of chunks.
-	bctx->head = &bctx->chunks[0];
-	bctx->chunks[7].next = NULL;
+	// The usable memory region will lie after the block header.
+	first_block->base = (byte_t *)first_block + sizeof(block);
+	first_block->total_size = total_size;
+	first_block->usable_size = size;
+	first_block->free_size = size;
 
-	for (uint8_t i = 0; i <= 6; ++i)
+	bctx->block_count = 1;
+	bctx->stack_count = 0;
+
+	return bctx;
+}
+
+void bignum_ctx_delete(bignum_ctx *bctx)
+{
+	block *temp1 = NULL;
+	block *temp2 = NULL;
+
+	if (bctx == NULL)
 	{
-		bctx->chunks[i].next = &bctx->chunks[i + 1];
+		return;
 	}
+
+	temp1 = bctx->blocks;
+
+	while ((temp2 = temp1))
+	{
+		temp1 = temp1->next;
+
+		// Zero contents before freeing.
+		memset(temp2, 0, temp2->total_size);
+		free(temp2);
+	}
+}
 
 	return bctx;
 }
