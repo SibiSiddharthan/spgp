@@ -12,14 +12,13 @@
 #include <minmax.h>
 #include <round.h>
 
-#define BIGNUM_CTX_STACK_DEPTH 8
+#define BIGNUM_CTX_STACK_DEPTH 4
 
 bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits);
 
 typedef struct _block
 {
 	void *base;
-	void *next;
 	size_t total_size;
 	size_t usable_size;
 	size_t free_size;
@@ -30,13 +29,11 @@ typedef struct _stack
 	void *start;
 	void *end;
 	void *ptr;
-	size_t size;
 } stack;
 
 struct _bignum_ctx
 {
 	block *blocks;
-	stack *top;
 	int8_t block_count;
 	int8_t stack_count;
 	stack stacks[BIGNUM_CTX_STACK_DEPTH];
@@ -115,21 +112,14 @@ void bignum_ctx_delete(bignum_ctx *bctx)
 	}
 }
 
-	return bctx;
+void bignum_ctx_start(bignum_ctx *bctx, size_t size)
+{
+	create_new_stack(bctx, size);
 }
 
-void bignum_ctx_delete(bignum_ctx *bctx)
+void bignum_ctx_end(bignum_ctx *bctx)
 {
-	bignum_ctx *temp = NULL;
-
-	while ((temp = bctx))
-	{
-		bctx = bctx->next;
-
-		// Zero contents before freeing.
-		memset(temp, 0, temp->total_size);
-		free(temp);
-	}
+	cleanup_stack(bctx);
 }
 
 void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size)
