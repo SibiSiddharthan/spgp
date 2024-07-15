@@ -92,23 +92,18 @@ bignum_ctx *bignum_ctx_new(size_t size)
 
 void bignum_ctx_delete(bignum_ctx *bctx)
 {
-	block *temp1 = NULL;
-	block *temp2 = NULL;
-
 	if (bctx == NULL)
 	{
 		return;
 	}
 
-	temp1 = bctx->blocks;
-
-	while ((temp2 = temp1))
+	for (int8_t i = 0; i < bctx->block_count; ++i)
 	{
-		temp1 = temp1->next;
+		block *current_block = &bctx->blocks[i];
 
 		// Zero contents before freeing.
-		memset(temp2, 0, temp2->total_size);
-		free(temp2);
+		memset(current_block, 0, current_block->total_size);
+		free(current_block);
 	}
 }
 
