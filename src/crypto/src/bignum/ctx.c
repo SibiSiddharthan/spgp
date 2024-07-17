@@ -39,6 +39,106 @@ struct _bignum_ctx
 	stack stacks[BIGNUM_CTX_STACK_DEPTH];
 };
 
+static void *allocate_memory(bignum_ctx *bctx, size_t size)
+{
+	void *ptr = NULL;
+	stack *current_stack = &bctx->stacks[bctx->stack_count - 1];
+
+	// Stack has insufficient space.
+	if ((uintptr_t)current_stack->end - (uintptr_t)current_stack->ptr < size)
+	{
+		return NULL;
+	}
+
+	ptr = current_stack->ptr;
+	current_stack->ptr = (void *)((uintptr_t)current_stack->ptr + size);
+
+	return ptr;
+}
+
+static block *create_new_block(bignum_ctx *bctx, size_t size)
+{
+	block *new_block = NULL;
+	size_t total_size = sizeof(block) + ROUND_UP(size, 32);
+
+	new_block = malloc(total_size);
+
+	if (new_block == NULL)
+	{
+		return NULL;
+	}
+
+	// Zero the block.
+	memset(new_block, 0, total_size);
+
+	new_block->base = (byte_t *)new_block + sizeof(block);
+	new_block->total_size = total_size;
+	new_block->usable_size = size;
+	new_block->free_size = size;
+
+	bctx->block_count++;
+
+	return new_block;
+}
+
+static stack *create_new_stack(bignum_ctx *bctx, size_t size)
+{
+	block *current_block = &bctx->blocks[bctx->block_count - 1];
+	stack *new_stack = NULL;
+
+	if (bctx->stack_count >= BIGNUM_CTX_STACK_DEPTH)
+	{
+		return NULL;
+	}
+
+	new_stack = &bctx->stacks[bctx->stack_count];
+
+	if (current_block->free_size < size)
+	{
+		current_block = create_new_block(bctx, size);
+
+		if (current_block == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	// Initialize the stack
+	new_stack->start = (byte_t *)current_block->base + (current_block->usable_size - current_block->free_size);
+	new_stack->end = (byte_t *)new_stack->start + size;
+	new_stack->ptr = new_stack->start;
+
+	bctx->stack_count++;
+
+	return new_stack;
+}
+
+static void cleanup_stack(bignum_ctx *bctx)
+{
+	block *current_block = &bctx->blocks[bctx->block_count - 1];
+	stack *current_stack = &bctx->stacks[bctx->stack_count - 1];
+
+	if (bctx->stack_count <= 0)
+	{
+		return;
+	}
+
+	current_block->free_size += (uintptr_t)current_stack->end - (uintptr_t)current_stack->start;
+	bctx->stack_count--;
+
+	// If the stack is created on a new block, free the block if this is the only stack in it.
+	if (bctx->block_count > 1)
+	{
+		if (current_block->free_size == current_block->usable_size)
+		{
+			memset(current_block, 0, current_block->total_size);
+			free(current_block);
+
+			bctx->block_count--;
+		}
+	}
+}
+
 #if 0
 bignum_ctx *bignum_ctx_init(void *ptr, size_t size)
 {
@@ -63,7 +163,7 @@ bignum_ctx *bignum_ctx_new(size_t size)
 	size_t total_size = sizeof(bignum_ctx) + sizeof(block);
 
 	// Make sure we allocate atleast 256 bytes for the stacks.
-	size = ROUND_UP(MAX(size, 256), 64);
+	size = ROUND_UP(MAX(size, 256), 32);
 	total_size += size;
 
 	bctx = malloc(total_size);
