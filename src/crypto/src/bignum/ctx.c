@@ -139,22 +139,40 @@ static void cleanup_stack(bignum_ctx *bctx)
 	}
 }
 
-#if 0
+// This is meant for internal use only. The size should always be big enough for only one block use throughout
+// the structure's lifetime.
 bignum_ctx *bignum_ctx_init(void *ptr, size_t size)
 {
 	bignum_ctx *bctx = ptr;
-	size_t usable_size = size - sizeof(bignum_ctx);
+	block *first_block = NULL;
+	size_t header_size = sizeof(bignum_ctx) + sizeof(block);
+	size_t usable_size = size - header_size;
 
-	if (size < sizeof(bignum_ctx))
+	const size_t min_size = 256;
+
+	if (size < header_size + min_size)
 	{
 		return NULL;
 	}
 
 	memset(bctx, 0, size);
 
+	// Initialize the first block. The first block will contain the entire bignum_ctx structure.
+	first_block = (block *)((byte_t *)bctx + sizeof(bignum_ctx));
+
+	// The usable memory region will lie after the block header.
+	first_block->base = (byte_t *)first_block + sizeof(block);
+	first_block->total_size = size;
+	first_block->usable_size = usable_size;
+	first_block->free_size = usable_size;
+
+	bctx->block_count = 1;
+	bctx->stack_count = 0;
+
+	return bctx;
+
 	return bctx;
 }
-#endif
 
 bignum_ctx *bignum_ctx_new(size_t size)
 {
