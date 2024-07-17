@@ -11,9 +11,14 @@
 #include <round.h>
 #include <minmax.h>
 
+void bignum_ctx_start(bignum_ctx *bctx, size_t size);
+void bignum_ctx_end(bignum_ctx *bctx);
+bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+
 bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
 {
 	bignum_t *temp = NULL;
+	bignum_ctx *obctx = bctx;
 	uint32_t required_bits = m->bits;
 	uint32_t op_bits = MAX(a->bits, b->bits) + 1;
 
@@ -23,20 +28,35 @@ bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 		return NULL;
 	}
 
-	temp = bignum_add(NULL, a, b);
 	r = bignum_resize(r, required_bits);
-
-	if (temp == NULL || r == NULL)
-	{
-		return NULL;
-	}
-
-	r = bignum_mod(r, temp, m);
-	bignum_delete(temp);
 
 	if (r == NULL)
 	{
 		return NULL;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(bignum_size(op_bits));
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	bignum_ctx_start(bctx, 0);
+
+	temp = bignum_ctx_allocate_bignum(bctx, op_bits);
+
+	temp = bignum_add(temp, a, b);
+	r = bignum_mod(r, temp, m);
+
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
 	}
 
 	return r;
@@ -45,6 +65,7 @@ bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 bignum_t *bignum_modsub(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
 {
 	bignum_t *temp = NULL;
+	bignum_ctx *obctx = bctx;
 	uint32_t required_bits = m->bits;
 	uint32_t op_bits = MAX(a->bits, b->bits) + 1;
 
@@ -54,20 +75,35 @@ bignum_t *bignum_modsub(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 		return NULL;
 	}
 
-	temp = bignum_sub(NULL, a, b);
 	r = bignum_resize(r, required_bits);
-
-	if (temp == NULL || r == NULL)
-	{
-		return NULL;
-	}
-
-	r = bignum_mod(r, temp, m);
-	bignum_delete(temp);
 
 	if (r == NULL)
 	{
 		return NULL;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(bignum_size(op_bits));
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	bignum_ctx_start(bctx, 0);
+
+	temp = bignum_ctx_allocate_bignum(bctx, op_bits);
+
+	temp = bignum_sub(temp, a, b);
+	r = bignum_mod(r, temp, m);
+
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
 	}
 
 	return r;
