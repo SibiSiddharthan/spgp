@@ -48,7 +48,7 @@ bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 		return NULL;
 	}
 
-	return bignum_init_checked(ptr, required_size, bits);
+	return bignum_init_checked(bn, required_size, bits);
 }
 
 bignum_t *bignum_new(uint32_t bits)
