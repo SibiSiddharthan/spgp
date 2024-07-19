@@ -50,7 +50,7 @@ bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 	temp = bignum_ctx_allocate_bignum(bctx, op_bits);
 
 	temp = bignum_add(temp, a, b);
-	r = bignum_mod(r, temp, m);
+	r = bignum_mod(bctx, r, temp, m);
 
 	bignum_ctx_end(bctx);
 
@@ -97,7 +97,7 @@ bignum_t *bignum_modsub(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 	temp = bignum_ctx_allocate_bignum(bctx, op_bits);
 
 	temp = bignum_sub(temp, a, b);
-	r = bignum_mod(r, temp, m);
+	r = bignum_mod(bctx, r, temp, m);
 
 	bignum_ctx_end(bctx);
 

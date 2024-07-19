@@ -19,6 +19,10 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
 int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words);
 
+void bignum_ctx_start(bignum_ctx *bctx, size_t size);
+void bignum_ctx_end(bignum_ctx *bctx);
+bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+
 int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r)
 {
 	bool free_scratch = false;
@@ -125,7 +129,7 @@ finalize:
 	return 0;
 }
 
-bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
+bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	int32_t status;
 
@@ -135,6 +139,8 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	bignum_t *quotient = r;
 	bignum_t *remainder = NULL;
+
+	bignum_ctx *obctx = bctx;
 
 	if (quotient_sign < 0)
 	{
@@ -148,16 +154,22 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 		return NULL;
 	}
 
-	remainder = bignum_new(remainder_bits);
-
-	if (remainder == NULL)
+	if (obctx == NULL)
 	{
-		return NULL;
+		bctx = bignum_ctx_new(bignum_size(remainder_bits));
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
 	}
 
+	bignum_ctx_start(bctx, 0);
+
+	remainder = bignum_ctx_allocate_bignum(bctx, remainder_bits);
 	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
 
-	bignum_delete(remainder);
+	bignum_ctx_end(bctx);
 
 	if (status == -1)
 	{
@@ -167,7 +179,7 @@ bignum_t *bignum_div(bignum_t *r, bignum_t *a, bignum_t *b)
 	return r;
 }
 
-bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
+bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	int32_t status;
 
@@ -177,6 +189,8 @@ bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	bignum_t *quotient = NULL;
 	bignum_t *remainder = r;
+
+	bignum_ctx *obctx = bctx;
 
 	if (quotient_sign < 0)
 	{
@@ -190,16 +204,22 @@ bignum_t *bignum_mod(bignum_t *r, bignum_t *a, bignum_t *b)
 		return NULL;
 	}
 
-	quotient = bignum_new(quotient_bits);
-
-	if (quotient == NULL)
+	if (obctx == NULL)
 	{
-		return NULL;
+		bctx = bignum_ctx_new(bignum_size(quotient_bits));
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
 	}
 
+	bignum_ctx_start(bctx, 0);
+
+	quotient = bignum_ctx_allocate_bignum(bctx, quotient_bits);
 	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
 
-	bignum_delete(quotient);
+	bignum_ctx_end(bctx);
 
 	if (status == -1)
 	{
