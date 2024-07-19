@@ -156,7 +156,12 @@ bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 
 	if (obctx == NULL)
 	{
-		bctx = bignum_ctx_new(bignum_size(remainder_bits));
+		size_t ctx_size = 0;
+
+		ctx_size += bignum_size(remainder_bits);
+		ctx_size += (CEIL_DIV(a->bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3;
+
+		bctx = bignum_ctx_new(ctx_size);
 
 		if (bctx == NULL)
 		{
@@ -164,7 +169,7 @@ bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 	}
 
-	bignum_ctx_start(bctx, 0);
+	bignum_ctx_start(bctx, bignum_size(remainder_bits));
 
 	remainder = bignum_ctx_allocate_bignum(bctx, remainder_bits);
 	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
@@ -206,7 +211,12 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 
 	if (obctx == NULL)
 	{
-		bctx = bignum_ctx_new(bignum_size(quotient_bits));
+		size_t ctx_size = 0;
+
+		ctx_size += bignum_size(quotient_bits);
+		ctx_size += (CEIL_DIV(a->bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3;
+
+		bctx = bignum_ctx_new(ctx_size);
 
 		if (bctx == NULL)
 		{
@@ -214,7 +224,7 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 	}
 
-	bignum_ctx_start(bctx, 0);
+	bignum_ctx_start(bctx, bignum_size(quotient_bits));
 
 	quotient = bignum_ctx_allocate_bignum(bctx, quotient_bits);
 	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
