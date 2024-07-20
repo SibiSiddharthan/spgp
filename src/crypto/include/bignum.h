@@ -54,6 +54,7 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size);
 int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size);
 
 void bignum_zero(bignum_t *bn);
+void bignum_one(bignum_t *bn);
 void bignum_set_word(bignum_t *bn, bn_word_t value);
 void bignum_set_sign(bignum_t *bn, int8_t sign);
 void bignum_set_flags(bignum_t *bn, int16_t flags);

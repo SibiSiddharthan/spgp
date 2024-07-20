@@ -116,7 +116,7 @@ bignum_t *bignum_resize(bignum_t *bn, uint32_t bits)
 	size_t new_size = 0;
 	void *ptr = NULL;
 
-	bits = ROUND_UP(bits, BIGNUM_BITS_PER_WORD);
+	bits = ROUND_UP(MAX(bits, 1), BIGNUM_BITS_PER_WORD);
 	new_size = bits / 8;
 
 	// Create a new bignum_t.
@@ -190,6 +190,16 @@ void bignum_zero(bignum_t *bn)
 	memset(bn->words, 0, bn->size);
 
 	bn->bits = 0;
+	bn->sign = 1;
+}
+
+void bignum_one(bignum_t *bn)
+{
+	// Zero the words and reset the struct.
+	memset(bn->words, 0, bn->size);
+
+	bn->words[0] = 1;
+	bn->bits = 1;
 	bn->sign = 1;
 }
 
