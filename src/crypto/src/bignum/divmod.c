@@ -80,7 +80,9 @@ int32_t bignum_divmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bignum_t *q,
 	required_scratch_size = (CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3;
 
 	bignum_ctx_start(bctx, required_scratch_size);
+
 	scratch = bignum_ctx_allocate_raw(bctx, required_scratch_size);
+	memset(scratch, 0, required_scratch_size);
 
 	bignum_div_words(scratch, dd->words, dv->words, q->words, r->words, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
 

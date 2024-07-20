@@ -33,9 +33,9 @@ typedef struct _stack
 
 struct _bignum_ctx
 {
-	block *blocks;
 	int8_t block_count;
 	int8_t stack_count;
+	block blocks[BIGNUM_CTX_STACK_DEPTH];
 	stack stacks[BIGNUM_CTX_STACK_DEPTH];
 };
 
@@ -58,7 +58,7 @@ static void *allocate_memory(bignum_ctx *bctx, size_t size)
 
 static block *create_new_block(bignum_ctx *bctx, size_t size)
 {
-	block *new_block = NULL;
+	block *new_block = &bctx->blocks[bctx->block_count];
 	size_t total_size = sizeof(block) + ROUND_UP(size, 32);
 
 	new_block = malloc(total_size);
@@ -108,6 +108,7 @@ static stack *create_new_stack(bignum_ctx *bctx, size_t size)
 	new_stack->end = (byte_t *)new_stack->start + size;
 	new_stack->ptr = new_stack->start;
 
+	current_block->free_size -= size;
 	bctx->stack_count++;
 
 	return new_stack;
@@ -158,18 +159,17 @@ bignum_ctx *bignum_ctx_init(void *ptr, size_t size)
 	memset(bctx, 0, size);
 
 	// Initialize the first block. The first block will contain the entire bignum_ctx structure.
-	first_block = (block *)((byte_t *)bctx + sizeof(bignum_ctx));
+	// first_block = (block *)((byte_t *)bctx + sizeof(bignum_ctx));
+	first_block = &bctx->blocks[0];
 
 	// The usable memory region will lie after the block header.
-	first_block->base = (byte_t *)first_block + sizeof(block);
+	first_block->base = (byte_t *)bctx + sizeof(bignum_ctx);
 	first_block->total_size = size;
 	first_block->usable_size = usable_size;
 	first_block->free_size = usable_size;
 
 	bctx->block_count = 1;
 	bctx->stack_count = 0;
-
-	return bctx;
 
 	return bctx;
 }
@@ -194,14 +194,16 @@ bignum_ctx *bignum_ctx_new(size_t size)
 	memset(bctx, 0, total_size);
 
 	// Initialize the first block. The first block will contain the entire bignum_ctx structure.
-	first_block = (block *)((byte_t *)bctx + sizeof(bignum_ctx));
+	// first_block = (block *)((byte_t *)bctx + sizeof(bignum_ctx));
+	first_block = &bctx->blocks[0];
 
 	// The usable memory region will lie after the block header.
-	first_block->base = (byte_t *)first_block + sizeof(block);
+	first_block->base = (byte_t *)bctx + sizeof(bignum_ctx);
 	first_block->total_size = total_size;
 	first_block->usable_size = size;
 	first_block->free_size = size;
 
+	// bctx->blocks = first_block;
 	bctx->block_count = 1;
 	bctx->stack_count = 0;
 
@@ -215,7 +217,7 @@ void bignum_ctx_delete(bignum_ctx *bctx)
 		return;
 	}
 
-	for (int8_t i = 0; i < bctx->block_count; ++i)
+	for (int8_t i = 1; i < bctx->block_count; ++i)
 	{
 		block *current_block = &bctx->blocks[i];
 
@@ -223,6 +225,10 @@ void bignum_ctx_delete(bignum_ctx *bctx)
 		memset(current_block, 0, current_block->total_size);
 		free(current_block);
 	}
+
+	// First block
+	memset(bctx, 0, bctx->blocks[0].total_size);
+	free(bctx);
 }
 
 void bignum_ctx_start(bignum_ctx *bctx, size_t size)
