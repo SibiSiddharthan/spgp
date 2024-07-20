@@ -422,9 +422,12 @@ int32_t bignum_div_tests(void)
 	int32_t status = 0;
 	uint32_t result = 0;
 
+	bignum_ctx *bctx = NULL;
 	bignum_t *dd = NULL, *dv = NULL, *q = NULL, *r = NULL;
 	char qhex[128] = {0};
 	char rhex[128] = {0};
+
+	bctx = bignum_ctx_new(1024);
 
 	// ------------------------------------------------------------------------
 
@@ -433,7 +436,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -458,7 +461,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -483,7 +486,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -508,7 +511,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -533,7 +536,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -558,7 +561,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -583,7 +586,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -608,7 +611,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -633,7 +636,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -658,7 +661,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -683,7 +686,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -708,7 +711,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -733,7 +736,7 @@ int32_t bignum_div_tests(void)
 	q = bignum_new(256);
 	r = bignum_new(256);
 
-	bignum_divmod(NULL, 0, dd, dv, q, r);
+	bignum_divmod(bctx, dd, dv, q, r);
 
 	memset(qhex, 0, 128);
 	memset(rhex, 0, 128);
@@ -752,6 +755,8 @@ int32_t bignum_div_tests(void)
 	bignum_delete(r);
 
 	// ------------------------------------------------------------------------
+
+	bignum_ctx_delete(bctx);
 
 	return status;
 }

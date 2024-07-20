@@ -7,7 +7,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include <bignum.h>
 #include <round.h>
@@ -21,11 +20,12 @@ int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, u
 
 void bignum_ctx_start(bignum_ctx *bctx, size_t size);
 void bignum_ctx_end(bignum_ctx *bctx);
+void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size);
 bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
 
-int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r)
+int32_t bignum_divmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r)
 {
-	bool free_scratch = false;
+	void *scratch = NULL;
 	size_t required_scratch_size = 0;
 
 	uint32_t quotient_bits = (dd->bits >= dv->bits) ? dd->bits - dv->bits + 1 : 1;
@@ -79,23 +79,8 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	// For normalized dividend, normalized divsor, multiplication scratch.
 	required_scratch_size = (CEIL_DIV(dd->bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3;
 
-	if (scratch == NULL)
-	{
-		free_scratch = true;
-		scratch = malloc(required_scratch_size);
-
-		if (scratch == NULL)
-		{
-			return -1;
-		}
-	}
-	else
-	{
-		if (scratch_size < required_scratch_size)
-		{
-			return -1;
-		}
-	}
+	bignum_ctx_start(bctx, required_scratch_size);
+	scratch = bignum_ctx_allocate_raw(bctx, required_scratch_size);
 
 	bignum_div_words(scratch, dd->words, dv->words, q->words, r->words, BIGNUM_WORD_COUNT(dd), BIGNUM_WORD_COUNT(dv));
 
@@ -119,13 +104,9 @@ int32_t bignum_divmod(void *scratch, size_t scratch_size, bignum_t *dd, bignum_t
 	q->bits = bignum_bitcount(q);
 	r->bits = bignum_bitcount(r);
 
+	bignum_ctx_end(bctx);
+
 finalize:
-
-	if (free_scratch)
-	{
-		free(scratch);
-	}
-
 	return 0;
 }
 
@@ -172,7 +153,7 @@ bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	bignum_ctx_start(bctx, bignum_size(remainder_bits));
 
 	remainder = bignum_ctx_allocate_bignum(bctx, remainder_bits);
-	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
+	status = bignum_divmod(bctx, a, b, quotient, remainder);
 
 	bignum_ctx_end(bctx);
 
@@ -227,7 +208,7 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	bignum_ctx_start(bctx, bignum_size(quotient_bits));
 
 	quotient = bignum_ctx_allocate_bignum(bctx, quotient_bits);
-	status = bignum_divmod(NULL, 0, a, b, quotient, remainder);
+	status = bignum_divmod(bctx, a, b, quotient, remainder);
 
 	bignum_ctx_end(bctx);
 
