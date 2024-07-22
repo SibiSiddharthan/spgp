@@ -18,13 +18,15 @@ void bignum_2complement(bn_word_t *r, uint32_t count);
 void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
 {
 	uint8_t carry;
+	bn_word_t temp;
 
 	carry = bignum_add_words(r->words, a->words, b->words, min_words);
 
 	for (uint32_t pos = min_words; pos < total_words; ++pos)
 	{
+		temp = a->words[pos];
 		r->words[pos] = a->words[pos] + carry;
-		carry = (r->words == 0);
+		carry = (r->words[pos] < temp);
 	}
 
 	if (carry)
@@ -39,13 +41,15 @@ void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint
 int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
 {
 	uint8_t borrow;
+	bn_word_t temp;
 
 	borrow = bignum_sub_words(r->words, a->words, b->words, min_words);
 
 	for (uint32_t pos = min_words; pos < total_words; ++pos)
 	{
+		temp = a->words[pos];
 		r->words[pos] = a->words[pos] - borrow;
-		borrow = (r->words[pos] == (bn_word_t)-1);
+		borrow = (r->words[pos] > temp);
 	}
 
 	// This should only happen if (a < b) and (a->bits == bits).
