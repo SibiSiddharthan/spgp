@@ -24,7 +24,6 @@ void bignum_2complement(bn_word_t *r, uint32_t count);
 static uint32_t count_trailing_zeros(bignum_t *bn)
 {
 	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
-	uint32_t i = count - 1;
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
@@ -35,14 +34,35 @@ static uint32_t count_trailing_zeros(bignum_t *bn)
 
 		return (i * BIGNUM_BITS_PER_WORD) + bsf_64(bn->words[i]);
 	}
-}
 
-int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
-{
+	return count * BIGNUM_BITS_PER_WORD;
 }
 
 int32_t bignum_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
 {
+}
+
+bn_word_t euclid_gcd(bn_word_t a, bn_word_t b)
+{
+	bn_word_t r;
+
+	// Assume a > b
+	if (a < b)
+	{
+		r = a;
+		a = b;
+		b = r;
+	}
+
+	while ((r = a % b) != 0)
+	{
+		a = b;
+		b = r;
+	}
+
+	r = b;
+
+	return r;
 }
 
 bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
@@ -54,23 +74,6 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 
 	bignum_ctx *obctx = bctx;
 	size_t ctx_size = a_size + b_size;
-
-	// Handle zero
-	if (a->bits == 0 || b->bits == 0)
-	{
-		r = bignum_resize(r, MAX(a->bits, b->bits));
-
-		if (r == NULL)
-		{
-			return NULL;
-		}
-
-		// GCD is always positive.
-		bignum_copy(r, sizeof(bignum_t) + r->size, (bignum_cmp_abs(a, b) > 0) ? a : b);
-		r->sign = 1;
-
-		return r;
-	}
 
 	r = bignum_resize(r, MIN(a->bits, b->bits));
 
@@ -166,5 +169,39 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 
 bignum_t *bignum_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
+	// Handle zero
+	if (a->bits == 0 || b->bits == 0)
+	{
+		r = bignum_resize(r, MAX(a->bits, b->bits));
+
+		if (r == NULL)
+		{
+			return NULL;
+		}
+
+		// GCD is always positive.
+		bignum_copy(r, sizeof(bignum_t) + r->size, (bignum_cmp_abs(a, b) > 0) ? a : b);
+		r->sign = 1;
+
+		return r;
+	}
+
+	if (a->bits <= BIGNUM_BITS_PER_WORD && b->bits <= BIGNUM_BITS_PER_WORD)
+	{
+		bn_word_t gcd;
+
+		r = bignum_resize(r, BIGNUM_BITS_PER_WORD);
+
+		if (r == NULL)
+		{
+			return NULL;
+		}
+
+		gcd = euclid_gcd(a->words[0], b->words[0]);
+		bignum_set_word(r, gcd);
+
+		return r;
+	}
+
 	return binary_gcd(bctx, r, a, b);
 }
