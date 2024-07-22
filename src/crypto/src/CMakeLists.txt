@@ -24,6 +24,7 @@ bignum/mul.c
 bignum/mod.c
 bignum/divmod.c
 bignum/shift.c
+bignum/gcd.c
 ${bignum_asm}
 #cipher
 cipher/aes.c
