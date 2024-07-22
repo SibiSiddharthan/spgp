@@ -205,8 +205,12 @@ void bignum_one(bignum_t *bn)
 
 void bignum_set_word(bignum_t *bn, bn_word_t value)
 {
+	// Zero the words.
+	memset(bn->words, 0, bn->size);
+
 	// Set the least significant word.
 	bn->words[0] = value;
+	bn->bits = bsr_64(value);
 }
 
 void bignum_set_sign(bignum_t *bn, int8_t sign)
