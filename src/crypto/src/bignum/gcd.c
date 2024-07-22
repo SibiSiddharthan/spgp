@@ -130,13 +130,13 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 		else // a_temp->bits == b_temp->bits
 		{
-			uint8_t borrow = bignum_sub_words(a_temp, a_temp, b_temp, BIGNUM_WORD_COUNT(a_temp));
+			uint8_t borrow = bignum_sub_words(a_temp->words, a_temp->words, b_temp->words, BIGNUM_WORD_COUNT(a_temp));
 			temp = a_temp;
 
 			if (borrow)
 			{
 				// b>a, Since we did (a-b) change it to (b-a).
-				bignum_2complement(a_temp, BIGNUM_WORD_COUNT(a_temp));
+				bignum_2complement(a_temp->words, BIGNUM_WORD_COUNT(a_temp));
 
 				a_temp = b_temp;
 				b_temp = temp;
