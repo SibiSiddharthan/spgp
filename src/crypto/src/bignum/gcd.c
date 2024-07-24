@@ -12,10 +12,7 @@
 #include <round.h>
 #include <minmax.h>
 
-void bignum_ctx_start(bignum_ctx *bctx, size_t size);
-void bignum_ctx_end(bignum_ctx *bctx);
-void *bignum_ctx_allocate_raw(bignum_ctx *bctx, size_t size);
-bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+#include <bignum-internal.h>
 
 uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
 int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words);

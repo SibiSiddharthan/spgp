@@ -11,9 +11,7 @@
 #include <round.h>
 #include <minmax.h>
 
-void bignum_ctx_start(bignum_ctx *bctx, size_t size);
-void bignum_ctx_end(bignum_ctx *bctx);
-bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+#include <bignum-internal.h>
 
 bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m)
 {

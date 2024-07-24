@@ -12,11 +12,9 @@
 #include <round.h>
 #include <minmax.h>
 
-void bignum_decrement(bn_word_t *r, uint32_t count);
+#include <bignum-internal.h>
 
-void bignum_ctx_start(bignum_ctx *bctx, size_t size);
-void bignum_ctx_end(bignum_ctx *bctx);
-bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+void bignum_decrement(bn_word_t *r, uint32_t count);
 
 static uint32_t count_trailing_zeros(bignum_t *bn)
 {
