@@ -59,6 +59,7 @@ void bignum_set_word(bignum_t *bn, bn_word_t value);
 void bignum_set_sign(bignum_t *bn, int8_t sign);
 void bignum_set_flags(bignum_t *bn, int16_t flags);
 uint32_t bignum_bitcount(bignum_t *bn);
+uint32_t bignum_ctz(bignum_t *bn);
 
 int32_t bignum_cmp(bignum_t *a, bignum_t *b);
 int32_t bignum_cmp_abs(bignum_t *a, bignum_t *b);

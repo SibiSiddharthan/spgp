@@ -184,6 +184,23 @@ uint32_t bignum_bitcount(bignum_t *bn)
 	}
 }
 
+uint32_t bignum_ctz(bignum_t *bn)
+{
+	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		if (bn->words[i] == 0)
+		{
+			continue;
+		}
+
+		return (i * BIGNUM_BITS_PER_WORD) + bsf_64(bn->words[i]);
+	}
+
+	return count * BIGNUM_BITS_PER_WORD;
+}
+
 void bignum_zero(bignum_t *bn)
 {
 	// Zero the words and reset the struct.

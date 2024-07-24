@@ -14,23 +14,6 @@
 
 #include <bignum-internal.h>
 
-static uint32_t count_trailing_zeros(bignum_t *bn)
-{
-	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
-
-	for (uint32_t i = 0; i < count; ++i)
-	{
-		if (bn->words[i] == 0)
-		{
-			continue;
-		}
-
-		return (i * BIGNUM_BITS_PER_WORD) + bsf_64(bn->words[i]);
-	}
-
-	return count * BIGNUM_BITS_PER_WORD;
-}
-
 static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32_t count)
 {
 	uint32_t k = 0;
@@ -45,7 +28,7 @@ static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32
 	bignum_copy(nm1, bignum_size(n->bits), n);
 	bignum_decrement(nm1->words, BIGNUM_WORD_COUNT(nm1));
 
-	k = count_trailing_zeros(nm1);
+	k = bignum_ctz(nm1);
 	q = bignum_rshift(q, nm1, k);
 
 	for (uint32_t i = 0; i < count; ++i)

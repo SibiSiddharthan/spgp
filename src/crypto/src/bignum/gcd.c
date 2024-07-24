@@ -14,23 +14,6 @@
 
 #include <bignum-internal.h>
 
-static uint32_t count_trailing_zeros(bignum_t *bn)
-{
-	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
-
-	for (uint32_t i = 0; i < count; ++i)
-	{
-		if (bn->words[i] == 0)
-		{
-			continue;
-		}
-
-		return (i * BIGNUM_BITS_PER_WORD) + bsf_64(bn->words[i]);
-	}
-
-	return count * BIGNUM_BITS_PER_WORD;
-}
-
 bn_word_t euclid_gcd(bn_word_t a, bn_word_t b)
 {
 	bn_word_t r;
@@ -89,8 +72,8 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	a_temp = bignum_ctx_allocate_bignum(bctx, a->bits);
 	b_temp = bignum_ctx_allocate_bignum(bctx, b->bits);
 
-	a_shift = count_trailing_zeros(a);
-	b_shift = count_trailing_zeros(b);
+	a_shift = bignum_ctz(a);
+	b_shift = bignum_ctz(b);
 
 	min_shift = MIN(a_shift, b_shift);
 
@@ -145,7 +128,7 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 			return r;
 		}
 
-		temp = bignum_rshift(temp, temp, count_trailing_zeros(temp));
+		temp = bignum_rshift(temp, temp, bignum_ctz(temp));
 	}
 
 	bignum_ctx_end(bctx);
