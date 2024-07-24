@@ -14,8 +14,6 @@
 
 #include <bignum-internal.h>
 
-void bignum_decrement(bn_word_t *r, uint32_t count);
-
 static uint32_t count_trailing_zeros(bignum_t *bn)
 {
 	uint32_t count = bn->size / BIGNUM_WORD_SIZE;

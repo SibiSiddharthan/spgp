@@ -14,10 +14,6 @@
 
 #include <bignum-internal.h>
 
-uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
-int32_t bignum_usub(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words);
-void bignum_2complement(bn_word_t *r, uint32_t count);
-
 static uint32_t count_trailing_zeros(bignum_t *bn)
 {
 	uint32_t count = bn->size / BIGNUM_WORD_SIZE;

@@ -10,10 +10,7 @@
 #include <bignum.h>
 #include <round.h>
 
-uint8_t bignum_add_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
-uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
-
-void bignum_2complement(bn_word_t *r, uint32_t count);
+#include <bignum-internal.h>
 
 void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)
 {

@@ -10,7 +10,7 @@
 #include <bignum.h>
 #include <round.h>
 
-void bignum_mul_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words, uint32_t b_words, uint32_t r_words);
+#include <bignum-internal.h>
 
 bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 {
