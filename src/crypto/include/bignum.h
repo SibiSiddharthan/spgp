@@ -66,7 +66,7 @@ int32_t bignum_cmp_abs(bignum_t *a, bignum_t *b);
 bignum_t *bignum_rand(bignum_t *bn, uint32_t bits);
 bignum_t *bignum_prime(bignum_t *bn, uint32_t bits);
 
-int32_t bignum_is_probable_prime(bignum_t *bn);
+int32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn);
 
 bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b);

@@ -1,0 +1,180 @@
+/*
+   Copyright (c) 2024 Sibi Siddharthan
+
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
+*/
+
+#include <stdlib.h>
+#include <string.h>
+#include <bignum.h>
+#include <bitscan.h>
+#include <round.h>
+#include <minmax.h>
+
+void bignum_decrement(bn_word_t *r, uint32_t count);
+
+void bignum_ctx_start(bignum_ctx *bctx, size_t size);
+void bignum_ctx_end(bignum_ctx *bctx);
+bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits);
+
+static uint32_t count_trailing_zeros(bignum_t *bn)
+{
+	uint32_t count = bn->size / BIGNUM_WORD_SIZE;
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		if (bn->words[i] == 0)
+		{
+			continue;
+		}
+
+		return (i * BIGNUM_BITS_PER_WORD) + bsf_64(bn->words[i]);
+	}
+
+	return count * BIGNUM_BITS_PER_WORD;
+}
+
+static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32_t count)
+{
+	uint32_t k = 0;
+	bignum_t *nm1 = NULL, *q = NULL, *a = NULL, *d = NULL, *m = NULL;
+
+	nm1 = bignum_ctx_allocate_bignum(bctx, n->bits);
+	q = bignum_ctx_allocate_bignum(bctx, n->bits);
+	a = bignum_ctx_allocate_bignum(bctx, n->bits);
+	d = bignum_ctx_allocate_bignum(bctx, n->bits);
+	m = bignum_ctx_allocate_bignum(bctx, n->bits);
+
+	bignum_copy(nm1, bignum_size(n->bits), n);
+	bignum_decrement(nm1->words, BIGNUM_WORD_COUNT(nm1));
+
+	k = count_trailing_zeros(nm1);
+	q = bignum_rshift(q, nm1, k);
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		a = bignum_rand(a, n->bits);
+		d = bignum_gcd(bctx, d, a, n);
+
+		// Check if greater than 1
+		if (d->bits > 1)
+		{
+			return 0;
+		}
+
+		m = bignum_mod(bctx, m, a, n);
+
+		if (m->bits == 1)
+		{
+			// a = 1 mod n
+			goto next_witness;
+		}
+
+		if (bignum_cmp(nm1, m) == 0)
+		{
+			// a = -1 mod n
+			goto next_witness;
+		}
+
+		for (uint32_t j = 1; j <= k - 1; ++j)
+		{
+			a = bignum_modsqr(bctx, a, a, n);
+
+			if (bignum_cmp(nm1, m) == 0)
+			{
+				// a = -1 mod n
+				goto next_witness;
+			}
+		}
+
+		return 0;
+
+	next_witness:
+		continue;
+	}
+
+	return 1;
+}
+
+int32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn)
+{
+	int32_t status;
+	size_t ctx_size = 0;
+
+	bignum_ctx *obctx = bctx;
+
+	// Handle prime numbers upto 127
+	if (bn->bits <= 7)
+	{
+		switch (bn->words[0])
+		{
+		case 2:
+		case 3:
+		case 5:
+		case 7:
+		case 11:
+		case 13:
+		case 17:
+		case 19:
+		case 23:
+		case 29:
+		case 31:
+		case 37:
+		case 41:
+		case 43:
+		case 47:
+		case 53:
+		case 59:
+		case 61:
+		case 67:
+		case 71:
+		case 73:
+		case 79:
+		case 83:
+		case 89:
+		case 97:
+		case 101:
+		case 103:
+		case 107:
+		case 109:
+		case 113:
+		case 127:
+			return 1;
+		}
+
+		return 0;
+	}
+
+	// Check if even
+	if (bn->words[0] % 2 == 0)
+	{
+		return 0;
+	}
+
+	ctx_size = 5 * bignum_size(bn->bits);
+
+	if (obctx == NULL)
+	{
+
+		bctx = bignum_ctx_new(ctx_size);
+
+		if (bctx == NULL)
+		{
+			return -1;
+		}
+	}
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	status = miller_rabin_primality_test(bctx, bn, 80);
+
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return status;
+}
