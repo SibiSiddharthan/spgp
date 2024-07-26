@@ -71,8 +71,8 @@ int32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn);
 
 bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b);
-bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b);
-bignum_t *bignum_sqr(bignum_t *r, bignum_t *a);
+bignum_t *bignum_mul(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b);
+bignum_t *bignum_sqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a);
 bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b);
 

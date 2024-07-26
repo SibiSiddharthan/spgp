@@ -124,7 +124,7 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		if (temp->bits == 0)
 		{
 			// We are done. r*(not temp) is the gcd.
-			r = bignum_mul(r, r, temp == a_temp ? b_temp : a_temp);
+			r = bignum_mul(bctx, r, r, temp == a_temp ? b_temp : a_temp);
 			return r;
 		}
 

@@ -159,7 +159,7 @@ bignum_t *bignum_modmul(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 
 	temp = bignum_ctx_allocate_bignum(bctx, op_bits);
 
-	temp = bignum_mul(temp, a, b);
+	temp = bignum_mul(bctx, temp, a, b);
 	r = bignum_mod(bctx, r, temp, m);
 
 	bignum_ctx_end(bctx);
@@ -212,7 +212,7 @@ bignum_t *bignum_modsqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 
 	temp = bignum_ctx_allocate_bignum(bctx, op_bits);
 
-	temp = bignum_mul(temp, a, a); // TODO : Implement bignum_sqr
+	temp = bignum_sqr(bctx, temp, a);
 	r = bignum_mod(bctx, r, temp, m);
 
 	bignum_ctx_end(bctx);

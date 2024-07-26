@@ -12,8 +12,12 @@
 
 #include <bignum-internal.h>
 
-bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
+bignum_t *bignum_mul(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
+	bignum_ctx *obctx = bctx;
+	bn_word_t *words = NULL;
+
+	size_t ctx_size = BIGNUM_WORD_COUNT(a) + BIGNUM_WORD_COUNT(b);
 	uint32_t required_bits = a->bits + b->bits;
 
 	// Handle zero
@@ -29,10 +33,20 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 		return NULL;
 	}
 
-	if (a->bits == 0 || b->bits == 0)
+	if (required_bits == 0)
 	{
 		bignum_zero(r);
 		return r;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(ctx_size);
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
 	}
 
 	if (a->bits < b->bits)
@@ -43,17 +57,33 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 		b = swap;
 	}
 
-	bignum_mul_words(r->words, a->words, b->words, BIGNUM_WORD_COUNT(a), BIGNUM_WORD_COUNT(b),
-					 CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD));
+	bignum_ctx_start(bctx, ctx_size);
+
+	words = bignum_ctx_allocate_raw(bctx, ctx_size);
+	memset(words, 0, ctx_size);
+
+	bignum_mul_words(words, a->words, b->words, BIGNUM_WORD_COUNT(a), BIGNUM_WORD_COUNT(b), CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD));
+	memcpy(r->words, words, CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE);
 
 	r->sign = a->sign * b->sign;
 	r->bits = bignum_bitcount(r);
 
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
 	return r;
 }
 
-bignum_t *bignum_sqr(bignum_t *r, bignum_t *a)
+bignum_t *bignum_sqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a)
 {
+	bignum_ctx *obctx = bctx;
+	bn_word_t *words = NULL;
+
+	size_t ctx_size = 2 * BIGNUM_WORD_COUNT(a);
 	uint32_t required_bits = 2 * a->bits;
 
 	// Handle zero
@@ -69,16 +99,39 @@ bignum_t *bignum_sqr(bignum_t *r, bignum_t *a)
 		return NULL;
 	}
 
-	if (a->bits == 0)
+	if (required_bits == 0)
 	{
 		bignum_zero(r);
 		return r;
 	}
 
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(ctx_size);
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	words = bignum_ctx_allocate_raw(bctx, ctx_size);
+	memset(words, 0, ctx_size);
+
 	bignum_sqr_words(r->words, a->words, BIGNUM_WORD_COUNT(a), CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD));
+	memcpy(r->words, words, CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE);
 
 	r->sign = 1;
 	r->bits = bignum_bitcount(r);
+
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
 
 	return r;
 }
