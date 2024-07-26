@@ -51,3 +51,34 @@ bignum_t *bignum_mul(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	return r;
 }
+
+bignum_t *bignum_sqr(bignum_t *r, bignum_t *a)
+{
+	uint32_t required_bits = 2 * a->bits;
+
+	// Handle zero
+	if (a->bits == 0)
+	{
+		required_bits = 0;
+	}
+
+	r = bignum_resize(r, required_bits);
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	if (a->bits == 0)
+	{
+		bignum_zero(r);
+		return r;
+	}
+
+	bignum_sqr_words(r->words, a->words, BIGNUM_WORD_COUNT(a), CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD));
+
+	r->sign = 1;
+	r->bits = bignum_bitcount(r);
+
+	return r;
+}
