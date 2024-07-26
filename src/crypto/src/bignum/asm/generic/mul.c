@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <bignum.h>
 
-static void basecase_multiply(uint32_t *r32, uint32_t *a32, uint32_t *b32, uint32_t a32_words, uint32_t b32_words, uint32_t r32_words)
+static void basecase_multiply(uint32_t *r32, uint32_t *a32, uint32_t *b32, uint32_t a32_words, uint32_t b32_words)
 {
 	bn_word_t temp = 0;
 	bn_word_t carry = 0;
@@ -22,12 +22,6 @@ static void basecase_multiply(uint32_t *r32, uint32_t *a32, uint32_t *b32, uint3
 
 		for (uint32_t j = 0; j < b32_words; ++j)
 		{
-			// Skip iterations where zero words would be accessed.
-			if ((i + j) >= r32_words)
-			{
-				continue;
-			}
-
 			// Multiply 2 32-bit words to form a 64 bit product.
 			// The high part is the carry for the next multiplication
 			// The low part is added with the carry from previous multiplication to r32.
@@ -42,16 +36,11 @@ static void basecase_multiply(uint32_t *r32, uint32_t *a32, uint32_t *b32, uint3
 			carry = high;
 		}
 
-		if ((i + b32_words) >= r32_words)
-		{
-			continue;
-		}
-
 		r32[i + b32_words] = (uint32_t)(carry & 0xFFFFFFFF);
 	}
 }
 
-static void basecase_square(uint32_t *r32, uint32_t *a32, uint32_t a32_words, uint32_t r32_words)
+static void basecase_square(uint32_t *r32, uint32_t *a32, uint32_t a32_words)
 {
 	bn_word_t temp = 0;
 	bn_word_t carry = 0;
@@ -65,12 +54,6 @@ static void basecase_square(uint32_t *r32, uint32_t *a32, uint32_t a32_words, ui
 
 		for (uint32_t j = i; j < a32_words; ++j)
 		{
-			// Skip iterations where zero words would be accessed.
-			if ((i + j) >= r32_words)
-			{
-				continue;
-			}
-
 			// Multiply 2 32-bit words to form a 64 bit product.
 			// The high part is the carry for the next multiplication
 			// The low part is added with the carry from previous multiplication to r32.
@@ -93,16 +76,11 @@ static void basecase_square(uint32_t *r32, uint32_t *a32, uint32_t a32_words, ui
 			carry = high;
 		}
 
-		if ((i + a32_words) >= r32_words)
-		{
-			continue;
-		}
-
 		r32[i + a32_words] = (uint32_t)(carry & 0xFFFFFFFF);
 	}
 }
 
-void bignum_mul_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words, uint32_t b_words, uint32_t r_words)
+void bignum_mul_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words, uint32_t b_words)
 {
 	uint32_t *a32 = (uint32_t *)a;
 	uint32_t *b32 = (uint32_t *)b;
@@ -110,7 +88,6 @@ void bignum_mul_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words
 
 	uint32_t a32_words = a_words * 2;
 	uint32_t b32_words = b_words * 2;
-	uint32_t r32_words = r_words * 2;
 
 	// Calculate the correct word count.
 	if (a32[a32_words - 1] == 0)
@@ -123,7 +100,7 @@ void bignum_mul_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t a_words
 		--b32_words;
 	}
 
-	return basecase_multiply(r32, a32, b32, a32_words, b32_words, r32_words);
+	return basecase_multiply(r32, a32, b32, a32_words, b32_words);
 }
 
 void bignum_mul32(uint32_t *r32, uint32_t *a32, uint32_t a32_words, uint32_t w)
@@ -145,13 +122,12 @@ void bignum_mul32(uint32_t *r32, uint32_t *a32, uint32_t a32_words, uint32_t w)
 	r32[a32_words] = (uint32_t)(carry & 0xFFFFFFFF);
 }
 
-void bignum_sqr_words(bn_word_t *r, bn_word_t *a, uint32_t a_words, uint32_t r_words)
+void bignum_sqr_words(bn_word_t *r, bn_word_t *a, uint32_t a_words)
 {
 	uint32_t *a32 = (uint32_t *)a;
 	uint32_t *r32 = (uint32_t *)r;
 
 	uint32_t a32_words = a_words * 2;
-	uint32_t r32_words = r_words * 2;
 
 	// Calculate the correct word count.
 	if (a32[a32_words - 1] == 0)
@@ -159,5 +135,5 @@ void bignum_sqr_words(bn_word_t *r, bn_word_t *a, uint32_t a_words, uint32_t r_w
 		--a32_words;
 	}
 
-	return basecase_square(r32, a32, a32_words, r32_words);
+	return basecase_square(r32, a32, a32_words);
 }

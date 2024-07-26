@@ -384,7 +384,7 @@ int32_t bignum_mul_tests(void)
 
 	a = bignum_set_hex(NULL, "10000001000000000100000001000000", 32);
 	b = bignum_set_hex(NULL, "f000000f000000000f0000000f000000", 32);
-	c = bignum_mul(NULL, a, b);
+	c = bignum_mul(NULL, NULL, a, b);
 
 	memset(hex, 0, 128);
 	result = bignum_get_hex(c, hex, 128);
@@ -400,7 +400,7 @@ int32_t bignum_mul_tests(void)
 
 	a = bignum_set_hex(NULL, "cd0000000cd00000000cd000000cd000000", 35);
 	b = bignum_set_hex(NULL, "-ab00000000ab000000ab000000", 27);
-	c = bignum_mul(NULL, a, b);
+	c = bignum_mul(NULL, NULL, a, b);
 
 	memset(hex, 0, 128);
 	result = bignum_get_hex(c, hex, 128);
