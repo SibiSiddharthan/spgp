@@ -33,6 +33,14 @@ int32_t bignum_divmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bignum_t *q,
 		++quotient_bits;
 	}
 
+	q = bignum_resize(q, quotient_bits);
+	r = bignum_resize(r, remainder_bits);
+
+	if (q == NULL || r == NULL)
+	{
+		return -1;
+	}
+
 	// Zero dividend
 	if (dd->bits == 0)
 	{
