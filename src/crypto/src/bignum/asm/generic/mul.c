@@ -62,12 +62,14 @@ static void basecase_square(uint32_t *r32, uint32_t *a32, uint32_t a32_words)
 			// Prevent repeated multiplications.
 			if (i != j)
 			{
-				r32[i + j + 1] += temp & (0x800000000000000);
-				temp <<= 2;
+				high = (temp >> 31);
+				low = (temp << 1) & 0xFFFFFFFF;
 			}
-
-			high = temp >> 32;
-			low = temp & 0xFFFFFFFF;
+			else
+			{
+				high = temp >> 32;
+				low = temp & 0xFFFFFFFF;
+			}
 
 			low += r32[i + j] + carry;
 			r32[i + j] = (uint32_t)(low & 0xFFFFFFFF);

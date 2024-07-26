@@ -120,7 +120,7 @@ bignum_t *bignum_sqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a)
 	words = bignum_ctx_allocate_raw(bctx, ctx_size);
 	memset(words, 0, ctx_size);
 
-	bignum_sqr_words(r->words, a->words, BIGNUM_WORD_COUNT(a));
+	bignum_sqr_words(words, a->words, BIGNUM_WORD_COUNT(a));
 	memcpy(r->words, words, CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE);
 
 	r->sign = 1;
