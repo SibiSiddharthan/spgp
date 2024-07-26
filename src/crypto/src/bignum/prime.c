@@ -23,7 +23,6 @@ static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32
 	q = bignum_ctx_allocate_bignum(bctx, n->bits);
 	a = bignum_ctx_allocate_bignum(bctx, n->bits);
 	d = bignum_ctx_allocate_bignum(bctx, n->bits);
-	m = bignum_ctx_allocate_bignum(bctx, n->bits);
 
 	bignum_copy(nm1, bignum_size(n->bits), n);
 	bignum_decrement(nm1->words, BIGNUM_WORD_COUNT(nm1));
@@ -42,15 +41,15 @@ static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32
 			return 0;
 		}
 
-		m = bignum_mod(bctx, m, a, n);
+		a = bignum_mod(bctx, a, a, n);
 
-		if (m->bits == 1)
+		if (a->bits == 1)
 		{
 			// a = 1 mod n
 			goto next_witness;
 		}
 
-		if (bignum_cmp(nm1, m) == 0)
+		if (bignum_cmp(nm1, a) == 0)
 		{
 			// a = -1 mod n
 			goto next_witness;
@@ -131,7 +130,8 @@ int32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn)
 		return 0;
 	}
 
-	ctx_size = 5 * bignum_size(bn->bits);
+	// 4 Temporaries
+	ctx_size = 4 * bignum_size(bn->bits);
 
 	if (obctx == NULL)
 	{
