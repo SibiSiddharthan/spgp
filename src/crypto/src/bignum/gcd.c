@@ -14,25 +14,41 @@
 
 #include <bignum-internal.h>
 
-bn_word_t euclid_gcd(bn_word_t a, bn_word_t b)
+bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
 {
-	bn_word_t r;
+	bignum_t *q = NULL, *r = NULL;
+
+	bignum_ctx_start(bctx, 0);
 
 	// Make sure a > b
 	if (a < b)
 	{
-		r = a;
+		bignum_t *t;
+
+		t = a;
 		a = b;
-		b = r;
+		b = t;
 	}
 
-	while ((r = a % b) != 0)
+	a = bignum_dup(bctx, a);
+	b = bignum_dup(bctx, b);
+	q = bignum_ctx_allocate_bignum(bctx, a->bits);
+	r = bignum_ctx_allocate_bignum(bctx, a->bits);
+
+	a->sign = b->sign = q->sign = r->sign = 1;
+
+	while (r->bits > 0)
 	{
+		bignum_divmod(bctx, a, b, q, r);
+
 		a = b;
 		b = r;
 	}
 
-	r = b;
+	gcd = bignum_copy(gcd, sizeof(bignum_t) + gcd->size, b);
+	gcd->sign = 1;
+
+	bignum_ctx_end(bctx);
 
 	return r;
 }
