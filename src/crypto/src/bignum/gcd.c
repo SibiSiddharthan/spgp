@@ -170,41 +170,16 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	return r;
 }
 
-int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
+bignum_t *binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
 {
-	bignum_t *a_temp = NULL, *b_temp = NULL;
 	bignum_t *x = NULL, *y = NULL;
-	size_t a_size = bignum_size(a->bits);
-	size_t b_size = bignum_size(b->bits);
 	uint32_t a_shift = 0, b_shift = 0, min_shift = 0;
 	uint32_t max_bits = MAX(a->bits, b->bits);
 
-	bignum_ctx *obctx = bctx;
-	size_t ctx_size = a_size + b_size;
+	bignum_ctx_start(bctx, 0);
 
-	r = bignum_resize(r, MIN(a->bits, b->bits));
-	u = bignum_resize(r, a->bits);
-	v = bignum_resize(r, b->bits);
-
-	if (r == NULL || u == NULL || v == NULL)
-	{
-		return -1;
-	}
-
-	if (obctx == NULL)
-	{
-		bctx = bignum_ctx_new(ctx_size);
-
-		if (bctx == NULL)
-		{
-			return -1;
-		}
-	}
-
-	bignum_ctx_start(bctx, ctx_size);
-
-	a_temp = bignum_ctx_allocate_bignum(bctx, a->bits);
-	b_temp = bignum_ctx_allocate_bignum(bctx, b->bits);
+	a = bignum_dup(bctx, a);
+	b = bignum_dup(bctx, b);
 	x = bignum_ctx_allocate_bignum(bctx, max_bits);
 	y = bignum_ctx_allocate_bignum(bctx, max_bits);
 
@@ -223,19 +198,19 @@ int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 
 	min_shift = MIN(a_shift, b_shift);
 
-	a_temp = bignum_rshift(a_temp, a, min_shift);
-	b_temp = bignum_rshift(b_temp, b, min_shift);
+	a = bignum_rshift(a, a, min_shift);
+	b = bignum_rshift(b, b, min_shift);
 
-	a_temp->sign = b_temp->sign = 1;
+	a->sign = b->sign = 1;
 
 	// Multiply gcd with common powers of 2 of a and b.
 	r = bignum_lshift(r, r, min_shift);
 
-	while (a_temp->bits > 0)
+	while (a->bits > 0)
 	{
-		while (a_temp->words[0] % 2 == 0)
+		while (a->words[0] % 2 == 0)
 		{
-			a_temp = bignum_rshift(a_temp, a_temp, 1);
+			a = bignum_rshift(a, a, 1);
 
 			if ((x->words[0] % 2 == 0) && (y->words[0] % 2 == 0))
 			{
@@ -252,9 +227,9 @@ int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 			}
 		}
 
-		while (b_temp->words[0] % 2 == 0)
+		while (b->words[0] % 2 == 0)
 		{
-			b_temp = bignum_rshift(b_temp, b_temp, 1);
+			b = bignum_rshift(b, b, 1);
 
 			if ((u->words[0] % 2 == 0) && (v->words[0] % 2 == 0))
 			{
@@ -272,30 +247,25 @@ int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 		}
 
 		// Both a,b should be odd now.
-		if (bignum_cmp(a_temp, b_temp) >= 0)
+		if (bignum_cmp(a, b) >= 0)
 		{
-			a_temp = bignum_sub(a_temp, a_temp, b_temp);
+			a = bignum_sub(a, a, b);
 			x = bignum_sub(x, x, u);
 			y = bignum_sub(y, y, v);
 		}
 		else
 		{
-			b_temp = bignum_sub(b_temp, b_temp, a_temp);
+			b = bignum_sub(b, b, a);
 			u = bignum_sub(u, u, x);
 			v = bignum_sub(v, v, y);
 		}
 	}
 
-	r = bignum_mul(bctx, r, r, b_temp);
+	r = bignum_mul(bctx, r, r, b);
 
 	bignum_ctx_end(bctx);
 
-	if (obctx == NULL)
-	{
-		bignum_ctx_delete(bctx);
-	}
-
-	return 0;
+	return r;
 }
 
 bignum_t *bignum_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
@@ -349,7 +319,7 @@ bignum_t *bignum_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 
 int32_t bignum_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
 {
-	int32_t status = 0;
+	bignum_ctx *obctx = bctx;
 
 	// Handle zero
 	if (a->bits == 0 || b->bits == 0)
@@ -388,7 +358,32 @@ int32_t bignum_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 		return 0;
 	}
 
-	status = binary_gcdex(bctx, r, u, v, a, b);
+	// General case.
+	r = bignum_resize(r, MIN(a->bits, b->bits));
+	u = bignum_resize(r, a->bits);
+	v = bignum_resize(r, b->bits);
 
-	return status;
+	if (r == NULL || u == NULL || v == NULL)
+	{
+		return -1;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(0);
+
+		if (bctx == NULL)
+		{
+			return -1;
+		}
+	}
+
+	r = binary_gcdex(bctx, r, u, v, a, b);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return 0;
 }
