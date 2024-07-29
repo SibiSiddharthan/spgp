@@ -76,7 +76,6 @@ bn_word_t euclid_gcdex(int64_t *u, int64_t *v, bn_word_t a, bn_word_t b)
 
 bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
-	bignum_t *a_temp = NULL, *b_temp = NULL;
 	size_t a_size = bignum_size(a->bits);
 	size_t b_size = bignum_size(b->bits);
 	uint32_t a_shift = 0, b_shift = 0, min_shift = 0;
@@ -85,21 +84,21 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 
 	bignum_ctx_start(bctx, ctx_size);
 
+	a = bignum_dup(bctx, a);
+	b = bignum_dup(bctx, b);
+
 	// Set gcd to 1
 	bignum_one(r);
-
-	a_temp = bignum_ctx_allocate_bignum(bctx, a->bits);
-	b_temp = bignum_ctx_allocate_bignum(bctx, b->bits);
 
 	a_shift = bignum_ctz(a);
 	b_shift = bignum_ctz(b);
 
 	min_shift = MIN(a_shift, b_shift);
 
-	a_temp = bignum_rshift(a_temp, a, a_shift);
-	b_temp = bignum_rshift(b_temp, b, b_shift);
+	a = bignum_rshift(a, a, a_shift);
+	b = bignum_rshift(b, b, b_shift);
 
-	a_temp->sign = b_temp->sign = 1;
+	a->sign = b->sign = 1;
 
 	// Multiply gcd with common powers of 2 of a and b.
 	r = bignum_lshift(r, r, min_shift);
@@ -109,41 +108,41 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		bignum_t *temp = NULL;
 
 		// Both a,b should be odd now.
-		if (a_temp->bits > b_temp->bits)
+		if (a->bits > b->bits)
 		{
-			bignum_usub(a_temp, a_temp, b_temp, BIGNUM_WORD_COUNT(b_temp), BIGNUM_WORD_COUNT(a_temp));
-			temp = a_temp;
+			bignum_usub(a, a, b, BIGNUM_WORD_COUNT(b), BIGNUM_WORD_COUNT(a));
+			temp = a;
 		}
-		else if (a_temp->bits < b_temp->bits)
+		else if (a->bits < b->bits)
 		{
-			bignum_usub(b_temp, b_temp, a_temp, BIGNUM_WORD_COUNT(a_temp), BIGNUM_WORD_COUNT(b_temp));
-			temp = b_temp;
+			bignum_usub(b, b, a, BIGNUM_WORD_COUNT(a), BIGNUM_WORD_COUNT(b));
+			temp = b;
 		}
 		else // a_temp->bits == b_temp->bits
 		{
-			uint8_t borrow = bignum_sub_words(a_temp->words, a_temp->words, b_temp->words, BIGNUM_WORD_COUNT(a_temp));
-			temp = a_temp;
+			uint8_t borrow = bignum_sub_words(a->words, a->words, b->words, BIGNUM_WORD_COUNT(a));
+			temp = a;
 
 			if (borrow)
 			{
 				// b>a, Since we did (a-b) change it to (b-a).
-				bignum_2complement(a_temp->words, BIGNUM_WORD_COUNT(a_temp));
+				bignum_2complement(a->words, BIGNUM_WORD_COUNT(a));
 
-				a_temp = b_temp;
-				b_temp = temp;
-				temp = b_temp;
+				a = b;
+				b = temp;
+				temp = b;
 			}
 		}
 
 		// Set the bits for the next iteration.
-		bignum_bitcount(a_temp);
-		bignum_bitcount(b_temp);
+		bignum_bitcount(a);
+		bignum_bitcount(b);
 
 		// Now temp should be even
 		if (temp->bits == 0)
 		{
 			// We are done. r*(not temp) is the gcd.
-			r = bignum_mul(bctx, r, r, temp == a_temp ? b_temp : a_temp);
+			r = bignum_mul(bctx, r, r, temp == a ? b : a);
 			break;
 		}
 
