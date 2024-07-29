@@ -13,6 +13,8 @@
 #include <minmax.h>
 #include <round.h>
 
+#include <bignum-internal.h>
+
 bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits)
 {
 	bignum_t *bn = (bignum_t *)ptr;
@@ -94,9 +96,18 @@ bignum_t *bignum_copy(void *ptr, size_t size, bignum_t *bn)
 	return bn2;
 }
 
-bignum_t *bignum_dup(bignum_t *bn)
+bignum_t *bignum_dup(bignum_ctx *bctx, bignum_t *bn)
 {
-	bignum_t *bn2 = bignum_new(bn->bits);
+	bignum_t *bn2 = NULL;
+
+	if (bctx != NULL)
+	{
+		bn2 = bignum_ctx_allocate_bignum(bctx, bn->bits);
+	}
+	else
+	{
+		bn2 = bignum_new(bn->bits);
+	}
 
 	if (bn2 == NULL)
 	{
