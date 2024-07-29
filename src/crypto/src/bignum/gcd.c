@@ -21,7 +21,7 @@ bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
 	bignum_ctx_start(bctx, 0);
 
 	// Make sure a > b
-	if (a < b)
+	if (bignum_cmp_abs(a, b) < 0)
 	{
 		bignum_t *t;
 
@@ -45,7 +45,7 @@ bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
 		b = r;
 	}
 
-	gcd = bignum_copy(gcd, sizeof(bignum_t) + gcd->size, b);
+	gcd = bignum_copy(gcd, sizeof(bignum_t) + gcd->size, a);
 	gcd->sign = 1;
 
 	bignum_ctx_end(bctx);
@@ -53,41 +53,58 @@ bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
 	return r;
 }
 
-bn_word_t euclid_gcdex(int64_t *u, int64_t *v, bn_word_t a, bn_word_t b)
+bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
 {
-	bn_word_t r;
-	bn_word_t q;
-	int64_t t, tu, tv;
+	bignum_t *q = NULL, *r = NULL;
+	bignum_t *x = NULL, *y = NULL;
+	bignum_t *t = NULL;
+	uint32_t max_bits = MAX(a->bits, b->bits);
 
-	// Make sure a > b
-	if (a < b)
+	bignum_ctx_start(bctx, 0);
+
+	a = bignum_dup(bctx, a);
+	b = bignum_dup(bctx, b);
+	x = bignum_ctx_allocate_bignum(bctx, max_bits);
+	y = bignum_ctx_allocate_bignum(bctx, max_bits);
+
+	a->sign = b->sign = 1;
+
+	if (bignum_cmp_abs(a, b) < 0)
 	{
-		r = a;
+		t = a;
 		a = b;
-		b = r;
+		b = t;
+
+		t = u;
+		u = v;
+		v = t;
 	}
 
-	tu = 0;
-	tv = 1;
+	// Initial values.
+	bignum_one(x);
+	bignum_zero(y);
 
-	while (b != 0)
+	bignum_zero(u);
+	bignum_one(v);
+
+	while (r->bits > 0)
 	{
-		q = a / b;
-		r = a % b;
+		bignum_divmod(bctx, a, b, q, r);
 
 		a = b;
 		b = r;
 
-		t = tu;
-		tu = tv;
-		tv = t - q * (tv);
+		t = u;
+		u = v;
+
+		v = bignum_mul(bctx, v, v, q);
+		v = bignum_sub(v, t, v);
 	}
 
-	r = a;
-	*u = tu;
-	*v = tv;
+	gcd = bignum_copy(gcd, sizeof(bignum_t) + gcd->size, a);
+	gcd->sign = 1;
 
-	return r;
+	return gcd;
 }
 
 bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
