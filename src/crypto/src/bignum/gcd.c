@@ -81,25 +81,7 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	size_t b_size = bignum_size(b->bits);
 	uint32_t a_shift = 0, b_shift = 0, min_shift = 0;
 
-	bignum_ctx *obctx = bctx;
 	size_t ctx_size = a_size + b_size;
-
-	r = bignum_resize(r, MIN(a->bits, b->bits));
-
-	if (r == NULL)
-	{
-		return NULL;
-	}
-
-	if (obctx == NULL)
-	{
-		bctx = bignum_ctx_new(ctx_size);
-
-		if (bctx == NULL)
-		{
-			return NULL;
-		}
-	}
 
 	bignum_ctx_start(bctx, ctx_size);
 
@@ -170,11 +152,6 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 
 	bignum_ctx_end(bctx);
 
-	if (obctx == NULL)
-	{
-		bignum_ctx_delete(bctx);
-	}
-
 	return r;
 }
 
@@ -239,7 +216,7 @@ int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 	// Multiply gcd with common powers of 2 of a and b.
 	r = bignum_lshift(r, r, min_shift);
 
-	while (1)
+	while (a_temp->bits > 0)
 	{
 		while (a_temp->words[0] % 2 == 0)
 		{
@@ -292,17 +269,9 @@ int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 			u = bignum_sub(u, u, x);
 			v = bignum_sub(v, v, y);
 		}
-
-
-		// Now temp should be even
-		if (a_temp->bits == 0)
-		{
-			// We are done. r*(not temp) is the gcd.
-			r = bignum_mul(bctx, r, r, b_temp);
-			break;
-		}
-
 	}
+
+	r = bignum_mul(bctx, r, r, b_temp);
 
 	bignum_ctx_end(bctx);
 
@@ -316,6 +285,8 @@ int32_t binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 
 bignum_t *bignum_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
+	bignum_ctx *obctx = bctx;
+
 	// Handle zero
 	if (a->bits == 0 || b->bits == 0)
 	{
@@ -333,7 +304,32 @@ bignum_t *bignum_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		return r;
 	}
 
-	return binary_gcd(bctx, r, a, b);
+	// General case.
+	r = bignum_resize(r, MIN(a->bits, b->bits));
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(0);
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	binary_gcd(bctx, r, a, b);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return r;
 }
 
 int32_t bignum_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
