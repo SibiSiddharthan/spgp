@@ -298,3 +298,58 @@ bignum_t *bignum_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *p,
 
 	return r;
 }
+
+bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
+{
+	int32_t status = 0;
+
+	bignum_t *u = NULL, *v = NULL, *gcd = NULL;
+	bignum_ctx *obctx = bctx;
+
+	r = bignum_resize(r, m->bits);
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(0);
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	bignum_ctx_start(bctx, 0);
+
+	u = bignum_ctx_allocate_bignum(bctx, m->bits);
+	v = bignum_ctx_allocate_bignum(bctx, m->bits);
+	gcd = bignum_ctx_allocate_bignum(bctx, m->bits);
+
+	status = bignum_gcdex(bctx, gcd, u, v, m, a);
+
+	if (status != 0)
+	{
+		bignum_ctx_end(bctx);
+		return NULL;
+	}
+
+	if (v->sign != m->sign)
+	{
+		v = bignum_add(v, v, m);
+	}
+
+	r = bignum_copy(r, bignum_size(m->bits), v);
+
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return r;
+}
