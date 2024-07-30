@@ -10,7 +10,6 @@
 
 #include <types.h>
 #include <bignum.h>
-#include <buffer.h>
 #include <hash.h>
 
 typedef struct _rsa_key
@@ -18,25 +17,15 @@ typedef struct _rsa_key
 	uint32_t bits;
 	bignum_t *p, *q, *n;
 	bignum_t *d, *e;
+	bignum_t *dmp1, *dmq1, *iqmp;
+	bignum_ctx *bctx;
 } rsa_key;
-
-typedef struct _mgf
-{
-	hash_ctx *hash;
-	buffer_t *seed;
-} mgf;
-
-typedef struct _oaep_options
-{
-	hash_ctx *hash;
-	mgf *mask;
-} oaep_options;
 
 typedef struct _rsa_pss_ctx
 {
 	rsa_key *key;
-	hash_ctx *hctx;
-	mgf *mask;
+	hash_ctx *hctx_label;
+	hash_ctx *hctx_mask;
 	size_t salt_size;
 } rsa_pss_ctx;
 
@@ -50,11 +39,56 @@ typedef struct _rsa_signature
 {
 	uint32_t bits;
 	uint32_t size;
-	byte_t sign[1];
+	byte_t *sign;
 } rsa_signature;
 
-rsa_key *rsa_generate_key(uint32_t bits);
-void rsa_delete_key(rsa_key *key);
+rsa_key *rsa_key_generate(uint32_t bits);
+rsa_key *rsa_key_new(uint32_t bits);
+void rsa_key_delete(rsa_key *key);
+
+inline bignum_t *rsa_key_get_p(rsa_key *rkey)
+{
+	return rkey->p;
+}
+
+inline bignum_t *rsa_key_get_q(rsa_key *rkey)
+{
+	return rkey->q;
+}
+
+inline bignum_t *rsa_key_get_n(rsa_key *rkey)
+{
+	return rkey->n;
+}
+
+inline bignum_t *rsa_key_get_d(rsa_key *rkey)
+{
+	return rkey->d;
+}
+
+inline bignum_t *rsa_key_get_e(rsa_key *rkey)
+{
+	return rkey->e;
+}
+
+inline bignum_t *rsa_key_get_dmp1(rsa_key *rkey)
+{
+	return rkey->dmp1;
+}
+
+inline bignum_t *rsa_key_get_dmq1(rsa_key *rkey)
+{
+	return rkey->dmq1;
+}
+
+inline bignum_t *rsa_key_get_iqmp(rsa_key *rkey)
+{
+	return rkey->iqmp;
+}
+
+int32_t rsa_key_set_basic(rsa_key *rkey, bignum_t *n, bignum_t *d, bignum_t *e);
+int32_t rsa_key_set_factors(rsa_key *rkey, bignum_t *p, bignum_t *q);
+int32_t rsa_key_set_crt(rsa_key *rkey, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp);
 
 bignum_t *rsa_public_encrypt(rsa_key *key, bignum_t *plain);
 bignum_t *rsa_public_decrypt(rsa_key *key, bignum_t *cipher);
@@ -62,25 +96,28 @@ bignum_t *rsa_public_decrypt(rsa_key *key, bignum_t *cipher);
 bignum_t *rsa_private_encrypt(rsa_key *key, bignum_t *plain);
 bignum_t *rsa_private_decrypt(rsa_key *key, bignum_t *cipher);
 
-int32_t rsa_encrypt_oaep(rsa_key *key, buffer_t *plaintext, buffer_t *label, buffer_t *ciphertext, oaep_options *options);
-int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, buffer_t *plaintext, oaep_options *options);
+int32_t rsa_encrypt_oaep(rsa_key *key, void *plaintext, size_t plaintext_size, void *label, size_t label_size, void *ciphertext,
+						 size_t ciphertext_size, hash_ctx *hctx_label, hash_ctx *hctx_mask);
+int32_t rsa_decrypt_oaep(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *label, size_t label_size, void *plaintext,
+						 size_t plaintext_size, hash_ctx *hctx_label, hash_ctx *hctx_mask);
 
-int32_t rsa_encrypt_pkcs(rsa_key *key, buffer_t *plaintext, buffer_t *ciphertext);
-int32_t rsa_decrypt_pkcs(rsa_key *key, buffer_t *ciphertext, buffer_t *plaintext);
+int32_t rsa_encrypt_pkcs(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+int32_t rsa_decrypt_pkcs(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 
-rsa_pss_ctx *rsa_sign_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size);
+rsa_pss_ctx *rsa_sign_pss_init(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask, size_t salt_size);
 void rsa_sign_pss_free(rsa_pss_ctx *rctx);
-void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx, mgf *mask);
+void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask);
 void rsa_sign_pss_update(rsa_pss_ctx *rctx, void *message, size_t size);
 rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx);
-rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size, void *message, size_t size);
+rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size);
 
-rsa_pss_ctx *rsa_verify_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size);
+rsa_pss_ctx *rsa_verify_pss_init(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask, size_t salt_size);
 void rsa_verify_pss_free(rsa_pss_ctx *rctx);
-void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx, mgf *mask);
+void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask);
 void rsa_verify_pss_update(rsa_pss_ctx *rctx, void *message, size_t size);
 int32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign);
-int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size, void *message, size_t size, rsa_signature *rsign);
+int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
+					   rsa_signature *rsign);
 
 rsa_pkcs_ctx *rsa_sign_pkcs_init(rsa_key *key, hash_ctx *hctx);
 void rsa_sign_pkcs_free(rsa_pkcs_ctx *rctx);
