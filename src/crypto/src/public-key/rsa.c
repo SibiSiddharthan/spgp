@@ -7,11 +7,16 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <byteswap.h>
 
 #include <bignum.h>
+#include <drbg.h>
+#include <hash.h>
 #include <rsa.h>
+#include <sha.h>
 #include <bignum-internal.h>
+
+#include <minmax.h>
+#include <byteswap.h>
 
 static int32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
 {
@@ -103,7 +108,6 @@ int32_t rsa_private_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_si
 	return rsa_private_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
-#if 0
 static inline void xor_bytes(byte_t *a, byte_t *b, size_t size)
 {
 	for (size_t i = 0; i < size; ++i)
@@ -112,216 +116,185 @@ static inline void xor_bytes(byte_t *a, byte_t *b, size_t size)
 	}
 }
 
-static buffer_t *MGF(mgf *mask, size_t size)
+static void MGF_XOR(hash_ctx *hctx, byte_t *seed, size_t seed_size, byte_t *output, size_t output_size)
 {
-	buffer_t *output = NULL;
-	hash_ctx *hctx = mask->hash;
 	size_t accumulated = 0;
 	uint32_t counter = 0;
 
-	if (size > (1ull << 32))
-	{
-		return NULL;
-	}
-
-	output = malloc(sizeof(buffer_t) + size + hctx->hash_size); // Extra
-
-	if (output == NULL)
-	{
-		return NULL;
-	}
-
-	output->data = (byte_t *)output + sizeof(buffer_t);
-	output->size = size;
-	output->capacity = size + hctx->hash_size;
-
-	while (accumulated < size)
+	while (accumulated < output_size)
 	{
 		counter = BSWAP_32(counter);
 
-		hash_update(hctx, mask->seed->data, mask->seed->size);
-		hash_update(hctx, &counter, 4);
-		hash_final(hctx, output->data + accumulated, output->capacity - accumulated);
 		hash_reset(hctx);
+
+		hash_update(hctx, seed, seed_size);
+		hash_update(hctx, &counter, 4);
+		hash_final(hctx, NULL, hctx->hash_size);
+
+		xor_bytes(output + accumulated, hctx->hash, MIN(output_size - accumulated, hctx->hash_size));
 
 		accumulated += hctx->hash_size;
 
 		counter = BSWAP_32(counter);
 		++counter;
 	}
-
-	// Truncate if necessary.
-	if (accumulated > size)
-	{
-		memset(output->data + size, 0, accumulated - size);
-	}
-
-	return output;
 }
 
-int32_t rsa_encrypt_oaep(rsa_key *key, buffer_t *plaintext, buffer_t *label, buffer_t *ciphertext, oaep_options *options)
+int32_t rsa_encrypt_oaep(rsa_key *key, void *plaintext, size_t plaintext_size, void *label, size_t label_size, void *ciphertext,
+						 size_t ciphertext_size, hash_ctx *hctx_label, hash_ctx *hctx_mask, drbg_ctx *drbg)
 {
-	int32_t status = -1;
+	int32_t status = 0;
+
+	// Sizes
 	size_t key_size = key->bits / 8;
-	size_t hash_size = options->hash->hash_size;
-	hash_ctx *hctx = options->hash;
-	mgf *mask = options->mask;
-
-	size_t ps_size = key_size - (plaintext->size + (2 * hash_size) + 2);
+	size_t hash_size = hctx_label != NULL ? hctx_label->hash_size : SHA1_HASH_SIZE;
+	size_t max_plaintext_size = key_size - (2 * hash_size) - 2;
+	size_t ps_size = key_size - (plaintext_size + (2 * hash_size) + 2);
 	size_t db_size = key_size - (hash_size + 1);
+	size_t seed_size = hash_size;
 	size_t em_size = key_size;
-	size_t pos = 0;
 
-	buffer_t empty_label = {0};
-	byte_t hash[64] = {0};
-	byte_t seed[64] = {0};
-	buffer_t bseed = {seed, hash_size, 64};
+	// Offsets
+	size_t seed_offset = 1;
+	size_t masked_seed_offset = seed_offset;
+	size_t db_offset = masked_seed_offset + hash_size;
+	size_t masked_db_offset = db_offset;
+	size_t ps_offset = db_offset + hash_size;
+	size_t message_offset = ps_offset + ps_size + 1;
+	size_t label_hash_offset = db_offset;
 
-	buffer_t *mseed = NULL;
-	buffer_t *mdb = NULL;
-	byte_t *db = NULL;
+	size_t ctx_size = em_size;
+	size_t default_hash_ctx_size = 0;
+
+	void *hctx = NULL;
 	byte_t *em = NULL;
 
-	bignum_t *p = NULL, *c = NULL;
-
-	// Zero length label.
-	if (label == NULL)
-	{
-		label = &empty_label;
-	}
-
 	// Length checking.
-	if (plaintext->size > (key_size - (2 * hash_size) - 2))
+	if (plaintext_size > max_plaintext_size)
 	{
 		return -1;
 	}
 
-	if (ciphertext->capacity < key_size)
+	if (ciphertext_size < key_size)
 	{
 		return -1;
 	}
 
-	hash_update(hctx, label->data, label->size);
-	hash_final(hctx, hash, hctx->hash_size);
-
-	db = (byte_t *)malloc(db_size);
-	em = (byte_t *)malloc(em_size);
-
-	if (db == NULL || em == NULL)
+	// Check Hash
+	if (hctx_label == NULL || hctx_mask == NULL)
 	{
-		goto cleanup;
+		default_hash_ctx_size = hash_ctx_size(HASH_SHA1);
+		ctx_size += default_hash_ctx_size;
 	}
 
-	// Construct DB.
-	pos = 0;
+	// Setup the DRBG
+	if (drbg == NULL)
+	{
+		if (default_drbg == NULL)
+		{
+			initialize_default_drbg();
+		}
 
-	memcpy(db, hash, hctx->hash_size);
-	pos += hctx->hash_size;
+		drbg = default_drbg;
+	}
 
-	memset(db + pos, 0, ps_size);
-	pos += ps_size;
+	bignum_ctx_start(key->bctx, ctx_size);
 
-	db[pos++] = 0x01;
+	// Allocate for EM
+	em = bignum_ctx_allocate_raw(key->bctx, em_size);
 
-	memcpy(db + pos, plaintext->data, plaintext->size);
-	pos += plaintext->size;
+	// If no hashes are specified use SHA-1
+	if (hctx_label == NULL || hctx_mask == NULL)
+	{
+		hctx = bignum_ctx_allocate_raw(key->bctx, default_hash_ctx_size);
+		hctx = hash_init(hctx, default_hash_ctx_size, HASH_SHA1);
+
+		if (hctx_label == NULL)
+		{
+			hctx_label = hctx;
+		}
+
+		if (hctx_mask == NULL)
+		{
+			hctx_mask = hctx;
+		}
+	}
+
+	// Constructing EM
+	memset(em, 0, em_size);
+
+	// Hash the label
+	hash_reset(hctx_label);
+
+	if (label_size > 0)
+	{
+		hash_update(hctx_label, label, label_size);
+	}
+
+	// Copy label_hash
+	hash_final(hctx_label, em + label_hash_offset, hctx_label->hash_size);
+
+	// PS length zeroes already done by memset.
+
+	// 0x1 following PS
+	em[message_offset - 1] = 0x1;
+
+	// Copy Message
+	memcpy(em + message_offset, plaintext, plaintext_size);
+
+	if (hctx_mask == NULL)
+	{
+		hctx_mask = hash_init(hctx, default_hash_ctx_size, HASH_SHA1);
+	}
+
+	// Generate seed
+	drbg_generate(drbg, NULL, 0, em + seed_offset, seed_size);
 
 	// Construct Masked DB.
-	// TODO random seed
-	mask->seed = &bseed;
-	mdb = MGF(mask, db_size);
+	MGF_XOR(hctx_mask, em + seed_offset, seed_size, em + db_offset, db_size);
 
-	if (mdb == NULL)
-	{
-		goto cleanup;
-	}
-
-	xor_bytes(mdb->data, db, db_size);
-
-	// Construct Masked Seed.
-	mask->seed = mdb;
-	mseed = MGF(mask, hash_size);
-
-	if (mseed == NULL)
-	{
-		goto cleanup;
-	}
-
-	xor_bytes(mseed->data, bseed.data, hash_size);
-
-	// Construct EM.
-	pos = 0;
-
-	em[pos++] = 0x00;
-
-	memcpy(em + pos, mseed->data, hash_size);
-	pos += hash_size;
-
-	memcpy(em + pos, mdb->data, db_size);
-	pos += db_size;
+	// Construct Masked Seed
+	MGF_XOR(hctx_mask, em + masked_db_offset, db_size, em + masked_seed_offset, seed_size);
 
 	// Encryption
-	p = bignum_new(em_size * 8);
+	status = rsa_public_encrypt(key, em, em_size, ciphertext, ciphertext_size);
 
-	if (p == NULL)
-	{
-		goto cleanup;
-	}
-	bignum_set_bytes_be(p, em, em_size);
-
-	c = rsa_public_encrypt(key, p);
-
-	if (c == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_get_bytes_be(c, ciphertext->data, ciphertext->capacity);
-
-	status = 0;
-
-cleanup:
-	free(mseed);
-	free(db);
-	free(mdb);
-	free(em);
-	bignum_secure_free(p);
-	bignum_secure_free(c);
+	bignum_ctx_end(key->bctx);
 
 	return status;
 }
 
-int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, buffer_t *plaintext, oaep_options *options)
+int32_t rsa_decrypt_oaep(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *label, size_t label_size, void *plaintext,
+						 size_t plaintext_size, hash_ctx *hctx_label, hash_ctx *hctx_mask)
 {
 	int32_t status = -1;
+
+	// Sizes
 	size_t key_size = key->bits / 8;
-	size_t hash_size = options->hash->hash_size;
-	hash_ctx *hctx = options->hash;
-	mgf *mask = options->mask;
-
+	size_t hash_size = hctx_label != NULL ? hctx_label->hash_size : SHA1_HASH_SIZE;
 	size_t db_size = key_size - (hash_size + 1);
+	size_t seed_size = hash_size;
 	size_t em_size = key_size;
-	size_t pos = 0;
 
-	buffer_t empty_label = {0};
-	byte_t hash[64] = {0};
+	// Offsets
+	size_t seed_offset = 1;
+	size_t masked_seed_offset = seed_offset;
+	size_t db_offset = masked_seed_offset + hash_size;
+	size_t masked_db_offset = db_offset;
+	size_t ps_offset = db_offset + hash_size;
+	size_t label_hash_offset = db_offset;
 
-	buffer_t mseed = {0};
-	buffer_t mdb = {0};
-	buffer_t *seedm = NULL;
-	buffer_t *dbm = NULL;
+	size_t message_offset = 0;
+	size_t message_size = 0;
+
+	size_t ctx_size = em_size;
+	size_t default_hash_ctx_size = 0;
+
+	void *hctx = NULL;
 	byte_t *em = NULL;
 
-	bignum_t *p = NULL, *c = NULL;
-
-	// Zero length label.
-	if (label == NULL)
-	{
-		label = &empty_label;
-	}
-
 	// Length checking.
-	if (ciphertext->size != key_size)
+	if (ciphertext_size > key_size)
 	{
 		return -1;
 	}
@@ -331,103 +304,102 @@ int32_t rsa_decrypt_oaep(rsa_key *key, buffer_t *ciphertext, buffer_t *label, bu
 		return -1;
 	}
 
-	hash_update(hctx, label->data, label->size);
-	hash_final(hctx, hash, hctx->hash_size);
-
-	em = (byte_t *)malloc(em_size);
-
-	if (em == NULL)
+	// Check Hash
+	if (hctx_label == NULL || hctx_mask == NULL)
 	{
-		goto cleanup;
+		default_hash_ctx_size = hash_ctx_size(HASH_SHA1);
+		ctx_size += default_hash_ctx_size;
+	}
+
+	bignum_ctx_start(key->bctx, ctx_size);
+
+	// Allocate for EM
+	em = bignum_ctx_allocate_raw(key->bctx, em_size);
+	memset(em, 0, em_size);
+
+	// If no hashes are specified use SHA-1
+	if (hctx_label == NULL || hctx_mask == NULL)
+	{
+		hctx = bignum_ctx_allocate_raw(key->bctx, default_hash_ctx_size);
+		hctx = hash_init(hctx, default_hash_ctx_size, HASH_SHA1);
+
+		if (hctx_label == NULL)
+		{
+			hctx_label = hctx;
+		}
+
+		if (hctx_mask == NULL)
+		{
+			hctx_mask = hctx;
+		}
 	}
 
 	// Decryption
-	c = bignum_new(key_size);
+	em_size = rsa_private_decrypt(key, ciphertext, ciphertext_size, em, em_size);
 
-	if (c == NULL)
+	// Decode EM
+	MGF_XOR(hctx_mask, em + masked_db_offset, db_size, em + masked_seed_offset, seed_size);
+	MGF_XOR(hctx_mask, em + seed_offset, seed_size, em + masked_db_offset, db_size);
+
+	// Hash the label
+	hash_reset(hctx_label);
+
+	if (label_size > 0)
 	{
-		goto cleanup;
+		hash_update(hctx_label, label, label_size);
 	}
 
-	bignum_set_bytes_be(c, ciphertext->data, ciphertext->size);
+	hash_final(hctx_label, NULL, hctx_label->hash_size);
 
-	p = rsa_private_decrypt(key, c);
-
-	if (p == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_get_bytes_be(p, em, em_size);
-
+	// Check if first byte is 0x00.
 	if (em[0] != 0x00)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	mseed.data = &em[1];
-	mseed.size = hash_size;
-	mseed.capacity = hash_size;
-
-	mdb.data = &em[1 + hash_size];
-	mdb.size = db_size;
-	mdb.capacity = db_size;
-
-	// Construct DB.
-	mask->seed = &mdb;
-	seedm = MGF(mask, hash_size);
-
-	xor_bytes(seedm->data, mseed.data, hash_size);
-
-	mask->seed = seedm;
-	dbm = MGF(mask, db_size);
-
-	xor_bytes(dbm->data, mdb.data, db_size);
-
-	if (memcmp(dbm->data, hash, hash_size) != 0)
+	// Check label hash.
+	if (memcmp(hctx_label->hash, em + label_hash_offset, hash_size) != 0)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	for (pos = hash_size;; ++pos)
+	// Check for 0x01.
+	for (size_t pos = ps_offset; pos < em_size; ++pos)
 	{
-		if (pos == dbm->size)
-		{
-			goto cleanup;
-		}
-
-		if (dbm->data[pos] == 0x00)
+		if (em[pos] == 0x00)
 		{
 			continue;
 		}
 
-		if (dbm->data[pos] == 0x01)
+		if (em[pos] == 0x01)
 		{
-			++pos;
+			message_offset = pos + 1;
+			message_size = em_size - message_offset;
 			break;
 		}
 	}
 
-	if (plaintext->capacity < (dbm->size - pos))
+	if (message_offset == 0)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	plaintext->size = dbm->size - pos;
-	memcpy(plaintext->data, &dbm->data[pos], plaintext->size);
+	if (plaintext_size < message_size)
+	{
+		goto end;
+	}
 
-	status = 0;
+	// Copy the message to plaintext.
+	memcpy(plaintext, em + message_offset, message_size);
 
-cleanup:
-	free(em);
-	free(seedm);
-	free(dbm);
-	bignum_secure_free(p);
-	bignum_secure_free(c);
+	status = message_size;
 
+end:
+	bignum_ctx_end(key->bctx);
 	return status;
 }
 
+#if 0
 int32_t rsa_encrypt_pkcs(rsa_key *key, buffer_t *plaintext, buffer_t *ciphertext)
 {
 	int32_t status = -1;
