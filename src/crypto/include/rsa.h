@@ -46,55 +46,55 @@ rsa_key *rsa_key_generate(uint32_t bits);
 rsa_key *rsa_key_new(uint32_t bits);
 void rsa_key_delete(rsa_key *key);
 
-inline bignum_t *rsa_key_get_p(rsa_key *rkey)
+inline bignum_t *rsa_key_get_p(rsa_key *key)
 {
-	return rkey->p;
+	return key->p;
 }
 
-inline bignum_t *rsa_key_get_q(rsa_key *rkey)
+inline bignum_t *rsa_key_get_q(rsa_key *key)
 {
-	return rkey->q;
+	return key->q;
 }
 
-inline bignum_t *rsa_key_get_n(rsa_key *rkey)
+inline bignum_t *rsa_key_get_n(rsa_key *key)
 {
-	return rkey->n;
+	return key->n;
 }
 
-inline bignum_t *rsa_key_get_d(rsa_key *rkey)
+inline bignum_t *rsa_key_get_d(rsa_key *key)
 {
-	return rkey->d;
+	return key->d;
 }
 
-inline bignum_t *rsa_key_get_e(rsa_key *rkey)
+inline bignum_t *rsa_key_get_e(rsa_key *key)
 {
-	return rkey->e;
+	return key->e;
 }
 
-inline bignum_t *rsa_key_get_dmp1(rsa_key *rkey)
+inline bignum_t *rsa_key_get_dmp1(rsa_key *key)
 {
-	return rkey->dmp1;
+	return key->dmp1;
 }
 
-inline bignum_t *rsa_key_get_dmq1(rsa_key *rkey)
+inline bignum_t *rsa_key_get_dmq1(rsa_key *key)
 {
-	return rkey->dmq1;
+	return key->dmq1;
 }
 
-inline bignum_t *rsa_key_get_iqmp(rsa_key *rkey)
+inline bignum_t *rsa_key_get_iqmp(rsa_key *key)
 {
-	return rkey->iqmp;
+	return key->iqmp;
 }
 
-int32_t rsa_key_set_basic(rsa_key *rkey, bignum_t *n, bignum_t *d, bignum_t *e);
-int32_t rsa_key_set_factors(rsa_key *rkey, bignum_t *p, bignum_t *q);
-int32_t rsa_key_set_crt(rsa_key *rkey, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp);
+int32_t rsa_key_set_basic(rsa_key *key, bignum_t *n, bignum_t *d, bignum_t *e);
+int32_t rsa_key_set_factors(rsa_key *key, bignum_t *p, bignum_t *q);
+int32_t rsa_key_set_crt(rsa_key *key, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp);
 
-bignum_t *rsa_public_encrypt(rsa_key *key, bignum_t *plain);
-bignum_t *rsa_public_decrypt(rsa_key *key, bignum_t *cipher);
+int32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+int32_t rsa_public_decrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 
-bignum_t *rsa_private_encrypt(rsa_key *key, bignum_t *plain);
-bignum_t *rsa_private_decrypt(rsa_key *key, bignum_t *cipher);
+int32_t rsa_private_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+int32_t rsa_private_decrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 
 int32_t rsa_encrypt_oaep(rsa_key *key, void *plaintext, size_t plaintext_size, void *label, size_t label_size, void *ciphertext,
 						 size_t ciphertext_size, hash_ctx *hctx_label, hash_ctx *hctx_mask);

@@ -11,69 +11,99 @@
 
 #include <bignum.h>
 #include <rsa.h>
+#include <bignum-internal.h>
+
+static int32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
+{
+	int32_t status = 0;
+
+	bignum_t *t = NULL;
+	size_t ctx_size = bignum_size(key->bits);
+
+	if (key->n == NULL || key->e == NULL)
+	{
+		return -1;
+	}
+
+	if (in_size > (key->bits / 8))
+	{
+		return -1;
+	}
+
+	if (out_size < (key->bits / 8))
+	{
+		return -1;
+	}
+
+	bignum_ctx_start(key->bctx, ctx_size);
+
+	t = bignum_ctx_allocate_bignum(key->bctx, key->bits);
+	t = bignum_set_bytes_be(t, in, in_size);
+	t = bignum_modexp(key->bctx, t, t, key->e, key->n);
+
+	status = bignum_get_bytes_be(t, out, out_size);
+
+	bignum_ctx_end(key->bctx);
+
+	return status;
+}
+
+static int32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
+{
+	int32_t status = 0;
+
+	bignum_t *t = NULL;
+	size_t ctx_size = bignum_size(key->bits);
+
+	if (key->n == NULL || key->e == NULL)
+	{
+		return -1;
+	}
+
+	if (in_size > (key->bits / 8))
+	{
+		return -1;
+	}
+
+	if (out_size < (key->bits / 8))
+	{
+		return -1;
+	}
+
+	bignum_ctx_start(key->bctx, ctx_size);
+
+	t = bignum_ctx_allocate_bignum(key->bctx, key->bits);
+	t = bignum_set_bytes_be(t, in, in_size);
+	t = bignum_modexp(key->bctx, t, t, key->d, key->n);
+
+	status = bignum_get_bytes_be(t, out, out_size);
+
+	bignum_ctx_end(key->bctx);
+
+	return status;
+}
+
+int32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+{
+	return rsa_public_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+int32_t rsa_public_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	return rsa_public_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+int32_t rsa_private_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+{
+	return rsa_private_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+int32_t rsa_private_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	return rsa_private_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
 
 #if 0
-
-bignum_t *rsa_public_encrypt(rsa_key *key, bignum_t *plain)
-{
-	if (key->bits < plain->bits)
-	{
-		return NULL;
-	}
-
-	if (key->n == NULL || key->e == NULL)
-	{
-		return NULL;
-	}
-
-	return bignum_modexp(plain, key->e, key->n);
-}
-
-bignum_t *rsa_public_decrypt(rsa_key *key, bignum_t *cipher)
-{
-	if (key->bits < cipher->bits)
-	{
-		return NULL;
-	}
-
-	if (key->n == NULL || key->e == NULL)
-	{
-		return NULL;
-	}
-
-	return bignum_modexp(cipher, key->e, key->n);
-}
-
-bignum_t *rsa_private_encrypt(rsa_key *key, bignum_t *plain)
-{
-	if (key->bits < plain->bits)
-	{
-		return NULL;
-	}
-
-	if (key->n == NULL || key->d == NULL)
-	{
-		return NULL;
-	}
-
-	return bignum_modexp(plain, key->d, key->n);
-}
-
-bignum_t *rsa_private_decrypt(rsa_key *key, bignum_t *cipher)
-{
-	if (key->bits < cipher->bits)
-	{
-		return NULL;
-	}
-
-	if (key->n == NULL || key->d == NULL)
-	{
-		return NULL;
-	}
-
-	return bignum_modexp(cipher, key->d, key->n);
-}
-
 static inline void xor_bytes(byte_t *a, byte_t *b, size_t size)
 {
 	for (size_t i = 0; i < size; ++i)
