@@ -13,6 +13,7 @@
 #include <hash.h>
 #include <rsa.h>
 #include <sha.h>
+#include <md5.h>
 #include <bignum-internal.h>
 
 #include <minmax.h>
@@ -578,10 +579,7 @@ static inline void rsa_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx
 	rctx->drbg = drbg;
 	rctx->salt_size = salt_size;
 
-	if (rctx->hctx_message != NULL)
-	{
-		hash_reset(rctx->hctx_message);
-	}
+	hash_reset(rctx->hctx_message);
 
 	if (rctx->hctx_mask != NULL)
 	{
@@ -694,6 +692,7 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
 	MGF_XOR(rctx->hctx_mask, hash, hash_size, em, db_size);
 
 	// Generate the signature.
+	memset(rsign, 0, sizeof(rsa_signature) + key_size);
 	rsign->size = key_size;
 	rsign->sign = (byte_t *)rsign + sizeof(rsa_signature);
 
@@ -876,6 +875,331 @@ int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask
 	status = rsa_verify_pss_final(rctx, rsign);
 
 	rsa_verify_pss_delete(rctx);
+
+	return status;
+}
+
+static uint32_t get_der_size(hash_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case HASH_MD5:
+		return 18 + MD5_HASH_SIZE;
+	case HASH_SHA1:
+		return 15 + SHA1_HASH_SIZE;
+	case HASH_SHA224:
+		return 19 + SHA224_HASH_SIZE;
+	case HASH_SHA256:
+		return 19 + SHA256_HASH_SIZE;
+	case HASH_SHA384:
+		return 19 + SHA384_HASH_SIZE;
+	case HASH_SHA512:
+		return 19 + SHA512_HASH_SIZE;
+	case HASH_SHA512_224:
+		return 19 + SHA512_224_HASH_SIZE;
+	case HASH_SHA512_256:
+		return 19 + SHA512_256_HASH_SIZE;
+	default:
+		return 0;
+	}
+}
+
+static inline rsa_pkcs_ctx *rsa_pkcs_new(rsa_key *key, hash_ctx *hctx)
+{
+	rsa_pkcs_ctx *rctx = NULL;
+	uint32_t der_size = 0;
+
+	// Parameter checking
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	if (hctx == NULL)
+	{
+		return NULL;
+	}
+
+	der_size = get_der_size(hctx->algorithm);
+
+	if (der_size == 0)
+	{
+		return NULL;
+	}
+
+	if ((key->bits / 8) < der_size + 11)
+	{
+		return NULL;
+	}
+
+	rctx = (rsa_pkcs_ctx *)malloc(sizeof(rsa_pkcs_ctx));
+
+	if (rctx == NULL)
+	{
+		return NULL;
+	}
+
+	rctx->key = key;
+	rctx->hctx = hctx;
+	rctx->der_size = der_size;
+
+	hash_reset(rctx->hctx);
+
+	return rctx;
+}
+
+static inline void rsa_pkcs_reset(rsa_pkcs_ctx *rctx, rsa_key *key, hash_ctx *hctx)
+{
+	rctx->key = key;
+	rctx->hctx = hctx;
+	rctx->der_size = get_der_size(hctx->algorithm);
+
+	hash_reset(rctx->hctx);
+}
+
+rsa_pkcs_ctx *rsa_sign_pkcs_new(rsa_key *key, hash_ctx *hctx)
+{
+	return rsa_pkcs_new(key, hctx);
+}
+
+void rsa_sign_pkcs_delete(rsa_pkcs_ctx *rctx)
+{
+	memset(rctx, 0, sizeof(rsa_pkcs_ctx));
+	free(rctx);
+}
+
+void rsa_sign_pkcs_reset(rsa_pkcs_ctx *rctx, rsa_key *key, hash_ctx *hctx)
+{
+	rsa_pkcs_reset(rctx, key, hctx);
+}
+
+void rsa_sign_pkcs_update(rsa_pkcs_ctx *rctx, void *message, size_t size)
+{
+	hash_update(rctx->hctx, message, size);
+}
+
+rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx)
+{
+	rsa_signature *rsign = NULL;
+
+	// Sizes
+	size_t key_size = rctx->key->bits / 8;
+	size_t hash_size = rctx->hctx->hash_size;
+	size_t der_size = rctx->der_size;
+	size_t em_size = key_size;
+	size_t ps_size = key_size - der_size - 3;
+
+	size_t ps_offset = 2;
+	size_t der_offset = em_size - der_size;
+	size_t hash_offset = em_size - hash_size;
+
+	byte_t *em = NULL;
+
+	// Allocate for the signature
+	rsign = malloc(sizeof(rsa_signature) + key_size);
+
+	if (rsign == NULL)
+	{
+		return NULL;
+	}
+
+	bignum_ctx_start(rctx->key->bctx, em_size);
+
+	// Allocate for EM
+	em = bignum_ctx_allocate_raw(rctx->key->bctx, em_size);
+	memset(em, 0, em_size);
+
+	em[0] = 0x00;
+	em[1] = 0x01;
+
+	memset(em + ps_offset, 0xFF, ps_size);
+
+	// Finish Hash
+	switch (rctx->hctx->algorithm)
+	{
+	case HASH_MD5:
+		memcpy(em + der_offset, "\x30\x20\x30\x0c\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00\x04\x10", 18);
+		break;
+	case HASH_SHA1:
+		memcpy(em + der_offset, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
+		break;
+	case HASH_SHA224:
+		memcpy(em + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x04\x05\x00\x04\x1c", 19);
+		break;
+	case HASH_SHA256:
+		memcpy(em + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20", 19);
+		break;
+	case HASH_SHA384:
+		memcpy(em + der_offset, "\x30\x41\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02\x05\x00\x04\x30", 19);
+		break;
+	case HASH_SHA512:
+		memcpy(em + der_offset, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40", 19);
+		break;
+	case HASH_SHA512_224:
+		memcpy(em + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x05\x05\x00\x04\x1c", 19);
+		break;
+	case HASH_SHA512_256:
+		memcpy(em + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x06\x05\x00\x04\x20", 19);
+		break;
+	default:
+		break;
+	}
+
+	hash_final(rctx->hctx, em + hash_offset, hash_size);
+
+	// Generate the signature.
+	memset(rsign, 0, sizeof(rsa_signature) + key_size);
+	rsign->size = key_size;
+	rsign->sign = (byte_t *)rsign + sizeof(rsa_signature);
+
+	rsign->bits = rsa_private_encrypt(rctx->key, em, em_size, rsign->sign, rsign->size);
+
+	bignum_ctx_end(rctx->key->bctx);
+
+	if (rsign->bits < 0)
+	{
+		free(rsign);
+		return NULL;
+	}
+
+	return rsign;
+}
+
+rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size)
+{
+	rsa_pkcs_ctx *rctx = rsa_sign_pkcs_new(key, hctx);
+	rsa_signature *rsign = NULL;
+
+	if (rctx == NULL)
+	{
+		return NULL;
+	}
+
+	rsa_sign_pkcs_update(rctx, message, size);
+	rsign = rsa_sign_pkcs_final(rctx);
+
+	rsa_sign_pkcs_delete(rctx);
+
+	return rsign;
+}
+
+rsa_pkcs_ctx *rsa_verify_pkcs_new(rsa_key *key, hash_ctx *hctx)
+{
+	return rsa_pkcs_new(key, hctx);
+}
+
+void rsa_verify_pkcs_delete(rsa_pkcs_ctx *rctx)
+{
+	memset(rctx, 0, sizeof(rsa_pkcs_ctx));
+	free(rctx);
+}
+
+void rsa_verify_pkcs_reset(rsa_pkcs_ctx *rctx, rsa_key *key, hash_ctx *hctx)
+{
+	rsa_pkcs_reset(rctx, key, hctx);
+}
+
+void rsa_verify_pkcs_update(rsa_pkcs_ctx *rctx, void *message, size_t size)
+{
+	hash_update(rctx->hctx, message, size);
+}
+
+int32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign)
+{
+	int32_t status = -1;
+
+	// Sizes
+	size_t key_size = rctx->key->bits / 8;
+	size_t hash_size = rctx->hctx->hash_size;
+	size_t der_size = rctx->der_size;
+	size_t em_size = key_size;
+	size_t ps_size = key_size - der_size - 3;
+
+	size_t ps_offset = 2;
+	size_t der_offset = em_size - der_size;
+	size_t hash_offset = em_size - hash_size;
+
+	size_t ctx_size = 2 * em_size;
+
+	byte_t *em = NULL;
+	byte_t *emp = NULL;
+
+	bignum_ctx_start(rctx->key->bctx, ctx_size);
+
+	// Allocate for EM'
+	emp = bignum_ctx_allocate_raw(rctx->key->bctx, em_size);
+	memset(emp, 0, em_size);
+
+	em[0] = 0x00;
+	em[1] = 0x01;
+
+	memset(em + ps_offset, 0xFF, ps_size);
+
+	// Finish Hash
+	switch (rctx->hctx->algorithm)
+	{
+	case HASH_MD5:
+		memcpy(emp + der_offset, "\x30\x20\x30\x0c\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00\x04\x10", 18);
+		break;
+	case HASH_SHA1:
+		memcpy(emp + der_offset, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
+		break;
+	case HASH_SHA224:
+		memcpy(emp + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x04\x05\x00\x04\x1c", 19);
+		break;
+	case HASH_SHA256:
+		memcpy(emp + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20", 19);
+		break;
+	case HASH_SHA384:
+		memcpy(emp + der_offset, "\x30\x41\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02\x05\x00\x04\x30", 19);
+		break;
+	case HASH_SHA512:
+		memcpy(emp + der_offset, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40", 19);
+		break;
+	case HASH_SHA512_224:
+		memcpy(emp + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x05\x05\x00\x04\x1c", 19);
+		break;
+	case HASH_SHA512_256:
+		memcpy(emp + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x06\x05\x00\x04\x20", 19);
+		break;
+	default:
+		break;
+	}
+
+	hash_final(rctx->hctx, emp + hash_offset, hash_size);
+
+	// Allocate for EM
+	em = bignum_ctx_allocate_raw(rctx->key->bctx, em_size);
+
+	// Decryption
+	rsa_public_decrypt(rctx->key, rsign->sign, rsign->size, em, em_size);
+
+	if (memcmp(em, emp, em_size) != 0)
+	{
+		goto end;
+	}
+
+	status = 0;
+
+end:
+	bignum_ctx_end(rctx->key->bctx);
+	return status;
+}
+
+int32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size, rsa_signature *rsign)
+{
+	int32_t status = -1;
+	rsa_pkcs_ctx *rctx = rsa_verify_pkcs_new(key, hctx);
+
+	if (rctx == NULL)
+	{
+		return status;
+	}
+
+	rsa_verify_pkcs_update(rctx, message, size);
+	status = rsa_verify_pkcs_final(rctx, rsign);
+
+	rsa_verify_pkcs_delete(rctx);
 
 	return status;
 }
