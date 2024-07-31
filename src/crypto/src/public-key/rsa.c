@@ -190,12 +190,7 @@ int32_t rsa_encrypt_oaep(rsa_key *key, void *plaintext, size_t plaintext_size, v
 	// Setup the DRBG
 	if (drbg == NULL)
 	{
-		if (default_drbg == NULL)
-		{
-			initialize_default_drbg();
-		}
-
-		drbg = default_drbg;
+		drbg = get_default_drbg();
 	}
 
 	bignum_ctx_start(key->bctx, ctx_size);
@@ -335,7 +330,7 @@ int32_t rsa_decrypt_oaep(rsa_key *key, void *ciphertext, size_t ciphertext_size,
 	}
 
 	// Decryption
-	em_size = rsa_private_decrypt(key, ciphertext, ciphertext_size, em, em_size);
+	rsa_private_decrypt(key, ciphertext, ciphertext_size, em, em_size);
 
 	// Decode EM
 	MGF_XOR(hctx_mask, em + masked_db_offset, db_size, em + masked_seed_offset, seed_size);
@@ -391,7 +386,6 @@ int32_t rsa_decrypt_oaep(rsa_key *key, void *ciphertext, size_t ciphertext_size,
 
 	// Copy the message to plaintext.
 	memcpy(plaintext, em + message_offset, message_size);
-
 	status = message_size;
 
 end:
@@ -399,149 +393,114 @@ end:
 	return status;
 }
 
-#if 0
-int32_t rsa_encrypt_pkcs(rsa_key *key, buffer_t *plaintext, buffer_t *ciphertext)
+int32_t rsa_encrypt_pkcs(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size, drbg_ctx *drbg)
 {
-	int32_t status = -1;
+	int32_t status = 0;
+
+	// Sizes
 	size_t key_size = key->bits / 8;
-	size_t ps_size = key_size - plaintext->size - 3;
+	size_t ps_size = key_size - plaintext_size - 3;
 	size_t em_size = key_size;
 
-	byte_t *ps = NULL;
+	// Offsets
+	size_t ps_offset = 2;
+	size_t message_offset = ps_offset + ps_size + 1;
+
 	byte_t *em = NULL;
 
-	size_t pos = 0;
-
-	bignum_t *p = NULL, *c = NULL;
-
 	// Length checking
-	if (plaintext->size > key_size - 11)
+	if (plaintext_size > key_size - 11)
 	{
 		return -1;
 	}
 
-	if (ciphertext->capacity < key_size)
+	if (ciphertext_size < key_size)
 	{
 		return -1;
 	}
 
-	ps = (byte_t *)malloc(ps_size);
-
-	if (ps == NULL)
+	// Setup the DRBG
+	if (drbg == NULL)
 	{
-		goto cleanup;
+		drbg = get_default_drbg();
 	}
 
-	// TODO randomize ps
-	em = (byte_t *)malloc(em_size);
+	bignum_ctx_start(key->bctx, em_size);
 
-	if (em == NULL)
-	{
-		goto cleanup;
-	}
+	// Allocate for EM
+	em = bignum_ctx_allocate_raw(key->bctx, em_size);
+	memset(em, 0, em_size);
 
 	// Construct EM
-	em[pos++] = 0x00;
-	em[pos++] = 0x02;
+	em[0] = 0x00;
+	em[1] = 0x02;
+	em[ps_offset + ps_size] = 0x00;
 
-	memcpy(em + pos, ps, ps_size);
-	pos += ps_size;
+	// Randomize PS with nonzero octests
+retry:
+	drbg_generate(drbg, NULL, 0, em + ps_offset, ps_size);
 
-	em[pos++] = 0x00;
-	memcpy(em + pos, plaintext->data, plaintext->size);
-	pos += ps_size;
+	for (size_t pos = ps_offset; pos < ps_size + ps_offset; ++pos)
+	{
+		if (em[pos] == 0x00)
+		{
+			goto retry;
+		}
+	}
+
+	memcpy(em + message_offset, plaintext, plaintext_size);
 
 	// Encryption
-	p = bignum_new(em_size * 8);
+	status = rsa_public_encrypt(key, em, em_size, ciphertext, ciphertext_size);
 
-	if (p == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_set_bytes_be(p, em, em_size);
-
-	c = rsa_public_encrypt(key, p);
-
-	if (c == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_get_bytes_be(c, ciphertext->data, ciphertext->capacity);
-
-	status = 0;
-
-cleanup:
-	free(ps);
-	free(em);
-	bignum_secure_free(p);
-	bignum_secure_free(c);
+	bignum_ctx_end(key->bctx);
 
 	return status;
 }
 
-int32_t rsa_decrypt_pkcs(rsa_key *key, buffer_t *ciphertext, buffer_t *plaintext)
+int32_t rsa_decrypt_pkcs(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
 	int32_t status = -1;
+
+	// Sizes
 	size_t key_size = key->bits / 8;
 	size_t em_size = key_size;
+
+	size_t message_offset = 0;
+	size_t message_size = 0;
 	size_t ps_size = 0;
 
 	byte_t *em = NULL;
 
-	size_t pos = 0;
-
-	bignum_t *p = NULL, *c = NULL;
-
 	// Length checking.
-	if (ciphertext->size != key_size)
+	if (ciphertext_size > key_size)
 	{
 		return -1;
 	}
 
-	em = (byte_t *)malloc(em_size);
+	bignum_ctx_start(key->bctx, em_size);
 
-	if (em == NULL)
-	{
-		return -1;
-	}
+	// Allocate for EM
+	em = bignum_ctx_allocate_raw(key->bctx, em_size);
+	memset(em, 0, em_size);
 
 	// Decryption
-	c = bignum_new(key_size);
-
-	if (c == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_set_bytes_be(c, ciphertext->data, ciphertext->size);
-
-	p = rsa_private_decrypt(key, c);
-
-	if (p == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_get_bytes_be(p, em, em_size);
+	rsa_private_decrypt(key, ciphertext, ciphertext_size, em, em_size);
 
 	// Verification
 	if (em[0] != 0x00 || em[1] != 0x02)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	for (pos = 2;; ++pos)
+	for (size_t pos = 2; pos < key_size; ++pos)
 	{
-		if (pos == key_size)
-		{
-			goto cleanup;
-		}
-
 		if (em[pos] == 0x00)
 		{
-			++pos;
+			message_offset = pos + 1;
+			message_size = key_size - message_offset;
+			ps_size = key_size - message_size - 3;
+
 			break;
 		}
 
@@ -550,27 +509,24 @@ int32_t rsa_decrypt_pkcs(rsa_key *key, buffer_t *ciphertext, buffer_t *plaintext
 
 	if (ps_size < 8)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	if (plaintext->capacity < key_size - pos)
+	if (plaintext_size < message_size)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	plaintext->size = key_size - pos;
-	memcpy(plaintext->data, em + pos, plaintext->size);
+	// Copy the message to plaintext.
+	memcpy(plaintext, em + message_offset, message_size);
+	status = message_size;
 
-	status = 0;
-
-cleanup:
-	free(em);
-	bignum_secure_free(p);
-	bignum_secure_free(c);
-
+end:
+	bignum_ctx_end(key->bctx);
 	return status;
 }
 
+#if 0
 static inline rsa_pss_ctx *rsa_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size)
 {
 	rsa_pss_ctx *rctx = (rsa_pss_ctx *)malloc(sizeof(rsa_pss_ctx));
