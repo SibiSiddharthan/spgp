@@ -526,10 +526,27 @@ end:
 	return status;
 }
 
-#if 0
-static inline rsa_pss_ctx *rsa_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size)
+static inline rsa_pss_ctx *rsa_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size)
 {
-	rsa_pss_ctx *rctx = (rsa_pss_ctx *)malloc(sizeof(rsa_pss_ctx));
+	rsa_pss_ctx *rctx = NULL;
+
+	// Parameter checking
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	if (hctx_message == NULL)
+	{
+		return NULL;
+	}
+
+	if ((key->bits / 8) < (hctx_message->hash_size + salt_size + 2))
+	{
+		return NULL;
+	}
+
+	rctx = (rsa_pss_ctx *)malloc(sizeof(rsa_pss_ctx));
 
 	if (rctx == NULL)
 	{
@@ -537,180 +554,166 @@ static inline rsa_pss_ctx *rsa_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask,
 	}
 
 	rctx->key = key;
-	rctx->hctx = hctx;
-	rctx->mask = mask;
+	rctx->hctx_message = hctx_message;
+	rctx->hctx_mask = hctx_mask;
+	rctx->drbg = drbg;
 	rctx->salt_size = salt_size;
+
+	hash_reset(rctx->hctx_message);
+
+	if (rctx->hctx_mask != NULL)
+	{
+		hash_reset(rctx->hctx_mask);
+	}
 
 	return rctx;
 }
 
-rsa_pss_ctx *rsa_sign_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size)
+static inline void rsa_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg,
+								 size_t salt_size)
 {
-	return rsa_pss_init(key, hctx, mask, salt_size);
+	rctx->key = key;
+	rctx->hctx_message = hctx_message;
+	rctx->hctx_mask = hctx_mask;
+	rctx->drbg = drbg;
+	rctx->salt_size = salt_size;
+
+	if (rctx->hctx_message != NULL)
+	{
+		hash_reset(rctx->hctx_message);
+	}
+
+	if (rctx->hctx_mask != NULL)
+	{
+		hash_reset(rctx->hctx_mask);
+	}
 }
 
-void rsa_sign_pss_free(rsa_pss_ctx *rctx)
+rsa_pss_ctx *rsa_sign_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size)
+{
+	return rsa_pss_new(key, hctx_message, hctx_mask, drbg, salt_size);
+}
+
+void rsa_sign_pss_delete(rsa_pss_ctx *rctx)
 {
 	memset(rctx, 0, sizeof(rsa_pss_ctx));
 	free(rctx);
 }
 
-void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx, mgf *mask)
+void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size)
 {
-	rctx->key = key;
-	rctx->hctx = hctx;
-	rctx->mask = mask;
+	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, drbg, salt_size);
 }
 
 void rsa_sign_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
 {
-	hash_update(rctx->hctx, message, size);
+	hash_update(rctx->hctx_message, message, size);
 }
 
 rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
 {
+	rsa_signature *rsign = NULL;
+
+	// Sizes
 	size_t key_size = rctx->key->bits / 8;
-	size_t hash_size = rctx->hctx->hash_size;
+	size_t hash_size = rctx->hctx_message->hash_size;
 	size_t salt_size = rctx->salt_size;
 
-	rsa_signature *rsign = NULL;
-	byte_t hash[MAX_HASH_SIZE] = {0};
-	byte_t hashp[MAX_HASH_SIZE] = {0};
-	byte_t salt[64] = {0};
-
-	size_t mp_size = 8 + hash_size + salt_size;
 	size_t ps_size = key_size - (salt_size + hash_size + 2);
 	size_t db_size = key_size - (hash_size + 1);
 	size_t em_size = key_size;
 
-	buffer_t bhashp = {hashp, hash_size, MAX_HASH_SIZE};
-	buffer_t *mdb = NULL;
+	size_t salt_offset = ps_size + 1;
+	size_t hash_offset = db_size;
 
-	byte_t *mp = NULL;
-	byte_t *db = NULL;
+	size_t ctx_size = em_size;
+	size_t default_hash_ctx_size = 0;
+
+	byte_t *hash = NULL;
+	byte_t *salt = NULL;
 	byte_t *em = NULL;
 
-	bignum_t *m = NULL;
-	bignum_t *s = NULL;
+	// Check Hash
+	if (rctx->hctx_mask == NULL)
+	{
+		default_hash_ctx_size = hash_ctx_size(HASH_SHA1);
+		ctx_size += default_hash_ctx_size;
+	}
 
-	size_t pos = 0;
+	// Allocate for the signature
+	rsign = malloc(sizeof(rsa_signature) + key_size);
 
-	if (key_size < hash_size + salt_size + 2)
+	if (rsign == NULL)
 	{
 		return NULL;
 	}
 
-	hash_final(rctx->hctx, hash, hash_size);
-	hash_reset(rctx->hctx);
+	bignum_ctx_start(rctx->key->bctx, ctx_size);
 
-	// TODO generate random salt
-
-	// Construct M'
-	pos = 0;
-	mp = (byte_t *)malloc(mp_size);
-
-	if (mp == NULL)
+	// If mask hash is not specified use SHA-1
+	if (rctx->hctx_mask == NULL)
 	{
-		goto cleanup;
+		rctx->hctx_mask = bignum_ctx_allocate_raw(rctx->key->bctx, default_hash_ctx_size);
+		rctx->hctx_mask = hash_init(rctx->hctx_mask, default_hash_ctx_size, HASH_SHA1);
 	}
 
-	memset(mp, 0, 8);
-	pos += 8;
+	em = bignum_ctx_allocate_raw(rctx->key->bctx, em_size);
+	memset(em, 0, em_size);
 
-	memcpy(mp + pos, hash, hash_size);
-	pos += hash_size;
+	em[ps_size] = 0x01;
+	em[em_size - 1] = 0xBC;
 
+	hash = em + hash_offset;
+	salt = em + salt_offset;
+
+	// Finish hashing the message.
+	hash_final(rctx->hctx_message, hash, hash_size);
+	hash_reset(rctx->hctx_message);
+
+	// Generate H'
+	uint64_t zero = 0;
+
+	hash_update(rctx->hctx_message, &zero, 8);
+	hash_update(rctx->hctx_message, hash, hash_size);
+
+	// Generate the salt
 	if (salt_size > 0)
 	{
-		memcpy(mp + pos, salt, salt_size);
-		pos += salt_size;
+		if (rctx->drbg == NULL)
+		{
+			rctx->drbg = get_default_drbg();
+		}
+
+		drbg_generate(rctx->drbg, NULL, 0, salt, salt_size);
+		hash_update(rctx->hctx_message, salt, salt_size);
 	}
 
-	hash_update(rctx->hctx, mp, mp_size);
-	hash_final(rctx->hctx, hashp, hash_size);
+	hash_final(rctx->hctx_message, hash, hash_size);
 
-	// Construct DB
-	pos = 0;
-	db = (byte_t *)malloc(db_size);
+	// DB Mask
+	MGF_XOR(rctx->hctx_mask, hash, hash_size, em, db_size);
 
-	if (db == NULL)
-	{
-		goto cleanup;
-	}
-
-	memset(db, 0, ps_size);
-	pos += ps_size;
-
-	db[pos++] = 0x01;
-
-	if (salt_size > 0)
-	{
-		memcpy(db + pos, salt, salt_size);
-		pos += salt_size;
-	}
-
-	rctx->mask->seed = &bhashp;
-	mdb = MGF(rctx->mask, db_size);
-
-	xor_bytes(db, mdb->data, db_size);
-
-	// Construct EM
-	pos = 0;
-	em = (byte_t *)malloc(em_size);
-
-	if (em == NULL)
-	{
-		goto cleanup;
-	}
-
-	memcpy(em, db, db_size);
-	pos += db_size;
-
-	memcpy(em + pos, hashp, hash_size);
-	pos += hash_size;
-
-	em[pos++] = 0xBC;
-
-	// Signature
-	m = bignum_new(em_size * 8);
-
-	if (m == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_set_bytes_be(m, em, em_size);
-
-	s = rsa_private_encrypt(rctx->key, m);
-
-	if (s == NULL)
-	{
-		goto cleanup;
-	}
-
-	rsign = (rsa_signature *)malloc(key_size + 8);
-
-	if (rsign == NULL)
-	{
-		goto cleanup;
-	}
-
+	// Generate the signature.
 	rsign->size = key_size;
-	bignum_get_bytes_be(s, rsign->sign, key_size);
+	rsign->sign = (byte_t *)rsign + sizeof(rsa_signature);
 
-cleanup:
-	free(mp);
-	free(db);
-	free(em);
-	bignum_secure_free(m);
-	bignum_secure_free(s);
+	rsign->bits = rsa_private_encrypt(rctx->key, em, em_size, rsign->sign, rsign->size);
+
+	bignum_ctx_end(rctx->key->bctx);
+
+	if (rsign->bits < 0)
+	{
+		free(rsign);
+		return NULL;
+	}
 
 	return rsign;
 }
 
-rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size, void *message, size_t size)
+rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size, void *message,
+							size_t message_size)
 {
-	rsa_pss_ctx *rctx = rsa_sign_pss_init(key, hctx, mask, salt_size);
+	rsa_pss_ctx *rctx = rsa_sign_pss_new(key, hctx_message, hctx_mask, drbg, salt_size);
 	rsa_signature *rsign = NULL;
 
 	if (rctx == NULL)
@@ -718,169 +721,151 @@ rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt
 		return NULL;
 	}
 
-	rsa_sign_pss_update(rctx, message, size);
+	rsa_sign_pss_update(rctx, message, message_size);
 	rsign = rsa_sign_pss_final(rctx);
 
-	rsa_sign_pss_free(rctx);
+	rsa_sign_pss_delete(rctx);
 
 	return rsign;
 }
 
-rsa_pss_ctx *rsa_verify_pss_init(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size)
+rsa_pss_ctx *rsa_verify_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size)
 {
-	return rsa_pss_init(key, hctx, mask, salt_size);
+	return rsa_pss_new(key, hctx_message, hctx_mask, NULL, salt_size);
 }
 
-void rsa_verify_pss_free(rsa_pss_ctx *rctx)
+void rsa_verify_pss_delete(rsa_pss_ctx *rctx)
 {
 	memset(rctx, 0, sizeof(rsa_pss_ctx));
 	free(rctx);
 }
 
-void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx, mgf *mask)
+void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size)
 {
-	rctx->key = key;
-	rctx->hctx = hctx;
-	rctx->mask = mask;
+	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, NULL, salt_size);
 }
 
 void rsa_verify_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
 {
-	hash_update(rctx->hctx, message, size);
+	hash_update(rctx->hctx_message, message, size);
 }
 
 int32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 {
 	int32_t status = -1;
 
+	// Sizes
 	size_t key_size = rctx->key->bits / 8;
-	size_t hash_size = rctx->hctx->hash_size;
+	size_t hash_size = rctx->hctx_message->hash_size;
 	size_t salt_size = rctx->salt_size;
 
-	byte_t hash[MAX_HASH_SIZE] = {0};
-	byte_t hashp[MAX_HASH_SIZE] = {0};
-
-	size_t mp_size = 8 + hash_size + salt_size;
 	size_t ps_size = key_size - (salt_size + hash_size + 2);
 	size_t db_size = key_size - (hash_size + 1);
 	size_t em_size = key_size;
 
-	buffer_t bhashp = {NULL, hash_size, MAX_HASH_SIZE};
-	buffer_t *dbm = NULL;
+	size_t salt_offset = ps_size + 1;
+	size_t hash_offset = db_size;
 
-	byte_t *mp = NULL;
-	byte_t *mdb = NULL;
+	size_t ctx_size = em_size + hash_size;
+	size_t default_hash_ctx_size = 0;
+
+	byte_t *mhash = NULL;
+	byte_t *hash = NULL;
+	byte_t *salt = NULL;
 	byte_t *em = NULL;
 
-	bignum_t *m = NULL;
-	bignum_t *s = NULL;
-
-	size_t pos = 0;
-
-	if (rsign->size != key_size)
+	// Length checking
+	if (rsign->size > key_size)
 	{
 		return -1;
 	}
 
-	if (key_size < hash_size + salt_size + 2)
+	if (rsign->size < hash_size + salt_size + 2)
 	{
 		return -1;
 	}
 
-	em = (byte_t *)malloc(em_size);
-
-	if (em == NULL)
+	// Check Hash
+	if (rctx->hctx_mask == NULL)
 	{
-		goto cleanup;
+		default_hash_ctx_size = hash_ctx_size(HASH_SHA1);
+		ctx_size += default_hash_ctx_size;
 	}
+
+	bignum_ctx_start(rctx->key->bctx, ctx_size);
+
+	// If mask hash is not specified use SHA-1
+	if (rctx->hctx_mask == NULL)
+	{
+		rctx->hctx_mask = bignum_ctx_allocate_raw(rctx->key->bctx, default_hash_ctx_size);
+		rctx->hctx_mask = hash_init(rctx->hctx_mask, default_hash_ctx_size, HASH_SHA1);
+	}
+
+	em = bignum_ctx_allocate_raw(rctx->key->bctx, em_size);
+	memset(em, 0, em_size);
+
+	hash = em + hash_offset;
+	salt = em + salt_offset;
+
+	// Decryption
+	rsa_public_decrypt(rctx->key, rsign->sign, rsign->size, em, em_size);
 
 	// Verification
-	s = bignum_new(key_size);
-
-	if (s == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_set_bytes_be(s, rsign->sign, rsign->size);
-
-	m = rsa_public_decrypt(rctx->key, s);
-
-	if (m == NULL)
-	{
-		goto cleanup;
-	}
-
-	bignum_get_bytes_be(m, em, em_size);
-
 	if (em[em_size - 1] != 0xBC)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	mdb = em;
-	bhashp.data = em + db_size;
+	// DB Mask
+	MGF_XOR(rctx->hctx_mask, hash, hash_size, em, db_size);
 
-	rctx->mask->seed = &bhashp;
-	dbm = MGF(rctx->mask, db_size);
-
-	xor_bytes(mdb, dbm->data, db_size);
-
-	for (size_t i = 0; i < ps_size; ++i)
+	// Check for zeros
+	for (size_t pos = 0; pos < ps_size; ++pos)
 	{
-		if (mdb[i] != 0x00)
+		if (em[pos] != 0x00)
 		{
-			goto cleanup;
+			goto end;
 		}
 	}
 
-	hash_final(rctx->hctx, hash, hash_size);
-	hash_reset(rctx->hctx);
-
-	// Construct M'
-	pos = 0;
-	mp = (byte_t *)malloc(mp_size);
-
-	if (mp == NULL)
+	// Check for 0x01
+	if (em[ps_size] != 0x01)
 	{
-		goto cleanup;
+		goto end;
 	}
 
-	memset(mp, 0, 8);
-	pos += 8;
+	// Compare hashes.
+	mhash = bignum_ctx_allocate_raw(rctx->key->bctx, hash_size);
+	memset(em, 0, hash_size);
 
-	memcpy(mp + pos, hash, hash_size);
-	pos += hash_size;
+	hash_final(rctx->hctx_message, mhash, hash_size);
+	hash_reset(rctx->hctx_message);
 
-	if (salt_size > 0)
+	uint64_t zero = 0;
+
+	hash_update(rctx->hctx_message, &zero, 8);
+	hash_update(rctx->hctx_message, mhash, hash_size);
+	hash_update(rctx->hctx_message, salt, salt_size);
+
+	hash_final(rctx->hctx_message, mhash, hash_size);
+
+	if (memcmp(hash, mhash, hash_size) != 0)
 	{
-		memcpy(mp + pos, mdb + ps_size, salt_size);
-		pos += salt_size;
-	}
-
-	hash_update(rctx->hctx, mp, mp_size);
-	hash_final(rctx->hctx, hashp, hash_size);
-
-	if (memcmp(hashp, bhashp.data, hash_size) != 0)
-	{
-		goto cleanup;
+		goto end;
 	}
 
 	status = 0;
 
-cleanup:
-	free(mp);
-	free(em);
-	bignum_secure_free(m);
-	bignum_secure_free(s);
-
+end:
+	bignum_ctx_end(rctx->key->bctx);
 	return status;
 }
 
-int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size, void *message, size_t size, rsa_signature *rsign)
+int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
+					   rsa_signature *rsign)
 {
 	int32_t status = -1;
-	rsa_pss_ctx *rctx = rsa_verify_pss_init(key, hctx, mask, salt_size);
+	rsa_pss_ctx *rctx = rsa_verify_pss_new(key, hctx_message, hctx_mask, salt_size);
 
 	if (rctx == NULL)
 	{
@@ -890,9 +875,7 @@ int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx, mgf *mask, size_t salt_size
 	rsa_verify_pss_update(rctx, message, size);
 	status = rsa_verify_pss_final(rctx, rsign);
 
-	rsa_verify_pss_free(rctx);
+	rsa_verify_pss_delete(rctx);
 
 	return status;
 }
-
-#endif
