@@ -244,7 +244,7 @@ int32_t rsa_encrypt_oaep(rsa_key *key, void *plaintext, size_t plaintext_size, v
 	}
 
 	// Generate seed
-	drbg_generate(drbg, NULL, 0, em + seed_offset, seed_size);
+	drbg_generate(drbg, 0, NULL, 0, em + seed_offset, seed_size);
 
 	// Construct Masked DB.
 	MGF_XOR(hctx_mask, em + seed_offset, seed_size, em + db_offset, db_size);
@@ -439,7 +439,7 @@ int32_t rsa_encrypt_pkcs(rsa_key *key, void *plaintext, size_t plaintext_size, v
 
 	// Randomize PS with nonzero octests
 retry:
-	drbg_generate(drbg, NULL, 0, em + ps_offset, ps_size);
+	drbg_generate(drbg, 0, NULL, 0, em + ps_offset, ps_size);
 
 	for (size_t pos = ps_offset; pos < ps_size + ps_offset; ++pos)
 	{
@@ -682,7 +682,7 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
 			rctx->drbg = get_default_drbg();
 		}
 
-		drbg_generate(rctx->drbg, NULL, 0, salt, salt_size);
+		drbg_generate(rctx->drbg, 0, NULL, 0, salt, salt_size);
 		hash_update(rctx->hctx_message, salt, salt_size);
 	}
 

@@ -298,7 +298,8 @@ int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, byte_t *additional_input, size_t inpu
 	return 0;
 }
 
-int32_t hmac_drbg_generate(hmac_drbg *hdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size)
+int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_request, byte_t *additional_input, size_t input_size,
+						   void *output, size_t output_size)
 {
 	int32_t status = 0;
 	hmac_ctx *hctx = hdrbg->hctx;
@@ -319,7 +320,7 @@ int32_t hmac_drbg_generate(hmac_drbg *hdrbg, byte_t *additional_input, size_t in
 	}
 
 	// Reseed
-	if (hdrbg->reseed_counter == hdrbg->reseed_interval)
+	if (hdrbg->reseed_counter == hdrbg->reseed_interval || prediction_resistance_request > 0)
 	{
 		status = hmac_drbg_reseed(hdrbg, NULL, 0);
 

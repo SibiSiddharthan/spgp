@@ -397,7 +397,8 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_
 	return 0;
 }
 
-int32_t ctr_drbg_generate(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size)
+int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, byte_t *additional_input, size_t input_size,
+						  void *output, size_t output_size)
 {
 	int32_t status;
 
@@ -424,7 +425,7 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, byte_t *additional_input, size_t inpu
 	}
 
 	// Reseed
-	if (cdrbg->reseed_counter == cdrbg->reseed_interval)
+	if (cdrbg->reseed_counter == cdrbg->reseed_interval || prediction_resistance_request > 0)
 	{
 		status = ctr_drbg_reseed(cdrbg, NULL, 0);
 
