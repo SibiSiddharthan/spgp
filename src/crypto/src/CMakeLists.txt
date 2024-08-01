@@ -47,6 +47,7 @@ mac/kmac.c
 #public-key
 public-key/rsa.c
 # rand
+rand/drbg.c
 rand/ctr-drbg.c
 rand/hash-drbg.c
 rand/hmac-drbg.c

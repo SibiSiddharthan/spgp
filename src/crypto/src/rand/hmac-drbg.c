@@ -196,6 +196,11 @@ static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, hmac_algori
 	return hdrbg;
 }
 
+size_t hmac_drbg_size(hmac_algorithm algorithm)
+{
+	return sizeof(hmac_drbg) + sizeof(hmac_ctx) + get_approved_hash_ctx_size(algorithm);
+}
+
 hmac_drbg *hmac_drbg_init(void *ptr, size_t size, hmac_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
 						  size_t personalization_size)
 {

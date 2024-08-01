@@ -282,6 +282,11 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, cipher_algori
 	return cdrbg;
 }
 
+size_t ctr_drbg_size(cipher_algorithm algorithm)
+{
+	return sizeof(ctr_drbg) + (get_approved_cipher_ctx_size(algorithm) * 2);
+}
+
 ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
 						size_t personalization_size)
 {

@@ -220,6 +220,11 @@ static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, hash_algori
 	return hdrbg;
 }
 
+size_t hash_drbg_size(hash_algorithm algorithm)
+{
+	return sizeof(hash_drbg) + sizeof(hash_ctx) + get_approved_hash_ctx_size(algorithm);
+}
+
 hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
 						  size_t personalization_size)
 {
