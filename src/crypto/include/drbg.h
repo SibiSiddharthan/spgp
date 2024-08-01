@@ -111,11 +111,11 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reques
 						  void *output, size_t output_size);
 
 size_t drbg_ctx_size(drbg_type type, uint32_t algorithm);
-drbg_ctx *drgb_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization,
+drbg_ctx *drbg_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization,
 					size_t personalization_size);
-drbg_ctx *drgb_new(drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
-void drgb_delete(drbg_ctx *drbg);
-int32_t drgb_reseed(drbg_ctx *drbg, byte_t *additional_input, size_t input_size);
+drbg_ctx *drbg_new(drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
+void drbg_delete(drbg_ctx *drbg);
+int32_t drbg_reseed(drbg_ctx *drbg, byte_t *additional_input, size_t input_size);
 int32_t drbg_generate(drbg_ctx *drbg, uint32_t prediction_resistance_request, byte_t *additional_input, size_t input_size, void *output,
 					  size_t output_size);
 
