@@ -73,6 +73,16 @@ typedef enum _drbg_type
 	CTR_DRBG
 } drbg_type;
 
+typedef struct _drbg_ctx
+{
+	drbg_type type;
+	size_t drbg_size;
+
+	void *_drbg;
+	int32_t (*_reseed)(void *, void *, size_t);
+	int32_t (*_generate)(void *, void *, size_t, void *, size_t);
+} drbg_ctx;
+
 hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
 						  size_t personalization_size);
 hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
@@ -88,10 +98,19 @@ int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, byte_t *additional_input, size_t inpu
 int32_t hmac_drbg_generate(hmac_drbg *hdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size);
 
 ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
-						  size_t personalization_size);
+						size_t personalization_size);
 ctr_drbg *ctr_drbg_new(cipher_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
 void ctr_drbg_delete(ctr_drbg *cdrbg);
 int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_size);
 int32_t ctr_drbg_generate(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size);
+
+drbg_ctx *drgb_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization,
+					size_t personalization_size);
+drbg_ctx *drgb_new(drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size);
+void drgb_delete(drbg_ctx *drbg);
+int32_t drgb_reseed(drbg_ctx *drbg, byte_t *additional_input, size_t input_size);
+int32_t drbg_generate(drbg_ctx *drbg, byte_t *additional_input, size_t input_size, void *output, size_t output_size);
+
+drbg_ctx *get_default_drbg(void);
 
 #endif
