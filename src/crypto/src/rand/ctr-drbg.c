@@ -16,7 +16,7 @@
 
 #define MAX_CTR_SEED_SIZE 64
 
-int32_t get_entropy(byte_t *buffer, size_t size);
+int32_t get_entropy(void *buffer, size_t size);
 
 static inline size_t get_approved_cipher_ctx_size(cipher_algorithm algorithm)
 {
@@ -159,7 +159,7 @@ static void ctr_drbg_update(ctr_drbg *cdrbg, byte_t *provided)
 	cdrbg->_init(cdrbg->_ctx, cdrbg->_size, cdrbg->_algorithm, cdrbg->key, cdrbg->key_size);
 }
 
-static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, byte_t *personalization, size_t personalization_size)
+static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_t personalization_size)
 {
 	int32_t status = -1;
 	size_t security = cdrbg->security_strength / 8;
@@ -215,7 +215,7 @@ end:
 }
 
 static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, cipher_algorithm algorithm, uint32_t reseed_interval,
-									   byte_t *personalization, size_t personalization_size)
+									   void *personalization, size_t personalization_size)
 {
 	ctr_drbg *cdrbg = (ctr_drbg *)ptr;
 
@@ -287,7 +287,7 @@ size_t ctr_drbg_size(cipher_algorithm algorithm)
 	return sizeof(ctr_drbg) + (get_approved_cipher_ctx_size(algorithm) * 2);
 }
 
-ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
+ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint32_t reseed_interval, void *personalization,
 						size_t personalization_size)
 {
 
@@ -312,7 +312,7 @@ ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint
 	return ctr_drbg_init_checked(ptr, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-ctr_drbg *ctr_drbg_new(cipher_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+ctr_drbg *ctr_drbg_new(cipher_algorithm algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 	ctr_drbg *cdrbg = NULL;
 	ctr_drbg *result = NULL;
@@ -354,7 +354,7 @@ void ctr_drbg_delete(ctr_drbg *cdrbg)
 	free(cdrbg);
 }
 
-int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_size)
+int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_size)
 {
 	int32_t status;
 	size_t security = cdrbg->security_strength / 8;
@@ -402,8 +402,8 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, byte_t *additional_input, size_t input_
 	return 0;
 }
 
-int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, byte_t *additional_input, size_t input_size,
-						  void *output, size_t output_size)
+int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
+						  size_t output_size)
 {
 	int32_t status;
 

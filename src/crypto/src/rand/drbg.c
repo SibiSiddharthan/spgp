@@ -42,7 +42,7 @@ size_t drbg_ctx_size(drbg_type type, uint32_t algorithm)
 }
 
 static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval,
-								   byte_t *personalization, size_t personalization_size)
+								   void *personalization, size_t personalization_size)
 {
 	drbg_ctx *drbg = (drbg_ctx *)ptr;
 
@@ -83,7 +83,7 @@ static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, drbg_type type, u
 	return drbg;
 }
 
-drbg_ctx *drgb_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization,
+drbg_ctx *drgb_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval, void *personalization,
 					size_t personalization_size)
 {
 	drbg_ctx *drbg = (drbg_ctx *)ptr;
@@ -110,7 +110,7 @@ drbg_ctx *drgb_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, 
 	return drbg_init_checked(ptr, ctx_size, type, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-drbg_ctx *drbg_new(drbg_type type, uint32_t algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+drbg_ctx *drbg_new(drbg_type type, uint32_t algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 	void *ptr = NULL;
 	drbg_ctx *drbg = NULL;
@@ -164,12 +164,12 @@ void drbg_delete(drbg_ctx *drbg)
 	free(drbg);
 }
 
-int32_t drbg_reseed(drbg_ctx *drbg, byte_t *additional_input, size_t input_size)
+int32_t drbg_reseed(drbg_ctx *drbg, void *additional_input, size_t input_size)
 {
 	return drbg->_reseed(drbg->_drbg, additional_input, input_size);
 }
 
-int32_t drbg_generate(drbg_ctx *drbg, uint32_t prediction_resistance_request, byte_t *additional_input, size_t input_size, void *output,
+int32_t drbg_generate(drbg_ctx *drbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
 					  size_t output_size)
 {
 	return drbg->_generate(drbg->_drbg, prediction_resistance_request, additional_input, input_size, output, output_size);

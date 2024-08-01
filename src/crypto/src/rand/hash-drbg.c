@@ -18,8 +18,8 @@
 #define MAX_ENTROPY_SIZE 128
 #define MAX_NONCE_SIZE   128
 
-int32_t get_entropy(byte_t *buffer, size_t size);
-int32_t get_nonce(byte_t *buffer, size_t size);
+int32_t get_entropy(void *buffer, size_t size);
+int32_t get_nonce(void *buffer, size_t size);
 
 static inline size_t get_approved_hash_ctx_size(hash_algorithm algorithm)
 {
@@ -110,7 +110,7 @@ static void hash_gen(hash_drbg *hdrbg, void *output, size_t output_size)
 	}
 }
 
-static int32_t hash_drbg_init_state(hash_drbg *hdrbg, byte_t *personalization, size_t personalization_size)
+static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, size_t personalization_size)
 {
 	int32_t status = -1;
 	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
@@ -162,7 +162,7 @@ end:
 }
 
 static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, hash_algorithm algorithm, uint32_t reseed_interval,
-										 byte_t *personalization, size_t personalization_size)
+										 void *personalization, size_t personalization_size)
 {
 	hash_drbg *hdrbg = (hash_drbg *)ptr;
 
@@ -225,7 +225,7 @@ size_t hash_drbg_size(hash_algorithm algorithm)
 	return sizeof(hash_drbg) + sizeof(hash_ctx) + get_approved_hash_ctx_size(algorithm);
 }
 
-hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
+hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, void *personalization,
 						  size_t personalization_size)
 {
 
@@ -250,7 +250,7 @@ hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint
 	return hash_drbg_init_checked(ptr, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 	hash_drbg *hdrbg = NULL;
 	hash_drbg *result = NULL;
@@ -292,7 +292,7 @@ void hash_drbg_delete(hash_drbg *hdrbg)
 	free(hdrbg);
 }
 
-int32_t hash_drbg_reseed(hash_drbg *hdrbg, byte_t *additional_input, size_t input_size)
+int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_size)
 {
 	int32_t status = -1;
 	size_t pos = 0;
@@ -341,7 +341,7 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, byte_t *additional_input, size_t inpu
 	return 0;
 }
 
-int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, byte_t *additional_input, size_t input_size,
+int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
 						   void *output, size_t output_size)
 {
 	int32_t status = 0;

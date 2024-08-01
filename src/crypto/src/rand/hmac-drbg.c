@@ -13,7 +13,7 @@
 #include <hmac.h>
 #include <sha.h>
 
-int32_t get_entropy(byte_t *buffer, size_t size);
+int32_t get_entropy(void *buffer, size_t size);
 
 static inline size_t get_approved_hash_ctx_size(hmac_algorithm algorithm)
 {
@@ -95,7 +95,7 @@ static void hmac_drbg_update(hmac_drbg *hdrbg, byte_t *provided, size_t provided
 	}
 }
 
-static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_algorithm algorithm, byte_t *personalization,
+static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_algorithm algorithm, void *personalization,
 									size_t personalization_size)
 {
 	int32_t status = -1;
@@ -140,7 +140,7 @@ end:
 }
 
 static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, hmac_algorithm algorithm, uint32_t reseed_interval,
-										 byte_t *personalization, size_t personalization_size)
+										 void *personalization, size_t personalization_size)
 {
 	hmac_drbg *hdrbg = (hmac_drbg *)ptr;
 
@@ -201,7 +201,7 @@ size_t hmac_drbg_size(hmac_algorithm algorithm)
 	return sizeof(hmac_drbg) + sizeof(hmac_ctx) + get_approved_hash_ctx_size(algorithm);
 }
 
-hmac_drbg *hmac_drbg_init(void *ptr, size_t size, hmac_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization,
+hmac_drbg *hmac_drbg_init(void *ptr, size_t size, hmac_algorithm algorithm, uint32_t reseed_interval, void *personalization,
 						  size_t personalization_size)
 {
 
@@ -226,7 +226,7 @@ hmac_drbg *hmac_drbg_init(void *ptr, size_t size, hmac_algorithm algorithm, uint
 	return hmac_drbg_init_checked(ptr, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hmac_drbg *hmac_drbg_new(hmac_algorithm algorithm, uint32_t reseed_interval, byte_t *personalization, size_t personalization_size)
+hmac_drbg *hmac_drbg_new(hmac_algorithm algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 	hmac_drbg *hdrbg = NULL;
 	hmac_drbg *result = NULL;
@@ -268,7 +268,7 @@ void hmac_drbg_delete(hmac_drbg *hdrbg)
 	free(hdrbg);
 }
 
-int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, byte_t *additional_input, size_t input_size)
+int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_size)
 {
 	int32_t status = -1;
 	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
@@ -303,7 +303,7 @@ int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, byte_t *additional_input, size_t inpu
 	return 0;
 }
 
-int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_request, byte_t *additional_input, size_t input_size,
+int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
 						   void *output, size_t output_size)
 {
 	int32_t status = 0;
