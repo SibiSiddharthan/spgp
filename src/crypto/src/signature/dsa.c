@@ -94,7 +94,7 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx)
 	hash_final(dctx->hctx, NULL, hash_size);
 	z = bignum_set_bytes_be(z, (byte_t *)&(dctx->hctx->hash), MIN(key->q->bits / 8, hash_size));
 
-	k = bignum_rand(k, key->q->bits);
+	k = bignum_rand(k, NULL, key->q->bits);
 	ik = bignum_modinv(bctx, ik, k, key->q);
 
 	// r = (g^k mod p) mod q.

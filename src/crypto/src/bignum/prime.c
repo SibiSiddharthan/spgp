@@ -32,7 +32,7 @@ static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		a = bignum_rand(a, n->bits);
+		a = bignum_rand(a, NULL, n->bits);
 		d = bignum_gcd(bctx, d, a, n);
 
 		// Check if greater than 1
