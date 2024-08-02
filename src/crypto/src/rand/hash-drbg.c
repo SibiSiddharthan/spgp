@@ -22,7 +22,6 @@
 #define MAX_NONCE_SIZE   128
 
 int32_t get_entropy(void *buffer, size_t size);
-int32_t get_nonce(void *buffer, size_t size);
 
 static inline size_t get_approved_hash_ctx_size(hash_algorithm algorithm)
 {
@@ -146,14 +145,8 @@ static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, siz
 		return status;
 	}
 
-	status = get_entropy(seed_material, security);
-
-	if (status != 0)
-	{
-		goto end;
-	}
-
-	status = get_nonce(seed_material + security, security);
+	// Entropy and Nonce
+	status = get_entropy(seed_material, 2*security);
 
 	if (status != 0)
 	{

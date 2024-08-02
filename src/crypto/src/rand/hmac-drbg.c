@@ -10,6 +10,7 @@
 
 #include <drbg.h>
 #include <round.h>
+#include <minmax.h>
 #include <hmac.h>
 #include <sha.h>
 
@@ -43,13 +44,13 @@ static void hmac_drbg_update(hmac_drbg *hdrbg, byte_t *provided, size_t provided
 	byte_t *key = hdrbg->key;
 	byte_t *seed = hdrbg->seed;
 
-	size_t hash_size = hctx->hash_size;
+	size_t output_size = hdrbg->output_size;
 	byte_t byte;
 
 	byte = 0x00;
 
 	// K = HMAC (K, V || 0x00 || provided_data)
-	hmac_update(hctx, seed, hash_size);
+	hmac_update(hctx, seed, output_size);
 	hmac_update(hctx, &byte, 1);
 
 	if (provided != NULL)
@@ -57,29 +58,29 @@ static void hmac_drbg_update(hmac_drbg *hdrbg, byte_t *provided, size_t provided
 		hmac_update(hctx, provided, provided_size);
 	}
 
-	hmac_final(hctx, key, hash_size);
-	hmac_reset(hctx, key, hash_size);
+	hmac_final(hctx, key, output_size);
+	hmac_reset(hctx, key, output_size);
 
 	// V = HMAC (K, V)
-	hmac_update(hctx, seed, hash_size);
-	hmac_final(hctx, seed, hash_size);
-	hmac_reset(hctx, key, hash_size);
+	hmac_update(hctx, seed, output_size);
+	hmac_final(hctx, seed, output_size);
+	hmac_reset(hctx, key, output_size);
 
 	if (provided != NULL)
 	{
 		byte = 0x01;
 
 		// K = HMAC(K, V || 0x01 || provided_data).
-		hmac_update(hctx, seed, hash_size);
+		hmac_update(hctx, seed, output_size);
 		hmac_update(hctx, &byte, 1);
 		hmac_update(hctx, provided, provided_size);
-		hmac_final(hctx, key, hash_size);
-		hmac_reset(hctx, key, hash_size);
+		hmac_final(hctx, key, output_size);
+		hmac_reset(hctx, key, output_size);
 
 		// V = HMAC (K, V)
-		hmac_update(hctx, seed, hash_size);
-		hmac_final(hctx, seed, hash_size);
-		hmac_reset(hctx, key, hash_size);
+		hmac_update(hctx, seed, output_size);
+		hmac_final(hctx, seed, output_size);
+		hmac_reset(hctx, key, output_size);
 	}
 }
 

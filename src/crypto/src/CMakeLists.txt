@@ -47,6 +47,7 @@ mac/kmac.c
 #public-key
 public-key/rsa.c
 # rand
+rand/entropy.c
 rand/drbg.c
 rand/ctr-drbg.c
 rand/hash-drbg.c
@@ -54,5 +55,7 @@ rand/hmac-drbg.c
 #signature
 signature/dsa.c
 )
+
+set_source_files_properties(rand/entropy.c PROPERTIES COMPILE_FLAGS "-mrdseed")
 
 target_include_directories(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
