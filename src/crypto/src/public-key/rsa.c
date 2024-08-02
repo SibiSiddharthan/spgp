@@ -21,7 +21,7 @@
 
 static int32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
 {
-	int32_t status = 0;
+	int32_t bits = 0;
 
 	bignum_t *t = NULL;
 	size_t ctx_size = bignum_size(key->bits);
@@ -47,16 +47,18 @@ static int32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, 
 	t = bignum_set_bytes_be(t, in, in_size);
 	t = bignum_modexp(key->bctx, t, t, key->e, key->n);
 
-	status = bignum_get_bytes_be(t, out, out_size);
+	bits = t->bits;
+
+	bignum_get_bytes_be_padded(t, out, out_size);
 
 	bignum_ctx_end(key->bctx);
 
-	return status;
+	return bits;
 }
 
 static int32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
 {
-	int32_t status = 0;
+	int32_t bits = 0;
 
 	bignum_t *t = NULL;
 	size_t ctx_size = bignum_size(key->bits);
@@ -82,11 +84,13 @@ static int32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out,
 	t = bignum_set_bytes_be(t, in, in_size);
 	t = bignum_modexp(key->bctx, t, t, key->d, key->n);
 
-	status = bignum_get_bytes_be(t, out, out_size);
+	bits = t->bits;
+
+	bignum_get_bytes_be_padded(t, out, out_size);
 
 	bignum_ctx_end(key->bctx);
 
-	return status;
+	return bits;
 }
 
 int32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
