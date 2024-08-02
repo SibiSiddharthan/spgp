@@ -13,6 +13,9 @@
 #include <hmac.h>
 #include <sha.h>
 
+// Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
+// Section 10.1.2
+
 int32_t get_entropy(void *buffer, size_t size);
 
 static inline size_t get_approved_hash_ctx_size(hmac_algorithm algorithm)
@@ -40,58 +43,43 @@ static void hmac_drbg_update(hmac_drbg *hdrbg, byte_t *provided, size_t provided
 	byte_t *key = hdrbg->key;
 	byte_t *seed = hdrbg->seed;
 
-	size_t output_size = hctx->hash_size;
+	size_t hash_size = hctx->hash_size;
 	byte_t byte;
 
-	if (provided == NULL)
+	byte = 0x00;
+
+	// K = HMAC (K, V || 0x00 || provided_data)
+	hmac_update(hctx, seed, hash_size);
+	hmac_update(hctx, &byte, 1);
+
+	if (provided != NULL)
 	{
-		byte = 0x00;
-
-		hmac_update(hctx, seed, output_size);
-		hmac_update(hctx, &byte, 1);
-		hmac_final(hctx, key, output_size);
-
-		hmac_reset(hctx, key, output_size);
-
-		hmac_update(hctx, seed, output_size);
-		hmac_final(hctx, seed, output_size);
-
-		hmac_reset(hctx, key, output_size);
-
-		return;
+		hmac_update(hctx, provided, provided_size);
 	}
 
-	else
+	hmac_final(hctx, key, hash_size);
+	hmac_reset(hctx, key, hash_size);
+
+	// V = HMAC (K, V)
+	hmac_update(hctx, seed, hash_size);
+	hmac_final(hctx, seed, hash_size);
+	hmac_reset(hctx, key, hash_size);
+
+	if (provided != NULL)
 	{
-		byte = 0x00;
-
-		hmac_update(hctx, seed, output_size);
-		hmac_update(hctx, &byte, 1);
-		hmac_update(hctx, provided, provided_size);
-		hmac_final(hctx, key, output_size);
-
-		hmac_reset(hctx, key, output_size);
-
-		hmac_update(hctx, seed, output_size);
-		hmac_final(hctx, seed, output_size);
-
-		hmac_reset(hctx, key, output_size);
-
 		byte = 0x01;
 
-		hmac_update(hctx, seed, output_size);
+		// K = HMAC(K, V || 0x01 || provided_data).
+		hmac_update(hctx, seed, hash_size);
 		hmac_update(hctx, &byte, 1);
 		hmac_update(hctx, provided, provided_size);
-		hmac_final(hctx, key, output_size);
+		hmac_final(hctx, key, hash_size);
+		hmac_reset(hctx, key, hash_size);
 
-		hmac_reset(hctx, key, output_size);
-
-		hmac_update(hctx, seed, output_size);
-		hmac_final(hctx, seed, output_size);
-
-		hmac_reset(hctx, key, output_size);
-
-		return;
+		// V = HMAC (K, V)
+		hmac_update(hctx, seed, hash_size);
+		hmac_final(hctx, seed, hash_size);
+		hmac_reset(hctx, key, hash_size);
 	}
 }
 
@@ -340,21 +328,13 @@ int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_requ
 		hmac_drbg_update(hdrbg, additional_input, input_size);
 	}
 
-	while ((count + hmac_size) <= output_size)
+	while (count <= output_size)
 	{
 		hmac_update(hctx, hdrbg->seed, hmac_size);
-		hmac_final(hctx, output, hmac_size);
+		hmac_final(hctx, output, MIN(output_size - count, hmac_size));
 
 		hmac_reset(hctx, hdrbg->key, hmac_size);
 		count += hmac_size;
-	}
-
-	if ((output_size - count) != 0)
-	{
-		hmac_update(hctx, hdrbg->seed, hmac_size);
-		hmac_final(hctx, output, output_size - count); // Automatic truncation
-
-		hmac_reset(hctx, hdrbg->key, hmac_size);
 	}
 
 	hmac_drbg_update(hdrbg, additional_input, input_size);
