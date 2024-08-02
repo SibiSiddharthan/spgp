@@ -135,9 +135,9 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 		return 1;
 	}
 
-	if (required_size == 0)
+	if (size < required_size)
 	{
-		required_size = 1;
+		return -1;
 	}
 
 	memcpy(bytes, bn->words, required_size);
@@ -205,6 +205,23 @@ int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 	}
 
 	return required_size;
+}
+
+int32_t bignum_get_bytes_be_padded(bignum_t *bn, byte_t *bytes, size_t size)
+{
+	size_t required_size = CEIL_DIV(bn->bits, 8);
+	size_t pad = size - required_size;
+
+	if (size < required_size)
+	{
+		return -1;
+	}
+
+	// Pad the start with zeros.
+	memset(bytes, 0x00, pad);
+	bignum_get_bytes_be(bn, bytes + pad, required_size);
+
+	return size;
 }
 
 static const char nibble_to_hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};

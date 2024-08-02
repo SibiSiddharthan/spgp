@@ -49,6 +49,7 @@ bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
 bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
 int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
+int32_t bignum_get_bytes_be_padded(bignum_t *bn, byte_t *bytes, size_t size);
 
 bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size);
 int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size);
