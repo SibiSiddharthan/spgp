@@ -14,6 +14,9 @@
 #include <cipher.h>
 #include <aes.h>
 
+// Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
+// Section 10.2.1
+
 #define MAX_CTR_SEED_SIZE 64
 
 int32_t get_entropy(void *buffer, size_t size);
@@ -416,12 +419,6 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reques
 
 	// Rightmost 64 bits
 	uint64_t *inc = (uint64_t *)(cdrbg->block + (block_size - 8));
-
-	// Check buffer
-	if (output == NULL)
-	{
-		return -1;
-	}
 
 	// Check requested size
 	if (output_size > MAX_DRBG_OUTPUT_SIZE)
