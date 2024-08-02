@@ -15,6 +15,9 @@
 #include <hash.h>
 #include <sha.h>
 
+// Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
+// Section 10.1.1
+
 #define MAX_ENTROPY_SIZE 128
 #define MAX_NONCE_SIZE   128
 
@@ -40,8 +43,48 @@ static inline size_t get_approved_hash_ctx_size(hash_algorithm algorithm)
 	}
 }
 
-static void add_bytes_be(void *a, size_t sa, void *c, size_t sc);
-static void increment_be(void *a, size_t s);
+// a = (a + b) % 2^(s*8), sa = s
+static void add_bytes_be(void *a, size_t sa, void *b, size_t sb, size_t s)
+{
+	size_t c = 0;
+	byte_t *pa = (byte_t *)a + (sa - 1);
+	byte_t *pb = (byte_t *)b + (sb - 1);
+	byte_t carry = 0, ta, tb;
+
+	for (c = 0; c < s; ++c)
+	{
+		ta = *pa;
+		tb = (pb >= (byte_t *)b) ? *pb : 0;
+
+		*pa += carry;
+		carry = (*pa < ta);
+		*pa += tb;
+		carry |= (*pa < tb);
+
+		pa--;
+		pb--;
+	}
+}
+
+// a = (a + 1) % 2^(s*8), len(a) = s
+static void increment_be(void *a, size_t s)
+{
+	size_t c = 0;
+	byte_t *p = (byte_t *)a + (s - 1);
+
+	for (c = 0; c < s; ++c)
+	{
+		++(*p);
+
+		// No carry
+		if (*p != 0)
+		{
+			return;
+		}
+
+		p--;
+	}
+}
 
 static void hash_df(hash_ctx *hctx, byte_t *seed_material, size_t seed_material_size, byte_t *output, size_t output_size)
 {
@@ -50,29 +93,16 @@ static void hash_df(hash_ctx *hctx, byte_t *seed_material, size_t seed_material_
 	size_t output_count = 0;
 	byte_t counter = 1;
 
-	byte_t hash[MAX_HASH_SIZE] = {0};
-
-	while ((output_count + hash_size) <= output_size)
+	while (output_count <= output_size)
 	{
 		hash_update(hctx, &counter, 1);
 		hash_update(hctx, &output_bits, 4);
 		hash_update(hctx, seed_material, seed_material_size);
-		hash_final(hctx, output + output_count, hash_size);
+		hash_final(hctx, output + output_count, MIN(output_size - output_count, hash_size));
 		hash_reset(hctx);
 
 		output_count += hash_size;
 		counter++;
-	}
-
-	if ((output_size - output_count) != 0)
-	{
-		hash_update(hctx, &counter, 1);
-		hash_update(hctx, &output_bits, 4);
-		hash_update(hctx, seed_material, seed_material_size);
-		hash_final(hctx, hash, hash_size);
-		hash_reset(hctx);
-
-		memcpy(output + output_count, hash, output_size - output_count);
 	}
 }
 
@@ -85,28 +115,18 @@ static void hash_gen(hash_drbg *hdrbg, void *output, size_t output_size)
 	size_t hash_size = hctx->hash_size;
 
 	byte_t data[MAX_SEED_SIZE] = {0};
-	byte_t hash[MAX_HASH_SIZE] = {0};
 
 	memcpy(data, hdrbg->seed, hdrbg->seed_size);
 
-	while ((count + hash_size) <= output_size)
+	while (count <= output_size)
 	{
 		hash_update(hctx, data, hdrbg->seed_size);
-		hash_final(hctx, op + count, hash_size);
+		hash_final(hctx, op + count, MIN(output_size - count, hash_size));
 		hash_reset(hctx);
 
 		increment_be(data, hdrbg->seed_size);
 
 		count += hash_size;
-	}
-
-	if ((output_size - count) != 0)
-	{
-		hash_update(hctx, data, hdrbg->seed_size);
-		hash_final(hctx, hash, hash_size);
-		hash_reset(hctx);
-
-		memcpy(op + count, hash, output_size - count);
 	}
 }
 
@@ -118,6 +138,7 @@ static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, siz
 
 	byte_t *seed_material = NULL;
 
+	// seed_material = entropy_input || nonce || personalization_string
 	seed_material = (byte_t *)malloc(seed_material_size);
 
 	if (seed_material == NULL)
@@ -308,6 +329,7 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 		return -1;
 	}
 
+	// seed_material = 0x01 || V || entropy_input || additional_input
 	seed_material[pos++] = 0x01;
 
 	memcpy(seed_material + pos, hdrbg->seed, hdrbg->seed_size);
@@ -346,6 +368,7 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 {
 	int32_t status = 0;
 	hash_ctx *hctx = hdrbg->hctx;
+	uint64_t reseed_counter = BSWAP_64(hdrbg->reseed_counter);
 
 	byte_t hash[MAX_HASH_SIZE] = {0};
 
@@ -368,6 +391,7 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 
 	if (additional_input != NULL && input_size > 0)
 	{
+		// hash(0x02 || V || additional_input)
 		hash_update(hctx, "\x02", 1);
 		hash_update(hctx, hdrbg->seed, hdrbg->seed_size);
 		hash_update(hctx, additional_input, input_size);
@@ -375,20 +399,22 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 		hash_final(hctx, hash, MAX_HASH_SIZE);
 		hash_reset(hctx);
 
-		add_bytes_be(hdrbg->seed, hdrbg->seed_size, hash, hctx->hash_size);
+		add_bytes_be(hdrbg->seed, hdrbg->seed_size, hash, hctx->hash_size, hdrbg->seed_size);
 	}
 
 	hash_gen(hdrbg, output, output_size);
 
+	// hash(0x03 || V)
 	hash_update(hctx, "\x03", 1);
 	hash_update(hctx, hdrbg->seed, hdrbg->seed_size);
 
 	hash_final(hctx, hash, MAX_HASH_SIZE);
 	hash_reset(hctx);
 
-	add_bytes_be(hdrbg->seed, hdrbg->seed_size, hash, hctx->hash_size);
-	add_bytes_be(hdrbg->seed, hdrbg->seed_size, hdrbg->constant, hdrbg->seed_size);
-	add_bytes_be(hdrbg->seed, hdrbg->seed_size, &hdrbg->reseed_counter, sizeof(hdrbg->reseed_counter));
+	// V = (V + H + C + reseed_counter)
+	add_bytes_be(hdrbg->seed, hdrbg->seed_size, hash, hctx->hash_size, hdrbg->seed_size);
+	add_bytes_be(hdrbg->seed, hdrbg->seed_size, hdrbg->constant, hdrbg->seed_size, hdrbg->seed_size);
+	add_bytes_be(hdrbg->seed, hdrbg->seed_size, &reseed_counter, sizeof(reseed_counter), hdrbg->seed_size);
 
 	hdrbg->reseed_counter++;
 
