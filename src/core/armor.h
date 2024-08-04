@@ -8,7 +8,7 @@
 #ifndef SPGP_ARMOR_H
 #define SPGP_ARMOR_H
 
-#include "macros.h"
+#include <spgp.h>
 
 typedef enum _armor_type
 {
