@@ -8,4 +8,9 @@
 add_library(spgp OBJECT 
 			armor.c armor.h
 			base64.c base64.h
-			crc24.c crc24.h)
+			crc24.c crc24.h
+			mpi.c mpi.h
+			)
+
+target_include_directories(spgp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(spgp crypto)
