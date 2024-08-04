@@ -13,8 +13,16 @@
 typedef struct _buffer_t
 {
 	byte_t *data;
+	size_t pos;
 	size_t size;
-	size_t capacity;
 } buffer_t;
+
+typedef struct _buffer_range_t
+{
+	byte_t *data;
+	size_t start;
+	size_t end;
+} buffer_range_t;
+
 
 #endif

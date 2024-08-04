@@ -8,7 +8,7 @@
 #ifndef SPGP_CRC24_H
 #define SPGP_CRC24_H
 
-#include "macros.h"
+#include <spgp.h>
 
 /*
    Name   : "CRC-24"

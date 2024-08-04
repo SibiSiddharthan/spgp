@@ -6,6 +6,8 @@
 */
 
 #include <types.h>
+#include <buffer.h>
+
 #include <byteswap.h>
 #include <minmax.h>
 #include <round.h>

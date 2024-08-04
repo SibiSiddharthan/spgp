@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include "crc24.h"
+#include <crc24.h>
 
 // clang-format off
 static uint32_t crc24_table[256] = 
@@ -49,6 +49,7 @@ uint32_t crc24_final(uint32_t crc)
 	return crc & CRC24_FINAL;
 }
 
+#if 0
 static void make_crc24_table(void)
 {
 
@@ -76,3 +77,4 @@ static void make_crc24_table(void)
 		// printf("\n");
 	}
 }
+#endif
