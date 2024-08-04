@@ -1,0 +1,17 @@
+/*
+   Copyright (c) 2024 Sibi Siddharthan
+
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
+*/
+
+#ifndef SPGP_ROUND_H
+#define SPGP_ROUND_H
+
+#define ROUND_UP(x, y)   ((((x) + ((y) - 1)) / (y)) * (y))
+#define ROUND_DOWN(x, y) (((x) / (y)) * (y))
+
+#define CEIL_DIV(x, y)  (((x) + (y) - 1) / (y))
+#define FLOOR_DIV(x, y) ((x) / (y))
+
+#endif
