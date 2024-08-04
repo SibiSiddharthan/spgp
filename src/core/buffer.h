@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef CRYPTO_BUFFER_H
-#define CRYPTO_BUFFER_H
+#ifndef SPGP_BUFFER_H
+#define SPGP_BUFFER_H
 
 #include <types.h>
 
