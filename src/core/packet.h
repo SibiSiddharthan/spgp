@@ -79,53 +79,6 @@ typedef struct _pgp_pkesk_packet
 
 } pgp_pkesk_packet;
 
-typedef struct _signature_subpacket_header
-{
-	byte_t type;
-	uint32_t size;
-} signature_subpacket_header;
-
-typedef struct _signature_subpacket
-{
-	struct _signature_subpacket *next;
-	signature_subpacket_header header;
-	byte_t data[1];
-} signature_subpacket;
-
-typedef struct _pgp_signature_packet
-{
-	pgp_packet_header header;
-
-	byte_t version; // 3,4,6
-	byte_t type;
-	byte_t timestamp[4];
-	byte_t key_id[8];
-	byte_t quick_hash[2];
-	byte_t public_key_algorithm_id;
-	byte_t hash_algorithm_id;
-
-	union {
-		uint8_t hashed_size_v3;
-		uint16_t hashed_size_v4;
-		uint32_t hashed_size_v6;
-	};
-
-	union {
-		uint16_t unhashed_size_v4;
-		uint32_t unhashed_size_v6;
-	};
-
-	byte_t salt_size;
-	byte_t salt[32];
-
-	void *hashed_data;
-	void *unhashed_data;
-
-	void *ctx;
-	void *public_key;
-	void *signature_data;
-} pgp_signature_packet;
-
 typedef struct _pgp_padding_packet
 {
 	void *data;
