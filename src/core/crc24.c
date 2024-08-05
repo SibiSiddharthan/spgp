@@ -34,11 +34,13 @@ uint32_t crc24_init(void)
 	return CRC24_INIT;
 }
 
-uint32_t crc24_update(uint32_t crc, const byte_t *data, size_t size)
+uint32_t crc24_update(uint32_t crc, const void *data, size_t size)
 {
+	const byte_t *pdata = data;
+
 	for (size_t i = 0; i < size; ++i)
 	{
-		crc = crc24_table[((crc >> 16) ^ data[i]) & 0xFF] ^ (crc << 8);
+		crc = crc24_table[((crc >> 16) ^ pdata[i]) & 0xFF] ^ (crc << 8);
 	}
 
 	return crc;

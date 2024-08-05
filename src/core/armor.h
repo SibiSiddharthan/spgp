@@ -10,28 +10,24 @@
 
 #include <spgp.h>
 
-typedef enum _armor_type
-{
-	ARMOR_MESSAGE = 0,
-	ARMOR_PUBLIC_KEY = 1,
-	ARMOR_PRIVATE_KEY = 2,
-	ARMOR_SIGNATURE = 3,
-	ARMOR_MULTIPART = 4,
-	ARMOR_CLEARTEXT = 5
-} armor_type;
+#define PGP_ARMOR_NO_CRC 0x1
 
-typedef enum _armor_header
+typedef enum _pgp_armor_type
 {
-	ARMOR_VERSION = 0,
-	ARMOR_COMMENT = 1,
-	ARMOR_HASH = 2,
-	ARMOR_CHARSET = 3
-} armor_header;
+	PGP_ARMOR_MESSAGE = 0,
+	PGP_ARMOR_PUBLIC_KEY = 1,
+	PGP_ARMOR_PRIVATE_KEY = 2,
+	PGP_ARMOR_SIGNATURE = 3,
+	PGP_ARMOR_CLEARTEXT = 4
+} pgp_armor_type;
 
-typedef enum _armor_flags
+typedef enum _pgp_armor_header
 {
-	ARMOR_NO_CRC = 0x1,
-} armor_flags;
+	PGP_ARMOR_VERSION = 0,
+	PGP_ARMOR_COMMENT = 1,
+	PGP_ARMOR_HASH = 2,
+	PGP_ARMOR_CHARSET = 3
+} pgp_armor_header;
 
 typedef enum _armor_status
 {
@@ -39,27 +35,19 @@ typedef enum _armor_status
 	ARMOR_INVALID_HEADER = -1,
 	ARMOR_INVALID_TYPE_FOR_CLEARTEXT = -2,
 	ARMOR_INCOMPATIBLE_TYPE_AND_HEADER = -3,
-	ARMOR_HEADER_TOO_BIG = -4
 } armor_status;
 
-typedef struct _armor_ctx
+typedef struct _pgp_armor_ctx
 {
 	// Type
-	armor_type type;
+	pgp_armor_type type;
 	uint32_t flags;
 
 	// Headers
-	byte_t version[15];
-	uint8_t version_size;
-
-	byte_t hash[15];
-	uint8_t hash_size;
-
-	byte_t charset[15];
-	uint8_t charset_size;
-
-	byte_t comment[31];
-	uint8_t comment_size;
+	buffer_t version;
+	buffer_t hash;
+	buffer_t charset;
+	buffer_t comment;
 
 	buffer_t cleartext;
 	buffer_t data;
@@ -67,16 +55,15 @@ typedef struct _armor_ctx
 	// CRC-24
 	uint32_t crc;
 
-} armor_ctx;
+} pgp_armor_ctx;
 
-armor_ctx *create_armor_encode_ctx(armor_type type, armor_flags flags);
-void destroy_armor_ctx(armor_ctx *ctx);
+pgp_armor_ctx *pgp_armor_init(void *ptr, size_t size, pgp_armor_type type, uint32_t flags);
+pgp_armor_ctx *pgp_armor_new(pgp_armor_type type, uint32_t flags);
+void pgp_armor_delete(pgp_armor_ctx *ctx);
 
-armor_status armor_add_header(armor_ctx *ctx, armor_header header, byte_t *value, size_t size);
-armor_status armor_encode_cleartext(armor_ctx *ctx, void *data, size_t size);
-armor_status armor_encode_data(armor_ctx *ctx, void *data, size_t size);
-buffer_t *armor_encode_finish(armor_ctx *ctx);
-
-armor_ctx *create_armor_decode_ctx(armor_type type, int flags);
+armor_status armor_set_header(pgp_armor_ctx *ctx, pgp_armor_header header, void *data, size_t size);
+armor_status armor_set_cleartext(pgp_armor_ctx *ctx, void *data, size_t size);
+armor_status armor_set_data(pgp_armor_ctx *ctx, void *data, size_t size);
+int32_t armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size);
 
 #endif

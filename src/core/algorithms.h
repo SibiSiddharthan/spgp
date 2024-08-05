@@ -44,10 +44,10 @@ typedef enum _pgp_symmetric_key_algorithms
 
 typedef enum _pgp_compression_algorithms
 {
-	UNCOMPRESSED = 0,
-	DEFALTE = 1,
-	ZLIB = 2,
-	BZIP2 = 3
+	PGP_UNCOMPRESSED = 0,
+	PGP_DEFALTE = 1,
+	PGP_ZLIB = 2,
+	PGP_BZIP2 = 3
 } pgp_compression_algorithms;
 
 typedef enum _pgp_hash_algorithms

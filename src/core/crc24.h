@@ -26,7 +26,7 @@
 #define CRC24_FINAL 0xFFFFFF
 
 uint32_t crc24_init(void);
-uint32_t crc24_update(uint32_t crc, const byte_t *data, size_t size);
+uint32_t crc24_update(uint32_t crc, const void *data, size_t size);
 uint32_t crc24_final(uint32_t crc);
 
 #endif

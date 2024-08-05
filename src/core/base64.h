@@ -10,7 +10,7 @@
 
 #include <spgp.h>
 
-#define BASE64_ENCODE_SIZE(x) ((ROUND_UP(x, 3) / 3) * 4)
+#define BASE64_ENCODE_SIZE(x) (CEIL_DIV((x), 3) * 4)
 #define BASE64_DECODE_SIZE(x) (((x) / 4) * 3)
 
 typedef enum _base64_status
