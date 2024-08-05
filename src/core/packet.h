@@ -38,8 +38,8 @@ typedef enum _pgp_packet_type
 
 typedef enum _pgp_packet_header_type
 {
-	PGP_LEGACY_HEADER = 0,
-	PGP_NEW_HEADER = 1
+	PGP_HEADER = 0,
+	PGP_LEGACY_HEADER = 1
 } pgp_packet_header_type;
 
 typedef struct _pgp_packet_header
