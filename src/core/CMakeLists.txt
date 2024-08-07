@@ -11,6 +11,7 @@ add_library(spgp OBJECT
 			crc24.c crc24.h
 			mpi.c mpi.h
 			packet.c packet.h
+			signature.c signature.h
 			)
 
 target_include_directories(spgp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
