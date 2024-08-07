@@ -13,6 +13,13 @@
 
 // Refer RFC 9580 - OpenPGP, Section 5.2 Signature Packet
 
+typedef enum _pgp_signature_version
+{
+	PGP_SIGNATURE_V3 = 3,
+	PGP_SIGNATURE_V4 = 4,
+	PGP_SIGNATURE_V6 = 6
+} pgp_signature_version;
+
 typedef enum _pgp_signature_type
 {
 	PGP_BINARY_SIGNATURE = 0X00,
@@ -42,9 +49,9 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_REGULAR_EXPRESSION_SUBPACKET = 6,
 	PGP_REVOCABLE_SUBPACKET = 7,
 	KEY_EXPIRATION_TIME_SUBPACKET = 9,
-	// 10 PLACEHOLDER FOR BACKWARD COMPATIBILITY
+	// 10 Placeholder for backward compatibility
 	PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET = 11,
-	PGP_REVOCATION_KEY_SUBPACKET = 12, // DEPRECATED
+	PGP_REVOCATION_KEY_SUBPACKET = 12, // Deprecated
 	PGP_ISSUER_KEY_ID_SUBPACKET = 16,
 	PGP_NOTATION_DATA_SUBPACKET = 20,
 	PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET = 21,
@@ -61,8 +68,8 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_EMBEDDED_SIGNATURE_SUBPACKET = 32,
 	PGP_ISSUER_FINGERPRINT_SUBPACKET = 33,
 	PGP_RECIPIENT_FINGERPRINT_SUBPACKET = 35,
-	// 37 RESERVED (ATTESTED CERTIFICATIONS)
-	// 38 RESERVED (KEY BLOCK)
+	// 37 Reserved (ATTESTED CERTIFICATIONS)
+	// 38 Reserved (KEY BLOCK)
 	PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET = 39,
 } pgp_signature_subpacket_type;
 
@@ -96,7 +103,7 @@ typedef struct _pgp_signature_packet
 {
 	pgp_packet_header header;
 
-	byte_t version; // 3,4,6
+	pgp_signature_version version;
 	byte_t type;
 	uint32_t timestamp;
 	byte_t public_key_algorithm_id;
