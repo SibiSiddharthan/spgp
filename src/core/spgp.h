@@ -14,5 +14,6 @@
 #include <byteswap.h>
 #include <minmax.h>
 #include <round.h>
+#include <load.h>
 
 #endif
