@@ -79,9 +79,62 @@ typedef struct _pgp_pkesk_packet
 
 } pgp_pkesk_packet;
 
+typedef struct _pgp_public_key_packet
+{
+	pgp_packet_header header;
+
+	byte_t version;
+	byte_t algorithm_id;
+	uint16_t expiry_days;
+	uint32_t creation_timestamp;
+
+	uint32_t key_material_size;
+	void *key_material;
+} pgp_pubkey_packet, pgp_pubsubkey_packet;
+
+typedef struct _pgp_secret_key_packet
+{
+	pgp_packet_header header;
+
+	byte_t version;
+	byte_t algorithm_id;
+	uint16_t expiry_days;
+	uint32_t creation_timestamp;
+
+	uint32_t key_material_size;
+	void *key_material;
+} pgp_seckey_packet, pgp_secsubkey_packet;
+
+typedef struct _pgp_comp_packet
+{
+	pgp_packet_header header;
+
+	byte_t compression_algorithm_id;
+	byte_t data[1];
+} pgp_comp_packet;
+
+typedef struct _pgp_marker_packet
+{
+	pgp_packet_header header;
+	byte_t marker[3]; // "PGP" (0x50, 0x47, 0x50)
+} pgp_marker_packet;
+
 typedef struct _pgp_padding_packet
 {
-	void *data;
+	pgp_packet_header header;
+	byte_t data[1];
 } pgp_padding_packet;
+
+typedef struct _pgp_mdc_packet
+{
+	pgp_packet_header header;
+	byte_t sha1_hash[20];
+} pgp_mdc_packet;
+
+typedef struct _pgp_trust_packet
+{
+	pgp_packet_header header;
+	void *placeholder;
+} pgp_trust_packet;
 
 #endif

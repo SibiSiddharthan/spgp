@@ -118,7 +118,7 @@ typedef struct _pgp_signature_packet
 {
 	pgp_packet_header header;
 
-	pgp_signature_version version;
+	byte_t version;
 	byte_t type;
 	uint32_t timestamp;
 	byte_t public_key_algorithm_id;
