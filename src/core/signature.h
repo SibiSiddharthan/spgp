@@ -20,6 +20,12 @@ typedef enum _pgp_signature_version
 	PGP_SIGNATURE_V6 = 6
 } pgp_signature_version;
 
+typedef enum _pgp_key_version
+{
+	PGP_KEY_V4 = 4,
+	PGP_KEY_V6 = 6
+} pgp_key_version;
+
 typedef enum _pgp_signature_type
 {
 	PGP_BINARY_SIGNATURE = 0X00,
@@ -56,7 +62,7 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_NOTATION_DATA_SUBPACKET = 20,
 	PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET = 21,
 	PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET = 22,
-	PGP_KEY_SERVER_REFERENCES_SUBPACKET = 23,
+	PGP_KEY_SERVER_PREFERENCES_SUBPACKET = 23,
 	PGP_PREFERRED_KEY_SERVER_SUBPACKET = 24,
 	PGP_PRIMARY_USER_ID_SUBPACKET = 25,
 	PGP_POLICY_URI_SUBPACKET = 26,
@@ -99,6 +105,14 @@ typedef enum _pgp_revocation_code
 #define PGP_FEATURE_SEIPD_V1 0x01 // Version 1 Symmetrically Encrypted and Integrity Protected Data packet
 #define PGP_FEATURE_SEIPD_V2 0x08 // Version 2 Symmetrically Encrypted and Integrity Protected Data packet
 
+// Revocation class
+#define PGP_REVOCATION_CLASS_NORMAL    0x80
+#define PGP_REVOCATION_CLASS_SENSITIVE 0x40
+
+// Key Fingerprint Sizes
+#define PGP_KEY_V4_FINGERPRINT_SIZE 20
+#define PGP_KEY_V6_FINGERPRINT_SIZE 32
+
 typedef struct _pgp_signature_packet
 {
 	pgp_packet_header header;
@@ -135,8 +149,7 @@ typedef struct _pgp_signature_subpacket_header
 typedef struct _signature_subpacket
 {
 	struct _signature_subpacket *next;
-	pgp_signature_subpacket_header header;
-	byte_t data[1];
+	void *data;
 } signature_subpacket;
 
 typedef struct _pgp_timestamp_subpacket
@@ -162,7 +175,14 @@ typedef struct _pgp_flags_subpacket
 {
 	pgp_signature_subpacket_header header;
 	byte_t flags[1];
-} pgp_key_server_references_subpacket, pgp_key_flags_subpacket, pgp_features_subpacket;
+} pgp_key_server_preferences_subpacket, pgp_key_flags_subpacket, pgp_features_subpacket;
+
+typedef struct _pgp_key_fingerprint_subpacket
+{
+	pgp_signature_subpacket_header header;
+	pgp_key_version version;
+	byte_t fingerprint[32];
+} pgp_issuer_fingerprint_subpacket, pgp_recipient_fingerprint_subpacket;
 
 typedef struct _pgp_trust_signature_subpacket
 {
@@ -180,7 +200,7 @@ typedef struct _pgp_regular_expression_subpacket
 typedef struct _pgp_revocation_key_subpacket
 {
 	pgp_signature_subpacket_header header;
-	byte_t type;
+	byte_t revocation_class;
 	byte_t algorithm_id;
 	byte_t key_fingerprint_v4[20];
 } pgp_revocation_key_subpacket;
@@ -223,7 +243,7 @@ typedef struct _reason_for_revocation_subpacket
 	pgp_signature_subpacket_header header;
 	pgp_revocation_code code;
 	byte_t *reason;
-} reason_for_revocation_subpacket;
+} pgp_reason_for_revocation_subpacket;
 
 typedef struct _pgp_signature_target_subpacket
 {
@@ -238,20 +258,5 @@ typedef struct _pgp_embedded_signature_subpacket
 	pgp_signature_subpacket_header header;
 	pgp_signature_packet *signature;
 } pgp_embedded_signature_subpacket;
-
-typedef struct _pgp_key_fingerprint_subpacket
-{
-	pgp_signature_subpacket_header header;
-
-	struct
-	{
-		byte_t version;
-		union {
-			byte_t v4[20];
-			byte_t v6[32];
-		};
-	} fingerpint;
-
-} pgp_issuer_fingerprint_subpacket, pgp_recipient_fingerprint_subpacket;
 
 #endif
