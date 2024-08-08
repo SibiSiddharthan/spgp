@@ -10,6 +10,7 @@
 
 #include <spgp.h>
 #include <packet.h>
+#include <mpi.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5.2 Signature Packet
 
@@ -134,8 +135,29 @@ typedef struct _pgp_signature_packet
 	void *hashed_data;
 	void *unhashed_data;
 
+	uint32_t key_bits;
 	void *signature;
 } pgp_signature_packet;
+
+typedef struct _pgp_rsa_signature
+{
+	mpi_t *e;
+} pgp_rsa_signature;
+
+typedef struct _pgp_dsa_signature
+{
+	mpi_t *r, *s;
+} pgp_dsa_signature, pgp_ecdsa_signature;
+
+typedef struct _pgp_ed25519_signature
+{
+	byte_t sig[64];
+} pgp_ed25519_signature;
+
+typedef struct _pgp_ed448_signature
+{
+	byte_t sig[114];
+} pgp_ed448_signature;
 
 // Signature subpackets
 
