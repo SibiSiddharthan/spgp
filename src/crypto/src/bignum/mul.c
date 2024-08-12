@@ -17,7 +17,7 @@ bignum_t *bignum_mul(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	bignum_ctx *obctx = bctx;
 	bn_word_t *words = NULL;
 
-	size_t ctx_size = BIGNUM_WORD_COUNT(a) + BIGNUM_WORD_COUNT(b);
+	size_t ctx_size = (BIGNUM_WORD_COUNT(a) + BIGNUM_WORD_COUNT(b)) * BIGNUM_WORD_SIZE;
 	uint32_t required_bits = a->bits + b->bits;
 
 	// Handle zero
