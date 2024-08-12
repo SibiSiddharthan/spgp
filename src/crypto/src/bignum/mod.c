@@ -227,7 +227,7 @@ bignum_t *bignum_modsqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 
 bignum_t *bignum_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *p, bignum_t *m)
 {
-	bignum_t *temp = NULL;
+	bignum_t *sq = NULL;
 	bignum_ctx *obctx = bctx;
 	uint32_t required_bits = m->bits;
 	uint32_t op_bits = 2 * a->bits;
@@ -269,18 +269,106 @@ bignum_t *bignum_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *p,
 
 	bignum_ctx_start(bctx, bignum_size(op_bits));
 
-	temp = bignum_ctx_allocate_bignum(bctx, op_bits);
+	sq = bignum_ctx_allocate_bignum(bctx, op_bits);
 
 	r = bignum_mod(bctx, r, a, m);
-	temp = bignum_copy(temp, bignum_size(r->bits * 2), r);
+	sq = bignum_copy(sq, bignum_size(r->bits * 2), r);
 
 	for (uint32_t i = 1; i < p->bits; ++i)
 	{
-		temp = bignum_modsqr(bctx, temp, temp, m);
+		sq = bignum_modsqr(bctx, sq, sq, m);
 
 		if (p->words[i / BIGNUM_BITS_PER_WORD] & ((bn_word_t)1 << (i % BIGNUM_BITS_PER_WORD)))
 		{
-			r = bignum_modmul(bctx, r, r, temp, m);
+			r = bignum_modmul(bctx, r, r, sq, m);
+		}
+	}
+
+	if (p->sign < 0)
+	{
+		r = bignum_modinv(bctx, r, r, m);
+	}
+
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return r;
+}
+
+bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *p, bignum_t *m, bignum_t *mu)
+{
+	bignum_t *sq = NULL;
+	bignum_ctx *obctx = bctx;
+	uint32_t required_bits = m->bits;
+	uint32_t op_bits = 2 * a->bits;
+
+	// Check zero.
+	if (m->bits == 0)
+	{
+		return NULL;
+	}
+
+	r = bignum_resize(r, required_bits);
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	if (p->bits == 0)
+	{
+		bignum_one(r);
+		return r;
+	}
+
+	if (obctx == NULL)
+	{
+		size_t ctx_size = 0;
+
+		ctx_size += bignum_size(op_bits);                                                  // a * a
+		ctx_size += op_bits > m->bits ? bignum_size(op_bits - m->bits) : bignum_size(1);   // (a*a)/m
+		ctx_size += (CEIL_DIV(op_bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3; // Scratch for division
+
+		bctx = bignum_ctx_new(ctx_size);
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	bignum_ctx_start(bctx, bignum_size(op_bits));
+
+	sq = bignum_ctx_allocate_bignum(bctx, op_bits);
+
+	if (mu == NULL)
+	{
+		mu = bignum_ctx_allocate_bignum(bctx, op_bits);
+		bignum_one(mu);
+		mu = bignum_lshift(mu, mu, ROUND_UP(m->bits, BIGNUM_BITS_PER_WORD) * 2);
+		mu = bignum_div(bctx, mu, mu, m);
+	}
+
+	if (a->bits > m->bits)
+	{
+		r = bignum_barret_mod(bctx, r, a, m, mu);
+	}
+
+	sq = bignum_copy(sq, bignum_size(r->bits * 2), r);
+
+	for (uint32_t i = 1; i < p->bits; ++i)
+	{
+		sq = bignum_sqr(bctx, sq, sq);
+		sq = bignum_barret_mod(bctx, sq, sq, m, mu);
+
+		if (p->words[i / BIGNUM_BITS_PER_WORD] & ((bn_word_t)1 << (i % BIGNUM_BITS_PER_WORD)))
+		{
+			r = bignum_mul(bctx, r, r, sq);
+			r = bignum_barret_mod(bctx, r, r, m, mu);
 		}
 	}
 
