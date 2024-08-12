@@ -256,6 +256,8 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 	r2 = bignum_ctx_allocate_bignum(bctx, r2_words * BIGNUM_WORD_SIZE);
 	dv_copy = bignum_ctx_allocate_bignum(bctx, rt_words * BIGNUM_WORD_SIZE);
 
+	// TODO: Partial multiplications
+
 	// q1 = dd / 2^(words - 1)
 	q1 = dd->words + (dv_words - 1);
 
@@ -275,9 +277,10 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 	rt = r2;
 	bignum_sub_words(rt, r1, r2, rt_words);
 
+	// Create copy of the divisor for easier subraction.
 	memcpy(dv_copy, dv->words, dv_words);
 
-	while (bignum_cmp_words(rt, dv->words, rt_words) > 0)
+	while (bignum_cmp_words(rt, dv->words, rt_words) >= 0)
 	{
 		// (q,r) = (q + 1,r − dv)
 		bignum_sub_words(rt, rt, dv_copy, rt_words);
