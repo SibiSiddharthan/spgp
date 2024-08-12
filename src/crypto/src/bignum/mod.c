@@ -301,7 +301,7 @@ bignum_t *bignum_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *p,
 
 bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *p, bignum_t *m, bignum_t *mu)
 {
-	bignum_t *sq = NULL;
+	bignum_t *sq = NULL, *qt = NULL;
 	bignum_ctx *obctx = bctx;
 	uint32_t required_bits = m->bits;
 	uint32_t op_bits = 2 * a->bits;
@@ -344,6 +344,7 @@ bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignu
 	bignum_ctx_start(bctx, bignum_size(op_bits));
 
 	sq = bignum_ctx_allocate_bignum(bctx, op_bits);
+	qt = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
 
 	if (mu == NULL)
 	{
@@ -355,7 +356,7 @@ bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignu
 
 	if (a->bits > m->bits)
 	{
-		r = bignum_barret_mod(bctx, r, a, m, mu);
+		bignum_barret_udivmod(bctx, a, m, mu, qt, r);
 	}
 
 	sq = bignum_copy(sq, bignum_size(r->bits * 2), r);
@@ -363,12 +364,12 @@ bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignu
 	for (uint32_t i = 1; i < p->bits; ++i)
 	{
 		sq = bignum_sqr(bctx, sq, sq);
-		sq = bignum_barret_mod(bctx, sq, sq, m, mu);
+		bignum_barret_udivmod(bctx, sq, m, mu, qt, sq);
 
 		if (p->words[i / BIGNUM_BITS_PER_WORD] & ((bn_word_t)1 << (i % BIGNUM_BITS_PER_WORD)))
 		{
 			r = bignum_mul(bctx, r, r, sq);
-			r = bignum_barret_mod(bctx, r, r, m, mu);
+			bignum_barret_udivmod(bctx, r, m, mu, qt, r);
 		}
 	}
 

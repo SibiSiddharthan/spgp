@@ -10,6 +10,7 @@
 
 #include <bignum.h>
 #include <round.h>
+#include <minmax.h>
 
 #include <bignum-internal.h>
 
@@ -218,4 +219,78 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	}
 
 	return r;
+}
+
+int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bignum_t *mu, bignum_t *q, bignum_t *r)
+{
+	uint32_t quotient_bits = (dd->bits >= dv->bits) ? dd->bits - dv->bits + 1 : 1;
+	uint32_t remainder_bits = dv->bits;
+
+	void *q1 = NULL, *q2 = NULL, *qt = NULL;
+	void *r1 = NULL, *r2 = NULL, *rt = NULL;
+	void *dv_copy = NULL;
+
+	uint32_t dd_words = BIGNUM_WORD_COUNT(dv);
+	uint32_t dv_words = BIGNUM_WORD_COUNT(dv);
+	uint32_t mu_words = BIGNUM_WORD_COUNT(mu);
+
+	uint32_t q1_words = dd_words - (dv_words - 1);
+	uint32_t q2_words = q1_words + mu_words;
+	uint32_t qt_words = q2_words - (dv_words + 1);
+
+	uint32_t r2_words = qt_words + dv_words;
+	uint32_t rt_words = dv_words + 1;
+
+	// Divisor is greater than dividend
+	if (dv->bits > dd->bits)
+	{
+		bignum_zero(q);
+		bignum_copy(r, sizeof(bignum_t) + r->size, dd);
+
+		return 0;
+	}
+
+	bignum_ctx_start(bctx, (q1_words + r2_words + rt_words) * BIGNUM_WORD_SIZE);
+
+	q2 = bignum_ctx_allocate_raw(bctx, q1_words * BIGNUM_WORD_SIZE);
+	r2 = bignum_ctx_allocate_bignum(bctx, r2_words * BIGNUM_WORD_SIZE);
+	dv_copy = bignum_ctx_allocate_bignum(bctx, rt_words * BIGNUM_WORD_SIZE);
+
+	// q1 = dd / 2^(words - 1)
+	q1 = dd->words + (dv_words - 1);
+
+	// q2 = q1 * mu
+	bignum_mul_words(q2, q1, mu->words, q1_words, mu_words);
+
+	// q = q2 / 2^(words + 1)
+	qt = (bn_word_t *)q2 + (dv_words + 1);
+
+	// r1 / dd % 2^(words + 1)
+	r1 = dd->words;
+
+	// r2 = (qt*dv) % 2^(words + 1)
+	bignum_mul_words(r2, qt, dv->words, qt_words, dv_words);
+
+	// rt = r1 - r2
+	rt = r2;
+	bignum_sub_words(rt, r1, r2, rt_words);
+
+	memcpy(dv_copy, dv->words, dv_words);
+
+	while (bignum_cmp_words(rt, dv->words, rt_words) > 0)
+	{
+		// (q,r) = (q + 1,r − dv)
+		bignum_sub_words(rt, rt, dv_copy, rt_words);
+		bignum_increment(qt, qt_words);
+	}
+
+	memcpy(q->words, qt, CEIL_DIV(quotient_bits, BIGNUM_BITS_PER_WORD));
+	q->bits = bignum_bitcount(q);
+
+	memcpy(r->words, rt, CEIL_DIV(remainder_bits, BIGNUM_BITS_PER_WORD));
+	r->bits = bignum_bitcount(r);
+
+	bignum_ctx_end(bctx);
+
+	return 0;
 }
