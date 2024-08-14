@@ -38,6 +38,7 @@ cipher/twofish.c
 cipher/cipher.c
 cipher/modes/ecb.c
 cipher/modes/cbc.c
+cipher/modes/cfb.c
 #hash
 hash/md5.c hash/ripemd.c
 hash/sha1.c hash/sha256.c hash/sha512.c hash/sha3.c
