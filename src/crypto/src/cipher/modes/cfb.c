@@ -184,7 +184,7 @@ uint64_t cipher_cfb1_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t pl
 
 uint64_t cipher_cfb1_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_decrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb1_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb1_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -194,7 +194,7 @@ uint64_t cipher_cfb1_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t pla
 
 uint64_t cipher_cfb1_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_decrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb1_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb8_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -204,7 +204,7 @@ uint64_t cipher_cfb8_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t pl
 
 uint64_t cipher_cfb8_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_decrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb8_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb8_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -214,7 +214,7 @@ uint64_t cipher_cfb8_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t pla
 
 uint64_t cipher_cfb8_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_decrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb8_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb64_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -224,7 +224,7 @@ uint64_t cipher_cfb64_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t p
 
 uint64_t cipher_cfb64_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb64_update_common(cctx, cctx->_decrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb64_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb128_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -234,7 +234,7 @@ uint64_t cipher_cfb128_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t 
 
 uint64_t cipher_cfb128_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb128_update_common(cctx, cctx->_decrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb128_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -352,7 +352,7 @@ uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t c
 		uint64_t *op = (uint64_t *)&pout[processed];
 		uint64_t *bp = (uint64_t *)cctx->buffer;
 
-		cctx->_decrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
 		op[0] = ip[0] ^ bp[0];
 		SHL128_64(cctx->buffer, op[0]);
 
@@ -361,7 +361,7 @@ uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t c
 	}
 
 	// Decrypt the last block
-	cctx->_decrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 	for (uint8_t i = 0; i < block_size; ++i)
 	{
@@ -549,7 +549,7 @@ uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t 
 		uint64_t *op = (uint64_t *)&pout[processed];
 		uint64_t *bp = (uint64_t *)cctx->buffer;
 
-		cctx->_decrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
 		op[0] = ip[0] ^ bp[0];
 		op[1] = ip[1] ^ bp[1];
 		memcpy(op, cctx->buffer, block_size);
@@ -559,7 +559,7 @@ uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t 
 	}
 
 	// Decrypt the last block
-	cctx->_decrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 	for (uint8_t i = 0; i < block_size; ++i)
 	{
