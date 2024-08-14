@@ -346,7 +346,7 @@ uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t c
 	}
 
 	// Process upto the last block.
-	while (processed <= (ciphertext_size - block_size))
+	while (processed + block_size <= ciphertext_size)
 	{
 		uint64_t *ip = (uint64_t *)&pin[processed];
 		uint64_t *op = (uint64_t *)&pout[processed];
@@ -543,7 +543,7 @@ uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t 
 	}
 
 	// Process upto the last block.
-	while (processed <= (ciphertext_size - block_size))
+	while (processed + block_size <= ciphertext_size)
 	{
 		uint64_t *ip = (uint64_t *)&pin[processed];
 		uint64_t *op = (uint64_t *)&pout[processed];

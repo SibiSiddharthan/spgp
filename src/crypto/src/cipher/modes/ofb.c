@@ -68,7 +68,7 @@ uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 	byte_t *pin = (byte_t *)plaintext;
 	byte_t *pout = (byte_t *)ciphertext;
 
-	if (plaintext_size < ciphertext_size)
+	if (ciphertext_size < plaintext_size)
 	{
 		return 0;
 	}
@@ -110,17 +110,13 @@ uint64_t cipher_ofb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	byte_t *pin = (byte_t *)ciphertext;
 	byte_t *pout = (byte_t *)plaintext;
 
-	byte_t *last_block = NULL;
-	uint8_t last_byte = 0;
-	uint8_t count = 0;
-
 	if (plaintext_size < ciphertext_size)
 	{
 		return 0;
 	}
 
 	// Process upto the last block.
-	while (processed <= (ciphertext_size - block_size))
+	while (processed + block_size <= ciphertext_size)
 	{
 		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
 

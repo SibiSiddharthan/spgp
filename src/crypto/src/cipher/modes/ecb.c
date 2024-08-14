@@ -151,7 +151,7 @@ uint64_t cipher_ecb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	}
 
 	// Process upto the last block.
-	while (processed < (ciphertext_size - block_size))
+	while (processed + block_size <= ciphertext_size)
 	{
 		cctx->_decrypt_block(cctx->_ctx, pin + processed, pout + result);
 

@@ -168,7 +168,7 @@ uint64_t cipher_cbc_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	}
 
 	// Process upto the last block.
-	while (processed <= (ciphertext_size - block_size))
+	while (processed + block_size <= ciphertext_size)
 	{
 		for (uint8_t i = 0; i < block_size; ++i)
 		{
