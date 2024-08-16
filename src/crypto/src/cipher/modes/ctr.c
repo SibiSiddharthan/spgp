@@ -21,7 +21,9 @@ uint64_t cipher_ctr_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, v
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
-	uint64_t *counter = (uint64_t *)&cctx->buffer[8];
+	uint64_t *oc = (uint64_t *)&cctx->buffer[8];
+
+	uint64_t counter = BSWAP_64(*oc);
 
 	// Make sure input is a multiple of block_size
 	if (in_size % block_size != 0)
@@ -43,7 +45,8 @@ uint64_t cipher_ctr_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, v
 			pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
 		}
 
-		*counter = BSWAP_64(BSWAP_64(*counter) + 1);
+		++counter;
+		*oc = BSWAP_64(counter);
 
 		result += block_size;
 		processed += block_size;
@@ -71,7 +74,9 @@ uint64_t cipher_ctr_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 
 	byte_t *pin = (byte_t *)plaintext;
 	byte_t *pout = (byte_t *)ciphertext;
-	uint64_t *counter = (uint64_t *)&cctx->buffer[8];
+	uint64_t *oc = (uint64_t *)&cctx->buffer[8];
+
+	uint64_t counter = BSWAP_64(*oc);
 
 	if (ciphertext_size < plaintext_size)
 	{
@@ -87,7 +92,8 @@ uint64_t cipher_ctr_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 			pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
 		}
 
-		*counter = BSWAP_64(BSWAP_64(*counter) + 1);
+		++counter;
+		*oc = BSWAP_64(counter);
 
 		result += block_size;
 		processed += block_size;
@@ -116,7 +122,9 @@ uint64_t cipher_ctr_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 
 	byte_t *pin = (byte_t *)ciphertext;
 	byte_t *pout = (byte_t *)plaintext;
-	uint64_t *counter = (uint64_t *)&cctx->buffer[8];
+	uint64_t *oc = (uint64_t *)&cctx->buffer[8];
+
+	uint64_t counter = BSWAP_64(*oc);
 
 	if (plaintext_size < ciphertext_size)
 	{
@@ -133,7 +141,8 @@ uint64_t cipher_ctr_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 			pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
 		}
 
-		*counter = BSWAP_64(BSWAP_64(*counter) + 1);
+		++counter;
+		*oc = BSWAP_64(counter);
 
 		result += block_size;
 		processed += block_size;
