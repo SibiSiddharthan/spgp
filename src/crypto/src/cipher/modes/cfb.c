@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <cipher.h>
+#include <byteswap.h>
 #include <round.h>
 
 static inline void SHL128_1(byte_t buffer[16], byte_t bit)
@@ -16,8 +17,11 @@ static inline void SHL128_1(byte_t buffer[16], byte_t bit)
 	uint64_t *t1 = (uint64_t *)&buffer[0];
 	uint64_t *t2 = (uint64_t *)&buffer[8];
 
-	*t1 = (*t1 >> 1 | ((*t2 & 0x1) << 63));
-	*t2 = (*t2 >> 1 | ((uint64_t)bit << 63));
+	*t1 = (BSWAP_64(*t1) << 1 | (*t2 & 0x1));
+	*t2 = (BSWAP_64(*t2) << 1 | (bit & 0x1));
+
+	*t1 = BSWAP_64(*t1);
+	*t2 = BSWAP_64(*t2);
 }
 
 static inline void SHL128_8(byte_t buffer[16], byte_t byte)
@@ -25,7 +29,7 @@ static inline void SHL128_8(byte_t buffer[16], byte_t byte)
 	uint64_t *t1 = (uint64_t *)&buffer[0];
 	uint64_t *t2 = (uint64_t *)&buffer[8];
 
-	*t1 = (*t1 >> 8 | ((*t2 & 0x1) << 56));
+	*t1 = (*t1 >> 8 | (*t2 & 0xFF));
 	*t2 = (*t2 >> 8 | ((uint64_t)byte << 56));
 }
 
