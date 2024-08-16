@@ -260,7 +260,7 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 void hash_delete(hash_ctx *hctx)
 {
 	// Zero the total memory region belonging to ctx.
-	memset(hctx->_ctx, 0, hctx->ctx_size);
+	memset(hctx, 0, hctx->ctx_size);
 	free(hctx);
 }
 
