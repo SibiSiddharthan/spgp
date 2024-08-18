@@ -18,7 +18,7 @@
 #include <minmax.h>
 #include <byteswap.h>
 
-// See NIST SP 800-38B TRecommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication
+// See NIST SP 800-38B Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication
 
 static inline size_t get_key_ctx_size(cmac_algorithm algorithm)
 {

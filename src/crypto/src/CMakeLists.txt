@@ -36,6 +36,7 @@ cipher/chacha20.c
 cipher/des.c
 cipher/twofish.c
 cipher/cipher.c
+cipher/aead/kw.c
 cipher/modes/ecb.c
 cipher/modes/cbc.c
 cipher/modes/cfb.c
