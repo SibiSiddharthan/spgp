@@ -60,6 +60,6 @@ void cmac_delete(cmac_ctx *cctx);
 
 void cmac_reset(cmac_ctx *cctx, void *key, size_t key_size);
 void cmac_update(cmac_ctx *cctx, void *data, size_t size);
-void cmac_generate(cmac_ctx *cctx, void *mac, size_t size);
+void cmac_final(cmac_ctx *cctx, void *mac, size_t size);
 
 #endif

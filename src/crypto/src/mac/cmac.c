@@ -462,7 +462,7 @@ void cmac_update(cmac_ctx *cctx, void *data, size_t size)
 	}
 }
 
-void cmac_generate(cmac_ctx *cctx, void *mac, size_t size)
+void cmac_final(cmac_ctx *cctx, void *mac, size_t size)
 {
 	uint64_t unprocessed = cctx->message_size % cctx->block_size;
 
