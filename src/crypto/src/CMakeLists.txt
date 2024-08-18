@@ -48,6 +48,7 @@ hash/shake.c
 hash/blake2.c
 hash/hash.c
 #mac
+mac/cmac.c
 mac/hmac.c
 mac/kmac.c
 #public-key
