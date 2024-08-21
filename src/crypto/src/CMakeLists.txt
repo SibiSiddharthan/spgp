@@ -38,6 +38,7 @@ cipher/twofish.c
 cipher/cipher.c
 cipher/aead/ccm.c
 cipher/aead/gcm.c
+cipher/aead/ocb.c
 cipher/aead/kw.c
 cipher/modes/ecb.c
 cipher/modes/cbc.c
