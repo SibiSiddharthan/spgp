@@ -52,6 +52,8 @@ hash/sha1.c hash/sha256.c hash/sha512.c hash/sha3.c
 hash/shake.c
 hash/blake2.c
 hash/hash.c
+#kdf
+kdf/pbkdf2.c
 #mac
 mac/cmac.c
 mac/hmac.c
