@@ -37,6 +37,7 @@ cipher/des.c
 cipher/twofish.c
 cipher/cipher.c
 cipher/aead/ccm.c
+cipher/aead/eax.c
 cipher/aead/gcm.c
 cipher/aead/ocb.c
 cipher/aead/kw.c
