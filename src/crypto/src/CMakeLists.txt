@@ -54,6 +54,7 @@ hash/blake2.c
 hash/hash.c
 #kdf
 kdf/pbkdf2.c
+kdf/scrypt.c
 #mac
 mac/cmac.c
 mac/hmac.c
