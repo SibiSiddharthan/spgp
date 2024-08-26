@@ -53,6 +53,7 @@ hash/shake.c
 hash/blake2.c
 hash/hash.c
 #kdf
+kdf/argon2.c
 kdf/pbkdf2.c
 kdf/scrypt.c
 #mac
