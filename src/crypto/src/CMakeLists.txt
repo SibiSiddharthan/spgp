@@ -40,6 +40,7 @@ cipher/aead/ccm.c
 cipher/aead/eax.c
 cipher/aead/gcm.c
 cipher/aead/ocb.c
+cipher/aead/siv.c
 cipher/aead/kw.c
 cipher/modes/ecb.c
 cipher/modes/cbc.c
