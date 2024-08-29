@@ -83,7 +83,7 @@ bignum_t *bignum_sqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a)
 	bignum_ctx *obctx = bctx;
 	bn_word_t *words = NULL;
 
-	size_t ctx_size = 2 * BIGNUM_WORD_COUNT(a);
+	size_t ctx_size = 2 * BIGNUM_WORD_COUNT(a) * BIGNUM_WORD_SIZE;
 	uint32_t required_bits = 2 * a->bits;
 
 	// Handle zero
