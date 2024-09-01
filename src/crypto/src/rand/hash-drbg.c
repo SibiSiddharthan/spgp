@@ -132,10 +132,12 @@ static void hash_gen(hash_drbg *hdrbg, void *output, size_t output_size)
 static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, size_t personalization_size)
 {
 	int32_t status = -1;
-	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
-	size_t seed_material_size = MAX((2 * security), (1 + hdrbg->seed_size)) + personalization_size;
+
+	size_t total_entropy_size = hdrbg->min_entropy_size + hdrbg->min_nonce_size;
+	size_t seed_material_size = 128 + personalization_size;
 
 	byte_t *seed_material = NULL;
+	size_t seed_input_size = 0;
 
 	// seed_material = entropy_input || nonce || personalization_string
 	seed_material = (byte_t *)malloc(seed_material_size);
@@ -146,19 +148,21 @@ static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, siz
 	}
 
 	// Entropy and Nonce
-	status = get_entropy(seed_material, 2*security);
+	status = hdrbg->entropy(seed_material, total_entropy_size);
+	seed_input_size += total_entropy_size;
 
-	if (status == 0)
+	if (status < total_entropy_size)
 	{
 		goto end;
 	}
 
 	if (personalization != NULL)
 	{
-		memcpy(seed_material + (2 * security), personalization, personalization_size);
+		memcpy(seed_material + seed_input_size, personalization, personalization_size);
+		seed_input_size += personalization_size;
 	}
 
-	hash_df(hdrbg->hctx, seed_material, seed_material_size, hdrbg->seed, hdrbg->seed_size);
+	hash_df(hdrbg->hctx, seed_material, seed_input_size, hdrbg->seed, hdrbg->seed_size);
 
 	// Reuse the same buffer
 	seed_material[0] = 0x00;
@@ -175,40 +179,55 @@ end:
 	return status;
 }
 
-static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, hash_algorithm algorithm, uint32_t reseed_interval,
-										 void *personalization, size_t personalization_size)
+static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size),
+										 hash_algorithm algorithm, uint32_t reseed_interval, void *personalization,
+										 size_t personalization_size)
 {
 	hash_drbg *hdrbg = (hash_drbg *)ptr;
 
+	byte_t nonce_buffer[32];
+
 	uint16_t seed_size;
+	uint16_t min_entropy_size;
+	uint16_t min_nonce_size;
 	uint16_t security_strength;
 
 	switch (algorithm)
 	{
 	case HASH_SHA1:
 		seed_size = 55;
+		min_entropy_size = 20;
+		min_nonce_size = 10;
 		security_strength = 160;
 		break;
 
 	case HASH_SHA224:
 	case HASH_SHA512_224:
 		seed_size = 55;
+		min_entropy_size = 28;
+		min_nonce_size = 14;
 		security_strength = 224;
 		break;
 
 	case HASH_SHA256:
 	case HASH_SHA512_256:
 		seed_size = 55;
+		min_entropy_size = 32;
+		min_nonce_size = 16;
 		security_strength = 256;
 		break;
 
 	case HASH_SHA384:
 		seed_size = 111;
+		min_entropy_size = 48;
+		min_nonce_size = 24;
 		security_strength = 384;
 		break;
 
 	case HASH_SHA512:
 		seed_size = 111;
+		min_entropy_size = 64;
+		min_nonce_size = 32;
 		security_strength = 512;
 		break;
 	default: // Prevent -Wswitch
@@ -221,7 +240,10 @@ static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, hash_algori
 	hdrbg->drbg_size = sizeof(hash_drbg) + sizeof(hash_ctx) + ctx_size;
 	hdrbg->reseed_interval = reseed_interval;
 	hdrbg->seed_size = seed_size;
+	hdrbg->min_entropy_size = min_entropy_size;
+	hdrbg->min_nonce_size = min_nonce_size;
 	hdrbg->security_strength = security_strength;
+	hdrbg->entropy = entropy == NULL ? get_entropy : entropy;
 
 	hash_init(hdrbg->hctx, sizeof(hash_ctx) + ctx_size, algorithm);
 
@@ -239,8 +261,8 @@ size_t hash_drbg_size(hash_algorithm algorithm)
 	return sizeof(hash_drbg) + sizeof(hash_ctx) + get_approved_hash_ctx_size(algorithm);
 }
 
-hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint32_t reseed_interval, void *personalization,
-						  size_t personalization_size)
+hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
+						  uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 
 	size_t ctx_size = get_approved_hash_ctx_size(algorithm);
@@ -261,10 +283,11 @@ hash_drbg *hash_drbg_init(void *ptr, size_t size, hash_algorithm algorithm, uint
 		return NULL;
 	}
 
-	return hash_drbg_init_checked(ptr, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+	return hash_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
+hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval, void *nonce,
+						 size_t nonce_size, void *personalization, size_t personalization_size)
 {
 	hash_drbg *hdrbg = NULL;
 	hash_drbg *result = NULL;
@@ -289,7 +312,7 @@ hash_drbg *hash_drbg_new(hash_algorithm algorithm, uint32_t reseed_interval, voi
 		return NULL;
 	}
 
-	result = hash_drbg_init_checked(hdrbg, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+	result = hash_drbg_init_checked(hdrbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 
 	if (result == NULL)
 	{
@@ -310,8 +333,7 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 {
 	int32_t status = -1;
 	size_t pos = 0;
-	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
-	size_t seed_material_size = 1 + hdrbg->seed_size + security + input_size;
+	size_t seed_material_size = 1 + hdrbg->seed_size + hdrbg->min_entropy_size + input_size;
 
 	byte_t *seed_material = NULL;
 
@@ -328,10 +350,10 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 	memcpy(seed_material + pos, hdrbg->seed, hdrbg->seed_size);
 	pos += hdrbg->seed_size;
 
-	status = get_entropy(seed_material + pos, security);
-	pos += security;
+	status = hdrbg->entropy(seed_material + pos, hdrbg->min_entropy_size);
+	pos += hdrbg->min_entropy_size;
 
-	if (status == 0)
+	if (status < hdrbg->min_entropy_size)
 	{
 		free(seed_material);
 		return -1;

@@ -26,12 +26,16 @@ typedef struct _hash_drbg
 {
 	hash_ctx *hctx;
 	size_t drbg_size;
-	byte_t seed[MAX_SEED_SIZE];
-	byte_t constant[MAX_SEED_SIZE];
+	byte_t seed[MAX_SEED_SIZE];     // V
+	byte_t constant[MAX_SEED_SIZE]; // C
 	uint16_t seed_size;
+	uint16_t min_entropy_size;
+	uint16_t min_nonce_size;
 	uint16_t security_strength;
 	uint64_t reseed_interval;
 	uint64_t reseed_counter;
+
+	uint32_t (*entropy)(void *buffer, size_t size);
 } hash_drbg;
 
 typedef struct _hmac_drbg
@@ -44,6 +48,8 @@ typedef struct _hmac_drbg
 	uint16_t security_strength;
 	uint64_t reseed_interval;
 	uint64_t reseed_counter;
+
+	uint32_t (*entropy)(void *buffer, size_t size)
 } hmac_drbg;
 
 typedef struct _ctr_drbg
@@ -64,6 +70,7 @@ typedef struct _ctr_drbg
 	int32_t _algorithm;
 	void (*_init)(void *, size_t, int32_t, void *, size_t);
 	void (*_encrypt)(void *, void *, void *);
+	uint32_t (*entropy)(void *buffer, size_t size)
 } ctr_drbg;
 
 typedef enum _drbg_type
@@ -85,9 +92,9 @@ typedef struct _drbg_ctx
 
 size_t hash_drbg_size(hash_algorithm algorithm);
 hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
-						  uint32_t reseed_interval, void *nonce, size_t nonce_size, void *personalization, size_t personalization_size);
-hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval, void *nonce,
-						 size_t nonce_size, void *personalization, size_t personalization_size);
+						  uint32_t reseed_interval, void *personalization, size_t personalization_size);
+hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
+						 void *personalization, size_t personalization_size);
 void hash_drbg_delete(hash_drbg *hdrbg);
 int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_size);
 int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
