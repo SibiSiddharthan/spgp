@@ -17,7 +17,7 @@
 // Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
 // Section 10.1.2
 
-int32_t get_entropy(void *buffer, size_t size);
+uint32_t get_entropy(void *buffer, size_t size);
 
 static inline size_t get_approved_hash_ctx_size(hmac_algorithm algorithm)
 {
@@ -103,7 +103,7 @@ static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_a
 	// Entropy and Nonce
 	status = get_entropy(seed_material, 2 * security);
 
-	if (status != 0)
+	if (status == 0)
 	{
 		goto end;
 	}
@@ -274,7 +274,7 @@ int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_
 
 	status = get_entropy(seed_material, security);
 
-	if (status != 0)
+	if (status == 0)
 	{
 		free(seed_material);
 		return -1;

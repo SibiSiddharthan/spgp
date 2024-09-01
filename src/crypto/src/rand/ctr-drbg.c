@@ -19,7 +19,7 @@
 
 #define MAX_CTR_SEED_SIZE 64
 
-int32_t get_entropy(void *buffer, size_t size);
+uint32_t get_entropy(void *buffer, size_t size);
 
 static inline size_t get_approved_cipher_ctx_size(cipher_algorithm algorithm)
 {
@@ -183,7 +183,7 @@ static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_
 	// Entropy and Nonce
 	status = get_entropy(seed_material, 2 * security);
 
-	if (status != 0)
+	if (status == 0)
 	{
 		goto end;
 	}
@@ -377,7 +377,7 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 
 	status = get_entropy(seed_material, security);
 
-	if (status != 0)
+	if (status == 0)
 	{
 		free(seed_material);
 		return -1;

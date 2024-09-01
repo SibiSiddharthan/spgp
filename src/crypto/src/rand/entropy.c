@@ -9,7 +9,7 @@
 #include <intrin.h>
 #include <types.h>
 
-int32_t get_entropy(void *buffer, size_t size)
+uint32_t get_entropy(void *buffer, size_t size)
 {
 	int32_t status = 0;
 	size_t count = 0;
@@ -21,7 +21,7 @@ int32_t get_entropy(void *buffer, size_t size)
 
 		if (status == 0)
 		{
-			return -1;
+			return count;
 		}
 
 		count += sizeof(uint64_t);
@@ -35,11 +35,11 @@ int32_t get_entropy(void *buffer, size_t size)
 
 		if (status == 0)
 		{
-			return -1;
+			return count;
 		}
 
 		memcpy(bp + count, &temp, size - count);
 	}
 
-	return 0;
+	return count;
 }
