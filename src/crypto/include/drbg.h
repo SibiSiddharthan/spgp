@@ -42,8 +42,8 @@ typedef struct _hmac_drbg
 {
 	hmac_ctx *hctx;
 	size_t drbg_size;
-	byte_t key[MAX_KEY_SIZE];
-	byte_t seed[MAX_SEED_SIZE];
+	byte_t key[MAX_KEY_SIZE];   // K
+	byte_t seed[MAX_SEED_SIZE]; // V
 	uint16_t output_size;
 	uint16_t min_entropy_size;
 	uint16_t min_nonce_size;

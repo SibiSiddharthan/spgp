@@ -42,6 +42,15 @@ function(crypto_mac_tests ...)
 	endforeach()
 endfunction()
 
+function(crypto_rand_tests ...)
+	foreach(test ${ARGV})
+		add_executable(test-${test} rand/test-${test}.c)
+		target_include_directories(test-${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+		target_link_libraries(test-${test} crypto)
+		add_test(NAME test-${test} COMMAND test-${test} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	endforeach()
+endfunction()
+
 crypto_bignum_tests(
 arithmetic
 basic
@@ -67,4 +76,8 @@ sha3
 
 crypto_mac_tests(
 hmac
+)
+
+crypto_rand_tests(
+drbg
 )

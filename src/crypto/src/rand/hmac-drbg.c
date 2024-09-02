@@ -315,7 +315,9 @@ int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_requ
 						   void *output, size_t output_size)
 {
 	int32_t status = 0;
+
 	hmac_ctx *hctx = hdrbg->hctx;
+	byte_t *pout = output;
 
 	size_t count = 0;
 	size_t hmac_size = hdrbg->output_size;
@@ -348,13 +350,14 @@ int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_requ
 		hmac_drbg_update(hdrbg, additional_input, input_size);
 	}
 
-	while (count <= output_size)
+	while (count < output_size)
 	{
 		hmac_update(hctx, hdrbg->seed, hmac_size);
-		hmac_final(hctx, output, MIN(output_size - count, hmac_size));
-
+		hmac_final(hctx, hdrbg->seed, hmac_size);
 		hmac_reset(hctx, hdrbg->key, hmac_size);
-		count += hmac_size;
+
+		memcpy(pout + count, hdrbg->seed, MIN(output_size - count, hmac_size));
+		count += MIN(output_size - count, hmac_size);
 	}
 
 	hmac_drbg_update(hdrbg, additional_input, input_size);
