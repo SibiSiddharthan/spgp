@@ -88,10 +88,11 @@ static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_a
 									size_t personalization_size)
 {
 	int32_t status = -1;
-	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
-	size_t seed_material_size = (2 * security) + personalization_size;
+	size_t total_entropy_size = hdrbg->min_entropy_size + hdrbg->min_nonce_size;
+	size_t seed_material_size = total_entropy_size + personalization_size;
 
 	byte_t *seed_material = NULL;
+	size_t seed_input_size = 0;
 
 	seed_material = (byte_t *)malloc(seed_material_size);
 
@@ -101,16 +102,17 @@ static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_a
 	}
 
 	// Entropy and Nonce
-	status = get_entropy(seed_material, 2 * security);
+	status = hdrbg->entropy(seed_material, total_entropy_size);
+	seed_input_size += total_entropy_size;
 
-	if (status == 0)
+	if (status < total_entropy_size)
 	{
 		goto end;
 	}
 
 	if (personalization != NULL)
 	{
-		memcpy(seed_material + (2 * security), personalization, personalization_size);
+		memcpy(seed_material + seed_input_size, personalization, personalization_size);
 	}
 
 	memset(hdrbg->key, 0x00, output_size);
@@ -128,41 +130,54 @@ end:
 	return status;
 }
 
-static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, hmac_algorithm algorithm, uint32_t reseed_interval,
-										 void *personalization, size_t personalization_size)
+static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size),
+										 hmac_algorithm algorithm, uint32_t reseed_interval, void *personalization,
+										 size_t personalization_size)
 {
 	hmac_drbg *hdrbg = (hmac_drbg *)ptr;
 
-	uint16_t security_strength;
 	uint16_t output_size;
+	uint16_t min_entropy_size;
+	uint16_t min_nonce_size;
+	uint16_t security_strength;
 
 	switch (algorithm)
 	{
 	case HMAC_SHA1:
-		security_strength = 160;
 		output_size = SHA1_HASH_SIZE;
+		min_entropy_size = 20;
+		min_nonce_size = 10;
+		security_strength = 160;
 		break;
 
 	case HMAC_SHA224:
 	case HMAC_SHA512_224:
-		security_strength = 224;
 		output_size = SHA224_HASH_SIZE;
+		min_entropy_size = 28;
+		min_nonce_size = 14;
+		security_strength = 224;
 		break;
 
 	case HMAC_SHA256:
 	case HMAC_SHA512_256:
-		security_strength = 256;
 		output_size = SHA256_HASH_SIZE;
+		min_entropy_size = 32;
+		min_nonce_size = 16;
+		security_strength = 256;
 		break;
 
 	case HMAC_SHA384:
-		security_strength = 384;
 		output_size = SHA384_HASH_SIZE;
+		min_entropy_size = 48;
+		min_nonce_size = 24;
+		security_strength = 384;
 		break;
 
 	case HMAC_SHA512:
-		security_strength = 512;
 		output_size = SHA512_HASH_SIZE;
+		min_entropy_size = 64;
+		min_nonce_size = 32;
+		security_strength = 512;
 		break;
 	default: // Prevent -Wswitch
 		return NULL;
@@ -174,7 +189,10 @@ static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, hmac_algori
 	hdrbg->drbg_size = sizeof(hmac_drbg) + sizeof(hmac_ctx) + ctx_size;
 	hdrbg->reseed_interval = reseed_interval;
 	hdrbg->output_size = output_size;
+	hdrbg->min_entropy_size = min_entropy_size;
+	hdrbg->min_nonce_size = min_nonce_size;
 	hdrbg->security_strength = security_strength;
+	hdrbg->entropy = entropy == NULL ? get_entropy : entropy;
 
 	if (hmac_drbg_init_state(hdrbg, output_size, algorithm, personalization, personalization_size) != 0)
 	{
@@ -190,8 +208,8 @@ size_t hmac_drbg_size(hmac_algorithm algorithm)
 	return sizeof(hmac_drbg) + sizeof(hmac_ctx) + get_approved_hash_ctx_size(algorithm);
 }
 
-hmac_drbg *hmac_drbg_init(void *ptr, size_t size, hmac_algorithm algorithm, uint32_t reseed_interval, void *personalization,
-						  size_t personalization_size)
+hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm,
+						  uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 
 	size_t ctx_size = get_approved_hash_ctx_size(algorithm);
@@ -212,10 +230,11 @@ hmac_drbg *hmac_drbg_init(void *ptr, size_t size, hmac_algorithm algorithm, uint
 		return NULL;
 	}
 
-	return hmac_drbg_init_checked(ptr, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+	return hmac_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hmac_drbg *hmac_drbg_new(hmac_algorithm algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
+hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm, uint32_t reseed_interval,
+						 void *personalization, size_t personalization_size)
 {
 	hmac_drbg *hdrbg = NULL;
 	hmac_drbg *result = NULL;
@@ -240,7 +259,7 @@ hmac_drbg *hmac_drbg_new(hmac_algorithm algorithm, uint32_t reseed_interval, voi
 		return NULL;
 	}
 
-	result = hmac_drbg_init_checked(hdrbg, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+	result = hmac_drbg_init_checked(hdrbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 
 	if (result == NULL)
 	{
@@ -260,8 +279,7 @@ void hmac_drbg_delete(hmac_drbg *hdrbg)
 int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_size)
 {
 	int32_t status = -1;
-	size_t security = ROUND_UP(hdrbg->security_strength / 8, 8);
-	size_t seed_material_size = security + input_size;
+	size_t seed_material_size = hdrbg->min_entropy_size + input_size;
 
 	byte_t *seed_material = NULL;
 
@@ -272,9 +290,9 @@ int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_
 		return -1;
 	}
 
-	status = get_entropy(seed_material, security);
+	status = hdrbg->entropy(seed_material, hdrbg->min_entropy_size);
 
-	if (status == 0)
+	if (status == hdrbg->min_entropy_size)
 	{
 		free(seed_material);
 		return -1;
@@ -282,7 +300,7 @@ int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_
 
 	if (additional_input != NULL && input_size > 0)
 	{
-		memcpy(seed_material + security, additional_input, input_size);
+		memcpy(seed_material + hdrbg->min_entropy_size, additional_input, input_size);
 	}
 
 	hmac_drbg_update(hdrbg, seed_material, seed_material_size);

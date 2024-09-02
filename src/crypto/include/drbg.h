@@ -45,6 +45,8 @@ typedef struct _hmac_drbg
 	byte_t key[MAX_KEY_SIZE];
 	byte_t seed[MAX_SEED_SIZE];
 	uint16_t output_size;
+	uint16_t min_entropy_size;
+	uint16_t min_nonce_size;
 	uint16_t security_strength;
 	uint64_t reseed_interval;
 	uint64_t reseed_counter;
@@ -102,9 +104,9 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 
 size_t hmac_drbg_size(hmac_algorithm algorithm);
 hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm,
-						  uint32_t reseed_interval, void *nonce, size_t nonce_size, void *personalization, size_t personalization_size);
-hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm, uint32_t reseed_interval, void *nonce,
-						 size_t nonce_size, void *personalization, size_t personalization_size);
+						  uint32_t reseed_interval, void *personalization, size_t personalization_size);
+hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm, uint32_t reseed_interval,
+						 void *personalization, size_t personalization_size);
 void hmac_drbg_delete(hmac_drbg *hdrbg);
 int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_size);
 int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
