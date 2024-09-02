@@ -165,6 +165,7 @@ static void ctr_drbg_update(ctr_drbg *cdrbg, byte_t *provided)
 static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_t personalization_size)
 {
 	int32_t status = -1;
+	uint32_t entropy_received = 0;
 	size_t total_entropy_size = cdrbg->min_entropy_size + cdrbg->min_nonce_size;
 	size_t seed_material_size = cdrbg->seed_size + total_entropy_size + personalization_size;
 
@@ -180,10 +181,10 @@ static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_
 	}
 
 	// Entropy and Nonce
-	status = cdrbg->entropy(seed_material, total_entropy_size);
+	entropy_received = cdrbg->entropy(seed_material, total_entropy_size);
 	seed_input_size += total_entropy_size;
 
-	if (status < total_entropy_size)
+	if (entropy_received < total_entropy_size)
 	{
 		goto end;
 	}
@@ -373,7 +374,8 @@ void ctr_drbg_delete(ctr_drbg *cdrbg)
 
 int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_size)
 {
-	int32_t status;
+	int32_t status = -1;
+	uint32_t entropy_received = 0;
 	size_t seed_material_size = cdrbg->min_entropy_size + cdrbg->seed_size + input_size;
 
 	byte_t *seed_material = NULL;
@@ -387,10 +389,10 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 		return -1;
 	}
 
-	status = cdrbg->entropy(seed_material, cdrbg->min_entropy_size);
+	entropy_received = cdrbg->entropy(seed_material, cdrbg->min_entropy_size);
 	seed_input_size += cdrbg->min_entropy_size;
 
-	if (status < cdrbg->min_entropy_size)
+	if (entropy_received < cdrbg->min_entropy_size)
 	{
 		free(seed_material);
 		return -1;

@@ -41,8 +41,8 @@ size_t drbg_ctx_size(drbg_type type, uint32_t algorithm)
 	return ctx_size;
 }
 
-static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval,
-								   void *personalization, size_t personalization_size)
+static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size), drbg_type type,
+								   uint32_t algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 	drbg_ctx *drbg = (drbg_ctx *)ptr;
 
@@ -57,16 +57,16 @@ static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, drbg_type type, u
 	switch (type)
 	{
 	case HASH_DRBG:
-		_drbg = hash_drbg_init(drbg->_drbg, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+		_drbg = hash_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 		_reseed = (int32_t(*)(void *, void *, size_t))hash_drbg_reseed;
 		_generate = (int32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hash_drbg_generate;
 		break;
 	case HMAC_DRBG:
-		_drbg = hmac_drbg_init(drbg->_drbg, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+		_drbg = hmac_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 		_generate = (int32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hmac_drbg_generate;
 		break;
 	case CTR_DRBG:
-		_drbg = ctr_drbg_init(drbg->_drbg, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+		_drbg = ctr_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 		_generate = (int32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))ctr_drbg_generate;
 		break;
 	}
@@ -83,8 +83,8 @@ static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, drbg_type type, u
 	return drbg;
 }
 
-drbg_ctx *drgb_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, uint32_t reseed_interval, void *personalization,
-					size_t personalization_size)
+drbg_ctx *drgb_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), drbg_type type, uint32_t algorithm,
+					uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 	drbg_ctx *drbg = (drbg_ctx *)ptr;
 	size_t drbg_size = drbg_ctx_size(type, algorithm);
@@ -107,10 +107,11 @@ drbg_ctx *drgb_init(void *ptr, size_t size, drbg_type type, uint32_t algorithm, 
 
 	memset(drbg, 0, drbg_size);
 
-	return drbg_init_checked(ptr, ctx_size, type, algorithm, reseed_interval, personalization, personalization_size);
+	return drbg_init_checked(ptr, ctx_size, entropy, type, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-drbg_ctx *drbg_new(drbg_type type, uint32_t algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
+drbg_ctx *drbg_new(uint32_t (*entropy)(void *buffer, size_t size), drbg_type type, uint32_t algorithm, uint32_t reseed_interval,
+				   void *personalization, size_t personalization_size)
 {
 	void *ptr = NULL;
 	drbg_ctx *drbg = NULL;
@@ -147,7 +148,7 @@ drbg_ctx *drbg_new(drbg_type type, uint32_t algorithm, uint32_t reseed_interval,
 
 	memset(ptr, 0, drbg_size);
 
-	drbg = drbg_init_checked(ptr, ctx_size, type, algorithm, reseed_interval, personalization, personalization_size);
+	drbg = drbg_init_checked(ptr, ctx_size, entropy, type, algorithm, reseed_interval, personalization, personalization_size);
 
 	if (drbg == NULL)
 	{
@@ -183,6 +184,6 @@ drbg_ctx *get_default_drbg(void)
 	}
 
 	// Use HMAC DRBG
-	default_drbg = drbg_new(HMAC_DRBG, HMAC_SHA512, 1u << 16, "DEFAULT HMAC DRBG", 17);
+	default_drbg = drbg_new(NULL, HMAC_DRBG, HMAC_SHA512, 1u << 16, "DEFAULT HMAC DRBG", 17);
 	return default_drbg;
 }

@@ -132,6 +132,7 @@ static void hash_gen(hash_drbg *hdrbg, void *output, size_t output_size)
 static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, size_t personalization_size)
 {
 	int32_t status = -1;
+	uint32_t entropy_received = 0;
 
 	size_t total_entropy_size = hdrbg->min_entropy_size + hdrbg->min_nonce_size;
 	size_t seed_material_size = 128 + personalization_size;
@@ -148,10 +149,10 @@ static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, siz
 	}
 
 	// Entropy and Nonce
-	status = hdrbg->entropy(seed_material, total_entropy_size);
+	entropy_received = hdrbg->entropy(seed_material, total_entropy_size);
 	seed_input_size += total_entropy_size;
 
-	if (status < total_entropy_size)
+	if (entropy_received < total_entropy_size)
 	{
 		goto end;
 	}
@@ -184,8 +185,6 @@ static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*
 										 size_t personalization_size)
 {
 	hash_drbg *hdrbg = (hash_drbg *)ptr;
-
-	byte_t nonce_buffer[32];
 
 	uint16_t seed_size;
 	uint16_t min_entropy_size;
@@ -286,8 +285,8 @@ hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buff
 	return hash_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval, void *nonce,
-						 size_t nonce_size, void *personalization, size_t personalization_size)
+hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
+						 void *personalization, size_t personalization_size)
 {
 	hash_drbg *hdrbg = NULL;
 	hash_drbg *result = NULL;
@@ -331,11 +330,11 @@ void hash_drbg_delete(hash_drbg *hdrbg)
 
 int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_size)
 {
-	int32_t status = -1;
-	size_t pos = 0;
+	uint32_t entropy_received = 0;
 	size_t seed_material_size = 1 + hdrbg->seed_size + hdrbg->min_entropy_size + input_size;
 
 	byte_t *seed_material = NULL;
+	size_t seed_input_size = 0;
 
 	seed_material = (byte_t *)malloc(seed_material_size);
 
@@ -345,15 +344,15 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 	}
 
 	// seed_material = 0x01 || V || entropy_input || additional_input
-	seed_material[pos++] = 0x01;
+	seed_material[seed_input_size++] = 0x01;
 
-	memcpy(seed_material + pos, hdrbg->seed, hdrbg->seed_size);
-	pos += hdrbg->seed_size;
+	memcpy(seed_material + seed_input_size, hdrbg->seed, hdrbg->seed_size);
+	seed_input_size += hdrbg->seed_size;
 
-	status = hdrbg->entropy(seed_material + pos, hdrbg->min_entropy_size);
-	pos += hdrbg->min_entropy_size;
+	entropy_received = hdrbg->entropy(seed_material + seed_input_size, hdrbg->min_entropy_size);
+	seed_input_size += hdrbg->min_entropy_size;
 
-	if (status < hdrbg->min_entropy_size)
+	if (entropy_received < hdrbg->min_entropy_size)
 	{
 		free(seed_material);
 		return -1;
@@ -361,7 +360,7 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 
 	if (additional_input != NULL)
 	{
-		memcpy(seed_material + pos, additional_input, input_size);
+		memcpy(seed_material + seed_input_size, additional_input, input_size);
 	}
 
 	hash_df(hdrbg->hctx, seed_material, seed_material_size, hdrbg->seed, hdrbg->seed_size);

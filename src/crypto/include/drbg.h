@@ -51,7 +51,7 @@ typedef struct _hmac_drbg
 	uint64_t reseed_interval;
 	uint64_t reseed_counter;
 
-	uint32_t (*entropy)(void *buffer, size_t size)
+	uint32_t (*entropy)(void *buffer, size_t size);
 } hmac_drbg;
 
 typedef struct _ctr_drbg
@@ -74,7 +74,7 @@ typedef struct _ctr_drbg
 	int32_t _algorithm;
 	void (*_init)(void *, size_t, int32_t, void *, size_t);
 	void (*_encrypt)(void *, void *, void *);
-	uint32_t (*entropy)(void *buffer, size_t size)
+	uint32_t (*entropy)(void *buffer, size_t size);
 } ctr_drbg;
 
 typedef enum _drbg_type
@@ -116,9 +116,9 @@ int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_requ
 
 size_t ctr_drbg_size(cipher_algorithm algorithm);
 ctr_drbg *ctr_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm,
-						uint32_t reseed_interval, void *nonce, size_t nonce_size, void *personalization, size_t personalization_size);
-ctr_drbg *ctr_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm, uint32_t reseed_interval, void *nonce,
-					   size_t nonce_size, void *personalization, size_t personalization_size);
+						uint32_t reseed_interval, void *personalization, size_t personalization_size);
+ctr_drbg *ctr_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm, uint32_t reseed_interval,
+					   void *personalization, size_t personalization_size);
 void ctr_drbg_delete(ctr_drbg *cdrbg);
 int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_size);
 int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,

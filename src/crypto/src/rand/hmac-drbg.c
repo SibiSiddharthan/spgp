@@ -88,6 +88,7 @@ static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_a
 									size_t personalization_size)
 {
 	int32_t status = -1;
+	uint32_t entropy_received = 0;
 	size_t total_entropy_size = hdrbg->min_entropy_size + hdrbg->min_nonce_size;
 	size_t seed_material_size = total_entropy_size + personalization_size;
 
@@ -102,10 +103,10 @@ static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_a
 	}
 
 	// Entropy and Nonce
-	status = hdrbg->entropy(seed_material, total_entropy_size);
+	entropy_received = hdrbg->entropy(seed_material, total_entropy_size);
 	seed_input_size += total_entropy_size;
 
-	if (status < total_entropy_size)
+	if (entropy_received < total_entropy_size)
 	{
 		goto end;
 	}
@@ -278,7 +279,7 @@ void hmac_drbg_delete(hmac_drbg *hdrbg)
 
 int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_size)
 {
-	int32_t status = -1;
+	uint32_t entropy_received = 0;
 	size_t seed_material_size = hdrbg->min_entropy_size + input_size;
 
 	byte_t *seed_material = NULL;
@@ -290,9 +291,9 @@ int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_
 		return -1;
 	}
 
-	status = hdrbg->entropy(seed_material, hdrbg->min_entropy_size);
+	entropy_received = hdrbg->entropy(seed_material, hdrbg->min_entropy_size);
 
-	if (status == hdrbg->min_entropy_size)
+	if (entropy_received < hdrbg->min_entropy_size)
 	{
 		free(seed_material);
 		return -1;
