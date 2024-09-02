@@ -62,6 +62,8 @@ typedef struct _ctr_drbg
 	uint16_t key_size;
 	uint16_t block_size;
 	uint16_t seed_size;
+	uint16_t min_entropy_size;
+	uint16_t min_nonce_size;
 	uint16_t security_strength;
 	uint64_t reseed_interval;
 	uint64_t reseed_counter;
@@ -124,9 +126,9 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reques
 
 size_t drbg_ctx_size(drbg_type type, uint32_t algorithm);
 drbg_ctx *drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), drbg_type type, uint32_t algorithm,
-					uint32_t reseed_interval, void *nonce, size_t nonce_size, void *personalization, size_t personalization_size);
+					uint32_t reseed_interval, void *personalization, size_t personalization_size);
 drbg_ctx *drbg_new(uint32_t (*entropy)(void *buffer, size_t size), drbg_type type, uint32_t algorithm, uint32_t reseed_interval,
-				   void *nonce, size_t nonce_size, void *personalization, size_t personalization_size);
+				   void *personalization, size_t personalization_size);
 void drbg_delete(drbg_ctx *drbg);
 int32_t drbg_reseed(drbg_ctx *drbg, void *additional_input, size_t input_size);
 int32_t drbg_generate(drbg_ctx *drbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,

@@ -165,15 +165,14 @@ static void ctr_drbg_update(ctr_drbg *cdrbg, byte_t *provided)
 static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_t personalization_size)
 {
 	int32_t status = -1;
-	size_t security = cdrbg->security_strength / 8;
-	size_t seed_size = cdrbg->seed_size;
-	size_t seed_material_size = (2 * security) + personalization_size;
-	size_t seed_material_full_size = seed_material_size + seed_size;
+	size_t total_entropy_size = cdrbg->min_entropy_size + cdrbg->min_nonce_size;
+	size_t seed_material_size = cdrbg->seed_size + total_entropy_size + personalization_size;
 
 	byte_t *seed_material = NULL;
 	byte_t *seed = NULL;
+	size_t seed_input_size = 0;
 
-	seed_material = (byte_t *)malloc(seed_material_full_size);
+	seed_material = (byte_t *)malloc(seed_material_size);
 
 	if (seed_material == NULL)
 	{
@@ -181,21 +180,23 @@ static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_
 	}
 
 	// Entropy and Nonce
-	status = get_entropy(seed_material, 2 * security);
+	status = cdrbg->entropy(seed_material, total_entropy_size);
+	seed_input_size += total_entropy_size;
 
-	if (status == 0)
+	if (status < total_entropy_size)
 	{
 		goto end;
 	}
 
 	if (personalization != NULL)
 	{
-		memcpy(seed_material + (2 * security), personalization, personalization_size);
+		memcpy(seed_material + seed_input_size, personalization, personalization_size);
+		seed_input_size += personalization_size;
 	}
 
-	seed = seed_material + seed_material_size;
+	seed = seed_material + seed_input_size;
 
-	status = ctr_drbg_df(cdrbg, seed_material, seed_material_size, seed, seed_size);
+	status = ctr_drbg_df(cdrbg, seed_material, seed_input_size, seed, cdrbg->seed_size);
 
 	if (status != 0)
 	{
@@ -217,8 +218,9 @@ end:
 	return status;
 }
 
-static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, cipher_algorithm algorithm, uint32_t reseed_interval,
-									   void *personalization, size_t personalization_size)
+static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size),
+									   cipher_algorithm algorithm, uint32_t reseed_interval, void *personalization,
+									   size_t personalization_size)
 {
 	ctr_drbg *cdrbg = (ctr_drbg *)ptr;
 
@@ -226,6 +228,8 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, cipher_algori
 	uint16_t key_size;
 	uint16_t seed_size;
 	uint16_t block_size;
+	uint16_t min_entropy_size;
+	uint16_t min_nonce_size;
 
 	void (*_init)(void *, size_t, int32_t, void *, size_t) = NULL;
 	void (*_encrypt)(void *, void *, void *) = NULL;
@@ -236,18 +240,24 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, cipher_algori
 	case CIPHER_AES128:
 		security_strength = 128;
 		key_size = 16;
+		min_entropy_size = 16;
+		min_nonce_size = 8;
 
 		_encrypt = (void (*)(void *, void *, void *))aes128_encrypt_block;
 		break;
 	case CIPHER_AES192:
 		security_strength = 192;
 		key_size = 24;
+		min_entropy_size = 24;
+		min_nonce_size = 12;
 
 		_encrypt = (void (*)(void *, void *, void *))aes192_encrypt_block;
 		break;
 	case CIPHER_AES256:
 		security_strength = 256;
 		key_size = 32;
+		min_entropy_size = 32;
+		min_nonce_size = 16;
 
 		_encrypt = (void (*)(void *, void *, void *))aes256_encrypt_block;
 		break;
@@ -267,7 +277,10 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, cipher_algori
 	cdrbg->key_size = key_size;
 	cdrbg->block_size = block_size;
 	cdrbg->seed_size = seed_size;
+	cdrbg->min_entropy_size = min_entropy_size;
+	cdrbg->min_nonce_size = min_nonce_size;
 	cdrbg->security_strength = security_strength;
+	cdrbg->entropy = entropy == NULL ? get_entropy : entropy;
 
 	cdrbg->_ctx = (void *)((byte_t *)cdrbg + sizeof(ctr_drbg));
 	cdrbg->_dfctx = (void *)((byte_t *)cdrbg->_ctx + ctx_size);
@@ -290,8 +303,8 @@ size_t ctr_drbg_size(cipher_algorithm algorithm)
 	return sizeof(ctr_drbg) + (get_approved_cipher_ctx_size(algorithm) * 2);
 }
 
-ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint32_t reseed_interval, void *personalization,
-						size_t personalization_size)
+ctr_drbg *ctr_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm,
+						uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 
 	size_t ctx_size = get_approved_cipher_ctx_size(algorithm);
@@ -312,10 +325,11 @@ ctr_drbg *ctr_drbg_init(void *ptr, size_t size, cipher_algorithm algorithm, uint
 		return NULL;
 	}
 
-	return ctr_drbg_init_checked(ptr, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+	return ctr_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-ctr_drbg *ctr_drbg_new(cipher_algorithm algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size)
+ctr_drbg *ctr_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm, uint32_t reseed_interval,
+					   void *personalization, size_t personalization_size)
 {
 	ctr_drbg *cdrbg = NULL;
 	ctr_drbg *result = NULL;
@@ -340,7 +354,7 @@ ctr_drbg *ctr_drbg_new(cipher_algorithm algorithm, uint32_t reseed_interval, voi
 		return NULL;
 	}
 
-	result = ctr_drbg_init_checked(cdrbg, ctx_size, algorithm, reseed_interval, personalization, personalization_size);
+	result = ctr_drbg_init_checked(cdrbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 
 	if (result == NULL)
 	{
@@ -360,24 +374,23 @@ void ctr_drbg_delete(ctr_drbg *cdrbg)
 int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_size)
 {
 	int32_t status;
-	size_t security = cdrbg->security_strength / 8;
-	size_t seed_size = cdrbg->seed_size;
-	size_t seed_material_size = security + input_size;
-	size_t seed_material_full_size = seed_material_size + seed_size;
+	size_t seed_material_size = cdrbg->min_entropy_size + cdrbg->seed_size + input_size;
 
 	byte_t *seed_material = NULL;
 	byte_t *seed = NULL;
+	size_t seed_input_size = 0;
 
-	seed_material = (byte_t *)malloc(seed_material_full_size);
+	seed_material = (byte_t *)malloc(seed_material_size);
 
 	if (seed_material == NULL)
 	{
 		return -1;
 	}
 
-	status = get_entropy(seed_material, security);
+	status = cdrbg->entropy(seed_material, cdrbg->min_entropy_size);
+	seed_input_size += cdrbg->min_entropy_size;
 
-	if (status == 0)
+	if (status < cdrbg->min_entropy_size)
 	{
 		free(seed_material);
 		return -1;
@@ -385,12 +398,13 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 
 	if (additional_input != NULL && input_size > 0)
 	{
-		memcpy(seed_material + security, additional_input, input_size);
+		memcpy(seed_material + seed_input_size, additional_input, input_size);
+		seed_input_size += input_size;
 	}
 
 	seed = seed_material + seed_material_size;
 
-	status = ctr_drbg_df(cdrbg, seed_material, seed_material_size, seed, seed_size);
+	status = ctr_drbg_df(cdrbg, seed_material, seed_input_size, seed, cdrbg->seed_size);
 
 	if (status != 0)
 	{
