@@ -69,12 +69,14 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "e75855f93b971ac468d200992e211960202d53cf08852ef86772d6490bfb53f9");
 	status += CHECK_BLOCK(hdrbg->key, 32, "302a4aba78412ab36940f4be7b940a0c728542b8b81d95b801a57b3797f9dd6e");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hmac_drbg_generate(hdrbg, 0, NULL, 0, buffer, 128);
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "bfbdcf455d5c82acafc59f339ce57126ff70b67aef910fa25db7617818faeafe");
 	status += CHECK_BLOCK(hdrbg->key, 32, "911bf7cbda4387a172a1a3daf6c9fa8e17c4bfef69cc7eff1341e7eef88d2811");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hmac_drbg_generate(hdrbg, 0, NULL, 0, buffer, 128);
@@ -86,6 +88,7 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "6b94e773e3469353a1ca8face76b238c5919d62a150a7dfc589ffa11c30b5b94");
 	status += CHECK_BLOCK(hdrbg->key, 32, "6dd2cd5b1edba4b620d195ce26ad6845b063211d11e591432de37a3ad793f66c");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 3);
 
 	hmac_drbg_delete(hdrbg);
 
@@ -98,6 +101,7 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "0369222ee2c0a271fed4629e6954613f8b96a19174eaf6bace11822ef8a0db01");
 	status += CHECK_BLOCK(hdrbg->key, 32, "fc24c5b12d7ead3a43c84ebf38c3ddede2b6691bf5aecd5bcd75afa4a205620f");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "0dc678372c9f24230d15acd1d36b13294c58b76f2847397fbc32dfada12b8e51");
@@ -106,6 +110,7 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "0e4aa4aeca304d1918e7c92dba0eaf92f8c348ecc031ab9efa75232448133066");
 	status += CHECK_BLOCK(hdrbg->key, 32, "26b7fa53a19ef63898ed51cfe9bbb9cf48ef26047a24d491cfabaa85ee83ad96");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "59874caea33944638e1e11fa3626fa2bc26d4502120c17e0e198d04f9ef0ff95");
@@ -117,6 +122,7 @@ int32_t hmac_drbg_test_suite()
 		"57f95b11c07f7fef1d381eb0b7fd535b902ccede73538155f30100fd13ff007806b367f5032561338a92541f441725eab17996dd58e9870025d98b4752b547");
 	status += CHECK_BLOCK(hdrbg->seed, 32, "93a426a8cb14dd95d443cd301eb94e7c4c365740797b2f2853adb7dbd6de9dd3");
 	status += CHECK_BLOCK(hdrbg->key, 32, "b559747acecd08edf539dd2e4f5465ecb0dee108181d15781015e482bb7ff958");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 3);
 
 	hmac_drbg_delete(hdrbg);
 
@@ -129,12 +135,14 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "65ee4461fd700036721800d2a71f5110cc8099fe447d4b68f317b821983a2063");
 	status += CHECK_BLOCK(hdrbg->key, 32, "ac0e155af29e01caf36f5f36944adf9cef01b18a4a7aa5af8d63cd56a1d03d43");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	hex_to_block(extra, 32, "0e4dddbe0034180b59303d527a938a447bad9e4a91787d1072e6f41350ff11e5");
 	hmac_drbg_reseed(hdrbg, extra, 32);
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "1de6328fc0c04353018c24e671c0828229d2bdb2faf331a9cb6363a68baf0ad9");
 	status += CHECK_BLOCK(hdrbg->key, 32, "e21c915e4af5e628b7a45d2953dd61b552f256a215dd604a56067829bd4dfabe");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "cb25fccf929812b9fc66aea93e0cafb064e25b8c2989ae5078648ef529ecb487");
@@ -142,6 +150,7 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "a3d029a688de1596b7a214af9f547d26e0d03bf3f62a5755e5288923b851c02e");
 	status += CHECK_BLOCK(hdrbg->key, 32, "41b4ab280425b8e79e25011bcfeef18fbfa57b272100351a742afcabb5be78cf");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "c1685a422e4a0673cea9948937a8fdaa77777066f501aa17493682a83d931e6a");
@@ -153,6 +162,7 @@ int32_t hmac_drbg_test_suite()
 		"b1b0f17712863df82406e2c2a2fb73ea99dc3969c7e52aeaea031e0112fbf8d785426ae7c106d876a900ba54c4e9a1f3656990571c6d1fb56131cd1cdb1e68");
 	status += CHECK_BLOCK(hdrbg->seed, 32, "53243974490ced473f3bc498415b40d75b08cd275bc596e5572aa14b9b51e054");
 	status += CHECK_BLOCK(hdrbg->key, 32, "8d5ed0295e15688a8f9d7556fd452d63c6b0dff43e653b607cc79958cb305921");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 3);
 
 	hmac_drbg_delete(hdrbg);
 
@@ -165,6 +175,7 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "af2a826550a0482185b35501838dd3b5d7673f92407559884c8a07389bc8a2d9");
 	status += CHECK_BLOCK(hdrbg->key, 32, "709931023cb2c21917a43b9f8945932d0e5c0484d1f4164c8d44046e28d8aecd");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "4df6f301c1f2831f18ab0715706fc1e381c1c09a11ffc9af9938bd28a6fe700b");
@@ -172,6 +183,7 @@ int32_t hmac_drbg_test_suite()
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "f534194e68446e435954f03505b2bda9bdc7a00a836569944adff7abce96aacc");
 	status += CHECK_BLOCK(hdrbg->key, 32, "8a2a3dd2f103aabee005bf3c53e017e42be31ced003728df50e3ce9e950fb7d4");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "e350cc55cd96ad56aeb81b7b735dc87d48a1a8adca68e3ff0304e9438c00b776");
@@ -249,6 +261,7 @@ int32_t hash_drbg_test_suite()
 						  "6e2f8fe3cdcd8942bc19890b70e89dd37ef46dfbdc17c209941b1b236417b3704ae2e5bbbf289500068fd45b6b40b69c78944f611255cf");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "665fee50d6d7c604f96d68192ebfaf508ea88a193c7b9ccd04a47034ee7de5a9549a709b7201b38b307fdfe842ff1be8f7fcbce6c82a28");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hash_drbg_generate(hdrbg, 0, NULL, 0, buffer, 128);
@@ -257,6 +270,7 @@ int32_t hash_drbg_test_suite()
 						  "d48f7e34a4a54f47b586f1249fa84d240d9cf81518935f09c40e32fe2b70cefff9715765773a401b85809bbceb0e8a12ff6e7d4e25281f");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "665fee50d6d7c604f96d68192ebfaf508ea88a193c7b9ccd04a47034ee7de5a9549a709b7201b38b307fdfe842ff1be8f7fcbce6c82a28");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hash_drbg_generate(hdrbg, 0, NULL, 0, buffer, 128);
@@ -270,6 +284,7 @@ int32_t hash_drbg_test_suite()
 						  "3aef6c857b7d154caef4593dce67fc749c45822e550efc1498b6cc482dce1492a6d442e2af5d76013490f5019bbb01f94476c212ea2eae");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "665fee50d6d7c604f96d68192ebfaf508ea88a193c7b9ccd04a47034ee7de5a9549a709b7201b38b307fdfe842ff1be8f7fcbce6c82a28");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 3);
 
 	hash_drbg_delete(hdrbg);
 
@@ -284,6 +299,7 @@ int32_t hash_drbg_test_suite()
 						  "ac04382ddaaa86eb444112d2a9b1e57e2f5f1df3afbbbcb3c72f0b7b8043b748eb57476658e253972e4b3d9f5459d635673c0902282a7b");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "3bf764be99e1eb50d43019f77de267f6d6ffaa3f76859e350f21b5bd40de45bf872eff398e44c1f0f38b154575ced1f1a3db4f3eee87e4");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "7a57a675c9df3ec61a20194a34fbd9f75944b36ac33f755b5a4546830011f3f6");
@@ -294,6 +310,7 @@ int32_t hash_drbg_test_suite()
 						  "e7fb9cec748c723c18712cca27944d75065ec83326415be69e322f13128b9ebe8c549a27fdf9d164ef63cf7fa89053bda560c64941c61d");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "3bf764be99e1eb50d43019f77de267f6d6ffaa3f76859e350f21b5bd40de45bf872eff398e44c1f0f38b154575ced1f1a3db4f3eee87e4");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "83e57b2d0f045d63f01cf2b43ca38b2b2f043fb2335f1bb1b571a813d561ede1");
@@ -307,6 +324,7 @@ int32_t hash_drbg_test_suite()
 						  "23f301ab0e6e5d8ceca146c1a576b56bdd5e72729cc6fbff1785913c88295bf1e1286b4773504218534cc43bc66ef40904e098c55c1edb");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "3bf764be99e1eb50d43019f77de267f6d6ffaa3f76859e350f21b5bd40de45bf872eff398e44c1f0f38b154575ced1f1a3db4f3eee87e4");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 3);
 
 	hash_drbg_delete(hdrbg);
 
@@ -321,6 +339,7 @@ int32_t hash_drbg_test_suite()
 						  "67ea750051ac6d9debd6251fb910479e4fc987430fa65a6c93cff3b1eb4d31363120601f092dffeb40fe0c953022bb6c4b4da160ef76ce");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "9c1846671d24ab6fec65768297105cbc05c95860a77dafcd5aceb98ef826298d0ab3dfc9a6ebd1984382cd8390d42415bd363524ae0837");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	hex_to_block(extra, 32, "b30d28afa4116bbc136e6509b582a693bc91714046aa3c66b677b3eff9adfd49");
 	hash_drbg_reseed(hdrbg, extra, 32);
@@ -329,6 +348,7 @@ int32_t hash_drbg_test_suite()
 						  "00fe5cec03fc719ca59a03897d61fce024ad5210be93ffc25cbe9b41a6a9f3e43ad947e920e1df86100a514ea5d9543f171f70657d8a62");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "a448b71f3dc2807227b67da919b82af35b5a8d4ebf012b720a59ae80c1d843c11932f9dcb8fcd9249920ded2e037c74feed2b31484009c");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "77fd1d68d6a4ddd5f327252d3f6bdfee8c35ced383beafc93277eff21b6ff41b");
@@ -338,6 +358,7 @@ int32_t hash_drbg_test_suite()
 						  "a547140b41bef20ecd508132971a27d38007df5f7d952c31ad0f9f286020e66b7c1d65eea824fbe70c97f6c42eea8f5ce3eb7693722ace");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "a448b71f3dc2807227b67da919b82af35b5a8d4ebf012b720a59ae80c1d843c11932f9dcb8fcd9249920ded2e037c74feed2b31484009c");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "59a01ff86a58721e85d2f83f7399f1964e27f87fcd1bf5c1ebf337109b13bd24");
@@ -351,6 +372,7 @@ int32_t hash_drbg_test_suite()
 						  "498fcb2a7f817280f506fedbb0d252c6db626cae3c96583a1de76082712c58b9dc29ddc66196c032ac7df836af29f7a71ae7159d555d76");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "a448b71f3dc2807227b67da919b82af35b5a8d4ebf012b720a59ae80c1d843c11932f9dcb8fcd9249920ded2e037c74feed2b31484009c");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 3);
 
 	hash_drbg_delete(hdrbg);
 
@@ -365,6 +387,7 @@ int32_t hash_drbg_test_suite()
 						  "6fabba1fef3b6028ae81bb8867a6aba3830b279b6b821190cc31d967965af0fca4335a6682f0fdad61da755095de2f6d983f1953ddc354");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "e2bf43dc2cc78cdc11bc2643dfeffe4fcd6af6be8bc773118e97ec6d589bd9119a340a4f2b3c5e77db1c4755c9d5ceb9d528ff4a1cf28e");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 1);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "752d90f2b91a5286b6d3308c7676272f45e5fbd0f9bd9087b3766c0ffc3c81ef");
@@ -374,6 +397,7 @@ int32_t hash_drbg_test_suite()
 						  "ef1966668052073d358dc6a4c4d91bea9cfad3705901dc6f5595d642183b730bbcf3c5fc685a036ac5807caab47a9931332fd74967a559");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "2fd90e22a28dbdb5bb34703213de0e1c7e10eddbb57b13089cc2cea7ce89a60c679b47e62f10be0714794fb61c09dd9b508f0e4bd60e0b");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	memset(buffer, 0, 128);
 	hex_to_block(extra, 32, "9668cff92593ad0576f15925f5aa5dea577a7790ad1c20f8773907bfc70b9bb0");
@@ -387,6 +411,7 @@ int32_t hash_drbg_test_suite()
 						  "ad5091b8206d67ca34d5ecf00148b21fba3f41a9158a4056cfc244dae115f15147ab1815ffb6db9718b1b5dbab9ac47e742b1328b7f312");
 	status += CHECK_BLOCK(hdrbg->constant, 55,
 						  "a9cece42836ccefdab349f6921d43566fcbfbe64afac23fb4051b232c1f10c85f51623b07de25a1175eb7208486bc5485ab1c9ab6ae719");
+	status += CHECK_VALUE(hdrbg->reseed_counter, 2);
 
 	hash_drbg_delete(hdrbg);
 
