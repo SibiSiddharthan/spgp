@@ -382,7 +382,7 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 {
 	int32_t status = 0;
 	hash_ctx *hctx = hdrbg->hctx;
-	uint64_t reseed_counter = BSWAP_64(hdrbg->reseed_counter);
+	uint64_t reseed_counter = 0;
 
 	byte_t hash[MAX_HASH_SIZE] = {0};
 
@@ -395,13 +395,18 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 	// Reseed
 	if (hdrbg->reseed_counter == hdrbg->reseed_interval || prediction_resistance_request > 0)
 	{
-		status = hash_drbg_reseed(hdrbg, NULL, 0);
+		status = hash_drbg_reseed(hdrbg, additional_input, input_size);
+
+		additional_input = NULL;
+		input_size = 0;
 
 		if (status == -1)
 		{
 			return -1;
 		}
 	}
+
+	reseed_counter = BSWAP_64(hdrbg->reseed_counter);
 
 	if (additional_input != NULL && input_size > 0)
 	{
