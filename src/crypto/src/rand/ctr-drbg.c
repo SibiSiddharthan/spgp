@@ -66,7 +66,7 @@ static int32_t ctr_drbg_df(ctr_drbg *cdrbg, byte_t *input, size_t input_size, by
 	uint32_t n = BSWAP_32((uint32_t)output_size);
 
 	byte_t *s = NULL;
-	size_t size = ROUND_UP(l + n + (sizeof(uint32_t) * 2) + 1, output_size) + AES_BLOCK_SIZE;
+	size_t size = ROUND_UP(input_size + (sizeof(uint32_t) * 2) + 1, AES_BLOCK_SIZE) + AES_BLOCK_SIZE;
 
 	size_t pos = 0;
 	byte_t count = 0;
@@ -84,13 +84,13 @@ static int32_t ctr_drbg_df(ctr_drbg *cdrbg, byte_t *input, size_t input_size, by
 		return -1;
 	}
 
-	memset(s + pos, 0, AES_BLOCK_SIZE);
+	memset(s, 0, size);
 	pos += AES_BLOCK_SIZE;
 
 	memcpy(s + pos, &l, sizeof(uint32_t));
 	pos += sizeof(uint32_t);
 
-	memcpy(s + pos, &s, sizeof(uint32_t));
+	memcpy(s + pos, &n, sizeof(uint32_t));
 	pos += sizeof(uint32_t);
 
 	memcpy(s + pos, input, input_size);
@@ -98,16 +98,14 @@ static int32_t ctr_drbg_df(ctr_drbg *cdrbg, byte_t *input, size_t input_size, by
 
 	s[pos++] = 0x80;
 
-	memset(s + pos, 0x00, size - pos);
-
 	cdrbg->_init(cdrbg->_dfctx, cdrbg->_size, cdrbg->_algorithm, (void *)base_key, cdrbg->key_size);
 
 	while (temp_size < cdrbg->seed_size)
 	{
 		// Last byte of integer.
-		s[7] = count;
+		s[3] = count;
 
-		bcc(cdrbg, s, size, temp, cdrbg->block_size);
+		bcc(cdrbg, s, size, temp + temp_size, cdrbg->block_size);
 		temp_size += cdrbg->block_size;
 
 		++count;
@@ -123,7 +121,9 @@ static int32_t ctr_drbg_df(ctr_drbg *cdrbg, byte_t *input, size_t input_size, by
 
 	while (temp_size < output_size)
 	{
-		cdrbg->_encrypt(cdrbg->_dfctx, new_block, temp);
+		cdrbg->_encrypt(cdrbg->_dfctx, new_block, new_block);
+
+		memcpy(temp + temp_size, new_block, cdrbg->block_size);
 		temp_size += cdrbg->block_size;
 	}
 
@@ -404,7 +404,7 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 		seed_input_size += input_size;
 	}
 
-	seed = seed_material + seed_material_size;
+	seed = seed_material + seed_input_size;
 
 	status = ctr_drbg_df(cdrbg, seed_material, seed_input_size, seed, cdrbg->seed_size);
 
@@ -445,7 +445,10 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reques
 	// Reseed
 	if (cdrbg->reseed_counter == cdrbg->reseed_interval || prediction_resistance_request > 0)
 	{
-		status = ctr_drbg_reseed(cdrbg, NULL, 0);
+	status = ctr_drbg_reseed(cdrbg, additional_input, input_size);
+
+		additional_input = NULL;
+		input_size = 0;
 
 		if (status == -1)
 		{
