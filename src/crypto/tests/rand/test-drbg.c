@@ -420,7 +420,193 @@ int32_t hash_drbg_test_suite()
 	return status;
 }
 
+static uint32_t ctr_drbg_aes256_entropy(void *buffer, size_t size)
+{
+	static uint32_t count = 0;
+
+	switch (count)
+	{
+	case 0:
+		hex_to_block(buffer, 32, "36401940fa8b1fba91a1661f211d78a0b9389a74e5bccfece8d766af1a6d3b14");
+		hex_to_block((byte_t *)buffer + 32, 16, "496f25b0f1301b4f501be30380a137eb");
+		break;
+	case 1:
+		hex_to_block(buffer, 32, "6b536f8f4c5616a0c4e681825585724d522d37fc02a05564030872e0d6c3922f");
+		hex_to_block((byte_t *)buffer + 32, 16, "0184417527ffdd3edddbb070957826c0");
+		break;
+	case 2:
+		hex_to_block(buffer, 32, "e2f75cf553035b3cb4d21e567ca5c203623d4a4b5885326f63ea61a020a4984e");
+		hex_to_block((byte_t *)buffer + 32, 16, "a666ee4b26dae5897fc5e85c643fc630");
+		break;
+	case 3:
+		hex_to_block(buffer, 32, "f6672d022226b05db5d3c59c0da5b20a1be05ecabbd1744483ca4ce5571d93f4");
+		break;
+	case 4:
+		hex_to_block(buffer, 32, "e02c6627df0c0422d2dfc7da9686daf8dce578966798d4e503530dd7db50130e");
+		hex_to_block((byte_t *)buffer + 32, 16, "1b48e103c4091ac2f4581dba6a61858c");
+		break;
+	case 5:
+		hex_to_block(buffer, 32, "323b97c0fe0060c94d0423f9e4424c9b92f769e170a3e1eabb72d78bec04bb27");
+		break;
+	case 6:
+		hex_to_block(buffer, 32, "c96c87b9eeee3ca77689d8935d0163cf2679bd35af98b195cf0622bd85dc9578");
+		break;
+
+	default:
+		break;
+	}
+
+	++count;
+
+	return size;
+}
+
+int32_t ctr_drbg_test_suite()
+{
+	int32_t status = 0;
+	ctr_drbg *cdrbg = NULL;
+
+	byte_t buffer[128] = {0};
+	byte_t extra[32] = {0};
+
+	// -------------------------------------------------------------------------------------------------------------------------------------
+	// Simple
+
+	cdrbg = ctr_drbg_new(ctr_drbg_aes256_entropy, CIPHER_AES256, 65536, NULL, 0);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "3363d9000e6db47c16d3fc65f2872c08a35f99b2d174afa537a66ec153052d98");
+	status += CHECK_BLOCK(cdrbg->block, 16, "9ee8d2e9c618ccbb8e66b5eb5333dce1");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 1);
+
+	memset(buffer, 0, 128);
+	ctr_drbg_generate(cdrbg, 0, NULL, 0, buffer, 64);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "b1dff09c816af6d4b2111fe63c4507cb196154f8c59957a94a2b641a7c16cc01");
+	status += CHECK_BLOCK(cdrbg->block, 16, "69eec01b2dd4ff3aab5fac9467f54485");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 2);
+
+	memset(buffer, 0, 128);
+	ctr_drbg_generate(cdrbg, 0, NULL, 0, buffer, 64);
+
+	status += CHECK_BLOCK(
+		buffer, 64,
+		"5862eb38bd558dd978a696e6df164782ddd887e7e9a6c9f3f1fbafb78941b535a64912dfd224c6dc7454e5250b3d97165e16260c2faf1cc7735cb75fb4f07e1d");
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "33a1f160b0bde1dd55fc314c3d1620c0581ace8b32f062fb1ed54cdecdc17694");
+	status += CHECK_BLOCK(cdrbg->block, 16, "f537c07f36573a26b3f55c8b9f7246d1");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 3);
+
+	ctr_drbg_delete(cdrbg);
+
+	// -------------------------------------------------------------------------------------------------------------------------------------
+	// Additional inputs
+
+	hex_to_block(extra, 32, "91e62a609b4db50c5e7ad7d09dc387dae9da6d2585bd3530389411cea7d2a40e");
+
+	cdrbg = ctr_drbg_new(ctr_drbg_aes256_entropy, CIPHER_AES256, 65536, extra, 32);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "a86cfae1c1c320f73e9d20a024a96105a1327eb32c9ace9f4158d39950861fbf");
+	status += CHECK_BLOCK(cdrbg->block, 16, "660938f7e6fbc4238b8d5970acfcc436");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 1);
+
+	memset(buffer, 0, 128);
+	hex_to_block(extra, 32, "42f398bf2229976f9d97b0a5fc47d5c64b70fa5631abf28f2c6f91f78b7278d9");
+
+	ctr_drbg_generate(cdrbg, 0, extra, 32, buffer, 64);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "f16822054dcb9e15fcc35aa14b43cee61f8d9756dc350af3199a97504e1875af");
+	status += CHECK_BLOCK(cdrbg->block, 16, "622346663e083cb20218729af58fba31");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 2);
+
+	memset(buffer, 0, 128);
+	hex_to_block(extra, 32, "c624291eb039ad1724c9b0ba20b98421a7f0032f6c8c00f64794018ce5a5ed96");
+	ctr_drbg_generate(cdrbg, 0, extra, 32, buffer, 64);
+
+	status += CHECK_BLOCK(
+		buffer, 64,
+		"507e0b4f12c408d87052b79eb4879c925a918b0fcd812bbedc720a3d8be656e40de900257f7a270dd6d8e7da50cdc20d744e94978d707b53f382aeb16488b122");
+	status += CHECK_BLOCK(cdrbg->key, 32, "e90c8990876479e28fb7e4f9a15a6c65fe55aff1aa14bffbfb4ef037d3268c95");
+	status += CHECK_BLOCK(cdrbg->block, 16, "ba2a09545efdc5f09a82014f632d226d");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 3);
+
+	ctr_drbg_delete(cdrbg);
+
+	// -------------------------------------------------------------------------------------------------------------------------------------
+	// Reseed
+
+	hex_to_block(extra, 32, "19275bbd7a0109d8179334c55337bc0a3f5ac48cb8c4959c888c0b65f7ac9a84");
+
+	cdrbg = ctr_drbg_new(ctr_drbg_aes256_entropy, CIPHER_AES256, 65536, extra, 32);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "7778c4dab6a0945bb276c82b1a17525a9bf9f128153ea11b12514b8ea925d7ea");
+	status += CHECK_BLOCK(cdrbg->block, 16, "f20cb02cc8917f1ffbf1b41827182067");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 1);
+
+	hex_to_block(extra, 32, "8c8f940af45aec864c8aa8be60b100f82bb9670c7e2a392a4ab6f4b20eefbbaa");
+	ctr_drbg_reseed(cdrbg, extra, 32);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "24343571d0cf186762a3eafa9107a1ed0c60885a8261b4a907fae7369510c42e");
+	status += CHECK_BLOCK(cdrbg->block, 16, "16bf5a7afee786299d7c0b44375e70bb");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 1);
+
+	memset(buffer, 0, 128);
+	hex_to_block(extra, 32, "26b5f0dadc891e0b1b78878e7ae75aee843376c0968c54c12759c18def21d363");
+	ctr_drbg_generate(cdrbg, 0, extra, 32, buffer, 64);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "f5d3d0da273749450d26fb333d81ac8b3f59f049abf3eb5a625394955f486130");
+	status += CHECK_BLOCK(cdrbg->block, 16, "23f0a9d6741928dfd14d3823ec59207c");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 2);
+
+	memset(buffer, 0, 128);
+	hex_to_block(extra, 32, "ff6791f4d4b29996b0399d95a14a28b8e2e20787531d916e7ed2ec040bbd7c84");
+	ctr_drbg_generate(cdrbg, 0, extra, 32, buffer, 64);
+
+	status += CHECK_BLOCK(
+		buffer, 64,
+		"eb8f289bb05be84084840c3d2c9deea0245487a98d7e1a4017b860e48635213d622a4a4eae91efdd5342ade94093f199c16deb1e58d0088b9b4a0f24a5d15775");
+	status += CHECK_BLOCK(cdrbg->key, 32, "2ac85be48c4b86fea6a3c6826c3d495f03bf4a273a038578b78c3e642a5431e4");
+	status += CHECK_BLOCK(cdrbg->block, 16, "57bc95505c2b95d293e628127ca2cb16");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 3);
+
+	ctr_drbg_delete(cdrbg);
+
+	// -------------------------------------------------------------------------------------------------------------------------------------
+	// Prediction resistance
+
+	hex_to_block(extra, 32, "0145aafa6ec83eb6525a8f2fa84ad630bb57bfe676a591900e18a4c0c4aa8402");
+
+	cdrbg = ctr_drbg_new(ctr_drbg_aes256_entropy, CIPHER_AES256, 65536, extra, 32);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "3d2ecef41efd871f7bea01244204b4d87cf8b72b5eeb6a12205dc5a8d0b3c76c");
+	status += CHECK_BLOCK(cdrbg->block, 16, "4af7241a20af7a651a2c20beaf450311");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 1);
+
+	memset(buffer, 0, 128);
+	hex_to_block(extra, 32, "fddddacb8c20182f16596a619105aae791696ee7aca308b5524383c178a27cc2");
+	ctr_drbg_generate(cdrbg, 1, extra, 32, buffer, 64);
+
+	status += CHECK_BLOCK(cdrbg->key, 32, "52166bb8609e11da91acf99948db35eb4dec23874f09f84c95d2babb78477aae");
+	status += CHECK_BLOCK(cdrbg->block, 16, "a6cde557ae2df8c1df7a521d79083550");
+	status += CHECK_VALUE(cdrbg->reseed_counter, 2);
+
+	memset(buffer, 0, 128);
+	hex_to_block(extra, 32, "d7e768a3281e4a43a0da59cd9af630548bcc2b95bff5c658b312b086f0fb54e4");
+	ctr_drbg_generate(cdrbg, 1, extra, 32, buffer, 64);
+
+	status += CHECK_BLOCK(
+		buffer, 64,
+		"493cdacfd25a678b8d8138bd4eff888b280d3e21e1fa73af3375d5914da958b1bed0233289ac49e59d56d5d40a7577fdc72304f8c8c8cb4ad4b216efa28180fd");
+	status += CHECK_BLOCK(cdrbg->key, 32, "1a4d00964d882b31ca3d36db6fc92f6f0cfbd2f5ea86891ac7776c44d911734b");
+	status += CHECK_BLOCK(cdrbg->block, 16, "6559a7fdf804e02e4062c0d7c9f7c7bf");
+
+	ctr_drbg_delete(cdrbg);
+
+	// -------------------------------------------------------------------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return hmac_drbg_test_suite() + hash_drbg_test_suite();
+	return hmac_drbg_test_suite() + hash_drbg_test_suite() + ctr_drbg_test_suite();
 }
