@@ -337,7 +337,10 @@ int32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_requ
 	// Reseed
 	if (hdrbg->reseed_counter == hdrbg->reseed_interval || prediction_resistance_request > 0)
 	{
-		status = hmac_drbg_reseed(hdrbg, NULL, 0);
+		status = hmac_drbg_reseed(hdrbg, additional_input, input_size);
+
+		additional_input = NULL;
+		input_size = 0;
 
 		if (status == -1)
 		{
