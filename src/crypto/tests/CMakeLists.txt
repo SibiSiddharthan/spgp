@@ -72,6 +72,7 @@ ripemd
 sha1
 sha2
 sha3
+shake
 )
 
 crypto_mac_tests(
