@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <shake.h>
+#include <bitscan.h>
 #include <minmax.h>
 
 // See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
@@ -226,26 +227,9 @@ void shake256_xof(void *data, size_t data_size, void *xof, size_t xof_size)
 }
 
 // Get the index of most significant non zero byte.
-static uint8_t leading(uint64_t x)
+static inline uint8_t leading(uint64_t x)
 {
-	byte_t *p = (byte_t *)&x;
-
-	// Shortcut for zero.
-	if (x == 0)
-	{
-		return 1;
-	}
-
-	for (uint8_t i = 7; i >= 0; ++i)
-	{
-		if (p[i] != 0)
-		{
-			return i + 1;
-		}
-	}
-
-	// Should be unreachable.
-	return 1;
+	return (bsr_64(x) / 8) + 1;
 }
 
 // leading(x) || BE(x)
@@ -354,7 +338,7 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *
 	uint64_t zero_pad = 0;
 
 	// cSHAKE128(X, L, N, S) = KECCAK[256](bytepad(encode_string(N) || encode_string(S), 168) || X || 00, L)
-	// cSHAKE256(X, L, N, S) = KECCAK[256](bytepad(encode_string(N) || encode_string(S), 136) || X || 00, L)
+	// cSHAKE256(X, L, N, S) = KECCAK[512](bytepad(encode_string(N) || encode_string(S), 136) || X || 00, L)
 
 	// Expansion of (bytepad(encode_string(N) || encode_string(S), B))
 	// left_encode(B) || left_encode(N.size) || N || left_encode(S.size) || S || padding
@@ -362,7 +346,7 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *
 	pos = left_encode(ctx->block_size, pad);
 	sha3_update(ctx, pad, pos);
 
-	pos = left_encode(name_size, pad);
+	pos = left_encode(name_size * 8, pad); // bits
 	sha3_update(ctx, pad, pos);
 
 	if (name != NULL)
@@ -370,7 +354,7 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *
 		sha3_update(ctx, name, name_size);
 	}
 
-	pos = left_encode(custom_size, pad);
+	pos = left_encode(custom_size * 8, pad); // bits
 	sha3_update(ctx, pad, pos);
 
 	if (custom != NULL)
@@ -383,10 +367,11 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *
 	if (zero_pad > 0)
 	{
 		memset(&ctx->internal[zero_pad], 0, ctx->block_size - zero_pad);
-		ctx->message_size += zero_pad;
-
-		sha3_hash_block(ctx);
 	}
+
+	// Hash the state
+	sha3_hash_block(ctx);
+	ctx->message_size = 0;
 
 	return ctx;
 }
