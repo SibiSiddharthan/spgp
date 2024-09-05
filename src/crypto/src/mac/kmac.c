@@ -19,6 +19,9 @@ uint8_t right_encode(uint64_t x, byte_t *o);
 sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *custom, size_t custom_size);
 void cshake_common_final(sha3_ctx *ctx, void *buffer, size_t size);
 
+// From sha3.c
+void sha3_hash_block(sha3_ctx *ctx);
+
 static sha3_ctx *kmac_init_common(sha3_ctx *ctx, void *key, size_t key_size, void *custom, size_t custom_size)
 {
 	byte_t pad[16] = {0};
@@ -33,7 +36,7 @@ static sha3_ctx *kmac_init_common(sha3_ctx *ctx, void *key, size_t key_size, voi
 	pos = left_encode(ctx->block_size, pad);
 	sha3_update(ctx, pad, pos);
 
-	pos = left_encode(key_size, pad);
+	pos = left_encode(key_size * 8, pad);
 	sha3_update(ctx, pad, pos);
 
 	if (key != NULL)
@@ -46,8 +49,11 @@ static sha3_ctx *kmac_init_common(sha3_ctx *ctx, void *key, size_t key_size, voi
 	if (zero_pad > 0)
 	{
 		memset(&ctx->internal[zero_pad], 0, ctx->block_size - zero_pad);
-		ctx->message_size += zero_pad;
 	}
+
+	// Hash the state
+	sha3_hash_block(ctx);
+	ctx->message_size = 0;
 
 	return ctx;
 }
