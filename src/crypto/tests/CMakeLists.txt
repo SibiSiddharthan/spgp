@@ -77,6 +77,7 @@ shake
 
 crypto_mac_tests(
 hmac
+kmac
 )
 
 crypto_rand_tests(
