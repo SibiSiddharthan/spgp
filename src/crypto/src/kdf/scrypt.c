@@ -88,58 +88,59 @@ static void salsa20_block(uint32_t block[SALSA20_BLOCK_WORDS])
 
 static void scrypt_block_mix(byte_t *in_blocks, byte_t *out_blocks, uint32_t count)
 {
-	byte_t t[64];
-	byte_t *x = in_blocks + ((count - 1) * 64);
+	byte_t x[64];
 	byte_t *y = out_blocks;
+
+	// Copy the last block
+	memcpy(x, in_blocks + ((count - 1) * 64), 64);
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		for (uint32_t j = 0; j < 64; ++j)
 		{
-			t[j] = x[j] ^ in_blocks[(i * 64) + j];
+			x[j] = x[j] ^ in_blocks[(i * 64) + j];
 		}
 
-		salsa20_block((void *)t);
+		salsa20_block((void *)x);
 
 		// Even blocks followed by odd blocks.
 		if (i % 2 == 0)
 		{
-			memcpy(y + ((i / 2) * 64), t, 64);
+			memcpy(y + ((i / 2) * 64), x, 64);
 		}
 		else
 		{
-			memcpy(y + (count / 2 * 64) + ((i / 2) * 64), t, 64);
+			memcpy(y + ((count / 2) * 64) + ((i / 2) * 64), x, 64);
 		}
 	}
 }
 
-static int32_t scrypt_rom_mix(byte_t *in_blocks, byte_t *out_blocks, uint32_t size, uint32_t shift)
+static void scrypt_rom_mix(void *temp, byte_t *in_blocks, byte_t *out_blocks, uint32_t size, uint32_t cost)
 {
-	byte_t *temp = NULL;
+	byte_t *v = NULL;
 	byte_t *x = NULL;
 	byte_t *y = NULL;
-	byte_t *t = NULL;
-	size_t temp_size = size * (1ull << shift) + size + size;
+
+	size_t v_size = size * cost;
+	size_t x_size = size;
+	size_t y_size = size;
+	size_t temp_size = v_size + x_size + y_size;
 
 	uint32_t count = size / 64;
 
-	temp = malloc(temp_size);
-
-	if (temp == NULL)
-	{
-		return -1;
-	}
-
 	memset(temp, 0, temp_size);
 
-	x = temp + size * (1ull << shift);
+	v = temp;
+	x = v + v_size;
+	y = x + x_size;
+
 	memcpy(x, in_blocks, size);
 
-	y = x + size;
-
-	for (uint32_t i = 0; i < (1ull << shift); ++i)
+	for (uint32_t i = 0; i < cost; ++i)
 	{
-		memcpy(temp + (i * size), x, size);
+		byte_t *t = NULL;
+
+		memcpy(v + (i * size), x, size);
 		scrypt_block_mix(x, y, count);
 
 		// Swap x,y
@@ -148,55 +149,49 @@ static int32_t scrypt_rom_mix(byte_t *in_blocks, byte_t *out_blocks, uint32_t si
 		y = t;
 	}
 
-	for (uint32_t i = 0; i < (1ull << shift); ++i)
+	for (uint32_t i = 0; i < cost; ++i)
 	{
-		uint32_t j = *((uint32_t *)x) % (1ull << shift);
+		uint32_t j = *((uint32_t *)(x + ((count - 1) * 64))) % cost;
 
 		for (uint32_t k = 0; k < size; ++k)
 		{
-			y[k] = x[k] ^ temp[(j * size) + k];
+			y[k] = x[k] ^ v[(j * size) + k];
 		}
 
 		scrypt_block_mix(y, x, count);
 	}
 
 	memcpy(out_blocks, x, size);
-
-	free(temp);
-
-	return 0;
 }
 
-uint32_t scrypt(void *password, size_t password_size, void *salt, size_t salt_size, uint32_t n, uint32_t p, uint32_t r, void *key,
-				size_t key_size)
+uint32_t scrypt(void *password, size_t password_size, void *salt, size_t salt_size, uint32_t cost, uint32_t block, uint32_t parallel,
+				void *key, size_t key_size)
 {
 	uint32_t result = 0;
 
 	byte_t *blocks = NULL;
-	size_t total_size = r * p * 128;
-	size_t block_size = r * 128;
+	byte_t *rom = NULL;
+	size_t pbkdf2_size = block * parallel * 128;
+	size_t block_size = block * 128;
+	size_t rom_size = (block_size * cost) + (2 * block_size);
+	size_t total_size = pbkdf2_size + rom_size;
 
 	blocks = malloc(total_size);
+	rom = blocks + pbkdf2_size;
 
 	if (blocks == NULL)
 	{
 		return 0;
 	}
 
-	result = pbkdf2(HMAC_SHA256, password, password_size, salt, salt_size, 1, blocks, total_size);
+	pbkdf2(HMAC_SHA256, password, password_size, salt, salt_size, 1, blocks, pbkdf2_size);
 
-	if (result == 0)
+	for (uint32_t i = 0; i < parallel; ++i)
 	{
-		free(blocks);
-		return 0;
+		scrypt_rom_mix(rom, blocks + (i * block_size), blocks + (i * block_size), block_size, cost);
 	}
 
-	for (uint32_t i = 0; i < p; ++i)
-	{
-		scrypt_rom_mix(blocks + (i * block_size), blocks + (i * block_size), block_size, n);
-	}
-
-	result = pbkdf2(HMAC_SHA256, password, password_size, blocks, total_size, 1, key, key_size);
+	result = pbkdf2(HMAC_SHA256, password, password_size, blocks, pbkdf2_size, 1, key, key_size);
 
 	free(blocks);
 

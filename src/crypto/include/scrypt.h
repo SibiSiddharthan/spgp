@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-uint32_t scrypt(void *password, size_t password_size, void *salt, size_t salt_size, uint32_t n, uint32_t p, uint32_t r, void *key,
-				size_t key_size);
+uint32_t scrypt(void *password, size_t password_size, void *salt, size_t salt_size, uint32_t cost, uint32_t block, uint32_t parallel,
+				void *key, size_t key_size);
 
 #endif
