@@ -86,6 +86,7 @@ shake
 
 crypto_kdf_tests(
 pbkdf2
+scrypt
 )
 
 crypto_mac_tests(
