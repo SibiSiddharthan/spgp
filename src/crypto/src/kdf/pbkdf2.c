@@ -26,7 +26,7 @@ uint32_t pbkdf2(hmac_algorithm algorithm, void *password, size_t password_size, 
 	byte_t mk[MAX_HASH_SIZE];
 
 	uint32_t result = 0;
-	uint32_t count = CEIL_DIV(key_size, hctx->hash_size);
+	uint32_t count = 0;
 
 	if (key_size > (1ull << 32))
 	{
@@ -41,9 +41,13 @@ uint32_t pbkdf2(hmac_algorithm algorithm, void *password, size_t password_size, 
 		return 0;
 	}
 
-	for (uint32_t i = 0; i < count; ++i)
+	count = CEIL_DIV(key_size, hctx->hash_size);
+
+	for (uint32_t i = 1; i <= count; ++i)
 	{
 		uint32_t t = BSWAP_32(i);
+
+		memset(mk, 0, hctx->hash_size);
 
 		// Do the first iteration.
 		hmac_update(hctx, salt, salt_size);
@@ -51,7 +55,10 @@ uint32_t pbkdf2(hmac_algorithm algorithm, void *password, size_t password_size, 
 		hmac_final(hctx, mac, hctx->hash_size);
 		hmac_reset(hctx, NULL, 0);
 
-		memset(mk, 0, hctx->hash_size);
+		for (uint32_t k = 0; k < hctx->hash_size; ++k)
+		{
+			mk[k] ^= mac[k];
+		}
 
 		for (uint32_t j = 1; j < iteration_count; ++j)
 		{
