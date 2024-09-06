@@ -5,6 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#ifndef CRYPTO_KDF_H
+#define CRYPTO_KDF_H
+
 #include <stdint.h>
 #include <kmac.h>
 
@@ -37,3 +40,5 @@ inline uint32_t kdf_kmac256(void *key, uint32_t key_size, void *context, uint32_
 	kmac256(key, key_size, label, label_size, context, context_size, derived_key, derived_key_size);
 	return derived_key_size;
 }
+
+#endif
