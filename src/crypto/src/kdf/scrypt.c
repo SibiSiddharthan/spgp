@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <pbkdf2.h>
 #include <hmac.h>
 #include <byteswap.h>
 #include <minmax.h>
@@ -17,9 +18,6 @@
 // Refer RFC 7914 : The scrypt Password-Based Key Derivation Function
 
 #define SALSA20_BLOCK_WORDS 16
-
-uint32_t pbkdf2(hmac_algorithm algorithm, void *password, size_t password_size, void *salt, size_t salt_size, uint32_t iteration_count,
-				void *key, size_t key_size);
 
 #define SALSA20_ROUND(X)                     \
 	{                                        \
