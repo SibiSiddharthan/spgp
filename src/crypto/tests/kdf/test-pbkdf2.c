@@ -12,6 +12,7 @@
 #include <test.h>
 
 // See RFC 6070 : PKCS #5: Password-Based Key Derivation Function 2 (PBKDF2) Test Vectors
+// See RFC 7914 : The scrypt Password-Based Key Derivation Function, Section 11
 
 int32_t pbkdf2_sha1_test_suite(void)
 {
@@ -36,7 +37,25 @@ int32_t pbkdf2_sha1_test_suite(void)
 	return status;
 }
 
+int32_t pbkdf2_sha256_test_suite(void)
+{
+	int32_t status = 0;
+	byte_t key[64];
+
+	pbkdf2(HMAC_SHA256, "passwd", 6, "salt", 4, 1, key, 64);
+	status += CHECK_BLOCK(
+		key, 64,
+		"55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783");
+
+	pbkdf2(HMAC_SHA256, "Password", 8, "NaCl", 4, 80000, key, 64);
+	status += CHECK_BLOCK(
+		key, 64,
+		"4ddcd8f60b98be21830cee5ef22701f9641a4418d04c0414aeff08876b34ab56a1d425a1225833549adb841b51c9b3176a272bdebba1d078478f62b397f33c8d");
+
+	return status;
+}
+
 int main()
 {
-	return pbkdf2_sha1_test_suite();
+	return pbkdf2_sha1_test_suite() + pbkdf2_sha256_test_suite();
 }
