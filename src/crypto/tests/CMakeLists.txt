@@ -33,6 +33,15 @@ function(crypto_hash_tests ...)
 	endforeach()
 endfunction()
 
+function(crypto_kdf_tests ...)
+	foreach(test ${ARGV})
+		add_executable(test-${test} kdf/test-${test}.c)
+		target_include_directories(test-${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+		target_link_libraries(test-${test} crypto)
+		add_test(NAME test-${test} COMMAND test-${test} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	endforeach()
+endfunction()
+
 function(crypto_mac_tests ...)
 	foreach(test ${ARGV})
 		add_executable(test-${test} mac/test-${test}.c)
@@ -73,6 +82,10 @@ sha1
 sha2
 sha3
 shake
+)
+
+crypto_kdf_tests(
+pbkdf2
 )
 
 crypto_mac_tests(
