@@ -19,8 +19,8 @@
 
 // See NIST SP 800-108 Recommendation for Key Derivation Using Pseudorandom Functions
 
-uint32_t kdf_counter(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *label, uint32_t label_size, void *context,
-					 uint32_t context_size, void *derived_key, uint32_t derived_key_size)
+uint32_t kdf_counter(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
+					 uint32_t label_size, void *context, uint32_t context_size, void *derived_key, uint32_t derived_key_size)
 {
 	void *ctx = NULL;
 	byte_t *pk = derived_key;
@@ -70,19 +70,26 @@ uint32_t kdf_counter(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_si
 
 		kdf_update(ctx, &t, 4);
 
-		if (label != NULL)
+		if (input != NULL)
 		{
-			kdf_update(ctx, label, label_size);
+			kdf_update(ctx, input, input_size);
 		}
-
-		kdf_update(ctx, &z, 1);
-
-		if (context != NULL)
+		else
 		{
-			kdf_update(ctx, context, context_size);
-		}
+			if (label != NULL)
+			{
+				kdf_update(ctx, label, label_size);
+			}
 
-		kdf_update(ctx, &l, 4);
+			kdf_update(ctx, &z, 1);
+
+			if (context != NULL)
+			{
+				kdf_update(ctx, context, context_size);
+			}
+
+			kdf_update(ctx, &l, 4);
+		}
 
 		kdf_final(ctx, pk + pos, MIN(out_size, derived_key_size - pos));
 		pos += MIN(out_size, derived_key_size - pos);
@@ -93,8 +100,9 @@ uint32_t kdf_counter(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_si
 	return derived_key_size;
 }
 
-uint32_t kdf_feedback(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *label, uint32_t label_size, void *context,
-					  uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key, uint32_t derived_key_size)
+uint32_t kdf_feedback(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
+					  uint32_t label_size, void *context, uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key,
+					  uint32_t derived_key_size)
 {
 	void *ctx = NULL;
 	byte_t *pk = derived_key;
@@ -183,8 +191,8 @@ uint32_t kdf_feedback(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_s
 	return derived_key_size;
 }
 
-uint32_t kdf_double_pipeline(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *label, uint32_t label_size, void *context,
-							 uint32_t context_size, void *derived_key, uint32_t derived_key_size)
+uint32_t kdf_double_pipeline(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
+							 uint32_t label_size, void *context, uint32_t context_size, void *derived_key, uint32_t derived_key_size)
 {
 	void *ctx = NULL;
 	byte_t *pk = derived_key;
@@ -288,17 +296,20 @@ uint32_t kdf_double_pipeline(kdf_prf prf, uint32_t algorithm, void *key, uint32_
 	return derived_key_size;
 }
 
-uint32_t kdf(kdf_mode mode, kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *label, uint32_t label_size, void *context,
-			 uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key, uint32_t derived_key_size)
+uint32_t kdf(kdf_mode mode, kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
+			 uint32_t label_size, void *context, uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key,
+			 uint32_t derived_key_size)
 {
 	switch (mode)
 	{
 	case KDF_MODE_COUNTER:
-		return kdf_counter(prf, algorithm, key, key_size, label, label_size, context, context_size, derived_key, derived_key_size);
+		return kdf_counter(prf, algorithm, key, key_size, input, input_size, label, label_size, context, context_size, derived_key,
+						   derived_key_size);
 	case KDF_MODE_FEEDBACK:
-		return kdf_feedback(prf, algorithm, key, key_size, label, label_size, context, context_size, iv, iv_size, derived_key,
-							derived_key_size);
+		return kdf_feedback(prf, algorithm, key, key_size, input, input_size, label, label_size, context, context_size, iv, iv_size,
+							derived_key, derived_key_size);
 	case KDF_MODE_DOUBLE_PIPLELINE:
-		return kdf_double_pipeline(prf, algorithm, key, key_size, label, label_size, context, context_size, derived_key, derived_key_size);
+		return kdf_double_pipeline(prf, algorithm, key, key_size, input, input_size, label, label_size, context, context_size, derived_key,
+								   derived_key_size);
 	}
 }

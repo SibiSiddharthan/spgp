@@ -85,6 +85,7 @@ shake
 )
 
 crypto_kdf_tests(
+kdf
 pbkdf2
 scrypt
 )
