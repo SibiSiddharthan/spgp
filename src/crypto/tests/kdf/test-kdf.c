@@ -83,7 +83,41 @@ int32_t kdf_feedback_test_suite(void)
 	return status;
 }
 
+int32_t kdf_double_pipeline_test_suite(void)
+{
+	int32_t status = 0;
+	byte_t key[32];
+	byte_t input[64];
+	byte_t output[256];
+
+	hex_to_block(key, 32, "02d36fa021c20ddbdee469f0579468bae5cb13b548b6c61cdf9d3ec419111de2");
+	hex_to_block(input, 51, "85abe38bf265fbdc6445ae5c71159f1548c73b7d526a623104904a0f8792070b3df9902b9669490425a385eadb0f9c76e46f0f");
+	kdf(KDF_MODE_DOUBLE_PIPLELINE, KDF_PRF_HMAC, HMAC_SHA256, key, 32, input, 51, NULL, 0, NULL, 0, NULL, 0, output, 64);
+	status += CHECK_BLOCK(
+		output, 64,
+		"d69f74f518c9f64f90a0beebab69f689b73b5c13eb0f860a95cad7d9814f8c506eb7b179a5c5b4466a9ec154c3bf1c13efd6ec0d82b02c29af2c690299edc453");
+
+	hex_to_block(key, 32, "40da26dc85fc48a30a52fb7bc8d6db7dd18cb57eb0de5c9b210b5d574dde358b");
+	hex_to_block(input, 51, "a166a4e1b63f753ae8f6850c7cf96ff8e83b22eced5dd458af592bb26e3a1d51c85eefc39accd2805095d3288d4b0d0cb996a1");
+	kdf(KDF_MODE_DOUBLE_PIPLELINE, KDF_PRF_HMAC, HMAC_SHA256, key, 32, input, 51, NULL, 0, NULL, 0, NULL, 0, output, 256);
+	status += CHECK_BLOCK(
+		output, 256,
+		"4d515afd94a115e504ed265dbbe019f1405b4b7ab351e6d496b6b9c15ae7601905eaa123b80c9855fdd458f9871f7ec2d16e05bf8991f8165c9faf916d2c62bcfb"
+		"34f0638a2f8c95a5b4b720123719988c5b6fd436858f3df65c4e22fec179cd065ea5cb8551c4582f65ff4f7eae9a3fda752ae862812016aa76343c5b6040d921f1"
+		"4f772d2fa9dba65094b244e770965629829dd14a9af537e80ca2122eb71e9b4b1c8e25dfe3b53155d969e596095675ca8dc67c12e11e7d950f219cad5e0bef3d66"
+		"68becac52140b9c153897466331ddaedac6d0ae68672e99cae96f6a021686d4fc2f1c9febacf8bc9005e4afb9a5d24a15aa2d7afe1adcad43dc346b09d");
+
+	hex_to_block(key, 32, "9306645e6b3182a66b1cca905480b7ffa8d60467a52c12202476a54287a45bc0");
+	hex_to_block(input, 51, "0fc1704af3daaa5942025495c22a710ed64bba03d71f0f89ee2b37552a073797d639a8fda73ee616332f5a54e51359ea578382");
+	kdf(KDF_MODE_DOUBLE_PIPLELINE, KDF_PRF_HMAC, HMAC_SHA256, key, 32, input, 51, NULL, 0, NULL, 0, NULL, 0, output, 70);
+	status += CHECK_BLOCK(output, 70,
+						  "a0a718541e7722e8a62b7946ea0244d1b6f3f1dc9213a880cc1c777ead8814b51b687777258e32fe9f0e85854271d9cb029026c3c7eb9201"
+						  "36005634b4e1c09acffa969cd952");
+
+	return status;
+}
+
 int main()
 {
-	return kdf_counter_test_suite() + kdf_feedback_test_suite();
+	return kdf_counter_test_suite() + kdf_feedback_test_suite() + kdf_double_pipeline_test_suite();
 }

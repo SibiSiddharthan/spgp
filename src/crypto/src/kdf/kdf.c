@@ -249,28 +249,39 @@ uint32_t kdf_double_pipeline(kdf_prf prf, uint32_t algorithm, void *key, uint32_
 	byte_t z = 0x00;
 
 	// A(0) = Label || 0x00 || Context || [L]
+	// OR
+	// A(0) = Input
 	// A(i) = PRF (K, A(i−1))
 	// K(i) = PRF (K, A(i) || [i] || Label || 0x00 || Context || [L])
+	// OR
+	// K(i) = PRF (K, A(i) || [i] || Input)
 	for (uint32_t i = 1; i <= count; ++i)
 	{
 		uint32_t t = BSWAP_32(i);
 
-		if (i == 0)
+		if (i == 1)
 		{
 			// Calculate A0
-			if (label != NULL)
+			if (input != NULL)
 			{
-				kdf_update(ctx, label, label_size);
+				kdf_update(ctx, input, input_size);
 			}
-
-			kdf_update(ctx, &z, 1);
-
-			if (context != NULL)
+			else
 			{
-				kdf_update(ctx, context, context_size);
-			}
+				if (label != NULL)
+				{
+					kdf_update(ctx, label, label_size);
+				}
 
-			kdf_update(ctx, &l, 4);
+				kdf_update(ctx, &z, 1);
+
+				if (context != NULL)
+				{
+					kdf_update(ctx, context, context_size);
+				}
+
+				kdf_update(ctx, &l, 4);
+			}
 
 			kdf_final(ctx, mac, out_size);
 			kdf_reset(ctx, NULL, 0);
@@ -285,19 +296,27 @@ uint32_t kdf_double_pipeline(kdf_prf prf, uint32_t algorithm, void *key, uint32_
 		kdf_update(ctx, mac, out_size);
 		kdf_update(ctx, &t, 4);
 
-		if (label != NULL)
+		if (input != NULL)
 		{
-			kdf_update(ctx, label, label_size);
+			kdf_update(ctx, input, input_size);
 		}
-
-		kdf_update(ctx, &z, 1);
-
-		if (context != NULL)
+		else
 		{
-			kdf_update(ctx, context, context_size);
-		}
 
-		kdf_update(ctx, &l, 4);
+			if (label != NULL)
+			{
+				kdf_update(ctx, label, label_size);
+			}
+
+			kdf_update(ctx, &z, 1);
+
+			if (context != NULL)
+			{
+				kdf_update(ctx, context, context_size);
+			}
+
+			kdf_update(ctx, &l, 4);
+		}
 
 		kdf_final(ctx, pk + pos, MIN(out_size, derived_key_size - pos));
 		pos += MIN(out_size, derived_key_size - pos);
