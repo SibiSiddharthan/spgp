@@ -57,6 +57,7 @@ hash/hash.c
 kdf/argon2.c
 kdf/pbkdf2.c
 kdf/scrypt.c
+kdf/hkdf.c
 kdf/kdf.c
 #mac
 mac/cmac.c
