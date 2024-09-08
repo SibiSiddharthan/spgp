@@ -19,7 +19,7 @@ int32_t kdf_counter_test_suite(void)
 	int32_t status = 0;
 	byte_t key[32];
 	byte_t input[64];
-	byte_t output[32];
+	byte_t output[64];
 
 	hex_to_block(key, 32, "dd1d91b7d90b2bd3138533ce92b272fbf8a369316aefe242e659cc0ae238afe0");
 	hex_to_block(
@@ -45,7 +45,45 @@ int32_t kdf_counter_test_suite(void)
 	return status;
 }
 
+int32_t kdf_feedback_test_suite(void)
+{
+	int32_t status = 0;
+	byte_t key[32];
+	byte_t iv[32];
+	byte_t input[64];
+	byte_t output[256];
+
+	hex_to_block(key, 32, "93f698e842eed75394d629d957e2e89c6e741f810b623c8b901e38376d068e7b");
+	hex_to_block(iv, 32, "9f575d9059d3e0c0803f08112f8a806de3c3471912cdf42b095388b14b33508e");
+	hex_to_block(input, 51, "53b89c18690e2057a1d167822e636de50be0018532c431f7f5e37f77139220d5e042599ebe266af5767ee18cd2c5c19a1f0f80");
+	kdf(KDF_MODE_FEEDBACK, KDF_PRF_HMAC, HMAC_SHA256, key, 32, input, 51, NULL, 0, NULL, 0, iv, 32, output, 64);
+	status += CHECK_BLOCK(
+		output, 64,
+		"bd1476f43a4e315747cf5918e0ea5bc0d98769457477c3ab18b742def0e079a933b756365afb5541f253fee43c6fd788a44041038509e9eeb68f7d65ffbb5f95");
+
+	hex_to_block(key, 32, "a5eb2ebcb9cc7aa0ee9f38cdcc18956a041714369acbcb722d995010f2b8463d");
+	hex_to_block(iv, 32, "11be2ef7753959c3c070d49afce9c4d09ad8311a14e03bcf9edc2c11fe6950b4");
+	hex_to_block(input, 51, "8f71ffd48fe4680cb13582f5c977c99fd6c4aa8012378857989b52fbee90d358df1e58802db0a31f562d064a9c42cb44136ee9");
+	kdf(KDF_MODE_FEEDBACK, KDF_PRF_HMAC, HMAC_SHA256, key, 32, input, 51, NULL, 0, NULL, 0, iv, 32, output, 256);
+	status += CHECK_BLOCK(
+		output, 256,
+		"0aa2002a47da3d5f840bbb4fdc7fec52583a3d9734d8f69f76983803f10ec2872ad88baec5234e30f84022dcec260072a65047ad6ea7bb0646c71012b8684c0d7a"
+		"0bd018ed4e23a289640a0d9c7c1885d310d933fd3fab5a20b1667da6e403a23909fac35bc1e80b7b82de2ed8b105a1a34a9754a954f95353d7c2f00a6beefed72a"
+		"b38a7b638304c1b712027cd16d3dc9735db2fcb2f05712b490080c0feb94827bda60f0f47eb449eafb85380187e6df31c2f0660027f086ea5b5965e4d705ae7db9"
+		"959a8e87acdcde604039a0fbfa72274b8339cdb3d53f432229125d20f3800db4351b4754742b2d6426a8e24076f349c589409feb45ff65738fd3d77168");
+
+	hex_to_block(key, 32, "833ab78dc0a2700c2ed8775c1565583895ab58760206675f25829f883dedaf6b");
+	hex_to_block(iv, 32, "14aef75054bf33d2e7417535fd8d9f8a872a8121d91eb5bf15f2799d2b5c7701");
+	hex_to_block(input, 51, "645fe69ba5377ec8d54cb2a774bf45bd008f7ac491e818f1835dc7b03b2df5a1812cc76d24185e5a962be381dd2ed3f48cf30d");
+	kdf(KDF_MODE_FEEDBACK, KDF_PRF_HMAC, HMAC_SHA256, key, 32, input, 51, NULL, 0, NULL, 0, iv, 32, output, 70);
+	status += CHECK_BLOCK(output, 70,
+						  "f0025aa175fc9b880abf4f4ee741c6d11d88286f43d2fa8ea4e96b55b075227c1c84a5797da8431fd8811274c7071627c3fae554bd0d4cce"
+						  "9074e98f5ecfa51ba67704efcc24");
+
+	return status;
+}
+
 int main()
 {
-	return kdf_counter_test_suite();
+	return kdf_counter_test_suite() + kdf_feedback_test_suite();
 }

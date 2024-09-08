@@ -64,6 +64,8 @@ uint32_t kdf_counter(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_si
 	byte_t z = 0x00;
 
 	// K(i) = PRF (K, [i] || Label || 0x00 || Context || [L])
+	// OR
+	// K(i) = PRF (K, [i] || Input)
 	for (uint32_t i = 1; i <= count; ++i)
 	{
 		uint32_t t = BSWAP_32(i);
@@ -148,11 +150,13 @@ uint32_t kdf_feedback(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_s
 
 	// K(0) = IV
 	// K(i) = PRF (K, K(i−1) || [i] || Label || 0x00 || Context || [L])
+	// OR
+	// K(i) = PRF (K, K(i−1) || [i] || Input)
 	for (uint32_t i = 1; i <= count; ++i)
 	{
 		uint32_t t = BSWAP_32(i);
 
-		if (i == 0)
+		if (i == 1)
 		{
 			if (iv != NULL)
 			{
@@ -166,19 +170,27 @@ uint32_t kdf_feedback(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_s
 
 		kdf_update(ctx, &t, 4);
 
-		if (label != NULL)
+		if (input != NULL)
 		{
-			kdf_update(ctx, label, label_size);
+			kdf_update(ctx, input, input_size);
 		}
-
-		kdf_update(ctx, &z, 1);
-
-		if (context != NULL)
+		else
 		{
-			kdf_update(ctx, context, context_size);
-		}
 
-		kdf_update(ctx, &l, 4);
+			if (label != NULL)
+			{
+				kdf_update(ctx, label, label_size);
+			}
+
+			kdf_update(ctx, &z, 1);
+
+			if (context != NULL)
+			{
+				kdf_update(ctx, context, context_size);
+			}
+
+			kdf_update(ctx, &l, 4);
+		}
 
 		kdf_final(ctx, mac, out_size);
 
