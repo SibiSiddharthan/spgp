@@ -24,8 +24,8 @@ typedef enum _kdf_mode
 	KDF_MODE_DOUBLE_PIPLELINE
 } kdf_mode;
 
-uint32_t kdf(kdf_mode mode, kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *context, uint32_t context_size,
-			 void *label, uint32_t label_size, void *iv, uint32_t iv_size, void *derived_key, uint32_t derived_key_size);
+uint32_t kdf(kdf_mode mode, kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *label, uint32_t label_size, void *context,
+			 uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key, uint32_t derived_key_size);
 
 inline uint32_t kdf_kmac128(void *key, uint32_t key_size, void *context, uint32_t context_size, void *label, uint32_t label_size,
 							void *derived_key, uint32_t derived_key_size)
@@ -34,7 +34,7 @@ inline uint32_t kdf_kmac128(void *key, uint32_t key_size, void *context, uint32_
 	return derived_key_size;
 }
 
-inline uint32_t kdf_kmac256(void *key, uint32_t key_size, void *context, uint32_t context_size, void *label, uint32_t label_size,
+inline uint32_t kdf_kmac256(void *key, uint32_t key_size, void *label, uint32_t label_size, void *context, uint32_t context_size,
 							void *derived_key, uint32_t derived_key_size)
 {
 	kmac256(key, key_size, label, label_size, context, context_size, derived_key, derived_key_size);
