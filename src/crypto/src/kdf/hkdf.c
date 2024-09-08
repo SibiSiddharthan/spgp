@@ -29,7 +29,7 @@ uint32_t hkdf(hmac_algorithm algorithm, void *key, uint32_t key_size, void *salt
 	uint32_t count = 0;
 	uint32_t pos = 0;
 
-	hctx = hmac_init(buffer, 2048, algorithm, key, key_size);
+	hctx = hmac_init(buffer, 2048, algorithm, salt, salt_size);
 
 	if (hctx == NULL)
 	{
@@ -38,11 +38,7 @@ uint32_t hkdf(hmac_algorithm algorithm, void *key, uint32_t key_size, void *salt
 
 	// Extract
 	// PRK = HMAC-Hash(salt, key)
-	if (salt != NULL)
-	{
-		hmac_update(hctx, salt, salt_size);
-	}
-
+	hmac_update(hctx, key, key_size);
 	hmac_final(hctx, prk, hctx->hash_size);
 
 	// Expand
@@ -72,8 +68,9 @@ uint32_t hkdf(hmac_algorithm algorithm, void *key, uint32_t key_size, void *salt
 		}
 
 		hmac_update(hctx, &i, 1);
+		hmac_final(hctx, mac, hctx->hash_size);
 
-		hmac_final(hctx, pk + pos, MIN(hctx->hash_size, derived_key_size - pos));
+		memcpy(pk + pos, mac, MIN(hctx->hash_size, derived_key_size - pos));
 		pos += MIN(hctx->hash_size, derived_key_size - pos);
 
 		hmac_reset(hctx, NULL, 0);
