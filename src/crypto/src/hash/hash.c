@@ -8,12 +8,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <minmax.h>
 #include <hash.h>
 #include <md5.h>
 #include <ripemd.h>
 #include <sha.h>
 #include <blake2.h>
+
+#include <minmax.h>
+#include <ptr.h>
 
 static inline size_t get_ctx_size(hash_algorithm algorithm)
 {
@@ -82,7 +84,7 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 	memset(hctx, 0, sizeof(hash_ctx));
 
 	// The actual hash context will be stored after hash_ctx.
-	_ctx = (void *)((byte_t *)hctx + sizeof(hash_ctx));
+	_ctx = PTR_OFFSET(hctx, sizeof(hash_ctx));
 
 	switch (algorithm)
 	{

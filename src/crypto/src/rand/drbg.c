@@ -9,13 +9,15 @@
 #include <string.h>
 
 #include <drbg.h>
-#include <byteswap.h>
-#include <round.h>
 #include <hash.h>
 #include <hmac.h>
 #include <cipher.h>
 #include <sha.h>
 #include <aes.h>
+
+#include <byteswap.h>
+#include <ptr.h>
+#include <round.h>
 
 drbg_ctx *default_drbg = NULL;
 
@@ -52,7 +54,7 @@ static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entrop
 
 	drbg->type = type;
 	drbg->drbg_size = ctx_size + sizeof(drbg_ctx);
-	drbg->_drbg = (void *)((byte_t *)drbg + sizeof(drbg_ctx));
+	drbg->_drbg = PTR_OFFSET(drbg, sizeof(drbg_ctx));
 
 	switch (type)
 	{

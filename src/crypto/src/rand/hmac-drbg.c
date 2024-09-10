@@ -9,10 +9,12 @@
 #include <string.h>
 
 #include <drbg.h>
-#include <round.h>
-#include <minmax.h>
 #include <hmac.h>
 #include <sha.h>
+
+#include <minmax.h>
+#include <ptr.h>
+#include <round.h>
 
 // Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
 // Section 10.1.2
@@ -186,7 +188,7 @@ static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*
 
 	memset(hdrbg, 0, sizeof(hmac_drbg));
 
-	hdrbg->hctx = (hmac_ctx *)((byte_t *)hdrbg + sizeof(hmac_drbg));
+	hdrbg->hctx = PTR_OFFSET(hdrbg, sizeof(hmac_drbg));
 	hdrbg->drbg_size = sizeof(hmac_drbg) + sizeof(hmac_ctx) + ctx_size;
 	hdrbg->reseed_interval = reseed_interval;
 	hdrbg->output_size = output_size;

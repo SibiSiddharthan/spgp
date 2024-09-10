@@ -9,11 +9,13 @@
 #include <string.h>
 
 #include <drbg.h>
-#include <round.h>
-#include <minmax.h>
-#include <byteswap.h>
 #include <hash.h>
 #include <sha.h>
+
+#include <byteswap.h>
+#include <minmax.h>
+#include <ptr.h>
+#include <round.h>
 
 // Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
 // Section 10.1.1
@@ -235,7 +237,7 @@ static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*
 
 	memset(hdrbg, 0, sizeof(hash_drbg));
 
-	hdrbg->hctx = (hash_ctx *)((byte_t *)hdrbg + sizeof(hash_drbg));
+	hdrbg->hctx = PTR_OFFSET(hdrbg, sizeof(hash_drbg));
 	hdrbg->drbg_size = sizeof(hash_drbg) + sizeof(hash_ctx) + ctx_size;
 	hdrbg->reseed_interval = reseed_interval;
 	hdrbg->seed_size = seed_size;

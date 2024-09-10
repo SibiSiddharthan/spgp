@@ -9,10 +9,12 @@
 #include <string.h>
 
 #include <drbg.h>
-#include <byteswap.h>
-#include <round.h>
 #include <cipher.h>
 #include <aes.h>
+
+#include <byteswap.h>
+#include <ptr.h>
+#include <round.h>
 
 // Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
 // Section 10.2.1
@@ -283,8 +285,8 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*en
 	cdrbg->security_strength = security_strength;
 	cdrbg->entropy = entropy == NULL ? get_entropy : entropy;
 
-	cdrbg->_ctx = (void *)((byte_t *)cdrbg + sizeof(ctr_drbg));
-	cdrbg->_dfctx = (void *)((byte_t *)cdrbg->_ctx + ctx_size);
+	cdrbg->_ctx = PTR_OFFSET(cdrbg, sizeof(ctr_drbg));
+	cdrbg->_dfctx = PTR_OFFSET(cdrbg->_ctx, ctx_size);
 	cdrbg->_size = ctx_size;
 	cdrbg->_algorithm = algorithm;
 	cdrbg->_init = _init;

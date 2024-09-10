@@ -8,11 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <minmax.h>
 #include <hmac.h>
 #include <sha.h>
 #include <md5.h>
 #include <ripemd.h>
+
+#include <minmax.h>
+#include <ptr.h>
 
 // See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (HMAC)
 
@@ -118,7 +120,7 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key,
 	memset(hctx, 0, sizeof(hmac_ctx));
 
 	// The actual hash context will be stored after hmac_ctx.
-	_ctx = (void *)((byte_t *)hctx + sizeof(hmac_ctx));
+	_ctx = PTR_OFFSET(hctx, sizeof(hmac_ctx));
 
 	switch (algorithm)
 	{
@@ -346,7 +348,7 @@ void hmac_final(hmac_ctx *hctx, void *mac, size_t size)
 
 static void hmac_common(hmac_algorithm algorithm, void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
-	// A big enough buffer for the hash_ctx.
+	// A big enough buffer for the hmac_ctx.
 	hmac_ctx *hctx = NULL;
 	byte_t buffer[1536];
 
