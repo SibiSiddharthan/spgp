@@ -10,38 +10,6 @@
 
 #include <types.h>
 
-typedef enum _cipher_mode
-{
-	MODE_NONE,
-	MODE_ECB,
-	MODE_CBC,
-	MODE_CBC_CTS1,
-	MODE_CBC_CTS2,
-	MODE_CBC_CTS3,
-	MODE_CFB1,
-	MODE_CFB8,
-	MODE_CFB64,
-	MODE_CFB128,
-	MODE_OFB,
-	MODE_CTR,
-	MODE_CMAC,
-	MODE_XTS,
-	MODE_KW
-} cipher_mode;
-
-typedef enum _cipher_type
-{
-	CIPHER_STREAM,
-	CIPHER_BLOCK
-} cipher_type;
-
-typedef enum _cipher_padding
-{
-	PADDING_ZERO,
-	PADDING_ISO7816,
-	PADDING_PKCS7
-} cipher_padding;
-
 typedef enum _cipher_algorithm
 {
 	// AES
@@ -66,35 +34,32 @@ typedef enum _cipher_algorithm
 	CIPHER_TWOFISH256,
 } cipher_algorithm;
 
+typedef enum _cipher_padding
+{
+	PADDING_ZERO,
+	PADDING_ISO7816,
+	PADDING_PKCS7
+} cipher_padding;
+
 typedef struct _cipher_ctx
 {
 	cipher_algorithm algorithm;
-	cipher_mode mode;
-	cipher_type type;
 	cipher_padding padding;
-	uint32_t block_size;
-	size_t ctx_size;
+	uint16_t ctx_size;
+	uint16_t block_size;
 	size_t message_size;
 	byte_t buffer[64];
 
 	void *_ctx;
-	void (*_encrypt_block)(void *, void *, void *);
-	void (*_decrypt_block)(void *, void *, void *);
-	void (*_encrypt_stream)(void *, void *, void *);
-	void (*_decrypt_stream)(void *, void *, void *);
+	void *(*_init)(void *, size_t, void *, size_t);
+	void (*_encrypt)(void *, void *, void *);
+	void (*_decrypt)(void *, void *, void *);
 } cipher_ctx;
 
 size_t cipher_ctx_size(cipher_algorithm algorithm);
 
-cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, cipher_mode mode, void *key, size_t key_size);
-cipher_ctx *cipher_new(cipher_algorithm algorithm, cipher_mode mode, void *key, size_t key_size);
+cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size);
+cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size);
 void cipher_delete(cipher_ctx *cctx);
-void cipher_reset(cipher_ctx *cctx, cipher_mode mode);
-
-void cipher_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-void cipher_encrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size);
-
-void cipher_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
-void cipher_decrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size);
 
 #endif

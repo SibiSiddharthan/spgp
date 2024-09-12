@@ -16,6 +16,8 @@
 #include <twofish.h>
 #include <chacha20.h>
 
+#include <ptr.h>
+
 static inline size_t get_ctx_size(cipher_algorithm algorithm)
 {
 	switch (algorithm)
@@ -56,34 +58,20 @@ size_t cipher_ctx_size(cipher_algorithm algorithm)
 	return sizeof(cipher_ctx) + get_ctx_size(algorithm);
 }
 
-cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, cipher_mode mode, void *key, size_t key_size)
+cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size)
 {
 	cipher_ctx *cctx = (cipher_ctx *)ptr;
 
 	size_t ctx_size = get_ctx_size(algorithm);
 	size_t required_size = sizeof(cipher_ctx) + ctx_size;
 
-	cipher_type type = CIPHER_BLOCK;
-	uint32_t block_size = 0;
+	uint32_t block_size = 16;
 
 	void *_ctx;
-	void (*_encrypt_block)(void *, void *, void *);
-	void (*_decrypt_block)(void *, void *, void *);
-	void (*_encrypt_stream)(void *, void *, void *);
-	void (*_decrypt_stream)(void *, void *, void *);
+	void (*_encrypt)(void *, void *, void *);
+	void (*_decrypt)(void *, void *, void *);
 
-	_ctx = (void *)((byte_t *)cctx + sizeof(cipher_ctx));
-
-	switch (mode)
-	{
-	case MODE_NONE:
-	case MODE_ECB:
-	case MODE_CBC:
-	case MODE_CTR:
-		break;
-	default:
-		return NULL;
-	}
+	_ctx = PTR_OFFSET(cctx, sizeof(cipher_ctx));
 
 	if (ctx_size == 0)
 	{
@@ -93,27 +81,6 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, ciph
 	if (size < required_size)
 	{
 		return NULL;
-	}
-
-	if (mode == MODE_NONE && algorithm != CIPHER_CHACHA20)
-	{
-		return NULL;
-	}
-
-	if (algorithm == CIPHER_CHACHA20)
-	{
-		type = CIPHER_STREAM;
-		block_size = 0;
-	}
-	else if (algorithm == CIPHER_TDES)
-	{
-		type = CIPHER_BLOCK;
-		block_size = 8;
-	}
-	else
-	{
-		type = CIPHER_BLOCK;
-		block_size = 16;
 	}
 
 	switch (algorithm)
@@ -181,21 +148,17 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, ciph
 	}
 
 	cctx->algorithm = algorithm;
-	cctx->mode = mode;
-	cctx->type = type;
 	cctx->block_size = block_size;
 	cctx->ctx_size = ctx_size;
 
 	cctx->_ctx = _ctx;
-	cctx->_encrypt_block = _encrypt_block;
-	cctx->_decrypt_block = _decrypt_block;
-	cctx->_encrypt_stream = _encrypt_stream;
-	cctx->_decrypt_stream = _decrypt_stream;
+	cctx->_encrypt = _encrypt;
+	cctx->_decrypt = _decrypt;
 
 	return _ctx;
 }
 
-cipher_ctx *cipher_new(cipher_algorithm algorithm, cipher_mode mode, void *key, size_t key_size)
+cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size)
 {
 	cipher_ctx *cctx = NULL;
 	cipher_ctx *result = NULL;
@@ -210,7 +173,7 @@ cipher_ctx *cipher_new(cipher_algorithm algorithm, cipher_mode mode, void *key, 
 		return NULL;
 	}
 
-	result = cipher_init(cctx, required_size, algorithm, mode, key, key_size);
+	result = cipher_init(cctx, required_size, algorithm, key, key_size);
 
 	if (result == NULL)
 	{
@@ -224,19 +187,7 @@ void cipher_delete(cipher_ctx *cctx)
 {
 	// Set these to invalid values.
 	cctx->algorithm = -1;
-	cctx->mode = -1;
 
 	memset(cctx->_ctx, 0, cctx->ctx_size);
 	free(cctx);
 }
-
-void cipher_reset(cipher_ctx *cctx, cipher_mode mode)
-{
-	cctx->mode = mode;
-}
-
-//void cipher_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-//void cipher_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-//
-//void cipher_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
-//void cipher_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);

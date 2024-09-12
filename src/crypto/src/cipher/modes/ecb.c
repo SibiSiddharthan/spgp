@@ -45,12 +45,12 @@ uint64_t cipher_ecb_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, v
 
 uint64_t cipher_ecb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_ecb_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_ecb_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_ecb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_ecb_update_common(cctx, cctx->_decrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_ecb_update_common(cctx, cctx->_decrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -81,7 +81,7 @@ uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 
 	while (processed + block_size <= plaintext_size)
 	{
-		cctx->_encrypt_block(cctx->_ctx, pin + processed, pout + result);
+		cctx->_encrypt(cctx->_ctx, pin + processed, pout + result);
 
 		result += block_size;
 		processed += block_size;
@@ -95,7 +95,7 @@ uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 		{
 			// Fill the last block with 'block_size' bytes.
 			memset(cctx->buffer, block_size, block_size);
-			cctx->_encrypt_block(cctx->_ctx, cctx->buffer, pout + result);
+			cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + result);
 			result += block_size;
 		}
 
@@ -121,7 +121,7 @@ uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 		break;
 	}
 
-	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, pout + result);
+	cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + result);
 	result += block_size;
 
 	return result;
@@ -153,14 +153,14 @@ uint64_t cipher_ecb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	// Process upto the last block.
 	while (processed + block_size <= ciphertext_size)
 	{
-		cctx->_decrypt_block(cctx->_ctx, pin + processed, pout + result);
+		cctx->_decrypt(cctx->_ctx, pin + processed, pout + result);
 
 		result += block_size;
 		processed += block_size;
 	}
 
 	// Decrypt the last block
-	cctx->_decrypt_block(cctx->_ctx, pin + processed, cctx->buffer);
+	cctx->_decrypt(cctx->_ctx, pin + processed, cctx->buffer);
 
 	// Check for PKCS7 padding
 	last_block = cctx->buffer;

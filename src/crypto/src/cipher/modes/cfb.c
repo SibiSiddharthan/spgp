@@ -183,62 +183,62 @@ uint64_t cipher_cfb128_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *
 
 uint64_t cipher_cfb1_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_cfb1_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_cfb1_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb1_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb1_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_cfb1_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_cfb1_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb1_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb8_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_cfb8_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_cfb8_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb8_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb8_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_cfb8_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_cfb8_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb8_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb64_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb64_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_cfb64_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_cfb64_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb64_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb64_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb128_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb128_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_cfb128_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_cfb128_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb128_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb128_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -274,7 +274,7 @@ uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t pl
 		uint64_t *op = (uint64_t *)&pout[processed];
 		uint64_t *bp = (uint64_t *)cctx->buffer;
 
-		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 		op[0] = ip[0] ^ bp[0];
 		SHL128_64(cctx->buffer, op[0]);
 
@@ -288,7 +288,7 @@ uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t pl
 	{
 		if (cctx->padding == PADDING_PKCS7)
 		{
-			cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+			cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 			for (uint8_t i = 0; i < block_size; ++i)
 			{
@@ -316,7 +316,7 @@ uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t pl
 		break;
 	}
 
-	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, pout + result);
+	cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + result);
 
 	for (uint8_t i = 0; i < block_size; ++i)
 	{
@@ -356,7 +356,7 @@ uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t c
 		uint64_t *op = (uint64_t *)&pout[processed];
 		uint64_t *bp = (uint64_t *)cctx->buffer;
 
-		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 		op[0] = ip[0] ^ bp[0];
 		SHL128_64(cctx->buffer, op[0]);
 
@@ -365,7 +365,7 @@ uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t c
 	}
 
 	// Decrypt the last block
-	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 	for (uint8_t i = 0; i < block_size; ++i)
 	{
@@ -470,7 +470,7 @@ uint64_t cipher_cfb128_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t p
 		uint64_t *op = (uint64_t *)&pout[processed];
 		uint64_t *bp = (uint64_t *)cctx->buffer;
 
-		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 		op[0] = ip[0] ^ bp[0];
 		op[1] = ip[1] ^ bp[1];
 		memcpy(op, cctx->buffer, block_size);
@@ -485,7 +485,7 @@ uint64_t cipher_cfb128_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t p
 	{
 		if (cctx->padding == PADDING_PKCS7)
 		{
-			cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+			cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 			for (uint8_t i = 0; i < block_size; ++i)
 			{
@@ -513,7 +513,7 @@ uint64_t cipher_cfb128_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t p
 		break;
 	}
 
-	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, pout + result);
+	cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + result);
 
 	for (uint8_t i = 0; i < block_size; ++i)
 	{
@@ -553,7 +553,7 @@ uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t 
 		uint64_t *op = (uint64_t *)&pout[processed];
 		uint64_t *bp = (uint64_t *)cctx->buffer;
 
-		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 		op[0] = ip[0] ^ bp[0];
 		op[1] = ip[1] ^ bp[1];
 		memcpy(op, cctx->buffer, block_size);
@@ -563,7 +563,7 @@ uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t 
 	}
 
 	// Decrypt the last block
-	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 	for (uint8_t i = 0; i < block_size; ++i)
 	{

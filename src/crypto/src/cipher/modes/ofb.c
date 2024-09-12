@@ -50,12 +50,12 @@ uint64_t cipher_ofb_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, v
 
 uint64_t cipher_ofb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_ofb_update_common(cctx, cctx->_encrypt_block, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_ofb_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
 uint64_t cipher_ofb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_ofb_update_common(cctx, cctx->_encrypt_block, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_ofb_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -75,7 +75,7 @@ uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 
 	while (processed + block_size <= plaintext_size)
 	{
-		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 		for (uint8_t i = 0; i < block_size; ++i)
 		{
@@ -88,7 +88,7 @@ uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 
 	remaining = plaintext_size - processed;
 
-	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 	for (uint8_t i = 0; i < remaining; ++i)
 	{
@@ -118,7 +118,7 @@ uint64_t cipher_ofb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	// Process upto the last block.
 	while (processed + block_size <= ciphertext_size)
 	{
-		cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 		for (uint8_t i = 0; i < block_size; ++i)
 		{
@@ -132,7 +132,7 @@ uint64_t cipher_ofb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	remaining = ciphertext_size - processed;
 
 	// Decrypt the last block
-	cctx->_encrypt_block(cctx->_ctx, cctx->buffer, cctx->buffer);
+	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
 	for (uint8_t i = 0; i < remaining; ++i)
 	{
