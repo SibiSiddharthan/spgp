@@ -330,7 +330,7 @@ void hmac_update(hmac_ctx *hctx, void *data, size_t size)
 	hctx->_update(hctx->_ctx, data, size);
 }
 
-void hmac_final(hmac_ctx *hctx, void *mac, size_t size)
+uint32_t hmac_final(hmac_ctx *hctx, void *mac, size_t size)
 {
 	// H ((K0 ^ ipad) || text)
 	hctx->_final(hctx->_ctx, hctx->ihash);
@@ -344,9 +344,11 @@ void hmac_final(hmac_ctx *hctx, void *mac, size_t size)
 
 	// Truncate if necessary
 	memcpy(mac, hctx->ihash, MIN(hctx->hash_size, size));
+
+	return MIN(hctx->hash_size, size);
 }
 
-static void hmac_common(hmac_algorithm algorithm, void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+static uint32_t hmac_common(hmac_algorithm algorithm, void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	// A big enough buffer for the hmac_ctx.
 	hmac_ctx *hctx = NULL;
@@ -356,70 +358,70 @@ static void hmac_common(hmac_algorithm algorithm, void *key, size_t key_size, vo
 
 	// Compute the mac.
 	hmac_update(hctx, data, data_size);
-	hmac_final(hctx, mac, mac_size);
+	return hmac_final(hctx, mac, mac_size);
 }
 
-void hmac_md5(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_md5(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_MD5, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_ripemd160(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_ripemd160(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_RIPEMD160, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha1(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha1(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA1, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA224, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA256, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha384(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha384(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA384, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha512(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha512(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA512, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha512_224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha512_224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA512_224, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha512_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha512_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA512_256, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha3_224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha3_224(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA3_224, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha3_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha3_256(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA3_256, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha3_384(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha3_384(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA3_384, key, key_size, data, data_size, mac, mac_size);
 }
 
-void hmac_sha3_512(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+uint32_t hmac_sha3_512(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
 {
 	return hmac_common(HMAC_SHA3_512, key, key_size, data, data_size, mac, mac_size);
 }
