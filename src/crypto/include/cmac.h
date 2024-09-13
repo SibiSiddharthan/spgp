@@ -10,7 +10,7 @@
 
 #include <types.h>
 
-// See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (cmac)
+// See NIST FIPS 800-38B Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication (CMAC)
 
 typedef enum _cmac_algorithm
 {
