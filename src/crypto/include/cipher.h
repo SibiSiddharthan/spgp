@@ -36,7 +36,7 @@ typedef enum _cipher_algorithm
 
 typedef enum _cipher_padding
 {
-	PADDING_UNKNOWN,
+	PADDING_NONE,
 	PADDING_ZERO,
 	PADDING_ISO7816,
 	PADDING_PKCS7
@@ -65,17 +65,17 @@ cipher_ctx *cipher_reset(cipher_ctx *cctx, void *key, size_t key_size);
 
 // Electronic Code Book (ECB)
 
-void cipher_ecb_encrypt_init(cipher_ctx *cctx, cipher_padding padding);
+cipher_ctx *cipher_ecb_encrypt_init(cipher_ctx *cctx, cipher_padding padding);
 uint64_t cipher_ecb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-void cipher_ecb_encrypt(cipher_ctx *cctx, cipher_padding padding, void *plaintext, size_t plaintext_size, void *ciphertext,
-						size_t ciphertext_size);
+uint64_t cipher_ecb_encrypt(cipher_ctx *cctx, cipher_padding padding, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size);
 
-void cipher_ecb_decrypt_init(cipher_ctx *cctx, cipher_padding padding);
+cipher_ctx *cipher_ecb_decrypt_init(cipher_ctx *cctx, cipher_padding padding);
 uint64_t cipher_ecb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_ecb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
-void cipher_ecb_decrypt(cipher_ctx *cctx, cipher_padding padding, void *ciphertext, size_t ciphertext_size, void *plaintext,
-						size_t plaintext_size);
+uint64_t cipher_ecb_decrypt(cipher_ctx *cctx, cipher_padding padding, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size);
 
 // Cipher Block Chaining (CBC)
 
