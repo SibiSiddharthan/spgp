@@ -38,7 +38,6 @@ typedef struct _cmac_ctx
 {
 	cmac_algorithm algorithm;
 	uint32_t ctx_size;
-	uint32_t key_ctx_size;
 	uint32_t block_size;
 
 	size_t message_size;
@@ -48,7 +47,8 @@ typedef struct _cmac_ctx
 	byte_t subkey2[16];
 
 	void *_key;
-	void (*_encrypt_block)(void *key, void *plaintext, void *ciphertext);
+	void (*_encrypt)(void *key, void *plaintext, void *ciphertext);
+	void (*_process)(struct _cmac_ctx *ctx);
 
 } cmac_ctx;
 
@@ -58,8 +58,8 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cmac_algorithm algorithm, void *key,
 cmac_ctx *cmac_new(cmac_algorithm algorithm, void *key, size_t key_size);
 void cmac_delete(cmac_ctx *cctx);
 
-void cmac_reset(cmac_ctx *cctx, void *key, size_t key_size);
+cmac_ctx *cmac_reset(cmac_ctx *cctx, void *key, size_t key_size);
 void cmac_update(cmac_ctx *cctx, void *data, size_t size);
-void cmac_final(cmac_ctx *cctx, void *mac, size_t size);
+uint32_t cmac_final(cmac_ctx *cctx, void *mac, size_t size);
 
 #endif

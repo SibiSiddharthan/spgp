@@ -15,8 +15,10 @@
 #include <des.h>
 #include <twofish.h>
 
-#include <minmax.h>
 #include <byteswap.h>
+#include <minmax.h>
+#include <ptr.h>
+#include <xor.h>
 
 // See NIST SP 800-38B Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication
 
@@ -49,6 +51,62 @@ static inline size_t get_key_ctx_size(cmac_algorithm algorithm)
 	}
 }
 
+static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
+{
+	switch (cctx->algorithm)
+	{
+	// AES
+	case CMAC_AES128:
+		return aes_key_init(cctx->_key, sizeof(aes_key), AES128, key, key_size);
+	case CMAC_AES192:
+		return aes_key_init(cctx->_key, sizeof(aes_key), AES192, key, key_size);
+	case CMAC_AES256:
+		return aes_key_init(cctx->_key, sizeof(aes_key), AES256, key, key_size);
+
+	// ARIA
+	case CMAC_ARIA128:
+		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA128, key, key_size);
+	case CMAC_ARIA192:
+		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA192, key, key_size);
+	case CMAC_ARIA256:
+		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA256, key, key_size);
+
+	// CAMELLIA
+	case CMAC_CAMELLIA128:
+		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA128, key, key_size);
+	case CMAC_CAMELLIA192:
+		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA192, key, key_size);
+	case CMAC_CAMELLIA256:
+		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA256, key, key_size);
+
+	// TDES
+	case CMAC_TDES:
+	{
+		int32_t status = 0;
+		byte_t k1[DES_KEY_SIZE], k2[DES_KEY_SIZE], k3[DES_KEY_SIZE];
+
+		status = tdes_decode_key(key, key_size, k1, k2, k3);
+
+		if (status == -1)
+		{
+			return NULL;
+		}
+
+		return tdes_key_init(cctx->_key, sizeof(tdes_key), k1, k2, k3, false);
+	}
+
+	// TWOFISH
+	case CMAC_TWOFISH128:
+		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH128, key, key_size);
+	case CMAC_TWOFISH192:
+		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH192, key, key_size);
+	case CMAC_TWOFISH256:
+		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH256, key, key_size);
+	}
+
+	return NULL;
+}
+
 static inline void SHL128_1(byte_t buffer[16])
 {
 	uint64_t *t1 = (uint64_t *)&buffer[0];
@@ -69,7 +127,7 @@ static void cmac_generate_subkeys_64(cmac_ctx *cctx)
 	uint64_t *p = (uint64_t *)l;
 	uint64_t k1, k2;
 
-	cctx->_encrypt_block(cctx->_key, l, l);
+	cctx->_encrypt(cctx->_key, l, l);
 
 	// K1
 	k1 = BSWAP_64(*p);
@@ -110,7 +168,7 @@ static void cmac_generate_subkeys_128(cmac_ctx *cctx)
 
 	byte_t l[16] = {0};
 
-	cctx->_encrypt_block(cctx->_key, l, l);
+	cctx->_encrypt(cctx->_key, l, l);
 
 	// K1
 	memcpy(cctx->subkey1, l, 16);
@@ -149,6 +207,18 @@ static void cmac_generate_subkeys(cmac_ctx *cctx)
 	return cmac_generate_subkeys_128(cctx);
 }
 
+static void cmac_process_block64(cmac_ctx *cctx)
+{
+	XOR8(cctx->state, cctx->state, cctx->buffer);
+	cctx->_encrypt(cctx->_key, cctx->state, cctx->state);
+}
+
+static void cmac_process_block128(cmac_ctx *cctx)
+{
+	XOR16(cctx->state, cctx->state, cctx->buffer);
+	cctx->_encrypt(cctx->_key, cctx->state, cctx->state);
+}
+
 size_t cmac_ctx_size(cmac_algorithm algorithm)
 {
 	return sizeof(cmac_ctx) + (3 * get_key_ctx_size(algorithm));
@@ -163,7 +233,7 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cmac_algorithm algorithm, void *key,
 	size_t block_size = 16;
 
 	void *_key = NULL;
-	void (*_encrypt_block)(void *key, void *plaintext, void *ciphertext) = NULL;
+	void (*_encrypt)(void *key, void *plaintext, void *ciphertext) = NULL;
 
 	if (key_ctx_size == 0)
 	{
@@ -175,119 +245,75 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cmac_algorithm algorithm, void *key,
 		return NULL;
 	}
 
-	if (algorithm == CMAC_TDES)
-	{
-		block_size = DES_BLOCK_SIZE;
-	}
-
-	// Zero the memory for cmac_ctx only, the memory for the actual key contexts will be
-	// zeroed when they are initialized.
-	memset(cctx, 0, sizeof(cmac_ctx));
-
 	// The actual hash context will be stored after cmac_ctx.
-	_key = (void *)((byte_t *)cctx + sizeof(cmac_ctx));
+	_key = PTR_OFFSET(cctx, sizeof(cmac_ctx));
 
 	switch (algorithm)
 	{
 	case CMAC_AES128:
-	{
-		_key = aes_key_init(_key, key_ctx_size, AES128, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))aes128_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))aes128_encrypt_block;
+		break;
 	case CMAC_AES192:
-	{
-		_key = aes_key_init(_key, key_ctx_size, AES192, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))aes192_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))aes192_encrypt_block;
+		break;
 	case CMAC_AES256:
-	{
-		_key = aes_key_init(_key, key_ctx_size, AES256, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))aes256_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))aes256_encrypt_block;
+		break;
 	case CMAC_ARIA128:
-	{
-		_key = aria_key_init(_key, key_ctx_size, ARIA128, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))aria128_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))aria128_encrypt_block;
+		break;
 	case CMAC_ARIA192:
-	{
-		_key = aria_key_init(_key, key_ctx_size, ARIA192, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))aria192_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))aria192_encrypt_block;
+		break;
 	case CMAC_ARIA256:
-	{
-		_key = aria_key_init(_key, key_ctx_size, ARIA256, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))aria256_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))aria256_encrypt_block;
+		break;
 	case CMAC_CAMELLIA128:
-	{
-		_key = camellia_key_init(_key, key_ctx_size, CAMELLIA128, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))camellia128_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))camellia128_encrypt_block;
+		break;
 	case CMAC_CAMELLIA192:
-	{
-		_key = camellia_key_init(_key, key_ctx_size, CAMELLIA192, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))camellia192_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))camellia192_encrypt_block;
+		break;
 	case CMAC_CAMELLIA256:
-	{
-		_key = camellia_key_init(_key, key_ctx_size, CAMELLIA256, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))camellia256_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))camellia256_encrypt_block;
+		break;
 	case CMAC_TWOFISH128:
-	{
-		_key = twofish_key_init(_key, key_ctx_size, TWOFISH128, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))twofish_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
+		break;
 	case CMAC_TWOFISH192:
-	{
-		_key = twofish_key_init(_key, key_ctx_size, TWOFISH192, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))twofish_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
+		break;
 	case CMAC_TWOFISH256:
-	{
-		_key = twofish_key_init(_key, key_ctx_size, TWOFISH256, key, key_size);
-		_encrypt_block = (void (*)(void *, void *, void *))twofish_encrypt_block;
-	}
-	break;
+		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
+		break;
 	case CMAC_TDES:
+		block_size = DES_BLOCK_SIZE;
+		_encrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;
+		break;
+	}
+
+	cctx->algorithm = algorithm;
+	cctx->ctx_size = required_size;
+	cctx->block_size = block_size;
+
+	cctx->_key = _key;
+	cctx->_encrypt = _encrypt;
+
+	if (block_size == 16)
 	{
-		byte_t k1[8], k2[8], k3[8];
-
-		if (tdes_decode_key(key, key_size, k1, k2, k3) == -1)
-		{
-			return NULL;
-		}
-
-		_key = tdes_key_init(_key, key_ctx_size, k1, k2, k3, false);
-		_encrypt_block = (void (*)(void *, void *, void *))tdes_encrypt_block;
+		cctx->_process = cmac_process_block128;
 	}
-	break;
+	else
+	{
+		cctx->_process = cmac_process_block64;
 	}
+
+	_key = cmac_key_init(cctx, key, key_size);
 
 	if (_key == NULL)
 	{
 		return NULL;
 	}
-
-	cctx->algorithm = algorithm;
-	cctx->ctx_size = required_size;
-	cctx->key_ctx_size = key_ctx_size;
-	cctx->block_size = block_size;
-
-	cctx->_key = _key;
-	cctx->_encrypt_block = _encrypt_block;
 
 	// Determine subkeys.
 	cmac_generate_subkeys(cctx);
@@ -323,111 +349,34 @@ void cmac_delete(cmac_ctx *cctx)
 	free(cctx);
 }
 
-void cmac_reset(cmac_ctx *cctx, void *key, size_t key_size)
+cmac_ctx *cmac_reset(cmac_ctx *cctx, void *key, size_t key_size)
 {
-	void *result = NULL;
+	void *ctx = NULL;
 
-	// If a new key is given, reset the subkeys.
 	if (key != NULL)
 	{
-		memset(cctx->_key, 0, cctx->key_ctx_size);
-		memset(cctx->subkey1, 0, 16);
-		memset(cctx->subkey2, 0, 16);
+		// If a new key is given, reset the subkeys.
+		memset(cctx, 0, cctx->ctx_size);
 
-		switch (cctx->algorithm)
-		{
-		case CMAC_AES128:
-		{
-			result = aes_key_init(cctx->_key, cctx->key_ctx_size, AES128, key, key_size);
-		}
-		break;
-		case CMAC_AES192:
-		{
-			result = aes_key_init(cctx->_key, cctx->key_ctx_size, AES192, key, key_size);
-		}
-		break;
-		case CMAC_AES256:
-		{
-			result = aes_key_init(cctx->_key, cctx->key_ctx_size, AES256, key, key_size);
-		}
-		break;
-		case CMAC_ARIA128:
-		{
-			result = aria_key_init(cctx->_key, cctx->key_ctx_size, ARIA128, key, key_size);
-		}
-		break;
-		case CMAC_ARIA192:
-		{
-			result = aria_key_init(cctx->_key, cctx->key_ctx_size, ARIA192, key, key_size);
-		}
-		break;
-		case CMAC_ARIA256:
-		{
-			result = aria_key_init(cctx->_key, cctx->key_ctx_size, ARIA256, key, key_size);
-		}
-		break;
-		case CMAC_CAMELLIA128:
-		{
-			result = camellia_key_init(cctx->_key, cctx->key_ctx_size, CAMELLIA128, key, key_size);
-		}
-		break;
-		case CMAC_CAMELLIA192:
-		{
-			result = camellia_key_init(cctx->_key, cctx->key_ctx_size, CAMELLIA192, key, key_size);
-		}
-		break;
-		case CMAC_CAMELLIA256:
-		{
-			result = camellia_key_init(cctx->_key, cctx->key_ctx_size, CAMELLIA256, key, key_size);
-		}
-		break;
-		case CMAC_TWOFISH128:
-		{
-			result = twofish_key_init(cctx->_key, cctx->key_ctx_size, TWOFISH128, key, key_size);
-		}
-		break;
-		case CMAC_TWOFISH192:
-		{
-			result = twofish_key_init(cctx->_key, cctx->key_ctx_size, TWOFISH192, key, key_size);
-		}
-		break;
-		case CMAC_TWOFISH256:
-		{
-			result = twofish_key_init(cctx->_key, cctx->key_ctx_size, TWOFISH256, key, key_size);
-		}
-		break;
-		case CMAC_TDES:
-		{
-			byte_t k1[8], k2[8], k3[8];
+		ctx = cmac_key_init(cctx, key, key_size);
 
-			if (tdes_decode_key(key, key_size, k1, k2, k3) == -1)
-			{
-				return;
-			}
-
-			cctx->_key = tdes_key_init(cctx->_key, cctx->key_ctx_size, k1, k2, k3, false);
-		}
-		break;
-		}
-
-		if (result == NULL)
+		if (ctx == NULL)
 		{
-			return;
+			return NULL;
 		}
 
 		cmac_generate_subkeys(cctx);
 	}
-}
+	else
+	{
+		// Reset state and buffer.
+		cctx->message_size = 0;
 
-static void cmac_process_block(cmac_ctx *cctx)
-{
-	uint64_t *x = (uint64_t *)cctx->buffer;
-	uint64_t *y = (uint64_t *)cctx->state;
+		memset(cctx->buffer, 0, 16);
+		memset(cctx->state, 0, 16);
+	}
 
-	y[0] ^= x[0];
-	y[1] ^= x[1];
-
-	cctx->_encrypt_block(cctx->_key, cctx->state, cctx->state);
+	return cctx;
 }
 
 void cmac_update(cmac_ctx *cctx, void *data, size_t size)
@@ -451,7 +400,7 @@ void cmac_update(cmac_ctx *cctx, void *data, size_t size)
 
 	while (pos < size)
 	{
-		cmac_process_block(cctx);
+		cctx->_process(cctx);
 
 		copy = MIN(cctx->block_size, size - pos);
 
@@ -462,51 +411,32 @@ void cmac_update(cmac_ctx *cctx, void *data, size_t size)
 	}
 }
 
-void cmac_final(cmac_ctx *cctx, void *mac, size_t size)
+uint32_t cmac_final(cmac_ctx *cctx, void *mac, size_t size)
 {
 	uint64_t unprocessed = cctx->message_size % cctx->block_size;
 
 	if (unprocessed == 0)
 	{
-		uint64_t *x = (uint64_t *)cctx->subkey1;
-		uint64_t *y = (uint64_t *)cctx->buffer;
-
-		if (cctx->block_size == 16)
-		{
-			y[0] ^= x[0];
-			y[1] ^= x[1];
-		}
-		else
-		{
-			y[0] ^= x[0];
-		}
-
-		cmac_process_block(cctx);
+		XOR8_N(cctx->buffer, cctx->buffer, cctx->subkey1, cctx->block_size);
+		cctx->_process(cctx);
 	}
 	else
 	{
-		uint64_t *x = (uint64_t *)cctx->subkey2;
-		uint64_t *y = (uint64_t *)cctx->state;
 		uint64_t remaining = cctx->block_size - (cctx->message_size % cctx->block_size);
-
 		cctx->buffer[cctx->message_size % cctx->block_size] = 0x80;
 		--remaining;
 
 		memset(cctx->buffer + cctx->block_size + 1, 0, remaining);
 
-		if (cctx->block_size == 16)
-		{
-			y[0] ^= x[0];
-			y[1] ^= x[1];
-		}
-		else
-		{
-			y[0] ^= x[0];
-		}
-
-		cmac_process_block(cctx);
+		XOR8_N(cctx->buffer, cctx->buffer, cctx->subkey2, cctx->block_size);
+		cctx->_process(cctx);
 	}
 
 	// Truncate if necessary
 	memcpy(mac, cctx->state, MIN(cctx->block_size, size));
+
+	// Reset CMAC
+	cmac_reset(cctx, NULL, 0);
+
+	return MIN(cctx->block_size, size);
 }

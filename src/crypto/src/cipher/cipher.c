@@ -93,7 +93,6 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 	case CIPHER_TDES:
 	{
 		int32_t status = 0;
-
 		byte_t k1[DES_KEY_SIZE], k2[DES_KEY_SIZE], k3[DES_KEY_SIZE];
 
 		status = tdes_decode_key(key, key_size, k1, k2, k3);
@@ -198,7 +197,7 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 
 	// TDES
 	case CIPHER_TDES:
-		block_size = 8;
+		block_size = DES_BLOCK_SIZE;
 		_encrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;
 		_decrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;
 		break;
