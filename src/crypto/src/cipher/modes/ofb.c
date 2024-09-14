@@ -24,16 +24,7 @@ static inline uint64_t cipher_ofb_update_core(cipher_ctx *cctx, void *in, void *
 	while ((processed + block_size) <= size)
 	{
 		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-
-		switch (block_size)
-		{
-		case 16:
-			XOR16(pout + processed, pin + processed, cctx->buffer);
-			break;
-		case 8:
-			XOR8(pout + processed, pin + processed, cctx->buffer);
-			break;
-		}
+		XOR8_N(pout + processed, pin + processed, cctx->buffer, block_size);
 
 		processed += block_size;
 	}

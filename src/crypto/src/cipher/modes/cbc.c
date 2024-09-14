@@ -24,17 +24,9 @@ static inline uint64_t cipher_cbc_encrypt_core(cipher_ctx *cctx, void *in, void 
 
 	while ((processed + block_size) <= size)
 	{
-		switch (block_size)
-		{
-		case 16:
-			XOR16(cctx->buffer, cctx->buffer, pin + processed);
-			break;
-		case 8:
-			XOR8(cctx->buffer, cctx->buffer, pin + processed);
-			break;
-		}
-
+		XOR8_N(cctx->buffer, cctx->buffer, pin + processed, block_size);
 		cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + processed);
+
 		processed += block_size;
 	}
 
@@ -51,17 +43,9 @@ static inline uint64_t cipher_cbc_decrypt_core(cipher_ctx *cctx, void *in, void 
 
 	while ((processed + block_size) <= size)
 	{
-		switch (block_size)
-		{
-		case 16:
-			XOR16(cctx->buffer, cctx->buffer, pin + processed);
-			break;
-		case 8:
-			XOR8(cctx->buffer, cctx->buffer, pin + processed);
-			break;
-		}
-
+		XOR8_N(cctx->buffer, cctx->buffer, pin + processed, block_size);
 		cctx->_decrypt(cctx->_ctx, cctx->buffer, pout + processed);
+
 		processed += block_size;
 	}
 

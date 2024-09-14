@@ -11,6 +11,25 @@
 #include <stdint.h>
 #include <ptr.h>
 
+static inline void xor8(void *r, void *a, void *b, size_t n)
+{
+	uint64_t *r64 = r;
+	uint64_t *a64 = a;
+	uint64_t *b64 = b;
+
+	while (n != 0)
+	{
+		*r64 = *a64 ^ *b64;
+
+		r64++;
+		a64++;
+		b64++;
+		n -= 8;
+	}
+}
+
+#define XOR8_N(R, A, B, N) xor8(R, A, B, N)
+
 #define XOR8(R, A, B)                                                 \
 	{                                                                 \
 		*((uint64_t *)(R)) = *((uint64_t *)(A)) ^ *((uint64_t *)(B)); \
