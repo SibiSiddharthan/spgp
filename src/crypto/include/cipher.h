@@ -93,67 +93,67 @@ uint64_t cipher_cbc_decrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, 
 
 // Cipher Feedback (CFB{1,8,64,128})
 
-cipher_ctx * cipher_cfb1_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb1_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_cfb1_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb1_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb1_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
-						 size_t ciphertext_size);
+							 size_t ciphertext_size);
 
-cipher_ctx * cipher_cfb1_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb1_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_cfb1_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb1_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb1_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
-						 size_t plaintext_size);
+							 size_t plaintext_size);
 
-cipher_ctx * cipher_cfb8_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb8_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_cfb8_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb8_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb8_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
-						 size_t ciphertext_size);
+							 size_t ciphertext_size);
 
-cipher_ctx * cipher_cfb8_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb8_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_cfb8_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb8_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb8_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
-						 size_t plaintext_size);
+							 size_t plaintext_size);
 
-cipher_ctx * cipher_cfb64_encrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb64_encrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
 uint64_t cipher_cfb64_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb64_encrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size,
-						  void *ciphertext, size_t ciphertext_size);
+							  void *ciphertext, size_t ciphertext_size);
 
-cipher_ctx * cipher_cfb64_decrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb64_decrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
 uint64_t cipher_cfb64_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb64_decrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
-						  void *plaintext, size_t plaintext_size);
+							  void *plaintext, size_t plaintext_size);
 
-cipher_ctx * cipher_cfb128_encrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb128_encrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
 uint64_t cipher_cfb128_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb128_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_cfb128_encrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size,
-						   void *ciphertext, size_t ciphertext_size);
+							   void *ciphertext, size_t ciphertext_size);
 
-cipher_ctx * cipher_cfb128_decrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
+cipher_ctx *cipher_cfb128_decrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
 uint64_t cipher_cfb128_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_cfb128_decrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
-						   void *plaintext, size_t plaintext_size);
+							   void *plaintext, size_t plaintext_size);
 
 // Output Feedback (OFB)
 
-void cipher_ofb_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
+cipher_ctx *cipher_ofb_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_ofb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-void cipher_ofb_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
-						size_t ciphertext_size);
+uint64_t cipher_ofb_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size);
 
-void cipher_ofb_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
+cipher_ctx *cipher_ofb_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_ofb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_ofb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
-void cipher_ofb_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
-						size_t plaintext_size);
+uint64_t cipher_ofb_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size);
 
 // Counter (CTR)
 

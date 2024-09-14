@@ -10,136 +10,147 @@
 
 #include <cipher.h>
 #include <round.h>
+#include <xor.h>
 
-uint64_t cipher_ofb_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, void *, void *), void *in, size_t in_size, void *out,
-								  size_t out_size)
+static inline uint64_t cipher_ofb_update_core(cipher_ctx *cctx, void *in, void *out, size_t size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
+	uint64_t remaining = 0;
 	uint16_t block_size = cctx->block_size;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 
-	// Make sure input is a multiple of block_size
-	if (in_size % block_size != 0)
+	while ((processed + block_size) <= size)
 	{
-		return 0;
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+
+		switch (block_size)
+		{
+		case 16:
+			XOR16(pout + processed, pin + processed, cctx->buffer);
+			break;
+		case 8:
+			XOR8(pout + processed, pin + processed, cctx->buffer);
+			break;
+		}
+
+		processed += block_size;
 	}
 
-	if (in_size < out_size)
-	{
-		return 0;
-	}
+	remaining = size - processed;
 
-	while (processed < in_size)
+	if (remaining > 0)
 	{
-		cipher_ops(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
-		for (uint8_t i = 0; i < block_size; ++i)
+		for (uint8_t i = 0; i < remaining; ++i)
 		{
 			pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
 		}
 
-		result += block_size;
-		processed += block_size;
+		processed += remaining;
 	}
 
-	return result;
+	return processed;
+}
+
+cipher_ctx *cipher_ofb_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+{
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
 }
 
 uint64_t cipher_ofb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_ofb_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
-}
-
-uint64_t cipher_ofb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
-{
-	return cipher_ofb_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
-}
-
-uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
-{
-	uint64_t result = 0;
-	uint64_t processed = 0;
-	uint64_t remaining = 0;
-	uint16_t block_size = cctx->block_size;
-
-	byte_t *pin = (byte_t *)plaintext;
-	byte_t *pout = (byte_t *)ciphertext;
-
 	if (ciphertext_size < plaintext_size)
 	{
 		return 0;
 	}
 
-	while (processed + block_size <= plaintext_size)
-	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-
-		for (uint8_t i = 0; i < block_size; ++i)
-		{
-			pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
-		}
-
-		result += block_size;
-		processed += block_size;
-	}
-
-	remaining = plaintext_size - processed;
-
-	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-
-	for (uint8_t i = 0; i < remaining; ++i)
-	{
-		pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
-	}
-
-	result += remaining;
-
-	return result;
+	return cipher_ofb_update_core(cctx, plaintext, ciphertext, ROUND_DOWN(plaintext_size, cctx->block_size));
 }
 
-uint64_t cipher_ofb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	uint64_t result = 0;
-	uint64_t processed = 0;
-	uint64_t remaining = 0;
-	uint16_t block_size = cctx->block_size;
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
 
-	byte_t *pin = (byte_t *)ciphertext;
-	byte_t *pout = (byte_t *)plaintext;
+	return cipher_ofb_update_core(cctx, plaintext, ciphertext, plaintext_size);
+}
 
+uint64_t cipher_ofb_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size)
+{
+	cctx = cipher_ofb_encrypt_init(cctx, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_ofb_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+cipher_ctx *cipher_ofb_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+{
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
+}
+
+uint64_t cipher_ofb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
 	if (plaintext_size < ciphertext_size)
 	{
 		return 0;
 	}
 
-	// Process upto the last block.
-	while (processed + block_size <= ciphertext_size)
+	return cipher_ofb_update_core(cctx, ciphertext, plaintext, ROUND_DOWN(ciphertext_size, cctx->block_size));
+}
+
+uint64_t cipher_ofb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	if (plaintext_size < ciphertext_size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-
-		for (uint8_t i = 0; i < block_size; ++i)
-		{
-			pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
-		}
-
-		result += block_size;
-		processed += block_size;
+		return 0;
 	}
 
-	remaining = ciphertext_size - processed;
+	return cipher_ofb_update_core(cctx, ciphertext, plaintext, ciphertext_size);
+}
 
-	// Decrypt the last block
-	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+uint64_t cipher_ofb_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size)
+{
+	cctx = cipher_ofb_decrypt_init(cctx, iv, iv_size);
 
-	for (uint8_t i = 0; i < remaining; ++i)
+	if (cctx == NULL)
 	{
-		cctx->buffer[i] ^= *(pin + processed + i);
+		return 0;
 	}
 
-	result += remaining;
-
-	return result;
+	return cipher_ofb_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
