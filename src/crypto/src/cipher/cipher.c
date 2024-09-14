@@ -53,6 +53,71 @@ static inline size_t get_ctx_size(cipher_algorithm algorithm)
 	}
 }
 
+static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
+{
+	switch (cctx->algorithm)
+	{
+	// AES
+	case CIPHER_AES128:
+		return aes_key_init(cctx->_ctx, sizeof(aes_key), AES128, key, key_size);
+	case CIPHER_AES192:
+		return aes_key_init(cctx->_ctx, sizeof(aes_key), AES192, key, key_size);
+	case CIPHER_AES256:
+		return aes_key_init(cctx->_ctx, sizeof(aes_key), AES256, key, key_size);
+
+	// ARIA
+	case CIPHER_ARIA128:
+		return aria_key_init(cctx->_ctx, sizeof(aria_key), ARIA128, key, key_size);
+	case CIPHER_ARIA192:
+		return aria_key_init(cctx->_ctx, sizeof(aria_key), ARIA192, key, key_size);
+	case CIPHER_ARIA256:
+		return aria_key_init(cctx->_ctx, sizeof(aria_key), ARIA256, key, key_size);
+
+	// CAMELLIA
+	case CIPHER_CAMELLIA128:
+		return camellia_key_init(cctx->_ctx, sizeof(camellia_key), CAMELLIA128, key, key_size);
+	case CIPHER_CAMELLIA192:
+		return camellia_key_init(cctx->_ctx, sizeof(camellia_key), CAMELLIA192, key, key_size);
+	case CIPHER_CAMELLIA256:
+		return camellia_key_init(cctx->_ctx, sizeof(camellia_key), CAMELLIA256, key, key_size);
+
+	// CHACHA
+	// case CIPHER_CHACHA20:
+	//	if (key_size != CHACHA20_KEY_SIZE)
+	//	{
+	//		return NULL;
+	//	}
+	//	_ctx = chacha20_key_init(_ctx, ctx_size, key, NULL);
+
+	// TDES
+	case CIPHER_TDES:
+	{
+		int32_t status = 0;
+
+		byte_t k1[DES_KEY_SIZE], k2[DES_KEY_SIZE], k3[DES_KEY_SIZE];
+
+		status = tdes_decode_key(key, key_size, k1, k2, k3);
+
+		if (status == -1)
+		{
+			return NULL;
+		}
+
+		return tdes_key_init(cctx->_ctx, sizeof(tdes_key), k1, k2, k3, false);
+	}
+
+	// TWOFISH
+	case CIPHER_TWOFISH128:
+		return twofish_key_init(cctx->_ctx, sizeof(twofish_key), TWOFISH128, key, key_size);
+	case CIPHER_TWOFISH192:
+		return twofish_key_init(cctx->_ctx, sizeof(twofish_key), TWOFISH192, key, key_size);
+	case CIPHER_TWOFISH256:
+		return twofish_key_init(cctx->_ctx, sizeof(twofish_key), TWOFISH256, key, key_size);
+	}
+
+	return NULL;
+}
+
 size_t cipher_ctx_size(cipher_algorithm algorithm)
 {
 	return sizeof(cipher_ctx) + get_ctx_size(algorithm);
@@ -87,75 +152,82 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 	{
 	// AES
 	case CIPHER_AES128:
-		_ctx = aes_key_init(_ctx, ctx_size, AES128, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))aes128_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))aes128_decrypt_block;
 		break;
 	case CIPHER_AES192:
-		_ctx = aes_key_init(_ctx, ctx_size, AES192, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))aes192_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))aes192_decrypt_block;
 		break;
 	case CIPHER_AES256:
 		_ctx = aes_key_init(_ctx, ctx_size, AES256, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))aes256_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))aes256_decrypt_block;
 		break;
 
 	// ARIA
 	case CIPHER_ARIA128:
-		_ctx = aria_key_init(_ctx, ctx_size, ARIA128, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))aria128_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))aria128_decrypt_block;
 		break;
 	case CIPHER_ARIA192:
-		_ctx = aria_key_init(_ctx, ctx_size, ARIA192, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))aria192_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))aria192_decrypt_block;
 		break;
 	case CIPHER_ARIA256:
-		_ctx = aria_key_init(_ctx, ctx_size, ARIA256, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))aria256_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))aria256_decrypt_block;
 		break;
 
 	// CAMELLIA
 	case CIPHER_CAMELLIA128:
-		_ctx = camellia_key_init(_ctx, ctx_size, CAMELLIA128, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))camellia128_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))camellia128_decrypt_block;
 		break;
 	case CIPHER_CAMELLIA192:
-		_ctx = camellia_key_init(_ctx, ctx_size, CAMELLIA192, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))camellia192_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))camellia192_decrypt_block;
 		break;
 	case CIPHER_CAMELLIA256:
-		_ctx = camellia_key_init(_ctx, ctx_size, CAMELLIA256, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))camellia256_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))camellia256_decrypt_block;
 		break;
 
 	// CHACHA
 	// case CIPHER_CHACHA20:
-	//	if (key_size != CHACHA20_KEY_SIZE)
-	//	{
-	//		return NULL;
-	//	}
-	//	_ctx = chacha20_key_init(_ctx, ctx_size, key, NULL);
 
 	// TDES
-	// case CIPHER_TDES:
-	//	return sizeof(tdes_key);
+	case CIPHER_TDES:
+		block_size = 8;
+		_encrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;
+		break;
 
 	// TWOFISH
 	case CIPHER_TWOFISH128:
-		_ctx = twofish_key_init(_ctx, ctx_size, TWOFISH128, key, key_size);
-		break;
 	case CIPHER_TWOFISH192:
-		_ctx = twofish_key_init(_ctx, ctx_size, TWOFISH192, key, key_size);
-		break;
 	case CIPHER_TWOFISH256:
-		_ctx = twofish_key_init(_ctx, ctx_size, TWOFISH256, key, key_size);
+		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))twofish_decrypt_block;
 		break;
 	}
+
+	cctx->algorithm = algorithm;
+	cctx->block_size = block_size;
+	cctx->ctx_size = required_size;
+
+	cctx->_ctx = _ctx;
+	cctx->_encrypt = _encrypt;
+	cctx->_decrypt = _decrypt;
+
+	_ctx = cipher_key_init(cctx, key, key_size);
 
 	if (_ctx == NULL)
 	{
 		return NULL;
 	}
 
-	cctx->algorithm = algorithm;
-	cctx->block_size = block_size;
-	cctx->ctx_size = ctx_size;
-
-	cctx->_ctx = _ctx;
-	cctx->_encrypt = _encrypt;
-	cctx->_decrypt = _decrypt;
-
-	return _ctx;
+	return cctx;
 }
 
 cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size)
@@ -190,4 +262,18 @@ void cipher_delete(cipher_ctx *cctx)
 
 	memset(cctx->_ctx, 0, cctx->ctx_size);
 	free(cctx);
+}
+
+cipher_ctx *cipher_reset(cipher_ctx *cctx, void *key, size_t key_size)
+{
+	void *ctx = NULL;
+
+	ctx = cipher_key_init(cctx, key, key_size);
+
+	if (ctx == NULL)
+	{
+		return NULL;
+	}
+
+	return cctx;
 }

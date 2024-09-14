@@ -51,7 +51,6 @@ typedef struct _cipher_ctx
 	byte_t buffer[32];
 
 	void *_ctx;
-	void *(*_init)(void *, size_t, void *, size_t);
 	void (*_encrypt)(void *, void *, void *);
 	void (*_decrypt)(void *, void *, void *);
 } cipher_ctx;
@@ -61,6 +60,8 @@ size_t cipher_ctx_size(cipher_algorithm algorithm);
 cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size);
 cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size);
 void cipher_delete(cipher_ctx *cctx);
+
+cipher_ctx *cipher_reset(cipher_ctx *cctx, void *key, size_t key_size);
 
 // Electronic Code Book (ECB)
 
