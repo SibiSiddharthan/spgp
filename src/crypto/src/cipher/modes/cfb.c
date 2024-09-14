@@ -11,6 +11,9 @@
 #include <cipher.h>
 #include <byteswap.h>
 #include <round.h>
+#include <xor.h>
+
+#include "padding.h"
 
 static inline void SHL128_1(byte_t buffer[16], byte_t bit)
 {
@@ -47,211 +50,330 @@ static inline byte_t get_bit(byte_t b, uint8_t i)
 	return (b >> (7 - i)) & 0x1;
 }
 
-uint64_t cipher_cfb1_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, void *, void *), void *in, size_t in_size, void *out,
-								   size_t out_size)
+static inline uint64_t cipher_cfb1_update_core(cipher_ctx *cctx, void *in, void *out, size_t size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 
-	if (in_size < out_size)
-	{
-		return 0;
-	}
-
-	while (processed < in_size)
+	while (processed < size)
 	{
 		byte_t out = 0;
 
 		for (uint8_t i = 0; i < 8; ++i)
 		{
-			cipher_ops(cctx->_ctx, cctx->buffer, cctx->buffer);
+			cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 			out |= (get_bit(pin[processed], i) << (7 - i)) ^ (get_bit(cctx->buffer[0], i) << (7 - i));
 			SHL128_1(cctx->buffer, get_bit(out, i));
 		}
 
 		pout[processed] = out;
-
-		++result;
 		++processed;
 	}
 
-	return result;
+	return processed;
 }
 
-uint64_t cipher_cfb8_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, void *, void *), void *in, size_t in_size, void *out,
-								   size_t out_size)
+static inline uint64_t cipher_cfb8_update_core(cipher_ctx *cctx, void *in, void *out, size_t size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 
-	if (in_size < out_size)
+	while (processed < size)
 	{
-		return 0;
-	}
-
-	while (processed < in_size)
-	{
-		cipher_ops(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 		pout[processed] = pin[processed] ^ cctx->buffer[0];
 		SHL128_8(cctx->buffer, pout[processed]);
 
-		++result;
 		++processed;
 	}
 
-	return result;
+	return processed;
 }
 
-uint64_t cipher_cfb64_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, void *, void *), void *in, size_t in_size, void *out,
-									size_t out_size)
+static inline uint64_t cipher_cfb64_update_core(cipher_ctx *cctx, void *in, void *out, size_t size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 
-	if (in_size % 8 != 0)
+	while ((processed + 8) < size)
 	{
-		return 0;
-	}
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+		XOR8(pout + processed, pin + processed, cctx->buffer);
+		SHL128_64(cctx->buffer, *(uint64_t *)(pout + processed));
 
-	if (in_size < out_size)
-	{
-		return 0;
-	}
-
-	while (processed < in_size)
-	{
-		uint64_t *ip = (uint64_t *)&pin[processed];
-		uint64_t *op = (uint64_t *)&pout[processed];
-		uint64_t *bp = (uint64_t *)cctx->buffer;
-
-		cipher_ops(cctx->_ctx, cctx->buffer, cctx->buffer);
-		op[0] = ip[0] ^ bp[0];
-		SHL128_64(cctx->buffer, op[0]);
-
-		result += 8;
 		processed += 8;
 	}
 
-	return result;
+	return processed;
 }
 
-uint64_t cipher_cfb128_update_common(cipher_ctx *cctx, void (*cipher_ops)(void *, void *, void *), void *in, size_t in_size, void *out,
-									 size_t out_size)
+static inline uint64_t cipher_cfb128_update_core(cipher_ctx *cctx, void *in, void *out, size_t size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 
-	if (in_size % 16 != 0)
+	while ((processed + 16) < size)
 	{
-		return 0;
-	}
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+		XOR16(pout + processed, pin + processed, cctx->buffer);
+		memcpy(pout + processed, cctx->buffer, 16);
 
-	if (in_size < out_size)
-	{
-		return 0;
-	}
-
-	while (processed < in_size)
-	{
-		uint64_t *ip = (uint64_t *)&pin[processed];
-		uint64_t *op = (uint64_t *)&pout[processed];
-		uint64_t *bp = (uint64_t *)cctx->buffer;
-
-		cipher_ops(cctx->_ctx, cctx->buffer, cctx->buffer);
-		op[0] = ip[0] ^ bp[0];
-		op[1] = ip[1] ^ bp[1];
-		memcpy(op, cctx->buffer, 16);
-
-		result += 16;
 		processed += 16;
 	}
 
-	return result;
+	return processed;
+}
+
+cipher_ctx *cipher_cfb1_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+{
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
 }
 
 uint64_t cipher_cfb1_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
-}
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
 
-uint64_t cipher_cfb1_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
-{
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb1_update_core(cctx, plaintext, ciphertext, plaintext_size);
 }
 
 uint64_t cipher_cfb1_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb1_update_core(cctx, plaintext, ciphertext, plaintext_size);
+}
+
+uint64_t cipher_cfb1_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size)
+{
+	cctx = cipher_cfb1_encrypt_init(cctx, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_cfb1_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+cipher_ctx *cipher_cfb1_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+{
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
+}
+
+uint64_t cipher_cfb1_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb1_update_core(cctx, ciphertext, plaintext, ciphertext_size);
 }
 
 uint64_t cipher_cfb1_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb1_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb1_update_core(cctx, ciphertext, plaintext, ciphertext_size);
+}
+
+uint64_t cipher_cfb1_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							 size_t plaintext_size)
+{
+	cctx = cipher_cfb1_encrypt_init(cctx, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_cfb1_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+cipher_ctx *cipher_cfb8_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+{
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
 }
 
 uint64_t cipher_cfb8_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
-}
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
 
-uint64_t cipher_cfb8_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
-{
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb8_update_core(cctx, plaintext, ciphertext, plaintext_size);
 }
 
 uint64_t cipher_cfb8_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb8_update_core(cctx, plaintext, ciphertext, plaintext_size);
+}
+
+uint64_t cipher_cfb8_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size)
+{
+	cctx = cipher_cfb8_encrypt_init(cctx, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_cfb8_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+cipher_ctx *cipher_cfb8_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+{
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
+}
+
+uint64_t cipher_cfb8_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb8_update_core(cctx, ciphertext, plaintext, ciphertext_size);
 }
 
 uint64_t cipher_cfb8_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	return cipher_cfb8_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb8_update_core(cctx, ciphertext, plaintext, ciphertext_size);
+}
+
+uint64_t cipher_cfb8_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							 size_t plaintext_size)
+{
+	cctx = cipher_cfb8_encrypt_init(cctx, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_cfb8_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+cipher_ctx *cipher_cfb64_encrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size)
+{
+	if (padding != PADDING_NONE && padding != PADDING_ZERO && padding != PADDING_ISO7816 && padding != PADDING_PKCS7)
+	{
+		return NULL;
+	}
+
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
 }
 
 uint64_t cipher_cfb64_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	return cipher_cfb64_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
-}
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
 
-uint64_t cipher_cfb64_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
-{
-	return cipher_cfb64_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
-}
-
-uint64_t cipher_cfb128_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
-{
-	return cipher_cfb128_update_common(cctx, cctx->_encrypt, plaintext, plaintext_size, ciphertext, ciphertext_size);
-}
-
-uint64_t cipher_cfb128_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
-{
-	return cipher_cfb128_update_common(cctx, cctx->_encrypt, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_cfb64_update_core(cctx, plaintext, ciphertext, plaintext_size);
 }
 
 uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
 	uint16_t block_size = 8;
 
 	byte_t *pin = (byte_t *)plaintext;
 	byte_t *pout = (byte_t *)ciphertext;
-	byte_t last_block[16] = {0};
 
+	byte_t temp[32] = {0};
 	uint64_t required_size = 0;
 
 	if (cctx->padding == PADDING_PKCS7)
@@ -263,83 +385,95 @@ uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t pl
 		required_size = ROUND_UP(plaintext_size, block_size);
 	}
 
+	if (cctx->padding == PADDING_NONE)
+	{
+		if (plaintext_size % block_size != 0)
+		{
+			return 0;
+		}
+	}
+
 	if (required_size < ciphertext_size)
 	{
 		return 0;
 	}
 
-	while (processed + block_size <= plaintext_size)
-	{
-		uint64_t *ip = (uint64_t *)&pin[processed];
-		uint64_t *op = (uint64_t *)&pout[processed];
-		uint64_t *bp = (uint64_t *)cctx->buffer;
-
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-		op[0] = ip[0] ^ bp[0];
-		SHL128_64(cctx->buffer, op[0]);
-
-		result += block_size;
-		processed += block_size;
-	}
-
+	// Process upto the last block
+	processed += cipher_cfb64_update_core(cctx, plaintext, ciphertext, plaintext_size);
 	remaining = plaintext_size - processed;
 
-	if (remaining == 0)
-	{
-		if (cctx->padding == PADDING_PKCS7)
-		{
-			cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-
-			for (uint8_t i = 0; i < block_size; ++i)
-			{
-				pout[result++] ^= block_size;
-			}
-		}
-
-		return result;
-	}
-
 	// Copy the remaining data to the buffer.
-	memcpy(last_block, pin + processed, remaining);
+	memcpy(temp, pin + processed, remaining);
+	fill_padding_block(cctx->padding, temp, block_size, remaining);
 
-	switch (cctx->padding)
+	if (cctx->padding == PADDING_PKCS7 || remaining > 0)
 	{
-	case PADDING_ZERO:
-		break;
-
-	case PADDING_ISO7816:
-		last_block[remaining] = 0x80;
-		break;
-
-	case PADDING_PKCS7:
-		memset(last_block + remaining, block_size - remaining, block_size - remaining);
-		break;
+		processed += cipher_cfb64_update_core(cctx, temp, pout + processed, block_size);
 	}
 
-	cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + result);
+	// Zero the internal buffer.
+	memset(cctx->buffer, 0, cctx->block_size);
 
-	for (uint8_t i = 0; i < block_size; ++i)
+	return processed;
+}
+
+uint64_t cipher_cfb64_encrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size,
+							  void *ciphertext, size_t ciphertext_size)
+{
+	cctx = cipher_cfb64_encrypt_init(cctx, padding, iv, iv_size);
+
+	if (cctx == NULL)
 	{
-		pout[result++] ^= last_block[i];
+		return 0;
 	}
 
-	return result;
+	return cipher_cfb64_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+cipher_ctx *cipher_cfb64_decrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size)
+{
+	if (padding != PADDING_NONE && padding != PADDING_ZERO && padding != PADDING_ISO7816 && padding != PADDING_PKCS7)
+	{
+		return NULL;
+	}
+
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
+}
+
+uint64_t cipher_cfb64_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb64_update_core(cctx, ciphertext, plaintext, ciphertext_size);
 }
 
 uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
+	uint64_t remaining = 0;
 	uint16_t block_size = 8;
 
 	byte_t *pin = (byte_t *)ciphertext;
 	byte_t *pout = (byte_t *)plaintext;
 
-	byte_t *last_block = NULL;
-	uint8_t last_byte = 0;
-	uint8_t count = 0;
+	byte_t temp[32] = {0};
 
-	if (plaintext_size % block_size != 0)
+	if (ciphertext_size % 8 != 0)
 	{
 		return 0;
 	}
@@ -350,104 +484,83 @@ uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t c
 	}
 
 	// Process upto the last block.
-	while (processed + block_size <= ciphertext_size)
+	processed += cipher_cfb64_update_core(cctx, ciphertext, plaintext, ciphertext_size - block_size);
+
+	// Decrypt the last block to the internal buffer.
+	cipher_cfb64_update_core(cctx, pin + processed, temp, block_size);
+
+	// Get the remaining bytes to copy.
+	remaining += check_for_padding(cctx->padding, temp, block_size);
+
+	memcpy(pout + processed, temp, remaining);
+	processed += remaining;
+
+	// Zero the internal buffer.
+	memset(cctx->buffer, 0, cctx->block_size);
+
+	return processed;
+}
+
+uint64_t cipher_cfb64_decrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							  void *plaintext, size_t plaintext_size)
+{
+	cctx = cipher_cfb64_encrypt_init(cctx, padding, iv, iv_size);
+
+	if (cctx == NULL)
 	{
-		uint64_t *ip = (uint64_t *)&pin[processed];
-		uint64_t *op = (uint64_t *)&pout[processed];
-		uint64_t *bp = (uint64_t *)cctx->buffer;
-
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-		op[0] = ip[0] ^ bp[0];
-		SHL128_64(cctx->buffer, op[0]);
-
-		result += block_size;
-		processed += block_size;
+		return 0;
 	}
 
-	// Decrypt the last block
-	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+	return cipher_cfb64_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
 
-	for (uint8_t i = 0; i < block_size; ++i)
+cipher_ctx *cipher_cfb128_encrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size)
+{
+	if (padding != PADDING_NONE && padding != PADDING_ZERO && padding != PADDING_ISO7816 && padding != PADDING_PKCS7)
 	{
-		cctx->buffer[i] ^= *(pin + processed + i);
+		return NULL;
 	}
 
-	// Check for PKCS7 padding
-	last_block = cctx->buffer;
-	last_byte = last_block[block_size - 1];
-	count = 0;
-
-	for (uint8_t i = 0; i < last_byte; ++i)
+	if (cctx->algorithm == CIPHER_CHACHA20)
 	{
-		if (last_block[block_size - 1 - i] == last_byte)
-		{
-			++count;
-		}
+		return NULL;
 	}
 
-	if (count == last_byte)
+	if (iv_size != cctx->block_size)
 	{
-		if (last_byte == block_size)
-		{
-			// Empty last block.
-			return result;
-		}
-
-		memcpy(pout + result, last_block, block_size - count);
-		result += (block_size - count);
-
-		return result;
+		return NULL;
 	}
 
-	// Check for zero ending.
-	count = 0;
-
-	if (last_block[block_size - 1] == 0)
+	if (cctx->block_size < 16)
 	{
-		for (uint16_t i = 0; i < block_size; ++i)
-		{
-			count += last_block[block_size - 1 - i];
-
-			if (count != 0)
-			{
-				if (count == 0x80)
-				{
-					// ISO-7816 padding
-					memcpy(pout + result, last_block, block_size - 1 - i);
-					result += (block_size - 1 - i);
-
-					return result;
-				}
-				else
-				{
-					// Zero padding
-					memcpy(pout + result, last_block, block_size - 1 - i);
-					result += (block_size - 1 - i);
-
-					return result;
-				}
-			}
-		}
+		return NULL;
 	}
 
-	// Perfect block.
-	memcpy(pout + result, cctx->buffer, block_size);
-	result += block_size;
+	memcpy(cctx->buffer, iv, iv_size);
 
-	return result;
+	return cctx;
+}
+
+uint64_t cipher_cfb128_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+{
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb128_update_core(cctx, plaintext, ciphertext, plaintext_size);
 }
 
 uint64_t cipher_cfb128_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
 	uint16_t block_size = 16;
 
 	byte_t *pin = (byte_t *)plaintext;
 	byte_t *pout = (byte_t *)ciphertext;
-	byte_t last_block[16] = {0};
 
+	byte_t temp[32] = {0};
 	uint64_t required_size = 0;
 
 	if (cctx->padding == PADDING_PKCS7)
@@ -459,84 +572,100 @@ uint64_t cipher_cfb128_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t p
 		required_size = ROUND_UP(plaintext_size, block_size);
 	}
 
+	if (cctx->padding == PADDING_NONE)
+	{
+		if (plaintext_size % block_size != 0)
+		{
+			return 0;
+		}
+	}
+
 	if (required_size < ciphertext_size)
 	{
 		return 0;
 	}
 
-	while (processed + block_size <= plaintext_size)
-	{
-		uint64_t *ip = (uint64_t *)&pin[processed];
-		uint64_t *op = (uint64_t *)&pout[processed];
-		uint64_t *bp = (uint64_t *)cctx->buffer;
-
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-		op[0] = ip[0] ^ bp[0];
-		op[1] = ip[1] ^ bp[1];
-		memcpy(op, cctx->buffer, block_size);
-
-		result += block_size;
-		processed += block_size;
-	}
-
+	// Process upto the last block
+	processed += cipher_cfb128_update_core(cctx, plaintext, ciphertext, plaintext_size);
 	remaining = plaintext_size - processed;
 
-	if (remaining == 0)
-	{
-		if (cctx->padding == PADDING_PKCS7)
-		{
-			cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-
-			for (uint8_t i = 0; i < block_size; ++i)
-			{
-				pout[result++] ^= block_size;
-			}
-		}
-
-		return result;
-	}
-
 	// Copy the remaining data to the buffer.
-	memcpy(last_block, pin + processed, remaining);
+	memcpy(temp, pin + processed, remaining);
+	fill_padding_block(cctx->padding, temp, block_size, remaining);
 
-	switch (cctx->padding)
+	if (cctx->padding == PADDING_PKCS7 || remaining > 0)
 	{
-	case PADDING_ZERO:
-		break;
-
-	case PADDING_ISO7816:
-		last_block[remaining] = 0x80;
-		break;
-
-	case PADDING_PKCS7:
-		memset(last_block + remaining, block_size - remaining, block_size - remaining);
-		break;
+		processed += cipher_cfb128_update_core(cctx, temp, pout + processed, block_size);
 	}
 
-	cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + result);
+	// Zero the internal buffer.
+	memset(cctx->buffer, 0, cctx->block_size);
 
-	for (uint8_t i = 0; i < block_size; ++i)
+	return processed;
+}
+
+uint64_t cipher_cfb128_encrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size,
+							   void *ciphertext, size_t ciphertext_size)
+{
+	cctx = cipher_cfb128_encrypt_init(cctx, padding, iv, iv_size);
+
+	if (cctx == NULL)
 	{
-		pout[result++] ^= last_block[i];
+		return 0;
 	}
 
-	return result;
+	return cipher_cfb128_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+cipher_ctx *cipher_cfb128_decrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size)
+{
+	if (padding != PADDING_NONE && padding != PADDING_ZERO && padding != PADDING_ISO7816 && padding != PADDING_PKCS7)
+	{
+		return NULL;
+	}
+
+	if (cctx->algorithm == CIPHER_CHACHA20)
+	{
+		return NULL;
+	}
+
+	if (iv_size != cctx->block_size)
+	{
+		return NULL;
+	}
+
+	if (cctx->block_size < 16)
+	{
+		return NULL;
+	}
+
+	memcpy(cctx->buffer, iv, iv_size);
+
+	return cctx;
+}
+
+uint64_t cipher_cfb128_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
+
+	return cipher_cfb128_update_core(cctx, ciphertext, plaintext, ciphertext_size);
 }
 
 uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	uint64_t result = 0;
 	uint64_t processed = 0;
+	uint64_t remaining = 0;
 	uint16_t block_size = 16;
 
 	byte_t *pin = (byte_t *)ciphertext;
 	byte_t *pout = (byte_t *)plaintext;
 
-	byte_t *last_block = NULL;
-	uint8_t last_byte = 0;
-	uint8_t count = 0;
+	byte_t temp[32] = {0};
 
-	if (plaintext_size % block_size != 0)
+	if (ciphertext_size % 8 != 0)
 	{
 		return 0;
 	}
@@ -547,90 +676,32 @@ uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t 
 	}
 
 	// Process upto the last block.
-	while (processed + block_size <= ciphertext_size)
+	processed += cipher_cfb128_update_core(cctx, ciphertext, plaintext, ciphertext_size - block_size);
+
+	// Decrypt the last block to the internal buffer.
+	cipher_cfb128_update_core(cctx, pin + processed, temp, block_size);
+
+	// Get the remaining bytes to copy.
+	remaining += check_for_padding(cctx->padding, temp, block_size);
+
+	memcpy(pout + processed, temp, remaining);
+	processed += remaining;
+
+	// Zero the internal buffer.
+	memset(cctx->buffer, 0, cctx->block_size);
+
+	return processed;
+}
+
+uint64_t cipher_cfb128_decrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							   void *plaintext, size_t plaintext_size)
+{
+	cctx = cipher_cfb128_encrypt_init(cctx, padding, iv, iv_size);
+
+	if (cctx == NULL)
 	{
-		uint64_t *ip = (uint64_t *)&pin[processed];
-		uint64_t *op = (uint64_t *)&pout[processed];
-		uint64_t *bp = (uint64_t *)cctx->buffer;
-
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-		op[0] = ip[0] ^ bp[0];
-		op[1] = ip[1] ^ bp[1];
-		memcpy(op, cctx->buffer, block_size);
-
-		result += block_size;
-		processed += block_size;
+		return 0;
 	}
 
-	// Decrypt the last block
-	cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-
-	for (uint8_t i = 0; i < block_size; ++i)
-	{
-		cctx->buffer[i] ^= *(pin + processed + i);
-	}
-
-	// Check for PKCS7 padding
-	last_block = cctx->buffer;
-	last_byte = last_block[block_size - 1];
-	count = 0;
-
-	for (uint8_t i = 0; i < last_byte; ++i)
-	{
-		if (last_block[block_size - 1 - i] == last_byte)
-		{
-			++count;
-		}
-	}
-
-	if (count == last_byte)
-	{
-		if (last_byte == block_size)
-		{
-			// Empty last block.
-			return result;
-		}
-
-		memcpy(pout + result, last_block, block_size - count);
-		result += (block_size - count);
-
-		return result;
-	}
-
-	// Check for zero ending.
-	count = 0;
-
-	if (last_block[block_size - 1] == 0)
-	{
-		for (uint16_t i = 0; i < block_size; ++i)
-		{
-			count += last_block[block_size - 1 - i];
-
-			if (count != 0)
-			{
-				if (count == 0x80)
-				{
-					// ISO-7816 padding
-					memcpy(pout + result, last_block, block_size - 1 - i);
-					result += (block_size - 1 - i);
-
-					return result;
-				}
-				else
-				{
-					// Zero padding
-					memcpy(pout + result, last_block, block_size - 1 - i);
-					result += (block_size - 1 - i);
-
-					return result;
-				}
-			}
-		}
-	}
-
-	// Perfect block.
-	memcpy(pout + result, cctx->buffer, block_size);
-	result += block_size;
-
-	return result;
+	return cipher_cfb128_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
