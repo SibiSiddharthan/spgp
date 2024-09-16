@@ -8,26 +8,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <types.h>
+#include <cipher.h>
 #include <byteswap.h>
 #include <minmax.h>
+#include <ptr.h>
 #include <round.h>
+#include <xor.h>
 
 // See NIST SP 800-38D Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC
-
-typedef struct _gcm_ctx
-{
-	byte_t h[16];
-	byte_t j[16];
-	byte_t s[16];
-	byte_t icb[16];
-
-	size_t data_size;
-	size_t ad_size;
-
-	void *key;
-	void (*encrypt)(void *key, void *plaintext, void *ciphertext);
-} gcm_ctx;
 
 static inline void block_multiplication(uint64_t x[2], uint64_t y[2])
 {
@@ -98,266 +86,277 @@ void ghash(void *state, void *key, void *data, size_t size)
 	}
 }
 
-uint64_t gctr_update(gcm_ctx *gctx, void *icb, void *in, size_t in_size, void *out, size_t out_size)
+uint64_t gctr_update(cipher_ctx *cctx, void *in, void *out, size_t size)
 {
 	const uint16_t block_size = 16;
 
-	uint64_t result = 0;
-	uint64_t processed = 0;
-
-	byte_t *pin = (byte_t *)in;
-	byte_t *pout = (byte_t *)out;
-
-	uint32_t *pc = (uint32_t *)((byte_t *)icb + 12);
-	uint32_t counter = BSWAP_32(*pc);
-
-	byte_t buffer[16];
-	uint64_t *b = (uint64_t *)buffer;
-
-	// Make sure input is a multiple of block_size
-	if (in_size % block_size != 0)
-	{
-		return 0;
-	}
-
-	if (in_size < out_size)
-	{
-		return 0;
-	}
-
-	while (processed < in_size)
-	{
-		uint64_t *x = (uint64_t *)(pin + processed);
-		uint64_t *y = (uint64_t *)(pout + processed);
-
-		gctx->encrypt(gctx->key, icb, buffer);
-
-		y[0] = b[0] ^ x[0];
-		y[1] = b[1] ^ x[1];
-
-		++counter;
-		*pc = BSWAP_32(counter);
-
-		result += block_size;
-		processed += block_size;
-	}
-
-	return result;
-}
-
-uint64_t gctr_final(gcm_ctx *gctx, void *icb, void *in, size_t in_size, void *out, size_t out_size)
-{
-	const uint16_t block_size = 16;
-
-	uint64_t result = 0;
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
 
-	byte_t *pin = (byte_t *)in;
-	byte_t *pout = (byte_t *)out;
+	byte_t *pin = in;
+	byte_t *pout = out;
 
-	uint32_t *pc = (uint32_t *)((byte_t *)icb + 12);
+	uint32_t *pc = PTR_OFFSET(cctx->gcm.icb, 12);
 	uint32_t counter = BSWAP_32(*pc);
 
 	byte_t buffer[16];
-	uint64_t *b = (uint64_t *)buffer;
 
-	if (in_size < out_size)
+	while ((processed + block_size) <= size)
 	{
-		return 0;
-	}
-
-	while (processed + block_size <= in_size)
-	{
-		uint64_t *x = (uint64_t *)(pin + processed);
-		uint64_t *y = (uint64_t *)(pout + processed);
-
-		gctx->encrypt(gctx->key, icb, buffer);
-
-		y[0] = b[0] ^ x[0];
-		y[1] = b[1] ^ x[1];
+		cctx->_encrypt(cctx->_ctx, cctx->gcm.icb, buffer);
+		XOR16(pout + processed, pin + processed, buffer);
 
 		++counter;
 		*pc = BSWAP_32(counter);
 
-		result += block_size;
 		processed += block_size;
 	}
 
-	remaining = in_size - processed;
+	remaining = size - processed;
 
-	gctx->encrypt(gctx->key, icb, buffer);
-
-	for (uint8_t i = 0; i < remaining; ++i)
+	if (remaining > 0)
 	{
-		pout[processed + i] = pin[processed + i] ^ buffer[i];
+		cctx->_encrypt(cctx->_ctx, cctx->gcm.icb, buffer);
+
+		for (uint8_t i = 0; i < remaining; ++i)
+		{
+			pout[processed + i] = pin[processed + i] ^ buffer[i];
+		}
+
+		processed += remaining;
 	}
 
-	result += remaining;
-
-	return result;
+	return processed;
 }
 
-int32_t gcm_init(gcm_ctx *gctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
+static cipher_ctx *cipher_gcm_common_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
 {
 	byte_t zero[16] = {0};
 	byte_t buffer[16];
 
+	// Check block size
+	if (cctx->block_size != 16)
+	{
+		return NULL;
+	}
+
 	// Check IV size
 	if ((iv_size < 12 || iv_size > 16) && iv_size != 8 && iv_size != 4)
 	{
-		return -1;
+		return NULL;
 	}
 
 	// Initialize H
-	gctx->encrypt(gctx->key, zero, gctx->h);
+	cctx->_encrypt(cctx->_ctx, zero, cctx->gcm.h);
 
 	// Initialize J
 	if (iv_size == 12)
 	{
-		memcpy(gctx->j, iv, 12);
-		gctx->j[15] = 1;
+		memcpy(cctx->gcm.j, iv, 12);
+		cctx->gcm.j[15] = 1;
 	}
 	else
 	{
 		size_t iv_rd_size = ROUND_DOWN(iv_size, 16);
-
 		uint64_t *pb = (uint64_t *)buffer;
 
-		ghash(gctx->j, gctx->h, iv, iv_rd_size);
+		ghash(cctx->gcm.j, cctx->gcm.h, iv, iv_rd_size);
 
 		if (iv_rd_size < iv_size)
 		{
 			memset(buffer, 0, 16);
 			memcpy(buffer, (byte_t *)iv + iv_rd_size, iv_size - iv_rd_size);
-			ghash(gctx->j, gctx->h, buffer, 16);
+			ghash(cctx->gcm.j, cctx->gcm.h, buffer, 16);
 		}
 
 		pb[0] = 0;
 		pb[1] = BSWAP_64(iv_size);
 
-		ghash(gctx->j, gctx->h, buffer, 16);
+		ghash(cctx->gcm.j, cctx->gcm.h, buffer, 16);
 	}
 
 	// Calculate ghash for associated data
 	size_t ad_rd_size = ROUND_DOWN(ad_size, 16);
 
-	ghash(gctx->s, gctx->h, associated_data, ad_rd_size);
+	ghash(cctx->gcm.s, cctx->gcm.h, associated_data, ad_rd_size);
 
 	if (ad_rd_size < ad_size)
 	{
 		memset(buffer, 0, 16);
 		memcpy(buffer, (byte_t *)associated_data + ad_rd_size, ad_size - ad_rd_size);
-		ghash(gctx->s, gctx->h, buffer, 16);
+		ghash(cctx->gcm.s, cctx->gcm.h, buffer, 16);
 	}
 
-	gctx->ad_size = ad_size;
+	cctx->gcm.ad_size = ad_size;
 
 	// Set ICB
 	uint32_t *counter = NULL;
 
-	memcpy(gctx->icb, gctx->j, 16);
-	counter = (uint32_t *)&gctx->icb[12];
+	memcpy(cctx->gcm.icb, cctx->gcm.j, 16);
+	counter = (uint32_t *)&cctx->gcm.icb[12];
 
 	*counter = BSWAP_32(*counter);
 	*counter += 1;
 	*counter = BSWAP_32(*counter);
 
-	return 0;
+	return cctx;
 }
 
-uint64_t gcm_ae_update(gcm_ctx *gctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+cipher_ctx *cipher_gcm_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
+{
+	return cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+}
+
+uint64_t cipher_gcm_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
 	uint64_t result = 0;
 
-	result = gctr_update(gctx, gctx->icb, plaintext, plaintext_size, ciphertext, ciphertext_size);
-	gctx->data_size += result;
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
 
-	ghash(gctx->s, gctx->h, ciphertext, result);
+	result = gctr_update(cctx, plaintext, ciphertext, ROUND_DOWN(plaintext_size, cctx->block_size));
+	cctx->gcm.data_size += result;
+
+	ghash(cctx->gcm.s, cctx->gcm.h, ciphertext, result);
 
 	return result;
 }
 
-uint64_t gcm_ae_final(gcm_ctx *gctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size, void *tag,
-					  size_t tag_size)
+uint64_t cipher_gcm_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
+								  void *tag, size_t tag_size)
 {
+	const uint16_t block_size = 16;
+
 	uint64_t result = 0;
 	uint64_t rd = 0;
 
 	byte_t buffer[16] = {0};
 	uint64_t *pb = (uint64_t *)buffer;
 
-	result = gctr_final(gctx, gctx->icb, plaintext, plaintext_size, ciphertext, ciphertext_size);
-	gctx->data_size += result;
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
+
+	result = gctr_update(cctx, plaintext, ciphertext, plaintext_size);
+	cctx->gcm.data_size += result;
 
 	rd = ROUND_DOWN(result, 16);
 
-	ghash(gctx->s, gctx->h, ciphertext, rd);
+	ghash(cctx->gcm.s, cctx->gcm.h, ciphertext, rd);
 
 	if (rd < result)
 	{
-		memset(buffer, 0, 16);
-		memcpy(buffer, (byte_t *)ciphertext + rd, result - rd);
-		ghash(gctx->s, gctx->h, buffer, 16);
+		memset(buffer, 0, block_size);
+		memcpy(buffer, PTR_OFFSET(ciphertext, rd), result - rd);
+		ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 	}
 
-	pb[0] = BSWAP_64(gctx->ad_size);
-	pb[1] = BSWAP_64(gctx->data_size);
+	pb[0] = BSWAP_64(cctx->gcm.ad_size);
+	pb[1] = BSWAP_64(cctx->gcm.data_size);
 
-	ghash(gctx->s, gctx->h, buffer, 16);
+	ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 
-	gctr_update(gctx, gctx->j, gctx->s, 16, buffer, 16);
+	cctx->_encrypt(cctx->_ctx, cctx->gcm.j, cctx->gcm.j);
+	XOR16(buffer, buffer, cctx->gcm.j);
+
 	memcpy(tag, buffer, MIN(tag_size, 16));
 
 	return 0;
 }
 
-uint64_t gcm_ad_update(gcm_ctx *gctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_gcm_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size, void *plaintext,
+							size_t plaintext_size, void *ciphertext, size_t ciphertext_size, void *tag, size_t tag_size)
+{
+	cctx = cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_gcm_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size, tag, tag_size);
+}
+
+cipher_ctx *cipher_gcm_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
+{
+	return cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+}
+
+uint64_t cipher_gcm_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
 	uint64_t result = 0;
 
-	result = gctr_update(gctx, gctx->icb, ciphertext, ciphertext_size, plaintext, plaintext_size);
-	gctx->data_size += result;
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
 
-	ghash(gctx->s, gctx->h, ciphertext, result);
+	result = gctr_update(cctx, ciphertext, plaintext, ROUND_DOWN(ciphertext_size, cctx->block_size));
+	cctx->gcm.data_size += result;
+
+	ghash(cctx->gcm.s, cctx->gcm.h, ciphertext, result);
 
 	return result;
 }
 
-uint64_t gcm_ad_final(gcm_ctx *gctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size, void *tag,
-					  size_t tag_size)
+uint64_t cipher_gcm_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
+								  void *tag, size_t tag_size)
 {
+	const uint16_t block_size = 16;
+
 	uint64_t result = 0;
 	uint64_t rd = 0;
 
 	byte_t buffer[16] = {0};
 	uint64_t *pb = (uint64_t *)buffer;
 
-	result = gctr_final(gctx, gctx->icb, plaintext, plaintext_size, ciphertext, ciphertext_size);
-	gctx->data_size += result;
+	if (plaintext_size < ciphertext_size)
+	{
+		return 0;
+	}
+
+	result = gctr_update(cctx, ciphertext, plaintext, ciphertext_size);
+	cctx->gcm.data_size += result;
 
 	rd = ROUND_DOWN(result, 16);
 
-	ghash(gctx->s, gctx->h, ciphertext, rd);
+	ghash(cctx->gcm.s, cctx->gcm.h, ciphertext, rd);
 
 	if (rd < result)
 	{
-		memset(buffer, 0, 16);
-		memcpy(buffer, (byte_t *)ciphertext + rd, result - rd);
-		ghash(gctx->s, gctx->h, buffer, 16);
+		memset(buffer, 0, block_size);
+		memcpy(buffer, PTR_OFFSET(ciphertext, rd), result - rd);
+		ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 	}
 
-	pb[0] = BSWAP_64(gctx->ad_size);
-	pb[1] = BSWAP_64(gctx->data_size);
+	pb[0] = BSWAP_64(cctx->gcm.ad_size);
+	pb[1] = BSWAP_64(cctx->gcm.data_size);
 
-	ghash(gctx->s, gctx->h, buffer, 16);
+	ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 
-	gctr_update(gctx, gctx->j, gctx->s, 16, buffer, 16);
+	cctx->_encrypt(cctx->_ctx, cctx->gcm.j, cctx->gcm.j);
+	XOR16(buffer, buffer, cctx->gcm.j);
 
-	if(memcmp(tag,buffer,tag_size) != 0)
+	if (memcmp(tag, buffer, tag_size) != 0)
 	{
-		return -1ull;
+		return 0;
 	}
 
-	return 0;
+	return result;
+}
+
+uint64_t cipher_gcm_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size, void *ciphertext,
+							size_t ciphertext_size, void *plaintext, size_t plaintext_size, void *tag, size_t tag_size)
+{
+	cctx = cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_gcm_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size, tag, tag_size);
 }

@@ -50,6 +50,19 @@ typedef struct _cipher_ctx
 	uint16_t block_size;
 	byte_t buffer[32];
 
+	union {
+		struct _gcm
+		{
+			byte_t h[16];
+			byte_t j[16];
+			byte_t s[16];
+			byte_t icb[16];
+
+			size_t data_size;
+			size_t ad_size;
+		} gcm;
+	};
+
 	void *_ctx;
 	void (*_encrypt)(void *, void *, void *);
 	void (*_decrypt)(void *, void *, void *);
@@ -169,6 +182,21 @@ uint64_t cipher_ctr_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 uint64_t cipher_ctr_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
 							size_t plaintext_size);
 
+// Galois Counter Mode (GCM)
+cipher_ctx *cipher_gcm_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size);
+uint64_t cipher_gcm_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+uint64_t cipher_gcm_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
+								  void *tag, size_t tag_size);
+uint64_t cipher_gcm_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size, void *plaintext,
+							size_t plaintext_size, void *ciphertext, size_t ciphertext_size, void *tag, size_t tag_size);
+
+cipher_ctx *cipher_gcm_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size);
+uint64_t cipher_gcm_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
+uint64_t cipher_gcm_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
+								  void *tag, size_t tag_size);
+uint64_t cipher_gcm_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size,void *associated_data, size_t ad_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size, void *tag, size_t tag_size);
+
 // Cipher Block Chaining-Message Authentication Code (CCM)
 uint64_t cipher_ccm_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
 							void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
@@ -181,5 +209,19 @@ uint32_t cipher_key_wrap_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciph
 
 uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
+
+// Synthetic Initialization Vector (SIV)
+
+typedef struct _siv_ctx
+{
+	cipher_ctx *cp_ctx;
+	// cmac_ctx *cm_ctx;
+} siv_ctx;
+
+siv_ctx *cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_size);
+uint32_t cipher_siv_cmac_encrypt(siv_ctx *sctx, void *associated_data, size_t ad_size, void *plaintext, size_t plaintext_size,
+								 void *ciphertext, size_t ciphertext_size);
+uint32_t cipher_siv_cmac_decrypt(siv_ctx *sctx, void *associated_data, size_t ad_size, void *ciphertext, size_t ciphertext_size,
+								 void *plaintext, size_t plaintext_size);
 
 #endif
