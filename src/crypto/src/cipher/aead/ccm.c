@@ -8,10 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <types.h>
+#include <cipher.h>
 #include <byteswap.h>
 #include <minmax.h>
 #include <round.h>
+#include <xor.h>
 
 // See NIST SP 800-38C Recommendation for Block Cipher Modes of Operation: The CCM Mode for Authentication and Confidentiality
 
@@ -117,32 +118,26 @@ static void generate_counter_blocks(byte_t *ptr, size_t counter_size, byte_t *no
 	}
 }
 
-static void generate_tag(void (*encrypt)(void *key, void *plaintext, void *ciphertext), void *key, void *in, size_t in_size, void *tag,
-						 size_t tag_size)
+static void generate_tag(cipher_ctx *cctx, void *in, size_t in_size, void *tag, size_t tag_size)
 {
 	size_t count = in_size / 16;
 	size_t processed = 0;
 
 	byte_t buffer[16];
-	byte_t *pin = (byte_t *)in;
+	byte_t *pin = in;
 
-	encrypt(key, pin, buffer);
+	cctx->_encrypt(cctx->_ctx, pin, buffer);
 
 	for (size_t i = 1; i < count; ++i)
 	{
-		uint64_t *x = (uint64_t *)(pin + processed);
-		uint64_t *y = (uint64_t *)(buffer);
-
-		y[0] ^= x[0];
-		y[1] ^= x[1];
-
-		encrypt(key, buffer, buffer);
+		XOR16(buffer, buffer, pin + processed);
+		cctx->_encrypt(cctx->_ctx, buffer, buffer);
 	}
 
 	memcpy(tag, buffer, MIN(tag_size, 16));
 }
 
-static void encrypt_counters(void (*encrypt)(void *key, void *plaintext, void *ciphertext), void *key, void *in, void *out, size_t size)
+static void encrypt_counters(cipher_ctx *cctx, void *in, void *out, size_t size)
 {
 	size_t count = size / 16;
 	size_t processed = 0;
@@ -152,12 +147,12 @@ static void encrypt_counters(void (*encrypt)(void *key, void *plaintext, void *c
 
 	for (size_t i = 0; i < count; ++i)
 	{
-		encrypt(key, pin + processed, pout + processed);
+		cctx->_encrypt(cctx->_ctx, pin + processed, pout + processed);
 	}
 }
 
-uint64_t ccm_ae(void (*encrypt)(void *key, void *plaintext, void *ciphertext), void *key, byte_t tag_size, void *nonce, byte_t nonce_size,
-				void *associated_data, size_t ad_size, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint64_t cipher_ccm_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
+							void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
 	byte_t *blocks = NULL;
 
@@ -170,8 +165,13 @@ uint64_t ccm_ae(void (*encrypt)(void *key, void *plaintext, void *ciphertext), v
 	size_t counters_size = ROUND_UP(plaintext_size, 16) + 16;
 	size_t payload_blocks_size = 0;
 
-	byte_t *pin = (byte_t *)plaintext;
-	byte_t *pout = (byte_t *)ciphertext;
+	byte_t *pin = plaintext;
+	byte_t *pout = ciphertext;
+
+	if (cctx->block_size != 16)
+	{
+		return 0;
+	}
 
 	if (ciphertext_size < (plaintext_size + tag_size))
 	{
@@ -212,13 +212,13 @@ uint64_t ccm_ae(void (*encrypt)(void *key, void *plaintext, void *ciphertext), v
 	memset(blocks, 0, blocks_size);
 
 	payload_blocks_size = generate_payload_blocks(blocks, nonce, nonce_size, associated_data, ad_size, plaintext, plaintext_size, t, q);
-	generate_tag(encrypt, key, blocks, payload_blocks_size, tag, tag_size);
+	generate_tag(cctx, blocks, payload_blocks_size, tag, tag_size);
 
 	// Generate counters
 	memset(blocks, 0, blocks_size);
 
 	generate_counter_blocks(blocks, counters_size, nonce, nonce_size, q);
-	encrypt_counters(encrypt, key, blocks, blocks, counters_size);
+	encrypt_counters(cctx, blocks, blocks, counters_size);
 
 	// Output ciphertext.
 	for (size_t i = 0; i < plaintext_size; ++i)
@@ -236,8 +236,8 @@ uint64_t ccm_ae(void (*encrypt)(void *key, void *plaintext, void *ciphertext), v
 	return plaintext_size + tag_size;
 }
 
-uint64_t ccm_ad(void (*encrypt)(void *key, void *plaintext, void *ciphertext), void *key, byte_t tag_size, void *nonce, byte_t nonce_size,
-				void *associated_data, size_t ad_size, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
+							void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
 	byte_t *blocks = NULL;
 
@@ -253,8 +253,13 @@ uint64_t ccm_ad(void (*encrypt)(void *key, void *plaintext, void *ciphertext), v
 	size_t payload_blocks_size = 0;
 	size_t plaintext_offset = blocks_size - ROUND_UP(ciphertext_size, 16);
 
-	byte_t *pin = (byte_t *)ciphertext;
-	byte_t *ptemp = (byte_t *)blocks + plaintext_offset;
+	byte_t *pin = ciphertext;
+	byte_t *ptemp = blocks + plaintext_offset;
+
+	if (cctx->block_size != 16)
+	{
+		return 0;
+	}
 
 	if (ciphertext_size <= tag_size)
 	{
@@ -294,7 +299,7 @@ uint64_t ccm_ad(void (*encrypt)(void *key, void *plaintext, void *ciphertext), v
 	memset(blocks, 0, blocks_size);
 
 	generate_counter_blocks(blocks, counters_size, nonce, nonce_size, q);
-	encrypt_counters(encrypt, key, blocks, blocks, counters_size);
+	encrypt_counters(cctx, blocks, blocks, counters_size);
 
 	for (size_t i = 0; i < tag_size; ++i)
 	{
@@ -310,8 +315,9 @@ uint64_t ccm_ad(void (*encrypt)(void *key, void *plaintext, void *ciphertext), v
 	// Generate tag
 	memset(blocks, 0, blocks_size);
 
-	payload_blocks_size = generate_payload_blocks(blocks, nonce, nonce_size, associated_data, ad_size, ptemp, expected_plaintext_size, t, q);
-	generate_tag(encrypt, key, blocks, payload_blocks_size, expected_tag, tag_size);
+	payload_blocks_size =
+		generate_payload_blocks(blocks, nonce, nonce_size, associated_data, ad_size, ptemp, expected_plaintext_size, t, q);
+	generate_tag(cctx, blocks, payload_blocks_size, expected_tag, tag_size);
 
 	if (memcmp(actual_tag, expected_tag, tag_size) != 0)
 	{

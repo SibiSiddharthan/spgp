@@ -170,9 +170,9 @@ uint64_t cipher_ctr_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ci
 							size_t plaintext_size);
 
 // Cipher Block Chaining-Message Authentication Code (CCM)
-uint32_t cipher_ccm_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
+uint64_t cipher_ccm_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
 							void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
-uint32_t cipher_ccm_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
+uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
 							void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 
 // Key Wrapping
