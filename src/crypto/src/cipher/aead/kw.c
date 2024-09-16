@@ -8,12 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <types.h>
+#include <cipher.h>
 #include <byteswap.h>
 
 // See NIST SP 800-38F Recommendation for Block Cipher Modes of Operation: Methods for Key Wrapping
 
-static void W(void (*encrypt)(void *key, void *plaintext, void *ciphertext), void *key, byte_t *material, size_t size, byte_t *result)
+static void W(cipher_ctx *cctx, byte_t *material, size_t size, byte_t *result)
 {
 	size_t n = size / 8;
 	size_t s = 6 * (n - 1);
@@ -31,7 +31,7 @@ static void W(void (*encrypt)(void *key, void *plaintext, void *ciphertext), voi
 		plaintext[0] = A;
 		plaintext[1] = R[0];
 
-		encrypt(key, plaintext, ciphertext);
+		cctx->_encrypt(cctx->_ctx, plaintext, ciphertext);
 
 		A = ciphertext[0] ^ t;
 
@@ -41,7 +41,7 @@ static void W(void (*encrypt)(void *key, void *plaintext, void *ciphertext), voi
 		}
 
 		plaintext[1] = R[0];
-		encrypt(key, plaintext, ciphertext);
+		cctx->_encrypt(cctx->_ctx, plaintext, ciphertext);
 
 		R[n - 1] = ciphertext[1];
 	}
@@ -50,7 +50,7 @@ static void W(void (*encrypt)(void *key, void *plaintext, void *ciphertext), voi
 	memcpy(result + 8, &R[1], size - 8);
 }
 
-static void iW(void (*decrypt)(void *key, void *ciphertext, void *plaintext), void *key, byte_t *material, size_t size, byte_t *result)
+static void iW(cipher_ctx *cctx, byte_t *material, size_t size, byte_t *result)
 {
 	size_t n = size / 8;
 	size_t s = 6 * (n - 1);
@@ -68,7 +68,7 @@ static void iW(void (*decrypt)(void *key, void *ciphertext, void *plaintext), vo
 		ciphertext[0] = A ^ t;
 		ciphertext[1] = R[n - 1];
 
-		decrypt(key, ciphertext, plaintext);
+		cctx->_decrypt(cctx->_ctx, ciphertext, plaintext);
 
 		A = ciphertext[0] ^ t;
 		R[1] = ciphertext[1];
@@ -83,80 +83,88 @@ static void iW(void (*decrypt)(void *key, void *ciphertext, void *plaintext), vo
 	memcpy(result + 8, R, size - 8);
 }
 
-int64_t KW_AE(void (*encrypt)(void *key, void *plaintext, void *ciphertext), void *key, void *plaintext, size_t plaintext_size,
-			  void *ciphertext, size_t ciphertext_size)
+uint32_t cipher_key_wrap_encrypt(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
 	byte_t icv1[8] = {0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6};
 	byte_t *material = NULL;
 	size_t material_size = plaintext_size + 8;
 
+	if (cctx->block_size != 16)
+	{
+		return 0;
+	}
+
 	if (plaintext_size % 8 != 0)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (plaintext_size < 16)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (ciphertext_size < material_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	material = malloc(material_size);
 
 	if (material == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
 	memcpy(material, icv1, 8);
 	memcpy(material + 8, plaintext, plaintext_size);
 
-	W(encrypt, key, material, material_size, ciphertext);
+	W(cctx, material, material_size, ciphertext);
 
 	free(material);
 
 	return material_size;
 }
 
-int64_t KW_AD(void (*decrypt)(void *key, void *plaintext, void *ciphertext), void *key, void *ciphertext, size_t ciphertext_size,
-			  void *plaintext, size_t plaintext_size)
+uint32_t cipher_key_wrap_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
 	byte_t icv1[8] = {0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6};
 	byte_t *result = NULL;
 	size_t result_size = ciphertext_size;
 
+	if (cctx->block_size != 16)
+	{
+		return 0;
+	}
+
 	if (ciphertext_size % 8 != 0)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (ciphertext_size < 24)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (plaintext_size < ciphertext_size - 8)
 	{
-		return -1;
+		return 0;
 	}
 
 	result = malloc(result_size);
 
 	if (result == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
-	iW(decrypt, key, ciphertext, ciphertext_size, result);
+	iW(cctx, ciphertext, ciphertext_size, result);
 
 	if (memcmp(result, icv1, 8) != 0)
 	{
 		free(result);
-		return -1;
+		return 0;
 	}
 
 	memcpy(plaintext, result + 8, result_size - 8);
@@ -166,8 +174,7 @@ int64_t KW_AD(void (*decrypt)(void *key, void *plaintext, void *ciphertext), voi
 	return result_size - 8;
 }
 
-int64_t KWP_AE(void (*encrypt)(void *key, void *plaintext, void *ciphertext), void *key, void *plaintext, size_t plaintext_size,
-			   void *ciphertext, size_t ciphertext_size)
+uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
 	byte_t icv2[4] = {0xA6, 0x59, 0x59, 0xA6};
 	byte_t *material = NULL;
@@ -177,16 +184,21 @@ int64_t KWP_AE(void (*encrypt)(void *key, void *plaintext, void *ciphertext), vo
 
 	uint32_t be_size = BSWAP_32((uint32_t)plaintext_size);
 
+	if (cctx->block_size != 16)
+	{
+		return 0;
+	}
+
 	if (ciphertext_size < material_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	material = malloc(material_size);
 
 	if (material == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
 	memcpy(material + pos, icv2, 4);
@@ -202,11 +214,11 @@ int64_t KWP_AE(void (*encrypt)(void *key, void *plaintext, void *ciphertext), vo
 
 	if (plaintext_size < 8)
 	{
-		encrypt(key, material, ciphertext);
+		cctx->_encrypt(cctx->_ctx, material, ciphertext);
 	}
 	else
 	{
-		W(encrypt, key, material, material_size, ciphertext);
+		W(cctx, material, material_size, ciphertext);
 	}
 
 	free(material);
@@ -214,10 +226,9 @@ int64_t KWP_AE(void (*encrypt)(void *key, void *plaintext, void *ciphertext), vo
 	return material_size;
 }
 
-int64_t KWP_AD(void (*decrypt)(void *key, void *plaintext, void *ciphertext), void *key, void *ciphertext, size_t ciphertext_size,
-			   void *plaintext, size_t plaintext_size)
+uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	int64_t status = -1;
+	uint32_t status = 0;
 
 	byte_t icv2[4] = {0xA6, 0x59, 0x59, 0xA6};
 	byte_t *result = NULL;
@@ -225,30 +236,35 @@ int64_t KWP_AD(void (*decrypt)(void *key, void *plaintext, void *ciphertext), vo
 	uint32_t material_size = 0;
 	int64_t padding_size = 0;
 
+	if (cctx->block_size != 16)
+	{
+		return 0;
+	}
+
 	if (ciphertext_size < 16)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (plaintext_size < ciphertext_size - 8)
 	{
-		return -1;
+		return 0;
 	}
 
 	result = malloc(result_size);
 
 	if (result == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (ciphertext_size == 16)
 	{
-		decrypt(key, ciphertext, result);
+		cctx->_decrypt(cctx->_ctx, ciphertext, result);
 	}
 	else
 	{
-		iW(decrypt, key, ciphertext, ciphertext_size, result);
+		iW(cctx, ciphertext, ciphertext_size, result);
 	}
 
 	if (memcmp(result, icv2, 4) != 0)
