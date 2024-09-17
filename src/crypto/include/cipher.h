@@ -61,6 +61,19 @@ typedef struct _cipher_ctx
 			size_t data_size;
 			size_t ad_size;
 		} gcm;
+
+		struct _eax
+		{
+			byte_t b[16];
+			byte_t p[16];
+			byte_t n[16];
+			byte_t h[16];
+			byte_t c[16];
+
+			byte_t tag_size;
+			size_t data_size;
+			size_t ad_size;
+		} eax;
 	};
 
 	void *_ctx;
@@ -209,6 +222,19 @@ uint32_t cipher_key_wrap_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciph
 
 uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
+
+// Encrypt Authenticate Translate (EAX)
+cipher_ctx *cipher_eax_encrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size);
+uint64_t cipher_eax_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+uint64_t cipher_eax_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+uint64_t cipher_eax_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size,
+							void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
+
+cipher_ctx *cipher_eax_decrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size);
+uint64_t cipher_eax_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
+uint64_t cipher_eax_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
+uint64_t cipher_eax_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size,
+							void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 
 // Synthetic Initialization Vector (SIV)
 
