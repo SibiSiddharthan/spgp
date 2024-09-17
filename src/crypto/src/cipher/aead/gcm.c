@@ -129,7 +129,7 @@ uint64_t gctr_update(cipher_ctx *cctx, void *in, void *out, size_t size)
 	return processed;
 }
 
-static cipher_ctx *cipher_gcm_common_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
+static cipher_ctx *cipher_gcm_init_common(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
 {
 	byte_t zero[16] = {0};
 	byte_t buffer[16];
@@ -204,7 +204,7 @@ static cipher_ctx *cipher_gcm_common_init(cipher_ctx *cctx, void *iv, size_t iv_
 
 cipher_ctx *cipher_gcm_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
 {
-	return cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+	return cipher_gcm_init_common(cctx, iv, iv_size, associated_data, ad_size);
 }
 
 uint64_t cipher_gcm_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -270,7 +270,7 @@ uint64_t cipher_gcm_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 uint64_t cipher_gcm_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size, void *plaintext,
 							size_t plaintext_size, void *ciphertext, size_t ciphertext_size, void *tag, size_t tag_size)
 {
-	cctx = cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+	cctx = cipher_gcm_init_common(cctx, iv, iv_size, associated_data, ad_size);
 
 	if (cctx == NULL)
 	{
@@ -282,7 +282,7 @@ uint64_t cipher_gcm_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *as
 
 cipher_ctx *cipher_gcm_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size)
 {
-	return cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+	return cipher_gcm_init_common(cctx, iv, iv_size, associated_data, ad_size);
 }
 
 uint64_t cipher_gcm_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
@@ -351,7 +351,7 @@ uint64_t cipher_gcm_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 uint64_t cipher_gcm_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size, void *ciphertext,
 							size_t ciphertext_size, void *plaintext, size_t plaintext_size, void *tag, size_t tag_size)
 {
-	cctx = cipher_gcm_common_init(cctx, iv, iv_size, associated_data, ad_size);
+	cctx = cipher_gcm_init_common(cctx, iv, iv_size, associated_data, ad_size);
 
 	if (cctx == NULL)
 	{

@@ -194,8 +194,8 @@ cipher_ctx *cipher_gcm_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size, 
 uint64_t cipher_gcm_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 uint64_t cipher_gcm_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
 								  void *tag, size_t tag_size);
-uint64_t cipher_gcm_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size,void *associated_data, size_t ad_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
-							size_t plaintext_size, void *tag, size_t tag_size);
+uint64_t cipher_gcm_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size, void *ciphertext,
+							size_t ciphertext_size, void *plaintext, size_t plaintext_size, void *tag, size_t tag_size);
 
 // Cipher Block Chaining-Message Authentication Code (CCM)
 uint64_t cipher_ccm_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size,
