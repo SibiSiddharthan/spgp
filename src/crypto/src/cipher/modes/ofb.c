@@ -146,6 +146,11 @@ static uint64_t ofb_common(cipher_algorithm algorithm, void *key, size_t key_siz
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
+	if (out_size < in_size)
+	{
+		return 0;
+	}
+
 	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
 
 	if (cctx == NULL)
@@ -160,7 +165,7 @@ static uint64_t ofb_common(cipher_algorithm algorithm, void *key, size_t key_siz
 		return 0;
 	}
 
-	return cipher_ofb_update_core(cctx, in, in_size, out, out_size);
+	return cipher_ofb_update_core(cctx, in, out, in_size);
 }
 
 uint64_t aes128_ofb_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,

@@ -275,6 +275,20 @@ uint64_t aes256_ofb_encrypt(void *key, size_t key_size, void *iv, size_t iv_size
 uint64_t aes256_ofb_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
 							size_t plaintext_size);
 
+// AES-CTR
+uint64_t aes128_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size);
+uint64_t aes128_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size);
 
+uint64_t aes192_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size);
+uint64_t aes192_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size);
+
+uint64_t aes256_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size);
+uint64_t aes256_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size);
 
 #endif
