@@ -8,35 +8,14 @@
 #ifndef CRYPTO_cmac_H
 #define CRYPTO_cmac_H
 
+#include <cipher-algorithm.h>
 #include <types.h>
 
 // See NIST FIPS 800-38B Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication (CMAC)
 
-typedef enum _cmac_algorithm
-{
-	// AES
-	CMAC_AES128,
-	CMAC_AES192,
-	CMAC_AES256,
-	// ARIA
-	CMAC_ARIA128,
-	CMAC_ARIA192,
-	CMAC_ARIA256,
-	// CAMELLIA
-	CMAC_CAMELLIA128,
-	CMAC_CAMELLIA192,
-	CMAC_CAMELLIA256,
-	// TDES
-	CMAC_TDES,
-	// TWOFISH
-	CMAC_TWOFISH128,
-	CMAC_TWOFISH192,
-	CMAC_TWOFISH256,
-} cmac_algorithm;
-
 typedef struct _cmac_ctx
 {
-	cmac_algorithm algorithm;
+	cipher_algorithm algorithm;
 	uint32_t ctx_size;
 	uint32_t block_size;
 
@@ -52,10 +31,10 @@ typedef struct _cmac_ctx
 
 } cmac_ctx;
 
-size_t cmac_ctx_size(cmac_algorithm algorithm);
+size_t cmac_ctx_size(cipher_algorithm algorithm);
 
-cmac_ctx *cmac_init(void *ptr, size_t size, cmac_algorithm algorithm, void *key, size_t key_size);
-cmac_ctx *cmac_new(cmac_algorithm algorithm, void *key, size_t key_size);
+cmac_ctx *cmac_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size);
+cmac_ctx *cmac_new(cipher_algorithm algorithm, void *key, size_t key_size);
 void cmac_delete(cmac_ctx *cctx);
 
 cmac_ctx *cmac_reset(cmac_ctx *cctx, void *key, size_t key_size);

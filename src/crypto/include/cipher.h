@@ -8,31 +8,8 @@
 #ifndef CRYPTO_CIPHER_H
 #define CRYPTO_CIPHER_H
 
+#include <cipher-algorithm.h>
 #include <types.h>
-
-typedef enum _cipher_algorithm
-{
-	// AES
-	CIPHER_AES128,
-	CIPHER_AES192,
-	CIPHER_AES256,
-	// ARIA
-	CIPHER_ARIA128,
-	CIPHER_ARIA192,
-	CIPHER_ARIA256,
-	// CAMELLIA
-	CIPHER_CAMELLIA128,
-	CIPHER_CAMELLIA192,
-	CIPHER_CAMELLIA256,
-	// CHACHA
-	CIPHER_CHACHA20,
-	// TDES
-	CIPHER_TDES,
-	// TWOFISH
-	CIPHER_TWOFISH128,
-	CIPHER_TWOFISH192,
-	CIPHER_TWOFISH256,
-} cipher_algorithm;
 
 typedef enum _cipher_padding
 {

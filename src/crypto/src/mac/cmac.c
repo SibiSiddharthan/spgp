@@ -22,31 +22,31 @@
 
 // See NIST SP 800-38B Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication
 
-static inline size_t get_key_ctx_size(cmac_algorithm algorithm)
+static inline size_t get_key_ctx_size(cipher_algorithm algorithm)
 {
 	// These are the only supported algorithms for CMAC currently.
 	switch (algorithm)
 	{
-	case CMAC_AES128:
-	case CMAC_AES192:
-	case CMAC_AES256:
+	case CIPHER_AES128:
+	case CIPHER_AES192:
+	case CIPHER_AES256:
 		return sizeof(aes_key);
-	case CMAC_ARIA128:
-	case CMAC_ARIA192:
-	case CMAC_ARIA256:
+	case CIPHER_ARIA128:
+	case CIPHER_ARIA192:
+	case CIPHER_ARIA256:
 		return sizeof(aria_key);
-	case CMAC_CAMELLIA128:
-	case CMAC_CAMELLIA192:
-	case CMAC_CAMELLIA256:
+	case CIPHER_CAMELLIA128:
+	case CIPHER_CAMELLIA192:
+	case CIPHER_CAMELLIA256:
 		return sizeof(camellia_key);
-	case CMAC_TDES:
+	case CIPHER_TDES:
 		return sizeof(tdes_key);
-	case CMAC_TWOFISH128:
-	case CMAC_TWOFISH192:
-	case CMAC_TWOFISH256:
+	case CIPHER_TWOFISH128:
+	case CIPHER_TWOFISH192:
+	case CIPHER_TWOFISH256:
 		return sizeof(twofish_key);
 	default:
-		// Invalid cmac specifier.
+		// Invalid CMAC specifier.
 		return 0;
 	}
 }
@@ -56,31 +56,31 @@ static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
 	switch (cctx->algorithm)
 	{
 	// AES
-	case CMAC_AES128:
+	case CIPHER_AES128:
 		return aes_key_init(cctx->_key, sizeof(aes_key), AES128, key, key_size);
-	case CMAC_AES192:
+	case CIPHER_AES192:
 		return aes_key_init(cctx->_key, sizeof(aes_key), AES192, key, key_size);
-	case CMAC_AES256:
+	case CIPHER_AES256:
 		return aes_key_init(cctx->_key, sizeof(aes_key), AES256, key, key_size);
 
 	// ARIA
-	case CMAC_ARIA128:
+	case CIPHER_ARIA128:
 		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA128, key, key_size);
-	case CMAC_ARIA192:
+	case CIPHER_ARIA192:
 		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA192, key, key_size);
-	case CMAC_ARIA256:
+	case CIPHER_ARIA256:
 		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA256, key, key_size);
 
 	// CAMELLIA
-	case CMAC_CAMELLIA128:
+	case CIPHER_CAMELLIA128:
 		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA128, key, key_size);
-	case CMAC_CAMELLIA192:
+	case CIPHER_CAMELLIA192:
 		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA192, key, key_size);
-	case CMAC_CAMELLIA256:
+	case CIPHER_CAMELLIA256:
 		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA256, key, key_size);
 
 	// TDES
-	case CMAC_TDES:
+	case CIPHER_TDES:
 	{
 		int32_t status = 0;
 		byte_t k1[DES_KEY_SIZE], k2[DES_KEY_SIZE], k3[DES_KEY_SIZE];
@@ -96,12 +96,14 @@ static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
 	}
 
 	// TWOFISH
-	case CMAC_TWOFISH128:
+	case CIPHER_TWOFISH128:
 		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH128, key, key_size);
-	case CMAC_TWOFISH192:
+	case CIPHER_TWOFISH192:
 		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH192, key, key_size);
-	case CMAC_TWOFISH256:
+	case CIPHER_TWOFISH256:
 		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH256, key, key_size);
+	default:
+		return NULL;
 	}
 
 	return NULL;
@@ -219,12 +221,12 @@ static void cmac_process_block128(cmac_ctx *cctx)
 	cctx->_encrypt(cctx->_key, cctx->state, cctx->state);
 }
 
-size_t cmac_ctx_size(cmac_algorithm algorithm)
+size_t cmac_ctx_size(cipher_algorithm algorithm)
 {
 	return sizeof(cmac_ctx) + (3 * get_key_ctx_size(algorithm));
 }
 
-cmac_ctx *cmac_init(void *ptr, size_t size, cmac_algorithm algorithm, void *key, size_t key_size)
+cmac_ctx *cmac_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size)
 {
 	cmac_ctx *cctx = (cmac_ctx *)ptr;
 	size_t key_ctx_size = get_key_ctx_size(algorithm);
@@ -250,46 +252,49 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cmac_algorithm algorithm, void *key,
 
 	switch (algorithm)
 	{
-	case CMAC_AES128:
+	case CIPHER_AES128:
 		_encrypt = (void (*)(void *, void *, void *))aes128_encrypt_block;
 		break;
-	case CMAC_AES192:
+	case CIPHER_AES192:
 		_encrypt = (void (*)(void *, void *, void *))aes192_encrypt_block;
 		break;
-	case CMAC_AES256:
+	case CIPHER_AES256:
 		_encrypt = (void (*)(void *, void *, void *))aes256_encrypt_block;
 		break;
-	case CMAC_ARIA128:
+	case CIPHER_ARIA128:
 		_encrypt = (void (*)(void *, void *, void *))aria128_encrypt_block;
 		break;
-	case CMAC_ARIA192:
+	case CIPHER_ARIA192:
 		_encrypt = (void (*)(void *, void *, void *))aria192_encrypt_block;
 		break;
-	case CMAC_ARIA256:
+	case CIPHER_ARIA256:
 		_encrypt = (void (*)(void *, void *, void *))aria256_encrypt_block;
 		break;
-	case CMAC_CAMELLIA128:
+	case CIPHER_CAMELLIA128:
 		_encrypt = (void (*)(void *, void *, void *))camellia128_encrypt_block;
 		break;
-	case CMAC_CAMELLIA192:
+	case CIPHER_CAMELLIA192:
 		_encrypt = (void (*)(void *, void *, void *))camellia192_encrypt_block;
 		break;
-	case CMAC_CAMELLIA256:
+	case CIPHER_CAMELLIA256:
 		_encrypt = (void (*)(void *, void *, void *))camellia256_encrypt_block;
 		break;
-	case CMAC_TWOFISH128:
+	case CIPHER_TWOFISH128:
 		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
 		break;
-	case CMAC_TWOFISH192:
+	case CIPHER_TWOFISH192:
 		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
 		break;
-	case CMAC_TWOFISH256:
+	case CIPHER_TWOFISH256:
 		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
 		break;
-	case CMAC_TDES:
+	case CIPHER_TDES:
 		block_size = DES_BLOCK_SIZE;
 		_encrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;
 		break;
+	default:
+		// Invalid CMAC specifier.
+		return NULL;
 	}
 
 	cctx->algorithm = algorithm;
@@ -321,7 +326,7 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cmac_algorithm algorithm, void *key,
 	return cctx;
 }
 
-cmac_ctx *cmac_new(cmac_algorithm algorithm, void *key, size_t key_size)
+cmac_ctx *cmac_new(cipher_algorithm algorithm, void *key, size_t key_size)
 {
 	cmac_ctx *cctx = NULL;
 	size_t ctx_size = get_key_ctx_size(algorithm);
