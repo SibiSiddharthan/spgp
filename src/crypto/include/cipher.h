@@ -227,4 +227,20 @@ uint32_t cipher_siv_cmac_encrypt(siv_ctx *sctx, void *associated_data, size_t ad
 uint32_t cipher_siv_cmac_decrypt(siv_ctx *sctx, void *associated_data, size_t ad_size, void *ciphertext, size_t ciphertext_size,
 								 void *plaintext, size_t plaintext_size);
 
+// AES
+uint64_t aes128_ecb_encrypt(void *key, size_t key_size, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
+							cipher_padding padding);
+uint64_t aes128_ecb_decrypt(void *key, size_t key_size, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
+							cipher_padding padding);
+
+uint64_t aes192_ecb_encrypt(void *key, size_t key_size, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
+							cipher_padding padding);
+uint64_t aes192_ecb_decrypt(void *key, size_t key_size, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
+							cipher_padding padding);
+
+uint64_t aes256_ecb_encrypt(void *key, size_t key_size, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
+							cipher_padding padding);
+uint64_t aes256_ecb_decrypt(void *key, size_t key_size, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
+							cipher_padding padding);
+
 #endif
