@@ -19,7 +19,7 @@ typedef struct _cmac_ctx
 	uint32_t ctx_size;
 	uint32_t block_size;
 
-	size_t message_size;
+	uint16_t unprocessed;
 	byte_t buffer[16];
 	byte_t state[16];
 	byte_t subkey1[16];

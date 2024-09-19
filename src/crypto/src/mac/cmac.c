@@ -247,6 +247,8 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cipher_algorithm algorithm, void *ke
 		return NULL;
 	}
 
+	memset(cctx, 0, sizeof(cmac_ctx));
+
 	// The actual hash context will be stored after cmac_ctx.
 	_key = PTR_OFFSET(cctx, sizeof(cmac_ctx));
 
@@ -361,7 +363,7 @@ cmac_ctx *cmac_reset(cmac_ctx *cctx, void *key, size_t key_size)
 	if (key != NULL)
 	{
 		// If a new key is given, reset the subkeys.
-		memset(cctx, 0, cctx->ctx_size);
+		memset(cctx, 0, offsetof(cmac_ctx, _key));
 
 		ctx = cmac_key_init(cctx, key, key_size);
 
@@ -375,7 +377,7 @@ cmac_ctx *cmac_reset(cmac_ctx *cctx, void *key, size_t key_size)
 	else
 	{
 		// Reset state and buffer.
-		cctx->message_size = 0;
+		cctx->unprocessed = 0;
 
 		memset(cctx->buffer, 0, 16);
 		memset(cctx->state, 0, 16);
@@ -388,50 +390,38 @@ void cmac_update(cmac_ctx *cctx, void *data, size_t size)
 {
 	uint64_t pos = 0;
 	uint64_t copy = 0;
-	uint64_t unprocessed = cctx->message_size % cctx->block_size;
 	byte_t *pdata = (byte_t *)data;
-
-	// First process the previous data if any.
-	if (unprocessed != 0)
-	{
-		uint64_t spill = cctx->block_size - unprocessed;
-		copy = MIN(spill, size);
-
-		memcpy(&cctx->buffer[unprocessed], pdata, copy);
-
-		cctx->message_size += copy;
-		pos += copy;
-	}
 
 	while (pos < size)
 	{
-		cctx->_process(cctx);
+		if (cctx->unprocessed == cctx->block_size)
+		{
+			cctx->_process(cctx);
+			cctx->unprocessed = 0;
+		}
 
-		copy = MIN(cctx->block_size, size - pos);
+		copy = MIN(cctx->block_size - cctx->unprocessed, size - pos);
+		memcpy(cctx->buffer + cctx->unprocessed, pdata + pos, copy);
 
-		memcpy(cctx->buffer, pdata + pos, copy);
-
-		cctx->message_size += copy;
 		pos += copy;
+		cctx->unprocessed += copy;
 	}
 }
 
 uint32_t cmac_final(cmac_ctx *cctx, void *mac, size_t size)
 {
-	uint64_t unprocessed = cctx->message_size % cctx->block_size;
-
-	if (unprocessed == 0)
+	if (cctx->unprocessed == cctx->block_size)
 	{
 		XOR8_N(cctx->buffer, cctx->buffer, cctx->subkey1, cctx->block_size);
 		cctx->_process(cctx);
 	}
 	else
 	{
-		uint64_t remaining = cctx->block_size - (cctx->message_size % cctx->block_size);
-		cctx->buffer[cctx->message_size % cctx->block_size] = 0x80;
+		uint64_t remaining = cctx->block_size - cctx->unprocessed;
+		cctx->buffer[cctx->unprocessed] = 0x80;
 		--remaining;
 
-		memset(cctx->buffer + cctx->block_size + 1, 0, remaining);
+		memset(cctx->buffer + (cctx->block_size - remaining), 0, remaining);
 
 		XOR8_N(cctx->buffer, cctx->buffer, cctx->subkey2, cctx->block_size);
 		cctx->_process(cctx);
