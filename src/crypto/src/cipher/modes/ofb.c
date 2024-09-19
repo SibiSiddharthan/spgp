@@ -46,7 +46,7 @@ static inline uint64_t cipher_ofb_update_core(cipher_ctx *cctx, void *in, void *
 	return processed;
 }
 
-cipher_ctx *cipher_ofb_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+static cipher_ctx *cipher_ofb_init_common(cipher_ctx *cctx, void *iv, size_t iv_size)
 {
 	if (cctx->algorithm == CIPHER_CHACHA20)
 	{
@@ -61,6 +61,11 @@ cipher_ctx *cipher_ofb_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
 	memcpy(cctx->buffer, iv, iv_size);
 
 	return cctx;
+}
+
+cipher_ctx *cipher_ofb_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
+{
+	return cipher_ofb_init_common(cctx, iv, iv_size);
 }
 
 uint64_t cipher_ofb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
@@ -98,19 +103,7 @@ uint64_t cipher_ofb_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *pl
 
 cipher_ctx *cipher_ofb_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
 {
-	if (cctx->algorithm == CIPHER_CHACHA20)
-	{
-		return NULL;
-	}
-
-	if (iv_size != cctx->block_size)
-	{
-		return NULL;
-	}
-
-	memcpy(cctx->buffer, iv, iv_size);
-
-	return cctx;
+	return cipher_ofb_init_common(cctx, iv, iv_size);
 }
 
 uint64_t cipher_ofb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
@@ -144,4 +137,64 @@ uint64_t cipher_ofb_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ci
 	}
 
 	return cipher_ofb_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+static uint64_t ofb_common(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
+						   void *out, size_t out_size)
+{
+	// A big enough buffer for the hmac_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	cctx = cipher_ofb_init_common(cctx, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_ofb_update_core(cctx, in, in_size, out, out_size);
+}
+
+uint64_t aes128_ofb_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size)
+{
+	return ofb_common(CIPHER_AES128, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+uint64_t aes128_ofb_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size)
+{
+	return ofb_common(CIPHER_AES128, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+uint64_t aes192_ofb_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size)
+{
+	return ofb_common(CIPHER_AES192, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+uint64_t aes192_ofb_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size)
+{
+	return ofb_common(CIPHER_AES192, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+uint64_t aes256_ofb_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size)
+{
+	return ofb_common(CIPHER_AES256, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+uint64_t aes256_ofb_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size)
+{
+	return ofb_common(CIPHER_AES256, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
