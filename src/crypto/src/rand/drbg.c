@@ -186,6 +186,6 @@ drbg_ctx *get_default_drbg(void)
 	}
 
 	// Use HMAC DRBG
-	default_drbg = drbg_new(NULL, HMAC_DRBG, HMAC_SHA512, 1u << 16, "DEFAULT HMAC DRBG", 17);
+	default_drbg = drbg_new(NULL, HMAC_DRBG, HASH_SHA512, 1u << 16, "DEFAULT HMAC DRBG", 17);
 	return default_drbg;
 }

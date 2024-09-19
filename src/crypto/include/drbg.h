@@ -104,10 +104,10 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
 						   void *output, size_t output_size);
 
-size_t hmac_drbg_size(hmac_algorithm algorithm);
-hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm,
+size_t hmac_drbg_size(hash_algorithm algorithm);
+hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
 						  uint32_t reseed_interval, void *personalization, size_t personalization_size);
-hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm, uint32_t reseed_interval,
+hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
 						 void *personalization, size_t personalization_size);
 void hmac_drbg_delete(hmac_drbg *hdrbg);
 int32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_size);

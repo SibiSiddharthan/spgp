@@ -21,19 +21,19 @@
 
 uint32_t get_entropy(void *buffer, size_t size);
 
-static inline size_t get_approved_hash_ctx_size(hmac_algorithm algorithm)
+static inline size_t get_approved_hash_ctx_size(hash_algorithm algorithm)
 {
 	switch (algorithm)
 	{
-	case HMAC_SHA1:
+	case HASH_SHA1:
 		return sizeof(sha1_ctx);
-	case HMAC_SHA224:
-	case HMAC_SHA256:
+	case HASH_SHA224:
+	case HASH_SHA256:
 		return sizeof(sha256_ctx);
-	case HMAC_SHA384:
-	case HMAC_SHA512:
-	case HMAC_SHA512_224:
-	case HMAC_SHA512_256:
+	case HASH_SHA384:
+	case HASH_SHA512:
+	case HASH_SHA512_224:
+	case HASH_SHA512_256:
 		return sizeof(sha512_ctx);
 	default:
 		return 0;
@@ -86,7 +86,7 @@ static void hmac_drbg_update(hmac_drbg *hdrbg, byte_t *provided, size_t provided
 	}
 }
 
-static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hmac_algorithm algorithm, void *personalization,
+static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hash_algorithm algorithm, void *personalization,
 									size_t personalization_size)
 {
 	int32_t status = -1;
@@ -134,7 +134,7 @@ end:
 }
 
 static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size),
-										 hmac_algorithm algorithm, uint32_t reseed_interval, void *personalization,
+										 hash_algorithm algorithm, uint32_t reseed_interval, void *personalization,
 										 size_t personalization_size)
 {
 	hmac_drbg *hdrbg = (hmac_drbg *)ptr;
@@ -146,37 +146,37 @@ static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*
 
 	switch (algorithm)
 	{
-	case HMAC_SHA1:
+	case HASH_SHA1:
 		output_size = SHA1_HASH_SIZE;
 		min_entropy_size = 20;
 		min_nonce_size = 10;
 		security_strength = 160;
 		break;
 
-	case HMAC_SHA224:
-	case HMAC_SHA512_224:
+	case HASH_SHA224:
+	case HASH_SHA512_224:
 		output_size = SHA224_HASH_SIZE;
 		min_entropy_size = 28;
 		min_nonce_size = 14;
 		security_strength = 224;
 		break;
 
-	case HMAC_SHA256:
-	case HMAC_SHA512_256:
+	case HASH_SHA256:
+	case HASH_SHA512_256:
 		output_size = SHA256_HASH_SIZE;
 		min_entropy_size = 32;
 		min_nonce_size = 16;
 		security_strength = 256;
 		break;
 
-	case HMAC_SHA384:
+	case HASH_SHA384:
 		output_size = SHA384_HASH_SIZE;
 		min_entropy_size = 48;
 		min_nonce_size = 24;
 		security_strength = 384;
 		break;
 
-	case HMAC_SHA512:
+	case HASH_SHA512:
 		output_size = SHA512_HASH_SIZE;
 		min_entropy_size = 64;
 		min_nonce_size = 32;
@@ -206,12 +206,12 @@ static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*
 	return hdrbg;
 }
 
-size_t hmac_drbg_size(hmac_algorithm algorithm)
+size_t hmac_drbg_size(hash_algorithm algorithm)
 {
 	return sizeof(hmac_drbg) + sizeof(hmac_ctx) + get_approved_hash_ctx_size(algorithm);
 }
 
-hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm,
+hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
 						  uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 
@@ -236,7 +236,7 @@ hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buff
 	return hmac_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hmac_algorithm algorithm, uint32_t reseed_interval,
+hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
 						 void *personalization, size_t personalization_size)
 {
 	hmac_drbg *hdrbg = NULL;

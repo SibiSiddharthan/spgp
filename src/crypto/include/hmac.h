@@ -8,33 +8,14 @@
 #ifndef CRYPTO_HMAC_H
 #define CRYPTO_HMAC_H
 
+#include <hash-algorithm.h>
 #include <types.h>
 
 // See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (HMAC)
 
-#define MAX_HASH_SIZE  64
-#define MAX_BLOCK_SIZE 256
-
-typedef enum _hmac_algorithm
-{
-	HMAC_MD5,
-	HMAC_RIPEMD160,
-	HMAC_SHA1,
-	HMAC_SHA224,
-	HMAC_SHA256,
-	HMAC_SHA384,
-	HMAC_SHA512,
-	HMAC_SHA512_224,
-	HMAC_SHA512_256,
-	HMAC_SHA3_224,
-	HMAC_SHA3_256,
-	HMAC_SHA3_384,
-	HMAC_SHA3_512
-} hmac_algorithm;
-
 typedef struct _hmac_ctx
 {
-	hmac_algorithm algorithm;
+	hash_algorithm algorithm;
 	size_t ctx_size;
 	size_t hash_size;
 	size_t block_size;
@@ -52,10 +33,10 @@ typedef struct _hmac_ctx
 
 } hmac_ctx;
 
-size_t hmac_ctx_size(hmac_algorithm algorithm);
+size_t hmac_ctx_size(hash_algorithm algorithm);
 
-hmac_ctx *hmac_init(void *ptr, size_t size, hmac_algorithm algorithm, void *key, size_t key_size);
-hmac_ctx *hmac_new(hmac_algorithm algorithm, void *key, size_t key_size);
+hmac_ctx *hmac_init(void *ptr, size_t size, hash_algorithm algorithm, void *key, size_t key_size);
+hmac_ctx *hmac_new(hash_algorithm algorithm, void *key, size_t key_size);
 void hmac_delete(hmac_ctx *hctx);
 
 void hmac_reset(hmac_ctx *hctx, void *key, size_t key_size);

@@ -13,7 +13,7 @@
 
 // Refer RFC 5869 : HMAC-based Extract-and-Expand Key Derivation Function (HKDF)
 
-uint32_t hkdf(hmac_algorithm algorithm, void *key, uint32_t key_size, void *salt, size_t salt_size, void *info, size_t info_size,
+uint32_t hkdf(hash_algorithm algorithm, void *key, uint32_t key_size, void *salt, size_t salt_size, void *info, size_t info_size,
 			  void *derived_key, uint32_t derived_key_size);
 
 #endif

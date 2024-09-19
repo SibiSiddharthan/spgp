@@ -16,7 +16,7 @@
 
 // See NIST SP 800-132 Recommendation for Password-Based Key Derivation
 
-uint32_t pbkdf2(hmac_algorithm algorithm, void *password, size_t password_size, void *salt, size_t salt_size, uint32_t iteration_count,
+uint32_t pbkdf2(hash_algorithm algorithm, void *password, size_t password_size, void *salt, size_t salt_size, uint32_t iteration_count,
 				void *key, size_t key_size)
 {
 	hmac_ctx *hctx = NULL;

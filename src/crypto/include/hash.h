@@ -8,28 +8,8 @@
 #ifndef CRYPTO_HASH_H
 #define CRYPTO_HASH_H
 
+#include <hash-algorithm.h>
 #include <types.h>
-
-#define MAX_HASH_SIZE 64
-
-typedef enum _hash_algorithm
-{
-	HASH_MD5,
-	HASH_RIPEMD160,
-	HASH_BLAKE2B,
-	HASH_BLAKE2S,
-	HASH_SHA1,
-	HASH_SHA224,
-	HASH_SHA256,
-	HASH_SHA384,
-	HASH_SHA512,
-	HASH_SHA512_224,
-	HASH_SHA512_256,
-	HASH_SHA3_224,
-	HASH_SHA3_256,
-	HASH_SHA3_384,
-	HASH_SHA3_512
-} hash_algorithm;
 
 typedef struct _hash_ctx
 {

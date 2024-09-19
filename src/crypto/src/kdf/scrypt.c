@@ -184,14 +184,14 @@ uint32_t scrypt(void *password, size_t password_size, void *salt, size_t salt_si
 		return 0;
 	}
 
-	pbkdf2(HMAC_SHA256, password, password_size, salt, salt_size, 1, blocks, pbkdf2_size);
+	pbkdf2(HASH_SHA256, password, password_size, salt, salt_size, 1, blocks, pbkdf2_size);
 
 	for (uint32_t i = 0; i < parallel; ++i)
 	{
 		scrypt_rom_mix(rom, blocks + (i * block_size), blocks + (i * block_size), block_size, cost);
 	}
 
-	result = pbkdf2(HMAC_SHA256, password, password_size, blocks, pbkdf2_size, 1, key, key_size);
+	result = pbkdf2(HASH_SHA256, password, password_size, blocks, pbkdf2_size, 1, key, key_size);
 
 	free(blocks);
 

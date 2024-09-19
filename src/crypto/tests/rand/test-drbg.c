@@ -65,7 +65,7 @@ int32_t hmac_drbg_test_suite()
 	// -------------------------------------------------------------------------------------------------------------------------------------
 	// Simple
 
-	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HMAC_SHA256, 65536, NULL, 0);
+	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HASH_SHA256, 65536, NULL, 0);
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "e75855f93b971ac468d200992e211960202d53cf08852ef86772d6490bfb53f9");
 	status += CHECK_BLOCK(hdrbg->key, 32, "302a4aba78412ab36940f4be7b940a0c728542b8b81d95b801a57b3797f9dd6e");
@@ -97,7 +97,7 @@ int32_t hmac_drbg_test_suite()
 
 	hex_to_block(extra, 32, "972527fe90601de9d13a050c7e49d556d0de6b0e75e0619807ade2178eefe47d");
 
-	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HMAC_SHA256, 65536, extra, 32);
+	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HASH_SHA256, 65536, extra, 32);
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "0369222ee2c0a271fed4629e6954613f8b96a19174eaf6bace11822ef8a0db01");
 	status += CHECK_BLOCK(hdrbg->key, 32, "fc24c5b12d7ead3a43c84ebf38c3ddede2b6691bf5aecd5bcd75afa4a205620f");
@@ -131,7 +131,7 @@ int32_t hmac_drbg_test_suite()
 
 	hex_to_block(extra, 32, "27e38c624a8f934e931e195a0cbcf38e4e8d50108dc318743fb4b61cf78a7d14");
 
-	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HMAC_SHA256, 65536, extra, 32);
+	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HASH_SHA256, 65536, extra, 32);
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "65ee4461fd700036721800d2a71f5110cc8099fe447d4b68f317b821983a2063");
 	status += CHECK_BLOCK(hdrbg->key, 32, "ac0e155af29e01caf36f5f36944adf9cef01b18a4a7aa5af8d63cd56a1d03d43");
@@ -171,7 +171,7 @@ int32_t hmac_drbg_test_suite()
 
 	hex_to_block(extra, 32, "f293dc63e6e0dcb94bb19929a7935ec71bf16c55258eb66c63ff6d3225a8c270");
 
-	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HMAC_SHA256, 65536, extra, 32);
+	hdrbg = hmac_drbg_new(hmac_drbg_sha256_entropy, HASH_SHA256, 65536, extra, 32);
 
 	status += CHECK_BLOCK(hdrbg->seed, 32, "af2a826550a0482185b35501838dd3b5d7673f92407559884c8a07389bc8a2d9");
 	status += CHECK_BLOCK(hdrbg->key, 32, "709931023cb2c21917a43b9f8945932d0e5c0484d1f4164c8d44046e28d8aecd");
