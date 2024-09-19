@@ -72,6 +72,9 @@ camellia
 chacha20
 des
 twofish
+
+# modes
+ecb
 )
 
 crypto_hash_tests(

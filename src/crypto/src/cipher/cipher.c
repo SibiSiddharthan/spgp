@@ -135,8 +135,6 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 	void (*_encrypt)(void *, void *, void *);
 	void (*_decrypt)(void *, void *, void *);
 
-	_ctx = PTR_OFFSET(cctx, sizeof(cipher_ctx));
-
 	if (ctx_size == 0)
 	{
 		return NULL;
@@ -146,6 +144,10 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 	{
 		return NULL;
 	}
+
+	memset(cctx, 0, sizeof(cipher_ctx));
+
+	_ctx = PTR_OFFSET(cctx, sizeof(cipher_ctx));
 
 	switch (algorithm)
 	{
