@@ -92,6 +92,7 @@ scrypt
 )
 
 crypto_mac_tests(
+cmac
 hmac
 kmac
 )
