@@ -235,3 +235,87 @@ uint64_t cipher_cbc_decrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, 
 
 	return cipher_cbc_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
+
+static uint64_t cbc_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext,
+								   size_t plaintext_size, void *ciphertext, size_t ciphertext_size, cipher_padding padding)
+{
+	// A big enough buffer for the hmac_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	cctx = cipher_cbc_encrypt_init(cctx, padding, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_cbc_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+static uint64_t cbc_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext,
+								   size_t ciphertext_size, void *plaintext, size_t plaintext_size, cipher_padding padding)
+{
+	// A big enough buffer for the hmac_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	cctx = cipher_cbc_decrypt_init(cctx, padding, iv, iv_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_cbc_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+uint64_t aes128_cbc_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size, cipher_padding padding)
+{
+	return cbc_encrypt_common(CIPHER_AES128, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size, padding);
+}
+
+uint64_t aes128_cbc_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size, cipher_padding padding)
+{
+	return cbc_decrypt_common(CIPHER_AES128, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size, padding);
+}
+
+uint64_t aes192_cbc_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size, cipher_padding padding)
+{
+	return cbc_encrypt_common(CIPHER_AES192, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size, padding);
+}
+
+uint64_t aes192_cbc_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size, cipher_padding padding)
+{
+	return cbc_decrypt_common(CIPHER_AES192, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size, padding);
+}
+
+uint64_t aes256_cbc_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							size_t ciphertext_size, cipher_padding padding)
+{
+	return cbc_encrypt_common(CIPHER_AES256, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size, padding);
+}
+
+uint64_t aes256_cbc_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+							size_t plaintext_size, cipher_padding padding)
+{
+	return cbc_decrypt_common(CIPHER_AES256, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size, padding);
+}
