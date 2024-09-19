@@ -75,6 +75,7 @@ twofish
 
 # modes
 ecb
+cbc
 )
 
 crypto_hash_tests(
