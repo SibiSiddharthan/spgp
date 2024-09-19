@@ -25,8 +25,9 @@ static inline uint64_t cipher_cbc_encrypt_core(cipher_ctx *cctx, void *in, void 
 	while ((processed + block_size) <= size)
 	{
 		XOR8_N(cctx->buffer, cctx->buffer, pin + processed, block_size);
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, pout + processed);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
 
+		memcpy(pout + processed, cctx->buffer, cctx->block_size);
 		processed += block_size;
 	}
 
@@ -41,11 +42,14 @@ static inline uint64_t cipher_cbc_decrypt_core(cipher_ctx *cctx, void *in, void 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 
+	byte_t temp[16] = {0};
+
 	while ((processed + block_size) <= size)
 	{
-		XOR8_N(cctx->buffer, cctx->buffer, pin + processed, block_size);
-		cctx->_decrypt(cctx->_ctx, cctx->buffer, pout + processed);
+		cctx->_decrypt(cctx->_ctx, pin + processed, temp);
+		XOR8_N(pout + processed, cctx->buffer, temp, block_size);
 
+		memcpy(cctx->buffer, pin + processed, block_size);
 		processed += block_size;
 	}
 
