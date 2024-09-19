@@ -41,4 +41,8 @@ cmac_ctx *cmac_reset(cmac_ctx *cctx, void *key, size_t key_size);
 void cmac_update(cmac_ctx *cctx, void *data, size_t size);
 uint32_t cmac_final(cmac_ctx *cctx, void *mac, size_t size);
 
+uint32_t aes128_cmac(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+uint32_t aes192_cmac(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+uint32_t aes256_cmac(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size);
+
 #endif

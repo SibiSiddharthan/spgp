@@ -445,3 +445,37 @@ uint32_t cmac_final(cmac_ctx *cctx, void *mac, size_t size)
 
 	return MIN(cctx->block_size, size);
 }
+
+static uint32_t cmac_common(cipher_algorithm algorithm, void *key, size_t key_size, void *data, size_t data_size, void *mac,
+							size_t mac_size)
+{
+	// A big enough buffer for the hmac_ctx.
+	cmac_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cmac_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	// Compute the mac.
+	cmac_update(cctx, data, data_size);
+	return cmac_final(cctx, mac, mac_size);
+}
+
+uint32_t aes128_cmac(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return cmac_common(CIPHER_AES128, key, key_size, data, data_size, mac, mac_size);
+}
+
+uint32_t aes192_cmac(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return cmac_common(CIPHER_AES192, key, key_size, data, data_size, mac, mac_size);
+}
+
+uint32_t aes256_cmac(void *key, size_t key_size, void *data, size_t data_size, void *mac, size_t mac_size)
+{
+	return cmac_common(CIPHER_AES256, key, key_size, data, data_size, mac, mac_size);
+}
