@@ -77,6 +77,7 @@ twofish
 ecb
 cbc
 ofb
+ctr
 )
 
 crypto_hash_tests(

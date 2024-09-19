@@ -24,11 +24,12 @@ static inline uint64_t cipher_ctr_update_core(cipher_ctx *cctx, void *in, void *
 	uint64_t *oc = (uint64_t *)&cctx->buffer[8];
 
 	uint64_t counter = BSWAP_64(*oc);
+	byte_t temp[16] = {0};
 
 	while ((processed + block_size) <= size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
-		XOR8_N(pout + processed, pin + processed, cctx->buffer, block_size);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, temp);
+		XOR8_N(pout + processed, pin + processed, temp, block_size);
 
 		++counter;
 		*oc = BSWAP_64(counter);
@@ -40,11 +41,11 @@ static inline uint64_t cipher_ctr_update_core(cipher_ctx *cctx, void *in, void *
 
 	if (remaining > 0)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_ctx, cctx->buffer, temp);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{
-			pout[processed + i] = pin[processed + i] ^ cctx->buffer[i];
+			pout[processed + i] = pin[processed + i] ^ temp[i];
 		}
 
 		processed += remaining;
