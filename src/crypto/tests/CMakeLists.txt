@@ -76,6 +76,7 @@ twofish
 # modes
 ecb
 cbc
+cfb
 ofb
 ctr
 )
