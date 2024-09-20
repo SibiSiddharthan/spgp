@@ -259,6 +259,52 @@ uint64_t aes256_cbc_encrypt(void *key, size_t key_size, void *iv, size_t iv_size
 uint64_t aes256_cbc_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
 							size_t plaintext_size, cipher_padding padding);
 
+// AES-CFB
+uint64_t aes128_cfb1_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size);
+uint64_t aes128_cfb1_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							 void *plaintext, size_t plaintext_size);
+
+uint64_t aes192_cfb1_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size);
+uint64_t aes192_cfb1_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							 void *plaintext, size_t plaintext_size);
+
+uint64_t aes256_cfb1_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size);
+uint64_t aes256_cfb1_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							 void *plaintext, size_t plaintext_size);
+
+uint64_t aes128_cfb8_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size);
+uint64_t aes128_cfb8_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							 void *plaintext, size_t plaintext_size);
+
+uint64_t aes192_cfb8_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size);
+uint64_t aes192_cfb8_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							 void *plaintext, size_t plaintext_size);
+
+uint64_t aes256_cfb8_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+							 size_t ciphertext_size);
+uint64_t aes256_cfb8_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							 void *plaintext, size_t plaintext_size);
+
+uint64_t aes128_cfb128_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size,
+							   void *ciphertext, size_t ciphertext_size, cipher_padding padding);
+uint64_t aes128_cfb128_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							   void *plaintext, size_t plaintext_size, cipher_padding padding);
+
+uint64_t aes192_cfb128_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size,
+							   void *ciphertext, size_t ciphertext_size, cipher_padding padding);
+uint64_t aes192_cfb128_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							   void *plaintext, size_t plaintext_size, cipher_padding padding);
+
+uint64_t aes256_cfb128_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size,
+							   void *ciphertext, size_t ciphertext_size, cipher_padding padding);
+uint64_t aes256_cfb128_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size,
+							   void *plaintext, size_t plaintext_size, cipher_padding padding);
+
 // AES-OFB
 uint64_t aes128_ofb_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
 							size_t ciphertext_size);
