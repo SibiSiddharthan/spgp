@@ -83,28 +83,28 @@ static void iW(cipher_ctx *cctx, byte_t *material, size_t size, byte_t *result)
 	memcpy(result + 8, R, size - 8);
 }
 
-uint32_t cipher_key_wrap_encrypt(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint32_t cipher_key_wrap_encrypt(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
 	byte_t icv1[8] = {0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6};
 	byte_t *material = NULL;
-	size_t material_size = plaintext_size + 8;
+	size_t material_size = in_size + 8;
 
 	if (cctx->block_size != 16)
 	{
 		return 0;
 	}
 
-	if (plaintext_size % 8 != 0)
+	if (in_size % 8 != 0)
 	{
 		return 0;
 	}
 
-	if (plaintext_size < 16)
+	if (in_size < 16)
 	{
 		return 0;
 	}
 
-	if (ciphertext_size < material_size)
+	if (out_size < material_size)
 	{
 		return 0;
 	}
@@ -117,37 +117,37 @@ uint32_t cipher_key_wrap_encrypt(cipher_ctx *cctx, void *plaintext, size_t plain
 	}
 
 	memcpy(material, icv1, 8);
-	memcpy(material + 8, plaintext, plaintext_size);
+	memcpy(material + 8, in, in_size);
 
-	W(cctx, material, material_size, ciphertext);
+	W(cctx, material, material_size, out);
 
 	free(material);
 
 	return material_size;
 }
 
-uint32_t cipher_key_wrap_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint32_t cipher_key_wrap_decrypt(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
 	byte_t icv1[8] = {0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6};
 	byte_t *result = NULL;
-	size_t result_size = ciphertext_size;
+	size_t result_size = in_size;
 
 	if (cctx->block_size != 16)
 	{
 		return 0;
 	}
 
-	if (ciphertext_size % 8 != 0)
+	if (in_size % 8 != 0)
 	{
 		return 0;
 	}
 
-	if (ciphertext_size < 24)
+	if (in_size < 24)
 	{
 		return 0;
 	}
 
-	if (plaintext_size < ciphertext_size - 8)
+	if (out_size < in_size - 8)
 	{
 		return 0;
 	}
@@ -159,7 +159,7 @@ uint32_t cipher_key_wrap_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciph
 		return 0;
 	}
 
-	iW(cctx, ciphertext, ciphertext_size, result);
+	iW(cctx, in, in_size, result);
 
 	if (memcmp(result, icv1, 8) != 0)
 	{
@@ -167,29 +167,29 @@ uint32_t cipher_key_wrap_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciph
 		return 0;
 	}
 
-	memcpy(plaintext, result + 8, result_size - 8);
+	memcpy(out, result + 8, result_size - 8);
 
 	free(result);
 
 	return result_size - 8;
 }
 
-uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
 	byte_t icv2[4] = {0xA6, 0x59, 0x59, 0xA6};
 	byte_t *material = NULL;
-	size_t padding_size = plaintext_size % 8;
-	size_t material_size = plaintext_size + 4 + 4 + padding_size;
+	size_t padding_size = in_size % 8;
+	size_t material_size = in_size + 4 + 4 + padding_size;
 	size_t pos = 0;
 
-	uint32_t be_size = BSWAP_32((uint32_t)plaintext_size);
+	uint32_t be_size = BSWAP_32((uint32_t)in_size);
 
 	if (cctx->block_size != 16)
 	{
 		return 0;
 	}
 
-	if (ciphertext_size < material_size)
+	if (out_size < material_size)
 	{
 		return 0;
 	}
@@ -207,18 +207,18 @@ uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *plaintext, size_t p
 	memcpy(material + pos, &be_size, 4);
 	pos += 4;
 
-	memcpy(material + pos, plaintext, plaintext_size);
-	pos += plaintext_size;
+	memcpy(material + pos, in, in_size);
+	pos += in_size;
 
 	memset(material + pos, 0, padding_size);
 
-	if (plaintext_size < 8)
+	if (in_size < 8)
 	{
-		cctx->_encrypt(cctx->_ctx, material, ciphertext);
+		cctx->_encrypt(cctx->_ctx, material, out);
 	}
 	else
 	{
-		W(cctx, material, material_size, ciphertext);
+		W(cctx, material, material_size, out);
 	}
 
 	free(material);
@@ -226,13 +226,13 @@ uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *plaintext, size_t p
 	return material_size;
 }
 
-uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
 	uint32_t status = 0;
 
 	byte_t icv2[4] = {0xA6, 0x59, 0x59, 0xA6};
 	byte_t *result = NULL;
-	size_t result_size = ciphertext_size;
+	size_t result_size = in_size;
 	uint32_t material_size = 0;
 	int64_t padding_size = 0;
 
@@ -241,12 +241,12 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t 
 		return 0;
 	}
 
-	if (ciphertext_size < 16)
+	if (in_size < 16)
 	{
 		return 0;
 	}
 
-	if (plaintext_size < ciphertext_size - 8)
+	if (out_size < in_size - 8)
 	{
 		return 0;
 	}
@@ -258,13 +258,13 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t 
 		return 0;
 	}
 
-	if (ciphertext_size == 16)
+	if (in_size == 16)
 	{
-		cctx->_decrypt(cctx->_ctx, ciphertext, result);
+		cctx->_decrypt(cctx->_ctx, in, result);
 	}
 	else
 	{
-		iW(cctx, ciphertext, ciphertext_size, result);
+		iW(cctx, in, in_size, result);
 	}
 
 	if (memcmp(result, icv2, 4) != 0)
@@ -273,7 +273,7 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t 
 	}
 
 	material_size = BSWAP_32(*(uint32_t *)&result[4]);
-	padding_size = 8 * ((ciphertext_size / 8) - 1) - material_size;
+	padding_size = 8 * ((in_size / 8) - 1) - material_size;
 
 	if (padding_size < 0 || padding_size > 7)
 	{
@@ -288,11 +288,139 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *ciphertext, size_t 
 		}
 	}
 
-	memcpy(plaintext, result + 8, material_size);
+	memcpy(out, result + 8, material_size);
 
 	status = material_size;
 
 finish:
 	free(result);
 	return status;
+}
+
+static uint32_t key_wrap_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *in, size_t in_size, void *out,
+										size_t out_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_key_wrap_encrypt(cctx, in, in_size, out, out_size);
+}
+
+static uint32_t key_wrap_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *in, size_t in_size, void *out,
+										size_t out_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_key_wrap_decrypt(cctx, in, in_size, out, out_size);
+}
+
+static uint32_t key_wrap_pad_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *in, size_t in_size, void *out,
+											size_t out_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_key_wrap_pad_encrypt(cctx, in, in_size, out, out_size);
+}
+
+static uint32_t key_wrap_pad_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *in, size_t in_size, void *out,
+											size_t out_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_key_wrap_pad_decrypt(cctx, in, in_size, out, out_size);
+}
+
+uint32_t aes128_key_wrap_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_encrypt_common(CIPHER_AES128, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes128_key_wrap_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_decrypt_common(CIPHER_AES128, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes192_key_wrap_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_encrypt_common(CIPHER_AES192, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes192_key_wrap_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_decrypt_common(CIPHER_AES192, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes256_key_wrap_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_encrypt_common(CIPHER_AES256, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes256_key_wrap_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_decrypt_common(CIPHER_AES256, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes128_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_pad_encrypt_common(CIPHER_AES128, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes128_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_pad_decrypt_common(CIPHER_AES128, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes192_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_pad_encrypt_common(CIPHER_AES192, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes192_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_pad_decrypt_common(CIPHER_AES192, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes256_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_pad_encrypt_common(CIPHER_AES256, key, key_size, in, in_size, out, out_size);
+}
+
+uint32_t aes256_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return key_wrap_pad_decrypt_common(CIPHER_AES256, key, key_size, in, in_size, out, out_size);
 }

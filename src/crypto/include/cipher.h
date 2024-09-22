@@ -295,4 +295,23 @@ uint64_t aes192_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size
 uint64_t aes256_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t aes256_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size);
 
+// AES-KW
+uint32_t aes128_key_wrap_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+uint32_t aes128_key_wrap_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+
+uint32_t aes192_key_wrap_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+uint32_t aes192_key_wrap_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+
+uint32_t aes256_key_wrap_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+uint32_t aes256_key_wrap_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+
+uint32_t aes128_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+uint32_t aes128_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+
+uint32_t aes192_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+uint32_t aes192_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+
+uint32_t aes256_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+uint32_t aes256_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
+
 #endif
