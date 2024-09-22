@@ -76,24 +76,24 @@ cipher_ctx *cipher_ctr_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
 	return cipher_ctr_init_common(cctx, iv, iv_size);
 }
 
-uint64_t cipher_ctr_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint64_t cipher_ctr_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
-	if (ciphertext_size < plaintext_size)
+	if (out_size < in_size)
 	{
 		return 0;
 	}
 
-	return cipher_ctr_update_core(cctx, plaintext, ciphertext, ROUND_DOWN(plaintext_size, cctx->block_size));
+	return cipher_ctr_update_core(cctx, in, out, ROUND_DOWN(in_size, cctx->block_size));
 }
 
-uint64_t cipher_ctr_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint64_t cipher_ctr_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
-	if (ciphertext_size < plaintext_size)
+	if (out_size < in_size)
 	{
 		return 0;
 	}
 
-	return cipher_ctr_update_core(cctx, plaintext, ciphertext, plaintext_size);
+	return cipher_ctr_update_core(cctx, in, out, in_size);
 }
 
 uint64_t cipher_ctr_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
@@ -114,24 +114,24 @@ cipher_ctx *cipher_ctr_decrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size)
 	return cipher_ctr_init_common(cctx, iv, iv_size);
 }
 
-uint64_t cipher_ctr_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ctr_decrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
-	if (plaintext_size < ciphertext_size)
+	if (out_size < in_size)
 	{
 		return 0;
 	}
 
-	return cipher_ctr_update_core(cctx, ciphertext, plaintext, ROUND_DOWN(ciphertext_size, cctx->block_size));
+	return cipher_ctr_update_core(cctx, in, out, ROUND_DOWN(in_size, cctx->block_size));
 }
 
-uint64_t cipher_ctr_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ctr_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
-	if (plaintext_size < ciphertext_size)
+	if (out_size < in_size)
 	{
 		return 0;
 	}
 
-	return cipher_ctr_update_core(cctx, ciphertext, plaintext, ciphertext_size);
+	return cipher_ctr_update_core(cctx, in, out, in_size);
 }
 
 uint64_t cipher_ctr_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
@@ -176,38 +176,32 @@ static uint64_t ctr_common(cipher_algorithm algorithm, void *key, size_t key_siz
 	return cipher_ctr_update_core(cctx, in, out, in_size);
 }
 
-uint64_t aes128_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
-							size_t ciphertext_size)
+uint64_t aes128_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size)
 {
-	return ctr_common(CIPHER_AES128, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return ctr_common(CIPHER_AES128, key, key_size, iv, iv_size, in, in_size, out, out_size);
 }
 
-uint64_t aes128_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
-							size_t plaintext_size)
+uint64_t aes128_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size)
 {
-	return ctr_common(CIPHER_AES128, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return ctr_common(CIPHER_AES128, key, key_size, iv, iv_size, in, in_size, out, out_size);
 }
 
-uint64_t aes192_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
-							size_t ciphertext_size)
+uint64_t aes192_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size)
 {
-	return ctr_common(CIPHER_AES192, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return ctr_common(CIPHER_AES192, key, key_size, iv, iv_size, in, in_size, out, out_size);
 }
 
-uint64_t aes192_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
-							size_t plaintext_size)
+uint64_t aes192_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size)
 {
-	return ctr_common(CIPHER_AES192, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return ctr_common(CIPHER_AES192, key, key_size, iv, iv_size, in, in_size, out, out_size);
 }
 
-uint64_t aes256_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *plaintext, size_t plaintext_size, void *ciphertext,
-							size_t ciphertext_size)
+uint64_t aes256_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size)
 {
-	return ctr_common(CIPHER_AES256, key, key_size, iv, iv_size, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return ctr_common(CIPHER_AES256, key, key_size, iv, iv_size, in, in_size, out, out_size);
 }
 
-uint64_t aes256_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
-							size_t plaintext_size)
+uint64_t aes256_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size)
 {
-	return ctr_common(CIPHER_AES256, key, key_size, iv, iv_size, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return ctr_common(CIPHER_AES256, key, key_size, iv, iv_size, in, in_size, out, out_size);
 }
