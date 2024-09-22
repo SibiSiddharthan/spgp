@@ -64,53 +64,53 @@ cipher_ctx *cipher_ecb_encrypt_init(cipher_ctx *cctx, cipher_padding padding)
 	return cctx;
 }
 
-uint64_t cipher_ecb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint64_t cipher_ecb_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
-	if (ciphertext_size < plaintext_size)
+	if (out_size < in_size)
 	{
 		return 0;
 	}
 
-	return cipher_ecb_encrypt_core(cctx, plaintext, ciphertext, plaintext_size);
+	return cipher_ecb_encrypt_core(cctx, in, out, in_size);
 }
 
-uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
 	uint16_t block_size = cctx->block_size;
 
-	byte_t *pin = (byte_t *)plaintext;
-	byte_t *pout = (byte_t *)ciphertext;
+	byte_t *pin = (byte_t *)in;
+	byte_t *pout = (byte_t *)out;
 
 	byte_t temp[32] = {0};
 	uint64_t required_size = 0;
 
 	if (cctx->padding == PADDING_PKCS7)
 	{
-		required_size = ROUND_UP(plaintext_size + 1, block_size);
+		required_size = ROUND_UP(in_size + 1, block_size);
 	}
 	else
 	{
-		required_size = ROUND_UP(plaintext_size, block_size);
+		required_size = ROUND_UP(in_size, block_size);
 	}
 
 	if (cctx->padding == PADDING_NONE)
 	{
-		if (plaintext_size % block_size != 0)
+		if (in_size % block_size != 0)
 		{
 			return 0;
 		}
 	}
 
-	if (required_size < ciphertext_size)
+	if (required_size < out_size)
 	{
 		return 0;
 	}
 
 	// Process upto the last block
-	processed += cipher_ecb_encrypt_core(cctx, plaintext, ciphertext, plaintext_size);
-	remaining = plaintext_size - processed;
+	processed += cipher_ecb_encrypt_core(cctx, in, out, in_size);
+	remaining = in_size - processed;
 
 	// Copy the remaining data to the buffer.
 	memcpy(temp, pin + processed, remaining);
@@ -127,8 +127,7 @@ uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 	return processed;
 }
 
-uint64_t cipher_ecb_encrypt(cipher_ctx *cctx, cipher_padding padding, void *plaintext, size_t plaintext_size, void *ciphertext,
-							size_t ciphertext_size)
+uint64_t cipher_ecb_encrypt(cipher_ctx *cctx, cipher_padding padding, void *in, size_t in_size, void *out, size_t out_size)
 {
 	cctx = cipher_ecb_encrypt_init(cctx, padding);
 
@@ -137,7 +136,7 @@ uint64_t cipher_ecb_encrypt(cipher_ctx *cctx, cipher_padding padding, void *plai
 		return 0;
 	}
 
-	return cipher_ecb_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_ecb_encrypt_final(cctx, in, in_size, out, out_size);
 }
 
 cipher_ctx *cipher_ecb_decrypt_init(cipher_ctx *cctx, cipher_padding padding)
@@ -157,39 +156,39 @@ cipher_ctx *cipher_ecb_decrypt_init(cipher_ctx *cctx, cipher_padding padding)
 	return cctx;
 }
 
-uint64_t cipher_ecb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ecb_decrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
-	if (plaintext_size < ciphertext_size)
+	if (out_size < in_size)
 	{
 		return 0;
 	}
 
-	return cipher_ecb_decrypt_core(cctx, ciphertext, plaintext, ciphertext_size);
+	return cipher_ecb_decrypt_core(cctx, in, out, in_size);
 }
 
-uint64_t cipher_ecb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ecb_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size)
 {
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
 	uint16_t block_size = cctx->block_size;
 
-	byte_t *pin = (byte_t *)ciphertext;
-	byte_t *pout = (byte_t *)plaintext;
+	byte_t *pin = (byte_t *)in;
+	byte_t *pout = (byte_t *)out;
 
 	byte_t temp[32] = {0};
 
-	if (ciphertext_size % block_size != 0)
+	if (in_size % block_size != 0)
 	{
 		return 0;
 	}
 
-	if (plaintext_size < ciphertext_size)
+	if (out_size < in_size)
 	{
 		return 0;
 	}
 
 	// Process upto the last block.
-	processed += cipher_ecb_decrypt_core(cctx, ciphertext, plaintext, ciphertext_size - block_size);
+	processed += cipher_ecb_decrypt_core(cctx, in, out, in_size - block_size);
 
 	// Decrypt the last block to the internal buffer.
 	cipher_ecb_decrypt_core(cctx, pin + processed, temp, block_size);
@@ -206,8 +205,7 @@ uint64_t cipher_ecb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	return processed;
 }
 
-uint64_t cipher_ecb_decrypt(cipher_ctx *cctx, cipher_padding padding, void *ciphertext, size_t ciphertext_size, void *plaintext,
-							size_t plaintext_size)
+uint64_t cipher_ecb_decrypt(cipher_ctx *cctx, cipher_padding padding, void *in, size_t in_size, void *out, size_t out_size)
 {
 	cctx = cipher_ecb_decrypt_init(cctx, padding);
 
@@ -216,11 +214,11 @@ uint64_t cipher_ecb_decrypt(cipher_ctx *cctx, cipher_padding padding, void *ciph
 		return 0;
 	}
 
-	return cipher_ecb_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_ecb_decrypt_final(cctx, in, in_size, out, out_size);
 }
 
-static uint64_t ecb_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *plaintext, size_t plaintext_size,
-								   void *ciphertext, size_t ciphertext_size, cipher_padding padding)
+static uint64_t ecb_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *in, size_t in_size, void *out,
+								   size_t out_size, cipher_padding padding)
 {
 	// A big enough buffer for the hmac_ctx.
 	cipher_ctx *cctx = NULL;
@@ -240,11 +238,11 @@ static uint64_t ecb_encrypt_common(cipher_algorithm algorithm, void *key, size_t
 		return 0;
 	}
 
-	return cipher_ecb_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_ecb_encrypt_final(cctx, in, in_size, out, out_size);
 }
 
-static uint64_t ecb_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *ciphertext, size_t ciphertext_size,
-								   void *plaintext, size_t plaintext_size, cipher_padding padding)
+static uint64_t ecb_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *in, size_t in_size, void *out,
+								   size_t out_size, cipher_padding padding)
 {
 	// A big enough buffer for the hmac_ctx.
 	cipher_ctx *cctx = NULL;
@@ -264,41 +262,35 @@ static uint64_t ecb_decrypt_common(cipher_algorithm algorithm, void *key, size_t
 		return 0;
 	}
 
-	return cipher_ecb_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_ecb_decrypt_final(cctx, in, in_size, out, out_size);
 }
 
-uint64_t aes128_ecb_encrypt(void *key, size_t key_size, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
-							cipher_padding padding)
+uint64_t aes128_ecb_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding)
 {
-	return ecb_encrypt_common(CIPHER_AES128, key, key_size, plaintext, plaintext_size, ciphertext, ciphertext_size, padding);
+	return ecb_encrypt_common(CIPHER_AES128, key, key_size, in, in_size, out, out_size, padding);
 }
 
-uint64_t aes128_ecb_decrypt(void *key, size_t key_size, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
-							cipher_padding padding)
+uint64_t aes128_ecb_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding)
 {
-	return ecb_decrypt_common(CIPHER_AES128, key, key_size, ciphertext, ciphertext_size, plaintext, plaintext_size, padding);
+	return ecb_decrypt_common(CIPHER_AES128, key, key_size, in, in_size, out, out_size, padding);
 }
 
-uint64_t aes192_ecb_encrypt(void *key, size_t key_size, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
-							cipher_padding padding)
+uint64_t aes192_ecb_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding)
 {
-	return ecb_encrypt_common(CIPHER_AES192, key, key_size, plaintext, plaintext_size, ciphertext, ciphertext_size, padding);
+	return ecb_encrypt_common(CIPHER_AES192, key, key_size, in, in_size, out, out_size, padding);
 }
 
-uint64_t aes192_ecb_decrypt(void *key, size_t key_size, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
-							cipher_padding padding)
+uint64_t aes192_ecb_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding)
 {
-	return ecb_decrypt_common(CIPHER_AES192, key, key_size, ciphertext, ciphertext_size, plaintext, plaintext_size, padding);
+	return ecb_decrypt_common(CIPHER_AES192, key, key_size, in, in_size, out, out_size, padding);
 }
 
-uint64_t aes256_ecb_encrypt(void *key, size_t key_size, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
-							cipher_padding padding)
+uint64_t aes256_ecb_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding)
 {
-	return ecb_encrypt_common(CIPHER_AES256, key, key_size, plaintext, plaintext_size, ciphertext, ciphertext_size, padding);
+	return ecb_encrypt_common(CIPHER_AES256, key, key_size, in, in_size, out, out_size, padding);
 }
 
-uint64_t aes256_ecb_decrypt(void *key, size_t key_size, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
-							cipher_padding padding)
+uint64_t aes256_ecb_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding)
 {
-	return ecb_decrypt_common(CIPHER_AES256, key, key_size, ciphertext, ciphertext_size, plaintext, plaintext_size, padding);
+	return ecb_decrypt_common(CIPHER_AES256, key, key_size, in, in_size, out, out_size, padding);
 }
