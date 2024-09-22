@@ -794,7 +794,7 @@ uint64_t cipher_cfb128_decrypt(cipher_ctx *cctx, cipher_padding padding, void *i
 static uint64_t cfb1_encrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
 							 void *out, size_t out_size)
 {
-	// A big enough buffer for the hmac_ctx.
+	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
@@ -818,7 +818,7 @@ static uint64_t cfb1_encrypt(cipher_algorithm algorithm, void *key, size_t key_s
 static uint64_t cfb1_decrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
 							 void *out, size_t out_size)
 {
-	// A big enough buffer for the hmac_ctx.
+	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
@@ -842,7 +842,7 @@ static uint64_t cfb1_decrypt(cipher_algorithm algorithm, void *key, size_t key_s
 static uint64_t cfb8_encrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
 							 void *out, size_t out_size)
 {
-	// A big enough buffer for the hmac_ctx.
+	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
@@ -866,7 +866,7 @@ static uint64_t cfb8_encrypt(cipher_algorithm algorithm, void *key, size_t key_s
 static uint64_t cfb8_decrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
 							 void *out, size_t out_size)
 {
-	// A big enough buffer for the hmac_ctx.
+	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
@@ -890,7 +890,7 @@ static uint64_t cfb8_decrypt(cipher_algorithm algorithm, void *key, size_t key_s
 static uint64_t cfb128_encrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
 							   void *out, size_t out_size, cipher_padding padding)
 {
-	// A big enough buffer for the hmac_ctx.
+	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
@@ -914,7 +914,7 @@ static uint64_t cfb128_encrypt(cipher_algorithm algorithm, void *key, size_t key
 static uint64_t cfb128_decrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
 							   void *out, size_t out_size, cipher_padding padding)
 {
-	// A big enough buffer for the hmac_ctx.
+	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 

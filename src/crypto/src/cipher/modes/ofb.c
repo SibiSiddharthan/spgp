@@ -140,7 +140,7 @@ uint64_t cipher_ofb_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *in
 static uint64_t ofb_common(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size,
 						   void *out, size_t out_size)
 {
-	// A big enough buffer for the hmac_ctx.
+	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
