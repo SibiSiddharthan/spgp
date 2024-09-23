@@ -12,6 +12,7 @@
 #include <test.h>
 
 // Refer RFC 3394: Advanced Encryption Standard (AES) Key Wrap Algorithm
+// Refer RFC 5649: Advanced Encryption Standard (AES) Key Wrap with Padding Algorithm
 
 int32_t aes128_kew_wrap_test_suite(void)
 {
@@ -121,7 +122,50 @@ int32_t aes256_kew_wrap_test_suite(void)
 	return status;
 }
 
+int32_t aes192_kew_wrap_pad_test_suite(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+	byte_t key[24];
+	byte_t plaintext[64];
+	byte_t ciphertext[64];
+
+	// ------------------------------------------------------------------------------------------------------------------------------------
+
+	hex_to_block(key, 24, "5840df6e29b02af1ab493b705bf16ea1ae8338f4dcc176a8");
+	hex_to_block(plaintext, 20, "c37b7e6492584340bed12207808941155068f738");
+
+	result = aes192_key_wrap_pad_encrypt(key, 24, plaintext, 20, ciphertext, 64);
+	status += CHECK_VALUE(result, 32);
+	status += CHECK_BLOCK(ciphertext, 32, "138bdeaa9b8fa7fc61f97742e72248ee5ae6ae5360d1ae6a5f54f373fa543b6a");
+
+	memset(plaintext, 0, 64);
+
+	result = aes192_key_wrap_pad_decrypt(key, 24, ciphertext, 32, plaintext, 64);
+	status += CHECK_VALUE(result, 20);
+	status += CHECK_BLOCK(plaintext, 20, "c37b7e6492584340bed12207808941155068f738");
+
+	// ------------------------------------------------------------------------------------------------------------------------------------
+
+	hex_to_block(key, 24, "5840df6e29b02af1ab493b705bf16ea1ae8338f4dcc176a8");
+	hex_to_block(plaintext, 7, "466f7250617369");
+
+	result = aes192_key_wrap_pad_encrypt(key, 24, plaintext, 7, ciphertext, 64);
+	status += CHECK_VALUE(result, 16);
+	status += CHECK_BLOCK(ciphertext, 16, "afbeb0f07dfbf5419200f2ccb50bb24f");
+
+	memset(plaintext, 0, 64);
+
+	result = aes192_key_wrap_pad_decrypt(key, 24, ciphertext, 16, plaintext, 64);
+	status += CHECK_VALUE(result, 7);
+	status += CHECK_BLOCK(plaintext, 7, "466f7250617369");
+
+	// ------------------------------------------------------------------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return aes128_kew_wrap_test_suite() + aes192_kew_wrap_test_suite() + aes256_kew_wrap_test_suite();
+	return aes128_kew_wrap_test_suite() + aes192_kew_wrap_test_suite() + aes256_kew_wrap_test_suite() + aes192_kew_wrap_pad_test_suite();
 }

@@ -10,6 +10,7 @@
 
 #include <cipher.h>
 #include <byteswap.h>
+#include <round.h>
 
 // See NIST SP 800-38F Recommendation for Block Cipher Modes of Operation: Methods for Key Wrapping
 
@@ -174,7 +175,7 @@ uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *in, size_t in_size,
 {
 	byte_t icv2[4] = {0xA6, 0x59, 0x59, 0xA6};
 	byte_t *material = NULL;
-	size_t padding_size = in_size % 8;
+	size_t padding_size = ROUND_UP(in_size, 8) - in_size;
 	size_t material_size = in_size + 4 + 4 + padding_size;
 	size_t pos = 0;
 
@@ -237,6 +238,11 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *in, size_t in_size,
 		return 0;
 	}
 
+	if (in_size % 8 != 0)
+	{
+		return 0;
+	}
+
 	if (in_size < 16)
 	{
 		return 0;
@@ -263,6 +269,7 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *in, size_t in_size,
 		iW(cctx, in, in_size, result);
 	}
 
+	// Check icv2
 	if (memcmp(result, icv2, 4) != 0)
 	{
 		goto finish;
@@ -271,6 +278,7 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *in, size_t in_size,
 	material_size = BSWAP_32(*(uint32_t *)&result[4]);
 	padding_size = 8 * ((in_size / 8) - 1) - material_size;
 
+	// Check padding
 	if (padding_size < 0 || padding_size > 7)
 	{
 		goto finish;
