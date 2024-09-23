@@ -79,6 +79,9 @@ cbc
 cfb
 ofb
 ctr
+
+#aead
+kw
 )
 
 crypto_hash_tests(
