@@ -11,6 +11,7 @@
 #include <cipher.h>
 #include <byteswap.h>
 #include <minmax.h>
+#include <ptr.h>
 #include <round.h>
 #include <xor.h>
 
@@ -21,6 +22,7 @@ static uint64_t generate_payload_blocks(byte_t *ptr, byte_t *nonce, size_t nonce
 {
 	size_t pos = 0;
 	byte_t flag = 0;
+	size_t payload_size_be = BSWAP_64(payload_size);
 
 	// Bit 6 is adata
 	flag |= (ad_size > 0) << 6;
@@ -38,7 +40,7 @@ static uint64_t generate_payload_blocks(byte_t *ptr, byte_t *nonce, size_t nonce
 	memcpy(ptr + pos, nonce, nonce_size);
 	pos += nonce_size;
 
-	memcpy(ptr + pos, &payload_size, q);
+	memcpy(ptr + pos, PTR_OFFSET(&payload_size_be, 8 - q), q);
 	pos += q;
 
 	// Associated data blocks
@@ -81,19 +83,20 @@ static uint64_t generate_payload_blocks(byte_t *ptr, byte_t *nonce, size_t nonce
 		// Pad with zeroes
 		if (pos % 16 != 0)
 		{
-			memset(ptr + pos, 0, pos % 16);
-			pos += (pos % 16);
+			memset(ptr + pos, 0, ROUND_UP(pos, 16) - pos);
+			pos = ROUND_UP(pos, 16);
 		}
 	}
 
 	// Payload
 	memcpy(ptr + pos, payload, payload_size);
+	pos += payload_size;
 
 	// Pad with zeroes
 	if (pos % 16 != 0)
 	{
-		memset(ptr + pos, 0, pos % 16);
-		pos += (pos % 16);
+		memset(ptr + pos, 0, ROUND_UP(pos, 16) - pos);
+		pos = ROUND_UP(pos, 16);
 	}
 
 	return pos;
@@ -107,13 +110,15 @@ static void generate_counter_blocks(byte_t *ptr, size_t counter_size, byte_t *no
 
 	for (uint64_t i = 0; i < count; ++i)
 	{
+		uint64_t i_be = BSWAP_64(i);
+
 		ptr[pos] = flag;
 		pos += 1;
 
 		memcpy(ptr + pos, nonce, nonce_size);
 		pos += nonce_size;
 
-		memcpy(ptr + pos, &i, q);
+		memcpy(ptr + pos, PTR_OFFSET(&i_be, 8 - q), q);
 		pos += q;
 	}
 }
@@ -130,6 +135,7 @@ static void generate_tag(cipher_ctx *cctx, void *in, size_t in_size, void *tag, 
 
 	for (size_t i = 1; i < count; ++i)
 	{
+		processed += 16;
 		XOR16(buffer, buffer, pin + processed);
 		cctx->_encrypt(cctx->_ctx, buffer, buffer);
 	}
@@ -148,6 +154,7 @@ static void encrypt_counters(cipher_ctx *cctx, void *in, void *out, size_t size)
 	for (size_t i = 0; i < count; ++i)
 	{
 		cctx->_encrypt(cctx->_ctx, pin + processed, pout + processed);
+		processed += 16;
 	}
 }
 
@@ -194,12 +201,6 @@ uint64_t cipher_ccm_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte
 		return 0;
 	}
 
-	// Invalid plaintext size
-	if (plaintext_size > (1ull << (8 * q)))
-	{
-		return 0;
-	}
-
 	// Allocate for blocks only.
 	blocks = malloc(blocks_size);
 
@@ -226,6 +227,7 @@ uint64_t cipher_ccm_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte
 		pout[i] = pin[i] ^ blocks[i + 16];
 	}
 
+	// First block is for the tag.
 	for (size_t i = 0; i < tag_size; ++i)
 	{
 		pout[i + plaintext_size] = tag[i] ^ blocks[i];
@@ -248,13 +250,14 @@ uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte
 	byte_t q = 0;
 
 	size_t expected_plaintext_size = ciphertext_size - tag_size;
-	size_t blocks_size = ROUND_UP(10 + ad_size, 16) + (2 * ROUND_UP(ciphertext_size, 16)) + 16;
+	size_t blocks_size = ROUND_UP(10 + ad_size, 16) + ROUND_UP(ciphertext_size, 16) + 16;
 	size_t counters_size = ROUND_UP(expected_plaintext_size, 16) + 16;
 	size_t payload_blocks_size = 0;
-	size_t plaintext_offset = blocks_size - ROUND_UP(ciphertext_size, 16);
+	size_t total_blocks_size = blocks_size + ROUND_UP(ciphertext_size, 16);
+	size_t plaintext_offset = blocks_size;
 
 	byte_t *pin = ciphertext;
-	byte_t *ptemp = blocks + plaintext_offset;
+	byte_t *ptemp = NULL;
 
 	if (cctx->block_size != 16)
 	{
@@ -288,12 +291,14 @@ uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte
 	}
 
 	// Allocate for blocks only.
-	blocks = malloc(blocks_size);
+	blocks = malloc(total_blocks_size);
 
 	if (blocks == NULL)
 	{
 		return 0;
 	}
+
+	ptemp = blocks + plaintext_offset;
 
 	// Generate counters
 	memset(blocks, 0, blocks_size);
@@ -303,7 +308,7 @@ uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, byte
 
 	for (size_t i = 0; i < tag_size; ++i)
 	{
-		actual_tag[i] = pin[ciphertext_size - 1 - i] ^ blocks[i];
+		actual_tag[i] = pin[(ciphertext_size - tag_size) + i] ^ blocks[i];
 	}
 
 	// Output plaintext to temporary.
