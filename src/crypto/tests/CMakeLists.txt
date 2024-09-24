@@ -81,6 +81,7 @@ ofb
 ctr
 
 #aead
+ccm
 kw
 )
 
