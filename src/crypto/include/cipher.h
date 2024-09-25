@@ -53,7 +53,7 @@ typedef struct _cipher_ctx
 		} eax;
 	};
 
-	void *_ctx;
+	void *_key;
 	void (*_encrypt)(void *, void *, void *);
 	void (*_decrypt)(void *, void *, void *);
 } cipher_ctx;

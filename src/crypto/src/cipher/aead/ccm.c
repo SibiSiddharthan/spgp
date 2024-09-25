@@ -131,13 +131,13 @@ static void generate_tag(cipher_ctx *cctx, void *in, size_t in_size, void *tag, 
 	byte_t buffer[16];
 	byte_t *pin = in;
 
-	cctx->_encrypt(cctx->_ctx, pin, buffer);
+	cctx->_encrypt(cctx->_key, pin, buffer);
 
 	for (size_t i = 1; i < count; ++i)
 	{
 		processed += 16;
 		XOR16(buffer, buffer, pin + processed);
-		cctx->_encrypt(cctx->_ctx, buffer, buffer);
+		cctx->_encrypt(cctx->_key, buffer, buffer);
 	}
 
 	memcpy(tag, buffer, MIN(tag_size, 16));
@@ -153,7 +153,7 @@ static void encrypt_counters(cipher_ctx *cctx, void *in, void *out, size_t size)
 
 	for (size_t i = 0; i < count; ++i)
 	{
-		cctx->_encrypt(cctx->_ctx, pin + processed, pout + processed);
+		cctx->_encrypt(cctx->_key, pin + processed, pout + processed);
 		processed += 16;
 	}
 }

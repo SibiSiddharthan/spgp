@@ -32,7 +32,7 @@ static void W(cipher_ctx *cctx, byte_t *material, size_t size, byte_t *result)
 		plaintext[0] = A;
 		plaintext[1] = R[1];
 
-		cctx->_encrypt(cctx->_ctx, plaintext, ciphertext);
+		cctx->_encrypt(cctx->_key, plaintext, ciphertext);
 
 		for (uint64_t i = 1; i <= n - 2; ++i)
 		{
@@ -65,7 +65,7 @@ static void iW(cipher_ctx *cctx, byte_t *material, size_t size, byte_t *result)
 		ciphertext[0] = A ^ BSWAP_64(t);
 		ciphertext[1] = R[n - 1];
 
-		cctx->_decrypt(cctx->_ctx, ciphertext, plaintext);
+		cctx->_decrypt(cctx->_key, ciphertext, plaintext);
 
 		for (uint64_t i = n - 2; i >= 1; --i)
 		{
@@ -211,7 +211,7 @@ uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *in, size_t in_size,
 
 	if (in_size < 8)
 	{
-		cctx->_encrypt(cctx->_ctx, material, out);
+		cctx->_encrypt(cctx->_key, material, out);
 	}
 	else
 	{
@@ -262,7 +262,7 @@ uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *in, size_t in_size,
 
 	if (in_size == 16)
 	{
-		cctx->_decrypt(cctx->_ctx, in, result);
+		cctx->_decrypt(cctx->_key, in, result);
 	}
 	else
 	{

@@ -23,7 +23,7 @@ static inline uint64_t cipher_ofb_update_core(cipher_ctx *cctx, void *in, void *
 
 	while ((processed + block_size) <= size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_key, cctx->buffer, cctx->buffer);
 		XOR8_N(pout + processed, pin + processed, cctx->buffer, block_size);
 
 		processed += block_size;
@@ -33,7 +33,7 @@ static inline uint64_t cipher_ofb_update_core(cipher_ctx *cctx, void *in, void *
 
 	if (remaining > 0)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, cctx->buffer);
+		cctx->_encrypt(cctx->_key, cctx->buffer, cctx->buffer);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{

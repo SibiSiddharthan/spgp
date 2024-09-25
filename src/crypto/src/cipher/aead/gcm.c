@@ -103,7 +103,7 @@ uint64_t gctr_update(cipher_ctx *cctx, void *in, void *out, size_t size)
 
 	while ((processed + block_size) <= size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->gcm.icb, buffer);
+		cctx->_encrypt(cctx->_key, cctx->gcm.icb, buffer);
 		XOR16(pout + processed, pin + processed, buffer);
 
 		++counter;
@@ -116,7 +116,7 @@ uint64_t gctr_update(cipher_ctx *cctx, void *in, void *out, size_t size)
 
 	if (remaining > 0)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->gcm.icb, buffer);
+		cctx->_encrypt(cctx->_key, cctx->gcm.icb, buffer);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{
@@ -147,7 +147,7 @@ static cipher_ctx *cipher_gcm_init_common(cipher_ctx *cctx, void *iv, size_t iv_
 	}
 
 	// Initialize H
-	cctx->_encrypt(cctx->_ctx, zero, cctx->gcm.h);
+	cctx->_encrypt(cctx->_key, zero, cctx->gcm.h);
 
 	// Initialize J
 	if (iv_size == 12)
@@ -259,7 +259,7 @@ uint64_t cipher_gcm_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 
 	ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 
-	cctx->_encrypt(cctx->_ctx, cctx->gcm.j, cctx->gcm.j);
+	cctx->_encrypt(cctx->_key, cctx->gcm.j, cctx->gcm.j);
 	XOR16(buffer, buffer, cctx->gcm.j);
 
 	memcpy(tag, buffer, MIN(tag_size, 16));
@@ -337,7 +337,7 @@ uint64_t cipher_gcm_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 
 	ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 
-	cctx->_encrypt(cctx->_ctx, cctx->gcm.j, cctx->gcm.j);
+	cctx->_encrypt(cctx->_key, cctx->gcm.j, cctx->gcm.j);
 	XOR16(buffer, buffer, cctx->gcm.j);
 
 	if (memcmp(tag, buffer, tag_size) != 0)

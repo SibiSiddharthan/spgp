@@ -28,7 +28,7 @@ static inline uint64_t cipher_ctr_update_core(cipher_ctx *cctx, void *in, void *
 
 	while ((processed + block_size) <= size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, temp);
+		cctx->_encrypt(cctx->_key, cctx->buffer, temp);
 		XOR8_N(pout + processed, pin + processed, temp, block_size);
 
 		++counter;
@@ -41,7 +41,7 @@ static inline uint64_t cipher_ctr_update_core(cipher_ctx *cctx, void *in, void *
 
 	if (remaining > 0)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->buffer, temp);
+		cctx->_encrypt(cctx->_key, cctx->buffer, temp);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{

@@ -44,19 +44,19 @@ static void omac(cipher_ctx *cctx, byte_t mac[16], uint64_t n, void *message, si
 	m[0] = 0;
 	m[1] = BSWAP_64(n);
 
-	cctx->_encrypt(cctx->_ctx, mac, mac);
+	cctx->_encrypt(cctx->_key, mac, mac);
 
 	for (processed = 0; processed < (size - 16); processed += 16)
 	{
 		XOR16(mac, mac, in + processed);
-		cctx->_encrypt(cctx->_ctx, mac, mac);
+		cctx->_encrypt(cctx->_key, mac, mac);
 	}
 
 	if (size % 16 == 0)
 	{
 		// Last block
 		XOR16(mac, cctx->eax.b, in + processed);
-		cctx->_encrypt(cctx->_ctx, mac, mac);
+		cctx->_encrypt(cctx->_key, mac, mac);
 	}
 	else
 	{
@@ -68,7 +68,7 @@ static void omac(cipher_ctx *cctx, byte_t mac[16], uint64_t n, void *message, si
 
 		// Last block
 		XOR16(mac, cctx->eax.p, buffer);
-		cctx->_encrypt(cctx->_ctx, mac, mac);
+		cctx->_encrypt(cctx->_key, mac, mac);
 	}
 }
 
@@ -88,11 +88,11 @@ static uint64_t ectr_update(cipher_ctx *cctx, void *in, void *out, size_t size)
 
 	while (processed < size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->eax.n, buffer);
+		cctx->_encrypt(cctx->_key, cctx->eax.n, buffer);
 		XOR16(pout + processed, pin + processed, buffer);
 
 		XOR16(cctx->eax.c, cctx->eax.c, pout + processed);
-		cctx->_encrypt(cctx->_ctx, cctx->eax.c, cctx->eax.c);
+		cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
 
 		++counter;
 		*pc = BSWAP_32(counter);
@@ -120,11 +120,11 @@ uint64_t ectr_final(cipher_ctx *cctx, void *in, void *out, size_t size)
 
 	while (processed + (2 * block_size) <= size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->eax.n, buffer);
+		cctx->_encrypt(cctx->_key, cctx->eax.n, buffer);
 		XOR16(pout + processed, pin + processed, buffer);
 
 		XOR16(cctx->eax.c, cctx->eax.c, pout + processed);
-		cctx->_encrypt(cctx->_ctx, cctx->eax.c, cctx->eax.c);
+		cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
 
 		++counter;
 		*pc = BSWAP_32(counter);
@@ -136,15 +136,15 @@ uint64_t ectr_final(cipher_ctx *cctx, void *in, void *out, size_t size)
 
 	if (remaining == block_size)
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->eax.n, buffer);
+		cctx->_encrypt(cctx->_key, cctx->eax.n, buffer);
 		XOR16(pout + processed, pin + processed, buffer);
 
 		XOR16(cctx->eax.c, cctx->eax.b, pout + processed);
-		cctx->_encrypt(cctx->_ctx, cctx->eax.c, cctx->eax.c);
+		cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
 	}
 	else
 	{
-		cctx->_encrypt(cctx->_ctx, cctx->eax.n, buffer);
+		cctx->_encrypt(cctx->_key, cctx->eax.n, buffer);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{
@@ -156,7 +156,7 @@ uint64_t ectr_final(cipher_ctx *cctx, void *in, void *out, size_t size)
 		buffer[remaining] = 0x80;
 
 		XOR16(cctx->eax.c, cctx->eax.p, buffer);
-		cctx->_encrypt(cctx->_ctx, cctx->eax.c, cctx->eax.c);
+		cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
 	}
 
 	processed += remaining;
@@ -176,7 +176,7 @@ static cipher_ctx *cipher_eax_init_common(cipher_ctx *cctx, byte_t tag_size, voi
 	}
 
 	// Initialize L
-	cctx->_encrypt(cctx->_ctx, buffer, l);
+	cctx->_encrypt(cctx->_key, buffer, l);
 
 	// Initialize B
 	double_block(cctx->eax.b, l);
@@ -192,7 +192,7 @@ static cipher_ctx *cipher_eax_init_common(cipher_ctx *cctx, byte_t tag_size, voi
 
 	// Initialize C
 	cctx->eax.c[15] = 0x2;
-	cctx->_encrypt(cctx->_ctx, cctx->eax.c, cctx->eax.c);
+	cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
 
 	cctx->eax.tag_size = tag_size;
 

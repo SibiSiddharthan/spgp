@@ -23,7 +23,7 @@ static inline uint64_t cipher_ecb_encrypt_core(cipher_ctx *cctx, void *in, void 
 
 	while ((processed + block_size) <= size)
 	{
-		cctx->_encrypt(cctx->_ctx, pin + processed, pout + processed);
+		cctx->_encrypt(cctx->_key, pin + processed, pout + processed);
 		processed += block_size;
 	}
 
@@ -40,7 +40,7 @@ static inline uint64_t cipher_ecb_decrypt_core(cipher_ctx *cctx, void *in, void 
 
 	while ((processed + block_size) <= size)
 	{
-		cctx->_decrypt(cctx->_ctx, pin + processed, pout + processed);
+		cctx->_decrypt(cctx->_key, pin + processed, pout + processed);
 		processed += block_size;
 	}
 

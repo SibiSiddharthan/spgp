@@ -59,27 +59,27 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 	{
 	// AES
 	case CIPHER_AES128:
-		return aes_key_init(cctx->_ctx, sizeof(aes_key), AES128, key, key_size);
+		return aes_key_init(cctx->_key, sizeof(aes_key), AES128, key, key_size);
 	case CIPHER_AES192:
-		return aes_key_init(cctx->_ctx, sizeof(aes_key), AES192, key, key_size);
+		return aes_key_init(cctx->_key, sizeof(aes_key), AES192, key, key_size);
 	case CIPHER_AES256:
-		return aes_key_init(cctx->_ctx, sizeof(aes_key), AES256, key, key_size);
+		return aes_key_init(cctx->_key, sizeof(aes_key), AES256, key, key_size);
 
 	// ARIA
 	case CIPHER_ARIA128:
-		return aria_key_init(cctx->_ctx, sizeof(aria_key), ARIA128, key, key_size);
+		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA128, key, key_size);
 	case CIPHER_ARIA192:
-		return aria_key_init(cctx->_ctx, sizeof(aria_key), ARIA192, key, key_size);
+		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA192, key, key_size);
 	case CIPHER_ARIA256:
-		return aria_key_init(cctx->_ctx, sizeof(aria_key), ARIA256, key, key_size);
+		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA256, key, key_size);
 
 	// CAMELLIA
 	case CIPHER_CAMELLIA128:
-		return camellia_key_init(cctx->_ctx, sizeof(camellia_key), CAMELLIA128, key, key_size);
+		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA128, key, key_size);
 	case CIPHER_CAMELLIA192:
-		return camellia_key_init(cctx->_ctx, sizeof(camellia_key), CAMELLIA192, key, key_size);
+		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA192, key, key_size);
 	case CIPHER_CAMELLIA256:
-		return camellia_key_init(cctx->_ctx, sizeof(camellia_key), CAMELLIA256, key, key_size);
+		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA256, key, key_size);
 
 	// CHACHA
 	// case CIPHER_CHACHA20:
@@ -102,16 +102,16 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 			return NULL;
 		}
 
-		return tdes_key_init(cctx->_ctx, sizeof(tdes_key), k1, k2, k3, false);
+		return tdes_key_init(cctx->_key, sizeof(tdes_key), k1, k2, k3, false);
 	}
 
 	// TWOFISH
 	case CIPHER_TWOFISH128:
-		return twofish_key_init(cctx->_ctx, sizeof(twofish_key), TWOFISH128, key, key_size);
+		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH128, key, key_size);
 	case CIPHER_TWOFISH192:
-		return twofish_key_init(cctx->_ctx, sizeof(twofish_key), TWOFISH192, key, key_size);
+		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH192, key, key_size);
 	case CIPHER_TWOFISH256:
-		return twofish_key_init(cctx->_ctx, sizeof(twofish_key), TWOFISH256, key, key_size);
+		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH256, key, key_size);
 	}
 
 	return NULL;
@@ -217,7 +217,7 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 	cctx->block_size = block_size;
 	cctx->ctx_size = required_size;
 
-	cctx->_ctx = _ctx;
+	cctx->_key = _ctx;
 	cctx->_encrypt = _encrypt;
 	cctx->_decrypt = _decrypt;
 
@@ -261,7 +261,7 @@ void cipher_delete(cipher_ctx *cctx)
 	// Set these to invalid values.
 	cctx->algorithm = -1;
 
-	memset(cctx->_ctx, 0, cctx->ctx_size);
+	memset(cctx->_key, 0, cctx->ctx_size);
 	free(cctx);
 }
 
