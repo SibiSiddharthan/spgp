@@ -360,3 +360,78 @@ uint64_t cipher_gcm_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *as
 
 	return cipher_gcm_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size, tag, tag_size);
 }
+
+static uint64_t gcm_ecnrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data,
+								   size_t ad_size, void *in, size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_gcm_encrypt(cctx, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag, tag_size);
+}
+
+static uint64_t gcm_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data,
+								   size_t ad_size, void *in, size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_gcm_decrypt(cctx, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag, tag_size);
+}
+
+uint64_t aes128_gcm_encrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	return gcm_ecnrypt_common(CIPHER_AES128, key, key_size, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
+}
+
+uint64_t aes128_gcm_decrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	return gcm_decrypt_common(CIPHER_AES128, key, key_size, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
+}
+
+uint64_t aes192_gcm_encrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	return gcm_ecnrypt_common(CIPHER_AES192, key, key_size, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
+}
+
+uint64_t aes192_gcm_decrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	return gcm_decrypt_common(CIPHER_AES192, key, key_size, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
+}
+
+uint64_t aes256_gcm_encrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	return gcm_ecnrypt_common(CIPHER_AES256, key, key_size, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
+}
+uint64_t aes256_gcm_decrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	return gcm_decrypt_common(CIPHER_AES256, key, key_size, iv, iv_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
+}

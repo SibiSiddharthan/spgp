@@ -295,6 +295,22 @@ uint64_t aes192_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size
 uint64_t aes256_ctr_encrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t aes256_ctr_decrypt(void *key, size_t key_size, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size);
 
+// AES-GCM
+uint64_t aes128_gcm_encrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size);
+uint64_t aes128_gcm_decrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size);
+
+uint64_t aes192_gcm_encrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size);
+uint64_t aes192_gcm_decrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size);
+
+uint64_t aes256_gcm_encrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size);
+uint64_t aes256_gcm_decrypt(void *key, size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, size_t tag_size);
+
 // AES-CCM
 uint64_t aes128_ccm_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
 							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
