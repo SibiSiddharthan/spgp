@@ -114,7 +114,7 @@ static inline void SHL128_1(byte_t buffer[16])
 	uint64_t *t1 = (uint64_t *)&buffer[0];
 	uint64_t *t2 = (uint64_t *)&buffer[8];
 
-	*t1 = (BSWAP_64(*t1) << 1 | (*t2 & 0x1));
+	*t1 = (BSWAP_64(*t1) << 1 | ((*t2 & 0x80) ? 0x01 : 0));
 	*t2 = BSWAP_64(*t2) << 1;
 
 	*t1 = BSWAP_64(*t1);
