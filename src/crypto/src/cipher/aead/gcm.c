@@ -22,37 +22,49 @@ static inline void block_multiplication(uint64_t x[2], uint64_t y[2])
 	const byte_t R[16] = {0xE1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 	uint64_t *r = (uint64_t *)R;
-
 	uint64_t z[2], v[2];
 
 	z[0] = 0;
 	z[1] = 0;
 
-	v[0] = BSWAP_64(x[0]);
-	v[1] = BSWAP_64(x[1]);
+	v[0] = x[0];
+	v[1] = x[1];
 
 	for (uint8_t i = 0; i < 128; ++i)
 	{
-		if (y[i / 64] & (1ull << i % 64))
+		byte_t a, b;
+
+		if (y[i / 64] & (1ull << (7 - (i % 8) + (i / 8) * 8)))
 		{
 			z[0] ^= v[0];
 			z[1] ^= v[1];
 		}
 
-		if (v[0] & 0x1)
+		a = v[0] >> 56;
+		b = v[1] >> 56;
+
+		if (b & 0x1)
 		{
-			v[0] = ((v[0] >> 1) | ((v[1] & 0x1) << 63)) ^ r[0];
-			v[1] = (v[1] >> 1) ^ r[1];
+			v[1] = (BSWAP_64(v[1]) >> 1) | ((a & 0x1) ? 0x8000000000000000 : 0);
+			v[0] = BSWAP_64(v[0]) >> 1;
+
+			v[0] = BSWAP_64(v[0]);
+			v[1] = BSWAP_64(v[1]);
+
+			v[0] ^= r[0];
 		}
 		else
 		{
-			v[0] = (v[0] >> 1) | ((v[1] & 0x1) << 63);
-			v[1] = v[1] >> 1;
+			v[1] = (BSWAP_64(v[1]) >> 1) | ((a & 0x1) ? 0x8000000000000000 : 0);
+			v[0] = BSWAP_64(v[0]) >> 1;
+
+			v[0] = BSWAP_64(v[0]);
+			v[1] = BSWAP_64(v[1]);
 		}
 	}
 
-	x[0] = BSWAP_64(z[0]);
-	x[1] = BSWAP_64(z[1]);
+	x[0] = z[0];
+	x[1] = z[1];
 }
 
 void ghash(void *state, void *key, void *data, size_t size)
@@ -66,17 +78,8 @@ void ghash(void *state, void *key, void *data, size_t size)
 
 	while (processed < size)
 	{
-
-		uint64_t z[2], v[2];
-
 		y[0] ^= x[0];
 		y[1] ^= x[1];
-
-		z[0] = 0;
-		z[1] = 0;
-
-		v[0] = BSWAP_64(y[0]);
-		v[1] = BSWAP_64(y[1]);
 
 		block_multiplication(y, h);
 
@@ -140,11 +143,7 @@ static cipher_ctx *cipher_gcm_init_common(cipher_ctx *cctx, void *iv, size_t iv_
 		return NULL;
 	}
 
-	// Check IV size
-	if ((iv_size < 12 || iv_size > 16) && iv_size != 8 && iv_size != 4)
-	{
-		return NULL;
-	}
+	memset(&cctx->gcm, 0, sizeof(cctx->gcm));
 
 	// Initialize H
 	cctx->_encrypt(cctx->_key, zero, cctx->gcm.h);
@@ -170,7 +169,7 @@ static cipher_ctx *cipher_gcm_init_common(cipher_ctx *cctx, void *iv, size_t iv_
 		}
 
 		pb[0] = 0;
-		pb[1] = BSWAP_64(iv_size);
+		pb[1] = BSWAP_64(iv_size * 8);
 
 		ghash(cctx->gcm.j, cctx->gcm.h, buffer, 16);
 	}
@@ -254,17 +253,17 @@ uint64_t cipher_gcm_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 		ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 	}
 
-	pb[0] = BSWAP_64(cctx->gcm.ad_size);
-	pb[1] = BSWAP_64(cctx->gcm.data_size);
+	pb[0] = BSWAP_64(cctx->gcm.ad_size * 8);
+	pb[1] = BSWAP_64(cctx->gcm.data_size * 8);
 
 	ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 
 	cctx->_encrypt(cctx->_key, cctx->gcm.j, cctx->gcm.j);
-	XOR16(buffer, buffer, cctx->gcm.j);
+	XOR16(buffer, cctx->gcm.s, cctx->gcm.j);
 
 	memcpy(tag, buffer, MIN(tag_size, 16));
 
-	return 0;
+	return result;
 }
 
 uint64_t cipher_gcm_encrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *associated_data, size_t ad_size, void *plaintext,
@@ -332,13 +331,13 @@ uint64_t cipher_gcm_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 		ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 	}
 
-	pb[0] = BSWAP_64(cctx->gcm.ad_size);
-	pb[1] = BSWAP_64(cctx->gcm.data_size);
+	pb[0] = BSWAP_64(cctx->gcm.ad_size * 8);
+	pb[1] = BSWAP_64(cctx->gcm.data_size * 8);
 
 	ghash(cctx->gcm.s, cctx->gcm.h, buffer, block_size);
 
 	cctx->_encrypt(cctx->_key, cctx->gcm.j, cctx->gcm.j);
-	XOR16(buffer, buffer, cctx->gcm.j);
+	XOR16(buffer, cctx->gcm.s, cctx->gcm.j);
 
 	if (memcmp(tag, buffer, tag_size) != 0)
 	{
