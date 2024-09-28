@@ -311,3 +311,79 @@ uint64_t cipher_eax_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size
 
 	return cipher_eax_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
+
+static uint64_t eax_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size,
+								   void *header, size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_eax_encrypt(cctx, tag_size, nonce, nonce_size, header, header_size, in, in_size, out, out_size);
+}
+
+static uint64_t eax_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size,
+								   void *header, size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	// A big enough buffer for the cipher_ctx.
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	return cipher_eax_decrypt(cctx, tag_size, nonce, nonce_size, header, header_size, in, in_size, out, out_size);
+}
+
+uint64_t aes128_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return eax_encrypt_common(CIPHER_AES128, key, key_size, tag_size, nonce, nonce_size, header, header_size, in, in_size, out,
+							  out_size);
+}
+
+uint64_t aes128_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return eax_decrypt_common(CIPHER_AES128, key, key_size, tag_size, nonce, nonce_size, header, header_size, in, in_size, out,
+							  out_size);
+}
+
+uint64_t aes192_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return eax_encrypt_common(CIPHER_AES192, key, key_size, tag_size, nonce, nonce_size, header, header_size, in, in_size, out,
+							  out_size);
+}
+
+uint64_t aes192_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return eax_decrypt_common(CIPHER_AES192, key, key_size, tag_size, nonce, nonce_size, header, header_size, in, in_size, out,
+							  out_size);
+}
+
+uint64_t aes256_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return eax_encrypt_common(CIPHER_AES256, key, key_size, tag_size, nonce, nonce_size, header, header_size, in, in_size, out,
+							  out_size);
+}
+
+uint64_t aes256_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	return eax_decrypt_common(CIPHER_AES256, key, key_size, tag_size, nonce, nonce_size, header, header_size, in, in_size, out,
+							  out_size);
+}

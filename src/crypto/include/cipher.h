@@ -346,4 +346,20 @@ uint32_t aes192_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_
 uint32_t aes256_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
 uint32_t aes256_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
 
+// AES-EAX
+uint64_t aes128_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes128_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size);
+
+uint64_t aes192_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes192_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size);
+
+uint64_t aes256_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes256_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header,
+							size_t header_size, void *in, size_t in_size, void *out, size_t out_size);
+
 #endif
