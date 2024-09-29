@@ -35,13 +35,7 @@ bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 
 	if (obctx == NULL)
 	{
-		size_t ctx_size = 0;
-
-		ctx_size += bignum_size(op_bits);                                                  // a + b
-		ctx_size += op_bits > m->bits ? bignum_size(op_bits - m->bits) : bignum_size(1);   // (a+b)/m
-		ctx_size += (CEIL_DIV(op_bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3; // Scratch for division
-
-		bctx = bignum_ctx_new(ctx_size);
+		bctx = bignum_ctx_new(0);
 
 		if (bctx == NULL)
 		{
@@ -88,13 +82,7 @@ bignum_t *bignum_modsub(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 
 	if (obctx == NULL)
 	{
-		size_t ctx_size = 0;
-
-		ctx_size += bignum_size(op_bits);                                                  // a - b
-		ctx_size += op_bits > m->bits ? bignum_size(op_bits - m->bits) : bignum_size(1);   // (a-b)/m
-		ctx_size += (CEIL_DIV(op_bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3; // Scratch for division
-
-		bctx = bignum_ctx_new(ctx_size);
+		bctx = bignum_ctx_new(0);
 
 		if (bctx == NULL)
 		{
@@ -141,13 +129,7 @@ bignum_t *bignum_modmul(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
 
 	if (obctx == NULL)
 	{
-		size_t ctx_size = 0;
-
-		ctx_size += bignum_size(op_bits);                                                  // a * b
-		ctx_size += op_bits > m->bits ? bignum_size(op_bits - m->bits) : bignum_size(1);   // (a*b)/m
-		ctx_size += (CEIL_DIV(op_bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3; // Scratch for division
-
-		bctx = bignum_ctx_new(ctx_size);
+		bctx = bignum_ctx_new(0);
 
 		if (bctx == NULL)
 		{
@@ -194,13 +176,7 @@ bignum_t *bignum_modsqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 
 	if (obctx == NULL)
 	{
-		size_t ctx_size = 0;
-
-		ctx_size += bignum_size(op_bits);                                                  // a * a
-		ctx_size += op_bits > m->bits ? bignum_size(op_bits - m->bits) : bignum_size(1);   // (a*a)/m
-		ctx_size += (CEIL_DIV(op_bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3; // Scratch for division
-
-		bctx = bignum_ctx_new(ctx_size);
+		bctx = bignum_ctx_new(0);
 
 		if (bctx == NULL)
 		{
@@ -253,13 +229,7 @@ bignum_t *bignum_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *p,
 
 	if (obctx == NULL)
 	{
-		size_t ctx_size = 0;
-
-		ctx_size += bignum_size(op_bits);                                                  // a * a
-		ctx_size += op_bits > m->bits ? bignum_size(op_bits - m->bits) : bignum_size(1);   // (a*a)/m
-		ctx_size += (CEIL_DIV(op_bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3; // Scratch for division
-
-		bctx = bignum_ctx_new(ctx_size);
+		bctx = bignum_ctx_new(0);
 
 		if (bctx == NULL)
 		{
@@ -327,13 +297,7 @@ bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignu
 
 	if (obctx == NULL)
 	{
-		size_t ctx_size = 0;
-
-		ctx_size += bignum_size(op_bits);                                                  // a * a
-		ctx_size += op_bits > m->bits ? bignum_size(op_bits - m->bits) : bignum_size(1);   // (a*a)/m
-		ctx_size += (CEIL_DIV(op_bits, BIGNUM_BITS_PER_WORD) + 1) * sizeof(bn_word_t) * 3; // Scratch for division
-
-		bctx = bignum_ctx_new(ctx_size);
+		bctx = bignum_ctx_new(0);
 
 		if (bctx == NULL)
 		{
