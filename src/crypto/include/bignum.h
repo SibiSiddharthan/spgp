@@ -9,6 +9,7 @@
 #define CRYPTO_BIGNUM_H
 
 #include <types.h>
+#include <minmax.h>
 #include <round.h>
 
 #define BIGNUM_WORD_SIZE     8
@@ -35,7 +36,7 @@ typedef struct _bignum_ctx bignum_ctx;
 
 inline size_t bignum_size(uint32_t bits)
 {
-	return sizeof(bignum_t) + CEIL_DIV(bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE;
+	return sizeof(bignum_t) + CEIL_DIV(MAX(bits, 1), BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE;
 }
 
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits);

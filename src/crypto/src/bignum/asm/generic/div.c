@@ -63,8 +63,6 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 	uint32_t dv_high = dv32[dv32_words - 1];
 	uint32_t shift = 31 - bsr_32(dv_high);
 
-	dv_high <<= shift;
-
 	if (shift != 0)
 	{
 		uint32_t carry;
@@ -90,6 +88,8 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 
 			// NOTE : Last carry should be zero.
 		}
+
+		dv_high = dv32_norm[dv32_words - 1];
 	}
 	else
 	{
@@ -128,7 +128,7 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 		{
 			while (carry != 1)
 			{
-				carry = bignum_add_words((bn_word_t *)dd32_norm, (bn_word_t *)dd32_norm, (bn_word_t *)dv32, word_count);
+				carry = bignum_add_words((bn_word_t *)dd32_norm, (bn_word_t *)dd32_norm, (bn_word_t *)dv32_norm, word_count);
 				--qe;
 			}
 		}
