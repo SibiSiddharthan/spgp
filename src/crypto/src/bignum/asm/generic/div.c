@@ -126,9 +126,12 @@ void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q,
 
 		if (borrow > 0)
 		{
+			memset(temp, 0, (dd32_words + 1) * sizeof(uint32_t));
+			memcpy(temp + i, dv32_norm, dv32_words * sizeof(uint32_t));
+
 			while (carry != 1)
 			{
-				carry = bignum_add_words((bn_word_t *)dd32_norm, (bn_word_t *)dd32_norm, (bn_word_t *)dv32_norm, word_count);
+				carry = bignum_add_words((bn_word_t *)dd32_norm, (bn_word_t *)dd32_norm, (bn_word_t *)temp, word_count);
 				--qe;
 			}
 		}
