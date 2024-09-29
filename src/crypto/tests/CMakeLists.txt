@@ -63,6 +63,7 @@ endfunction()
 crypto_bignum_tests(
 arithmetic
 basic
+mod
 )
 
 crypto_cipher_tests(
