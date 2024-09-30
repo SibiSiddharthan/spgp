@@ -24,7 +24,7 @@ static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32
 	a = bignum_ctx_allocate_bignum(bctx, n->bits);
 	d = bignum_ctx_allocate_bignum(bctx, n->bits);
 
-	bignum_copy(nm1, bignum_size(n->bits), n);
+	bignum_copy(nm1, n);
 	bignum_decrement(nm1->words, BIGNUM_WORD_COUNT(nm1));
 
 	k = bignum_ctz(nm1);

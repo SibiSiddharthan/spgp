@@ -79,21 +79,22 @@ void bignum_delete(bignum_t *bn)
 	free(bn);
 }
 
-bignum_t *bignum_copy(void *ptr, size_t size, bignum_t *bn)
+bignum_t *bignum_copy(bignum_t *dst_bn, bignum_t *src_bn)
 {
-	bignum_t *bn2 = ptr;
+	size_t copy_size = BIGNUM_WORD_COUNT(src_bn) * BIGNUM_WORD_SIZE;
 
-	if (size < bignum_size(bn->bits))
+	if (dst_bn->size < copy_size)
 	{
 		return NULL;
 	}
 
-	memcpy(bn2->words, bn->words, bn2->size);
+	memset(dst_bn->words, 0, dst_bn->size);
+	memcpy(dst_bn->words, src_bn->words, copy_size);
 
-	bn2->bits = bn->bits;
-	bn2->sign = bn->sign;
+	dst_bn->bits = src_bn->bits;
+	dst_bn->sign = src_bn->sign;
 
-	return bn2;
+	return dst_bn;
 }
 
 bignum_t *bignum_dup(bignum_ctx *bctx, bignum_t *bn)
@@ -114,7 +115,7 @@ bignum_t *bignum_dup(bignum_ctx *bctx, bignum_t *bn)
 		return NULL;
 	}
 
-	memcpy(bn2->words, bn->words, bn2->size);
+	memcpy(bn2->words, bn->words, bn->size);
 
 	bn2->bits = bn->bits;
 	bn2->sign = bn->sign;

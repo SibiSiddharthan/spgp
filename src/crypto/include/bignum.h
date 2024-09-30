@@ -41,7 +41,7 @@ inline size_t bignum_size(uint32_t bits)
 
 bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits);
 bignum_t *bignum_new(uint32_t bits);
-bignum_t *bignum_copy(void *ptr, size_t size, bignum_t *bn);
+bignum_t *bignum_copy(bignum_t *dst_bn, bignum_t *src_bn);
 bignum_t *bignum_dup(bignum_ctx *bctx, bignum_t *bn);
 bignum_t *bignum_resize(bignum_t *bn, uint32_t bits);
 void bignum_delete(bignum_t *bn);

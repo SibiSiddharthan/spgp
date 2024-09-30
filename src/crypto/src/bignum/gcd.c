@@ -45,7 +45,7 @@ bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
 		b = r;
 	}
 
-	gcd = bignum_copy(gcd, sizeof(bignum_t) + gcd->size, a);
+	gcd = bignum_copy(gcd, a);
 	gcd->sign = 1;
 
 	bignum_ctx_end(bctx);
@@ -101,7 +101,7 @@ bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bignum_t *v
 		v = bignum_sub(v, t, v);
 	}
 
-	gcd = bignum_copy(gcd, sizeof(bignum_t) + gcd->size, a);
+	gcd = bignum_copy(gcd, a);
 	gcd->sign = 1;
 
 	return gcd;
@@ -300,7 +300,7 @@ bignum_t *bignum_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 
 		// GCD is always positive.
-		bignum_copy(r, sizeof(bignum_t) + r->size, (bignum_cmp_abs(a, b) > 0) ? a : b);
+		bignum_copy(r, (bignum_cmp_abs(a, b) > 0) ? a : b);
 		r->sign = 1;
 
 		return r;
@@ -352,13 +352,13 @@ int32_t bignum_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 
 		if (cmp > 0)
 		{
-			bignum_copy(r, sizeof(bignum_t) + r->size, a);
+			bignum_copy(r, a);
 			bignum_zero(v);
 			bignum_one(u);
 		}
 		else if (cmp < 0)
 		{
-			bignum_copy(r, sizeof(bignum_t) + r->size, b);
+			bignum_copy(r, b);
 			bignum_zero(u);
 			bignum_one(v);
 		}
