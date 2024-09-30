@@ -57,7 +57,7 @@ int32_t bignum_divmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bignum_t *q,
 		if (quotient_sign > 0)
 		{
 			bignum_zero(q);
-			bignum_copy(r, sizeof(bignum_t) + r->size, dd);
+			bignum_copy(r, dd);
 		}
 		else
 		{
@@ -235,7 +235,7 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 	if (dv->bits > dd->bits)
 	{
 		bignum_zero(q);
-		bignum_copy(r, sizeof(bignum_t) + r->size, dd);
+		bignum_copy(r, dd);
 
 		return 0;
 	}
