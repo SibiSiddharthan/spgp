@@ -78,7 +78,14 @@ static void basecase_square(uint32_t *r32, uint32_t *a32, uint32_t a32_words)
 			carry = high;
 		}
 
-		r32[i + a32_words] = (uint32_t)(carry & 0xFFFFFFFF);
+		r32[i + a32_words] += (uint32_t)(carry & 0xFFFFFFFF);
+
+		// The carry for 2*x*y. This can be greater than 0xFFFFFFFF.
+		// NOTE: The last word won't be accessed here. (r32[2 * a32_words])
+		if (carry > 0xFFFFFFFF)
+		{
+			r32[i + a32_words + 1] = carry >> 32;
+		}
 	}
 }
 
