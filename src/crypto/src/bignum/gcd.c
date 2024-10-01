@@ -170,8 +170,8 @@ static bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t
 		}
 
 		// Set the bits for the next iteration.
-		bignum_bitcount(a);
-		bignum_bitcount(b);
+		a->bits = bignum_bitcount(a);
+		b->bits = bignum_bitcount(b);
 
 		// Now temp should be even
 		if (temp->bits == 0)
