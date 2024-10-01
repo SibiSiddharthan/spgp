@@ -37,13 +37,14 @@ static bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum
 
 	a->sign = b->sign = q->sign = r->sign = 1;
 
-	while (r->bits > 0)
+	do
 	{
 		bignum_divmod(bctx, a, b, q, r);
 
-		a = b;
-		b = r;
-	}
+		bignum_copy(a, b);
+		bignum_copy(b, r);
+
+	} while (r->bits > 0);
 
 	gcd = bignum_copy(gcd, a);
 	gcd->sign = 1;
@@ -87,19 +88,20 @@ static bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bign
 	bignum_zero(u);
 	bignum_one(v);
 
-	while (r->bits > 0)
+	do
 	{
 		bignum_divmod(bctx, a, b, q, r);
 
-		a = b;
-		b = r;
+		bignum_copy(a, b);
+		bignum_copy(b, r);
 
-		t = u;
-		u = v;
+		bignum_copy(t, u);
+		bignum_copy(u, v);
 
 		v = bignum_mul(bctx, v, v, q);
 		v = bignum_sub(v, t, v);
-	}
+
+	} while (r->bits > 0);
 
 	gcd = bignum_copy(gcd, a);
 	gcd->sign = 1;
