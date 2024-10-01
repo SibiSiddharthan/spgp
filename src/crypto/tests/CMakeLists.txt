@@ -64,6 +64,7 @@ crypto_bignum_tests(
 arithmetic
 basic
 mod
+gcd
 )
 
 crypto_cipher_tests(
