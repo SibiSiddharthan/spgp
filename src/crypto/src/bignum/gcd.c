@@ -14,7 +14,7 @@
 
 #include <bignum-internal.h>
 
-bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
+static bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
 {
 	bignum_t *q = NULL, *r = NULL;
 
@@ -53,7 +53,7 @@ bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum_t *b)
 	return r;
 }
 
-bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
+static bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
 {
 	bignum_t *q = NULL, *r = NULL;
 	bignum_t *x = NULL, *y = NULL;
@@ -107,7 +107,7 @@ bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bignum_t *v
 	return gcd;
 }
 
-bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
+static bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
 	size_t a_size = bignum_size(a->bits);
 	size_t b_size = bignum_size(b->bits);
@@ -187,7 +187,7 @@ bignum_t *binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	return r;
 }
 
-bignum_t *binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
+static bignum_t *binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
 {
 	bignum_t *x = NULL, *y = NULL;
 	uint32_t a_shift = 0, b_shift = 0, min_shift = 0;
@@ -284,6 +284,149 @@ bignum_t *binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, 
 
 	return r;
 }
+
+static bignum_t *bignum_gcd_common(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b,
+								   bignum_t *(*gcd_algorithm)(bignum_ctx *, bignum_t *, bignum_t *, bignum_t *))
+
+{
+	bignum_ctx *obctx = bctx;
+
+	// Handle zero
+	if (a->bits == 0 || b->bits == 0)
+	{
+		r = bignum_resize(r, MAX(a->bits, b->bits));
+
+		if (r == NULL)
+		{
+			return NULL;
+		}
+
+		// GCD is always positive.
+		bignum_copy(r, (bignum_cmp_abs(a, b) > 0) ? a : b);
+		r->sign = 1;
+
+		return r;
+	}
+
+	// General case.
+	r = bignum_resize(r, MIN(a->bits, b->bits));
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(0);
+
+		if (bctx == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	gcd_algorithm(bctx, r, a, b);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return r;
+}
+
+static int32_t bignum_gcdex_common(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b,
+								   bignum_t *(*gcdex_algorithm)(bignum_ctx *, bignum_t *, bignum_t *, bignum_t *, bignum_t *, bignum_t *))
+{
+	bignum_ctx *obctx = bctx;
+
+	// Handle zero
+	if (a->bits == 0 || b->bits == 0)
+	{
+		r = bignum_resize(r, MAX(a->bits, b->bits));
+
+		if (r == NULL)
+		{
+			return -1;
+		}
+
+		int32_t cmp = bignum_cmp_abs(a, b);
+
+		if (cmp > 0)
+		{
+			bignum_copy(r, a);
+			bignum_zero(v);
+			bignum_one(u);
+		}
+		else if (cmp < 0)
+		{
+			bignum_copy(r, b);
+			bignum_zero(u);
+			bignum_one(v);
+		}
+		else
+		{
+			bignum_zero(r);
+			bignum_zero(u);
+			bignum_zero(v);
+		}
+
+		// GCD is always positive.
+		r->sign = 1;
+
+		return 0;
+	}
+
+	// General case.
+	r = bignum_resize(r, MIN(a->bits, b->bits));
+	u = bignum_resize(r, a->bits);
+	v = bignum_resize(r, b->bits);
+
+	if (r == NULL || u == NULL || v == NULL)
+	{
+		return -1;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(0);
+
+		if (bctx == NULL)
+		{
+			return -1;
+		}
+	}
+
+	r = gcdex_algorithm(bctx, r, u, v, a, b);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return 0;
+}
+
+bignum_t *bignum_euclid_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
+{
+	return bignum_gcd_common(bctx, r, a, b, euclid_gcd);
+};
+
+int32_t bignum_euclid_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
+{
+	return bignum_gcdex_common(bctx, r, u, v, a, b, euclid_gcdex);
+};
+
+bignum_t *bignum_binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
+{
+	return bignum_gcd_common(bctx, r, a, b, binary_gcd);
+};
+
+int32_t bignum_binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
+{
+	return bignum_gcdex_common(bctx, r, u, v, a, b, binary_gcdex);
+};
 
 bignum_t *bignum_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 {
