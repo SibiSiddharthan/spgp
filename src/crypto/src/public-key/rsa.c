@@ -20,26 +20,25 @@
 #include <minmax.h>
 #include <ptr.h>
 
-static int32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
+static uint32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
 {
-	int32_t bits = 0;
-
 	bignum_t *t = NULL;
 	size_t ctx_size = bignum_size(key->bits);
+	size_t output_size = key->bits / 8;
 
 	if (key->n == NULL || key->e == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (in_size > (key->bits / 8))
 	{
-		return -1;
+		return 0;
 	}
 
 	if (out_size < (key->bits / 8))
 	{
-		return -1;
+		return 0;
 	}
 
 	bignum_ctx_start(key->bctx, ctx_size);
@@ -48,35 +47,32 @@ static int32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, 
 	t = bignum_set_bytes_be(t, in, in_size);
 	t = bignum_modexp(key->bctx, t, t, key->e, key->n);
 
-	bits = t->bits;
-
-	bignum_get_bytes_be_padded(t, out, out_size);
+	bignum_get_bytes_be_padded(t, out, output_size);
 
 	bignum_ctx_end(key->bctx);
 
-	return bits;
+	return output_size;
 }
 
-static int32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
+static uint32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
 {
-	int32_t bits = 0;
-
 	bignum_t *t = NULL;
 	size_t ctx_size = bignum_size(key->bits);
+	size_t output_size = key->bits / 8;
 
-	if (key->n == NULL || key->e == NULL)
+	if (key->n == NULL || key->d == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (in_size > (key->bits / 8))
 	{
-		return -1;
+		return 0;
 	}
 
 	if (out_size < (key->bits / 8))
 	{
-		return -1;
+		return 0;
 	}
 
 	bignum_ctx_start(key->bctx, ctx_size);
@@ -85,13 +81,11 @@ static int32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out,
 	t = bignum_set_bytes_be(t, in, in_size);
 	t = bignum_modexp(key->bctx, t, t, key->d, key->n);
 
-	bits = t->bits;
-
-	bignum_get_bytes_be_padded(t, out, out_size);
+	bignum_get_bytes_be_padded(t, out, output_size);
 
 	bignum_ctx_end(key->bctx);
 
-	return bits;
+	return output_size;
 }
 
 rsa_key *rsa_key_new(uint32_t bits)
@@ -178,22 +172,22 @@ void rsa_key_set_crt(rsa_key *key, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqm
 	bignum_copy(key->iqmp, iqmp);
 }
 
-int32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
 	return rsa_public_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
-int32_t rsa_public_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint32_t rsa_public_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
 	return rsa_public_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
-int32_t rsa_private_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint32_t rsa_private_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
 	return rsa_private_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
 }
 
-int32_t rsa_private_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint32_t rsa_private_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
 	return rsa_private_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
