@@ -49,42 +49,42 @@ rsa_key *rsa_key_generate(uint32_t bits);
 rsa_key *rsa_key_new(uint32_t bits);
 void rsa_key_delete(rsa_key *key);
 
-inline bignum_t *rsa_key_get_p(rsa_key *key)
+inline const bignum_t *rsa_key_get_p(rsa_key *key)
 {
 	return key->p;
 }
 
-inline bignum_t *rsa_key_get_q(rsa_key *key)
+inline const bignum_t *rsa_key_get_q(rsa_key *key)
 {
 	return key->q;
 }
 
-inline bignum_t *rsa_key_get_n(rsa_key *key)
+inline const bignum_t *rsa_key_get_n(rsa_key *key)
 {
 	return key->n;
 }
 
-inline bignum_t *rsa_key_get_d(rsa_key *key)
+inline const bignum_t *rsa_key_get_d(rsa_key *key)
 {
 	return key->d;
 }
 
-inline bignum_t *rsa_key_get_e(rsa_key *key)
+inline const bignum_t *rsa_key_get_e(rsa_key *key)
 {
 	return key->e;
 }
 
-inline bignum_t *rsa_key_get_dmp1(rsa_key *key)
+inline const bignum_t *rsa_key_get_dmp1(rsa_key *key)
 {
 	return key->dmp1;
 }
 
-inline bignum_t *rsa_key_get_dmq1(rsa_key *key)
+inline const bignum_t *rsa_key_get_dmq1(rsa_key *key)
 {
 	return key->dmq1;
 }
 
-inline bignum_t *rsa_key_get_iqmp(rsa_key *key)
+inline const bignum_t *rsa_key_get_iqmp(rsa_key *key)
 {
 	return key->iqmp;
 }
