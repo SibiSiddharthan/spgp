@@ -79,8 +79,11 @@ bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 		size -= BIGNUM_WORD_SIZE;
 	}
 
-	bn->words[count - 1] = 0;
-	pos = 0;
+	if (size != 0)
+	{
+		bn->words[count - 1] = 0;
+		pos = 0;
+	}
 
 	// Most significant word
 	switch (size % 8)

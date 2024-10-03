@@ -83,6 +83,11 @@ bignum_t *bignum_copy(bignum_t *dst_bn, bignum_t *src_bn)
 {
 	size_t copy_size = BIGNUM_WORD_COUNT(src_bn) * BIGNUM_WORD_SIZE;
 
+	if (dst_bn == src_bn)
+	{
+		return dst_bn;
+	}
+
 	if (dst_bn->size < copy_size)
 	{
 		return NULL;
