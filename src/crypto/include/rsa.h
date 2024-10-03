@@ -15,10 +15,12 @@
 
 typedef struct _rsa_key
 {
+	uint32_t size;
 	uint32_t bits;
 	bignum_t *p, *q, *n;
 	bignum_t *d, *e;
 	bignum_t *dmp1, *dmq1, *iqmp;
+	bignum_t *mu;
 	bignum_ctx *bctx;
 } rsa_key;
 
@@ -48,6 +50,10 @@ typedef struct _rsa_signature
 rsa_key *rsa_key_generate(uint32_t bits);
 rsa_key *rsa_key_new(uint32_t bits);
 void rsa_key_delete(rsa_key *key);
+
+void rsa_key_set_basic(rsa_key *key, bignum_t *n, bignum_t *d, bignum_t *e);
+void rsa_key_set_factors(rsa_key *key, bignum_t *p, bignum_t *q);
+void rsa_key_set_crt(rsa_key *key, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp);
 
 inline const bignum_t *rsa_key_get_p(rsa_key *key)
 {
@@ -88,10 +94,6 @@ inline const bignum_t *rsa_key_get_iqmp(rsa_key *key)
 {
 	return key->iqmp;
 }
-
-int32_t rsa_key_set_basic(rsa_key *key, bignum_t *n, bignum_t *d, bignum_t *e);
-int32_t rsa_key_set_factors(rsa_key *key, bignum_t *p, bignum_t *q);
-int32_t rsa_key_set_crt(rsa_key *key, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp);
 
 int32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 int32_t rsa_public_decrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);

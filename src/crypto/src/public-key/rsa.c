@@ -16,8 +16,9 @@
 #include <md5.h>
 #include <bignum-internal.h>
 
-#include <minmax.h>
 #include <byteswap.h>
+#include <minmax.h>
+#include <ptr.h>
 
 static int32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
 {
@@ -91,6 +92,90 @@ static int32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out,
 	bignum_ctx_end(key->bctx);
 
 	return bits;
+}
+
+rsa_key *rsa_key_new(uint32_t bits)
+{
+	rsa_key *key = NULL;
+	uint32_t required_size = 0;
+	uint32_t bctx_size = 0;
+	uint32_t bignums_size = 0;
+
+	bits = ROUND_UP(bits, 1024);
+	bctx_size += 16 * (bits * 2) / 8; // For bctx
+
+	bignums_size = bignum_size(bits)           // n
+				   + 2 * bignum_size(bits)     // d,e
+				   + 2 * bignum_size(bits / 2) // p,q
+				   + 3 * bignum_size(bits / 2) // crt
+				   + bignum_size(bits)         // mu
+		;
+
+	required_size = sizeof(rsa_key) + bctx_size + bignums_size;
+
+	key = malloc(required_size);
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, required_size);
+
+	key->size = required_size;
+	key->bits = bits;
+
+	key->bctx = bignum_ctx_init(PTR_OFFSET(key, sizeof(rsa_key) + bignums_size), bctx_size);
+
+	return key;
+}
+
+void rsa_key_delete(rsa_key *key)
+{
+	memset(key, 0, key->size);
+	free(key);
+}
+
+void rsa_key_set_basic(rsa_key *key, bignum_t *n, bignum_t *d, bignum_t *e)
+{
+	uint32_t n_offset = sizeof(rsa_key);
+	uint32_t d_offset = n_offset + bignum_size(n->bits);
+	uint32_t e_offset = d_offset + bignum_size(d->bits);
+
+	key->n = bignum_init(PTR_OFFSET(key, n_offset), bignum_size(n->bits), n->bits);
+	key->d = bignum_init(PTR_OFFSET(key, d_offset), bignum_size(d->bits), d->bits);
+	key->e = bignum_init(PTR_OFFSET(key, e_offset), bignum_size(e->bits), e->bits);
+
+	bignum_copy(key->n, n);
+	bignum_copy(key->d, d);
+	bignum_copy(key->e, e);
+}
+
+void rsa_key_set_factors(rsa_key *key, bignum_t *p, bignum_t *q)
+{
+	uint32_t p_offset = sizeof(rsa_key) + (3 * bignum_size(key->bits));
+	uint32_t q_offset = p_offset + bignum_size(p->bits);
+
+	key->p = bignum_init(PTR_OFFSET(key, p_offset), bignum_size(p->bits), p->bits);
+	key->q = bignum_init(PTR_OFFSET(key, q_offset), bignum_size(q->bits), q->bits);
+
+	bignum_copy(key->p, p);
+	bignum_copy(key->q, q);
+}
+
+void rsa_key_set_crt(rsa_key *key, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp)
+{
+	uint32_t dmp1_offset = sizeof(rsa_key) + (3 * bignum_size(key->bits)) + (2 * bignum_size(key->bits / 2));
+	uint32_t dmq1_offset = dmp1_offset + bignum_size(dmp1->bits);
+	uint32_t iqmp_offset = dmq1_offset + bignum_size(dmq1->bits);
+
+	key->dmp1 = bignum_init(PTR_OFFSET(key, dmp1_offset), bignum_size(dmp1->bits), dmp1->bits);
+	key->dmq1 = bignum_init(PTR_OFFSET(key, dmq1_offset), bignum_size(dmq1->bits), dmq1->bits);
+	key->iqmp = bignum_init(PTR_OFFSET(key, iqmp_offset), bignum_size(iqmp->bits), iqmp->bits);
+
+	bignum_copy(key->dmp1, dmp1);
+	bignum_copy(key->dmq1, dmq1);
+	bignum_copy(key->iqmp, iqmp);
 }
 
 int32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
