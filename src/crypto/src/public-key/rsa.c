@@ -832,9 +832,9 @@ void rsa_verify_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
 	hash_update(rctx->hctx_message, message, size);
 }
 
-int32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
+uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 {
-	int32_t status = -1;
+	int32_t status = 0;
 
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
@@ -859,12 +859,12 @@ int32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 	// Length checking
 	if (rsign->size > key_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (rsign->size < hash_size + salt_size + 2)
 	{
-		return -1;
+		return 0;
 	}
 
 	// Check Hash
@@ -936,17 +936,17 @@ int32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 		goto end;
 	}
 
-	status = 0;
+	status = 1;
 
 end:
 	bignum_ctx_end(rctx->key->bctx);
 	return status;
 }
 
-int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
-					   rsa_signature *rsign)
+uint32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
+						rsa_signature *rsign)
 {
-	int32_t status = -1;
+	int32_t status = 0;
 	rsa_pss_ctx *rctx = rsa_verify_pss_new(key, hctx_message, hctx_mask, salt_size);
 
 	if (rctx == NULL)
@@ -1187,9 +1187,9 @@ void rsa_verify_pkcs_update(rsa_pkcs_ctx *rctx, void *message, size_t size)
 	hash_update(rctx->hctx, message, size);
 }
 
-int32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign)
+uint32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign)
 {
-	int32_t status = -1;
+	int32_t status = 0;
 
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
@@ -1262,16 +1262,16 @@ int32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign)
 		goto end;
 	}
 
-	status = 0;
+	status = 1;
 
 end:
 	bignum_ctx_end(rctx->key->bctx);
 	return status;
 }
 
-int32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size, rsa_signature *rsign)
+uint32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size, rsa_signature *rsign)
 {
-	int32_t status = -1;
+	int32_t status = 0;
 	rsa_pkcs_ctx *rctx = rsa_verify_pkcs_new(key, hctx);
 
 	if (rctx == NULL)

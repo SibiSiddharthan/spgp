@@ -121,8 +121,8 @@ rsa_pss_ctx *rsa_verify_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *
 void rsa_verify_pss_delete(rsa_pss_ctx *rctx);
 void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size);
 void rsa_verify_pss_update(rsa_pss_ctx *rctx, void *message, size_t size);
-int32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign);
-int32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
+uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign);
+uint32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
 					   rsa_signature *rsign);
 
 rsa_pkcs_ctx *rsa_sign_pkcs_new(rsa_key *key, hash_ctx *hctx);
@@ -136,7 +136,7 @@ rsa_pkcs_ctx *rsa_verify_pkcs_new(rsa_key *key, hash_ctx *hctx);
 void rsa_verify_pkcs_delete(rsa_pkcs_ctx *rctx);
 void rsa_verify_pkcs_reset(rsa_pkcs_ctx *rctx, rsa_key *key, hash_ctx *hctx);
 void rsa_verify_pkcs_update(rsa_pkcs_ctx *rctx, void *message, size_t size);
-int32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign);
-int32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size, rsa_signature *rsign);
+uint32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign);
+uint32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size, rsa_signature *rsign);
 
 #endif
