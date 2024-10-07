@@ -61,7 +61,7 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"74230447bcd492f2f8a8c594a04379271690bf0c8a13ddfc1b7b96413e77ab2664cba1acd7a3c57ee5276e27414f8283a6f93b73bd392bd541f07eb461a080bb66"
 		"7e5ff095c9319f575b3893977e658c6c001ceef88a37b7902d4db31c3e34f3c164c47bbeefde3b946bad416a752c2cafcee9e401ae08884e5b8aa839f9d0b5");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 
@@ -85,7 +85,7 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"c43011f3ee88c9c9adcac8bf37221afa31769d347dec705e53aca98993e74606591867ccd289ba1b4f19365f983e0c578346da76c5e2228a07e4fc9b3d48071633"
 		"71a52b68b66873201dc7d6b56616ac2e4cb522120787df7f15a5e8763a54c179c635d65816bc19485de3eb35a52040591094fe0e6485a7e0c60e38e7c61551");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 
@@ -109,7 +109,7 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"f60a3a543768fabe37f003009a8c26f7dc91f1422d4429ed7f9d744cdd4b552afef75d241acda04ffc39672159ee248e602dab7192449e2ed4552995c258f00a47"
 		"6346e36a29a0126bc249040faa57c9380bdd74b83f62c56790920574433432f8d65c5cd185e24fad13127265c6a5ef8db4f114493d5cfa61d91664981408e9");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 
@@ -133,7 +133,7 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"ab18939230b096646a37a781629fbd9270f3891a5ceab4a8c3bc6851bc34115dbc066541b764a2ce88cc16a79324e5f8a90807652c639041733c34016fd30af08f"
 		"ed9024e26cf0b07c22811b1ae7911109e9625943447207dcd3fff39c45cb69ee731d22f8f008730ce2efc53f114945573ea2ddebb6e262c527d20f8bb1dc32");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 
@@ -213,7 +213,7 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"254ce36e8ed62e0887d4be00eefa82515acef956540cff45c448e7f9a9d5c9f40de61da439f389e5255ef8c83257ec921bfd150829c522eaa720d7be965860cea2"
 		"bbe57454fc5e9588d6a96c22f2d989fd0bd21924501367450ad2a3627e4ee3ca15616748ba54219a84f8742495f23de6425710ac7479c4844d0031750f3c38");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 
@@ -239,7 +239,7 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"f996f3adc2aba505ad4ae52bc5a43371a33d0f28e1950b66d208240670f352ef96185e9a7044f4ce2f2ff9ae01a31ef640e0b682e940c5105117594613dd1df74d"
 		"8f2ba20c52223b045a782e850a12a2aa5c12fad484f1a256d0cd0872d304e885c201cd7e1e56d594930bb4392136fb4979cc9b88aab7a44bfc2953751c2f4c");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 
@@ -265,7 +265,7 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"32fd45e73f6f6949f20cab78c0cc31d814baea6389546a365d35f54f23f1d995b74101187760c89bb0b40b5057b182e2fafb50b8f5cad879e993d3cb6ae59f61f8"
 		"91da34310d3010441a7153a9a5e7f210ebe6bc97e1a4e33fd34bb8a14b4db6dd34f8c2d43f4ab19786060b1e70070e3ed4d5f6d561767c483d879d2fec8b9c");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 
@@ -291,7 +291,7 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"db6c9d4badb1d9b74d68346448b4d5340631783b5a35ac2458563ed0672cf54197587fb734c4ac189b2dda954cdfb18b41c010a77e90464eea6f863c5da0956bfa"
 		"8cc636bf0a28be5addfe8d3e7e6f79f71d7fcbbae23ea141783f91d6cc4c8fad125811760ab57133818892471a79c6d04eafef37b2fbe506785318f9398377");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128);
+	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
 
 	memset(sign, 0, 1024);
 

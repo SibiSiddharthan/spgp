@@ -1061,9 +1061,9 @@ void rsa_sign_pkcs_update(rsa_pkcs_ctx *rctx, void *message, size_t size)
 	hash_update(rctx->hctx, message, size);
 }
 
-rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx)
+rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx, void *signature, size_t size)
 {
-	rsa_signature *rsign = NULL;
+	rsa_signature *rsign = signature;
 
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
@@ -1071,6 +1071,7 @@ rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx)
 	size_t der_size = rctx->der_size;
 	size_t em_size = key_size;
 	size_t ps_size = key_size - der_size - 3;
+	size_t signature_size = sizeof(rsa_signature) + key_size;
 
 	size_t ps_offset = 2;
 	size_t der_offset = em_size - der_size;
@@ -1079,7 +1080,17 @@ rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx)
 	byte_t *em = NULL;
 
 	// Allocate for the signature
-	rsign = malloc(sizeof(rsa_signature) + key_size);
+	if (rsign == NULL)
+	{
+		rsign = malloc(signature_size);
+	}
+	else
+	{
+		if (size < signature_size)
+		{
+			return NULL;
+		}
+	}
 
 	if (rsign == NULL)
 	{
@@ -1148,7 +1159,7 @@ rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx)
 	return rsign;
 }
 
-rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size)
+rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t message_size, void *signature, size_t signature_size)
 {
 	rsa_pkcs_ctx *rctx = rsa_sign_pkcs_new(key, hctx);
 	rsa_signature *rsign = NULL;
@@ -1158,8 +1169,8 @@ rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t
 		return NULL;
 	}
 
-	rsa_sign_pkcs_update(rctx, message, size);
-	rsign = rsa_sign_pkcs_final(rctx);
+	rsa_sign_pkcs_update(rctx, message, message_size);
+	rsign = rsa_sign_pkcs_final(rctx, signature, signature_size);
 
 	rsa_sign_pkcs_delete(rctx);
 
@@ -1269,7 +1280,7 @@ end:
 	return status;
 }
 
-uint32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t size, rsa_signature *rsign)
+uint32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, rsa_signature *rsign, void *message, size_t size)
 {
 	int32_t status = 0;
 	rsa_pkcs_ctx *rctx = rsa_verify_pkcs_new(key, hctx);
