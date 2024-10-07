@@ -47,29 +47,34 @@ static void basecase_square(uint32_t *r32, uint32_t *a32, uint32_t a32_words)
 	bn_word_t high = 0;
 	bn_word_t low = 0;
 
-	// Iterations go from r32[0 ... a32_words + b32_words - 2]
+	// Iterations go from r32[0 ... a32_words - 2]
 	for (uint32_t i = 0; i < a32_words; ++i)
 	{
 		carry = 0;
 
-		for (uint32_t j = i; j < a32_words; ++j)
+		// Multiply 2 32-bit words to form a 64 bit product.
+		// The high part is the carry for the next multiplication
+		// The low part is added with the carry from previous multiplication to r32.
+
+		// First iteration
+		temp = (bn_word_t)a32[i] * (bn_word_t)a32[i];
+
+		high = temp >> 32;
+		low = temp & 0xFFFFFFFF;
+
+		low += r32[i + i] + carry;
+		r32[i + i] = (uint32_t)(low & 0xFFFFFFFF);
+
+		high += (low >> 32);
+		carry = high;
+
+		for (uint32_t j = i + 1; j < a32_words; ++j)
 		{
-			// Multiply 2 32-bit words to form a 64 bit product.
-			// The high part is the carry for the next multiplication
-			// The low part is added with the carry from previous multiplication to r32.
 			temp = (bn_word_t)a32[i] * (bn_word_t)a32[j];
 
 			// Prevent repeated multiplications.
-			if (i != j)
-			{
-				high = (temp >> 31);
-				low = (temp << 1) & 0xFFFFFFFF;
-			}
-			else
-			{
-				high = temp >> 32;
-				low = temp & 0xFFFFFFFF;
-			}
+			high = (temp >> 31);
+			low = (temp << 1) & 0xFFFFFFFF;
 
 			low += r32[i + j] + carry;
 			r32[i + j] = (uint32_t)(low & 0xFFFFFFFF);
