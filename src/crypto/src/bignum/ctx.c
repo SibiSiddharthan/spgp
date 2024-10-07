@@ -14,7 +14,7 @@
 
 #define BIGNUM_CTX_ALIGNMENT 32
 
-bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits);
+bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits, int16_t flags);
 
 typedef struct _block
 {
@@ -225,7 +225,7 @@ bignum_ctx *bignum_ctx_init(void *ptr, size_t size)
 
 	// Initialize the first block. The first block will contain the entire bignum_ctx structure.
 	bctx->current_stack = NULL;
-	bctx->current_block = (void *)((byte_t*)bctx + sizeof(bignum_ctx));
+	bctx->current_block = (void *)((byte_t *)bctx + sizeof(bignum_ctx));
 
 	first_block = bctx->current_block;
 
@@ -265,7 +265,7 @@ bignum_ctx *bignum_ctx_new(size_t size)
 
 	// Initialize the first block. The first block will contain the entire bignum_ctx structure.
 	bctx->current_stack = NULL;
-	bctx->current_block = (void *)((byte_t*)bctx + sizeof(bignum_ctx));
+	bctx->current_block = (void *)((byte_t *)bctx + sizeof(bignum_ctx));
 
 	first_block = bctx->current_block;
 
@@ -327,8 +327,7 @@ bignum_t *bignum_ctx_allocate_bignum(bignum_ctx *bctx, uint32_t bits)
 	}
 
 	// Bignums allocated in ctx should not be resized.
-	bn = bignum_init_checked(ptr, required_size, bits);
-	bn->flags |= BIGNUM_FLAG_NO_RESIZE;
+	bn = bignum_init_checked(ptr, required_size, bits, BIGNUM_FLAG_NO_RESIZE);
 
 	return bn;
 }

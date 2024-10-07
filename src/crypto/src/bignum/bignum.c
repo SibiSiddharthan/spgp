@@ -15,7 +15,7 @@
 
 #include <bignum-internal.h>
 
-bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits)
+bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits, int16_t flags)
 {
 	bignum_t *bn = (bignum_t *)ptr;
 
@@ -24,6 +24,7 @@ bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits)
 	// Atleast one word will be allocatted.
 	bn->bits = 0;
 	bn->sign = 1;
+	bn->flags = flags;
 	bn->size = CEIL_DIV(bits, 8);
 	bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
 
@@ -43,7 +44,7 @@ bignum_t *bignum_init(void *ptr, size_t size, uint32_t bits)
 		return NULL;
 	}
 
-	return bignum_init_checked(bn, required_size, bits);
+	return bignum_init_checked(bn, required_size, bits, BIGNUM_FLAG_NO_RESIZE);
 }
 
 bignum_t *bignum_new(uint32_t bits)
@@ -61,7 +62,7 @@ bignum_t *bignum_new(uint32_t bits)
 		return NULL;
 	}
 
-	return bignum_init_checked(bn, size, bits);
+	return bignum_init_checked(bn, size, bits, 0);
 }
 
 void bignum_delete(bignum_t *bn)
