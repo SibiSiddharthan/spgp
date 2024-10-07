@@ -224,8 +224,8 @@ static void MGF_XOR(hash_ctx *hctx, byte_t *seed, size_t seed_size, byte_t *outp
 	}
 }
 
-int32_t rsa_encrypt_oaep(rsa_key *key, void *plaintext, size_t plaintext_size, void *label, size_t label_size, void *ciphertext,
-						 size_t ciphertext_size, hash_ctx *hctx_label, hash_ctx *hctx_mask, drbg_ctx *drbg)
+int32_t rsa_encrypt_oaep(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask, drbg_ctx *drbg, void *label, size_t label_size,
+						 void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
 {
 	int32_t status = 0;
 
@@ -343,8 +343,8 @@ int32_t rsa_encrypt_oaep(rsa_key *key, void *plaintext, size_t plaintext_size, v
 	return status;
 }
 
-int32_t rsa_decrypt_oaep(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *label, size_t label_size, void *plaintext,
-						 size_t plaintext_size, hash_ctx *hctx_label, hash_ctx *hctx_mask)
+int32_t rsa_decrypt_oaep(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask, void *label, size_t label_size, void *ciphertext,
+						 size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
 	int32_t status = -1;
 
