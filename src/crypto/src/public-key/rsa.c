@@ -16,6 +16,7 @@
 #include <md5.h>
 #include <bignum-internal.h>
 
+#include <bitscan.h>
 #include <byteswap.h>
 #include <minmax.h>
 #include <ptr.h>
@@ -197,6 +198,33 @@ static inline void xor_bytes(byte_t *a, byte_t *b, size_t size)
 	for (size_t i = 0; i < size; ++i)
 	{
 		a[i] ^= b[i];
+	}
+}
+
+static inline void zero_top_bits(byte_t *em, bignum_t *n)
+{
+	uint32_t em_bits = ROUND_UP(n->bits, 1024);
+	uint32_t pos = 0;
+
+	for (pos = 0;; ++pos)
+	{
+		if (em[pos] != 0)
+		{
+			em_bits -= 8 - (bsr_8(em[pos]) + 1);
+			break;
+		}
+
+		em_bits -= 8;
+	}
+
+	pos = 0;
+
+	while (em_bits >= n->bits)
+	{
+		em[pos / 8] &= 0xFF ^ (1 << (7 - (pos % 8)));
+
+		++pos;
+		--em_bits;
 	}
 }
 
@@ -745,11 +773,6 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx, void *signature, size_t siz
 		return NULL;
 	}
 
-	if (rsign == NULL)
-	{
-		return NULL;
-	}
-
 	bignum_ctx_start(rctx->key->bctx, ctx_size);
 
 	// If mask hash is not specified use SHA-1
@@ -802,6 +825,9 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx, void *signature, size_t siz
 
 	// DB Mask
 	MGF_XOR(rctx->hctx_mask, hash, hash_size, em, db_size);
+
+	// Zero the top bits to ensure em < n
+	zero_top_bits(em, rctx->key->n);
 
 	// Generate the signature.
 	memset(rsign, 0, sizeof(rsa_signature) + key_size);
