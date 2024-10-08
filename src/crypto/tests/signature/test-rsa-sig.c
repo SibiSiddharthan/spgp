@@ -319,7 +319,333 @@ int32_t rsa3072_pkcs_sig_tests(void)
 	return status;
 }
 
+int32_t rsa2048_pss_sig_tests(void)
+{
+	int32_t status = 0;
+
+	rsa_key *key = NULL;
+	bignum_t *n = NULL, *e = NULL, *d = NULL;
+
+	hash_ctx *hctx = NULL;
+	rsa_signature *rsign = NULL;
+	byte_t message[512] = {0};
+	byte_t sign[1024] = {0};
+	byte_t salt[64] = {0};
+
+	n = bignum_set_hex(
+		NULL,
+		"c5062b58d8539c765e1e5dbaf14cf75dd56c2e13105fecfd1a930bbb5948ff328f126abe779359ca59bca752c308d281573bc6178b6c0fef7dc445e4f826430437"
+		"b9f9d790581de5749c2cb9cb26d42b2fee15b6b26f09c99670336423b86bc5bec71113157be2d944d7ff3eebffb28413143ea36755db0ae62ff5b724eecb3d316b"
+		"6bac67e89cacd8171937e2ab19bd353a89acea8c36f81c89a620d5fd2effea896601c7f9daca7f033f635a3a943331d1b1b4f5288790b53af352f1121ca1bef205"
+		"f40dc012c412b40bdd27585b946466d75f7ee0a7f9d549b4bece6f43ac3ee65fe7fd37123359d9f1a850ad450aaf5c94eb11dea3fc0fc6e9856b1805ef",
+		512);
+
+	e = bignum_set_hex(
+		NULL,
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000086c94f",
+		512);
+
+	d = bignum_set_hex(
+		NULL,
+		"49e5786bb4d332f94586327bde088875379b75d128488f08e574ab4715302a87eea52d4c4a23d8b97af7944804337c5f55e16ba9ffafc0c9fd9b88eca443f39b79"
+		"67170ddb8ce7ddb93c6087c8066c4a95538a441b9dc80dc9f7810054fd1e5c9d0250c978bb2d748abe1e9465d71a8165d3126dce5db2adacc003e9062ba37a54b6"
+		"3e5f49a4eafebd7e4bf5b0a796c2b3a950fa09c798d3fa3e86c4b62c33ba9365eda054e5fe74a41f21b595026acf1093c90a8c71722f91af1ed29a41a2449a320f"
+		"c7ba3120e3e8c3e4240c04925cc698ecd66c7c906bdf240adad972b4dff4869d400b5d13e33eeba38e075e872b0ed3e91cc9c283867a4ffc3901d2069f",
+		512);
+
+	key = rsa_key_new(2048);
+	rsa_key_set_basic(key, n, d, e);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA224);
+
+	hex_to_block(
+		message, 128,
+		"37ddd9901478ae5c16878702cea4a19e786d35582de44ae65a16cd5370fbe3ffdd9e7ee83c7d2f27c8333bbe1754f090059939b1ee3d71e020a675528f48fdb2cb"
+		"c72c65305b65125c796162e7b07e044ed15af52f52a1febcf4237e6aa42a69e99f0a9159daf924bba12176a57ef4013a5cc0ab5aec83471648005d67d7122e");
+
+	hex_to_block(salt, 15, "463729b3eaf43502d9cff129925681");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 15, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 256);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"7e628bcbe6ff83a937b8961197d8bdbb322818aa8bdf30cdfb67ca6bf025ef6f09a99dba4c3ee2807d0b7c77776cfeff33b68d7e3fa859c4688626b2441897d26e"
+		"5d6b559dd72a596e7dad7def9278419db375f7c67cee0740394502212ebdd4a6c8d3af6ee2fd696d8523de6908492b7cbf2254f15a348956c19840dc15a3d732ef"
+		"862b62ede022290de3af11ca5e79a3392fff06f75aca8c88a2de1858b35a216d8f73fd70e9d67958ed39a6f8976fb94ec6e61f238a52f9d42241e8354f89e3ece9"
+		"4d6fa5bfbba1eeb70e1698bff31a685fbe799fb44efe21338ed6eea2129155aabc0943bc9f69a8e58897db6a8abcc2879d5d0c5d3e6dc5eb48cf16dac8");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA256);
+
+	hex_to_block(
+		message, 128,
+		"c32976432e240d23df6594f2885f00db7fa7e53b7aa84ef89798ec149fab74828b86423847f64285b7e210a5f87e5e93e8c2971ee81bc13fe060a8aa840739a3d6"
+		"992c13ec63e6dbf46f9d6875b2bd87d8878a7b265c074e13ab17643c2de356ad4a7bfda6d3c0cc9ff381638963e46257de087bbdd5e8cc3763836b4e833a42");
+
+	hex_to_block(salt, 20, "e1256fc1eeef81773fdd54657e4007fde6bcb9b1");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 20, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 256);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"be69c54dad9d8b6db7676fe74321a0aeb08d1cc17f6607e87982f99489344e99378c38341e0e605b8ff903c74a973872a9880e05a8ef0bd3e6049931acf152dd54"
+		"fec9105a57b73f77631db736b427f1bd83275e0173d4e09cd4f8c382e8b502a3b0adbd0c68911d02de17fff3d927e250e1826762efc0b895dfa502f18dc334b4c5"
+		"73f99b51b74fdd23009861028f1eed6875bf31d557acd6de8f63fa1274f7bed7a1b4c079f5a9b85bfab29f552c7f647d6c9241563fac123a739674b0ad09c3f942"
+		"08795d9a50529d799afc597e025f1254995f043234891620b10d5c5569be14b0f463a495f416024618486c7ff5ec775cfb46fbdff5379c5e09150b81a3");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA384);
+
+	hex_to_block(
+		message, 128,
+		"d58e0997224d12e635586e9cedd82dddf6a268aa5570774c417163f635059ea643c1f24cabbab82eac004a8b9a68bb7e318fc526291b02040a445fa44294cf8075"
+		"ea3c2114c5c38731bf20cb9258670304f5f666f129a7b135324ac92ec752a11211ce5e86f79bb96c9ed8a5fc309b3216dde2b2d620cd1a6a440aab202690d1");
+
+	hex_to_block(salt, 25, "b750587671afd76886e8ffb7865e78f706641b2e4251b48706");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 25, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 256);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"4385e67819283d81eab2b59357c51ce37b5ea32b76af345a457e5aa2dd61113865a587d2c8a8f1c8825281c052a88fc67797adb6251d28efb911564671affcbfc7"
+		"e1a3c055dce8d93497fe80da459647ac71f17e9aa07d1aafd5260ac284d622a03b6670c55b0d40696d436c638f9b48bd08f37db4eaf1d9746d2c24de347dcca0a6"
+		"2df244bd2a554bd08d047efe52cb1266ee5988447e1b2740f960d22e9ed3f2573ea8753a60d306d654a26503a5416a4439ee44aefe08cfebbed56585eaa01a64bc"
+		"812f589da9e9d51849b4d4feea04e2b03c4d4fe516decea1e3d9e7e35bfec17d7b2c218d8553bab921eab6410ad30cc131579497d186fa25cf62521fe9");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA512);
+
+	hex_to_block(
+		message, 128,
+		"cce6ea5a46bdd6805160dce409d1023cd71d3893303ca0497f392d5c5f936fe50ee2ade61ebd35426edcf00d597a39062dfdef62dfd9c9ccfdb2eaa9e3c1b6a032"
+		"78e35a7e69d386476421212bdf7af4599bae5e49850653abdbd9a59d8f5a8220f0b43fcd875953c43f96a7e6ca6c0d443f9b0dd608ffe871fb1fd7f3c70494");
+
+	hex_to_block(salt, 30, "aa10fec3f83b7a97e092877a5bf9081283f502a0a46b50e395ab983a49ac");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 30, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 256);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"9a465479c1474c1a54f16f309bd87b0c641a458d86173a4f29c2829fea0410787a81b3c1360cfc525d133dfdecc13acdd5199954dd8440739608545724cf1270ca"
+		"a39a221e9c6bfba399b9b05e55708875bac1578642ba7211260662299bf5ef68a39594e38faee14989ac5b2daa13211ece394cde46afa1b110bb55f631bdae5b84"
+		"8dfdb8920d7c74eff82ecdf59f2c6ed9b818c2336364b2a56d34a22ac42089dc5730e8e57b356cc4822c1e646268dc6a423e034b8b1512d41b88c70b27e431d681"
+		"51e61a4fa5c89f1e90d621e07228c0346ca46f767a989f1b0d007237645d448030a7fe45ee0f46521272a8cc453a835984f8268752bef801b6226140b5");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	free(n);
+	free(d);
+	free(e);
+
+	rsa_key_delete(key);
+
+	return status;
+}
+
+int32_t rsa3072_pss_sig_tests(void)
+{
+	int32_t status = 0;
+
+	rsa_key *key = NULL;
+	bignum_t *n = NULL, *e = NULL, *d = NULL;
+
+	hash_ctx *hctx = NULL;
+	rsa_signature *rsign = NULL;
+	byte_t message[512] = {0};
+	byte_t sign[1024] = {0};
+	byte_t salt[64] = {0};
+
+	n = bignum_set_hex(
+		NULL,
+		"a7a1882a7fb896786034d07fb1b9f6327c27bdd7ce6fe39c285ae3b6c34259adc0dc4f7b9c7dec3ca4a20d3407339eedd7a12a421da18f5954673cac2ff059156e"
+		"cc73c6861ec761e6a0f2a5a033a6768c6a42d8b459e1b4932349e84efd92df59b45935f3d0e30817c66201aa99d07ae36c5d74f408d69cc08f044151ff4960e531"
+		"360cb19077833adf7bce77ecfaa133c0ccc63c93b856814569e0b9884ee554061b9a20ab46c38263c094dae791aa61a17f8d16f0e85b7e5ce3b067ece89e20bc4e"
+		"8f1ae814b276d234e04f4e766f501da74ea7e3817c24ea35d016676cece652b823b051625573ca92757fc720d254ecf1dcbbfd21d98307561ecaab545480c7c52a"
+		"d7e9fa6b597f5fe550559c2fe923205ac1761a99737ca02d7b19822e008a8969349c87fb874c81620e38f613c8521f0381fe5ba55b74827dad3e1cf2aa29c69336"
+		"29f2b286ad11be88fa6436e7e3f64a75e3595290dc0d1cd5eee7aaac54959cc53bd5a934a365e72dd81a2bd4fb9a67821bffedf2ef2bd94913de8b",
+		768);
+
+	e = bignum_set_hex(
+		NULL,
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001415a7",
+		768);
+
+	d = bignum_set_hex(
+		NULL,
+		"073a5fc4cd642f6113dffc4f84035cee3a2b8acc549703751a1d6a5eaa13487229a58ef7d7a522bb9f4f25510f1aa0f74c6a8fc8a5c5be8b91a674ede50e92f7e3"
+		"4a90a3c9da999fffb1d695e4588f451256c163484c151350cb9c7825a7d910845ee5cf826fecf9a7c0fbbbba22bb4a531c131d2e7761ba898f002ebef8ab872185"
+		"11f81d3266e1ec07a7ca8622514c6dfdc86c67679a2c8f5f031de9a0c22b5a88060b46ee0c64d3b9af3c0a379bcd9c6a1b51cf6480456d3fd6def94cd2a6c171dd"
+		"3f010e3c9d662bc857208248c94ebcb9fd997b9ff4a7e5fd95558569906525e741d78344f6f6cfdbd59d4faa52ee3fa964fb7cccb2d6be1935d211fe1498217716"
+		"273939a946081fd8509913fd47747c5c2f03efd4d6fc9c6fcfd8402e9f40a0a5b3de3ca2b3c0fac9456938faa6cf2c20e3912e5981c9876d8ca1ff29b87a15eeae"
+		"0ccce3f8a8f1e405091c083b98bcc5fe0d0deaae33c67c0394437f0eccb385b7efb17aeebba8afaecca30a2f63eac8f0ac8f1eacad85bbcaf3960b",
+		768);
+
+	key = rsa_key_new(3072);
+	rsa_key_set_basic(key, n, d, e);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA224);
+
+	hex_to_block(
+		message, 128,
+		"c8ed14895c80a91fda8367cf4aee386b8a378645f06afee72f7c94047fddc7aef84c26c83fef13bf65a3c7750c91967ecc02748fd574b933d5ec21c01c8f178afe"
+		"6c3356789d0112178e04c3169cfabec6e2621b334f3c6705fc1099a4bd3147a0f7431a4fb1fb80b8ed26a0af38ed93428057d154260fe98854687661919e4e");
+
+	hex_to_block(salt, 28, "3f805057471aab0a28cfc8430dabcf990612e8a908b158ae36b4ed53");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 28, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 384);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"27b4f0aa139565fbd7860760610f6866d5b5f0d777921f06f5053291123e3b259d67294ccb8c0d068b8dae360aad2cf7d07296b539e4d2e9b08c343286d522f7dd"
+		"63c6620e8672be492f3b039f73d88ab9d22a5463cd1f07d688e8ba3fbad531b0c3870ccbfebb596ce4ec643d309744bdbd675d5841284cbac902cfb70ade6d3394"
+		"6d8dc6109bbbc42412db25b8c62222c5ff94f8eb868982265392a44e807474910b4b39558bbef33197907178ce146fdd7e94092ad58bf41a474e626136789fc2fe"
+		"6374a1b5fefddd5fecb7f8ca5893220d1ab9e822c3ae8adda1ebaddb18a6a12bfc165d12071441a991377cee6dc8e50839497346fee13f12c5b7b6d024b8ecfdad"
+		"80d5ef6e9e4996ac21c4eb6036bb51f5be5e38f265181154000824e3c1f231d18589ccdaee90fe307ba56324318b5358468e9f3913b83ab8b34d949629ed7839f8"
+		"da85bdcda52f3da5a419f777b3860dbf2ffe28d96244312549528a20cc7399fc010844365806167fe43235521c909587c2c7b8db4e296dad2aefa2");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA256);
+
+	hex_to_block(
+		message, 128,
+		"60402ded89d0979afb49f8508eb978a841abc2aec59cacef40b31ad34bac1f2d3c166611abbed1e62f6b5fbb69cb53df44ae93ab7a724ea35bbee1beca74fc0188"
+		"e00052b536ac8c933bf9cf8e42421a795aa81b1bc6b545eaad4024161390edc908c45aae1f71b4b0228e3104048d816917cba4ae7f2afe75e7fcad3873241a");
+
+	hex_to_block(salt, 32, "3e07ade72a3f52530f53135a5d7d93217435ba001ea55a8f5d5d1304684874bc");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 32, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 384);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"5f183009708b379637dac2b14293709aa6d7e86c267a0b690a3c275031139891267c64e5edecdff14c2cc2f2d985b62f900aee6e04ca51a70a5f946463691cf16c"
+		"2d45547c5374f15bdb8881641d3040ef57807532cf5b2ced07623d0f638b39ebc2f2ce283eea2247e1df3af5430554d1d4b88b7b21622993419971b7d0d5449122"
+		"a10fc31b2ddcc53ff751ff4bf4d336fac667b646780272db89a3ea4226afa20877bfb86ba3ff4204e5cd56e13a1dc9d53f5c9465b97a182b2bf671512ef89e6c39"
+		"69f97307a3e4beba39a78e0ad1bb9799cda92976ca39d99db4ac149c84bb9bc8997e8d5e056d67ca23fe4be28e66c4bc00a25d65bb9d7d623fea2d3b9cf859dfd9"
+		"efa9e52268bfa297afb1cc2883db0c9c42fc04180e2ec6f49657c7008e4025061f896886613895a35bc2d3655a8f50a9fca2ac648f352eb06bfba2fc340aaeead4"
+		"a8457c65e2e8fdba568c60a6d8d381f5d9caa30127771f4a94fdb8cde7be4fa7b4f89fe379dd3e1ca66ae1fdd63bebdc0015448e61ef1666594b8f");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA384);
+
+	hex_to_block(
+		message, 128,
+		"b50bf2767250f14fa7b6f5ea21a54da8d01e91151eb491107fd88b2d4a5aa157c72d89ba896b87e0fe989819442bf0213e4aa7fde8d6b026e7a70ae965193a0e1b"
+		"c7f8b8af96298c41f60d154164ba678333c903958d4ffb50b50f57ad8eedb6da61a6398ddbbf9c9955bba6bf5991c4c6615df1cde156d8e188003dcbc3a399");
+
+	hex_to_block(salt, 48, "61a762f8968d5f367e2dbcacb4021653dc75437d9000e3169d943729703837a5cbf4de62bdedc95fd0d1004e84751452");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 48, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 384);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"1f068bd083a26534040f41c1387e71a8c00370c5f1c958127e0bc721751b5940513023fad02a6101bbcefaaaaeea2875952bf859d494bfb23fd89149d91290359e"
+		"cb44ecf2fcaa5775e2e61e5f8d5151343576fe9c7167e919a5d081dac6bb8117229c420fd2b0fcb521f4e72366bfb443e688a65fa392eaa5115c292ab05bb4db65"
+		"468aab267178653dfa0a5efc960636fcce86433528dbce955a0b1aa188ac33ea128206ecc0feeab8f7df6f8c381b10489c8cfb2d02459e4cffc16f43a66aa4eaa1"
+		"9bc518ccfcf9fc1e4861cfa13e9b41fcefade2cd2ebc001ec8430a1cb949a0f2f876badc568c703e4209e7ca16f688ba9705c14fa1c882e6c4871b9deff31521d2"
+		"d418e0342e189c40ed19c1b6f4320d89a36f78eca143d3c16dd3eb338c0743646fd314c725c2d36a13080bfcdeea0e431de71d61f652033a75424fe1e1586695c3"
+		"dc463ad553c1cf3ab24a41ff4e031f9e0c2cb0024cef68273ea3b8c1be9d923d3e9c9686c41977ac7be94a6d23181936131c17a39a898c943dcc8b");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	hctx = hash_new(HASH_SHA512);
+
+	hex_to_block(
+		message, 128,
+		"44240ce519f00239bd66ba03c84d3160b1ce39e3932866e531a62b1c37cf4170c3dc4809236fb1ade181db49fc9c7ccd794b433d1ad0bc056e14738e0ae45c0e15"
+		"5972a40a989fa4b9bcdc308f11990818835fa2c256b47ee4173fb4fed22ccf4385d2dd54d593c74f0004df08134eb8965dd53a122317f59b95d6b69d017958");
+
+	hex_to_block(
+		salt, 62,
+		"2d0c49b20789f39502eefd092a2b6a9b2757c1456147569a685fca4492a8d5b0e6234308385d3d629644ca37e3399616c266f199b6521a9987b2be9ee783");
+
+	rsign = rsa_sign_pss(key, hctx, hctx, NULL, salt, 62, message, 128, NULL, 0);
+
+	memset(sign, 0, 1024);
+
+	status += CHECK_VALUE(rsign->size, 384);
+	status += CHECK_BLOCK(
+		rsign->sign, rsign->size,
+		"8f47abc2326e22cf62404508b442e81ad45afff7274096b9a13e478cdd0a72f99a76bf517f1bb0f872a523d8c588d4402569e948fd6a108ae1a45c65830828a10e"
+		"94d432765314ba82ead310fc87ac99a5b39f30ab8820bf69e6934a9c1c915c19f36ea7717eaff7af67b4991315b1873ba929bedf18a975be808e7aa14a6726126c"
+		"79cc93f69541c5cefdeb5b67ec279d8f5a446583e4b4faed1685140ee4b3b757c8ff4a1ef9cd76a88e05319ee62003d2d77290c94c579b0ca2ab0deb3176ef10a3"
+		"fdb85c80ffbc9e2a665a23744fc836f9a9a103cd9fb756952356a2f1acdd68a645e20179006558b5d4d0b9b0bd3adf5e290f49dae60b9d19920953ea8bb237d5b3"
+		"dcfe149a60f12a4ee3a889b33bcd3a3b753d610757cbcd093dd5a734255333689695ab636963e3d215a8e77ff31973718a4944a1e9e44f45754d39f6fa431c53f9"
+		"a2ef36e16a5f70636eb5fba54e15c20a714f2809a7cff4b8dc1165f836607eb5a5a3bb0c4567eee26941fef46fb41e73b565c0cf8c72e404221264");
+
+	hash_delete(hctx);
+	free(rsign);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	free(n);
+	free(d);
+	free(e);
+
+	rsa_key_delete(key);
+
+	return status;
+}
+
 int main()
 {
-	return rsa2048_pkcs_sig_tests() + rsa3072_pkcs_sig_tests();
+	return rsa2048_pkcs_sig_tests() + rsa3072_pkcs_sig_tests() + rsa2048_pss_sig_tests() + rsa3072_pss_sig_tests();
 }
