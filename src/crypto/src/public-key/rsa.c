@@ -610,7 +610,8 @@ end:
 	return status;
 }
 
-static inline rsa_pss_ctx *rsa_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size)
+static inline rsa_pss_ctx *rsa_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt,
+									   size_t salt_size)
 {
 	rsa_pss_ctx *rctx = NULL;
 
@@ -641,6 +642,7 @@ static inline rsa_pss_ctx *rsa_pss_new(rsa_key *key, hash_ctx *hctx_message, has
 	rctx->hctx_message = hctx_message;
 	rctx->hctx_mask = hctx_mask;
 	rctx->drbg = drbg;
+	rctx->salt = salt;
 	rctx->salt_size = salt_size;
 
 	hash_reset(rctx->hctx_message);
@@ -653,13 +655,14 @@ static inline rsa_pss_ctx *rsa_pss_new(rsa_key *key, hash_ctx *hctx_message, has
 	return rctx;
 }
 
-static inline void rsa_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg,
+static inline void rsa_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt,
 								 size_t salt_size)
 {
 	rctx->key = key;
 	rctx->hctx_message = hctx_message;
 	rctx->hctx_mask = hctx_mask;
 	rctx->drbg = drbg;
+	rctx->salt = salt;
 	rctx->salt_size = salt_size;
 
 	hash_reset(rctx->hctx_message);
@@ -670,9 +673,9 @@ static inline void rsa_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx
 	}
 }
 
-rsa_pss_ctx *rsa_sign_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size)
+rsa_pss_ctx *rsa_sign_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt, size_t salt_size)
 {
-	return rsa_pss_new(key, hctx_message, hctx_mask, drbg, salt_size);
+	return rsa_pss_new(key, hctx_message, hctx_mask, drbg, salt, salt_size);
 }
 
 void rsa_sign_pss_delete(rsa_pss_ctx *rctx)
@@ -681,9 +684,10 @@ void rsa_sign_pss_delete(rsa_pss_ctx *rctx)
 	free(rctx);
 }
 
-void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size)
+void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt,
+						size_t salt_size)
 {
-	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, drbg, salt_size);
+	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, drbg, salt, salt_size);
 }
 
 void rsa_sign_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
@@ -691,9 +695,9 @@ void rsa_sign_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
 	hash_update(rctx->hctx_message, message, size);
 }
 
-rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
+rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx, void *signature, size_t size)
 {
-	rsa_signature *rsign = NULL;
+	rsa_signature *rsign = signature;
 
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
@@ -710,6 +714,8 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
 	size_t ctx_size = em_size;
 	size_t default_hash_ctx_size = 0;
 
+	size_t signature_size = sizeof(rsa_signature) + key_size;
+
 	byte_t *hash = NULL;
 	byte_t *salt = NULL;
 	byte_t *em = NULL;
@@ -722,7 +728,22 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
 	}
 
 	// Allocate for the signature
-	rsign = malloc(sizeof(rsa_signature) + key_size);
+	if (rsign == NULL)
+	{
+		rsign = malloc(signature_size);
+	}
+	else
+	{
+		if (size < signature_size)
+		{
+			return NULL;
+		}
+	}
+
+	if (rsign == NULL)
+	{
+		return NULL;
+	}
 
 	if (rsign == NULL)
 	{
@@ -760,12 +781,20 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
 	// Generate the salt
 	if (salt_size > 0)
 	{
-		if (rctx->drbg == NULL)
+		if (rctx->salt != NULL)
 		{
-			rctx->drbg = get_default_drbg();
+			memcpy(salt, rctx->salt, rctx->salt_size);
+		}
+		else
+		{
+			if (rctx->drbg == NULL)
+			{
+				rctx->drbg = get_default_drbg();
+			}
+
+			drbg_generate(rctx->drbg, 0, NULL, 0, salt, salt_size);
 		}
 
-		drbg_generate(rctx->drbg, 0, NULL, 0, salt, salt_size);
 		hash_update(rctx->hctx_message, salt, salt_size);
 	}
 
@@ -792,10 +821,10 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx)
 	return rsign;
 }
 
-rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, size_t salt_size, void *message,
-							size_t message_size)
+rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt, size_t salt_size,
+							void *message, size_t message_size, void *signature, size_t signature_size)
 {
-	rsa_pss_ctx *rctx = rsa_sign_pss_new(key, hctx_message, hctx_mask, drbg, salt_size);
+	rsa_pss_ctx *rctx = rsa_sign_pss_new(key, hctx_message, hctx_mask, drbg, salt, salt_size);
 	rsa_signature *rsign = NULL;
 
 	if (rctx == NULL)
@@ -804,7 +833,7 @@ rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx
 	}
 
 	rsa_sign_pss_update(rctx, message, message_size);
-	rsign = rsa_sign_pss_final(rctx);
+	rsign = rsa_sign_pss_final(rctx, signature, signature_size);
 
 	rsa_sign_pss_delete(rctx);
 
@@ -813,7 +842,7 @@ rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx
 
 rsa_pss_ctx *rsa_verify_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size)
 {
-	return rsa_pss_new(key, hctx_message, hctx_mask, NULL, salt_size);
+	return rsa_pss_new(key, hctx_message, hctx_mask, NULL, NULL, salt_size);
 }
 
 void rsa_verify_pss_delete(rsa_pss_ctx *rctx)
@@ -824,7 +853,7 @@ void rsa_verify_pss_delete(rsa_pss_ctx *rctx)
 
 void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size)
 {
-	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, NULL, salt_size);
+	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, NULL, NULL, salt_size);
 }
 
 void rsa_verify_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
