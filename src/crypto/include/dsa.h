@@ -38,14 +38,14 @@ dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx);
 void dsa_sign_delete(dsa_ctx *dctx);
 void dsa_sign_reset(dsa_ctx *dctx, dsa_key *key, hash_ctx *hctx);
 void dsa_sign_update(dsa_ctx *dctx, void *message, size_t size);
-dsa_signature *dsa_sign_final(dsa_ctx *dctx);
-dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *message, size_t size);
+dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size);
+dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *message, size_t message_size, void *signature, size_t signature_size);
 
 dsa_ctx *dsa_verify_new(dsa_key *key, hash_ctx *hctx);
 void dsa_verify_delete(dsa_ctx *dctx);
 void dsa_verify_reset(dsa_ctx *dctx, dsa_key *key, hash_ctx *hctx);
 void dsa_verify_update(dsa_ctx *dctx, void *message, size_t size);
-int32_t dsa_verify_final(dsa_ctx *dctx, dsa_signature *dsign);
-int32_t dsa_verify(dsa_key *key, hash_ctx *hctx, void *message, size_t size, dsa_signature *dsign);
+uint32_t dsa_verify_final(dsa_ctx *dctx, dsa_signature *dsign);
+uint32_t dsa_verify(dsa_key *key, hash_ctx *hctx, void *message, size_t size, dsa_signature *dsign);
 
 #endif
