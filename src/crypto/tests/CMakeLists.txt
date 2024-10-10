@@ -126,5 +126,6 @@ drbg
 )
 
 crypto_signature_tests(
+dsa
 rsa-sig
 )
