@@ -14,8 +14,11 @@
 
 typedef struct _dsa_key
 {
+	uint32_t size;
+	uint16_t p_bits, q_bits;
 	bignum_t *p, *q, *g;
 	bignum_t *x, *y;
+	bignum_t *mu;
 	bignum_ctx *bctx;
 } dsa_key;
 
@@ -31,7 +34,7 @@ typedef struct _dsa_ctx
 } dsa_ctx;
 
 dsa_key *dsa_key_generate(uint32_t bits);
-dsa_key *dsa_key_new(uint32_t bits);
+dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
 void dsa_key_delete(dsa_key *key);
 
 void dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g);
