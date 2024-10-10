@@ -52,9 +52,9 @@ rsa_key *rsa_key_generate(uint32_t bits);
 rsa_key *rsa_key_new(uint32_t bits);
 void rsa_key_delete(rsa_key *key);
 
-void rsa_key_set_basic(rsa_key *key, bignum_t *n, bignum_t *d, bignum_t *e);
-void rsa_key_set_factors(rsa_key *key, bignum_t *p, bignum_t *q);
-void rsa_key_set_crt(rsa_key *key, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp);
+rsa_key *rsa_key_set_basic(rsa_key *key, bignum_t *n, bignum_t *d, bignum_t *e);
+rsa_key *rsa_key_set_factors(rsa_key *key, bignum_t *p, bignum_t *q);
+rsa_key *rsa_key_set_crt(rsa_key *key, bignum_t *dmp1, bignum_t *dmq1, bignum_t *iqmp);
 
 inline const bignum_t *rsa_key_get_p(rsa_key *key)
 {
