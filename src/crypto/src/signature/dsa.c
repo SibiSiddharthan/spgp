@@ -87,7 +87,7 @@ void dsa_key_delete(dsa_key *key)
 	free(key);
 }
 
-void dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g)
+dsa_key *dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g)
 {
 	uint32_t p_offset = sizeof(dsa_key);
 	uint32_t q_offset = p_offset + bignum_size(p->bits);
@@ -97,18 +97,28 @@ void dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g)
 	key->q = bignum_init(PTR_OFFSET(key, q_offset), bignum_size(key->q_bits), q->bits);
 	key->g = bignum_init(PTR_OFFSET(key, g_offset), bignum_size(key->p_bits), g->bits);
 
+	if (key->p == NULL || key->q == NULL || key->g == NULL)
+	{
+		return NULL;
+	}
+
 	bignum_copy(key->p, p);
 	bignum_copy(key->q, q);
 	bignum_copy(key->g, g);
 }
 
-void dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y)
+dsa_key *dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y)
 {
 	uint32_t x_offset = sizeof(dsa_key) + (2 * bignum_size(key->p_bits) + bignum_size(key->q_bits));
 	uint32_t y_offset = x_offset + bignum_size(x->bits);
 
 	key->x = bignum_init(PTR_OFFSET(key, x_offset), bignum_size(key->q_bits), x->bits);
 	key->y = bignum_init(PTR_OFFSET(key, y_offset), bignum_size(key->p_bits), y->bits);
+
+	if (key->x == NULL || key->y == NULL)
+	{
+		return NULL;
+	}
 
 	bignum_copy(key->x, x);
 	bignum_copy(key->y, y);

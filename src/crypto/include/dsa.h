@@ -37,8 +37,8 @@ dsa_key *dsa_key_generate(uint32_t bits);
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
 void dsa_key_delete(dsa_key *key);
 
-void dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g);
-void dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y);
+dsa_key *dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g);
+dsa_key *dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y);
 
 inline const bignum_t *dsa_key_get_p(dsa_key *key)
 {
