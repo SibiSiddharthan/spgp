@@ -392,7 +392,7 @@ bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 	v = bignum_ctx_allocate_bignum(bctx, m->bits);
 	gcd = bignum_ctx_allocate_bignum(bctx, m->bits);
 
-	status = bignum_eucild_gcdex(bctx, gcd, u, v, m, a);
+	status = bignum_euclid_gcdex(bctx, gcd, u, v, m, a);
 
 	if (status != 0)
 	{

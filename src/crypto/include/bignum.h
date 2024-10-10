@@ -94,7 +94,7 @@ bignum_t *bignum_euclid_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t
 bignum_t *bignum_binary_gcd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b);
 
 int32_t bignum_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b);
-int32_t bignum_eucild_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b);
+int32_t bignum_euclid_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b);
 int32_t bignum_binary_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b);
 
 int32_t bignum_divmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r);
