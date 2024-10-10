@@ -31,6 +31,8 @@ typedef struct _dsa_ctx
 {
 	dsa_key *key;
 	hash_ctx *hctx;
+	byte_t *salt;
+	size_t salt_size;
 } dsa_ctx;
 
 dsa_key *dsa_key_generate(uint32_t bits);
@@ -65,12 +67,13 @@ inline const bignum_t *dsa_key_get_y(dsa_key *key)
 	return key->y;
 }
 
-dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx);
+dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size);
 void dsa_sign_delete(dsa_ctx *dctx);
 void dsa_sign_reset(dsa_ctx *dctx, dsa_key *key, hash_ctx *hctx);
 void dsa_sign_update(dsa_ctx *dctx, void *message, size_t size);
 dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size);
-dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *message, size_t message_size, void *signature, size_t signature_size);
+dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size, void *message, size_t message_size, void *signature,
+						size_t signature_size);
 
 dsa_ctx *dsa_verify_new(dsa_key *key, hash_ctx *hctx);
 void dsa_verify_delete(dsa_ctx *dctx);

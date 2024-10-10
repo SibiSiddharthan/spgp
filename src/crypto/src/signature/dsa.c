@@ -105,6 +105,8 @@ dsa_key *dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g)
 	bignum_copy(key->p, p);
 	bignum_copy(key->q, q);
 	bignum_copy(key->g, g);
+
+	return key;
 }
 
 dsa_key *dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y)
@@ -122,11 +124,18 @@ dsa_key *dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y)
 
 	bignum_copy(key->x, x);
 	bignum_copy(key->y, y);
+
+	return key;
 }
 
-dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx)
+dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size)
 {
 	dsa_ctx *dctx = NULL;
+
+	if (salt != NULL && salt_size > (key->q_bits / 8))
+	{
+		return NULL;
+	}
 
 	dctx = (dsa_ctx *)malloc(sizeof(dsa_ctx));
 
@@ -137,6 +146,8 @@ dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx)
 
 	dctx->key = key;
 	dctx->hctx = hctx;
+	dctx->salt = salt;
+	dctx->salt_size = salt_size;
 
 	hash_reset(dctx->hctx);
 
@@ -214,7 +225,15 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	hash_final(dctx->hctx, NULL, hash_size);
 	z = bignum_set_bytes_be(z, dctx->hctx->hash, MIN(key->q->bits / 8, hash_size));
 
-	k = bignum_rand(k, NULL, key->q->bits);
+	if (dctx->salt != NULL)
+	{
+		k = bignum_set_bytes_be(k, dctx->salt, dctx->salt_size);
+	}
+	else
+	{
+		k = bignum_rand(k, NULL, key->q->bits);
+	}
+
 	ik = bignum_modinv(bctx, ik, k, key->q);
 
 	// r = (g^k mod p) mod q.
@@ -231,9 +250,10 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	return dsign;
 }
 
-dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *message, size_t message_size, void *signature, size_t signature_size)
+dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size, void *message, size_t message_size, void *signature,
+						size_t signature_size)
 {
-	dsa_ctx *dctx = dsa_sign_new(key, hctx);
+	dsa_ctx *dctx = dsa_sign_new(key, hctx, salt, salt_size);
 	dsa_signature *dsign = NULL;
 
 	if (dctx == NULL)
