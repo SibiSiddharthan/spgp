@@ -386,7 +386,7 @@ bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 		}
 	}
 
-	bignum_ctx_start(bctx, 0);
+	bignum_ctx_start(bctx, 3 * bignum_size(m->bits));
 
 	u = bignum_ctx_allocate_bignum(bctx, m->bits);
 	v = bignum_ctx_allocate_bignum(bctx, m->bits);

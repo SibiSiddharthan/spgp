@@ -57,21 +57,35 @@ static bignum_t *euclid_gcd(bignum_ctx *bctx, bignum_t *gcd, bignum_t *a, bignum
 static bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bignum_t *v, bignum_t *a, bignum_t *b)
 {
 	bignum_t *q = NULL, *r = NULL;
-	bignum_t *x = NULL, *y = NULL;
-	bignum_t *t = NULL;
-	uint32_t max_bits = MAX(a->bits, b->bits);
+	bignum_t *t1 = NULL, *t2 = NULL;
+	bignum_t *u1 = NULL, *u2 = NULL, *u3 = NULL;
+	bignum_t *v1 = NULL, *v2 = NULL, *v3 = NULL;
 
-	bignum_ctx_start(bctx, 0);
+	uint32_t max_bits = MAX(a->bits, b->bits) * 2;
 
-	a = bignum_dup(bctx, a);
-	b = bignum_dup(bctx, b);
-	x = bignum_ctx_allocate_bignum(bctx, max_bits);
-	y = bignum_ctx_allocate_bignum(bctx, max_bits);
+	bignum_ctx_start(bctx, 10 * bignum_size(max_bits));
+
+	q = bignum_ctx_allocate_bignum(bctx, max_bits);
+	r = bignum_ctx_allocate_bignum(bctx, max_bits);
+
+	u1 = bignum_ctx_allocate_bignum(bctx, max_bits);
+	u2 = bignum_ctx_allocate_bignum(bctx, max_bits);
+	u3 = bignum_ctx_allocate_bignum(bctx, max_bits);
+
+	v1 = bignum_ctx_allocate_bignum(bctx, max_bits);
+	v2 = bignum_ctx_allocate_bignum(bctx, max_bits);
+	v3 = bignum_ctx_allocate_bignum(bctx, max_bits);
+
+	t1 = bignum_ctx_allocate_bignum(bctx, max_bits);
+	t2 = bignum_ctx_allocate_bignum(bctx, max_bits);
 
 	a->sign = b->sign = 1;
 
+	// Make sure a > b
 	if (bignum_cmp_abs(a, b) < 0)
 	{
+		bignum_t *t;
+
 		t = a;
 		a = b;
 		b = t;
@@ -82,29 +96,43 @@ static bignum_t *euclid_gcdex(bignum_ctx *bctx, bignum_t *gcd, bignum_t *u, bign
 	}
 
 	// Initial values.
-	bignum_one(x);
-	bignum_zero(y);
+	bignum_one(u1);
+	bignum_zero(v1);
 
-	bignum_zero(u);
-	bignum_one(v);
+	bignum_zero(u2);
+	bignum_one(v2);
+
+	u3 = bignum_dup(bctx, a);
+	v3 = bignum_dup(bctx, b);
 
 	do
 	{
-		bignum_divmod(bctx, a, b, q, r);
+		bignum_divmod(bctx, u3, v3, q, r);
 
-		bignum_copy(a, b);
-		bignum_copy(b, r);
+		bignum_copy(u3, v3);
+		bignum_copy(v3, r);
 
-		bignum_copy(t, u);
-		bignum_copy(u, v);
+		t1 = bignum_mul(bctx, t1, v1, q);
+		t1 = bignum_sub(t1, u1, t1);
 
-		v = bignum_mul(bctx, v, v, q);
-		v = bignum_sub(v, t, v);
+		t2 = bignum_mul(bctx, t2, v2, q);
+		t2 = bignum_sub(t2, u2, t2);
+
+		bignum_copy(u1, v1);
+		bignum_copy(u2, v2);
+
+		bignum_copy(v1, t1);
+		bignum_copy(v2, t2);
 
 	} while (r->bits > 0);
 
-	gcd = bignum_copy(gcd, a);
+	gcd = bignum_copy(gcd, u3);
 	gcd->sign = 1;
+
+	u = bignum_copy(u, u1);
+	v = bignum_copy(v, u2);
+
+	bignum_ctx_end(bctx);
 
 	return gcd;
 }
@@ -382,8 +410,8 @@ static int32_t bignum_gcdex_common(bignum_ctx *bctx, bignum_t *r, bignum_t *u, b
 
 	// General case.
 	r = bignum_resize(r, MIN(a->bits, b->bits));
-	u = bignum_resize(r, a->bits);
-	v = bignum_resize(r, b->bits);
+	u = bignum_resize(u, a->bits);
+	v = bignum_resize(v, b->bits);
 
 	if (r == NULL || u == NULL || v == NULL)
 	{
@@ -522,8 +550,8 @@ int32_t bignum_gcdex(bignum_ctx *bctx, bignum_t *r, bignum_t *u, bignum_t *v, bi
 
 	// General case.
 	r = bignum_resize(r, MIN(a->bits, b->bits));
-	u = bignum_resize(r, a->bits);
-	v = bignum_resize(r, b->bits);
+	u = bignum_resize(u, a->bits);
+	v = bignum_resize(v, b->bits);
 
 	if (r == NULL || u == NULL || v == NULL)
 	{
