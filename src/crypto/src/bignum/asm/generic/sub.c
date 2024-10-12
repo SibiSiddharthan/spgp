@@ -14,17 +14,19 @@ uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t coun
 {
 	uint8_t borrow = 0;
 	bn_word_t temp_a = 0;
+	bn_word_t temp_b = 0;
 	bn_word_t temp_r = 0;
 
 	for (uint32_t pos = 0; pos < count; ++pos)
 	{
 		temp_a = *a;
+		temp_b = *b;
 
 		// Subract previous borrow
 		*r = temp_a - borrow; // borrow -> 0|1
 		borrow = (*r > temp_a); // Next borrow
 		temp_r = *r;
-		*r -= *b;
+		*r -= temp_b;
 		borrow |= (*r > temp_r); // Next borrow
 
 		a++;
