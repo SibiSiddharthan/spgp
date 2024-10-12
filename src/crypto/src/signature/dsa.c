@@ -184,12 +184,13 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	bignum_ctx *bctx = dctx->key->bctx;
 
 	size_t hash_size = hctx->hash_size;
-	size_t ctx_size = 3 * bignum_size(key->q->bits);
-	size_t signature_size = sizeof(dsa_signature) + bignum_size(key->p->bits) + bignum_size(key->q->bits);
+	size_t ctx_size = (3 * bignum_size(key->q->bits)) + bignum_size(key->p->bits);
+	size_t signature_size = sizeof(dsa_signature) + (2 * bignum_size(key->q->bits));
 
 	bignum_t *k = NULL;
 	bignum_t *ik = NULL;
 	bignum_t *z = NULL;
+	bignum_t *t = NULL;
 
 	// Allocate the signature
 	if (dsign == NULL)
@@ -212,7 +213,7 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	dsign->r = PTR_OFFSET(dsign, sizeof(dsa_signature));
 	dsign->s = PTR_OFFSET(dsign, sizeof(dsa_signature) + bignum_size(key->p->bits));
 
-	dsign->r = bignum_init(dsign->r, bignum_size(key->p->bits), key->p->bits);
+	dsign->r = bignum_init(dsign->r, bignum_size(key->q->bits), key->q->bits);
 	dsign->s = bignum_init(dsign->s, bignum_size(key->q->bits), key->q->bits);
 
 	bignum_ctx_start(bctx, ctx_size);
@@ -220,6 +221,8 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	k = bignum_ctx_allocate_bignum(bctx, key->q->bits);
 	ik = bignum_ctx_allocate_bignum(bctx, key->q->bits);
 	z = bignum_ctx_allocate_bignum(bctx, MIN(key->q->bits, hash_size * 8));
+
+	t = bignum_ctx_allocate_bignum(bctx, key->p->bits);
 
 	// Finish hashing
 	hash_final(dctx->hctx, NULL, hash_size);
@@ -237,8 +240,8 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	ik = bignum_modinv(bctx, ik, k, key->q);
 
 	// r = (g^k mod p) mod q.
-	dsign->r = bignum_modexp(bctx, dsign->r, key->g, k, key->p);
-	dsign->r = bignum_mod(bctx, dsign->r, dsign->r, key->q);
+	t = bignum_modexp(bctx, t, key->g, k, key->p);
+	dsign->r = bignum_mod(bctx, dsign->r, t, key->q);
 
 	// s = (ik(z + xr)) mod q.
 	dsign->s = bignum_modmul(bctx, dsign->s, key->x, dsign->r, key->q);
