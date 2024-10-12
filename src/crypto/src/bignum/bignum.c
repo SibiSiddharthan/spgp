@@ -15,7 +15,7 @@
 
 #include <bignum-internal.h>
 
-bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits, int16_t flags)
+bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits, uint16_t flags)
 {
 	bignum_t *bn = (bignum_t *)ptr;
 

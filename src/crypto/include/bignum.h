@@ -28,7 +28,7 @@ typedef struct _bignum_t
 	uint32_t size;
 	int8_t sign;
 	int8_t resize;
-	int16_t flags;
+	uint16_t flags;
 	bn_word_t *words;
 } bignum_t;
 
