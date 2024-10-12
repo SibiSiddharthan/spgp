@@ -99,7 +99,7 @@ bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b)
 	{
 		// Different sign, subract b from a.
 		int32_t sign = bignum_usub(r, a, b, min_words, total_words);
-		r->sign = sign * (swap == NULL ? a->sign : b->sign);
+		r->sign = (sign * a->sign);
 	}
 
 	r->bits = bignum_bitcount(r);
