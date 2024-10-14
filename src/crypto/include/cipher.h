@@ -46,8 +46,11 @@ typedef struct _cipher_ctx
 			byte_t n[16];
 			byte_t h[16];
 			byte_t c[16];
+			byte_t t[16];
+			byte_t icb[16];
 
 			byte_t tag_size;
+			byte_t t_size;
 			size_t data_size;
 			size_t ad_size;
 		} eax;
