@@ -338,20 +338,14 @@ bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignu
 
 	for (uint32_t i = 1; i < p->bits; ++i)
 	{
-		sq = bignum_sqr(bctx, sq, sq);
-
-		bignum_copy(st, sq);
+		st = bignum_sqr(bctx, st, sq);
 		bignum_zero(sq);
-
 		bignum_barret_udivmod(bctx, st, m, mu, qt, sq);
 
 		if (p->words[i / BIGNUM_BITS_PER_WORD] & ((bn_word_t)1 << (i % BIGNUM_BITS_PER_WORD)))
 		{
-			r = bignum_mul(bctx, r, r, sq);
-
-			bignum_copy(rt, r);
+			rt = bignum_mul(bctx, rt, r, sq);
 			bignum_zero(r);
-
 			bignum_barret_udivmod(bctx, rt, m, mu, qt, r);
 		}
 	}
