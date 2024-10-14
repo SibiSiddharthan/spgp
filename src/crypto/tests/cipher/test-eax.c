@@ -36,8 +36,8 @@ int32_t aes128_eax_suite(void)
 	status += CHECK_BLOCK(ciphertext, 16, "e037830e8389f27b025a2d6527e79d01");
 
 	memset(plaintext, 0, 64);
-	// result = aes128_eax_decrypt(key, 16, 16, nonce, 16, header, 8, ciphertext, 16, plaintext, 64);
-	// status += CHECK_VALUE(result, 0);
+	result = aes128_eax_decrypt(key, 16, 16, nonce, 16, header, 8, ciphertext, 16, plaintext, 64);
+	status += CHECK_VALUE(result, 0);
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -169,10 +169,10 @@ int32_t aes128_eax_suite(void)
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
-	hex_to_block(key, 16, "ca40d7446e545ffaed3bd12a740a659ffbbb3ceab7");
+	hex_to_block(key, 16, "8395fcf1e95bebd697bd010bc766aac3");
 	hex_to_block(nonce, 16, "22e7add93cfc6393c57ec0b3c17d6b44");
 	hex_to_block(header, 8, "126735fcc320d25a");
-	hex_to_block(plaintext, 21, "8b0a79306c9ce7ed99dae4f87f8dd61636");
+	hex_to_block(plaintext, 21, "ca40d7446e545ffaed3bd12a740a659ffbbb3ceab7");
 
 	result = aes128_eax_encrypt(key, 16, 16, nonce, 16, header, 8, plaintext, 21, ciphertext, 64);
 	status += CHECK_VALUE(result, 37);
