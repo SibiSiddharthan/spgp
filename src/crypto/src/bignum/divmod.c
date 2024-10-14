@@ -119,7 +119,7 @@ bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	uint32_t remainder_bits = b->bits;
 	int32_t quotient_sign = a->sign * b->sign;
 
-	bignum_t *quotient = r;
+	bignum_t *quotient = NULL;
 	bignum_t *remainder = NULL;
 
 	bignum_ctx *obctx = bctx;
@@ -129,9 +129,9 @@ bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		++quotient_bits;
 	}
 
-	quotient = bignum_resize(quotient, quotient_bits);
+	r = bignum_resize(r, quotient_bits);
 
-	if (quotient == NULL)
+	if (r == NULL)
 	{
 		return NULL;
 	}
@@ -146,10 +146,14 @@ bignum_t *bignum_div(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 	}
 
-	bignum_ctx_start(bctx, bignum_size(remainder_bits));
+	bignum_ctx_start(bctx, bignum_size(remainder_bits) + bignum_size(quotient_bits));
 
+	quotient = bignum_ctx_allocate_bignum(bctx, quotient_bits);
 	remainder = bignum_ctx_allocate_bignum(bctx, remainder_bits);
+
 	status = bignum_divmod(bctx, a, b, quotient, remainder);
+
+	bignum_copy(r, quotient);
 
 	bignum_ctx_end(bctx);
 
@@ -170,7 +174,7 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	int32_t quotient_sign = a->sign * b->sign;
 
 	bignum_t *quotient = NULL;
-	bignum_t *remainder = r;
+	bignum_t *remainder = NULL;
 
 	bignum_ctx *obctx = bctx;
 
@@ -179,9 +183,9 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		++quotient_bits;
 	}
 
-	remainder = bignum_resize(remainder, remainder_bits);
+	r = bignum_resize(r, remainder_bits);
 
-	if (remainder == NULL)
+	if (r == NULL)
 	{
 		return NULL;
 	}
@@ -196,10 +200,14 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 		}
 	}
 
-	bignum_ctx_start(bctx, bignum_size(quotient_bits));
+	bignum_ctx_start(bctx, bignum_size(remainder_bits) + bignum_size(quotient_bits));
 
 	quotient = bignum_ctx_allocate_bignum(bctx, quotient_bits);
+	remainder = bignum_ctx_allocate_bignum(bctx, remainder_bits);
+
 	status = bignum_divmod(bctx, a, b, quotient, remainder);
+
+	bignum_copy(r, remainder);
 
 	bignum_ctx_end(bctx);
 
