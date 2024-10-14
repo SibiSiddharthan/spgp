@@ -445,7 +445,183 @@ int32_t bignum_modexp_tests(void)
 	return status;
 }
 
+int32_t bignum_barret_modexp_tests(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	bignum_t *a = NULL, *p = NULL, *m = NULL, *r = NULL;
+	char hex[512] = {0};
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "86b49", 5);
+	p = bignum_set_hex(NULL, "2", 1);
+	m = bignum_set_hex(NULL, "30d26ecb", 8);
+
+	r = bignum_barret_modexp(NULL, NULL, a, p, m, NULL);
+
+	memset(hex, 0, 512);
+	result = bignum_get_hex(r, hex, 512);
+
+	status += CHECK_HEX(hex, "0x208f8aa0", 10);
+	status += CHECK_VALUE(result, 10);
+
+	bignum_delete(a);
+	bignum_delete(p);
+	bignum_delete(m);
+	bignum_delete(r);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "17591bb", 7);
+	p = bignum_set_hex(NULL, "6", 1);
+	m = bignum_set_hex(NULL, "30d26ecb", 8);
+
+	r = bignum_barret_modexp(NULL, NULL, a, p, m, NULL);
+
+	memset(hex, 0, 512);
+	result = bignum_get_hex(r, hex, 512);
+
+	status += CHECK_HEX(hex, "0x27308229", 10);
+	status += CHECK_VALUE(result, 10);
+
+	bignum_delete(a);
+	bignum_delete(p);
+	bignum_delete(m);
+	bignum_delete(r);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(NULL, "21292626", 8);
+	p = bignum_set_hex(NULL, "d", 1);
+	m = bignum_set_hex(NULL, "30d26ecb", 8);
+
+	r = bignum_barret_modexp(NULL, NULL, a, p, m, NULL);
+
+	memset(hex, 0, 512);
+	result = bignum_get_hex(r, hex, 512);
+
+	status += CHECK_HEX(hex, "0x2bdf498f", 10);
+	status += CHECK_VALUE(result, 10);
+
+	bignum_delete(a);
+	bignum_delete(p);
+	bignum_delete(m);
+	bignum_delete(r);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(
+		NULL,
+		"ead8c5a451541c50cab74de530c89376d9a55c723e0cac3c84b25f0093c08a2961e49ab48966361c42c9f99111587252d98395b76788400d75c66ef208ea2767a2"
+		"8d6f8dc3a859f39c95765d57f139e7fc14f47c908c62df051e7216d379f52028843b4d82ef49133cce8fe671ae179423ac8da5be43b01caaf425cd969300cd",
+		256);
+	p = bignum_set_hex(
+		NULL,
+		"8de689aef79eba6b20d7debb8d146541348df2f259dff6c3bfabf5517c8caf0473866a03ddbd03fc354bb00beda35e67f342d684896bf8dbb79238a6929692b1a8"
+		"7f58a2dcba596fe1a0514e3019baffe1b580fc810bd9774c00ab0f37af78619b30f273e3bfb95daac34e74566f84bb8809be7650dec75a20be61b4f904ed4e",
+		256);
+	m = bignum_set_hex(
+		NULL,
+		"c95943186c7567fe8cd1bb4f07e7c659475fd9f38217571af20dfe7e4666d86286bc5b2bb013197f9b1c452c69a95bb7e450cf6e45d46e452282d5d2826978e06c"
+		"52c7ca204869e8d1b1fac4911e3aef92c7b2d7551ebd8c6fe0365fad49e275cc2949a124385cadc4ace24671c4fe86a849de07c6fafacb312f55e9f3c79dcb",
+		256);
+
+	r = bignum_barret_modexp(NULL, NULL, a, p, m, NULL);
+
+	memset(hex, 0, 512);
+	result = bignum_get_hex(r, hex, 512);
+
+	status += CHECK_HEX(
+		hex,
+		"0x5150fb769d5c5d341aaf56639a7bcc77c415fe46439938a2190283409692f29cd080bfe3433005d98d24718a03a3553c8560c5e9c8ed0f53b8945eb18290e1c1"
+		"a83d919302510f66dd89b58acc2de79ad54b8a30d3e1019d4d222556beefca0821b094ecf104b5e4cfce69d2d520d2abf54f3e393d25ed3d27e8c2e3ca2e5ff9",
+		258);
+	status += CHECK_VALUE(result, 258);
+
+	bignum_delete(a);
+	bignum_delete(p);
+	bignum_delete(m);
+	bignum_delete(r);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(
+		NULL,
+		"855144760f2be2f2038d8ff628f03a902ae2e07736f2695ec980f84a1781665ab65e2b4e53d31856f431a32fd58d8a7727acee54cc54a62161b035c0293714ca29"
+		"4e2161ea4a48660bf084b885f504ad23ea338030460310bd19186be9030ab5136f09fe6a9223962bce385aaaf9c39fe6ed6d005fa96163fe15cdfa08fc914d",
+		256);
+	p = bignum_set_hex(
+		NULL,
+		"bb552be12c02ae8b9e90c8beb5689ffefe3378d2c30f12a6d14496250ecce30317c642857535a741642c3df689a8d71a276d247ed482b07b50135357da6143ac2f"
+		"5c74f6c739c5ff6ada21e1ab35439f6445a1019d6b607950bffb0357c6009a2bfc88cd7f4f883dc591d4eb45b1d787e85aba5c10ee4fe05ea47bf556aec94d",
+		256);
+	m = bignum_set_hex(
+		NULL,
+		"dcc24236a1bb94c71d9ec162a6aa4697b932717e82b667cad08b6bd1bbcbddf7cd167b7458de2b0b780486b39574e749d6405f9ede774a021d6b547271523e9e84"
+		"a6fdd3a98315607ccf93356f54daa9c75e1e311e1672d0dc163be13f9ed6762f7dd301f5b0a1bb2398b608f40ac357ae34fc8a87d4fef3b961cbdb806d9061",
+		256);
+
+	r = bignum_barret_modexp(NULL, NULL, a, p, m, NULL);
+
+	memset(hex, 0, 512);
+	result = bignum_get_hex(r, hex, 512);
+
+	status += CHECK_HEX(
+		hex,
+		"0xbbad67352704a6321809f742826bf3d1c31c0ad057bf81432abeb30dc9913c896c03e69eb1cde6b78ffcb320c4625bd38ef23a08d6c64dc86aec951b72d74b09"
+		"7e209ce63092959894614e3865a6153ec0ff6fda639e44071a33763f6b18edc1c22094c3f844f04a86d414c4cb618e9812991c61289360c7ba60f190f75038d0",
+		258);
+	status += CHECK_VALUE(result, 258);
+
+	bignum_delete(a);
+	bignum_delete(p);
+	bignum_delete(m);
+	bignum_delete(r);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_set_hex(
+		NULL,
+		"b4fde2908745ff92cc5826a27dcfdda09e8fffee681844fa4c7f1354d946d5d84e0e0c7a4a4cb20943d9c73dd707ca47d796945d6f6b55933b615e2c522f5dfc33"
+		"e0652917b4809bab86f4fa56b32b746c177764895492d0a6a699812b2827fe701d40ef7effd78ea8efe1cac15ff74a295a09614bf04cae1a5017872ba22efe",
+		256);
+	p = bignum_set_hex(
+		NULL,
+		"a5524b41dfc6b570df1d8f6633ac7777c1131abe3a99c6166b0d29d3b8883c41b00a0c53cdd6f42820bf05c810b6ec53e77a8c1b9344ea0c91d4f410a2f204c369"
+		"f3db33bf8c88217fc2cf802a9d9bce8119242d8e781875b85431be170076498c0963574ee423551aec9557e2fc672ab1ab5d0cbb1c400535df9481e7934d8f",
+		256);
+	m = bignum_set_hex(
+		NULL,
+		"88f3c87ac5e3272a21b8a858da640d6939fb8113a95412c38663a0f352686d69a5d7927e60b484b9fcb8ef12978fe25ff2ebc9b61c5450e04222ef20ba3cbbdc5e"
+		"c45581ce0f58e10be7bb9de7fa08752303a7a1db23b2ac9c6692ec63bf09ecd6639e06c5491ba568ea886620d71da32d329615f0e1443a75d09ae35b8a2d7f",
+		256);
+
+	r = bignum_barret_modexp(NULL, NULL, a, p, m, NULL);
+
+	memset(hex, 0, 512);
+	result = bignum_get_hex(r, hex, 512);
+
+	status += CHECK_HEX(
+		hex,
+		"0x292f0b39ca0f1c850b1a00cffd2d54924fcd5fc7e7504c9d593e6c0ff74760b1f4bdd81679fe06c50248336f3108c593fa111072ee87d0fcc89a63243a1dc890"
+		"44503663eee9bc18f51c3e0193d9108303e12ac90ff78f6ec752a4386af09c42db524a7cbe9a3d4fcccd56c34d283bcc9debc17158b5fe8df0c1888a9841bf8f",
+		258);
+	status += CHECK_VALUE(result, 258);
+
+	bignum_delete(a);
+	bignum_delete(p);
+	bignum_delete(m);
+	bignum_delete(r);
+
+	// ------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return bignum_modadd_tests() + bignum_modsub_tests() + bignum_modsqr_tests() + bignum_modmul_tests() + bignum_modexp_tests();
+	return bignum_modadd_tests() + bignum_modsub_tests() + bignum_modsqr_tests() + bignum_modmul_tests() + bignum_modexp_tests() +
+		   bignum_barret_modexp_tests();
 }
