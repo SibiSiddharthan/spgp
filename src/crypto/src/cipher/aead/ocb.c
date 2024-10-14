@@ -14,6 +14,8 @@
 #include <minmax.h>
 #include <round.h>
 
+#include "double-block.h"
+
 // See NIST SP 800-38D Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (OCB) and GMAC
 
 typedef struct _ocb_ctx
@@ -34,23 +36,6 @@ typedef struct _ocb_ctx
 	void (*encrypt)(void *key, void *plaintext, void *ciphertext);
 	void (*decrypt)(void *key, void *ciphertext, void *plaintext);
 } ocb_ctx;
-
-static inline void double_block(byte_t r[16], byte_t b[16])
-{
-	uint64_t *u = (uint64_t *)b;
-	uint64_t *v = (uint64_t *)r;
-
-	v[0] = BSWAP_64(u[0]);
-	v[1] = BSWAP_64(u[1]);
-
-	v[0] = (v[0] << 1) | (v[1] >> 63);
-	v[1] = v[1] << 1;
-
-	v[0] = BSWAP_64(v[0]);
-	v[1] = BSWAP_64(v[1]);
-
-	r[15] ^= 0x87;
-}
 
 static void calculate_hash(ocb_ctx *octx, void *associated_data, size_t ad_size)
 {
