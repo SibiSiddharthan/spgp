@@ -54,6 +54,22 @@ typedef struct _cipher_ctx
 			size_t data_size;
 			size_t ad_size;
 		} eax;
+
+		struct _ocb
+		{
+			byte_t ls[16][18];
+			byte_t offset[16];
+			byte_t checksum[16];
+			byte_t osum[16];
+
+			uint8_t max_ntz;
+			uint8_t tag_size;
+			size_t block_count;
+
+			size_t data_size;
+			size_t ad_size;
+
+		} ocb;
 	};
 
 	void *_key;
@@ -203,6 +219,21 @@ uint64_t cipher_eax_decrypt_update(cipher_ctx *cctx, void *in, size_t in_size, v
 uint64_t cipher_eax_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t cipher_eax_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size, void *in,
 							size_t in_size, void *out, size_t out_size);
+
+// Offset CodeBook (OCB)
+cipher_ctx *cipher_ocb_encrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
+									size_t ad_size);
+uint64_t cipher_ocb_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_ocb_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_ocb_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+							void *in, size_t in_size, void *out, size_t out_size);
+
+cipher_ctx *cipher_ocb_decrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
+									size_t ad_size);
+uint64_t cipher_ocb_decrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_ocb_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_ocb_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+							void *in, size_t in_size, void *out, size_t out_size);
 
 // Synthetic Initialization Vector (SIV)
 
