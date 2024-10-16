@@ -183,6 +183,8 @@ static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, size_t tag_size, voi
 		return NULL;
 	}
 
+	memset(&cctx->ocb, 0, sizeof(cctx->ocb));
+
 	// Initialize L
 	cctx->_encrypt(cctx->_key, zero, cctx->ocb.ls[0]); // L*
 	double_block(cctx->ocb.ls[1], cctx->ocb.ls[0]);    // L$
