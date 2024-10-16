@@ -93,8 +93,9 @@ ctr
 
 #aead
 eax
-gcm
 ccm
+gcm
+ocb
 kw
 )
 
