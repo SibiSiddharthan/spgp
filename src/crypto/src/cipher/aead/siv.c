@@ -79,7 +79,7 @@ static void s2v(cmac_ctx *cctx, byte_t iv[16], void **associated_data, size_t *a
 	}
 }
 
-static uint64_t siv_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, void *out, size_t size)
+static uint64_t siv_cmac_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, void *out, size_t size)
 {
 	const uint16_t block_size = 16;
 	const uint64_t mask = ((1ull << 63) - 1) - (1ull << 31); // Zero 63, 31 bit
@@ -105,13 +105,7 @@ static uint64_t siv_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, void *
 	while ((processed + block_size) <= size)
 	{
 		cctx->_encrypt(cctx->_key, icb, buffer);
-
 		XOR16(pout + processed, pin + processed, buffer);
-
-		for (uint8_t i = 0; i < block_size; ++i)
-		{
-			pout[processed + i] = pin[processed + i] ^ buffer[i];
-		}
 
 		counter &= mask;
 		counter += 1;
@@ -180,7 +174,7 @@ uint64_t cipher_siv_cmac_encrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void **as
 	}
 
 	s2v(cm_ctx, iv, associated_data, ad_size, ad_count, nonce, nonce_size, plaintext, plaintext_size);
-	siv_ctr_update(ci_ctx, iv, plaintext, PTR_OFFSET(ciphertext, 16), plaintext_size);
+	siv_cmac_ctr_update(ci_ctx, iv, plaintext, PTR_OFFSET(ciphertext, 16), plaintext_size);
 
 	memcpy(ciphertext, iv, 16);
 
@@ -203,7 +197,7 @@ uint64_t cipher_siv_cmac_decrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void **as
 
 	memcpy(actual_iv, ciphertext, 16);
 
-	siv_ctr_update(ci_ctx, actual_iv, PTR_OFFSET(ciphertext, 16), plaintext, plaintext_size);
+	siv_cmac_ctr_update(ci_ctx, actual_iv, PTR_OFFSET(ciphertext, 16), plaintext, plaintext_size);
 	s2v(cm_ctx, expected_iv, associated_data, ad_size, ad_count, nonce, nonce_size, plaintext, plaintext_size);
 
 	if (memcmp(actual_iv, expected_iv, 16) != 0)
@@ -288,4 +282,298 @@ uint64_t aes512_siv_cmac_decrypt(void *key, size_t key_size, void **associated_d
 {
 	return siv_decrypt_common(CIPHER_AES256, key, key_size, associated_data, ad_size, ad_count, nonce, nonce_size, in, in_size, out,
 							  out_size);
+}
+
+// Refer RFC 8452: AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption
+
+static inline void block_multiplication(uint64_t x[2], uint64_t y[2])
+{
+	uint64_t r = 0x87ull << 56;
+	uint64_t z[2], v[2];
+
+	z[0] = 0;
+	z[1] = 0;
+
+	v[0] = x[0];
+	v[1] = x[1];
+
+	for (uint8_t i = 0; i < 128; ++i)
+	{
+		if (y[i / 64] & (1ull << (7 - (i % 8) + (i / 8) * 8)))
+		{
+			XOR16(z, z, v);
+		}
+
+		if ((v[1] >> 56) & 0x80)
+		{
+			v[1] = (v[1] << 1) | (((v[0] >> 56) & 0x80) ? 0x1 : 0);
+			v[0] = v[0] << 1;
+
+			v[1] ^= r;
+		}
+		else
+		{
+			v[1] = (v[1] << 1) | (((v[0] >> 56) & 0x80) ? 0x1 : 0);
+			v[0] = v[0] << 1;
+		}
+	}
+
+	x[0] = z[0];
+	x[1] = z[1];
+}
+
+static void polyval(void *tag, void *authentication_key, void *associated_data, size_t ad_size, void *plaintext, size_t plaintext_size)
+{
+	uint64_t length[2];
+	uint64_t processed = 0;
+
+	// Associated data
+	while (processed < ad_size)
+	{
+		XOR16(tag, tag, PTR_OFFSET(associated_data, processed));
+		block_multiplication(tag, authentication_key);
+
+		processed += 16;
+	}
+
+	processed = 0;
+
+	// Plaintext
+	while (processed < plaintext_size)
+	{
+		XOR16(tag, tag, PTR_OFFSET(plaintext, processed));
+		block_multiplication(tag, authentication_key);
+
+		processed += 16;
+	}
+
+	// Length block
+	length[0] = ad_size * 8;
+	length[1] = plaintext_size * 8;
+
+	XOR16(tag, tag, length);
+	block_multiplication(tag, authentication_key);
+}
+
+static uint64_t siv_gcm_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, void *out, size_t size)
+{
+	const uint16_t block_size = 16;
+
+	uint64_t processed = 0;
+	uint64_t remaining = 0;
+
+	byte_t buffer[16] = {0};
+	byte_t icb[16] = {0};
+
+	byte_t *pin = (byte_t *)in;
+	byte_t *pout = (byte_t *)out;
+	uint64_t *oc = (uint64_t *)&icb[8];
+
+	memcpy(icb, iv, 16);
+	icb[15] |= 0x80;
+
+	while ((processed + block_size) <= size)
+	{
+		cctx->_encrypt(cctx->_key, icb, buffer);
+		XOR16(pout + processed, pin + processed, buffer);
+
+		(*oc)++;
+		processed += block_size;
+	}
+
+	remaining = size - processed;
+
+	if (remaining > 0)
+	{
+
+		cctx->_encrypt(cctx->_key, icb, buffer);
+
+		for (uint8_t i = 0; i < remaining; ++i)
+		{
+			pout[processed + i] = pin[processed + i] ^ buffer[i];
+		}
+
+		processed += block_size;
+	}
+
+	return processed;
+}
+
+static byte_t cipher_siv_gcm_derive_keys(cipher_algorithm algorithm, void *key, size_t key_size, byte_t nonce[12],
+										 byte_t authentication_key[16], byte_t encryption_key[32])
+{
+	cipher_ctx *cctx = NULL;
+	byte_t cipher_buffer[512];
+
+	byte_t buffer[16] = {0};
+	byte_t block[16] = {0};
+	uint32_t *oc = (uint32_t *)&block[0];
+
+	cctx = cipher_init(cipher_buffer, 512, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	memcpy(block + 4, nonce, 12);
+
+	// Authentication key
+	*oc = 0;
+	cctx->_encrypt(cctx->_key, block, buffer);
+	memcpy(authentication_key, buffer, 8);
+
+	*oc = 1;
+	cctx->_encrypt(cctx->_key, block, buffer);
+	memcpy(authentication_key + 8, buffer, 8);
+
+	// Encryption key
+	*oc = 2;
+	cctx->_encrypt(cctx->_key, block, buffer);
+	memcpy(encryption_key, buffer, 8);
+
+	*oc = 3;
+	cctx->_encrypt(cctx->_key, block, buffer);
+	memcpy(encryption_key + 8, buffer, 8);
+
+	if (key_size == 32)
+	{
+		*oc = 4;
+		cctx->_encrypt(cctx->_key, block, buffer);
+		memcpy(encryption_key + 16, buffer, 8);
+
+		*oc = 5;
+		cctx->_encrypt(cctx->_key, block, buffer);
+		memcpy(encryption_key + 24, buffer, 8);
+	}
+
+	return (((*oc) - 1) * 8);
+}
+
+uint64_t cipher_siv_gcm_encrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, byte_t nonce_size,
+								void *associated_data, size_t ad_size, void *plaintext, size_t plaintext_size, void *ciphertext,
+								size_t ciphertext_size)
+{
+	cipher_ctx *cctx = NULL;
+	byte_t cipher_buffer[512];
+
+	byte_t authentication_key[16] = {0};
+	byte_t encryption_key[32] = {0};
+	byte_t nonce_copy[16] = {0};
+	byte_t tag[16] = {0};
+	byte_t encryption_key_size = 0;
+
+	if (key_size != 16 && key_size != 32)
+	{
+		return 0;
+	}
+
+	if (nonce_size != 12)
+	{
+		return 0;
+	}
+
+	if (ciphertext_size < (plaintext_size + 16))
+	{
+		return 0;
+	}
+
+	memcpy(nonce_copy, nonce, 12);
+
+	encryption_key_size = cipher_siv_gcm_derive_keys(algorithm, key, key_size, nonce_copy, authentication_key, encryption_key);
+
+	if (encryption_key_size == 0)
+	{
+		return 0;
+	}
+
+	cctx = cipher_init(cipher_buffer, 512, algorithm, key, encryption_key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	polyval(tag, authentication_key, associated_data, ad_size, plaintext, plaintext_size);
+
+	XOR16(tag, tag, nonce_copy);
+	tag[15] &= 0x7F;
+
+	cctx->_encrypt(cctx->_key, tag, tag);
+
+	siv_gcm_ctr_update(cctx, tag, plaintext, ciphertext, plaintext_size);
+
+	memcpy(PTR_OFFSET(ciphertext, plaintext_size), tag, 16);
+
+	return plaintext_size + 16;
+}
+
+uint64_t cipher_siv_gcm_decrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, byte_t nonce_size,
+								void *associated_data, size_t ad_size, void *ciphertext, size_t ciphertext_size, void *plaintext,
+								size_t plaintext_size)
+{
+	cipher_ctx *cctx = NULL;
+	byte_t cipher_buffer[512];
+
+	byte_t authentication_key[16] = {0};
+	byte_t encryption_key[32] = {0};
+	byte_t nonce_copy[16] = {0};
+	byte_t expected_tag[16] = {0};
+	byte_t actual_tag[16] = {0};
+	byte_t encryption_key_size = 0;
+
+	if (key_size != 16 && key_size != 32)
+	{
+		return 0;
+	}
+
+	if (nonce_size != 12)
+	{
+		return 0;
+	}
+
+	if (ciphertext_size < 16)
+	{
+		return 0;
+	}
+
+	if (plaintext_size < (ciphertext_size - 16))
+	{
+		return 0;
+	}
+
+	plaintext_size = ciphertext_size - 16;
+
+	memcpy(nonce_copy, nonce, 12);
+
+	encryption_key_size = cipher_siv_gcm_derive_keys(algorithm, key, key_size, nonce_copy, authentication_key, encryption_key);
+
+	if (encryption_key_size == 0)
+	{
+		return 0;
+	}
+
+	cctx = cipher_init(cipher_buffer, 512, algorithm, key, encryption_key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	memcpy(expected_tag, PTR_OFFSET(ciphertext, ciphertext_size - 16), 16);
+
+	siv_gcm_ctr_update(cctx, expected_tag, ciphertext, plaintext, plaintext_size);
+	polyval(actual_tag, authentication_key, associated_data, ad_size, plaintext, plaintext_size);
+
+	XOR16(actual_tag, actual_tag, nonce_copy);
+	actual_tag[15] &= 0x7F;
+
+	cctx->_encrypt(cctx->_key, actual_tag, actual_tag);
+
+	if (memcmp(actual_tag, expected_tag, 16) != 0)
+	{
+		return 0;
+	}
+
+	return plaintext_size;
 }
