@@ -247,9 +247,9 @@ uint64_t cipher_siv_cmac_decrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void **as
 								 void *nonce, size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
 
 uint64_t cipher_siv_gcm_encrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, byte_t nonce_size,
-								 void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
+								void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t cipher_siv_gcm_decrypt(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, byte_t nonce_size,
-								 void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
+								void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
 
 // AES-ECB
 uint64_t aes128_ecb_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding);
@@ -429,5 +429,16 @@ uint64_t aes512_siv_cmac_encrypt(void *key, size_t key_size, void **associated_d
 								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t aes512_siv_cmac_decrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,
 								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
+
+// AES-SIV-GCM
+uint64_t aes128_siv_gcm_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size);
+uint64_t aes128_siv_gcm_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size);
+
+uint64_t aes256_siv_gcm_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size);
+uint64_t aes256_siv_gcm_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size);
 
 #endif

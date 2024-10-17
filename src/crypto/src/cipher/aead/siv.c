@@ -577,3 +577,27 @@ uint64_t cipher_siv_gcm_decrypt(cipher_algorithm algorithm, void *key, size_t ke
 
 	return plaintext_size;
 }
+
+uint64_t aes128_siv_gcm_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size)
+{
+	return cipher_siv_gcm_encrypt(CIPHER_AES128, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes128_siv_gcm_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size)
+{
+	return cipher_siv_gcm_decrypt(CIPHER_AES128, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes256_siv_gcm_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size)
+{
+	return cipher_siv_gcm_encrypt(CIPHER_AES256, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes256_siv_gcm_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+								size_t in_size, void *out, size_t out_size)
+{
+	return cipher_siv_gcm_decrypt(CIPHER_AES256, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
