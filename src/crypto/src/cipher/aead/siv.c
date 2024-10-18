@@ -42,7 +42,7 @@ static void s2v(cmac_ctx *cctx, byte_t iv[16], void *associated_data, size_t ad_
 	double_block(dbl, buffer);
 
 	// Optional Nonce
-	if (nonce != NULL)
+	if (nonce != NULL && nonce_size > 0)
 	{
 		cmac_update(cctx, nonce, nonce_size);
 		cmac_final(cctx, buffer, 16);
@@ -67,6 +67,9 @@ static void s2v(cmac_ctx *cctx, byte_t iv[16], void *associated_data, size_t ad_
 	{
 		memset(buffer, 0, 16);
 		memcpy(buffer, plaintext, plaintext_size);
+
+		buffer[plaintext_size] = 0x80;
+
 		XOR16(buffer, buffer, dbl);
 
 		cmac_update(cctx, buffer, 16);
@@ -88,10 +91,14 @@ static uint64_t siv_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, void *
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 	uint64_t *oc = (uint64_t *)&icb[8];
+	uint64_t counter = 0;
 
 	memcpy(icb, iv, 16);
+	counter = BSWAP_64(*oc);
 
-	uint64_t counter = BSWAP_64(*oc);
+	// Initial mask
+	counter &= mask;
+	*oc = BSWAP_64(counter);
 
 	while ((processed + block_size) <= size)
 	{
