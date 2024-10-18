@@ -241,10 +241,10 @@ uint64_t cipher_ocb_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size
 // Synthetic Initialization Vector (SIV)
 int32_t cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_size, void *ci_ctx, size_t cipher_ctx_size, void *cm_ctx,
 							 size_t cmac_ctx_size);
-uint64_t cipher_siv_cmac_encrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void *nonce, size_t nonce_size, void *associated_data,
-								 size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_siv_cmac_decrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void *nonce, size_t nonce_size, void *associated_data,
-								 size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_siv_cmac_encrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void **associated_data, size_t *ad_size, uint32_t ad_count,
+								 void *nonce, size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_siv_cmac_decrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void **associated_data, size_t *ad_size, uint32_t ad_count,
+								 void *nonce, size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
 
 // AES-ECB
 uint64_t aes128_ecb_encrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size, cipher_padding padding);
@@ -410,19 +410,19 @@ uint64_t aes256_ocb_decrypt(void *key, size_t key_size, byte_t tag_size, void *n
 							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
 
 // AES-SIV-CMAC
-uint64_t aes256_siv_cmac_encrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-								 void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes256_siv_cmac_decrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-								 void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes256_siv_cmac_encrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,
+								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes256_siv_cmac_decrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,
+								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
 
-uint64_t aes384_siv_cmac_encrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-								 void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes384_siv_cmac_decrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-								 void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes384_siv_cmac_encrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,
+								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes384_siv_cmac_decrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,
+								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
 
-uint64_t aes512_siv_cmac_encrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-								 void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes512_siv_cmac_decrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-								 void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes512_siv_cmac_encrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,
+								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes512_siv_cmac_decrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,
+								 size_t nonce_size, void *in, size_t in_size, void *out, size_t out_size);
 
 #endif
