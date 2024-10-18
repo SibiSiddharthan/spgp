@@ -202,3 +202,73 @@ uint64_t cipher_siv_cmac_decrypt(cipher_ctx *ci_ctx, cmac_ctx *cm_ctx, void *non
 
 	return plaintext_size;
 }
+
+static uint64_t siv_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, size_t nonce_size,
+								   void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	byte_t cipher_buffer[512];
+	byte_t cmac_buffer[512];
+
+	cipher_ctx *ci_ctx = (cipher_ctx *)cipher_buffer;
+	cmac_ctx *cm_ctx = (cmac_ctx *)cmac_buffer;
+
+	if (cipher_siv_cmac_init(algorithm, key, key_size, ci_ctx, 512, cm_ctx, 512) != 0)
+	{
+		return 0;
+	}
+
+	return cipher_siv_cmac_encrypt(ci_ctx, cm_ctx, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+static uint64_t siv_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, size_t nonce_size,
+								   void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+{
+	byte_t cipher_buffer[512];
+	byte_t cmac_buffer[512];
+
+	cipher_ctx *ci_ctx = (cipher_ctx *)cipher_buffer;
+	cmac_ctx *cm_ctx = (cmac_ctx *)cmac_buffer;
+
+	if (cipher_siv_cmac_init(algorithm, key, key_size, ci_ctx, 512, cm_ctx, 512) != 0)
+	{
+		return 0;
+	}
+
+	return cipher_siv_cmac_decrypt(ci_ctx, cm_ctx, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes256_siv_cmac_encrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+								 void *in, size_t in_size, void *out, size_t out_size)
+{
+	return siv_encrypt_common(CIPHER_AES128, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes256_siv_cmac_decrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+								 void *in, size_t in_size, void *out, size_t out_size)
+{
+	return siv_decrypt_common(CIPHER_AES128, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes384_siv_cmac_encrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+								 void *in, size_t in_size, void *out, size_t out_size)
+{
+	return siv_encrypt_common(CIPHER_AES192, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes384_siv_cmac_decrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+								 void *in, size_t in_size, void *out, size_t out_size)
+{
+	return siv_decrypt_common(CIPHER_AES192, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes512_siv_cmac_encrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+								 void *in, size_t in_size, void *out, size_t out_size)
+{
+	return siv_encrypt_common(CIPHER_AES256, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
+
+uint64_t aes512_siv_cmac_decrypt(void *key, size_t key_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
+								 void *in, size_t in_size, void *out, size_t out_size)
+{
+	return siv_decrypt_common(CIPHER_AES256, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+}
