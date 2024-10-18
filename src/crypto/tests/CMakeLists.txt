@@ -96,6 +96,7 @@ eax
 ccm
 gcm
 ocb
+siv
 kw
 )
 

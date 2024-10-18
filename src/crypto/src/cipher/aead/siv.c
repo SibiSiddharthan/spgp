@@ -51,8 +51,7 @@ static void s2v(cmac_ctx *cctx, byte_t iv[16], void **associated_data, size_t *a
 		cmac_final(cctx, buffer, 16);
 		cmac_reset(cctx, NULL, 0);
 
-		XOR16(buffer, buffer, dbl);
-		double_block(dbl, buffer);
+		XOR16(dbl, dbl, buffer);
 	}
 
 	// Plaintext
