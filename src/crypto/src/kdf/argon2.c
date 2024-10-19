@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <argon2.h>
 #include <blake2.h>
 #include <byteswap.h>
 #include <minmax.h>
@@ -15,6 +16,7 @@
 #include <round.h>
 
 // Refer RFC 9106 : Argon2 Memory-Hard Function for Password Hashing and Proof-of-Work Applications
+
 #define ARGON2_D  0
 #define ARGON2_I  1
 #define ARGON2_ID 2
@@ -208,7 +210,6 @@ static void block_offset(uint32_t argon2_type, uint32_t i, uint32_t j, uint32_t 
 
 	if (argon2_type == ARGON2_D || argon2_type == ARGON2_DS || (argon2_type == ARGON2_ID && !(pass == 0 && slice < 2)))
 	{
-
 	}
 
 	x = j1 >> 31;
@@ -312,7 +313,7 @@ static uint32_t argon2_common(void *password, uint32_t password_size, void *salt
 		{
 			uint32_t l, z;
 
-			//block_offset(argon2_type, i, j, &l, &z);
+			// block_offset(argon2_type, i, j, &l, &z);
 			G(blocks + (i * lane_size) + (j * ARGON2_BLOCK_SIZE), blocks + (i * lane_size) + ((j - 1) * ARGON2_BLOCK_SIZE),
 			  blocks + (l * lane_size) + (z * ARGON2_BLOCK_SIZE), (uint64_t *)sbox);
 		}
@@ -333,7 +334,7 @@ static uint32_t argon2_common(void *password, uint32_t password_size, void *salt
 		{
 			uint32_t l, z;
 
-			//block_offset(argon2_type, i, 0, &l, &z);
+			// block_offset(argon2_type, i, 0, &l, &z);
 			G(temp, blocks + (i * lane_size) + ((columns - 1) * ARGON2_BLOCK_SIZE), blocks + (l * lane_size) + (z * ARGON2_BLOCK_SIZE),
 			  (uint64_t *)sbox);
 
@@ -350,7 +351,7 @@ static uint32_t argon2_common(void *password, uint32_t password_size, void *salt
 			{
 				uint32_t l, z;
 
-				//block_offset(argon2_type, i, j, &l, &z);
+				// block_offset(argon2_type, i, j, &l, &z);
 				G(temp, blocks + (i * lane_size) + ((j - 1) * ARGON2_BLOCK_SIZE), blocks + (l * lane_size) + (z * ARGON2_BLOCK_SIZE),
 				  (uint64_t *)sbox);
 
