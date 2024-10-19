@@ -115,6 +115,7 @@ kdf
 hkdf
 pbkdf2
 scrypt
+argon2
 )
 
 crypto_mac_tests(
