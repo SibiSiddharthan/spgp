@@ -275,7 +275,7 @@ int32_t aes128_ocb_suite(void)
 	hex_to_block(plaintext, 40, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324252627");
 
 	result = aes128_ocb_encrypt(key, 16, 12, nonce, 12, associated_data, 40, plaintext, 40, ciphertext, 64);
-	status += CHECK_VALUE(result, 56);
+	status += CHECK_VALUE(result, 52);
 	status += CHECK_BLOCK(ciphertext, 52,
 						  "1792a4e31e0755fb03e31b22116e6c2ddf9efd6e33d536f1a0124b0a55bae884ed93481529c76b6ad0c515f4d1cdd4fdac4f02aa");
 

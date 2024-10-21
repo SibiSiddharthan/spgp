@@ -60,7 +60,7 @@ typedef struct _cipher_ctx
 		struct _ocb
 		{
 			// TODO: Fix AEAD limitations
-			byte_t ls[16][6];
+			byte_t ls[6][16];
 			byte_t offset[16];
 			byte_t checksum[16];
 			byte_t osum[16];
