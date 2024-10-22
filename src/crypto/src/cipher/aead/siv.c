@@ -286,10 +286,12 @@ uint64_t aes512_siv_cmac_decrypt(void *key, size_t key_size, void **associated_d
 
 // Refer RFC 8452: AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption
 
-static inline void block_multiplication(uint64_t x[2], uint64_t y[2])
+static inline void polyval_multiplication(uint64_t x[2], uint64_t y[2])
 {
-	uint64_t r = 0x87ull << 56;
+	const byte_t r[16] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC2};
 	uint64_t z[2], v[2];
+
+	// X = X * Y
 
 	z[0] = 0;
 	z[1] = 0;
@@ -299,21 +301,21 @@ static inline void block_multiplication(uint64_t x[2], uint64_t y[2])
 
 	for (uint8_t i = 0; i < 128; ++i)
 	{
-		if (y[i / 64] & (1ull << (7 - (i % 8) + (i / 8) * 8)))
+		if (y[i / 64] & (1ull << (i % 64)))
 		{
 			XOR16(z, z, v);
 		}
 
-		if ((v[1] >> 56) & 0x80)
+		if (v[1] & 0x8000000000000000)
 		{
-			v[1] = (v[1] << 1) | (((v[0] >> 56) & 0x80) ? 0x1 : 0);
+			v[1] = (v[1] << 1) | (v[0] >> 63);
 			v[0] = v[0] << 1;
 
-			v[1] ^= r;
+			XOR16(v, v, r);
 		}
 		else
 		{
-			v[1] = (v[1] << 1) | (((v[0] >> 56) & 0x80) ? 0x1 : 0);
+			v[1] = (v[1] << 1) | (v[0] >> 63);
 			v[0] = v[0] << 1;
 		}
 	}
@@ -324,27 +326,60 @@ static inline void block_multiplication(uint64_t x[2], uint64_t y[2])
 
 static void polyval(void *tag, void *authentication_key, void *associated_data, size_t ad_size, void *plaintext, size_t plaintext_size)
 {
+	const byte_t w[16] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x92};
+	const uint16_t block_size = 16;
+
+	byte_t buffer[16];
 	uint64_t length[2];
+	uint64_t hx128[2] = {0};
+
 	uint64_t processed = 0;
+	uint64_t remaining = 0;
+
+	// Calculate H*(x^-128)
+	memcpy(hx128, authentication_key, 16);
+	polyval_multiplication(hx128, (uint64_t *)w);
 
 	// Associated data
-	while (processed < ad_size)
+	while ((processed + block_size) <= ad_size)
 	{
 		XOR16(tag, tag, PTR_OFFSET(associated_data, processed));
-		block_multiplication(tag, authentication_key);
+		polyval_multiplication(tag, hx128);
 
 		processed += 16;
+	}
+
+	remaining = ad_size - processed;
+
+	if (remaining > 0)
+	{
+		memset(buffer, 0, 16);
+		memcpy(buffer, PTR_OFFSET(associated_data, processed), remaining);
+
+		XOR16(tag, tag, buffer);
+		polyval_multiplication(tag, hx128);
 	}
 
 	processed = 0;
 
 	// Plaintext
-	while (processed < plaintext_size)
+	while ((processed + block_size) <= plaintext_size)
 	{
 		XOR16(tag, tag, PTR_OFFSET(plaintext, processed));
-		block_multiplication(tag, authentication_key);
+		polyval_multiplication(tag, hx128);
 
 		processed += 16;
+	}
+
+	remaining = plaintext_size - processed;
+
+	if (remaining > 0)
+	{
+		memset(buffer, 0, 16);
+		memcpy(buffer, PTR_OFFSET(plaintext, processed), remaining);
+
+		XOR16(tag, tag, buffer);
+		polyval_multiplication(tag, hx128);
 	}
 
 	// Length block
@@ -352,7 +387,7 @@ static void polyval(void *tag, void *authentication_key, void *associated_data, 
 	length[1] = plaintext_size * 8;
 
 	XOR16(tag, tag, length);
-	block_multiplication(tag, authentication_key);
+	polyval_multiplication(tag, hx128);
 }
 
 static uint64_t siv_gcm_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, void *out, size_t size)
@@ -367,7 +402,7 @@ static uint64_t siv_gcm_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, vo
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
-	uint64_t *oc = (uint64_t *)&icb[8];
+	uint32_t *oc = (uint32_t *)&icb[0];
 
 	memcpy(icb, iv, 16);
 	icb[15] |= 0x80;
@@ -487,7 +522,7 @@ uint64_t cipher_siv_gcm_encrypt(cipher_algorithm algorithm, void *key, size_t ke
 		return 0;
 	}
 
-	cctx = cipher_init(cipher_buffer, 512, algorithm, key, encryption_key_size);
+	cctx = cipher_init(cipher_buffer, 512, algorithm, encryption_key, encryption_key_size);
 
 	if (cctx == NULL)
 	{
@@ -553,7 +588,7 @@ uint64_t cipher_siv_gcm_decrypt(cipher_algorithm algorithm, void *key, size_t ke
 		return 0;
 	}
 
-	cctx = cipher_init(cipher_buffer, 512, algorithm, key, encryption_key_size);
+	cctx = cipher_init(cipher_buffer, 512, algorithm, encryption_key, encryption_key_size);
 
 	if (cctx == NULL)
 	{
