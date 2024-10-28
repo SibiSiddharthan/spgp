@@ -15,6 +15,7 @@ typedef enum _pgp_public_key_algorithms
 	PGP_RSA_ENCRYPT_OR_SIGN = 1,
 	PGP_RSA_ENCRYPT_ONLY = 2,
 	PGP_RSA_SIGN_ONLY = 3,
+	PGP_KYBER = 8,
 	PGP_ELGAMAL_ENCRYPT_ONLY = 16,
 	PGP_DSA = 17,
 	PGP_ECDH = 18,
