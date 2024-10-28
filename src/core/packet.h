@@ -137,4 +137,6 @@ typedef struct _pgp_trust_packet
 	void *placeholder;
 } pgp_trust_packet;
 
+uint64_t dump_pgp_packet(void *data, size_t data_size);
+
 #endif

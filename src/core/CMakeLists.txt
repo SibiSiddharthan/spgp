@@ -16,3 +16,6 @@ add_library(spgp OBJECT
 
 target_include_directories(spgp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(spgp crypto)
+
+add_executable(dump dump.c)
+target_link_libraries(dump spgp crypto)

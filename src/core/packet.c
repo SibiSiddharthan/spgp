@@ -235,3 +235,8 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 
 	return pos;
 }
+
+uint64_t dump_pgp_packet(void *data, size_t data_size)
+{
+	return 0;
+}
