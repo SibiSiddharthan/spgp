@@ -380,6 +380,52 @@ uint64_t dump_pgp_packet(void *data, size_t data_size)
 	return 0;
 }
 
+pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
+{
+	byte_t *in = data;
+	size_t pos = get_header_size(PGP_HEADER, packet->header.size);
+
+	// Get the compression algorithm
+	LOAD_8(&packet->compression_algorithm_id, in + pos);
+	pos += 1;
+
+	// Copy the compressed data.
+	memcpy(packet->data, in + pos, packet->header.size - 1);
+
+	return packet;
+}
+
+size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	// 1 octet of compression algorithm
+	// N bytes of padding data
+
+	required_size = packet->header.size;
+	required_size += get_header_size(PGP_HEADER, required_size);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet of compression algorithm
+	LOAD_8(out + pos, &packet->compression_algorithm_id);
+	pos += 1;
+
+	// Compressed data
+	memcpy(out + pos, packet->data, packet->header.size - 1);
+	pos += packet->header.size;
+
+	return pos;
+}
+
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
 {
 	// Copy the padding data.
@@ -407,7 +453,7 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 	// Header
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
-	// Padding fata
+	// Padding data
 	memcpy(out + pos, packet->data, packet->header.size);
 	pos += packet->header.size;
 

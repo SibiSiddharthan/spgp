@@ -105,13 +105,13 @@ typedef struct _pgp_secret_key_packet
 	void *key_material;
 } pgp_seckey_packet, pgp_secsubkey_packet;
 
-typedef struct _pgp_comp_packet
+typedef struct _pgp_compressed_packet
 {
 	pgp_packet_header header;
 
 	byte_t compression_algorithm_id;
 	byte_t data[1];
-} pgp_comp_packet;
+} pgp_compresed_packet;
 
 typedef struct _pgp_marker_packet
 {
@@ -138,6 +138,9 @@ typedef struct _pgp_trust_packet
 } pgp_trust_packet;
 
 uint64_t dump_pgp_packet(void *data, size_t data_size);
+
+pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size);
+size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
 
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
