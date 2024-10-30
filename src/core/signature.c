@@ -480,7 +480,7 @@ static uint32_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, v
 	// A 2-octet/4-octet count for the hashed subpacket data that follows this field.
 	// A hashed subpacket data set (zero or more subpackets).
 	// A 2-octet/4-octet count for the unhashed subpacket data that follows this field.
-	// An uhashed subpacket data set (zero or more subpackets).
+	// An unhashed subpacket data set (zero or more subpackets).
 	// A 2-octet field holding the left 16 bits of the signed hash value.
 	// (For V6) A 1-octet salt size.
 	// (For V6) The salt.
