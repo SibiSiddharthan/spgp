@@ -187,17 +187,17 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 		pos += 1;
 
 		// 1 octed length
-		if (header->size < 192)
+		if (header->body_size < 192)
 		{
-			uint8_t size = (uint8_t)header->size;
+			uint8_t size = (uint8_t)header->body_size;
 
 			LOAD_8(out + pos, &size);
 			pos += 1;
 		}
 		// 2 octet legnth
-		else if (header->size < 8384)
+		else if (header->body_size < 8384)
 		{
-			uint16_t size = (uint16_t)header->size - 192;
+			uint16_t size = (uint16_t)header->body_size - 192;
 			uint8_t o1 = (size >> 8) + 192;
 			uint8_t o2 = (size & 0xFF);
 
@@ -212,7 +212,7 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 		{
 			// 1st octet is 255
 			uint8_t byte = 255;
-			uint32_t size = BSWAP_32((uint32_t)header->size);
+			uint32_t size = BSWAP_32((uint32_t)header->body_size);
 
 			LOAD_8(out + pos, &byte);
 			pos += 1;
@@ -228,17 +228,17 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 		pos += 1;
 
 		// 1 octed length
-		if (header->size < 256)
+		if (header->body_size < 256)
 		{
-			uint8_t size = (uint8_t)header->size;
+			uint8_t size = (uint8_t)header->body_size;
 
 			LOAD_8(out + pos, &size);
 			pos += 1;
 		}
 		// 2 octet legnth
-		else if (header->size < 65536)
+		else if (header->body_size < 65536)
 		{
-			uint16_t size = BSWAP_16((uint16_t)header->size);
+			uint16_t size = BSWAP_16((uint16_t)header->body_size);
 
 			LOAD_16(out + pos, &size);
 			pos += 2;
@@ -246,7 +246,7 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 		// 4 octet length
 		else
 		{
-			uint32_t size = BSWAP_32((uint32_t)header->size);
+			uint32_t size = BSWAP_32((uint32_t)header->body_size);
 
 			LOAD_32(out + pos, &size);
 			pos += 4;
@@ -310,7 +310,7 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 	}
 
 	header.tag = pdata[0];
-	header.size = get_packet_size(data, size);
+	header.body_size = get_packet_size(data, size);
 
 	return header;
 }
@@ -320,12 +320,12 @@ size_t pgp_packet_read(void *data, size_t size)
 	pgp_packet_header header = pgp_packet_header_read(data, size);
 	pgp_packet_type ptype = pgp_packet_get_type(header.tag);
 
-	if (ptype == PGP_RESERVED || header.size == 0)
+	if (ptype == PGP_RESERVED || header.body_size == 0)
 	{
 		return 0;
 	}
 
-	if (size < (get_header_size(get_packet_header_type(&header), header.size) + header.size))
+	if (size < (get_header_size(get_packet_header_type(&header), header.body_size) + header.body_size))
 	{
 		// Invalid packet
 		return 0;
@@ -383,14 +383,14 @@ uint64_t dump_pgp_packet(void *data, size_t data_size)
 pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = get_header_size(PGP_HEADER, packet->header.size);
+	size_t pos = packet->header.header_size;;
 
 	// Get the compression algorithm
 	LOAD_8(&packet->compression_algorithm_id, in + pos);
 	pos += 1;
 
 	// Copy the compressed data.
-	memcpy(packet->data, in + pos, packet->header.size - 1);
+	memcpy(packet->data, in + pos, packet->header.body_size - 1);
 
 	return packet;
 }
@@ -404,8 +404,7 @@ size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_
 	// 1 octet of compression algorithm
 	// N bytes of padding data
 
-	required_size = packet->header.size;
-	required_size += get_header_size(PGP_HEADER, required_size);
+	required_size = packet->header.body_size + packet->header.header_size;
 
 	if (size < required_size)
 	{
@@ -420,8 +419,8 @@ size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_
 	pos += 1;
 
 	// Compressed data
-	memcpy(out + pos, packet->data, packet->header.size - 1);
-	pos += packet->header.size;
+	memcpy(out + pos, packet->data, packet->header.body_size - 1);
+	pos += packet->header.body_size;
 
 	return pos;
 }
@@ -429,7 +428,7 @@ size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
 {
 	// Copy the padding data.
-	memcpy(packet->data, (byte_t *)data + get_header_size(PGP_HEADER, packet->header.size), packet->header.size);
+	memcpy(packet->data, (byte_t *)data + packet->header.header_size, packet->header.body_size);
 
 	return packet;
 }
@@ -442,8 +441,7 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 
 	// N bytes of padding data
 
-	required_size = packet->header.size;
-	required_size += get_header_size(PGP_HEADER, required_size);
+	required_size = packet->header.body_size + packet->header.header_size;
 
 	if (size < required_size)
 	{
@@ -454,8 +452,8 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
 	// Padding data
-	memcpy(out + pos, packet->data, packet->header.size);
-	pos += packet->header.size;
+	memcpy(out + pos, packet->data, packet->header.body_size);
+	pos += packet->header.body_size;
 
 	return pos;
 }

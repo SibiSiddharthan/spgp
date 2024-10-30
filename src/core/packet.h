@@ -45,7 +45,8 @@ typedef enum _pgp_packet_header_type
 typedef struct _pgp_packet_header
 {
 	byte_t tag;
-	uint32_t size;
+	byte_t header_size;
+	uint32_t body_size;
 } pgp_packet_header;
 
 typedef struct _pgp_pkesk_packet

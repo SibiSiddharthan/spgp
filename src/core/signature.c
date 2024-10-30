@@ -418,7 +418,7 @@ static uint32_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void
 	// One or more MPIs comprising the signature
 
 	required_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + get_signature_size(packet->public_key_algorithm_id, packet->key_bits);
-	required_size += get_header_size(PGP_LEGACY_HEADER, required_size);
+	required_size += packet->header.header_size;
 
 	if (size < required_size)
 	{
@@ -489,7 +489,7 @@ static uint32_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, v
 	required_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_size + packet->unhashed_size +
 					get_signature_size(packet->public_key_algorithm_id, packet->key_bits);
 	required_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
-	required_size += get_header_size(PGP_HEADER, required_size);
+	required_size += packet->header.header_size;
 
 	if (size < required_size)
 	{
