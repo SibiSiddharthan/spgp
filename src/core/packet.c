@@ -8,6 +8,8 @@
 #include <spgp.h>
 #include <packet.h>
 
+#include <string.h>
+
 // Refer RFC 9580 - OpenPGP, Section 4.2 Packet Headers
 
 static pgp_packet_header_type get_packet_header_type(void *packet)
@@ -376,4 +378,38 @@ size_t pgp_packet_read(void *data, size_t size)
 uint64_t dump_pgp_packet(void *data, size_t data_size)
 {
 	return 0;
+}
+
+pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
+{
+	// Copy the padding data.
+	memcpy(packet->data, (byte_t *)data + get_header_size(PGP_HEADER, packet->header.size), packet->header.size);
+
+	return packet;
+}
+
+size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	// N bytes of padding data
+
+	required_size = packet->header.size;
+	required_size += get_header_size(PGP_HEADER, required_size);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Padding fata
+	memcpy(out + pos, packet->data, packet->header.size);
+	pos += packet->header.size;
+
+	return pos;
 }
