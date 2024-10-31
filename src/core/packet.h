@@ -149,4 +149,7 @@ size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
 
+pgp_compresed_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size);
+size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
+
 #endif

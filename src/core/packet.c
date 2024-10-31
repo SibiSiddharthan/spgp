@@ -509,3 +509,48 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 
 	return pos;
 }
+
+pgp_compresed_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size)
+{
+	// Checks for a valid modification detection code packet.
+	if (packet->header.header_size != 2)
+	{
+		return NULL;
+	}
+
+	if (packet->header.body_size != 20)
+	{
+		return NULL;
+	}
+
+	// Copy the SHA-1 hash
+	memcpy(packet->sha1_hash, (byte_t *)data + packet->header.header_size, 20);
+
+	return packet;
+}
+
+size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	// 2 octet header (new and legacy)
+	// 20 octets of SHA-1 hash
+
+	required_size = 2 + 3;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Padding data
+	memcpy(out + pos, packet->sha1_hash, 20);
+	pos += 3;
+
+	return pos;
+}
