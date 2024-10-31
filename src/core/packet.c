@@ -26,7 +26,7 @@ static pgp_packet_header_type get_packet_header_type(void *packet)
 	return PGP_LEGACY_HEADER;
 }
 
-static uint32_t get_packet_size(void *packet, size_t packet_size)
+static uint32_t get_packet_body_size(void *packet, size_t packet_size)
 {
 	pgp_packet_header *header = packet;
 	byte_t *byte = (byte_t *)packet + 1;
@@ -101,7 +101,7 @@ static uint32_t get_packet_size(void *packet, size_t packet_size)
 	return size;
 }
 
-uint32_t get_header_size(pgp_packet_header_type type, size_t size)
+byte_t get_packet_header_size(pgp_packet_header_type type, size_t size)
 {
 	if (type == PGP_HEADER)
 	{
@@ -310,7 +310,8 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 	}
 
 	header.tag = pdata[0];
-	header.body_size = get_packet_size(data, size);
+	header.header_size = get_packet_header_size(get_packet_header_type(data), size);
+	header.body_size = get_packet_body_size(data, size);
 
 	return header;
 }
@@ -325,7 +326,7 @@ size_t pgp_packet_read(void *data, size_t size)
 		return 0;
 	}
 
-	if (size < (get_header_size(get_packet_header_type(&header), header.body_size) + header.body_size))
+	if (size < (get_packet_header_size(get_packet_header_type(&header), header.body_size) + header.body_size))
 	{
 		// Invalid packet
 		return 0;
@@ -383,7 +384,8 @@ uint64_t dump_pgp_packet(void *data, size_t data_size)
 pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;;
+	size_t pos = packet->header.header_size;
+	;
 
 	// Get the compression algorithm
 	LOAD_8(&packet->compression_algorithm_id, in + pos);

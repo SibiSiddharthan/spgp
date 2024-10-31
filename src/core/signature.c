@@ -13,7 +13,7 @@
 #include <string.h>
 
 uint32_t mpi_write_checked(mpi_t *mpi, void *ptr);
-uint32_t get_header_size(pgp_packet_header_type type, size_t size);
+uint32_t get_packet_header_size(pgp_packet_header_type type, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 
 static uint32_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, uint32_t size);
