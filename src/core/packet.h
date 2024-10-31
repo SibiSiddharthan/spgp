@@ -143,6 +143,9 @@ uint64_t dump_pgp_packet(void *data, size_t data_size);
 pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size);
 size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
 
+pgp_compresed_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size);
+size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
+
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
 

@@ -385,7 +385,6 @@ pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, vo
 {
 	byte_t *in = data;
 	size_t pos = packet->header.header_size;
-	;
 
 	// Get the compression algorithm
 	LOAD_8(&packet->compression_algorithm_id, in + pos);
@@ -406,7 +405,7 @@ size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_
 	// 1 octet of compression algorithm
 	// N bytes of padding data
 
-	required_size = packet->header.body_size + packet->header.header_size;
+	required_size = packet->header.header_size + packet->header.body_size;
 
 	if (size < required_size)
 	{
@@ -427,6 +426,57 @@ size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_
 	return pos;
 }
 
+pgp_compresed_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size)
+{
+	byte_t marker[3] = {0x50, 0x47, 0x50};
+
+	// Checks for a valid marker packet.
+	if (packet->header.header_size != 2)
+	{
+		return NULL;
+	}
+
+	if (packet->header.body_size != 3)
+	{
+		return NULL;
+	}
+
+	if (memcmp((byte_t *)data + packet->header.header_size, marker, 3) != 0)
+	{
+		return NULL;
+	}
+
+	memcpy(packet->marker, marker, 3);
+
+	return packet;
+}
+
+size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	// 2 octet header (new and legacy)
+	// 3 octets of marker data
+
+	required_size = 2 + 3;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Padding data
+	memcpy(out + pos, packet->marker, 3);
+	pos += 3;
+
+	return pos;
+}
+
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
 {
 	// Copy the padding data.
@@ -443,7 +493,7 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 
 	// N bytes of padding data
 
-	required_size = packet->header.body_size + packet->header.header_size;
+	required_size = packet->header.header_size + packet->header.body_size;
 
 	if (size < required_size)
 	{
