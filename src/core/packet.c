@@ -426,7 +426,7 @@ size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_
 	return pos;
 }
 
-pgp_compresed_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size)
+pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size)
 {
 	byte_t marker[3] = {0x50, 0x47, 0x50};
 
@@ -510,7 +510,7 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-pgp_compresed_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size)
+pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size)
 {
 	// Checks for a valid modification detection code packet.
 	if (packet->header.header_size != 2)
