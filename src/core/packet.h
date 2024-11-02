@@ -120,6 +120,12 @@ typedef struct _pgp_marker_packet
 	byte_t marker[3]; // "PGP" (0x50, 0x47, 0x50)
 } pgp_marker_packet;
 
+typedef struct _pgp_user_id_packet
+{
+	pgp_packet_header header;
+	byte_t user_id[1];
+} pgp_user_id_packet;
+
 typedef struct _pgp_padding_packet
 {
 	pgp_packet_header header;
@@ -145,6 +151,9 @@ size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_
 
 pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size);
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
+
+pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size);
+size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
 
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);

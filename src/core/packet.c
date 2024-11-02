@@ -477,6 +477,39 @@ size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size
 	return pos;
 }
 
+pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size)
+{
+	// Copy the user data.
+	memcpy(packet->user_id, (byte_t *)data + packet->header.header_size, packet->header.body_size);
+
+	return packet;
+}
+
+size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	// N bytes of user data
+
+	required_size = packet->header.header_size + packet->header.body_size;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// User data
+	memcpy(out + pos, packet->user_id, packet->header.body_size);
+	pos += packet->header.body_size;
+
+	return pos;
+}
+
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
 {
 	// Copy the padding data.
