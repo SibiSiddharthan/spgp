@@ -49,37 +49,6 @@ typedef struct _pgp_packet_header
 	uint32_t body_size;
 } pgp_packet_header;
 
-typedef struct _pgp_pkesk_packet
-{
-	pgp_packet_header header;
-
-	byte_t version; // 3 or 6
-
-	union {
-		struct
-		{
-			byte_t key_id[8];
-			byte_t algorithm_id;
-		} v3;
-
-		struct
-		{
-			byte_t size;
-			byte_t version;
-
-			union {
-				byte_t fingerprint_v4[20];
-				byte_t fingerprint_v6[32];
-			};
-
-			byte_t algorithm_id;
-		} v6;
-	};
-
-	void *key_data;
-
-} pgp_pkesk_packet;
-
 typedef struct _pgp_public_key_packet
 {
 	pgp_packet_header header;
