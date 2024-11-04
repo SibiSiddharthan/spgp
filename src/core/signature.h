@@ -139,6 +139,27 @@ typedef struct _pgp_signature_packet
 	void *signature;
 } pgp_signature_packet;
 
+typedef struct _pgp_one_pass_signature_packet
+{
+	pgp_packet_header header;
+
+	byte_t version;
+	byte_t type;
+	byte_t public_key_algorithm_id;
+	byte_t hash_algorithm_id;
+
+	union {
+		byte_t key_id[8];
+		byte_t key_fingerprint[32];
+	};
+
+	byte_t salt_size;
+	byte_t salt[32];
+
+	byte_t nested;
+
+} pgp_one_pass_signature_packet;
+
 typedef struct _pgp_rsa_signature
 {
 	mpi_t *e;
