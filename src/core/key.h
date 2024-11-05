@@ -52,4 +52,10 @@ typedef struct _pgp_secret_key_packet
 
 } pgp_secret_key_packet, _pgp_secret_subkey_packet;
 
+pgp_public_key_packet *pgp_public_key_packet_read(pgp_public_key_packet *packet, void *data, size_t size);
+size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, size_t size);
+
+pgp_secret_key_packet *pgp_secret_key_packet_read(pgp_secret_key_packet *packet, void *data, size_t size);
+size_t pgp_secret_key_packet_write(pgp_secret_key_packet *packet, void *ptr, size_t size);
+
 #endif

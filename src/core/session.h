@@ -51,4 +51,10 @@ typedef struct _pgp_skesk_packet
 
 } pgp_skesk_packet;
 
+pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, size_t size);
+size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size);
+
+pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, size_t size);
+size_t pgp_skesk_packet_write(pgp_skesk_packet *packet, void *ptr, size_t size);
+
 #endif

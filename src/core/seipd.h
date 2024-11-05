@@ -43,4 +43,11 @@ typedef struct _pgp_seipd_packet
 
 } pgp_seipd_packet;
 
+pgp_sed_packet *pgp_sed_packet_read(pgp_sed_packet *packet, void *data, size_t size);
+size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size);
+
+pgp_seipd_packet *pgp_seipd_packet_read(pgp_seipd_packet *packet, void *data, size_t size);
+size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size);
+
+
 #endif
