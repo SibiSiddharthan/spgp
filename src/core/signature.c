@@ -16,7 +16,7 @@ uint32_t mpi_write_checked(mpi_t *mpi, void *ptr);
 uint32_t get_packet_header_size(pgp_packet_header_type type, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 
-static uint32_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, uint32_t size);
+static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
 uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 {
@@ -39,10 +39,10 @@ uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 	}
 }
 
-uint32_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr)
+size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr)
 {
 	byte_t *out = ptr;
-	uint32_t pos = 0;
+	size_t pos = 0;
 
 	switch (packet->public_key_algorithm_id)
 	{
@@ -80,10 +80,10 @@ uint32_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr)
 	}
 }
 
-static uint32_t pgp_signature_subpacket_header_write(pgp_signature_subpacket_header *header, void *ptr)
+static size_t pgp_signature_subpacket_header_write(pgp_signature_subpacket_header *header, void *ptr)
 {
 	byte_t *out = ptr;
-	uint32_t pos = 0;
+	size_t pos = 0;
 
 	// Subpacket length
 
@@ -166,12 +166,12 @@ static byte_t is_valid_signature_subpacket(pgp_signature_subpacket_header *heade
 	}
 }
 
-static uint32_t pgp_signature_subpackets_write(void *data, size_t size, void *ptr)
+static size_t pgp_signature_subpackets_write(void *data, size_t size, void *ptr)
 {
 	pgp_signature_subpacket_header *header = NULL;
 	signature_subpacket *subpacket = data;
 	byte_t *out = ptr;
-	uint32_t pos = 0;
+	size_t pos = 0;
 
 	if (size == 0)
 	{
@@ -401,11 +401,11 @@ static uint32_t pgp_signature_subpackets_write(void *data, size_t size, void *pt
 	return pos;
 }
 
-static uint32_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *ptr, uint32_t size)
+static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	uint32_t required_size = 0;
-	uint32_t pos = 0;
+	size_t required_size = 0;
+	size_t pos = 0;
 
 	// A 1-octet version number with value 3.
 	// A 1-octet length of the following hashed material; it be 5:
@@ -467,11 +467,11 @@ static uint32_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void
 	return pos;
 }
 
-static uint32_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, uint32_t size)
+static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	uint32_t required_size = 0;
-	uint32_t pos = 0;
+	size_t required_size = 0;
+	size_t pos = 0;
 
 	// A 1-octet version number. This is 4 for version 4 signatures and 6 for version 6 signatures.
 	// A 1-octet Signature Type ID.
@@ -576,7 +576,7 @@ static uint32_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, v
 	return pos;
 }
 
-uint32_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, uint32_t size)
+size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	switch (packet->version)
 	{
@@ -590,7 +590,7 @@ uint32_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, uin
 	}
 }
 
-pgp_user_id_packet *pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet *packet, void *data, size_t size)
+pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
 	size_t pos = packet->header.header_size;

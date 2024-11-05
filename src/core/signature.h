@@ -308,4 +308,10 @@ typedef struct _pgp_embedded_signature_subpacket
 	pgp_signature_packet *signature;
 } pgp_embedded_signature_subpacket;
 
+pgp_signature_packet *pgp_signature_packet_read(pgp_signature_packet *packet, void *data, size_t size);
+size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
+
+pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet *packet, void *data, size_t size);
+size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
+
 #endif
