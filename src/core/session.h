@@ -11,6 +11,7 @@
 #include <spgp.h>
 #include <packet.h>
 #include <mpi.h>
+#include <s2k.h>
 
 typedef enum _pgp_pkesk_version
 {
@@ -18,6 +19,11 @@ typedef enum _pgp_pkesk_version
 	PGP_PKESK_V6 = 6
 } pgp_pkesk_version;
 
+typedef enum _pgp_skesk_version
+{
+	PGP_SKESK_V4 = 4,
+	PGP_SKESK_V6 = 6
+} pgp_skesk_version;
 
 typedef struct _pgp_pkesk_packet
 {
@@ -47,9 +53,9 @@ typedef struct _pgp_skesk_packet
 	byte_t version; // 4 or 6
 	byte_t symmetric_key_algorithm_id;
 	byte_t aead_algorithm_id;
-	byte_t s2k_algorithm_id;
+	pgp_s2k s2k_algorithm;
 
-	uint16_t session_key_bits;
+	uint16_t session_key_size;
 	uint16_t iv_size;
 	uint16_t tag_size;
 
