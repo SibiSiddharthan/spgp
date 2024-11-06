@@ -12,11 +12,19 @@
 #include <packet.h>
 #include <mpi.h>
 
+typedef enum _pgp_pkesk_version
+{
+	PGP_PKESK_V3 = 3,
+	PGP_PKESK_V6 = 6
+} pgp_pkesk_version;
+
+
 typedef struct _pgp_pkesk_packet
 {
 	pgp_packet_header header;
 
 	byte_t version; // 3 or 6
+	byte_t anonymous;
 	byte_t public_key_algorithm_id;
 	byte_t session_key_algorithm_id;
 	byte_t key_version;
