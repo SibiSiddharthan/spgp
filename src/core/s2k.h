@@ -59,4 +59,9 @@ typedef struct _pgp_s2k
 	};
 } pgp_s2k;
 
+uint32_t pgp_s2k_size(pgp_s2k s2k);
+
+pgp_s2k *pgp_s2k_read(pgp_s2k s2k, void *data, size_t size);
+uint32_t pgp_s2k_write(pgp_s2k s2k, void *ptr);
+
 #endif
