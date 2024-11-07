@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 	char buffer[65536] = {0};
 	size_t size = 0;
 
-	const char *filename = "";
+	const char *filename = "test.c.sig";
 
 	FILE *f = fopen(filename, "rb");
 	size = fread(buffer, 1, 65536, f);
