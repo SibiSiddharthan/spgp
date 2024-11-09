@@ -16,11 +16,7 @@ typedef struct _pgp_sed_packet
 {
 	pgp_packet_header header;
 
-	byte_t random_iv[16];
-	byte_t end_iv[2];
-
-	uint32_t data_size;
-	void *data;
+	byte_t data[1];
 
 } pgp_sed_packet;
 
@@ -48,6 +44,5 @@ size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size);
 
 pgp_seipd_packet *pgp_seipd_packet_read(pgp_seipd_packet *packet, void *data, size_t size);
 size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size);
-
 
 #endif
