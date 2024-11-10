@@ -9,6 +9,7 @@
 #include <s2k.h>
 #include <algorithms.h>
 
+#include <argon2.h>
 #include <hash.h>
 
 #include <string.h>
@@ -227,6 +228,8 @@ static byte_t get_hash_id(pgp_hash_algorithms algorithm)
 		return HASH_SHA3_256;
 	case PGP_SHA3_512:
 		return HASH_SHA3_512;
+	default:
+		return 0;
 	}
 }
 
@@ -340,4 +343,26 @@ static uint32_t s2k_iterated_hash(pgp_hash_algorithms algorithm, void *password,
 	}
 
 	return key_size;
+}
+
+static uint32_t s2k_argon2_hash(void *password, uint32_t password_size, byte_t salt[16], uint32_t parallel, uint32_t memory,
+								uint32_t iterations, void *key, uint32_t key_size)
+{
+	return argon2id(password, password_size, salt, 16, parallel, memory, iterations, NULL, 0, NULL, 0, key, key_size);
+}
+
+uint32_t s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size)
+{
+	switch (s2k->id)
+	{
+	case pgp_simple_s2k:
+		return s2k_simple_hash(s2k->simple_s2k.hash_id, password, password_size, key, key_size);
+	case pgp_salted_s2k:
+		return s2k_salted_hash(s2k->salted_s2k.hash_id, s2k->salted_s2k.salt, password, password_size, key, key_size);
+	case pgp_iterated_s2k:
+		return s2k_iterated_hash(s2k->iterated_s2k.hash_id, s2k->iterated_s2k.salt, IT_COUNT(s2k->iterated_s2k.count), password,
+								 password_size, key, key_size);
+	case pgp_argon2:
+		return s2k_argon2_hash(password, password_size, s2k->argon2.salt, s2k->argon2.p, s2k->argon2.m, s2k->argon2.t, key, key_size);
+	}
 }
