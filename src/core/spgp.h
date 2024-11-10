@@ -13,6 +13,7 @@
 
 #include <byteswap.h>
 #include <minmax.h>
+#include <ptr.h>
 #include <round.h>
 #include <load.h>
 
