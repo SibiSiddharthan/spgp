@@ -262,3 +262,38 @@ static uint32_t s2k_simple_hash(pgp_hash_algorithms algorithm, void *password, u
 
 	return key_size;
 }
+
+static uint32_t s2k_salted_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, byte_t salt[8], void *key,
+								uint32_t key_size)
+{
+	byte_t hash_buffer[2048] = {0};
+	hash_ctx *hctx = NULL;
+
+	uint32_t output = 0;
+	uint32_t iteration = 0;
+
+	hctx = hash_init(hash_buffer, 2048, get_hash_id(algorithm));
+
+	if (hctx == NULL)
+	{
+		return 0;
+	}
+
+	while (output < key_size)
+	{
+		for (uint32_t i = 0; i < iteration; ++i)
+		{
+			hash_update(hctx, "\x00", 1);
+		}
+
+		hash_update(hctx, salt, 8);
+		hash_update(hctx, password, password_size);
+		hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hctx->hash_size));
+
+		hash_reset(hctx);
+
+		output += MIN(key_size - output, hctx->hash_size);
+	}
+
+	return key_size;
+}
