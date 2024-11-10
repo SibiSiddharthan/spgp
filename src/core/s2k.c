@@ -7,6 +7,9 @@
 
 #include <spgp.h>
 #include <s2k.h>
+#include <algorithms.h>
+
+#include <hash.h>
 
 #include <string.h>
 
@@ -200,4 +203,62 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 		return pos;
 	}
 	}
+}
+
+static byte_t get_hash_id(pgp_hash_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_MD5:
+		return HASH_MD5;
+	case PGP_SHA1:
+		return HASH_SHA1;
+	case PGP_RIPEMD_160:
+		return HASH_RIPEMD160;
+	case PGP_SHA2_256:
+		return HASH_SHA256;
+	case PGP_SHA2_384:
+		return HASH_SHA384;
+	case PGP_SHA2_512:
+		return HASH_SHA512;
+	case PGP_SHA2_224:
+		return HASH_SHA224;
+	case PGP_SHA3_256:
+		return HASH_SHA3_256;
+	case PGP_SHA3_512:
+		return HASH_SHA3_512;
+	}
+}
+
+static uint32_t s2k_simple_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, void *key, uint32_t key_size)
+{
+	byte_t hash_buffer[2048] = {0};
+	hash_ctx *hctx = NULL;
+
+	uint32_t output = 0;
+	uint32_t iteration = 0;
+
+	hctx = hash_init(hash_buffer, 2048, get_hash_id(algorithm));
+
+	if (hctx == NULL)
+	{
+		return 0;
+	}
+
+	while (output < key_size)
+	{
+		for (uint32_t i = 0; i < iteration; ++i)
+		{
+			hash_update(hctx, "\x00", 1);
+		}
+
+		hash_update(hctx, password, password_size);
+		hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hctx->hash_size));
+
+		hash_reset(hctx);
+
+		output += MIN(key_size - output, hctx->hash_size);
+	}
+
+	return key_size;
 }
