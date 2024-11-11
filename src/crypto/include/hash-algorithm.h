@@ -10,7 +10,7 @@
 
 typedef enum _hash_algorithm
 {
-	HASH_MD5,
+	HASH_MD5 = 1,
 	HASH_RIPEMD160,
 	HASH_BLAKE2B,
 	HASH_BLAKE2S,
