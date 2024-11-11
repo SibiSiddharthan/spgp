@@ -317,6 +317,12 @@ static uint32_t s2k_iterated_hash(pgp_hash_algorithms algorithm, void *password,
 		return 0;
 	}
 
+	// Atleast 1 full salt || password is hashed.
+	if (count < (password_size + 16))
+	{
+		count = password_size + 16;
+	}
+
 	while (output < key_size)
 	{
 		uint32_t input = 0;
