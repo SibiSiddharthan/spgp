@@ -18,13 +18,13 @@ uint32_t pgp_s2k_size(pgp_s2k *s2k)
 {
 	switch (s2k->id)
 	{
-	case pgp_simple_s2k:
+	case PGP_S2K_SIMPLE:
 		return 2;
-	case pgp_salted_s2k:
+	case PGP_S2K_SALTED:
 		return 10;
-	case pgp_iterated_s2k:
+	case PGP_S2K_ITERATED:
 		return 11;
-	case pgp_argon2:
+	case PGP_S2K_ARGON2:
 		return 20;
 	}
 }
@@ -45,7 +45,7 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 
 	switch (s2k->id)
 	{
-	case pgp_simple_s2k:
+	case PGP_S2K_SIMPLE:
 	{
 		if (size < 2)
 		{
@@ -53,12 +53,12 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 		}
 
 		// 1 octet hash algorithm id
-		LOAD_8(&s2k->simple_s2k.hash_id, in + pos);
+		LOAD_8(&s2k->simple.hash_id, in + pos);
 		pos += 1;
 
 		return s2k;
 	}
-	case pgp_salted_s2k:
+	case PGP_S2K_SALTED:
 	{
 		if (size < 10)
 		{
@@ -66,16 +66,16 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 		}
 
 		// 1 octet hash algorithm id
-		LOAD_8(&s2k->salted_s2k.hash_id, in + pos);
+		LOAD_8(&s2k->salted.hash_id, in + pos);
 		pos += 1;
 
 		// 8 octet salt
-		LOAD_64(&s2k->salted_s2k.salt, in + pos);
+		LOAD_64(&s2k->salted.salt, in + pos);
 		pos += 8;
 
 		return s2k;
 	}
-	case pgp_iterated_s2k:
+	case PGP_S2K_ITERATED:
 	{
 
 		if (size < 11)
@@ -84,20 +84,20 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 		}
 
 		// 1 octet hash algorithm id
-		LOAD_8(&s2k->iterated_s2k.hash_id, in + pos);
+		LOAD_8(&s2k->iterated.hash_id, in + pos);
 		pos += 1;
 
 		// 8 octet salt
-		LOAD_64(&s2k->iterated_s2k.salt, in + pos);
+		LOAD_64(&s2k->iterated.salt, in + pos);
 		pos += 8;
 
 		// 1 octet iteration count
-		LOAD_8(&s2k->iterated_s2k.count, in + pos);
+		LOAD_8(&s2k->iterated.count, in + pos);
 		pos += 1;
 
 		return s2k;
 	}
-	case pgp_argon2:
+	case PGP_S2K_ARGON2:
 	{
 		if (size < 20)
 		{
@@ -134,52 +134,52 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 
 	switch (s2k->id)
 	{
-	case pgp_simple_s2k:
+	case PGP_S2K_SIMPLE:
 	{
 		// 1 octet id
 		LOAD_8(out + pos, &s2k->id);
 		pos += 1;
 
 		// 1 octet hash algorithm id
-		LOAD_8(out + pos, &s2k->simple_s2k.hash_id);
+		LOAD_8(out + pos, &s2k->simple.hash_id);
 		pos += 1;
 
 		return pos;
 	}
-	case pgp_salted_s2k:
+	case PGP_S2K_SALTED:
 	{
 		// 1 octet id
 		LOAD_8(out + pos, &s2k->id);
 		pos += 1;
 
 		// 1 octet hash algorithm id
-		LOAD_8(out + pos, &s2k->salted_s2k.hash_id);
+		LOAD_8(out + pos, &s2k->salted.hash_id);
 		pos += 1;
 
 		// 8 octet salt
-		LOAD_64(out + pos, &s2k->salted_s2k.salt);
+		LOAD_64(out + pos, &s2k->salted.salt);
 		pos += 8;
 
 		return pos;
 	}
-	case pgp_iterated_s2k:
+	case PGP_S2K_ITERATED:
 	{
 
 		// 1 octet hash algorithm id
-		LOAD_8(out + pos, &s2k->iterated_s2k.hash_id);
+		LOAD_8(out + pos, &s2k->iterated.hash_id);
 		pos += 1;
 
 		// 8 octet salt
-		LOAD_64(out + pos, &s2k->iterated_s2k.salt);
+		LOAD_64(out + pos, &s2k->iterated.salt);
 		pos += 8;
 
 		// 1 octet iteration count
-		LOAD_8(out + pos, &s2k->iterated_s2k.count);
+		LOAD_8(out + pos, &s2k->iterated.count);
 		pos += 1;
 
 		return pos;
 	}
-	case pgp_argon2:
+	case PGP_S2K_ARGON2:
 	{
 		// 1 octet id
 		LOAD_8(out + pos, &s2k->id);
@@ -355,14 +355,14 @@ uint32_t s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *ke
 {
 	switch (s2k->id)
 	{
-	case pgp_simple_s2k:
-		return s2k_simple_hash(s2k->simple_s2k.hash_id, password, password_size, key, key_size);
-	case pgp_salted_s2k:
-		return s2k_salted_hash(s2k->salted_s2k.hash_id, s2k->salted_s2k.salt, password, password_size, key, key_size);
-	case pgp_iterated_s2k:
-		return s2k_iterated_hash(s2k->iterated_s2k.hash_id, s2k->iterated_s2k.salt, IT_COUNT(s2k->iterated_s2k.count), password,
-								 password_size, key, key_size);
-	case pgp_argon2:
+	case PGP_S2K_SIMPLE:
+		return s2k_simple_hash(s2k->simple.hash_id, password, password_size, key, key_size);
+	case PGP_S2K_SALTED:
+		return s2k_salted_hash(s2k->salted.hash_id, s2k->salted.salt, password, password_size, key, key_size);
+	case PGP_S2K_ITERATED:
+		return s2k_iterated_hash(s2k->iterated.hash_id, s2k->iterated.salt, IT_COUNT(s2k->iterated.count), password, password_size, key,
+								 key_size);
+	case PGP_S2K_ARGON2:
 		return s2k_argon2_hash(password, password_size, s2k->argon2.salt, s2k->argon2.p, s2k->argon2.m, s2k->argon2.t, key, key_size);
 	}
 }

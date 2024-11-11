@@ -17,10 +17,10 @@
 
 typedef enum _pgp_s2k_type
 {
-	pgp_simple_s2k = 0,
-	pgp_salted_s2k = 1,
-	pgp_iterated_s2k = 3,
-	pgp_argon2 = 4
+	PGP_S2K_SIMPLE = 0,
+	PGP_S2K_SALTED = 1,
+	PGP_S2K_ITERATED = 3,
+	PGP_S2K_ARGON2 = 4
 } pgp_s2k_type;
 
 typedef struct _pgp_s2k
@@ -31,14 +31,14 @@ typedef struct _pgp_s2k
 		{
 			// id = 0;
 			byte_t hash_id;
-		} simple_s2k;
+		} simple;
 
 		struct
 		{
 			// id = 1;
 			byte_t hash_id;
 			byte_t salt[8];
-		} salted_s2k;
+		} salted;
 
 		struct
 		{
@@ -46,7 +46,7 @@ typedef struct _pgp_s2k
 			byte_t hash_id;
 			byte_t salt[8];
 			byte_t count;
-		} iterated_s2k;
+		} iterated;
 
 		struct
 		{
