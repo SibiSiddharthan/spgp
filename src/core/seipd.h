@@ -12,6 +12,12 @@
 #include <packet.h>
 #include <mpi.h>
 
+typedef enum _pgp_seipd_version
+{
+	PGP_SEIPD_V1 = 1,
+	PGP_SEIPD_V2 = 2
+} pgp_seipd_version;
+
 typedef struct _pgp_sed_packet
 {
 	pgp_packet_header header;
