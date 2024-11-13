@@ -27,6 +27,9 @@ uint32_t pgp_s2k_size(pgp_s2k *s2k)
 	case PGP_S2K_ARGON2:
 		return 20;
 	}
+
+	// Unreachable
+	return 0;
 }
 
 pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
@@ -204,6 +207,9 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 		return pos;
 	}
 	}
+
+	// Unreachable
+	return 0;
 }
 
 static byte_t get_hash_id(pgp_hash_algorithms algorithm)
@@ -364,11 +370,14 @@ uint32_t s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *ke
 	case PGP_S2K_SIMPLE:
 		return s2k_simple_hash(s2k->simple.hash_id, password, password_size, key, key_size);
 	case PGP_S2K_SALTED:
-		return s2k_salted_hash(s2k->salted.hash_id, s2k->salted.salt, password, password_size, key, key_size);
+		return s2k_salted_hash(s2k->salted.hash_id, password, password_size, s2k->salted.salt, key, key_size);
 	case PGP_S2K_ITERATED:
-		return s2k_iterated_hash(s2k->iterated.hash_id, s2k->iterated.salt, IT_COUNT(s2k->iterated.count), password, password_size, key,
+		return s2k_iterated_hash(s2k->iterated.hash_id, password, password_size, s2k->iterated.salt, IT_COUNT(s2k->iterated.count), key,
 								 key_size);
 	case PGP_S2K_ARGON2:
 		return s2k_argon2_hash(password, password_size, s2k->argon2.salt, s2k->argon2.p, s2k->argon2.m, s2k->argon2.t, key, key_size);
 	}
+
+	// Unreachable
+	return 0;
 }
