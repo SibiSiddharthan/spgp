@@ -10,8 +10,10 @@
 
 #include <argon2.h>
 #include <blake2.h>
+
 #include <byteswap.h>
 #include <minmax.h>
+#include <ptr.h>
 #include <rotate.h>
 #include <round.h>
 
@@ -23,6 +25,8 @@
 #define ARGON2_DS 4
 
 #define ARGON2_BLOCK_SIZE 1024
+
+#define ARGON2_BLOCK(B, C, X, Y) (PTR_OFFSET(B, ((X * C) + Y) * ARGON2_BLOCK_SIZE))
 
 static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t output_size)
 {
@@ -38,6 +42,7 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 
 		blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
 
+		// BLAKE2B(LE32(T) || A)
 		blake2b_update(&bctx, &output_size, 4);
 		blake2b_update(&bctx, input, input_size);
 
@@ -62,15 +67,18 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 
 		blake2b_final(&bctx, h, 64);
 
+		// Copy only the first 32 bytes
 		memcpy(output, h, 32);
 		pos += 32;
 
+		// Other iterations
 		for (uint32_t i = 1; i < r; ++i)
 		{
 			blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
 			blake2b_update(&bctx, h, 64);
 			blake2b_final(&bctx, h, 64);
 
+			// Copy only the first 32 bytes
 			memcpy(output + pos, h, 32);
 			pos += 32;
 		}
@@ -82,7 +90,16 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 		blake2b_update(&bctx, h, 64);
 		blake2b_final(&bctx, h, bparam.digest_size);
 
+		// Copy all of the truncated digest
 		memcpy(output + pos, h, bparam.digest_size);
+	}
+}
+
+static inline void X(byte_t r[1024], byte_t a[1024], byte_t b[1024])
+{
+	for (uint32_t i = 0; i < 1024; ++i)
+	{
+		r[i] = a[i] ^ b[i];
 	}
 }
 
@@ -121,10 +138,7 @@ static void G(byte_t o[ARGON2_BLOCK_SIZE], byte_t b1[ARGON2_BLOCK_SIZE], byte_t 
 	uint64_t w = 0;
 
 	// Initial XOR
-	for (uint32_t i = 0; i < 1024; ++i)
-	{
-		r[i] = b1[i] ^ b2[i];
-	}
+	X(r, b1, b2);
 
 	memcpy(p, r, ARGON2_BLOCK_SIZE);
 
@@ -182,7 +196,7 @@ static void G(byte_t o[ARGON2_BLOCK_SIZE], byte_t b1[ARGON2_BLOCK_SIZE], byte_t 
 	}
 }
 
-static void generate_sbox(byte_t sbox[ARGON2_BLOCK_SIZE * 8], byte_t first_block[ARGON2_BLOCK_SIZE])
+static void argon2_generate_sbox(byte_t sbox[ARGON2_BLOCK_SIZE * 8], byte_t first_block[ARGON2_BLOCK_SIZE])
 {
 	byte_t zero_block[ARGON2_BLOCK_SIZE] = {0};
 	byte_t out_block[ARGON2_BLOCK_SIZE];
@@ -199,58 +213,114 @@ static void generate_sbox(byte_t sbox[ARGON2_BLOCK_SIZE * 8], byte_t first_block
 	}
 }
 
-static void block_offset(uint32_t argon2_type, uint32_t i, uint32_t j, uint32_t lanes, uint32_t columns, uint32_t pass, uint32_t *l,
-						 uint32_t *z)
+static void argon2_generate_addresses(byte_t address_block[ARGON2_BLOCK_SIZE], uint64_t pass, uint64_t lane, uint64_t slice, uint64_t lanes,
+									  uint64_t passes, uint64_t argon2_type, uint64_t counter)
 {
-	uint32_t j1, j2;
-	uint32_t w;
-	uint32_t x, y, zz;
+	byte_t zero_block[ARGON2_BLOCK_SIZE] = {0};
+	byte_t input_block[ARGON2_BLOCK_SIZE] = {0};
+	byte_t out_block[ARGON2_BLOCK_SIZE];
 
-	uint32_t slice = j / (columns / 4);
+	uint64_t *p = (uint64_t *)input_block;
 
-	if (argon2_type == ARGON2_D || argon2_type == ARGON2_DS || (argon2_type == ARGON2_ID && !(pass == 0 && slice < 2)))
-	{
-	}
+	p[0] = pass;
+	p[1] = lane;
+	p[2] = slice;
+	p[3] = lanes;
+	p[4] = passes;
+	p[5] = argon2_type;
+	p[6] = counter;
 
-	x = j1 >> 31;
-	y = w * x;
-	zz = w - 1 - y;
+	G(out_block, zero_block, input_block, NULL);
+	G(address_block, zero_block, out_block, NULL);
 }
 
-static uint32_t argon2_common(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,
-							  uint32_t iterations, uint32_t argon2_type, void *secret, uint32_t secret_size, void *data, uint32_t data_size,
-							  void *key, uint32_t key_size)
+static uint64_t argon2_block_offset(uint32_t pass, uint32_t slice, uint32_t lane, uint32_t column, uint32_t column_start, uint32_t columns,
+									uint32_t j1, uint32_t j2)
+{
+	uint32_t l, z;
+
+	uint64_t w;
+	uint64_t x, y, zz;
+
+	byte_t same_lane = 0;
+
+	uint64_t block_start = 0;
+	uint64_t block_offset = 0;
+
+	l = j2;
+
+	if (lane == l)
+	{
+		same_lane = 1;
+	}
+
+	// If we work with the first slice and first pass, set to current lane.
+	if (pass == 0)
+	{
+		if (slice == 0)
+		{
+			w = column - 1;
+		}
+		else
+		{
+			if (same_lane)
+			{
+				w = column - 1;
+			}
+			else
+			{
+				w = slice * (columns / 4);
+
+				if (column - column_start == 0)
+				{
+					w -= 1;
+				}
+			}
+		}
+	}
+	else
+	{
+		if (same_lane)
+		{
+			w = columns - (columns / 4) + (column - 1);
+		}
+		else
+		{
+			w = columns - (columns / 4);
+
+			if (column - column_start == 0)
+			{
+				w -= 1;
+			}
+		}
+	}
+
+	x = (j1 * j1) >> 32;
+	y = (w * x) >> 32;
+	zz = w - 1 - y;
+
+	z = zz;
+
+	if (pass != 0)
+	{
+		block_start = (slice == 3) ? 0 : ((slice + 1) * (columns / 4));
+	}
+
+	block_offset = (block_start + z) % columns;
+	block_offset *= ARGON2_BLOCK_SIZE;
+
+	return block_offset;
+}
+
+static void argon2_generate_h0(byte_t h0[64], void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel,
+							   uint32_t memory, uint32_t iterations, uint32_t argon2_type, void *secret, uint32_t secret_size, void *data,
+							   uint32_t data_size, void *key, uint32_t key_size)
 {
 	blake2b_param bparam = BLAKE2_PARAM_INIT(64, 0);
 	blake2b_ctx bctx;
 
-	byte_t h0[72];
 	uint32_t version = 0x13;
 
-	byte_t *blocks = NULL;
-	byte_t *sbox = NULL;
-	size_t sbox_size = argon2_type == ARGON2_DS ? (ARGON2_BLOCK_SIZE * 8) : 0;
-	size_t blocks_size = 4 * parallel * (memory / (4 * parallel)) * ARGON2_BLOCK_SIZE;
-	size_t total_size = sbox_size + blocks_size;
-
-	uint32_t lanes = parallel;
-	uint32_t columns = blocks_size / (parallel * ARGON2_BLOCK_SIZE);
-
-	size_t lane_size = blocks_size / parallel;
-
-	if (memory < (8 * parallel))
-	{
-		return 0;
-	}
-
-	blocks = malloc(total_size);
-
-	if (blocks == NULL)
-	{
-		return 0;
-	}
-
-	// Generate H0
 	blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
 
 	blake2b_update(&bctx, &parallel, 4);
@@ -277,101 +347,214 @@ static uint32_t argon2_common(void *password, uint32_t password_size, void *salt
 	}
 
 	blake2b_final(&bctx, h0, 64);
+}
 
+static void argon2_intial_fill(void *blocks, byte_t h0[72], uint32_t lanes, uint32_t columns)
+{
 	uint32_t *x = (uint32_t *)&h0[64];
 	uint32_t *y = (uint32_t *)&h0[68];
 
 	// Calculate B[i][0]
+	*x = 0;
+
 	for (uint32_t i = 0; i < lanes; ++i)
 	{
-		*x = 0;
 		*y = i;
-
-		H(h0, 72, blocks + (i * lane_size), ARGON2_BLOCK_SIZE);
+		H(h0, 72, ARGON2_BLOCK(blocks, columns, i, 0), ARGON2_BLOCK_SIZE);
 	}
 
 	// Calculate B[i][1]
+	*x = 1;
+
 	for (uint32_t i = 0; i < lanes; ++i)
 	{
-		*x = 1;
 		*y = i;
+		H(h0, 72, ARGON2_BLOCK(blocks, columns, i, 1), ARGON2_BLOCK_SIZE);
+	}
+}
 
-		H(h0, 72, blocks + (i * lane_size) + ARGON2_BLOCK_SIZE, ARGON2_BLOCK_SIZE);
+static void argon2_fill_segment(void *blocks, void *sbox, uint32_t argon2_type, uint32_t passes, uint32_t pass, uint32_t slice,
+								uint32_t lane, uint32_t lanes, uint32_t columns, uint32_t column_start, uint32_t column_end)
+{
+	byte_t addresses[ARGON2_BLOCK_SIZE];
+	byte_t temp[ARGON2_BLOCK_SIZE];
+
+	uint32_t lane_counter = 1;
+	uint32_t block_counter = 0;
+
+	uint32_t j1, j2;
+
+	byte_t data_dependent_addressing = 0;
+
+	if (argon2_type == ARGON2_D || argon2_type == ARGON2_DS || (argon2_type == ARGON2_ID && !(pass == 0 && slice < 2)))
+	{
+		data_dependent_addressing = 1;
 	}
 
-	// First iteration
-	if (argon2_type == ARGON2_DS)
+	// Starting slice column
+	if (slice == 0)
 	{
-		sbox = blocks + blocks_size;
-		generate_sbox(sbox, blocks);
-	}
-
-	// Calculate B[i][j]
-	for (uint32_t j = 2; j < columns; ++j)
-	{
-		for (uint32_t i = 0; i < lanes; ++i)
+		if (pass == 0)
 		{
-			uint32_t l, z;
-
-			// block_offset(argon2_type, i, j, &l, &z);
-			G(blocks + (i * lane_size) + (j * ARGON2_BLOCK_SIZE), blocks + (i * lane_size) + ((j - 1) * ARGON2_BLOCK_SIZE),
-			  blocks + (l * lane_size) + (z * ARGON2_BLOCK_SIZE), (uint64_t *)sbox);
+			column_start = 2;
 		}
 	}
 
-	// More iterations
-	for (uint32_t k = 1; k < iterations; ++k)
+	if (pass == 0)
 	{
-		byte_t temp[1024];
-
-		if (argon2_type == ARGON2_DS)
-		{
-			generate_sbox(sbox, blocks);
-		}
-
-		// Calculate B[i][0]
-		for (uint32_t i = 0; i < lanes; ++i)
-		{
-			uint32_t l, z;
-
-			// block_offset(argon2_type, i, 0, &l, &z);
-			G(temp, blocks + (i * lane_size) + ((columns - 1) * ARGON2_BLOCK_SIZE), blocks + (l * lane_size) + (z * ARGON2_BLOCK_SIZE),
-			  (uint64_t *)sbox);
-
-			for (uint32_t w = 0; w < 1024; ++w)
-			{
-				*(blocks + (i * lane_size) + w) ^= temp[w];
-			}
-		}
-
 		// Calculate B[i][j]
-		for (uint32_t j = 1; j < columns; ++j)
+		for (uint32_t j = column_start; j < column_end; ++j, ++block_counter)
 		{
-			for (uint32_t i = 0; i < lanes; ++i)
+			// Calculate J1, J2
+			if (data_dependent_addressing)
 			{
-				uint32_t l, z;
-
-				// block_offset(argon2_type, i, j, &l, &z);
-				G(temp, blocks + (i * lane_size) + ((j - 1) * ARGON2_BLOCK_SIZE), blocks + (l * lane_size) + (z * ARGON2_BLOCK_SIZE),
-				  (uint64_t *)sbox);
-
-				for (uint32_t w = 0; w < 1024; ++w)
+				// The first 8 bytes of the block are J1 || J2
+				j1 = *(uint32_t *)PTR_OFFSET(ARGON2_BLOCK(blocks, columns, lane, j - 1), 0);
+				j2 = *(uint32_t *)PTR_OFFSET(ARGON2_BLOCK(blocks, columns, lane, j - 1), 4);
+			}
+			else
+			{
+				if (block_counter % 128 == 0)
 				{
-					*(blocks + (i * lane_size) + (j * ARGON2_BLOCK_SIZE) + w) ^= temp[w];
+					// Generate new addresses
+					argon2_generate_addresses(addresses, pass, lane, slice, lanes, passes, argon2_type, lane_counter);
+					++lane_counter;
+				}
+
+				j1 = *(uint32_t *)PTR_OFFSET(addresses, ((8 * block_counter) + 0) % ARGON2_BLOCK_SIZE);
+				j2 = *(uint32_t *)PTR_OFFSET(addresses, ((8 * block_counter) + 4) % ARGON2_BLOCK_SIZE);
+			}
+
+			// First pass
+			if (pass == 0)
+			{
+				// block_offset(argon2_type, i, j, &l, &z);
+				G(ARGON2_BLOCK(blocks, columns, lane, j), ARGON2_BLOCK(blocks, columns, lane, j - 1),
+				  PTR_OFFSET(blocks, argon2_block_offset(pass, slice, lane, j, column_start, columns, j1, j2)), sbox);
+			}
+			// Later passes
+			else
+			{
+				// Calculate B[i][0]
+				if (j == 0)
+				{
+					G(temp, ARGON2_BLOCK(blocks, columns, lane, columns - 1),
+					  PTR_OFFSET(blocks, argon2_block_offset(pass, slice, lane, j, column_start, columns, j1, j2)), sbox);
+					X(ARGON2_BLOCK(blocks, columns, lane, 0), ARGON2_BLOCK(blocks, columns, lane, 0), temp);
+				}
+				else
+				{
+
+					G(temp, ARGON2_BLOCK(blocks, columns, lane, j - 1),
+					  PTR_OFFSET(blocks, argon2_block_offset(pass, slice, lane, j, column_start, columns, j1, j2)), sbox);
+					X(ARGON2_BLOCK(blocks, columns, lane, j), ARGON2_BLOCK(blocks, columns, lane, j), temp);
 				}
 			}
 		}
 	}
+}
+
+static void argon2_fill_segments(void *blocks, void *sbox, uint32_t argon2_type, uint32_t iterations, uint32_t lanes, uint32_t columns)
+{
+	for (uint32_t k = 0; k < iterations; ++k)
+	{
+		if (argon2_type == ARGON2_DS)
+		{
+			argon2_generate_sbox(sbox, blocks);
+		}
+
+		// Slice 0
+		for (uint32_t i = 0; i < lanes; ++i)
+		{
+			argon2_fill_segment(blocks, sbox, argon2_type, iterations, k, 0, i, lanes, columns, 0, columns / 4);
+		}
+
+		// Slice 1
+		for (uint32_t i = 0; i < lanes; ++i)
+		{
+			argon2_fill_segment(blocks, sbox, argon2_type, iterations, k, 1, i, lanes, columns, columns / 4, columns / 2);
+		}
+
+		// Slice 2
+		for (uint32_t i = 0; i < lanes; ++i)
+		{
+			argon2_fill_segment(blocks, sbox, argon2_type, iterations, k, 2, i, lanes, columns, columns / 2, 3 * (columns / 4));
+		}
+
+		// Slice 3
+		for (uint32_t i = 0; i < lanes; ++i)
+		{
+			argon2_fill_segment(blocks, sbox, argon2_type, iterations, k, 3, i, lanes, columns, 3 * (columns / 4), columns);
+		}
+	}
+}
+
+static uint32_t argon2_common(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,
+							  uint32_t iterations, uint32_t argon2_type, void *secret, uint32_t secret_size, void *data, uint32_t data_size,
+							  void *key, uint32_t key_size)
+{
+	byte_t h0[72];
+
+	void *blocks = NULL;
+	void *sbox = NULL;
+	size_t sbox_size = argon2_type == ARGON2_DS ? (ARGON2_BLOCK_SIZE * 8) : 0;
+	size_t blocks_size = ROUND_DOWN(memory, 4 * parallel) * ARGON2_BLOCK_SIZE;
+	size_t total_size = sbox_size + blocks_size;
+
+	uint32_t lanes = parallel;
+	uint32_t columns = blocks_size / (parallel * ARGON2_BLOCK_SIZE);
+
+	// Paramter validation
+	if (key_size < 4)
+	{
+		return 0;
+	}
+
+	if (parallel < 1 || parallel >= (1ull << 24))
+	{
+		return 0;
+	}
+
+	if (memory < (8 * parallel))
+	{
+		return 0;
+	}
+
+	if (iterations < 0)
+	{
+		return 0;
+	}
+
+	blocks = malloc(total_size);
+
+	if (blocks == NULL)
+	{
+		return 0;
+	}
+
+	memset(blocks, 0, total_size);
+
+	if (argon2_type == ARGON2_DS)
+	{
+		sbox = PTR_OFFSET(blocks, blocks_size);
+	}
+
+	// Generate H0
+	argon2_generate_h0(h0, password, password_size, salt, salt_size, parallel, memory, iterations, argon2_type, secret, secret_size, data,
+					   data_size, key, key_size);
+
+	// First blocks
+	argon2_intial_fill(blocks, h0, lanes, columns);
+
+	// File segments
+	argon2_fill_segments(blocks, sbox, argon2_type, iterations, lanes, columns);
 
 	// Calculate C
 	byte_t c[1024] = {0};
 
 	for (uint32_t i = 0; i < lanes; ++i)
 	{
-		for (uint32_t w = 0; w < 1024; ++w)
-		{
-			c[w] ^= *(blocks + (i * lane_size) + ((columns - 1) * ARGON2_BLOCK_SIZE) + w);
-		}
+		X(c, c, ARGON2_BLOCK(blocks, columns, i, columns - 1));
 	}
 
 	// Calculate T
