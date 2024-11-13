@@ -316,6 +316,7 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 	return header;
 }
 
+#if 0
 size_t pgp_packet_read(void *data, size_t size)
 {
 	pgp_packet_header header = pgp_packet_header_read(data, size);
@@ -375,6 +376,7 @@ size_t pgp_packet_read(void *data, size_t size)
 		return 0;
 	}
 }
+#endif
 
 uint64_t dump_pgp_packet(void *data, size_t data_size)
 {

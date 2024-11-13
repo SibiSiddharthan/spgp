@@ -11,8 +11,15 @@
 #include <round.h>
 #include <string.h>
 
-static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32_t size);
-static uint32_t pgp_session_key_write(pgp_pkesk_packet *packet, void *ptr);
+static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32_t size)
+{
+	return 0;
+}
+
+static uint32_t pgp_session_key_write(pgp_pkesk_packet *packet, void *ptr)
+{
+	return 0;
+}
 
 static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
 {
@@ -182,7 +189,7 @@ size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
 	}
 }
 
-static pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
 	size_t required_size = 0;
@@ -193,7 +200,7 @@ static pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t siz
 	// A S2K specifier
 	// (Optional) Encrypted Session key
 
-	required_size = packet->header.header_size + 1 + 1 + pgp_s2k_size(packet->s2k_algorithm) + packet->session_key_size;
+	required_size = packet->header.header_size + 1 + 1 + pgp_s2k_size(&packet->s2k_algorithm) + packet->session_key_size;
 
 	if (size < required_size)
 	{
@@ -212,7 +219,7 @@ static pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t siz
 	pos += 1;
 
 	// S2K specifier
-	pos += pgp_s2k_write(packet->s2k_algorithm, out + pos);
+	pos += pgp_s2k_write(&packet->s2k_algorithm, out + pos);
 
 	// (Optional) Session key
 	if (packet->session_key_size > 0)
@@ -224,7 +231,7 @@ static pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t siz
 	return pos;
 }
 
-static pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+static size_t pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
 	byte_t s2k_size = 0;
@@ -241,7 +248,7 @@ static pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, size_t siz
 	// Encrypted session key.
 	// Authetication key tag.
 
-	s2k_size = pgp_s2k_size(packet->s2k_algorithm);
+	s2k_size = pgp_s2k_size(&packet->s2k_algorithm);
 	required_size =
 		packet->header.header_size + 1 + 1 + 1 + 1 + 1 + s2k_size + packet->iv_size + packet->session_key_size + packet->tag_size;
 
@@ -276,7 +283,7 @@ static pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, size_t siz
 	pos += 1;
 
 	// S2K specifier
-	pos += pgp_s2k_write(packet->s2k_algorithm, out + pos);
+	pos += pgp_s2k_write(&packet->s2k_algorithm, out + pos);
 
 	// IV
 	memcpy(out + pos, packet->iv, packet->iv_size);
@@ -325,7 +332,7 @@ pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, si
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(packet->s2k_algorithm, in + pos, packet->header.body_size - pos);
+		result = pgp_s2k_read(&packet->s2k_algorithm, in + pos, packet->header.body_size - pos);
 
 		if (result == NULL)
 		{
@@ -358,14 +365,14 @@ pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, si
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(packet->s2k_algorithm, in + pos, packet->header.body_size - pos);
+		result = pgp_s2k_read(&packet->s2k_algorithm, in + pos, packet->header.body_size - pos);
 
 		if (result == NULL)
 		{
 			return NULL;
 		}
 
-		pos += pgp_s2k_size(packet->s2k_algorithm);
+		pos += pgp_s2k_size(&packet->s2k_algorithm);
 
 		// (Optional) Session key
 		packet->session_key_size = packet->header.body_size - pos;

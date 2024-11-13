@@ -113,7 +113,8 @@ typedef struct _pgp_trust_packet
 	void *placeholder;
 } pgp_trust_packet;
 
-uint64_t dump_pgp_packet(void *data, size_t data_size);
+pgp_packet_header pgp_packet_header_read(void *data, size_t size);
+uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 
 pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size);
 size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
@@ -129,5 +130,7 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 
 pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size);
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
+
+uint64_t dump_pgp_packet(void *data, size_t data_size);
 
 #endif
