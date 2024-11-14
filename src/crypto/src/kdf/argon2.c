@@ -24,8 +24,9 @@
 #define ARGON2_ID 2
 #define ARGON2_DS 4
 
-#define ARGON2_VERSION    0x13
-#define ARGON2_BLOCK_SIZE 1024
+#define ARGON2_VERSION     0x13
+#define ARGON2_SLICE_COUNT 4
+#define ARGON2_BLOCK_SIZE  1024
 
 #define ARGON2_BLOCK(A, X, Y) (PTR_OFFSET((A)->blocks, (((X) * ((A)->columns)) + (Y)) * ARGON2_BLOCK_SIZE))
 
@@ -44,6 +45,12 @@ typedef struct _argon2_ctx
 	uint32_t blocks_in_segment;
 	uint32_t blocks_in_lane;
 	uint32_t total_blocks;
+
+	struct
+	{
+		uint32_t start;
+		uint32_t end;
+	} slices[ARGON2_SLICE_COUNT];
 
 	size_t total_size;
 
@@ -118,9 +125,9 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 	}
 }
 
-static inline void X(byte_t r[1024], byte_t a[1024], byte_t b[1024])
+static inline void X(byte_t r[ARGON2_BLOCK_SIZE], byte_t a[ARGON2_BLOCK_SIZE], byte_t b[ARGON2_BLOCK_SIZE])
 {
-	for (uint32_t i = 0; i < 1024; ++i)
+	for (uint32_t i = 0; i < ARGON2_BLOCK_SIZE; ++i)
 	{
 		r[i] = a[i] ^ b[i];
 	}
@@ -256,6 +263,7 @@ static argon2_ctx *argon2_new(uint32_t argon2_type, uint32_t parallel, uint32_t 
 
 	memset(actx, 0, total_size);
 
+	// Set the parameters
 	actx->version = ARGON2_VERSION;
 	actx->argon2_type = argon2_type;
 	actx->parallel = parallel;
@@ -268,6 +276,19 @@ static argon2_ctx *argon2_new(uint32_t argon2_type, uint32_t parallel, uint32_t 
 	actx->blocks_in_segment = columns / 4;
 	actx->blocks_in_lane = columns;
 	actx->total_blocks = actx->lanes * actx->columns;
+
+	// Set the slices
+	actx->slices[0].start = 0;
+	actx->slices[0].end = actx->columns / 4;
+
+	actx->slices[1].start = actx->columns / 4;
+	actx->slices[1].end = actx->columns / 2;
+
+	actx->slices[2].start = actx->columns / 2;
+	actx->slices[2].end = 3 * (actx->columns / 4);
+
+	actx->slices[3].start = 3 * (actx->columns / 4);
+	actx->slices[3].end = actx->columns;
 
 	actx->total_size = total_size;
 
@@ -287,10 +308,12 @@ void argon2_delete(argon2_ctx *actx)
 	free(actx);
 }
 
-static void argon2_generate_sbox(byte_t sbox[ARGON2_BLOCK_SIZE * 8], byte_t first_block[ARGON2_BLOCK_SIZE])
+static void argon2_generate_sbox(argon2_ctx *actx)
 {
 	byte_t zero_block[ARGON2_BLOCK_SIZE] = {0};
 	byte_t out_block[ARGON2_BLOCK_SIZE];
+
+	byte_t *first_block = actx->blocks;
 
 	size_t pos = 0;
 
@@ -299,13 +322,13 @@ static void argon2_generate_sbox(byte_t sbox[ARGON2_BLOCK_SIZE * 8], byte_t firs
 		G(out_block, zero_block, first_block, NULL);
 		G(out_block, zero_block, out_block, NULL);
 
-		memcpy(sbox + pos, out_block, ARGON2_BLOCK_SIZE);
+		memcpy(PTR_OFFSET(actx->sbox, pos), out_block, ARGON2_BLOCK_SIZE);
 		pos += ARGON2_BLOCK_SIZE;
 	}
 }
 
-static void argon2_generate_addresses(byte_t address_block[ARGON2_BLOCK_SIZE], uint64_t pass, uint64_t lane, uint64_t slice,
-									  uint64_t blocks, uint64_t passes, uint64_t argon2_type, uint64_t counter)
+static void argon2_generate_addresses(argon2_ctx *actx, byte_t address_block[ARGON2_BLOCK_SIZE], uint32_t pass, uint32_t lane,
+									  uint32_t slice, uint32_t counter)
 {
 	byte_t zero_block[ARGON2_BLOCK_SIZE] = {0};
 	byte_t input_block[ARGON2_BLOCK_SIZE] = {0};
@@ -313,24 +336,24 @@ static void argon2_generate_addresses(byte_t address_block[ARGON2_BLOCK_SIZE], u
 
 	uint64_t *p = (uint64_t *)input_block;
 
-	p[0] = pass;
-	p[1] = lane;
-	p[2] = slice;
-	p[3] = blocks;
-	p[4] = passes;
-	p[5] = argon2_type;
-	p[6] = counter;
+	p[0] = (uint64_t)pass;
+	p[1] = (uint64_t)lane;
+	p[2] = (uint64_t)slice;
+	p[3] = (uint64_t)actx->total_blocks;
+	p[4] = (uint64_t)actx->iterations;
+	p[5] = (uint64_t)actx->argon2_type;
+	p[6] = (uint64_t)counter;
 
 	G(out_block, zero_block, input_block, NULL);
 	G(address_block, zero_block, out_block, NULL);
 }
 
-static uint64_t argon2_block_offset(uint32_t pass, uint32_t slice, uint32_t lane, uint32_t column, uint32_t column_start, uint32_t columns,
-									uint32_t j1, uint32_t j2)
+static uint64_t argon2_block_offset(argon2_ctx *actx, uint32_t pass, uint32_t slice, uint32_t lane, uint32_t column, uint64_t psuedo_rand)
 {
-	uint32_t l, z;
+	uint32_t j1, j2;
+	uint32_t ref_lane, ref_index;
 
-	uint64_t w;
+	uint64_t block_count;
 	uint64_t x, y, zz;
 
 	byte_t same_lane = 0;
@@ -338,34 +361,64 @@ static uint64_t argon2_block_offset(uint32_t pass, uint32_t slice, uint32_t lane
 	uint64_t block_start = 0;
 	uint64_t block_offset = 0;
 
-	l = j2;
+	j1 = psuedo_rand & 0xFFFFFFFF;
+	j2 = (psuedo_rand >> 32) % actx->lanes;
 
-	if (lane == l)
+	ref_lane = j2;
+
+	/*
+		This is pretty complicated. The argon2 paper calls this algorithm index alpha.
+		We need to find the count of blocks to be considered for indexing.
+		Here is my explanation of it.
+
+		First up if we are dealing with the first pass and first slice we consider the current lane only.
+
+		We have 2 conditions if ref_lane is the current lane or not.
+		If (ref_lane == lane) we need to count all the blocks in the current lane
+		that have been filled excluding the last filled block.
+
+		For the first pass this is always the current column index - 1.
+		Consider N columns indexed [0, N-1]. The columns before Ci is i.
+		We exclude the last filled block, so block_count -> i - 1
+
+		For subsequent passes, we have already filled the other blocks.
+		We need to consider all the other blocks in the other segments(i.e 3 segments excluding this one) belonging to this lane
+		except this one.
+		From this segment consider only filled blocks.
+		From the above total exclude the last filled block.
+
+		If (ref_lane != lane) we need to count all the blocks in the current lane and not in
+		the same slice that have been filled.
+		If the block in consideration is the first block of the segment we exclude the last block counted
+
+		For the first pass the block count is always the number of slices completed multiplied by the blocks in each segment.
+		For subsequent passes, consider all blocks in the lane not in the current segment.
+		Now apply the first block in segment condition to get the count.
+	*/
+
+	if (pass == 0 && slice == 0)
+	{
+		ref_lane = lane;
+	}
+
+	if (ref_lane == lane)
 	{
 		same_lane = 1;
 	}
 
-	// If we work with the first slice and first pass, set to current lane.
 	if (pass == 0)
 	{
-		if (slice == 0)
+		if (same_lane)
 		{
-			w = column - 1;
+			block_count = column - 1;
 		}
 		else
 		{
-			if (same_lane)
-			{
-				w = column - 1;
-			}
-			else
-			{
-				w = slice * (columns / 4);
+			block_count = slice * actx->blocks_in_segment;
 
-				if (column - column_start == 0)
-				{
-					w -= 1;
-				}
+			if (column - actx->slices[slice].start == 0)
+			{
+				block_count -= 1;
 			}
 		}
 	}
@@ -373,32 +426,44 @@ static uint64_t argon2_block_offset(uint32_t pass, uint32_t slice, uint32_t lane
 	{
 		if (same_lane)
 		{
-			w = columns - (columns / 4) + (column % (columns / 4) - 1);
+			block_count = actx->columns - actx->blocks_in_segment + (column % actx->blocks_in_segment) - 1;
 		}
 		else
 		{
-			w = columns - (columns / 4);
+			block_count = actx->columns - actx->blocks_in_segment;
 
-			if (column - column_start == 0)
+			if (column - actx->slices[slice].start == 0)
 			{
-				w -= 1;
+				block_count -= 1;
 			}
 		}
 	}
 
+	/*
+		We now have our block count. We use it to get the ref index.
+		This is the approximation function used.
+	*/
 	x = ((uint64_t)j1 * (uint64_t)j1) >> 32;
-	y = (w * x) >> 32;
-	zz = w - 1 - y;
+	y = (block_count * x) >> 32;
+	zz = block_count - 1 - y;
 
-	z = zz;
+	ref_index = zz;
+
+	/*
+		The blocks are counted from oldest to newest.
+		Say we are at (pass = 1, slice = 1). The blocks are counted from slice 2. (ie S2 , S3, S1).
+		Do modular arithmentic to deal with it.
+
+		BLOCK[ref_lane][(block_start + ref_index) % actx->columns] will be the desired block.
+	*/
 
 	if (pass != 0)
 	{
-		block_start = (slice == 3) ? 0 : ((slice + 1) * (columns / 4));
+		block_start = (slice == (ARGON2_SLICE_COUNT - 1)) ? 0 : ((slice + 1) * actx->blocks_in_segment);
 	}
 
-	block_offset = (block_start + z) % columns;
-	block_offset += l * columns;
+	block_offset = (block_start + ref_index) % actx->columns;
+	block_offset += ref_lane * actx->columns;
 	block_offset *= ARGON2_BLOCK_SIZE;
 
 	return block_offset;
@@ -440,6 +505,8 @@ static void argon2_generate_h0(argon2_ctx *actx, void *password, uint32_t passwo
 
 static void argon2_intial_fill(argon2_ctx *actx)
 {
+	// We have an extra 8 bytes in h0 just for this.
+	// This makes H() way simpler.
 	uint32_t *x = (uint32_t *)&actx->h0[64];
 	uint32_t *y = (uint32_t *)&actx->h0[68];
 
@@ -462,12 +529,12 @@ static void argon2_intial_fill(argon2_ctx *actx)
 	}
 }
 
-static void argon2_fill_segment(argon2_ctx *actx, uint32_t pass, uint32_t slice, uint32_t lane, uint32_t column_start, uint32_t column_end)
+static void argon2_fill_segment(argon2_ctx *actx, uint32_t pass, uint32_t slice, uint32_t lane)
 {
 	byte_t addresses[ARGON2_BLOCK_SIZE];
 	byte_t temp[ARGON2_BLOCK_SIZE];
 
-	uint32_t lane_counter = 1;
+	uint32_t segment_counter = 1;
 	uint32_t block_counter = 0;
 
 	uint64_t psuedo_rand = 0; // J1 || J2
@@ -479,18 +546,17 @@ static void argon2_fill_segment(argon2_ctx *actx, uint32_t pass, uint32_t slice,
 		data_dependent_addressing = 1;
 	}
 
-	// Calculate B[i][j]
-	for (uint32_t j = column_start; j < column_end; ++j, ++block_counter)
+	// Calculate B[i][j > 2]
+	for (uint32_t j = actx->slices[slice].start; j < actx->slices[slice].end; ++j, ++block_counter)
 	{
 		// Skip first 2 B[i][0], B[i][1]
 		if (pass == 0)
 		{
-			if ((j == 0) && (column_end > 2) && (data_dependent_addressing == 0))
+			if ((j == 0) && (actx->slices[slice].end > 2) && (data_dependent_addressing == 0))
 			{
 				// Generate new addresses for segments in the first slice if we are going to need them.
-				argon2_generate_addresses(addresses, pass, lane, slice, actx->total_blocks, actx->iterations, actx->argon2_type,
-										  lane_counter);
-				++lane_counter;
+				argon2_generate_addresses(actx, addresses, pass, lane, slice, segment_counter);
+				++segment_counter;
 			}
 
 			if (j < 2)
@@ -502,19 +568,20 @@ static void argon2_fill_segment(argon2_ctx *actx, uint32_t pass, uint32_t slice,
 		// Calculate J1, J2
 		if (data_dependent_addressing)
 		{
-			// The first 8 bytes of the block are J1 || J2
+			// The first 8 bytes of the previous block
 			psuedo_rand = *(uint64_t *)ARGON2_BLOCK(actx, lane, j != 0 ? j - 1 : actx->columns - 1);
 		}
 		else
 		{
+			// Generate new addresses if we need them.
+			// Upto 128 blocks in a segment can use the same address block. More than that we need to generate a new one.
 			if (block_counter % 128 == 0)
 			{
-				// Generate new addresses
-				argon2_generate_addresses(addresses, pass, lane, slice, actx->total_blocks, actx->iterations, actx->argon2_type,
-										  lane_counter);
-				++lane_counter;
+				argon2_generate_addresses(actx, addresses, pass, lane, slice, segment_counter);
+				++segment_counter;
 			}
 
+			// The first 8 bytes of the block given by the counter.
 			psuedo_rand = *(uint64_t *)PTR_OFFSET(addresses, (8 * block_counter) % ARGON2_BLOCK_SIZE);
 		}
 
@@ -522,9 +589,7 @@ static void argon2_fill_segment(argon2_ctx *actx, uint32_t pass, uint32_t slice,
 		if (pass == 0)
 		{
 			G(ARGON2_BLOCK(actx, lane, j), ARGON2_BLOCK(actx, lane, j - 1),
-			  PTR_OFFSET(actx->blocks, argon2_block_offset(pass, slice, lane, j, column_start, actx->columns, psuedo_rand & 0xFFFFFFFF,
-														   (psuedo_rand >> 32) % actx->lanes)),
-			  actx->sbox);
+			  PTR_OFFSET(actx->blocks, argon2_block_offset(actx, pass, slice, lane, j, psuedo_rand)), actx->sbox);
 		}
 		// Later passes
 		else
@@ -533,18 +598,15 @@ static void argon2_fill_segment(argon2_ctx *actx, uint32_t pass, uint32_t slice,
 			if (j == 0)
 			{
 				G(temp, ARGON2_BLOCK(actx, lane, actx->columns - 1),
-				  PTR_OFFSET(actx->blocks, argon2_block_offset(pass, slice, lane, j, column_start, actx->columns, psuedo_rand & 0xFFFFFFFF,
-															   (psuedo_rand >> 32) % actx->lanes)),
-				  actx->sbox);
+				  PTR_OFFSET(actx->blocks, argon2_block_offset(actx, pass, slice, lane, j, psuedo_rand)), actx->sbox);
 				X(ARGON2_BLOCK(actx, lane, 0), ARGON2_BLOCK(actx, lane, 0), temp);
 			}
+			// Calculate B[i][j > 1]
 			else
 			{
 
 				G(temp, ARGON2_BLOCK(actx, lane, j - 1),
-				  PTR_OFFSET(actx->blocks, argon2_block_offset(pass, slice, lane, j, column_start, actx->columns, psuedo_rand & 0xFFFFFFFF,
-															   (psuedo_rand >> 32) % actx->lanes)),
-				  actx->sbox);
+				  PTR_OFFSET(actx->blocks, argon2_block_offset(actx, pass, slice, lane, j, psuedo_rand)), actx->sbox);
 				X(ARGON2_BLOCK(actx, lane, j), ARGON2_BLOCK(actx, lane, j), temp);
 			}
 		}
@@ -555,33 +617,19 @@ static void argon2_fill_segments(argon2_ctx *actx)
 {
 	for (uint32_t k = 0; k < actx->iterations; ++k)
 	{
+		// Generate sbox if required
 		if (actx->argon2_type == ARGON2_DS)
 		{
-			argon2_generate_sbox(actx->sbox, actx->blocks);
+			argon2_generate_sbox(actx);
 		}
 
-		// Slice 0
-		for (uint32_t i = 0; i < actx->lanes; ++i)
+		// Fill the segments slicewise
+		for (uint32_t s = 0; s < ARGON2_SLICE_COUNT; ++s)
 		{
-			argon2_fill_segment(actx, k, 0, i, 0, actx->columns / 4);
-		}
-
-		// Slice 1
-		for (uint32_t i = 0; i < actx->lanes; ++i)
-		{
-			argon2_fill_segment(actx, k, 1, i, actx->columns / 4, actx->columns / 2);
-		}
-
-		// Slice 2
-		for (uint32_t i = 0; i < actx->lanes; ++i)
-		{
-			argon2_fill_segment(actx, k, 2, i, actx->columns / 2, 3 * (actx->columns / 4));
-		}
-
-		// Slice 3
-		for (uint32_t i = 0; i < actx->lanes; ++i)
-		{
-			argon2_fill_segment(actx, k, 3, i, 3 * (actx->columns / 4), actx->columns);
+			for (uint32_t i = 0; i < actx->lanes; ++i)
+			{
+				argon2_fill_segment(actx, k, s, i);
+			}
 		}
 	}
 }
@@ -589,7 +637,7 @@ static void argon2_fill_segments(argon2_ctx *actx)
 static void argon2_final(argon2_ctx *actx, void *key, uint32_t key_size)
 {
 	// Calculate C
-	byte_t c[1024] = {0};
+	byte_t c[ARGON2_BLOCK_SIZE] = {0};
 
 	for (uint32_t i = 0; i < actx->lanes; ++i)
 	{
@@ -597,7 +645,7 @@ static void argon2_final(argon2_ctx *actx, void *key, uint32_t key_size)
 	}
 
 	// Calculate T
-	H(c, 1024, key, key_size);
+	H(c, ARGON2_BLOCK_SIZE, key, key_size);
 }
 
 static uint32_t argon2_common(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,
