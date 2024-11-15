@@ -59,7 +59,23 @@ typedef struct _pgp_s2k
 	};
 } pgp_s2k;
 
-uint32_t pgp_s2k_size(pgp_s2k *s2k);
+static inline uint32_t pgp_s2k_size(pgp_s2k *s2k)
+{
+	switch (s2k->id)
+	{
+	case PGP_S2K_SIMPLE:
+		return 2;
+	case PGP_S2K_SALTED:
+		return 10;
+	case PGP_S2K_ITERATED:
+		return 11;
+	case PGP_S2K_ARGON2:
+		return 20;
+	}
+
+	// Unreachable
+	return 0;
+}
 
 pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size);
 uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr);
