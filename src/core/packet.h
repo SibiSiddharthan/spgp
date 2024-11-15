@@ -49,32 +49,6 @@ typedef struct _pgp_packet_header
 	uint32_t body_size;
 } pgp_packet_header;
 
-typedef struct _pgp_public_key_packet
-{
-	pgp_packet_header header;
-
-	byte_t version;
-	byte_t algorithm_id;
-	uint16_t expiry_days;
-	uint32_t creation_timestamp;
-
-	uint32_t key_material_size;
-	void *key_material;
-} pgp_pubkey_packet, pgp_pubsubkey_packet;
-
-typedef struct _pgp_secret_key_packet
-{
-	pgp_packet_header header;
-
-	byte_t version;
-	byte_t algorithm_id;
-	uint16_t expiry_days;
-	uint32_t creation_timestamp;
-
-	uint32_t key_material_size;
-	void *key_material;
-} pgp_seckey_packet, pgp_secsubkey_packet;
-
 typedef struct _pgp_compressed_packet
 {
 	pgp_packet_header header;
@@ -116,8 +90,8 @@ typedef struct _pgp_trust_packet
 pgp_packet_header pgp_packet_header_read(void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 
-pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size);
-size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
+pgp_compresed_packet *pgp_compressed_packet_read(pgp_compresed_packet *packet, void *data, size_t size);
+size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
 
 pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size);
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);

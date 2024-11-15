@@ -7,6 +7,10 @@
 
 #include <spgp.h>
 #include <packet.h>
+#include <key.h>
+#include <seipd.h>
+#include <session.h>
+#include <signature.h>
 
 #include <string.h>
 
@@ -316,21 +320,20 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 	return header;
 }
 
-#if 0
-size_t pgp_packet_read(void *data, size_t size)
+void *pgp_packet_read(void *data, size_t size)
 {
 	pgp_packet_header header = pgp_packet_header_read(data, size);
 	pgp_packet_type ptype = pgp_packet_get_type(header.tag);
 
 	if (ptype == PGP_RESERVED || header.body_size == 0)
 	{
-		return 0;
+		return NULL;
 	}
 
 	if (size < (get_packet_header_size(get_packet_header_type(&header), header.body_size) + header.body_size))
 	{
 		// Invalid packet
-		return 0;
+		return NULL;
 	}
 
 	switch (ptype)
@@ -338,33 +341,33 @@ size_t pgp_packet_read(void *data, size_t size)
 	case PGP_PKESK:
 		return pgp_pkesk_packet_read(NULL, data, size);
 	case PGP_SIG:
-		return pgp_signature_packet_read(NULL, data, size);
+		return NULL; // pgp_signature_packet_read(NULL, data, size);
 	case PGP_SKESK:
 		return pgp_skesk_packet_read(NULL, data, size);
 	case PGP_OPS:
-		return pgp_ops_packet_read(NULL, data, size);
+		return pgp_one_pass_signature_packet_read(NULL, data, size);
 	case PGP_SECKEY:
-		return pgp_secret_key_packet_read(NULL, data, size);
+		return NULL; // pgp_secret_key_packet_read(NULL, data, size);
 	case PGP_PUBKEY:
-		return pgp_public_key_packet_read(NULL, data, size);
+		return NULL; // pgp_public_key_packet_read(NULL, data, size);
 	case PGP_SECSUBKEY:
-		return pgp_secret_subkey_packet_read(NULL, data, size);
+		return NULL; // pgp_secret_key_packet_read(NULL, data, size);
 	case PGP_COMP:
 		return pgp_compressed_packet_read(NULL, data, size);
 	case PGP_SED:
-		return pgp_encrypted_packet_read(NULL, data, size);
+		return pgp_sed_packet_read(NULL, data, size);
 	case PGP_MARKER:
 		return pgp_marker_packet_read(NULL, data, size);
 	case PGP_LIT:
-		return pgp_literal_packet_read(NULL, data, size);
+		return NULL; // pgp_literal_packet_read(NULL, data, size);
 	case PGP_TRUST:
-		return pgp_trust_packet_read(NULL, data, size);
+		return NULL; // pgp_trust_packet_read(NULL, data, size);
 	case PGP_UID:
-		return pgp_uid_packet_read(NULL, data, size);
+		return pgp_user_id_packet_read(NULL, data, size);
 	case PGP_PUBSUBKEY:
-		return pgp_public_subkey_packet_read(NULL, data, size);
+		return NULL; // pgp_public_key_packet_read(NULL, data, size);
 	case PGP_UAT:
-		return pgp_uat_packet_read(NULL, data, size);
+		return NULL; // pgp_uat_packet_read(NULL, data, size);
 	case PGP_SEIPD:
 		return pgp_seipd_packet_read(NULL, data, size);
 	case PGP_MDC:
@@ -373,17 +376,16 @@ size_t pgp_packet_read(void *data, size_t size)
 		return pgp_padding_packet_read(NULL, data, size);
 		break;
 	default:
-		return 0;
+		return NULL;
 	}
 }
-#endif
 
 uint64_t dump_pgp_packet(void *data, size_t data_size)
 {
 	return 0;
 }
 
-pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
+pgp_compresed_packet *pgp_compressed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
 	size_t pos = packet->header.header_size;
@@ -398,7 +400,7 @@ pgp_compresed_packet *pgp_compresed_packet_read(pgp_compresed_packet *packet, vo
 	return packet;
 }
 
-size_t pgp_compresed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size)
+size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
 	size_t required_size = 0;
