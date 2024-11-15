@@ -161,7 +161,7 @@ pgp_seipd_packet *pgp_seipd_packet_read(pgp_seipd_packet *packet, void *data, si
 
 		// Data
 		packet->data_size = packet->header.body_size - pos - 16;
-		memcpy(packet->data, in + pos, packet->data);
+		memcpy(packet->data, in + pos, packet->data_size);
 		pos += packet->data_size;
 
 		// Tag
@@ -173,7 +173,7 @@ pgp_seipd_packet *pgp_seipd_packet_read(pgp_seipd_packet *packet, void *data, si
 	{
 		// Data
 		packet->data_size = packet->header.body_size - 1;
-		memcpy(packet->data, in + pos, packet->data);
+		memcpy(packet->data, in + pos, packet->data_size);
 		pos += packet->data_size;
 	}
 	else

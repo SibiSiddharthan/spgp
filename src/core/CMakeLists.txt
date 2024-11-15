@@ -12,6 +12,7 @@ add_library(spgp OBJECT
 			mpi.c mpi.h
 			packet.c packet.h
 			s2k.c s2k.h
+			seipd.c seipd.h
 			session.c session.h
 			signature.c signature.h
 			)
