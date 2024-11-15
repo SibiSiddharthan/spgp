@@ -12,6 +12,14 @@
 #include <packet.h>
 #include <mpi.h>
 
+typedef enum _pgp_key_version
+{
+	PGP_KEY_V2 = 2,
+	PGP_KEY_V3 = 3, 
+	PGP_KEY_V4 = 4,
+	PGP_KEY_V6 = 6
+} pgp_key_version;
+
 typedef struct _pgp_public_key_packet
 {
 	pgp_packet_header header;
@@ -22,6 +30,7 @@ typedef struct _pgp_public_key_packet
 	byte_t public_key_algorithm_id;
 
 	uint16_t key_bits;
+	uint32_t key_data_size;
 	void *key_data;
 
 } pgp_public_key_packet, pgp_public_subkey_packet;

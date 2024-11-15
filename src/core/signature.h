@@ -10,6 +10,7 @@
 
 #include <spgp.h>
 #include <packet.h>
+#include <key.h>
 #include <mpi.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5.2 Signature Packet
@@ -26,12 +27,6 @@ typedef enum _pgp_one_pass_signature_version
 	PGP_ONE_PASS_SIGNATURE_V3 = 3,
 	PGP_ONE_PASS_SIGNATURE_V6 = 6
 } pgp_one_pass_signature_version;
-
-typedef enum _pgp_key_version
-{
-	PGP_KEY_V4 = 4,
-	PGP_KEY_V6 = 6
-} pgp_key_version;
 
 typedef enum _pgp_signature_type
 {
