@@ -359,7 +359,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_MARKER:
 		return pgp_marker_packet_read(NULL, data, size);
 	case PGP_LIT:
-		return NULL; // pgp_literal_packet_read(NULL, data, size);
+		return pgp_literal_packet_read(NULL, data, size);
 	case PGP_TRUST:
 		return NULL; // pgp_trust_packet_read(NULL, data, size);
 	case PGP_UID:
@@ -477,6 +477,95 @@ size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size
 	// Padding data
 	memcpy(out + pos, packet->marker, 3);
 	pos += 3;
+
+	return pos;
+}
+
+pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *data, size_t size)
+{
+	byte_t *in = data;
+	size_t pos = packet->header.header_size;
+
+	// 1-octet format specifier
+	LOAD_8(&packet->format, in + pos);
+	pos += 1;
+
+	if (packet->format != PGP_LITERAL_DATA_BINARY && packet->format != PGP_LITERAL_DATA_UTF8 && packet->format != PGP_LITERAL_DATA_TEXT)
+	{
+		return NULL;
+	}
+
+	// A 1-octet denoting file name length
+	LOAD_8(&packet->filename_size, in + pos);
+	pos += 1;
+
+	// N-octets of filename
+	if (packet->filename_size > 0)
+	{
+		memcpy(packet->filename, in + pos, packet->filename_size);
+		pos += packet->filename_size;
+	}
+
+	// A 4-octet date
+	uint32_t date_be;
+
+	LOAD_32(&date_be, in + pos);
+	packet->date = BSWAP_32(date_be);
+	pos += 4;
+
+	// Literal data
+	memcpy(packet->data, in + pos, packet->data_size);
+	pos += packet->data_size;
+
+	return packet;
+}
+
+size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	// A 1-octet format specifier
+	// A 1-octet denoting file name length
+	// N-octets of filename
+	// A 4-octet date
+	// Literal data
+
+	required_size = packet->header.header_size + 1 + 1 + 4 + packet->filename_size + packet->data_size;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1-octet format specifier
+	LOAD_8(out + pos, &packet->format);
+	pos += 1;
+
+	// A 1-octet denoting file name length
+	LOAD_8(out + pos, &packet->filename_size);
+	pos += 1;
+
+	// N-octets of filename
+	if (packet->filename_size > 0)
+	{
+		memcpy(out + pos, packet->filename, packet->filename_size);
+		pos += packet->filename_size;
+	}
+
+	// A 4-octet date
+	uint32_t date = BSWAP_32(packet->date);
+
+	LOAD_32(out + pos, &date);
+	pos += 4;
+
+	// Literal data
+	memcpy(out + pos, packet->data, packet->data_size);
+	pos += packet->data_size;
 
 	return pos;
 }

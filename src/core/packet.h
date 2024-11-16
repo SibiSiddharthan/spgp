@@ -63,6 +63,29 @@ typedef struct _pgp_marker_packet
 	byte_t marker[3]; // "PGP" (0x50, 0x47, 0x50)
 } pgp_marker_packet;
 
+typedef enum _pgp_literal_data_format
+{
+	PGP_LITERAL_DATA_BINARY = 0x62, // 'b'
+	PGP_LITERAL_DATA_UTF8 = 0x75,   // 'u',
+	PGP_LITERAL_DATA_TEXT = 0x74    // 't'
+
+} _pgp_literal_data_format;
+
+typedef struct _pgp_literal_packet
+{
+	pgp_packet_header header;
+
+	byte_t format;
+	uint32_t date;
+
+	byte_t filename_size;
+	void *filename;
+
+	uint32_t data_size;
+	void *data;
+
+} pgp_literal_packet;
+
 typedef struct _pgp_user_id_packet
 {
 	pgp_packet_header header;
@@ -95,6 +118,9 @@ size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size
 
 pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size);
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
+
+pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *data, size_t size);
+size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size);
 
 pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size);
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
