@@ -104,10 +104,16 @@ typedef struct _pgp_mdc_packet
 	byte_t sha1_hash[20];
 } pgp_mdc_packet;
 
+typedef enum _pgp_trust_level
+{
+	PGP_TRUST_NEVER = 0,
+	PGP_TRUST_FULL = 1
+} pgp_trust_level;
+
 typedef struct _pgp_trust_packet
 {
 	pgp_packet_header header;
-	void *placeholder;
+	byte_t level;
 } pgp_trust_packet;
 
 pgp_packet_header pgp_packet_header_read(void *data, size_t size);
@@ -130,6 +136,9 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 
 pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size);
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
+
+pgp_trust_packet *pgp_trust_packet_read(pgp_trust_packet *packet, void *data, size_t size);
+size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 
 uint64_t dump_pgp_packet(void *data, size_t data_size);
 

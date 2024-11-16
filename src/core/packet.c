@@ -361,7 +361,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_LIT:
 		return pgp_literal_packet_read(NULL, data, size);
 	case PGP_TRUST:
-		return NULL; // pgp_trust_packet_read(NULL, data, size);
+		return pgp_trust_packet_read(NULL, data, size);
 	case PGP_UID:
 		return pgp_user_id_packet_read(NULL, data, size);
 	case PGP_PUBSUBKEY:
@@ -677,6 +677,40 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
 	// Padding data
 	memcpy(out + pos, packet->sha1_hash, 20);
 	pos += 3;
+
+	return pos;
+}
+
+pgp_trust_packet *pgp_trust_packet_read(pgp_trust_packet *packet, void *data, size_t size)
+{
+	byte_t *in = data;
+	size_t pos = packet->header.header_size;
+
+	LOAD_8(&packet->level, in + pos);
+	pos += 1;
+
+	return packet;
+}
+
+size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	required_size = packet->header.header_size + 1;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Trust level
+	LOAD_8(out + pos, &packet->level);
+	pos += 1;
 
 	return pos;
 }
