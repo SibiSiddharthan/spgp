@@ -83,7 +83,7 @@ mpi_t *mpi_from_bn(mpi_t *mpi, bignum_t *bn)
 }
 
 // See RFC 9580 - OpenPGP, Section 3.2 Multiprecision Integers.
-int32_t mpi_write(mpi_t *mpi, void *ptr, size_t size)
+uint32_t mpi_write(mpi_t *mpi, void *ptr, size_t size)
 {
 	// 2 bytes for the bits + the number in big endian form.
 	uint16_t required_size = 2 + CEIL_DIV(mpi->bits, 8);
@@ -94,19 +94,6 @@ int32_t mpi_write(mpi_t *mpi, void *ptr, size_t size)
 	{
 		return -1;
 	}
-
-	LOAD_16(out, &bits_be);
-	memcpy(out + sizeof(uint16_t), mpi->bytes, CEIL_DIV(mpi->bits, 8));
-
-	return required_size;
-}
-
-uint32_t mpi_write_checked(mpi_t *mpi, void *ptr)
-{
-	// 2 bytes for the bits + the number in big endian form.
-	uint16_t required_size = 2 + CEIL_DIV(mpi->bits, 8);
-	uint16_t bits_be = BSWAP_16(mpi->bits);
-	byte_t *out = ptr;
 
 	LOAD_16(out, &bits_be);
 	memcpy(out + sizeof(uint16_t), mpi->bytes, CEIL_DIV(mpi->bits, 8));
