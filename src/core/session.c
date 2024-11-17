@@ -16,9 +16,105 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 	return 0;
 }
 
-static uint32_t pgp_session_key_write(pgp_pkesk_packet *packet, void *ptr)
+static uint32_t pgp_session_key_write(pgp_pkesk_packet *packet, void *ptr, uint32_t size)
 {
-	return 0;
+	byte_t *out = ptr;
+	size_t pos = 0;
+
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	{
+		// MPI of (m^e) mod n
+		pgp_rsa_encrypt *sk = packet->session_key;
+		return mpi_write(sk->c, out, size);
+	}
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		// MPI of (m^e) mod n
+		pgp_elgamal_encrypt *sk = packet->session_key;
+
+		pos += mpi_write(sk->r, out + pos, size - pos);
+		pos += mpi_write(sk->s, out + pos, size - pos);
+
+		return pos;
+	}
+	case PGP_ECDH:
+	{
+		pgp_ecdh_encrypt *sk = packet->session_key;
+
+		// MPI of EC point
+		memcpy(out + pos, sk->ephemeral_key, sk->ephemeral_key_size);
+		pos += sk->ephemeral_key_size;
+
+		// 1 octet count
+		LOAD_8(out + pos, &sk->encrypted_session_key_size);
+		pos += 1;
+
+		// Encrypted session key
+		memcpy(out + pos, sk->encrypted_session_key, sk->encrypted_session_key_size);
+		pos += sk->encrypted_session_key_size;
+
+		return pos;
+	}
+	case PGP_X25519:
+	{
+		pgp_x25519_encrypt *sk = packet->session_key;
+
+		// 32 octets of ephemeral key
+		memcpy(out + pos, sk->ephemeral, 32);
+		pos += 32;
+
+		// 1 octet count
+		LOAD_8(out + pos, sk->size);
+		pos += 1;
+
+		if (packet->version == PGP_PKESK_V3)
+		{
+			// 1 octet algorithm id
+			LOAD_8(out + pos, &sk->algorithm);
+			pos += 1;
+		}
+
+		// Encrypted session key
+		byte_t encrypted_session_key_size = sk->size - (packet->version == PGP_PKESK_V3 ? 1 : 0);
+
+		memcpy(out + pos, sk->encrypted_session_key, encrypted_session_key_size);
+		pos += encrypted_session_key_size;
+
+		return pos;
+	}
+	case PGP_X448:
+	{
+		pgp_x448_encrypt *sk = packet->session_key;
+
+		// 56 octets of ephemeral key
+		memcpy(out + pos, sk->ephemeral, 56);
+		pos += 32;
+
+		// 1 octet count
+		LOAD_8(out + pos, &sk->size);
+		pos += 1;
+
+		if (packet->version == PGP_PKESK_V3)
+		{
+			// 1 octet algorithm id
+			LOAD_8(out + pos, &sk->algorithm);
+			pos += 1;
+		}
+
+		// Encrypted session key
+		byte_t encrypted_session_key_size = sk->size - (packet->version == PGP_PKESK_V3 ? 1 : 0);
+
+		memcpy(out + pos, sk->encrypted_session_key, encrypted_session_key_size);
+		pos += encrypted_session_key_size;
+
+		return pos;
+	}
+	default:
+		return 0;
+	}
 }
 
 static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
@@ -32,7 +128,7 @@ static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, siz
 	// A 1-octet public key algorithm.
 	// Session key
 
-	required_size = packet->header.header_size + 1 + 8 + 1 + CEIL_DIV(packet->session_key_bits, 8);
+	required_size = packet->header.header_size + 1 + 8 + 1 + packet->session_key_size;
 
 	if (size < required_size)
 	{
@@ -54,7 +150,7 @@ static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, siz
 	LOAD_8(out + pos, &packet->public_key_algorithm_id);
 	pos += 1;
 
-	pos += pgp_session_key_write(packet, out + pos);
+	pos += pgp_session_key_write(packet, out + pos, size - pos);
 
 	return pos;
 }
@@ -72,7 +168,7 @@ static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, siz
 	// A 1-octet public key algorithm.
 	// Session key
 
-	required_size = packet->header.header_size + 1 + 1 + 1 + packet->anonymous + CEIL_DIV(packet->session_key_bits, 8);
+	required_size = packet->header.header_size + 1 + 1 + 1 + packet->anonymous + packet->session_key_size;
 
 	if (size < required_size)
 	{
@@ -112,7 +208,7 @@ static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, siz
 	LOAD_8(out + pos, &packet->public_key_algorithm_id);
 	pos += 1;
 
-	pos += pgp_session_key_write(packet, out + pos);
+	pos += pgp_session_key_write(packet, out + pos, size - pos);
 
 	return pos;
 }

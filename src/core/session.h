@@ -41,7 +41,7 @@ typedef struct _pgp_pkesk_packet
 		byte_t key_fingerprint[32];
 	};
 
-	uint16_t session_key_bits;
+	uint16_t session_key_size;
 	void *session_key;
 
 } pgp_pkesk_packet;
@@ -64,6 +64,44 @@ typedef struct _pgp_skesk_packet
 	void *session_key;
 
 } pgp_skesk_packet;
+
+typedef struct _pgp_rsa_encrypt
+{
+	mpi_t *c; // (m^e) mod n.
+} pgp_rsa_encrypt;
+
+typedef struct _pgp_elgamal_encrypt
+{
+	mpi_t *r; // (g^k) mod p
+	mpi_t *s; // m * (y^k) mod p
+} pgp_elgamal_encrypt;
+
+typedef struct _pgp_ecdh_encrypt
+{
+	byte_t ephemeral_key_size;
+	byte_t encrypted_session_key_size;
+
+	void *ephemeral_key;
+	void *encrypted_session_key;
+} pgp_ecdh_encrypt;
+
+typedef struct _pgp_x25519_encrypt
+{
+	byte_t ephemeral[32];
+	byte_t size;
+	byte_t algorithm;
+
+	void *encrypted_session_key;
+} pgp_x25519_encrypt;
+
+typedef struct _pgp_x448_encrypt
+{
+	byte_t ephemeral[56];
+	byte_t size;
+	byte_t algorithm;
+
+	void *encrypted_session_key;
+} pgp_x448_encrypt;
 
 pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, size_t size);
 size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size);
