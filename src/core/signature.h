@@ -136,7 +136,7 @@ typedef struct _pgp_signature_packet
 	void *hashed_data;
 	void *unhashed_data;
 
-	uint32_t key_bits;
+	uint32_t signature_size;
 	void *signature;
 } pgp_signature_packet;
 
