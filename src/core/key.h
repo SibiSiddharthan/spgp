@@ -60,36 +60,55 @@ typedef struct _pgp_secret_key_packet
 
 } pgp_secret_key_packet, _pgp_secret_subkey_packet;
 
-typedef struct _pgp_rsa_public_key
+typedef struct _pgp_rsa_key
 {
+	// Public
 	mpi_t *n, *e;
-} pgp_rsa_public_key;
 
-typedef struct _pgp_dsa_public_key
+	// Private
+	mpi_t *d;
+	mpi_t *p, *q;
+	mpi_t *u;
+} pgp_rsa_key;
+
+typedef struct _pgp_dsa_key
 {
+	// Public
 	mpi_t *p, *q;
 	mpi_t *g;
 	mpi_t *y;
-} pgp_dsa_public_key;
 
-typedef struct _pgp_elgamal_public_key
+	// Private
+	mpi_t *x;
+} pgp_dsa_key;
+
+typedef struct _pgp_elgamal_key
 {
+	// Public
 	mpi_t *p;
 	mpi_t *g;
 	mpi_t *y;
-} pgp_elgamal_public_key;
 
-typedef struct _pgp_ecdsa_public_key
+	// Private
+	mpi_t *x;
+} pgp_elgamal_key;
+
+typedef struct _pgp_ecdsa_key
 {
+	// Public
 	byte_t oid_size;
 	byte_t oid[16];
 
 	byte_t point_size;
 	void *point;
-} pgp_ecdsa_public_key;
 
-typedef struct _pgp_ecdh_public_key
+	// Private
+	mpi_t *x;
+} pgp_ecdsa_key;
+
+typedef struct _pgp_ecdh_key
 {
+	// Public
 	byte_t oid_size;
 	byte_t oid[16];
 
@@ -103,27 +122,34 @@ typedef struct _pgp_ecdh_public_key
 
 	byte_t point_size;
 	void *point;
-} pgp_ecdh_public_key;
+
+	// Private
+	mpi_t *x;
+} pgp_ecdh_key;
 
 typedef struct _pgp_x25519_key
 {
-	byte_t key[32];
-} pgp_x25519_public_key, pgp_x25519_secret_key;
+	byte_t public_key[32];
+	byte_t private_key[32];
+} pgp_x25519_key;
 
 typedef struct _pgp_x448_key
 {
-	byte_t key[56];
-} pgp_x448_public_key, pgp_x448_secret_key;
+	byte_t public_key[56];
+	byte_t private_key[56];
+} pgp_x448_key;
 
 typedef struct _pgp_ed25519_key
 {
-	byte_t key[32];
-} pgp_ed25519_public_key, pgp_ed25519_secret_key;
+	byte_t public_key[32];
+	byte_t private_key[32];
+} pgp_ed25519_key;
 
 typedef struct _pgp_ed448_key
 {
-	byte_t key[57];
-} pgp_ed448_public_key, pgp_ed448_secret_key;
+	byte_t public_key[57];
+	byte_t private_key[57];
+} pgp_ed448_key;
 
 pgp_public_key_packet *pgp_public_key_packet_read(pgp_public_key_packet *packet, void *data, size_t size);
 size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, size_t size);
