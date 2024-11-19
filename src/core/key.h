@@ -16,7 +16,7 @@
 typedef enum _pgp_key_version
 {
 	PGP_KEY_V2 = 2, // NOTE : Version 2 is identical to version 3.
-	PGP_KEY_V3 = 3, 
+	PGP_KEY_V3 = 3,
 	PGP_KEY_V4 = 4,
 	PGP_KEY_V6 = 6
 } pgp_key_version;
@@ -59,6 +59,71 @@ typedef struct _pgp_secret_key_packet
 	void *private_key_data;
 
 } pgp_secret_key_packet, _pgp_secret_subkey_packet;
+
+typedef struct _pgp_rsa_public_key
+{
+	mpi_t *n, *e;
+} pgp_rsa_public_key;
+
+typedef struct _pgp_dsa_public_key
+{
+	mpi_t *p, *q;
+	mpi_t *g;
+	mpi_t *y;
+} pgp_dsa_public_key;
+
+typedef struct _pgp_elgamal_public_key
+{
+	mpi_t *p;
+	mpi_t *g;
+	mpi_t *y;
+} pgp_elgamal_public_key;
+
+typedef struct _pgp_ecdsa_public_key
+{
+	byte_t oid_size;
+	byte_t oid[16];
+
+	byte_t point_size;
+	void *point;
+} pgp_ecdsa_public_key;
+
+typedef struct _pgp_ecdh_public_key
+{
+	byte_t oid_size;
+	byte_t oid[16];
+
+	struct
+	{
+		byte_t size;
+		byte_t extensions;
+		byte_t hash_algorithm_id;
+		byte_t symmetric_key_algorithm_id;
+	} kdf;
+
+	byte_t point_size;
+	void *point;
+} pgp_ecdh_public_key;
+
+typedef struct _pgp_x25519_key
+{
+	byte_t key[32];
+} pgp_x25519_public_key, pgp_x25519_secret_key;
+
+typedef struct _pgp_x448_key
+{
+	byte_t key[56];
+} pgp_x448_public_key, pgp_x448_secret_key;
+
+typedef struct _pgp_ed25519_key
+{
+	byte_t key[32];
+} pgp_ed25519_public_key, pgp_ed25519_secret_key;
+
+typedef struct _pgp_ed448_key
+{
+	byte_t key[57];
+} pgp_ed448_public_key, pgp_ed448_secret_key;
 
 pgp_public_key_packet *pgp_public_key_packet_read(pgp_public_key_packet *packet, void *data, size_t size);
 size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, size_t size);

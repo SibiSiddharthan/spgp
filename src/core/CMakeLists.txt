@@ -11,6 +11,7 @@ add_library(spgp OBJECT
 			crc24.c crc24.h
 			mpi.c mpi.h
 			packet.c packet.h
+			key.c key.h
 			s2k.c s2k.h
 			seipd.c seipd.h
 			session.c session.h
