@@ -140,6 +140,4 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
 pgp_trust_packet *pgp_trust_packet_read(pgp_trust_packet *packet, void *data, size_t size);
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 
-uint64_t dump_pgp_packet(void *data, size_t data_size);
-
 #endif

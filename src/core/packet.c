@@ -380,11 +380,6 @@ void *pgp_packet_read(void *data, size_t size)
 	}
 }
 
-uint64_t dump_pgp_packet(void *data, size_t data_size)
-{
-	return 0;
-}
-
 pgp_compresed_packet *pgp_compressed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
