@@ -5,6 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <spgp.h>
 #include <packet.h>
 
