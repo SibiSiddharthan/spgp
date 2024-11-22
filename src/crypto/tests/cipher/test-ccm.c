@@ -17,7 +17,7 @@
 int32_t aes128_ccm_suite(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[16];
 	byte_t nonce[16];

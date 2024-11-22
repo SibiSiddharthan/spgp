@@ -607,7 +607,7 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 {
 	uint64_t kl[2], kr[2];
 	uint8_t w0[16], w1[16], w2[16], w3[16];
-	uint8_t nr;
+	uint8_t nr = 0;
 
 	uint64_t *k = (uint64_t *)actual_key;
 	uint8_t *r = (uint8_t *)kr;

@@ -67,16 +67,16 @@ static inline uint64_t cipher_cfb1_encrypt_core(cipher_ctx *cctx, void *in, void
 
 	while (processed < size)
 	{
-		byte_t out = 0;
+		byte_t out_byte = 0;
 
 		for (uint8_t i = 0; i < 8; ++i)
 		{
 			cctx->_encrypt(cctx->_key, cctx->buffer, temp);
-			out |= (get_bit(pin[processed], i) ^ get_bit(temp[0], 0)) << (7 - i);
-			SHL128_1(cctx->buffer, get_bit(out, i));
+			out_byte |= (get_bit(pin[processed], i) ^ get_bit(temp[0], 0)) << (7 - i);
+			SHL128_1(cctx->buffer, get_bit(out_byte, i));
 		}
 
-		pout[processed] = out;
+		pout[processed] = out_byte;
 		++processed;
 	}
 
@@ -94,16 +94,16 @@ static inline uint64_t cipher_cfb1_decrypt_core(cipher_ctx *cctx, void *in, void
 
 	while (processed < size)
 	{
-		byte_t out = 0;
+		byte_t out_byte = 0;
 
 		for (uint8_t i = 0; i < 8; ++i)
 		{
 			cctx->_encrypt(cctx->_key, cctx->buffer, temp);
-			out |= (get_bit(pin[processed], i) ^ get_bit(temp[0], 0)) << (7 - i);
+			out_byte |= (get_bit(pin[processed], i) ^ get_bit(temp[0], 0)) << (7 - i);
 			SHL128_1(cctx->buffer, get_bit(pin[processed], i));
 		}
 
-		pout[processed] = out;
+		pout[processed] = out_byte;
 		++processed;
 	}
 

@@ -11,6 +11,7 @@
 
 #include <des.h>
 #include <byteswap.h>
+#include <ptr.h>
 
 // See NIST FIPS 46-3 Data Encryption Standard (DES)
 
@@ -445,14 +446,14 @@ int32_t tdes_decode_key(void *key, size_t key_size, byte_t k1[DES_KEY_SIZE], byt
 	case DES_KEY_SIZE * 2:
 		// 128(112) bit key. k1 = k3.
 		memcpy(k1, key, DES_KEY_SIZE);
-		memcpy(k2, key + DES_KEY_SIZE, DES_KEY_SIZE);
+		memcpy(k2, PTR_OFFSET(key, DES_KEY_SIZE), DES_KEY_SIZE);
 		memcpy(k3, key, DES_KEY_SIZE);
 		break;
 	case DES_KEY_SIZE * 3:
 		// 192(168) bit key.
 		memcpy(k1, key, DES_KEY_SIZE);
-		memcpy(k2, key + DES_KEY_SIZE, DES_KEY_SIZE);
-		memcpy(k3, key + DES_KEY_SIZE + DES_KEY_SIZE, DES_KEY_SIZE);
+		memcpy(k2, PTR_OFFSET(key, DES_KEY_SIZE), DES_KEY_SIZE);
+		memcpy(k3, PTR_OFFSET(key, DES_KEY_SIZE + DES_KEY_SIZE), DES_KEY_SIZE);
 		break;
 	default:
 		return -1;

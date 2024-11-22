@@ -131,9 +131,9 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 
 	uint32_t block_size = 16;
 
-	void *_ctx;
-	void (*_encrypt)(void *, void *, void *);
-	void (*_decrypt)(void *, void *, void *);
+	void *_ctx = NULL;
+	void (*_encrypt)(void *, void *, void *) = NULL;
+	void (*_decrypt)(void *, void *, void *) = NULL;
 
 	if (ctx_size == 0)
 	{

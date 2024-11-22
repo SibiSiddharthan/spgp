@@ -17,7 +17,7 @@
 int32_t aes256_siv_cmac_suite(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[32];
 	byte_t ad_1[64];
@@ -76,7 +76,7 @@ int32_t aes256_siv_cmac_suite(void)
 int32_t aes128_siv_gcm_suite(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[16];
 	byte_t ad[64];
@@ -484,7 +484,7 @@ int32_t aes128_siv_gcm_suite(void)
 int32_t aes256_siv_gcm_suite(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[32];
 	byte_t ad[64];
@@ -892,7 +892,7 @@ int32_t aes256_siv_gcm_suite(void)
 int32_t aes256_siv_gcm_wrap_tests(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[32];
 	byte_t nonce[64];

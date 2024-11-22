@@ -75,6 +75,8 @@ rand/hmac-drbg.c
 signature/dsa.c
 )
 
-set_source_files_properties(rand/entropy.c PROPERTIES COMPILE_FLAGS "-mrdseed")
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+	set_source_files_properties(rand/entropy.c PROPERTIES COMPILE_FLAGS "-mrdseed")
+endif()
 
 target_include_directories(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)

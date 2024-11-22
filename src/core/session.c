@@ -164,7 +164,7 @@ static uint32_t pgp_session_key_write(pgp_pkesk_packet *packet, void *ptr, uint3
 		pos += 32;
 
 		// 1 octet count
-		LOAD_8(out + pos, sk->size);
+		LOAD_8(out + pos, &sk->size);
 		pos += 1;
 
 		if (packet->version == PGP_PKESK_V3)

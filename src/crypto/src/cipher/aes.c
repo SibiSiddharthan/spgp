@@ -432,8 +432,8 @@ void aes256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_
 static void rijndael_key_expansion(aes_key *expanded_key, void *actual_key)
 {
 	const uint8_t nb = 4;
-	uint8_t nk, nr;
-	uint32_t temp;
+	uint8_t nk = 0, nr = 0;
+	uint32_t temp = 0;
 	uint32_t word[60];
 
 	switch (expanded_key->type)

@@ -13,7 +13,7 @@
 
 // Tests taken from NIST
 
-static uint32_t hmac_drbg_sha256_entropy(void *buffer, size_t size)
+static uint32_t hmac_drbg_sha256_entropy(void *buffer, uint32_t size)
 {
 	static uint32_t count = 0;
 
@@ -203,7 +203,7 @@ int32_t hmac_drbg_test_suite()
 	return status;
 }
 
-static uint32_t hash_drbg_sha256_entropy(void *buffer, size_t size)
+static uint32_t hash_drbg_sha256_entropy(void *buffer, uint32_t size)
 {
 	static uint32_t count = 0;
 
@@ -420,7 +420,7 @@ int32_t hash_drbg_test_suite()
 	return status;
 }
 
-static uint32_t ctr_drbg_aes256_entropy(void *buffer, size_t size)
+static uint32_t ctr_drbg_aes256_entropy(void *buffer, uint32_t size)
 {
 	static uint32_t count = 0;
 

@@ -15,7 +15,7 @@
 int32_t aes128_gcm_suite(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[16];
 	byte_t iv[64];
@@ -149,7 +149,7 @@ int32_t aes128_gcm_suite(void)
 int32_t aes192_gcm_suite(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[24];
 	byte_t iv[64];
@@ -283,7 +283,7 @@ int32_t aes192_gcm_suite(void)
 int32_t aes256_gcm_suite(void)
 {
 	int32_t status = 0;
-	uint32_t result = 0;
+	uint64_t result = 0;
 
 	byte_t key[32];
 	byte_t iv[64];
