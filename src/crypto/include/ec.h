@@ -116,16 +116,43 @@ typedef enum _curve_id
 
 } curve_id;
 
+// y^2 = (x^3 + Ax + B) % p
+typedef struct _ec_prime_curve
+{
+	// prime
+	const bignum_t *p;
+
+	// constants
+	const bignum_t *a;
+	const bignum_t *b;
+
+	// generator
+	const bignum_t *gx;
+	const bignum_t *gy;
+} ec_prime_curve;
+
 typedef struct _ec_point
 {
-	curve_id id;
 	bignum_t *x, *y;
-
-	bignum_t (*_add)(bignum_ctx *, bignum_t *, bignum_t *, bignum_t *, bignum_t *, bignum_t *, bignum_t *);
-	bignum_t (*_double)(bignum_ctx *, bignum_t *, bignum_t *, bignum_t *, bignum_t *);
-	bignum_t (*_check)(bignum_ctx *, bignum_t *, bignum_t *);
-
 } ec_point;
+
+typedef struct _ec_group
+{
+	curve_id id;
+
+	void *parameters;
+	bignum_ctx *bctx;
+
+	bignum_t (*_add)(struct _ec_group *, struct _ec_point *, struct _ec_point *, struct _ec_point *);
+	bignum_t (*_double)(struct _ec_group *, struct _ec_point *, struct _ec_point *);
+	bignum_t (*_multiply)(struct _ec_group *, struct _ec_point *, struct _ec_point *, bignum_t *);
+	bignum_t (*_check)(struct _ec_group *, struct _ec_point *);
+
+} ec_group;
+
+ec_group *ec_group_init(void *ptr, size_t size, curve_id id);
+ec_group *ec_group_new(curve_id id);
+void ec_point_delete(ec_group *bn);
 
 inline size_t ec_point_size(uint32_t bits)
 {
@@ -134,13 +161,12 @@ inline size_t ec_point_size(uint32_t bits)
 
 ec_point *ec_point_init(void *ptr, size_t size, curve_id id);
 ec_point *ec_point_new(curve_id id);
-ec_point *ec_point_copy(ec_point *dst_p, ec_point *src_p);
-ec_point *bignum_dup(bignum_ctx *bctx, ec_point *p);
+ec_point *ec_point_copy(ec_point *dst, ec_point *src);
 void ec_point_delete(ec_point *bn);
 
-ec_point *ec_point_add(bignum_ctx *bctx, ec_point *r, ec_point *a, ec_point *b);
-ec_point *ec_point_dbl(bignum_ctx *bctx, ec_point *r, ec_point *a);
-ec_point *ec_point_mul(bignum_ctx *bctx, ec_point *r, ec_point *a, bignum_t *n);
+ec_point *ec_point_add(ec_group *g, ec_point *r, ec_point *a, ec_point *b);
+ec_point *ec_point_dbl(ec_group *g, ec_point *r, ec_point *a);
+ec_point *ec_point_mul(ec_group *g, ec_point *r, ec_point *a, bignum_t *n);
 
 uint32_t ec_point_check(bignum_ctx *bctx, ec_point *a);
 
