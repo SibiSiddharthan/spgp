@@ -28,6 +28,8 @@ bignum/gcd.c
 bignum/prime.c
 bignum/rand.c
 ${bignum_asm}
+#ec
+ec/ec.c
 #cipher
 cipher/aes.c
 cipher/aria.c
