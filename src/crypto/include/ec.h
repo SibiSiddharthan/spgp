@@ -120,15 +120,15 @@ typedef enum _curve_id
 typedef struct _ec_prime_curve
 {
 	// prime
-	const bignum_t *p;
+	bignum_t *p;
 
 	// constants
-	const bignum_t *a;
-	const bignum_t *b;
+	bignum_t *a;
+	bignum_t *b;
 
 	// generator
-	const bignum_t *gx;
-	const bignum_t *gy;
+	bignum_t *gx;
+	bignum_t *gy;
 } ec_prime_curve;
 
 typedef struct _ec_point
