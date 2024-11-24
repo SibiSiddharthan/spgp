@@ -30,6 +30,7 @@ bignum/rand.c
 ${bignum_asm}
 #ec
 ec/ec.c
+ec/prime.c
 #cipher
 cipher/aes.c
 cipher/aria.c
