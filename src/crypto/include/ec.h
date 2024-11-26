@@ -145,10 +145,11 @@ typedef struct _ec_group
 	void *parameters;
 	bignum_ctx *bctx;
 
-	bignum_t (*_add)(struct _ec_group *, struct _ec_point *, struct _ec_point *, struct _ec_point *);
-	bignum_t (*_double)(struct _ec_group *, struct _ec_point *, struct _ec_point *);
-	bignum_t (*_multiply)(struct _ec_group *, struct _ec_point *, struct _ec_point *, bignum_t *);
-	bignum_t (*_check)(struct _ec_group *, struct _ec_point *);
+	ec_point *(*_add)(struct _ec_group *, struct _ec_point *, struct _ec_point *, struct _ec_point *);
+	ec_point *(*_double)(struct _ec_group *, struct _ec_point *, struct _ec_point *);
+	ec_point *(*_multiply)(struct _ec_group *, struct _ec_point *, struct _ec_point *, bignum_t *);
+	uint32_t (*_on_curve)(struct _ec_group *, struct _ec_point *);
+	uint32_t (*_at_infinity)(struct _ec_group *, struct _ec_point *);
 
 } ec_group;
 
@@ -169,12 +170,13 @@ ec_point *ec_point_new(ec_group *eg);
 ec_point *ec_point_copy(ec_point *dst, ec_point *src);
 void ec_point_delete(ec_point *ep);
 
-ec_point *ec_point_add(ec_group *g, ec_point *r, ec_point *a, ec_point *b);
-ec_point *ec_point_dbl(ec_group *g, ec_point *r, ec_point *a);
-ec_point *ec_point_mul(ec_group *g, ec_point *r, ec_point *a, bignum_t *n);
-
 void ec_point_infinity(ec_group *g, ec_point *r);
 
-uint32_t ec_point_check(bignum_ctx *bctx, ec_point *a);
+ec_point *ec_point_add(ec_group *g, ec_point *r, ec_point *a, ec_point *b);
+ec_point *ec_point_double(ec_group *g, ec_point *r, ec_point *a);
+ec_point *ec_point_multiply(ec_group *g, ec_point *r, ec_point *a, bignum_t *n);
+
+uint32_t ec_point_on_curve(ec_group *g, ec_point *a);
+uint32_t ec_point_at_infinity(ec_group *g, ec_point *a);
 
 #endif
