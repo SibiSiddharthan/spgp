@@ -24,7 +24,7 @@ bignum_t nist_p192_gy = {.bits = 187, .flags = 0, .resize = 0, .sign = 1, .size 
 
 const ec_prime_curve ec_nist_p192 = {.p = &nist_p192_p, .a = &nist_p192_a, .b = &nist_p192_b, .gx = &nist_p192_gx, .gy = &nist_p192_gy};
 
-uint32_t ec_prime_point_infinity(ec_point *a)
+uint32_t ec_prime_point_at_infinity(ec_point *a)
 {
 	if (a->x->bits == 0 && a->y->bits == 0)
 	{
@@ -52,7 +52,7 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 	}
 
 	// If the point is at infinity O + O = O
-	if (ec_prime_point_infinity(a))
+	if (ec_prime_point_at_infinity(a))
 	{
 		ec_point_infinity(eg, r);
 		return r;
@@ -118,19 +118,19 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 	}
 
 	// If the point is at infinity O + O = O
-	if (ec_prime_point_infinity(a) && ec_prime_point_infinity(b))
+	if (ec_prime_point_at_infinity(a) && ec_prime_point_at_infinity(b))
 	{
 		ec_point_infinity(eg, r);
 		return r;
 	}
 
-	if (ec_prime_point_infinity(a))
+	if (ec_prime_point_at_infinity(a))
 	{
 		ec_point_copy(r, b);
 		return r;
 	}
 
-	if (ec_prime_point_infinity(b))
+	if (ec_prime_point_at_infinity(b))
 	{
 		ec_point_copy(r, a);
 		return r;
@@ -243,7 +243,7 @@ ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum
 	return r;
 }
 
-uint32_t ec_prime_point_check(ec_group *eg, ec_point *a)
+uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a)
 {
 	uint32_t result = 0;
 	ec_prime_curve *parameters = eg->parameters;
