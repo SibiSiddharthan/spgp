@@ -24,6 +24,16 @@ bignum_t nist_p192_gy = {.bits = 187, .flags = 0, .resize = 0, .sign = 1, .size 
 
 const ec_prime_curve ec_nist_p192 = {.p = &nist_p192_p, .a = &nist_p192_a, .b = &nist_p192_b, .gx = &nist_p192_gx, .gy = &nist_p192_gy};
 
+uint32_t ec_prime_point_infinity(ec_point *a)
+{
+	if (a->x->bits == 0 && a->y->bits == 0)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 {
 	ec_prime_curve *parameters = eg->parameters;
