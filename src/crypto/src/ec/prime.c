@@ -51,6 +51,20 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 		}
 	}
 
+	// If the point is at infinity O + O = O
+	if (ec_prime_point_infinity(a))
+	{
+		ec_point_infinity(eg, r);
+		return r;
+	}
+
+	// If the point is on the x-axis
+	if (a->y->bits == 0)
+	{
+		ec_point_infinity(eg, r);
+		return r;
+	}
+
 	bignum_ctx_start(eg->bctx, 3 * bignum_size(3 * ROUND_UP(parameters->bits, BIGNUM_BITS_PER_WORD)));
 
 	lambda = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(parameters->bits, BIGNUM_BITS_PER_WORD)));
@@ -100,6 +114,41 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 		if (r == NULL)
 		{
 			return NULL;
+		}
+	}
+
+	// If the point is at infinity O + O = O
+	if (ec_prime_point_infinity(a) && ec_prime_point_infinity(b))
+	{
+		ec_point_infinity(eg, r);
+		return r;
+	}
+
+	if (ec_prime_point_infinity(a))
+	{
+		ec_point_copy(r, b);
+		return r;
+	}
+
+	if (ec_prime_point_infinity(b))
+	{
+		ec_point_copy(r, a);
+		return r;
+	}
+
+	if (bignum_cmp(a->x, b->x) == 0)
+	{
+		// If the points are the same
+		if (bignum_cmp(a->y, b->y) == 0)
+		{
+			ec_prime_point_double(eg, r, a);
+			return r;
+		}
+		// If the points lie on the same ordinate line
+		else
+		{
+			ec_point_infinity(eg, r);
+			return r;
 		}
 	}
 

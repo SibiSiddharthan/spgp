@@ -173,6 +173,8 @@ ec_point *ec_point_add(ec_group *g, ec_point *r, ec_point *a, ec_point *b);
 ec_point *ec_point_dbl(ec_group *g, ec_point *r, ec_point *a);
 ec_point *ec_point_mul(ec_group *g, ec_point *r, ec_point *a, bignum_t *n);
 
+void ec_point_infinity(ec_group *g, ec_point *r);
+
 uint32_t ec_point_check(bignum_ctx *bctx, ec_point *a);
 
 #endif
