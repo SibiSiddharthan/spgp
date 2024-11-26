@@ -119,6 +119,8 @@ typedef enum _curve_id
 // y^2 = (x^3 + Ax + B) % p
 typedef struct _ec_prime_curve
 {
+	uint32_t bits;
+
 	// prime
 	bignum_t *p;
 
@@ -163,7 +165,7 @@ inline size_t ec_point_size(uint32_t bits)
 }
 
 ec_point *ec_point_init(void *ptr, size_t size, curve_id id);
-ec_point *ec_point_new(curve_id id);
+ec_point *ec_point_new(ec_group *eg);
 ec_point *ec_point_copy(ec_point *dst, ec_point *src);
 void ec_point_delete(ec_point *ep);
 
