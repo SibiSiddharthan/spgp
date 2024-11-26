@@ -185,6 +185,64 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 	return r;
 }
 
+ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum_t *n)
+{
+	ec_prime_curve *parameters = eg->parameters;
+	ec_point *r0 = NULL, *r1 = NULL;
+
+	bignum_t *x0 = NULL, *y0 = NULL;
+	bignum_t *x1 = NULL, *y1 = NULL;
+
+	if (r == NULL)
+	{
+		r = ec_point_new(eg);
+
+		if (r == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	bignum_ctx_start(eg->bctx, 4 * bignum_size(ROUND_UP(parameters->bits, BIGNUM_BITS_PER_WORD)));
+
+	x0 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(parameters->bits, BIGNUM_BITS_PER_WORD)));
+	y0 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(parameters->bits, BIGNUM_BITS_PER_WORD)));
+
+	x1 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(parameters->bits, BIGNUM_BITS_PER_WORD)));
+	y1 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(parameters->bits, BIGNUM_BITS_PER_WORD)));
+
+	r0->x = x0;
+	r0->y = y0;
+
+	ec_point_infinity(eg, r0);
+
+	r1->x = x1;
+	r1->y = y1;
+
+	bignum_copy(x1, a->x);
+	bignum_copy(y1, a->y);
+
+	for (uint32_t i = 1; i < n->bits; ++i)
+	{
+		if (n->words[i / BIGNUM_BITS_PER_WORD] & ((bn_word_t)1 << (i % BIGNUM_BITS_PER_WORD)))
+		{
+			r0 = ec_prime_point_add(eg, r0, r0, r1);
+			r1 = ec_prime_point_double(eg, r1, r1);
+		}
+		else
+		{
+			r1 = ec_prime_point_add(eg, r1, r0, r1);
+			r0 = ec_prime_point_double(eg, r0, r0);
+		}
+	}
+
+	ec_point_copy(r, r0);
+
+	bignum_ctx_end(eg->bctx);
+
+	return r;
+}
+
 uint32_t ec_prime_point_check(ec_group *eg, ec_point *a)
 {
 	uint32_t result = 0;
