@@ -150,7 +150,7 @@ typedef struct _ec_group
 	uint32_t (*_on_curve)(struct _ec_group *, struct _ec_point *);
 	uint32_t (*_at_infinity)(struct _ec_group *, struct _ec_point *);
 	uint32_t (*_to_bytes)(struct _ec_group *, struct _ec_point *, void *, uint32_t, uint32_t);
-	uint32_t (*_from_bytes)(struct _ec_group *, struct _ec_point *, void *, uint32_t);
+	ec_point *(*_from_bytes)(struct _ec_group *, struct _ec_point *, void *, uint32_t);
 
 } ec_group;
 
@@ -181,6 +181,6 @@ uint32_t ec_point_on_curve(ec_group *g, ec_point *a);
 uint32_t ec_point_at_infinity(ec_group *g, ec_point *a);
 
 uint32_t ec_point_to_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size, uint32_t compression);
-uint32_t ec_point_from_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size);
+ec_point *ec_point_from_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size);
 
 #endif

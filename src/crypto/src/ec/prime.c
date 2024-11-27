@@ -9,6 +9,10 @@
 #include <bignum.h>
 #include <ec.h>
 
+#include <ptr.h>
+
+#include <string.h>
+
 // NIST P-192
 bn_word_t nist_p192_p_words[3] = {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFE, 0xFFFFFFFFFFFFFFFF};
 bn_word_t nist_p192_a_words[3] = {0xFFFFFFFFFFFFFFFC, 0xFFFFFFFFFFFFFFFE, 0xFFFFFFFFFFFFFFFF};
@@ -252,7 +256,8 @@ uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a)
 	bignum_t *rhs = NULL;
 	bignum_t *xcube = NULL;
 
-	bignum_ctx_start(eg->bctx, bignum_size(parameters->p->bits * 6));
+	bignum_ctx_start(eg->bctx,
+					 bignum_size(parameters->p->bits) + bignum_size(parameters->p->bits * 2) + bignum_size(parameters->p->bits * 3));
 
 	lhs = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits);
 	rhs = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits * 2);
@@ -282,3 +287,183 @@ uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a)
 	return result;
 }
 
+uint32_t ec_prime_point_to_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size, uint32_t compression)
+{
+	byte_t *out = buffer;
+	uint32_t pos = 0;
+
+	uint32_t bytes_for_point = ROUND_UP(eg->bits, 8);
+
+	// Check for infinity
+	if (ec_prime_point_at_infinity(ep))
+	{
+		if (size < 1)
+		{
+			return 0;
+		}
+
+		out[pos] = 0x00;
+		pos += 1;
+
+		return pos;
+	}
+
+	if (compression)
+	{
+		if (size < (1 + bytes_for_point))
+		{
+			return 0;
+		}
+
+		if (ep->y->words[0] % 2 == 0)
+		{
+			out[pos] = 0x02;
+		}
+		else
+		{
+			out[pos] = 0x03;
+		}
+
+		pos += 1;
+		pos += bignum_get_bytes_be(ep->x, out + pos, bytes_for_point);
+	}
+	else
+	{
+		if (size < (1 + (2 * bytes_for_point)))
+		{
+			return 0;
+		}
+
+		out[pos] = 0x04;
+		pos += 1;
+
+		pos += bignum_get_bytes_be(ep->x, out + pos, bytes_for_point);
+		pos += bignum_get_bytes_be(ep->y, out + pos, bytes_for_point);
+	}
+
+	return pos;
+}
+
+ec_point *ec_prime_point_from_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size)
+{
+	ec_prime_curve *parameters = eg->parameters;
+	byte_t *in = buffer;
+	ec_point *p = ep;
+
+	uint32_t bytes_for_point = ROUND_UP(eg->bits, 8);
+
+	if (size < 1)
+	{
+		return NULL;
+	}
+
+	if (ep == NULL)
+	{
+		ep = ec_point_new(eg);
+
+		if (ep == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	// Check for infinity
+	switch (in[0])
+	{
+	case 0x00:
+	{
+		ec_point_infinity(eg, ep);
+		return ep;
+	}
+	case 0x02:
+	case 0x03:
+	{
+		int32_t result = 0;
+
+		bignum_t *temp = NULL, *ysq = NULL;
+		bignum_t *y1 = NULL, *y2 = NULL;
+
+		if (size < (1 + bytes_for_point))
+		{
+			return 0;
+		}
+
+		bignum_set_bytes_be(ep->x, PTR_OFFSET(buffer, 1), bytes_for_point);
+
+		bignum_ctx_start(eg->bctx, bignum_size(parameters->p->bits * 2) + bignum_size(parameters->p->bits * 3) +
+									   2 * bignum_size(parameters->p->bits));
+
+		temp = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits * 3);
+		ysq = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits * 2);
+
+		y1 = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits);
+		y2 = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits);
+
+		// Compute x^3 %p
+		temp = bignum_sqr(eg->bctx, temp, ep->x);
+		temp = bignum_modmul(eg->bctx, temp, temp, ep->x, parameters->p);
+
+		// Compute Ax + B % p
+		ysq = bignum_mul(eg->bctx, ysq, ep->x, parameters->a);
+		ysq = bignum_modadd(eg->bctx, ysq, ysq, parameters->b, parameters->p);
+
+		ysq = bignum_modadd(eg->bctx, ysq, temp, ysq, parameters->p);
+
+		// Find sqrt
+		result = bignum_modsqrt(eg->bctx, y1, y2, ysq, parameters->p);
+
+		if (result == -1)
+		{
+			if (p == NULL)
+			{
+				ec_point_delete(ep);
+			}
+
+			bignum_ctx_end(eg->bctx);
+			return NULL;
+		}
+
+		if (in[0] == 0x02)
+		{
+			if (y1->words[0] % 2 == 0)
+			{
+				bignum_copy(ep->y, y1);
+			}
+			else
+			{
+				bignum_copy(ep->y, y2);
+			}
+		}
+		else
+		{
+			if (y1->words[0] % 2 == 0)
+			{
+				bignum_copy(ep->y, y2);
+			}
+			else
+			{
+				bignum_copy(ep->y, y1);
+			}
+		}
+
+		bignum_ctx_end(eg->bctx);
+
+		return ep;
+	}
+	case 0x04:
+	{
+		if (size < (1 + (2 * bytes_for_point)))
+		{
+			return 0;
+		}
+
+		bignum_set_bytes_be(ep->x, PTR_OFFSET(buffer, 1), bytes_for_point);
+		bignum_set_bytes_be(ep->y, PTR_OFFSET(buffer, 1 + bytes_for_point), bytes_for_point);
+
+		return ep;
+	}
+
+	default:
+		return NULL;
+	}
+}
