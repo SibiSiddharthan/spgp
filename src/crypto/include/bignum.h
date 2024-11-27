@@ -48,12 +48,12 @@ void bignum_delete(bignum_t *bn);
 
 bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
 bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
-int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
-int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
-int32_t bignum_get_bytes_be_padded(bignum_t *bn, byte_t *bytes, size_t size);
+uint32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size);
+uint32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size);
+uint32_t bignum_get_bytes_be_padded(bignum_t *bn, byte_t *bytes, size_t size);
 
 bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size);
-int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size);
+uint32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size);
 
 void bignum_zero(bignum_t *bn);
 void bignum_one(bignum_t *bn);
@@ -69,7 +69,7 @@ int32_t bignum_cmp_abs(bignum_t *a, bignum_t *b);
 bignum_t *bignum_rand(bignum_t *bn, void *drbg, uint32_t bits);
 bignum_t *bignum_prime(bignum_t *bn, uint32_t bits);
 
-int32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn);
+uint32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn);
 
 bignum_t *bignum_add(bignum_t *r, bignum_t *a, bignum_t *b);
 bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b);

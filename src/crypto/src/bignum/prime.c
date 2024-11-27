@@ -14,7 +14,7 @@
 
 #include <bignum-internal.h>
 
-static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32_t count)
+static uint32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32_t count)
 {
 	uint32_t k = 0;
 	bignum_t *nm1 = NULL, *q = NULL, *a = NULL, *d = NULL, *m = NULL;
@@ -75,9 +75,9 @@ static int32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32
 	return 1;
 }
 
-int32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn)
+uint32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn)
 {
-	int32_t status;
+	uint32_t status;
 	size_t ctx_size = 0;
 
 	bignum_ctx *obctx = bctx;

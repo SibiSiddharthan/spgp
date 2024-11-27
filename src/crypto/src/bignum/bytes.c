@@ -122,7 +122,7 @@ bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 	return bn;
 }
 
-int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
+uint32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	size_t required_size = CEIL_DIV(bn->bits, 8);
 
@@ -140,7 +140,7 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 
 	if (size < required_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	memcpy(bytes, bn->words, required_size);
@@ -148,7 +148,7 @@ int32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 	return required_size;
 }
 
-int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
+uint32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	bn_word_t word = 0;
 	size_t count = CEIL_DIV(bn->bits, BIGNUM_BITS_PER_WORD);
@@ -170,7 +170,7 @@ int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 
 	if (size < required_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	// Most significant word
@@ -210,14 +210,14 @@ int32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 	return required_size;
 }
 
-int32_t bignum_get_bytes_be_padded(bignum_t *bn, byte_t *bytes, size_t size)
+uint32_t bignum_get_bytes_be_padded(bignum_t *bn, byte_t *bytes, size_t size)
 {
 	size_t required_size = CEIL_DIV(bn->bits, 8);
 	size_t pad = size - required_size;
 
 	if (size < required_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	// Pad the start with zeros.
@@ -327,7 +327,7 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 	return bn;
 }
 
-int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size)
+uint32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size)
 {
 	int32_t result = 0;
 
@@ -339,7 +339,7 @@ int32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size)
 	{
 		if (size < 3)
 		{
-			return -1;
+			return 0;
 		}
 
 		hex[result++] = '0';
