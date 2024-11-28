@@ -192,6 +192,7 @@ uint32_t ec_point_to_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buf
 ec_point *ec_point_from_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size);
 
 ec_key *ec_key_generate(ec_key *ek, ec_group *eg);
+uint32_t ec_public_key_validate(ec_key *ek, uint32_t full);
 
 ec_key *ec_key_new(ec_group *eg);
 void ec_key_delete(ec_key *ek);

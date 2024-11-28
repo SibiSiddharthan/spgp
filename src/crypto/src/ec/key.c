@@ -59,3 +59,45 @@ ec_key *ec_key_generate(ec_key *ek, ec_group *eg)
 
 	return ek;
 }
+
+uint32_t ec_public_key_validate(ec_key *ek, uint32_t full)
+{
+	ec_prime_curve *parameters = ek->eg->parameters;
+	bignum_t *p = parameters->p;
+
+	// Check if point is not at infinity
+	if (ec_point_at_infinity(ek->eg, ek->q))
+	{
+		return 0;
+	}
+
+	// Check if Qx, Qy is less than p
+	if (bignum_cmp(ek->q->x, p) >= 0 || bignum_cmp(ek->q->y, p))
+	{
+		return 0;
+	}
+
+	// Check if point is on curve
+	if (ec_point_on_curve(ek->eg, ek->q) == 0)
+	{
+		return 0;
+	}
+
+	// Check if [n]Q = O
+	if (full)
+	{
+		ec_point *inf = NULL;
+
+		inf = ec_point_multiply(ek->eg, NULL, ek->q, parameters->n);
+
+		if (ec_point_at_infinity(ek->eg, inf) != 0)
+		{
+			ec_point_delete(inf);
+			return 0;
+		}
+
+		ec_point_delete(inf);
+	}
+
+	return 1;
+}
