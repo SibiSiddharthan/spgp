@@ -154,6 +154,14 @@ typedef struct _ec_group
 
 } ec_group;
 
+typedef struct _ec_key
+{
+	ec_group *eg;
+
+	bignum_t *d; // Private
+	ec_point *q; // Public
+} ec_key;
+
 size_t ec_group_size(uint32_t bits);
 uint32_t ec_group_bits(curve_id id);
 
@@ -182,5 +190,10 @@ uint32_t ec_point_at_infinity(ec_group *g, ec_point *a);
 
 uint32_t ec_point_to_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size, uint32_t compression);
 ec_point *ec_point_from_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size);
+
+ec_key *ec_key_generate(ec_key *ek, ec_group *eg);
+
+ec_key *ec_key_new(ec_group *eg);
+void ec_key_delete(ec_key *ek);
 
 #endif
