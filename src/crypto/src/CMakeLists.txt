@@ -79,6 +79,7 @@ rand/hash-drbg.c
 rand/hmac-drbg.c
 #signature
 signature/dsa.c
+signature/ecdsa.c
 )
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")

@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef CRYPTO_DSA_H
-#define CRYPTO_DSA_H
+#ifndef CRYPTO_ECDSA_H
+#define CRYPTO_ECDSA_H
 
 #include <bignum.h>
 #include <ec.h>
