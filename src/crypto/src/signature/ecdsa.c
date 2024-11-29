@@ -122,15 +122,13 @@ ecdsa_signature *ecdsa_sign_final(ecdsa_ctx *ectx, void *signature, size_t size)
 	// Finish hashing
 	hash_final(ectx->hctx, NULL, hash_size);
 
-	if (key->eg->bits % 8 == 0)
-	{
-		e = bignum_set_bytes_be(e, ectx->hctx->hash, MIN(key->eg->bits / 8, hash_size));
-	}
-	else
+	if (key->eg->bits % 8 != 0)
 	{
 		// Zero the lower hash bits for the partial byte
 		ectx->hctx->hash[key->eg->bits / 8] &= 0xFF - ((1 << (8 - key->eg->bits % 8)) - 1);
 	}
+
+	e = bignum_set_bytes_be(e, ectx->hctx->hash, MIN(key->eg->bits / 8, hash_size));
 
 retry:
 	if (ectx->salt != NULL)
@@ -195,3 +193,172 @@ ecdsa_signature *ecdsa_sign(ec_key *key, hash_ctx *hctx, void *salt, size_t salt
 	return dsign;
 }
 
+ecdsa_ctx *ecdsa_verify_new(ec_key *key, hash_ctx *hctx)
+{
+	ecdsa_ctx *ectx = NULL;
+
+	ectx = (ecdsa_ctx *)malloc(sizeof(ecdsa_ctx));
+
+	if (ectx == NULL)
+	{
+		return NULL;
+	}
+
+	ectx->key = key;
+	ectx->hctx = hctx;
+
+	hash_reset(ectx->hctx);
+
+	return ectx;
+}
+
+void ecdsa_verify_delete(ecdsa_ctx *ectx)
+{
+	ectx->key = NULL;
+	ectx->hctx = NULL;
+
+	free(ectx);
+}
+
+void ecdsa_verify_reset(ecdsa_ctx *ectx, ec_key *key, hash_ctx *hctx)
+{
+	ectx->key = key;
+	ectx->hctx = hctx;
+
+	hash_reset(ectx->hctx);
+}
+
+void ecdsa_verify_update(ecdsa_ctx *ectx, void *message, size_t size)
+{
+	hash_update(ectx->hctx, message, size);
+}
+
+uint32_t ecdsa_verify_final(ecdsa_ctx *ectx, ecdsa_signature *ecsign)
+{
+	uint32_t status = 0;
+
+	ec_key *key = ectx->key;
+	ec_prime_curve *parameters = ectx->key->eg->parameters;
+	hash_ctx *hctx = ectx->hctx;
+	bignum_ctx *bctx = ectx->key->eg->bctx;
+
+	size_t hash_size = hctx->hash_size;
+	size_t ctx_size = 10 * bignum_size(key->eg->bits);
+
+	bignum_t *is = NULL;
+	bignum_t *u = NULL;
+	bignum_t *v = NULL;
+	bignum_t *e = NULL;
+
+	bignum_t *x1 = NULL;
+	bignum_t *y1 = NULL;
+
+	bignum_t *x2 = NULL;
+	bignum_t *y2 = NULL;
+
+	bignum_t *x3 = NULL;
+	bignum_t *y3 = NULL;
+
+	ec_point r1, r2, r3, g;
+	void *result = NULL;
+
+	if (bignum_cmp(ecsign->r, parameters->n) >= 0 || bignum_cmp(ecsign->s, parameters->n) >= 0)
+	{
+		return 0;
+	}
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	is = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+	u = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+	v = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+
+	x1 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+	y1 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+
+	x2 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+	y2 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+
+	x3 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+	y3 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+
+	e = bignum_ctx_allocate_bignum(bctx, MIN(key->eg->bits, hash_size * 8));
+
+	// Hashing
+	hash_final(ectx->hctx, NULL, hash_size);
+
+	if (key->eg->bits % 8 != 0)
+	{
+		// Zero the lower hash bits for the partial byte
+		ectx->hctx->hash[key->eg->bits / 8] &= 0xFF - ((1 << (8 - key->eg->bits % 8)) - 1);
+	}
+
+	e = bignum_set_bytes_be(e, ectx->hctx->hash, MIN(key->eg->bits / 8, hash_size));
+
+	is = bignum_modinv(bctx, is, ecsign->s, parameters->n);
+
+	u = bignum_modmul(bctx, u, e, is, parameters->n);
+	v = bignum_modmul(bctx, v, ecsign->r, is, parameters->n);
+
+	// r = [u]G + [v]Q.
+	r1.x = x1;
+	r1.y = y1;
+
+	g.x = parameters->gx;
+	g.y = parameters->gy;
+
+	result = ec_point_multiply(key->eg, &r1, &g, u);
+
+	if (result == NULL)
+	{
+		goto end;
+	}
+
+	r2.x = x2;
+	r2.y = y2;
+
+	result = ec_point_multiply(key->eg, &r1, key->q, v);
+
+	if (result == NULL)
+	{
+		goto end;
+	}
+
+	r3.x = x3;
+	r3.y = y3;
+
+	result = ec_point_add(key->eg, &r3, &r1, &r2);
+
+	if (result == NULL)
+	{
+		goto end;
+	}
+
+	if (bignum_cmp(r3.x, ecsign->r) == 0)
+	{
+		status = 1;
+	}
+
+end:
+	bignum_ctx_end(bctx);
+
+	return status;
+}
+
+uint32_t ecdsa_verify(ec_key *key, hash_ctx *hctx, void *message, size_t size, ecdsa_signature *dsign)
+{
+	uint32_t status = 0;
+	ecdsa_ctx *ectx = ecdsa_verify_new(key, hctx);
+
+	if (ectx == NULL)
+	{
+		return status;
+	}
+
+	ecdsa_verify_update(ectx, message, size);
+	status = ecdsa_verify_final(ectx, dsign);
+
+	ecdsa_verify_delete(ectx);
+
+	return status;
+}

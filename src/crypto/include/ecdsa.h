@@ -37,7 +37,7 @@ ecdsa_ctx *ecdsa_verify_new(ec_key *key, hash_ctx *hctx);
 void ecdsa_verify_delete(ecdsa_ctx *dctx);
 void ecdsa_verify_reset(ecdsa_ctx *dctx, ec_key *key, hash_ctx *hctx);
 void ecdsa_verify_update(ecdsa_ctx *dctx, void *message, size_t size);
-uint32_t ecdsa_verify_final(ecdsa_ctx *dctx, ecdsa_signature *dsign);
-uint32_t ecdsa_verify(ec_key *key, hash_ctx *hctx, void *message, size_t size, ecdsa_ctx *dsign);
+uint32_t ecdsa_verify_final(ecdsa_ctx *dctx, ecdsa_signature *ecsign);
+uint32_t ecdsa_verify(ec_key *key, hash_ctx *hctx, void *message, size_t size, ecdsa_signature *ecsign);
 
 #endif
