@@ -15,9 +15,7 @@
 
 ec_key *ec_key_generate(ec_key *ek, ec_group *eg)
 {
-	ec_prime_curve *parameters = eg->parameters;
-
-	ec_point g = {.x = parameters->gx, .y = parameters->gy};
+	ec_point g = {.x = eg->gx, .y = eg->gy};
 	uint32_t bytes = CEIL_DIV(eg->bits, 8);
 
 	drbg_ctx *drbg = get_default_drbg();
@@ -48,7 +46,7 @@ ec_key *ec_key_generate(ec_key *ek, ec_group *eg)
 		// The generated key should less than the order of the elliptic curve
 		bignum_set_bytes_be(ek->d, buffer, bytes);
 
-		if (bignum_cmp_abs(ek->d, parameters->n) < 0)
+		if (bignum_cmp_abs(ek->d, eg->n) < 0)
 		{
 			break;
 		}
@@ -62,8 +60,7 @@ ec_key *ec_key_generate(ec_key *ek, ec_group *eg)
 
 uint32_t ec_public_key_validate(ec_key *ek, uint32_t full)
 {
-	ec_prime_curve *parameters = ek->eg->parameters;
-	bignum_t *p = parameters->p;
+	bignum_t *p = ek->eg->p;
 
 	// Check if point is not at infinity
 	if (ec_point_at_infinity(ek->eg, ek->q))
@@ -88,7 +85,7 @@ uint32_t ec_public_key_validate(ec_key *ek, uint32_t full)
 	{
 		ec_point *inf = NULL;
 
-		inf = ec_point_multiply(ek->eg, NULL, ek->q, parameters->n);
+		inf = ec_point_multiply(ek->eg, NULL, ek->q, ek->eg->n);
 
 		if (ec_point_at_infinity(ek->eg, inf) != 0)
 		{

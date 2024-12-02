@@ -119,16 +119,9 @@ typedef enum _curve_id
 // y^2 = (x^3 + Ax + B) % p
 typedef struct _ec_prime_curve
 {
-	bignum_t *p; // prime
-	bignum_t *n; // order
-
 	// constants
 	bignum_t *a;
 	bignum_t *b;
-
-	// generator
-	bignum_t *gx;
-	bignum_t *gy;
 } ec_prime_curve;
 
 typedef struct _ec_point
@@ -140,6 +133,13 @@ typedef struct _ec_group
 {
 	curve_id id;
 	uint32_t bits;
+
+	bignum_t *p; // prime
+	bignum_t *n; // order
+
+	// generator
+	bignum_t *gx;
+	bignum_t *gy;
 
 	void *parameters;
 	bignum_ctx *bctx;

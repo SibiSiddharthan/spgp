@@ -26,7 +26,7 @@ bignum_t nist_p192_b = {.bits = 192, .flags = 0, .resize = 0, .sign = 1, .size =
 bignum_t nist_p192_gx = {.bits = 192, .flags = 0, .resize = 0, .sign = 1, .size = 24, .words = nist_p192_gx_words};
 bignum_t nist_p192_gy = {.bits = 187, .flags = 0, .resize = 0, .sign = 1, .size = 24, .words = nist_p192_gy_words};
 
-const ec_prime_curve ec_nist_p192 = {.p = &nist_p192_p, .a = &nist_p192_a, .b = &nist_p192_b, .gx = &nist_p192_gx, .gy = &nist_p192_gy};
+// const ec_prime_curve ec_nist_p192 = {.p = &nist_p192_p, .a = &nist_p192_a, .b = &nist_p192_b, .gx = &nist_p192_gx, .gy = &nist_p192_gy};
 
 uint32_t ec_prime_point_at_infinity(ec_point *a)
 {
@@ -81,19 +81,19 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 	x = bignum_add(x, x, parameters->a);
 
 	y = bignum_lshift(y, a->y, 1);
-	y = bignum_modinv(eg->bctx, y, y, parameters->p);
+	y = bignum_modinv(eg->bctx, y, y, eg->p);
 
-	lambda = bignum_modmul(eg->bctx, lambda, x, y, parameters->p);
+	lambda = bignum_modmul(eg->bctx, lambda, x, y, eg->p);
 
 	// Compute x' = lambda^2 - 2x
 	x = bignum_sqr(eg->bctx, x, lambda);
 	y = bignum_lshift(y, a->x, 1);
-	x = bignum_modsub(eg->bctx, x, x, y, parameters->p);
+	x = bignum_modsub(eg->bctx, x, x, y, eg->p);
 
 	// Compute y' = lambda(x - x') - y
 	y = bignum_sub(y, a->x, x);
 	y = bignum_mul(eg->bctx, y, y, lambda);
-	y = bignum_modsub(eg->bctx, y, y, a->y, parameters->p);
+	y = bignum_modsub(eg->bctx, y, y, a->y, eg->p);
 
 	// Copy results
 	bignum_copy(r->x, x);
@@ -166,19 +166,19 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 	y = bignum_sub(y, b->y, a->y);
 	x = bignum_sub(x, b->x, a->x);
 
-	x = bignum_modinv(eg->bctx, x, x, parameters->p);
+	x = bignum_modinv(eg->bctx, x, x, eg->p);
 
-	lambda = bignum_modmul(eg->bctx, lambda, y, x, parameters->p);
+	lambda = bignum_modmul(eg->bctx, lambda, y, x, eg->p);
 
 	// Compute x' = lambda^2 - x1 - x2
 	x = bignum_sqr(eg->bctx, x, lambda);
 	x = bignum_sub(x, x, a->x);
-	x = bignum_modsub(eg->bctx, x, x, b->x, parameters->p);
+	x = bignum_modsub(eg->bctx, x, x, b->x, eg->p);
 
 	// Compute y' = lambda(x - x') - y
 	y = bignum_sub(y, a->x, x);
 	y = bignum_mul(eg->bctx, y, y, lambda);
-	y = bignum_modsub(eg->bctx, y, y, a->y, parameters->p);
+	y = bignum_modsub(eg->bctx, y, y, a->y, eg->p);
 
 	// Copy results
 	bignum_copy(r->x, x);
@@ -191,7 +191,6 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 
 ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum_t *n)
 {
-	ec_prime_curve *parameters = eg->parameters;
 	ec_point *r0 = NULL, *r1 = NULL;
 
 	bignum_t *x0 = NULL, *y0 = NULL;
@@ -256,25 +255,24 @@ uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a)
 	bignum_t *rhs = NULL;
 	bignum_t *xcube = NULL;
 
-	bignum_ctx_start(eg->bctx,
-					 bignum_size(parameters->p->bits) + bignum_size(parameters->p->bits * 2) + bignum_size(parameters->p->bits * 3));
+	bignum_ctx_start(eg->bctx, bignum_size(eg->p->bits) + bignum_size(eg->p->bits * 2) + bignum_size(eg->p->bits * 3));
 
-	lhs = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits);
-	rhs = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits * 2);
-	xcube = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits * 3);
+	lhs = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits);
+	rhs = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits * 2);
+	xcube = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits * 3);
 
 	// Compute y^2 % p
-	lhs = bignum_modsqr(eg->bctx, lhs, a->y, parameters->p);
+	lhs = bignum_modsqr(eg->bctx, lhs, a->y, eg->p);
 
 	// Compute Ax + B % p
 	rhs = bignum_mul(eg->bctx, rhs, a->x, parameters->a);
-	rhs = bignum_modadd(eg->bctx, rhs, rhs, parameters->b, parameters->p);
+	rhs = bignum_modadd(eg->bctx, rhs, rhs, parameters->b, eg->p);
 
 	// Compute x^3 %p
 	xcube = bignum_sqr(eg->bctx, xcube, a->x);
-	xcube = bignum_modmul(eg->bctx, xcube, xcube, a->x, parameters->p);
+	xcube = bignum_modmul(eg->bctx, xcube, xcube, a->x, eg->p);
 
-	rhs = bignum_modadd(eg->bctx, rhs, xcube, rhs, parameters->p);
+	rhs = bignum_modadd(eg->bctx, rhs, xcube, rhs, eg->p);
 
 	// Compare
 	if (bignum_cmp(lhs, rhs) == 0)
@@ -390,27 +388,27 @@ ec_point *ec_prime_point_from_bytes(struct _ec_group *eg, struct _ec_point *ep, 
 
 		bignum_set_bytes_be(ep->x, PTR_OFFSET(buffer, 1), bytes_for_point);
 
-		bignum_ctx_start(eg->bctx, bignum_size(parameters->p->bits * 2) + bignum_size(parameters->p->bits * 3) +
-									   2 * bignum_size(parameters->p->bits));
+		bignum_ctx_start(eg->bctx, bignum_size(eg->p->bits * 2) + bignum_size(eg->p->bits * 3) +
+									   2 * bignum_size(eg->p->bits));
 
-		temp = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits * 3);
-		ysq = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits * 2);
+		temp = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits * 3);
+		ysq = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits * 2);
 
-		y1 = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits);
-		y2 = bignum_ctx_allocate_bignum(eg->bctx, parameters->p->bits);
+		y1 = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits);
+		y2 = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits);
 
 		// Compute x^3 %p
 		temp = bignum_sqr(eg->bctx, temp, ep->x);
-		temp = bignum_modmul(eg->bctx, temp, temp, ep->x, parameters->p);
+		temp = bignum_modmul(eg->bctx, temp, temp, ep->x, eg->p);
 
 		// Compute Ax + B % p
 		ysq = bignum_mul(eg->bctx, ysq, ep->x, parameters->a);
-		ysq = bignum_modadd(eg->bctx, ysq, ysq, parameters->b, parameters->p);
+		ysq = bignum_modadd(eg->bctx, ysq, ysq, parameters->b, eg->p);
 
-		ysq = bignum_modadd(eg->bctx, ysq, temp, ysq, parameters->p);
+		ysq = bignum_modadd(eg->bctx, ysq, temp, ysq, eg->p);
 
 		// Find sqrt
-		result = bignum_modsqrt(eg->bctx, y1, y2, ysq, parameters->p);
+		result = bignum_modsqrt(eg->bctx, y1, y2, ysq, eg->p);
 
 		if (result == -1)
 		{

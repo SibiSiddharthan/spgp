@@ -68,7 +68,6 @@ ecdsa_signature *ecdsa_sign_final(ecdsa_ctx *ectx, void *signature, size_t size)
 	ecdsa_signature *ecsign = signature;
 
 	ec_key *key = ectx->key;
-	ec_prime_curve *parameters = ectx->key->eg->parameters;
 	hash_ctx *hctx = ectx->hctx;
 	bignum_ctx *bctx = ectx->key->eg->bctx;
 
@@ -140,14 +139,14 @@ retry:
 		k = bignum_rand(k, NULL, key->eg->bits);
 	}
 
-	ik = bignum_modinv(bctx, ik, k, parameters->n);
+	ik = bignum_modinv(bctx, ik, k, ectx->key->eg->n);
 
 	// r = [k]G.
 	r.x = x;
 	r.y = y;
 
-	g.x = parameters->gx;
-	g.y = parameters->gy;
+	g.x = ectx->key->eg->gx;
+	g.y = ectx->key->eg->gy;
 
 	result = ec_point_multiply(key->eg, &r, &g, k);
 
@@ -165,9 +164,9 @@ retry:
 	bignum_copy(ecsign->r, r.x);
 
 	// s = (ik(e + rd)) mod n.
-	ecsign->s = bignum_modmul(bctx, ecsign->s, ecsign->r, key->d, parameters->n);
-	ecsign->s = bignum_modadd(bctx, ecsign->s, ecsign->s, e, parameters->n);
-	ecsign->s = bignum_modmul(bctx, ecsign->s, ecsign->s, ik, parameters->n);
+	ecsign->s = bignum_modmul(bctx, ecsign->s, ecsign->r, key->d, ectx->key->eg->n);
+	ecsign->s = bignum_modadd(bctx, ecsign->s, ecsign->s, e, ectx->key->eg->n);
+	ecsign->s = bignum_modmul(bctx, ecsign->s, ecsign->s, ik, ectx->key->eg->n);
 
 	bignum_ctx_end(bctx);
 
@@ -238,7 +237,6 @@ uint32_t ecdsa_verify_final(ecdsa_ctx *ectx, ecdsa_signature *ecsign)
 	uint32_t status = 0;
 
 	ec_key *key = ectx->key;
-	ec_prime_curve *parameters = ectx->key->eg->parameters;
 	hash_ctx *hctx = ectx->hctx;
 	bignum_ctx *bctx = ectx->key->eg->bctx;
 
@@ -262,7 +260,7 @@ uint32_t ecdsa_verify_final(ecdsa_ctx *ectx, ecdsa_signature *ecsign)
 	ec_point r1, r2, r3, g;
 	void *result = NULL;
 
-	if (bignum_cmp(ecsign->r, parameters->n) >= 0 || bignum_cmp(ecsign->s, parameters->n) >= 0)
+	if (bignum_cmp(ecsign->r, ectx->key->eg->n) >= 0 || bignum_cmp(ecsign->s, ectx->key->eg->n) >= 0)
 	{
 		return 0;
 	}
@@ -295,17 +293,17 @@ uint32_t ecdsa_verify_final(ecdsa_ctx *ectx, ecdsa_signature *ecsign)
 
 	e = bignum_set_bytes_be(e, ectx->hctx->hash, MIN(key->eg->bits / 8, hash_size));
 
-	is = bignum_modinv(bctx, is, ecsign->s, parameters->n);
+	is = bignum_modinv(bctx, is, ecsign->s, ectx->key->eg->n);
 
-	u = bignum_modmul(bctx, u, e, is, parameters->n);
-	v = bignum_modmul(bctx, v, ecsign->r, is, parameters->n);
+	u = bignum_modmul(bctx, u, e, is, ectx->key->eg->n);
+	v = bignum_modmul(bctx, v, ecsign->r, is, ectx->key->eg->n);
 
 	// r = [u]G + [v]Q.
 	r1.x = x1;
 	r1.y = y1;
 
-	g.x = parameters->gx;
-	g.y = parameters->gy;
+	g.x = ectx->key->eg->gx;
+	g.y = ectx->key->eg->gy;
 
 	result = ec_point_multiply(key->eg, &r1, &g, u);
 
