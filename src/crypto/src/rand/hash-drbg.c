@@ -330,7 +330,7 @@ void hash_drbg_delete(hash_drbg *hdrbg)
 	free(hdrbg);
 }
 
-int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_size)
+uint32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_size)
 {
 	uint32_t entropy_received = 0;
 	size_t seed_material_size = 1 + hdrbg->seed_size + hdrbg->min_entropy_size + input_size;
@@ -342,7 +342,7 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 
 	if (seed_material == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
 	// seed_material = 0x01 || V || entropy_input || additional_input
@@ -357,7 +357,7 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 	if (entropy_received < hdrbg->min_entropy_size)
 	{
 		free(seed_material);
-		return -1;
+		return 0;
 	}
 
 	if (additional_input != NULL)
@@ -376,10 +376,10 @@ int32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_
 	hdrbg->reseed_counter = 1;
 
 	free(seed_material);
-	return 0;
+	return 1;
 }
 
-int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
+uint32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
 						   void *output, size_t output_size)
 {
 	int32_t status = 0;
@@ -391,7 +391,7 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 	// Check requested size
 	if (output_size > MAX_DRBG_OUTPUT_SIZE)
 	{
-		return -1;
+		return 0;
 	}
 
 	// Reseed
@@ -402,9 +402,9 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 		additional_input = NULL;
 		input_size = 0;
 
-		if (status == -1)
+		if (status == 0)
 		{
-			return -1;
+			return 0;
 		}
 	}
 
@@ -439,5 +439,5 @@ int32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_requ
 
 	hdrbg->reseed_counter++;
 
-	return 0;
+	return output_size;
 }

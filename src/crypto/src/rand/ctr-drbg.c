@@ -374,7 +374,7 @@ void ctr_drbg_delete(ctr_drbg *cdrbg)
 	free(cdrbg);
 }
 
-int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_size)
+uint32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_size)
 {
 	int32_t status = -1;
 	uint32_t entropy_received = 0;
@@ -388,7 +388,7 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 
 	if (seed_material == NULL)
 	{
-		return -1;
+		return 0;
 	}
 
 	entropy_received = cdrbg->entropy(seed_material, cdrbg->min_entropy_size);
@@ -397,7 +397,7 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 	if (entropy_received < cdrbg->min_entropy_size)
 	{
 		free(seed_material);
-		return -1;
+		return 0;
 	}
 
 	if (additional_input != NULL && input_size > 0)
@@ -412,7 +412,7 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 
 	if (status != 0)
 	{
-		return -1;
+		return 0;
 	}
 
 	ctr_drbg_update(cdrbg, seed);
@@ -420,10 +420,10 @@ int32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_si
 	cdrbg->reseed_counter = 1;
 
 	free(seed_material);
-	return 0;
+	return 1;
 }
 
-int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
+uint32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
 						  size_t output_size)
 {
 	int32_t status;
@@ -452,9 +452,9 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reques
 		additional_input = NULL;
 		input_size = 0;
 
-		if (status == -1)
+		if (status == 0)
 		{
-			return -1;
+			return 0;
 		}
 	}
 
@@ -464,7 +464,7 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reques
 
 		if (status != 0)
 		{
-			return -1;
+			return 0;
 		}
 
 		ctr_drbg_update(cdrbg, seed);
@@ -489,5 +489,5 @@ int32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reques
 	ctr_drbg_update(cdrbg, seed);
 	cdrbg->reseed_counter++;
 
-	return 0;
+	return output_size;
 }

@@ -49,8 +49,8 @@ static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entrop
 	drbg_ctx *drbg = (drbg_ctx *)ptr;
 
 	void *_drbg = NULL;
-	int32_t (*_reseed)(void *, void *, size_t) = NULL;
-	int32_t (*_generate)(void *, uint32_t, void *, size_t, void *, size_t) = NULL;
+	uint32_t (*_reseed)(void *, void *, size_t) = NULL;
+	uint32_t (*_generate)(void *, uint32_t, void *, size_t, void *, size_t) = NULL;
 
 	drbg->type = type;
 	drbg->drbg_size = ctx_size + sizeof(drbg_ctx);
@@ -60,16 +60,16 @@ static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entrop
 	{
 	case HASH_DRBG:
 		_drbg = hash_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
-		_reseed = (int32_t(*)(void *, void *, size_t))hash_drbg_reseed;
-		_generate = (int32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hash_drbg_generate;
+		_reseed = (uint32_t(*)(void *, void *, size_t))hash_drbg_reseed;
+		_generate = (uint32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hash_drbg_generate;
 		break;
 	case HMAC_DRBG:
 		_drbg = hmac_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
-		_generate = (int32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hmac_drbg_generate;
+		_generate = (uint32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hmac_drbg_generate;
 		break;
 	case CTR_DRBG:
 		_drbg = ctr_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
-		_generate = (int32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))ctr_drbg_generate;
+		_generate = (uint32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))ctr_drbg_generate;
 		break;
 	}
 
@@ -167,12 +167,12 @@ void drbg_delete(drbg_ctx *drbg)
 	free(drbg);
 }
 
-int32_t drbg_reseed(drbg_ctx *drbg, void *additional_input, size_t input_size)
+uint32_t drbg_reseed(drbg_ctx *drbg, void *additional_input, size_t input_size)
 {
 	return drbg->_reseed(drbg->_drbg, additional_input, input_size);
 }
 
-int32_t drbg_generate(drbg_ctx *drbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
+uint32_t drbg_generate(drbg_ctx *drbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
 					  size_t output_size)
 {
 	return drbg->_generate(drbg->_drbg, prediction_resistance_request, additional_input, input_size, output, output_size);
