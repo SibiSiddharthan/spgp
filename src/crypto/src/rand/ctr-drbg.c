@@ -21,7 +21,7 @@
 
 #define MAX_CTR_SEED_SIZE 64
 
-uint32_t get_entropy(void *buffer, size_t size);
+uint32_t get_entropy(void *state, void *buffer, uint32_t size);
 
 static inline size_t get_approved_cipher_ctx_size(cipher_algorithm algorithm)
 {
@@ -183,7 +183,7 @@ static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_
 	}
 
 	// Entropy and Nonce
-	entropy_received = cdrbg->entropy(seed_material, total_entropy_size);
+	entropy_received = cdrbg->entropy(NULL, seed_material, total_entropy_size);
 	seed_input_size += total_entropy_size;
 
 	if (entropy_received < total_entropy_size)
@@ -221,7 +221,7 @@ end:
 	return status;
 }
 
-static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size),
+static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size),
 									   cipher_algorithm algorithm, uint32_t reseed_interval, void *personalization,
 									   size_t personalization_size)
 {
@@ -306,7 +306,7 @@ size_t ctr_drbg_size(cipher_algorithm algorithm)
 	return sizeof(ctr_drbg) + (get_approved_cipher_ctx_size(algorithm) * 2);
 }
 
-ctr_drbg *ctr_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm,
+ctr_drbg *ctr_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size), cipher_algorithm algorithm,
 						uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 
@@ -331,7 +331,7 @@ ctr_drbg *ctr_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer
 	return ctr_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-ctr_drbg *ctr_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm, uint32_t reseed_interval,
+ctr_drbg *ctr_drbg_new(uint32_t (*entropy)(void *state, void *buffer, uint32_t size), cipher_algorithm algorithm, uint32_t reseed_interval,
 					   void *personalization, size_t personalization_size)
 {
 	ctr_drbg *cdrbg = NULL;
@@ -391,7 +391,7 @@ uint32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_s
 		return 0;
 	}
 
-	entropy_received = cdrbg->entropy(seed_material, cdrbg->min_entropy_size);
+	entropy_received = cdrbg->entropy(NULL, seed_material, cdrbg->min_entropy_size);
 	seed_input_size += cdrbg->min_entropy_size;
 
 	if (entropy_received < cdrbg->min_entropy_size)
@@ -424,7 +424,7 @@ uint32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_s
 }
 
 uint32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
-						  size_t output_size)
+						   size_t output_size)
 {
 	int32_t status;
 
@@ -447,7 +447,7 @@ uint32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reque
 	// Reseed
 	if (cdrbg->reseed_counter == cdrbg->reseed_interval || prediction_resistance_request > 0)
 	{
-	status = ctr_drbg_reseed(cdrbg, additional_input, input_size);
+		status = ctr_drbg_reseed(cdrbg, additional_input, input_size);
 
 		additional_input = NULL;
 		input_size = 0;

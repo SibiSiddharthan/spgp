@@ -19,7 +19,7 @@
 // Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
 // Section 10.1.2
 
-uint32_t get_entropy(void *buffer, size_t size);
+uint32_t get_entropy(void *state, void *buffer, uint32_t size);
 
 static inline size_t get_approved_hash_ctx_size(hash_algorithm algorithm)
 {
@@ -105,7 +105,7 @@ static int32_t hmac_drbg_init_state(hmac_drbg *hdrbg, size_t output_size, hash_a
 	}
 
 	// Entropy and Nonce
-	entropy_received = hdrbg->entropy(seed_material, total_entropy_size);
+	entropy_received = hdrbg->entropy(NULL, seed_material, total_entropy_size);
 	seed_input_size += total_entropy_size;
 
 	if (entropy_received < total_entropy_size)
@@ -133,7 +133,7 @@ end:
 	return status;
 }
 
-static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size),
+static hmac_drbg *hmac_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size),
 										 hash_algorithm algorithm, uint32_t reseed_interval, void *personalization,
 										 size_t personalization_size)
 {
@@ -211,7 +211,7 @@ size_t hmac_drbg_size(hash_algorithm algorithm)
 	return sizeof(hmac_drbg) + sizeof(hmac_ctx) + get_approved_hash_ctx_size(algorithm);
 }
 
-hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
+hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm,
 						  uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 
@@ -236,7 +236,7 @@ hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buff
 	return hmac_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
+hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm, uint32_t reseed_interval,
 						 void *personalization, size_t personalization_size)
 {
 	hmac_drbg *hdrbg = NULL;
@@ -293,7 +293,7 @@ uint32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input
 		return 0;
 	}
 
-	entropy_received = hdrbg->entropy(seed_material, hdrbg->min_entropy_size);
+	entropy_received = hdrbg->entropy(NULL, seed_material, hdrbg->min_entropy_size);
 
 	if (entropy_received < hdrbg->min_entropy_size)
 	{
@@ -314,7 +314,7 @@ uint32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input
 }
 
 uint32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
-						   void *output, size_t output_size)
+							void *output, size_t output_size)
 {
 	int32_t status = 0;
 

@@ -35,7 +35,7 @@ typedef struct _hash_drbg
 	uint64_t reseed_interval;
 	uint64_t reseed_counter;
 
-	uint32_t (*entropy)(void *buffer, size_t size);
+	uint32_t (*entropy)(void *state, void *buffer, uint32_t size);
 } hash_drbg;
 
 typedef struct _hmac_drbg
@@ -51,7 +51,7 @@ typedef struct _hmac_drbg
 	uint64_t reseed_interval;
 	uint64_t reseed_counter;
 
-	uint32_t (*entropy)(void *buffer, size_t size);
+	uint32_t (*entropy)(void *state, void *buffer, uint32_t size);
 } hmac_drbg;
 
 typedef struct _ctr_drbg
@@ -74,7 +74,7 @@ typedef struct _ctr_drbg
 	uint32_t _algorithm;
 	void (*_init)(void *, size_t, int32_t, void *, size_t);
 	void (*_encrypt)(void *, void *, void *);
-	uint32_t (*entropy)(void *buffer, size_t size);
+	uint32_t (*entropy)(void *state, void *buffer, uint32_t size);
 } ctr_drbg;
 
 typedef enum _drbg_type
@@ -95,44 +95,44 @@ typedef struct _drbg_ctx
 } drbg_ctx;
 
 size_t hash_drbg_size(hash_algorithm algorithm);
-hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
+hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm,
 						  uint32_t reseed_interval, void *personalization, size_t personalization_size);
-hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
+hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm, uint32_t reseed_interval,
 						 void *personalization, size_t personalization_size);
 void hash_drbg_delete(hash_drbg *hdrbg);
 uint32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input_size);
 uint32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
-						   void *output, size_t output_size);
+							void *output, size_t output_size);
 
 size_t hmac_drbg_size(hash_algorithm algorithm);
-hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
+hmac_drbg *hmac_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm,
 						  uint32_t reseed_interval, void *personalization, size_t personalization_size);
-hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
+hmac_drbg *hmac_drbg_new(uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm, uint32_t reseed_interval,
 						 void *personalization, size_t personalization_size);
 void hmac_drbg_delete(hmac_drbg *hdrbg);
 uint32_t hmac_drbg_reseed(hmac_drbg *hdrbg, void *additional_input, size_t input_size);
 uint32_t hmac_drbg_generate(hmac_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
-						   void *output, size_t output_size);
+							void *output, size_t output_size);
 
 size_t ctr_drbg_size(cipher_algorithm algorithm);
-ctr_drbg *ctr_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm,
+ctr_drbg *ctr_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size), cipher_algorithm algorithm,
 						uint32_t reseed_interval, void *personalization, size_t personalization_size);
-ctr_drbg *ctr_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), cipher_algorithm algorithm, uint32_t reseed_interval,
+ctr_drbg *ctr_drbg_new(uint32_t (*entropy)(void *state, void *buffer, uint32_t size), cipher_algorithm algorithm, uint32_t reseed_interval,
 					   void *personalization, size_t personalization_size);
 void ctr_drbg_delete(ctr_drbg *cdrbg);
 uint32_t ctr_drbg_reseed(ctr_drbg *cdrbg, void *additional_input, size_t input_size);
 uint32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
-						  size_t output_size);
+						   size_t output_size);
 
 size_t drbg_ctx_size(drbg_type type, uint32_t algorithm);
-drbg_ctx *drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), drbg_type type, uint32_t algorithm,
-					uint32_t reseed_interval, void *personalization, size_t personalization_size);
-drbg_ctx *drbg_new(uint32_t (*entropy)(void *buffer, size_t size), drbg_type type, uint32_t algorithm, uint32_t reseed_interval,
-				   void *personalization, size_t personalization_size);
+drbg_ctx *drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size), drbg_type type,
+					uint32_t algorithm, uint32_t reseed_interval, void *personalization, size_t personalization_size);
+drbg_ctx *drbg_new(uint32_t (*entropy)(void *state, void *buffer, uint32_t size), drbg_type type, uint32_t algorithm,
+				   uint32_t reseed_interval, void *personalization, size_t personalization_size);
 void drbg_delete(drbg_ctx *drbg);
 uint32_t drbg_reseed(drbg_ctx *drbg, void *additional_input, size_t input_size);
 uint32_t drbg_generate(drbg_ctx *drbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size, void *output,
-					  size_t output_size);
+					   size_t output_size);
 
 drbg_ctx *get_default_drbg(void);
 

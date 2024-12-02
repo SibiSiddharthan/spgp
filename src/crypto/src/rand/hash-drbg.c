@@ -23,7 +23,7 @@
 #define MAX_ENTROPY_SIZE 128
 #define MAX_NONCE_SIZE   128
 
-uint32_t get_entropy(void *buffer, size_t size);
+uint32_t get_entropy(void *state, void *buffer, uint32_t size);
 
 static inline size_t get_approved_hash_ctx_size(hash_algorithm algorithm)
 {
@@ -151,7 +151,7 @@ static int32_t hash_drbg_init_state(hash_drbg *hdrbg, void *personalization, siz
 	}
 
 	// Entropy and Nonce
-	entropy_received = hdrbg->entropy(seed_material, total_entropy_size);
+	entropy_received = hdrbg->entropy(NULL, seed_material, total_entropy_size);
 	seed_input_size += total_entropy_size;
 
 	if (entropy_received < total_entropy_size)
@@ -182,7 +182,7 @@ end:
 	return status;
 }
 
-static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *buffer, size_t size),
+static hash_drbg *hash_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size),
 										 hash_algorithm algorithm, uint32_t reseed_interval, void *personalization,
 										 size_t personalization_size)
 {
@@ -262,7 +262,7 @@ size_t hash_drbg_size(hash_algorithm algorithm)
 	return sizeof(hash_drbg) + sizeof(hash_ctx) + get_approved_hash_ctx_size(algorithm);
 }
 
-hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm,
+hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm,
 						  uint32_t reseed_interval, void *personalization, size_t personalization_size)
 {
 
@@ -287,7 +287,7 @@ hash_drbg *hash_drbg_init(void *ptr, size_t size, uint32_t (*entropy)(void *buff
 	return hash_drbg_init_checked(ptr, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
 }
 
-hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *buffer, size_t size), hash_algorithm algorithm, uint32_t reseed_interval,
+hash_drbg *hash_drbg_new(uint32_t (*entropy)(void *state, void *buffer, uint32_t size), hash_algorithm algorithm, uint32_t reseed_interval,
 						 void *personalization, size_t personalization_size)
 {
 	hash_drbg *hdrbg = NULL;
@@ -351,7 +351,7 @@ uint32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input
 	memcpy(seed_material + seed_input_size, hdrbg->seed, hdrbg->seed_size);
 	seed_input_size += hdrbg->seed_size;
 
-	entropy_received = hdrbg->entropy(seed_material + seed_input_size, hdrbg->min_entropy_size);
+	entropy_received = hdrbg->entropy(NULL, seed_material + seed_input_size, hdrbg->min_entropy_size);
 	seed_input_size += hdrbg->min_entropy_size;
 
 	if (entropy_received < hdrbg->min_entropy_size)
@@ -380,7 +380,7 @@ uint32_t hash_drbg_reseed(hash_drbg *hdrbg, void *additional_input, size_t input
 }
 
 uint32_t hash_drbg_generate(hash_drbg *hdrbg, uint32_t prediction_resistance_request, void *additional_input, size_t input_size,
-						   void *output, size_t output_size)
+							void *output, size_t output_size)
 {
 	int32_t status = 0;
 	hash_ctx *hctx = hdrbg->hctx;
