@@ -9,10 +9,10 @@
 #include <intrin.h>
 #include <types.h>
 
-uint32_t get_entropy(void *buffer, size_t size)
+uint32_t get_entropy(void *state, void *buffer, uint32_t size)
 {
-	int32_t status = 0;
-	size_t count = 0;
+	uint32_t status = 0;
+	uint32_t count = 0;
 	byte_t *bp = buffer;
 
 	while ((count + sizeof(uint64_t)) < size)
