@@ -13,7 +13,7 @@
 
 bignum_t *bignum_rand(bignum_t *bn, void *drbg, uint32_t bits)
 {
-	int32_t status = 0;
+	uint32_t status = 0;
 	drbg_ctx *rbctx = drbg;
 
 	bn = bignum_resize(bn, bits);
@@ -30,10 +30,11 @@ bignum_t *bignum_rand(bignum_t *bn, void *drbg, uint32_t bits)
 
 	status = drbg_generate(rbctx, 0, NULL, 0, bn->words, CEIL_DIV(bits, 8));
 
-	if (status != 0)
+	if (status == 0)
 	{
 		return NULL;
 	}
 
-	return 0;
+	return bn;
 }
+
