@@ -35,6 +35,8 @@ bignum_t *bignum_rand(bignum_t *bn, void *drbg, uint32_t bits)
 		return NULL;
 	}
 
+	bn->bits = bignum_bitcount(bn);
+
 	return bn;
 }
 
@@ -63,6 +65,8 @@ bignum_t *bignum_rand_max(bignum_t *bn, bignum_t *limit, void *drbg, uint32_t bi
 		{
 			return NULL;
 		}
+
+		bn->bits = bignum_bitcount(bn);
 
 		// bn < limit
 		if (bignum_cmp_abs(bn, limit) >= 0)
