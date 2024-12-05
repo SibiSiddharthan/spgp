@@ -285,7 +285,7 @@ uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a)
 	return result;
 }
 
-uint32_t ec_prime_point_to_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size, uint32_t compression)
+uint32_t ec_prime_point_encode(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size, uint32_t compression)
 {
 	byte_t *out = buffer;
 	uint32_t pos = 0;
@@ -342,7 +342,7 @@ uint32_t ec_prime_point_to_bytes(struct _ec_group *eg, struct _ec_point *ep, voi
 	return pos;
 }
 
-ec_point *ec_prime_point_from_bytes(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size)
+ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size)
 {
 	ec_prime_curve *parameters = eg->parameters;
 	byte_t *in = buffer;
