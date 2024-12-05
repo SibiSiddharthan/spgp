@@ -137,9 +137,7 @@ typedef struct _ec_group
 	bignum_t *p; // prime
 	bignum_t *n; // order
 
-	// generator
-	bignum_t *gx;
-	bignum_t *gy;
+	ec_point *g; // generator
 
 	void *parameters;
 	bignum_ctx *bctx;

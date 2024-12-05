@@ -15,9 +15,7 @@
 
 ec_key *ec_key_generate(ec_key *ek, ec_group *eg)
 {
-	ec_point g = {.x = eg->gx, .y = eg->gy};
 	uint32_t bytes = CEIL_DIV(eg->bits, 8);
-
 	drbg_ctx *drbg = get_default_drbg();
 
 	byte_t buffer[64] = {0};
@@ -53,7 +51,7 @@ ec_key *ec_key_generate(ec_key *ek, ec_group *eg)
 	}
 
 	// Calculate the public key
-	ek->q = ec_point_multiply(eg, ek->q, &g, ek->d);
+	ek->q = ec_point_multiply(eg, ek->q, ek->eg->g, ek->d);
 
 	return ek;
 }

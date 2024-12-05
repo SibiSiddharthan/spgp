@@ -81,7 +81,7 @@ ecdsa_signature *ecdsa_sign_final(ecdsa_ctx *ectx, void *signature, size_t size)
 	bignum_t *x = NULL;
 	bignum_t *y = NULL;
 
-	ec_point r, g;
+	ec_point r;
 	void *result = NULL;
 
 	// Allocate the signature
@@ -145,10 +145,7 @@ retry:
 	r.x = x;
 	r.y = y;
 
-	g.x = ectx->key->eg->gx;
-	g.y = ectx->key->eg->gy;
-
-	result = ec_point_multiply(key->eg, &r, &g, k);
+	result = ec_point_multiply(key->eg, &r, ectx->key->eg->g, k);
 
 	if (result == NULL)
 	{
@@ -257,7 +254,7 @@ uint32_t ecdsa_verify_final(ecdsa_ctx *ectx, ecdsa_signature *ecsign)
 	bignum_t *x3 = NULL;
 	bignum_t *y3 = NULL;
 
-	ec_point r1, r2, r3, g;
+	ec_point r1, r2, r3;
 	void *result = NULL;
 
 	if (bignum_cmp(ecsign->r, ectx->key->eg->n) >= 0 || bignum_cmp(ecsign->s, ectx->key->eg->n) >= 0)
@@ -302,10 +299,7 @@ uint32_t ecdsa_verify_final(ecdsa_ctx *ectx, ecdsa_signature *ecsign)
 	r1.x = x1;
 	r1.y = y1;
 
-	g.x = ectx->key->eg->gx;
-	g.y = ectx->key->eg->gy;
-
-	result = ec_point_multiply(key->eg, &r1, &g, u);
+	result = ec_point_multiply(key->eg, &r1, ectx->key->eg->g, u);
 
 	if (result == NULL)
 	{
