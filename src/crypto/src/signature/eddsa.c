@@ -128,3 +128,92 @@ ed25519_signature *ed25519_sign(ed25519_key *key, void *message, size_t message_
 	return edsign;
 }
 
+static uint32_t ed25519_verify_internal(ec_group *group, ed25519_key *key, ed25519_signature *edsign, void *message, size_t size)
+{
+	uint32_t status = 0;
+
+	bignum_ctx *bctx = group->bctx;
+	size_t ctx_size = 10 * bignum_size(group->bits);
+
+	bignum_t *t = NULL;
+	bignum_t *u = NULL;
+	bignum_t *v = NULL;
+
+	ec_point *r = NULL, *q = NULL;
+	ec_point *lhs = NULL, *rhs = NULL;
+	void *result = NULL;
+
+	sha512_ctx hctx;
+
+	byte_t hash[SHA512_HASH_SIZE];
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	t = bignum_ctx_allocate_bignum(bctx, group->bits);
+	u = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
+
+	t = bignum_set_bytes_le(t, PTR_OFFSET(edsign, ED25519_KEY_OCTETS), ED25519_KEY_OCTETS);
+
+	if (bignum_cmp(t, group->n) >= 0)
+	{
+		goto end;
+	}
+
+	r = ec_point_decode(group, r, edsign, ED25519_KEY_OCTETS);
+
+	if (r == NULL)
+	{
+		goto end;
+	}
+
+	q = ec_point_decode(group, q, key->public_key, ED25519_KEY_OCTETS);
+
+	if (q == NULL)
+	{
+		goto end;
+	}
+
+	sha512_init(&hctx, sizeof(sha512_ctx));
+
+	sha512_update(&hctx, edsign, 32);
+	sha512_update(&hctx, key->public_key, ED25519_KEY_OCTETS);
+	sha512_update(&hctx, message, size);
+	sha512_final(&hctx, hash);
+
+	u = bignum_set_bytes_le(u, hash, SHA512_HASH_SIZE);
+
+	lhs = ec_point_multiply(group, lhs, group->g, t);
+
+	rhs = ec_point_multiply(group, rhs, q, u);
+	rhs = ec_point_add(group, rhs, rhs, r);
+
+	if (bignum_cmp(rhs->y, lhs->y) == 0)
+	{
+		status = 1;
+	}
+
+end:
+	bignum_ctx_end(bctx);
+
+	return status;
+}
+
+uint32_t ed25519_verify(ed25519_key *key, ed25519_signature *edsign, void *message, size_t message_size)
+{
+	uint32_t status = 0;
+	ec_group *group = NULL;
+
+	// Allocate the group
+	group = ec_group_new(EC_ED25519);
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	status = ed25519_verify_internal(group, key, edsign, message, message_size);
+
+	ec_group_delete(group);
+
+	return status;
+}
