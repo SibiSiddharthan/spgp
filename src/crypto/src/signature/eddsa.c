@@ -217,3 +217,128 @@ uint32_t ed25519_verify(ed25519_key *key, ed25519_signature *edsign, void *messa
 
 	return status;
 }
+
+static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed448_signature *edsign, void *context, size_t context_size,
+											void *message, size_t message_size)
+{
+	bignum_ctx *bctx = group->bctx;
+	size_t ctx_size = 2 * bignum_size(group->bits) + 3 * bignum_size(SHA512_HASH_SIZE * 8);
+
+	bignum_t *k = NULL;
+	bignum_t *s = NULL;
+	bignum_t *d = NULL;
+
+	bignum_t *x = NULL;
+	bignum_t *y = NULL;
+
+	ec_point r;
+	void *result = NULL;
+
+	shake256_ctx hctx;
+
+	byte_t prehash[ED448_SIGN_OCTETS];
+	byte_t hash[ED448_SIGN_OCTETS];
+
+	shake256_init(&hctx, sizeof(shake256_ctx), 912);
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	x = bignum_ctx_allocate_bignum(bctx, group->bits);
+	y = bignum_ctx_allocate_bignum(bctx, group->bits);
+	k = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
+	s = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
+
+	// Compute the prehash
+	shake256_update(&hctx, key->private_key, ED448_KEY_OCTETS);
+	shake256_final(&hctx, prehash, ED448_SIGN_OCTETS);
+	shake256_reset(&hctx, 912);
+
+	// Hash the message
+	shake256_update(&hctx, "SigEd448", 8);
+	shake256_update(&hctx, "\x00", 1);
+	shake256_update(&hctx, context_size, 1);
+	shake256_update(&hctx, context, context_size);
+	shake256_update(&hctx, PTR_OFFSET(prehash, 32), 32);
+	shake256_update(&hctx, message, message_size);
+	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
+	shake256_reset(&hctx, 912);
+
+	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
+	s = bignum_set_bytes_le(k, prehash, ED448_SIGN_OCTETS);
+
+	// R = [k]G.
+	r.x = x;
+	r.y = y;
+
+	ec_point_multiply(&group, &r, group->g, k);
+	ec_point_encode(&group, &r, edsign, ED448_KEY_OCTETS, 0);
+
+	shake256_update(&hctx, "SigEd448", 8);
+	shake256_update(&hctx, "\x00", 1);
+	shake256_update(&hctx, context_size, 1);
+	shake256_update(&hctx, context, context_size);
+	shake256_update(&hctx, edsign, ED448_KEY_OCTETS);
+	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
+	shake256_update(&hctx, message, message_size);
+	sha512_final(&hctx, hash);
+
+	// s = (r + ds) mod n.
+	s = bignum_modmul(bctx, s, s, d, group->n);
+	s = bignum_modadd(bctx, s, s, k, group->n);
+
+	bignum_get_bytes_le(s, PTR_OFFSET(edsign, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
+
+	bignum_ctx_end(bctx);
+
+	return edsign;
+}
+
+ed448_signature *ed448_sign(ed448_key *key, void *context, size_t context_size, void *message, size_t message_size, void *signature,
+							size_t signature_size)
+{
+	ec_group *group = NULL;
+	ed448_signature *edsign = signature;
+
+	// Check context size
+	if (context_size > 255)
+	{
+		return NULL;
+	}
+
+	// Allocate the signature
+	if (edsign == NULL)
+	{
+		edsign = malloc(ED448_SIGN_OCTETS);
+	}
+	else
+	{
+		if (signature_size < ED448_SIGN_OCTETS)
+		{
+			return NULL;
+		}
+	}
+
+	if (edsign == NULL)
+	{
+		return NULL;
+	}
+
+	// Allocate the group
+	group = ec_group_new(EC_ED448);
+
+	if (group == NULL)
+	{
+		if (signature == NULL)
+		{
+			free(edsign);
+		}
+
+		return NULL;
+	}
+
+	edsign = ed448_sign_internal(group, key, edsign, context, context_size, message, message_size);
+
+	ec_group_delete(group);
+
+	return edsign;
+}
