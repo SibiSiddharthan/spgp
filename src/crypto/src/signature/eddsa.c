@@ -342,3 +342,98 @@ ed448_signature *ed448_sign(ed448_key *key, void *context, size_t context_size, 
 
 	return edsign;
 }
+
+static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_signature *edsign, void *context, size_t context_size,
+									  void *message, size_t size)
+{
+	uint32_t status = 0;
+
+	bignum_ctx *bctx = group->bctx;
+	size_t ctx_size = 10 * bignum_size(group->bits);
+
+	bignum_t *t = NULL;
+	bignum_t *u = NULL;
+	bignum_t *v = NULL;
+
+	ec_point *r = NULL, *q = NULL;
+	ec_point *lhs = NULL, *rhs = NULL;
+	void *result = NULL;
+
+	shake256_ctx hctx;
+
+	byte_t hash[ED448_SIGN_OCTETS];
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	t = bignum_ctx_allocate_bignum(bctx, group->bits);
+	u = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
+
+	t = bignum_set_bytes_le(t, PTR_OFFSET(edsign, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
+
+	if (bignum_cmp(t, group->n) >= 0)
+	{
+		goto end;
+	}
+
+	r = ec_point_decode(group, r, edsign, ED448_KEY_OCTETS);
+
+	if (r == NULL)
+	{
+		goto end;
+	}
+
+	q = ec_point_decode(group, q, key->public_key, ED448_KEY_OCTETS);
+
+	if (q == NULL)
+	{
+		goto end;
+	}
+
+	shake256_init(&hctx, sizeof(sha512_ctx), 912);
+
+	shake256_update(&hctx, "SigEd448", 8);
+	shake256_update(&hctx, "\x00", 1);
+	shake256_update(&hctx, context_size, 1);
+	shake256_update(&hctx, context, context_size);
+	shake256_update(&hctx, edsign, 32);
+	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
+	shake256_update(&hctx, message, size);
+	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
+
+	u = bignum_set_bytes_le(u, hash, ED448_SIGN_OCTETS);
+
+	lhs = ec_point_multiply(group, lhs, group->g, t);
+
+	rhs = ec_point_multiply(group, rhs, q, u);
+	rhs = ec_point_add(group, rhs, rhs, r);
+
+	if (bignum_cmp(rhs->y, lhs->y) == 0)
+	{
+		status = 1;
+	}
+
+end:
+	bignum_ctx_end(bctx);
+
+	return status;
+}
+
+uint32_t ed448_verify(ed448_key *key, ed448_signature *edsign, void *context, size_t context_size, void *message, size_t message_size)
+{
+	uint32_t status = 0;
+	ec_group *group = NULL;
+
+	// Allocate the group
+	group = ec_group_new(EC_ED448);
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	status = ed448_verify_internal(group, key, edsign, context, context_size, message, message_size);
+
+	ec_group_delete(group);
+
+	return status;
+}
