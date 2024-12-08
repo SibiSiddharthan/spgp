@@ -80,6 +80,7 @@ rand/hmac-drbg.c
 #signature
 signature/dsa.c
 signature/ecdsa.c
+signature/eddsa.c
 )
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")

@@ -32,7 +32,6 @@ static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *ke
 	bignum_t *y = NULL;
 
 	ec_point r;
-	void *result = NULL;
 
 	sha512_ctx hctx;
 
@@ -66,8 +65,8 @@ static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *ke
 	r.x = x;
 	r.y = y;
 
-	ec_point_multiply(&group, &r, group->g, k);
-	ec_point_encode(&group, &r, edsign, ED25519_KEY_OCTETS, 0);
+	ec_point_multiply(group, &r, group->g, k);
+	ec_point_encode(group, &r, edsign, ED25519_KEY_OCTETS, 0);
 
 	sha512_update(&hctx, edsign, ED25519_KEY_OCTETS);
 	sha512_update(&hctx, key->public_key, ED25519_KEY_OCTETS);
@@ -137,11 +136,9 @@ static uint32_t ed25519_verify_internal(ec_group *group, ed25519_key *key, ed255
 
 	bignum_t *t = NULL;
 	bignum_t *u = NULL;
-	bignum_t *v = NULL;
 
 	ec_point *r = NULL, *q = NULL;
 	ec_point *lhs = NULL, *rhs = NULL;
-	void *result = NULL;
 
 	sha512_ctx hctx;
 
@@ -208,7 +205,7 @@ uint32_t ed25519_verify(ed25519_key *key, ed25519_signature *edsign, void *messa
 
 	if (group == NULL)
 	{
-		return NULL;
+		return 0;
 	}
 
 	status = ed25519_verify_internal(group, key, edsign, message, message_size);
@@ -232,7 +229,6 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	bignum_t *y = NULL;
 
 	ec_point r;
-	void *result = NULL;
 
 	shake256_ctx hctx;
 
@@ -256,7 +252,7 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	// Hash the message
 	shake256_update(&hctx, "SigEd448", 8);
 	shake256_update(&hctx, "\x00", 1);
-	shake256_update(&hctx, context_size, 1);
+	shake256_update(&hctx, &context_size, 1);
 	shake256_update(&hctx, context, context_size);
 	shake256_update(&hctx, PTR_OFFSET(prehash, 32), 32);
 	shake256_update(&hctx, message, message_size);
@@ -270,17 +266,17 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	r.x = x;
 	r.y = y;
 
-	ec_point_multiply(&group, &r, group->g, k);
-	ec_point_encode(&group, &r, edsign, ED448_KEY_OCTETS, 0);
+	ec_point_multiply(group, &r, group->g, k);
+	ec_point_encode(group, &r, edsign, ED448_KEY_OCTETS, 0);
 
 	shake256_update(&hctx, "SigEd448", 8);
 	shake256_update(&hctx, "\x00", 1);
-	shake256_update(&hctx, context_size, 1);
+	shake256_update(&hctx, &context_size, 1);
 	shake256_update(&hctx, context, context_size);
 	shake256_update(&hctx, edsign, ED448_KEY_OCTETS);
 	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
 	shake256_update(&hctx, message, message_size);
-	sha512_final(&hctx, hash);
+	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
 
 	// s = (r + ds) mod n.
 	s = bignum_modmul(bctx, s, s, d, group->n);
@@ -353,11 +349,9 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 
 	bignum_t *t = NULL;
 	bignum_t *u = NULL;
-	bignum_t *v = NULL;
 
 	ec_point *r = NULL, *q = NULL;
 	ec_point *lhs = NULL, *rhs = NULL;
-	void *result = NULL;
 
 	shake256_ctx hctx;
 
@@ -393,7 +387,7 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 
 	shake256_update(&hctx, "SigEd448", 8);
 	shake256_update(&hctx, "\x00", 1);
-	shake256_update(&hctx, context_size, 1);
+	shake256_update(&hctx, &context_size, 1);
 	shake256_update(&hctx, context, context_size);
 	shake256_update(&hctx, edsign, 32);
 	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
@@ -428,7 +422,7 @@ uint32_t ed448_verify(ed448_key *key, ed448_signature *edsign, void *context, si
 
 	if (group == NULL)
 	{
-		return NULL;
+		return 0;
 	}
 
 	status = ed448_verify_internal(group, key, edsign, context, context_size, message, message_size);
