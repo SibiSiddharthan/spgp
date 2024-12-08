@@ -48,8 +48,9 @@ ed448_signature *ed448_sign(ed448_key *key, void *context, size_t context_size, 
 							size_t signature_size);
 uint32_t ed448_verify(ed448_key *key, ed448_signature *edsign, void *context, size_t context_size, void *message, size_t message_size);
 
-ed25519_signature *ed25519ph_sign(ed25519_key *key, void *message, size_t message_size, void *signature, size_t signature_size);
-uint32_t ed25519ph_verify(ed25519_key *key, ed25519_signature *edsign, void *message, size_t size);
+ed25519_signature *ed25519ph_sign(ed25519_key *key, void *context, size_t context_size, void *message, size_t message_size, void *signature,
+								  size_t signature_size);
+uint32_t ed25519ph_verify(ed25519_key *key, ed25519_signature *edsign, void *context, size_t context_size, void *message, size_t size);
 
 ed448_signature *ed448ph_sign(ed448_key *key, void *context, size_t context_size, void *message, size_t message_size, void *signature,
 							  size_t signature_size);
