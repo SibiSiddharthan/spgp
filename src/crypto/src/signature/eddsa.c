@@ -19,6 +19,22 @@
 #include <minmax.h>
 #include <ptr.h>
 
+static void dom2_sha512_update(sha512_ctx *hctx, byte_t octet, void *context, byte_t context_size)
+{
+	sha512_update(hctx, "SigEd25519 no Ed25519 collisions", 32);
+	sha512_update(hctx, &octet, 1);
+	sha512_update(hctx, &context_size, 1);
+	sha512_update(hctx, context, context_size);
+}
+
+static void dom4_shake256_update(shake256_ctx *hctx, byte_t octet, void *context, byte_t context_size)
+{
+	shake256_update(hctx, "SigEd448", 8);
+	shake256_update(hctx, &octet, 1);
+	shake256_update(hctx, &context_size, 1);
+	shake256_update(hctx, context, context_size);
+}
+
 static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *key, ed25519_signature *edsign, void *message, size_t size)
 {
 	bignum_ctx *bctx = group->bctx;
@@ -252,17 +268,13 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	// Compute the prehash
 	shake256_update(&hctx, key->private_key, ED448_KEY_OCTETS);
 	shake256_final(&hctx, prehash, ED448_SIGN_OCTETS);
-	shake256_reset(&hctx, 912);
 
 	// Hash the message
-	shake256_update(&hctx, "SigEd448", 8);
-	shake256_update(&hctx, "\x00", 1);
-	shake256_update(&hctx, &context_size, 1);
-	shake256_update(&hctx, context, context_size);
+	shake256_reset(&hctx, 912);
+	dom4_shake256_update(&hctx, 0, context, context_size);
 	shake256_update(&hctx, PTR_OFFSET(prehash, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
 	shake256_update(&hctx, message, message_size);
 	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
-	shake256_reset(&hctx, 912);
 
 	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
 	s = bignum_set_bytes_le(d, prehash, ED448_SIGN_OCTETS);
@@ -274,10 +286,8 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	ec_point_multiply(group, &r, group->g, k);
 	ec_point_encode(group, &r, edsign, ED448_KEY_OCTETS, 0);
 
-	shake256_update(&hctx, "SigEd448", 8);
-	shake256_update(&hctx, "\x00", 1);
-	shake256_update(&hctx, &context_size, 1);
-	shake256_update(&hctx, context, context_size);
+	shake256_reset(&hctx, 912);
+	dom4_shake256_update(&hctx, 0, context, context_size);
 	shake256_update(&hctx, edsign, ED448_KEY_OCTETS);
 	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
 	shake256_update(&hctx, message, message_size);
@@ -392,10 +402,8 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 
 	shake256_init(&hctx, sizeof(sha512_ctx), 912);
 
-	shake256_update(&hctx, "SigEd448", 8);
-	shake256_update(&hctx, "\x00", 1);
-	shake256_update(&hctx, &context_size, 1);
-	shake256_update(&hctx, context, context_size);
+	shake256_reset(&hctx, 912);
+	dom4_shake256_update(&hctx, 0, context, context_size);
 	shake256_update(&hctx, edsign, ED448_KEY_OCTETS);
 	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
 	shake256_update(&hctx, message, size);
@@ -473,22 +481,18 @@ static ed25519_signature *ed25519ph_sign_internal(ec_group *group, ed25519_key *
 	// Hash the message
 	sha512_update(&hctx, message, message_size);
 	sha512_final(&hctx, mhash);
-	sha512_reset(&hctx);
 
 	// Compute the prehash
+	sha512_reset(&hctx);
 	sha512_update(&hctx, key->private_key, ED25519_KEY_OCTETS);
 	sha512_final(&hctx, prehash);
-	sha512_reset(&hctx);
 
 	// Compute the final hash
-	sha512_update(&hctx, "SigEd25519 no Ed25519 collisions", 32);
-	sha512_update(&hctx, "\x01", 1);
-	sha512_update(&hctx, &context_size, 1);
-	sha512_update(&hctx, context, context_size);
+	sha512_reset(&hctx);
+	dom2_sha512_update(&hctx, 1, context, context_size);
 	sha512_update(&hctx, PTR_OFFSET(prehash, SHA512_HASH_SIZE / 2), SHA512_HASH_SIZE / 2);
 	sha512_update(&hctx, mhash, SHA512_HASH_SIZE);
 	sha512_final(&hctx, hash);
-	sha512_reset(&hctx);
 
 	k = bignum_set_bytes_le(k, hash, SHA512_HASH_SIZE);
 	s = bignum_set_bytes_le(s, prehash, SHA512_HASH_SIZE);
@@ -500,10 +504,8 @@ static ed25519_signature *ed25519ph_sign_internal(ec_group *group, ed25519_key *
 	ec_point_multiply(group, &r, group->g, k);
 	ec_point_encode(group, &r, edsign, ED25519_KEY_OCTETS, 0);
 
-	sha512_update(&hctx, "SigEd25519 no Ed25519 collisions", 32);
-	sha512_update(&hctx, "\x01", 1);
-	sha512_update(&hctx, &context_size, 1);
-	sha512_update(&hctx, context, context_size);
+	sha512_reset(&hctx);
+	dom2_sha512_update(&hctx, 1, context, context_size);
 	sha512_update(&hctx, edsign, ED25519_KEY_OCTETS);
 	sha512_update(&hctx, key->public_key, ED25519_KEY_OCTETS);
 	sha512_update(&hctx, mhash, SHA512_HASH_SIZE);
@@ -615,10 +617,8 @@ static uint32_t ed25519ph_verify_internal(ec_group *group, ed25519_key *key, ed2
 	sha512_update(&hctx, message, message_size);
 	sha512_final(&hctx, hash);
 
-	sha512_update(&hctx, "SigEd25519 no Ed25519 collisions", 32);
-	sha512_update(&hctx, "\x01", 1);
-	sha512_update(&hctx, &context_size, 1);
-	sha512_update(&hctx, context, context_size);
+	sha512_reset(&hctx);
+	dom2_sha512_update(&hctx, 1, context, context_size);
 	sha512_update(&hctx, edsign, ED25519_KEY_OCTETS);
 	sha512_update(&hctx, key->public_key, ED25519_KEY_OCTETS);
 	sha512_update(&hctx, hash, SHA512_HASH_SIZE);
@@ -704,10 +704,7 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 
 	// Compute the final hash
 	shake256_reset(&hctx, 912);
-	shake256_update(&hctx, "SigEd448", 8);
-	shake256_update(&hctx, "\x01", 1);
-	shake256_update(&hctx, &context_size, 1);
-	shake256_update(&hctx, context, context_size);
+	dom4_shake256_update(&hctx, 1, context, context_size);
 	shake256_update(&hctx, PTR_OFFSET(prehash, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
 	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
 
@@ -722,10 +719,7 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 	ec_point_encode(group, &r, edsign, ED448_KEY_OCTETS, 0);
 
 	shake256_reset(&hctx, 912);
-	shake256_update(&hctx, "SigEd448", 8);
-	shake256_update(&hctx, "\x01", 1);
-	shake256_update(&hctx, &context_size, 1);
-	shake256_update(&hctx, context, context_size);
+	dom4_shake256_update(&hctx, 1, context, context_size);
 	shake256_update(&hctx, edsign, ED448_KEY_OCTETS);
 	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
 	shake256_update(&hctx, mhash, 64);
@@ -843,10 +837,7 @@ static uint32_t ed448ph_verify_internal(ec_group *group, ed448_key *key, ed448_s
 	shake256_final(&hctx, hash, 64);
 
 	shake256_reset(&hctx, 912);
-	shake256_update(&hctx, "SigEd448", 8);
-	shake256_update(&hctx, "\x01", 1);
-	shake256_update(&hctx, &context_size, 1);
-	shake256_update(&hctx, context, context_size);
+	dom4_shake256_update(&hctx, 1, context, context_size);
 	shake256_update(&hctx, edsign, ED448_KEY_OCTETS);
 	shake256_update(&hctx, key->public_key, ED448_KEY_OCTETS);
 	shake256_update(&hctx, hash, 64);
