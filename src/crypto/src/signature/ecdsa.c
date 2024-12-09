@@ -136,7 +136,7 @@ retry:
 	}
 	else
 	{
-		k = bignum_rand(k, NULL, key->eg->bits);
+		k = bignum_rand_max(NULL, k, key->eg->n);
 	}
 
 	ik = bignum_modinv(bctx, ik, k, ectx->key->eg->n);

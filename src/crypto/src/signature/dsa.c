@@ -234,7 +234,7 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	}
 	else
 	{
-		k = bignum_rand(k, NULL, key->q->bits);
+		k = bignum_rand_max(NULL, k, key->q);
 	}
 
 	ik = bignum_modinv(bctx, ik, k, key->q);
