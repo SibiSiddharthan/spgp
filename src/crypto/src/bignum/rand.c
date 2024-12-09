@@ -11,7 +11,7 @@
 #include <round.h>
 #include <drbg.h>
 
-bignum_t *bignum_rand(bignum_t *bn, void *drbg, uint32_t bits)
+bignum_t *bignum_rand(void *drbg, bignum_t *bn, uint32_t bits)
 {
 	uint32_t status = 0;
 	drbg_ctx *rbctx = drbg;
@@ -40,7 +40,7 @@ bignum_t *bignum_rand(bignum_t *bn, void *drbg, uint32_t bits)
 	return bn;
 }
 
-bignum_t *bignum_rand_max(bignum_t *bn, void *drbg, bignum_t *limit)
+bignum_t *bignum_rand_max(void *drbg, bignum_t *bn, bignum_t *limit)
 {
 	uint32_t status = 0;
 	drbg_ctx *rbctx = drbg;

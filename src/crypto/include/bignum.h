@@ -66,8 +66,8 @@ uint32_t bignum_ctz(bignum_t *bn);
 int32_t bignum_cmp(bignum_t *a, bignum_t *b);
 int32_t bignum_cmp_abs(bignum_t *a, bignum_t *b);
 
-bignum_t *bignum_rand(bignum_t *bn, void *drbg, uint32_t bits);
-bignum_t *bignum_rand_max(bignum_t *bn, void *drbg, bignum_t *limit);
+bignum_t *bignum_rand(void *drbg, bignum_t *bn, uint32_t bits);
+bignum_t *bignum_rand_max(void *drbg, bignum_t *bn, bignum_t *limit);
 bignum_t *bignum_prime(bignum_t *bn, uint32_t bits);
 
 uint32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn);
