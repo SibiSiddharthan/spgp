@@ -92,11 +92,10 @@ static uint32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out
 rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e, uint32_t flags)
 {
 	rsa_key *key = NULL;
-	bignum_t *pm1 = NULL, *qm1 = NULL, *pmq = NULL;
-	bignum_t *gcdp = NULL, *gcdq = NULL;
-	bignum_t *phi = NULL, *one = NULL;
+	bignum_t *pm1 = NULL, *qm1 = NULL, *pmq = NULL, *lcm = NULL;
+	bignum_t *phi = NULL, *gcd = NULL, *one = NULL;
 	uint32_t prime_bits = ROUND_UP(bits, 1024) / 2;
-	size_t ctx_size = (5 * bignum_size(prime_bits)) + bignum_size(2 * prime_bits) + bignum_size(1);
+	size_t ctx_size = (4 * bignum_size(prime_bits)) + (2 * bignum_size(2 * prime_bits)) + bignum_size(1);
 
 	// Validate e
 	if (e->bits < 16 || e->bits > 256)
@@ -123,11 +122,11 @@ rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e, uint32_t flags)
 	pm1 = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
 	qm1 = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
 	pmq = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
-
-	gcdp = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
-	gcdq = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
+	lcm = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
 
 	phi = bignum_ctx_allocate_bignum(key->bctx, 2 * prime_bits);
+	gcd = bignum_ctx_allocate_bignum(key->bctx, 2 * prime_bits);
+
 	one = bignum_ctx_allocate_bignum(key->bctx, 1);
 
 	bignum_one(one);
@@ -159,10 +158,11 @@ retry:
 		pm1 = bignum_sub(pm1, key->p, one);
 		qm1 = bignum_sub(pm1, key->q, one);
 
-		gcdp = bignum_gcd(key->bctx, gcdp, pm1, e);
-		gcdq = bignum_gcd(key->bctx, gcdq, qm1, e);
+		// phi = (p-1) * (q-1)
+		phi = bignum_mul(key->bctx, phi, pm1, qm1);
+		gcd = bignum_gcd(key->bctx, gcd, phi, e);
 
-		if (gcdp->bits != 1 && gcdq->bits != 1)
+		if (gcd->bits != 1)
 		{
 			continue;
 		}
@@ -170,14 +170,13 @@ retry:
 
 	bignum_copy(key->e, e);
 
-	// phi = (p-1) * (q-1)
-	phi = bignum_mul(key->bctx, phi, pm1, qm1);
-
 	// n = p * q
 	key->n = bignum_mul(key->bctx, key->n, key->p, key->q);
 
-	// d = (1/e) % phi
-	key->d = bignum_modinv(key->bctx, key->d, key->e, phi);
+	// d = (1/e) % lcm(p-1,q-1)
+	lcm = bignum_gcd(key->bctx, lcm, pm1, qm1);
+	lcm = bignum_div(key->bctx, lcm, phi, lcm);
+	key->d = bignum_modinv(key->bctx, key->d, key->e, lcm);
 
 	if (key->d <= prime_bits)
 	{
