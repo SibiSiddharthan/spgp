@@ -89,6 +89,106 @@ static uint32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out
 	return output_size;
 }
 
+rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e)
+{
+	rsa_key *key = NULL;
+	bignum_t *pm1 = NULL, *qm1 = NULL, *pmq = NULL;
+	bignum_t *gcdp = NULL, *gcdq = NULL;
+	bignum_t *phi = NULL, *one = NULL;
+	uint32_t prime_bits = ROUND_UP(bits, 1024) / 2;
+	size_t ctx_size = (5 * bignum_size(prime_bits)) + bignum_size(2 * prime_bits) + bignum_size(1);
+
+	// Validate e
+	if (e->bits < 16 || e->bits > 256)
+	{
+		return NULL;
+	}
+
+	// Reject if e is even
+	if (e->words[0] % 2 == 0)
+	{
+		return NULL;
+	}
+
+	bits = ROUND_UP(bits, 1024);
+	key = rsa_key_new(bits);
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	bignum_ctx_start(key->bctx, ctx_size);
+
+	pm1 = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
+	qm1 = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
+	pmq = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
+
+	gcdp = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
+	gcdq = bignum_ctx_allocate_bignum(key->bctx, prime_bits);
+
+	phi = bignum_ctx_allocate_bignum(key->bctx, 2 * prime_bits);
+	one = bignum_ctx_allocate_bignum(key->bctx, 1);
+
+	bignum_one(one);
+
+retry:
+	// Generate p,q
+	while (1)
+	{
+		// Regenerate q for each retry
+		bignum_zero(key->q);
+
+		while (bignum_is_probable_prime(key->bctx, key->p) == 0)
+		{
+			bignum_rand(NULL, key->p, prime_bits);
+		}
+
+		while (bignum_is_probable_prime(key->bctx, key->q) == 0)
+		{
+			bignum_rand(NULL, key->q, prime_bits);
+		}
+
+		pmq = bignum_sub(pmq, key->p, key->q);
+
+		if (pmq->bits < (prime_bits - 100))
+		{
+			continue;
+		}
+
+		pm1 = bignum_sub(pm1, key->p, one);
+		qm1 = bignum_sub(pm1, key->q, one);
+
+		gcdp = bignum_gcd(key->bctx, gcdp, pm1, e);
+		gcdq = bignum_gcd(key->bctx, gcdq, qm1, e);
+
+		if (gcdp->bits != 1 && gcdq->bits != 1)
+		{
+			continue;
+		}
+	}
+
+	bignum_copy(key->e, e);
+
+	// phi = (p-1) * (q-1)
+	phi = bignum_mul(key->bctx, phi, pm1, qm1);
+
+	// n = p * q
+	key->n = bignum_mul(key->bctx, key->n, key->p, key->q);
+
+	// d = (1/e) % phi
+	key->d = bignum_modinv(key->bctx, key->d, key->e, phi);
+
+	if (key->d <= prime_bits)
+	{
+		goto retry;
+	}
+
+	bignum_ctx_end(key->bctx);
+
+	return key;
+}
+
 rsa_key *rsa_key_new(uint32_t bits)
 {
 	rsa_key *key = NULL;
