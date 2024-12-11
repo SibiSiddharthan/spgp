@@ -16,6 +16,29 @@
 #include <minmax.h>
 #include <ptr.h>
 
+dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g)
+{
+	dsa_key *key = dsa_key_new(p->bits, q->bits);
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the parameters
+	bignum_copy(key->p, p);
+	bignum_copy(key->q, q);
+	bignum_copy(key->g, g);
+
+	// Generate x
+	bignum_rand_max(NULL, key->x, key->q);
+
+	// Calculate y
+	bignum_modexp(key->bctx, key->y, key->g, key->x, key->p);
+
+	return key;
+}
+
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits)
 {
 	dsa_key *key = NULL;

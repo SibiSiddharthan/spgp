@@ -35,7 +35,7 @@ typedef struct _dsa_ctx
 	size_t salt_size;
 } dsa_ctx;
 
-dsa_key *dsa_key_generate(uint32_t bits);
+dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g);
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
 void dsa_key_delete(dsa_key *key);
 

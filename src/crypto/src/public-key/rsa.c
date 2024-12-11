@@ -178,7 +178,7 @@ retry:
 	lcm = bignum_div(key->bctx, lcm, phi, lcm);
 	key->d = bignum_modinv(key->bctx, key->d, key->e, lcm);
 
-	if (key->d <= prime_bits)
+	if (key->d->bits <= prime_bits)
 	{
 		goto retry;
 	}
