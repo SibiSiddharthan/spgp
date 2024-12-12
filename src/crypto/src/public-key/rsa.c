@@ -89,7 +89,7 @@ static uint32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out
 	return output_size;
 }
 
-rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e, uint32_t flags)
+rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e)
 {
 	rsa_key *key = NULL;
 	bignum_t *pm1 = NULL, *qm1 = NULL, *pmq = NULL, *lcm = NULL;
@@ -184,12 +184,9 @@ retry:
 	}
 
 	// Fill the CRT factors
-	if (flags & RSA_KEY_GENERATE_CRT)
-	{
-		key->dmp1 = bignum_mod(key->bctx, key->dmp1, key->d, pm1);
-		key->dmq1 = bignum_mod(key->bctx, key->dmq1, key->d, qm1);
-		key->iqmp = bignum_modinv(key->bctx, key->iqmp, key->q, key->p);
-	}
+	key->dmp1 = bignum_mod(key->bctx, key->dmp1, key->d, pm1);
+	key->dmq1 = bignum_mod(key->bctx, key->dmq1, key->d, qm1);
+	key->iqmp = bignum_modinv(key->bctx, key->iqmp, key->q, key->p);
 
 	bignum_ctx_end(key->bctx);
 

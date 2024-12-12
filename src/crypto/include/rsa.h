@@ -13,8 +13,6 @@
 #include <hash.h>
 #include <drbg.h>
 
-#define RSA_KEY_GENERATE_CRT 1
-
 typedef struct _rsa_key
 {
 	uint32_t size;
@@ -50,7 +48,7 @@ typedef struct _rsa_signature
 	byte_t *sign;
 } rsa_signature;
 
-rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e, uint32_t flags);
+rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e);
 rsa_key *rsa_key_new(uint32_t bits);
 void rsa_key_delete(rsa_key *key);
 
