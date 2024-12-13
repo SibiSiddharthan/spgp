@@ -16,9 +16,53 @@
 #include <minmax.h>
 #include <ptr.h>
 
+static uint32_t dsa_valid_pq_lengths(uint32_t p_bits, uint32_t q_bits)
+{
+	if (p_bits == 1024)
+	{
+		if (q_bits != 160)
+		{
+			return 0;
+		}
+	}
+	else if (p_bits == 2048)
+	{
+		if (q_bits != 224 && q_bits != 256)
+		{
+			return 0;
+		}
+	}
+	else if (p_bits == 3072)
+	{
+		if (q_bits != 256)
+		{
+			return 0;
+		}
+	}
+	else
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g)
 {
-	dsa_key *key = dsa_key_new(p->bits, q->bits);
+	dsa_key *key = NULL;
+
+	// Check bits
+	if (dsa_valid_pq_lengths(p->bits, q->bits) == 0)
+	{
+		return NULL;
+	}
+
+	if (bignum_cmp(g, p) >= 0)
+	{
+		return NULL;
+	}
+
+	key = dsa_key_new(p->bits, q->bits);
 
 	if (key == NULL)
 	{
@@ -49,29 +93,7 @@ dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits)
 	p_bits = ROUND_UP(p_bits, 1024);
 	q_bits = ROUND_UP(q_bits, 8);
 
-	// Allowed bit lengths
-	if (p_bits == 1024)
-	{
-		if (q_bits != 160)
-		{
-			return NULL;
-		}
-	}
-	else if (p_bits == 2048)
-	{
-		if (q_bits != 224 && q_bits != 256)
-		{
-			return NULL;
-		}
-	}
-	else if (p_bits == 3072)
-	{
-		if (q_bits != 256)
-		{
-			return NULL;
-		}
-	}
-	else
+	if (dsa_valid_pq_lengths(p_bits, q_bits) == 0)
 	{
 		return NULL;
 	}
