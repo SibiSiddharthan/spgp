@@ -35,6 +35,9 @@ typedef struct _dsa_ctx
 	size_t salt_size;
 } dsa_ctx;
 
+uint32_t dsa_parameters_generate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignum_t *g, uint32_t p_bits, uint32_t q_bits, void *seed,
+								 size_t seed_size);
+
 dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g);
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
 void dsa_key_delete(dsa_key *key);
