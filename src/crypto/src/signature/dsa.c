@@ -190,7 +190,6 @@ retry_gen_q:
 
 		if (bignum_is_probable_prime(bctx, pc))
 		{
-			bignum_copy(p, pc);
 			counter = i;
 			break;
 		}
@@ -221,7 +220,7 @@ retry_gen_q:
 		w = bignum_set_bytes_be(w, hash, hctx->hash_size);
 		gc = bignum_modexp(bctx, gc, w, e, p);
 
-		if (g->bits >= 2)
+		if (gc->bits >= 2)
 		{
 			break;
 		}
@@ -233,6 +232,195 @@ retry_gen_q:
 	bignum_ctx_delete(bctx);
 
 	return counter;
+}
+
+uint32_t dsa_parameters_validate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignum_t *g, uint32_t counter, void *seed, size_t seed_size)
+{
+	bignum_ctx *bctx = NULL;
+
+	uint32_t p_bits = p->bits;
+	uint32_t q_bits = q->bits;
+
+	bignum_t *q2 = NULL, *qc = NULL, *pc = NULL, *gc = NULL, *ds = NULL, *c = NULL, *e = NULL, *w = NULL;
+	size_t ctx_size = 0;
+
+	uint32_t offset = 1;
+
+	uint32_t l = (p_bits / 8);
+	uint32_t n = (q_bits / 8);
+	uint32_t s = CEIL_DIV(l, hctx->hash_size);
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	uint32_t hash_size = 0;
+	uint32_t hash_offset = 0;
+
+	void *pseed = NULL;
+	void *pbuffer = NULL;
+
+	// Check bits
+	if (dsa_valid_pq_lengths(p_bits, q_bits) == 0)
+	{
+		return 0;
+	}
+
+	if (CEIL_DIV(q->bits, 8) > hctx->hash_size)
+	{
+		return 0;
+	}
+
+	if (CEIL_DIV(q->bits, 8) > seed_size)
+	{
+		return 0;
+	}
+
+	if (counter >= (4 * l))
+	{
+		return 0;
+	}
+
+	ctx_size = bignum_size(q_bits) + (3 * bignum_size(p_bits)) + bignum_size((seed_size + 1) * 8) + (2 * bignum_size(q_bits + 1)) +
+			   bignum_size(hctx->hash_size * 8) + seed_size + l;
+	bctx = bignum_ctx_new(256 + ctx_size);
+
+	if (bctx == NULL)
+	{
+		return 0;
+	}
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	qc = bignum_ctx_allocate_bignum(bctx, q_bits);
+	pc = bignum_ctx_allocate_bignum(bctx, p_bits);
+	gc = bignum_ctx_allocate_bignum(bctx, p_bits);
+	ds = bignum_ctx_allocate_bignum(bctx, (seed_size + 1) * 8);
+
+	c = bignum_ctx_allocate_bignum(bctx, q_bits + 1);
+	q2 = bignum_ctx_allocate_bignum(bctx, q_bits + 1);
+
+	e = bignum_ctx_allocate_bignum(bctx, p_bits);
+	w = bignum_ctx_allocate_bignum(bctx, hctx->hash_size * 8);
+
+	pseed = bignum_ctx_allocate_raw(bctx, seed_size);
+	pbuffer = bignum_ctx_allocate_raw(bctx, l);
+
+	// Check q
+	hash_reset(hctx);
+	hash_update(hctx, seed, seed_size);
+	hash_final(hctx, hash, MAX_HASH_SIZE);
+
+	// Truncate to q_bits
+	hash_size = MIN(hctx->hash_size, n);
+	hash_offset = hctx->hash_size - hash_size;
+
+	// Set the first and last bits to 1.
+	bignum_set_bytes_be(qc, PTR_OFFSET(hash, hash_offset), hash_size);
+	bignum_set_bit(qc, 0);
+	bignum_set_bit(qc, q_bits - 1);
+
+	// Check prime
+	if (bignum_cmp(q, qc) != 0)
+	{
+		return 0;
+	}
+
+	if (bignum_is_probable_prime(bctx, qc) == 0)
+	{
+		return 0;
+	}
+
+	// Check p
+	for (uint32_t i = 0; i < (4 * l); ++i)
+	{
+		uint32_t start = l;
+		uint32_t remaining = l;
+
+		ds = bignum_set_bytes_be(ds, seed, seed_size);
+		ds = bignum_uadd_word(ds, ds, offset);
+
+		for (uint32_t j = 0; j < s; ++j)
+		{
+			ds = bignum_uadd_word(ds, ds, j);
+			ds = bignum_mod2p(ds, ds, seed_size * 8);
+
+			bignum_get_bytes_be(ds, pseed, seed_size);
+
+			hash_reset(hctx);
+			hash_update(hctx, seed, seed_size);
+			hash_final(hctx, hash, MAX_HASH_SIZE);
+
+			hash_size = MIN(hctx->hash_size, remaining);
+			hash_offset = hctx->hash_size - hash_size;
+			start -= hash_size;
+
+			memcpy(PTR_OFFSET(pbuffer, start), PTR_OFFSET(hash, hash_offset), hash_size);
+		}
+
+		bignum_set_bytes_be(pc, pbuffer, l);
+		bignum_set_bit(pc, p_bits - 1);
+
+		c = bignum_mod(bctx, c, pc, q2);
+		pc = bignum_sub(pc, pc, c);
+		pc = bignum_uadd_word(pc, pc, 1);
+
+		if (bignum_get_bit(pc, p_bits - 1) == 0)
+		{
+			offset += s;
+			continue;
+		}
+
+		if (bignum_is_probable_prime(bctx, pc))
+		{
+			if (i != counter)
+			{
+				return 0;
+			}
+
+			if (bignum_cmp(p, pc) != 0)
+			{
+				return 0;
+			}
+		}
+
+		offset += s;
+	}
+
+	// Check g
+	uint16_t count_be = 0;
+	uint8_t index = 1;
+
+	e = bignum_usub_word(e, p, 1);
+	e = bignum_div(bctx, e, e, q);
+
+	for (uint16_t c = 1; c < (4 * l); ++c)
+	{
+		count_be = BSWAP_16(c);
+
+		hash_reset(hctx);
+		hash_update(hctx, seed, seed_size);
+		hash_update(hctx, "ggen", 4);
+		hash_update(hctx, &index, 1);
+		hash_update(hctx, &count_be, 2);
+		hash_final(hctx, hash, MAX_HASH_SIZE);
+
+		w = bignum_set_bytes_be(w, hash, hctx->hash_size);
+		gc = bignum_modexp(bctx, gc, w, e, p);
+
+		if (gc->bits >= 2)
+		{
+			break;
+		}
+	}
+
+	if (bignum_cmp(g, gc) != 0)
+	{
+		return 0;
+	}
+
+	bignum_ctx_end(bctx);
+	bignum_ctx_delete(bctx);
+
+	return 1;
 }
 
 dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g)
