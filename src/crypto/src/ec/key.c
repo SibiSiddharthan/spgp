@@ -61,7 +61,7 @@ uint32_t ec_public_key_validate(ec_key *ek, uint32_t full)
 	bignum_t *p = ek->eg->p;
 
 	// Check if point is not at infinity
-	if (ec_point_at_infinity(ek->eg, ek->q))
+	if (ec_point_is_identity(ek->eg, ek->q))
 	{
 		return 0;
 	}
@@ -85,7 +85,7 @@ uint32_t ec_public_key_validate(ec_key *ek, uint32_t full)
 
 		inf = ec_point_multiply(ek->eg, NULL, ek->q, ek->eg->n);
 
-		if (ec_point_at_infinity(ek->eg, inf) != 0)
+		if (ec_point_is_identity(ek->eg, inf) != 0)
 		{
 			ec_point_delete(inf);
 			return 0;
