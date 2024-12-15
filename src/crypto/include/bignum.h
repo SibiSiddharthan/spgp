@@ -63,6 +63,10 @@ void bignum_set_flags(bignum_t *bn, int16_t flags);
 uint32_t bignum_bitcount(bignum_t *bn);
 uint32_t bignum_ctz(bignum_t *bn);
 
+byte_t bignum_get_bit(bignum_t *r, uint32_t index);
+bignum_t *bignum_set_bit(bignum_t *r, uint32_t index);
+bignum_t *bignum_clear_bit(bignum_t *r, uint32_t index);
+
 int32_t bignum_cmp(bignum_t *a, bignum_t *b);
 int32_t bignum_cmp_abs(bignum_t *a, bignum_t *b);
 
@@ -81,6 +85,14 @@ bignum_t *bignum_mod(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b);
 
 bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift);
 bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift);
+
+bignum_t *bignum_lshift1(bignum_t *r, bignum_t *a);
+bignum_t *bignum_rshift1(bignum_t *r, bignum_t *a);
+
+bignum_t *bignum_uadd_word(bignum_t *r, bignum_t *a, bn_word_t w);
+bignum_t *bignum_usub_word(bignum_t *r, bignum_t *a, bn_word_t w);
+bignum_t *bignum_umul_word(bignum_t *r, bignum_t *a, bn_word_t w);
+bignum_t *bignum_umod2p(bignum_t *a, uint32_t bits);
 
 bignum_t *bignum_modadd(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
 bignum_t *bignum_modsub(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b, bignum_t *m);
