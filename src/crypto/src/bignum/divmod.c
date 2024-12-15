@@ -300,3 +300,33 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 
 	return 0;
 }
+
+bignum_t *bignum_umod2p(bignum_t *a, uint32_t bits)
+{
+	uint32_t words_cleared = 0;
+	uint32_t top_word = 0;
+
+	if (bits > a->bits)
+	{
+		return a;
+	}
+
+	top_word = CEIL_DIV(bits, BIGNUM_BITS_PER_WORD);
+	words_cleared = BIGNUM_WORD_COUNT(a) - top_word;
+
+	// Clear whole words
+	if (words_cleared > 0)
+	{
+		memset(a->words + top_word, 0, words_cleared * BIGNUM_WORD_SIZE);
+	}
+
+	// Clear remaining bits
+	if (bits % BIGNUM_BITS_PER_WORD != 0)
+	{
+		a->words[top_word - 1] &= ((1ull << bits) - 1);
+	}
+
+	a->bits = MIN(a->bits, bits);
+
+	return a;
+}
