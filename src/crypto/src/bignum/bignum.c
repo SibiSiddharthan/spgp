@@ -257,3 +257,43 @@ void bignum_set_flags(bignum_t *bn, int16_t flags)
 {
 	bn->flags = flags & BIGNUM_FLAG_MASK;
 }
+
+byte_t bignum_get_bit(bignum_t *r, uint32_t index)
+{
+	// Unset leading bits return 0.
+	if ((index + 1) > r->bits)
+	{
+		return 0;
+	}
+
+	return (r->words[index / BIGNUM_BITS_PER_WORD] >> (index % BIGNUM_BITS_PER_WORD)) & 0x1;
+}
+
+bignum_t *bignum_set_bit(bignum_t *r, uint32_t index)
+{
+	r = bignum_resize(r, index + 1);
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	r->words[index / BIGNUM_BITS_PER_WORD] |= (1ull << (index % BIGNUM_BITS_PER_WORD));
+	r->bits = MAX(r->bits, (index + 1));
+
+	return r;
+}
+
+bignum_t *bignum_clear_bit(bignum_t *r, uint32_t index)
+{
+	// Out of bounds bit, just return.
+	if ((index + 1) > r->bits)
+	{
+		return r;
+	}
+
+	r->words[index / BIGNUM_BITS_PER_WORD] &= ~(1ull << (index % BIGNUM_BITS_PER_WORD));
+	r->bits = bignum_bitcount(r);
+
+	return r;
+}
