@@ -169,3 +169,55 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 
 	return r;
 }
+
+bignum_t *bignum_uadd_word(bignum_t *r, bignum_t *a, bn_word_t w)
+{
+	uint32_t required_bits = a->bits + 1;
+	uint8_t carry = 0;
+
+	r = bignum_resize(r, required_bits);
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	r->words[0] = a->words[0] + w;
+	carry = (r->words[0] < w);
+
+	if (carry > 0)
+	{
+		bignum_increment(&r->words[1], BIGNUM_WORD_COUNT(r) - 1);
+	}
+
+	r->bits = bignum_bitcount(r);
+	r->sign = a->sign;
+
+	return r;
+}
+
+bignum_t *bignum_usub_word(bignum_t *r, bignum_t *a, bn_word_t w)
+{
+	uint32_t required_bits = a->bits;
+	uint8_t borrow = 0;
+
+	r = bignum_resize(r, required_bits);
+
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	r->words[0] = a->words[0] - w;
+	borrow = (r->words[0] > w);
+
+	if (borrow > 0)
+	{
+		bignum_decrement(&r->words[1], BIGNUM_WORD_COUNT(r) - 1);
+	}
+
+	r->bits = bignum_bitcount(r);
+	r->sign = a->sign;
+
+	return r;
+}
