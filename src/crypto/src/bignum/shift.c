@@ -14,7 +14,7 @@
 
 bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 {
-	uint32_t required_bits = a->bits + shift;
+	uint32_t required_bits = (a->bits != 0) ? (a->bits + shift) : 0;
 	uint32_t word_shift = shift / BIGNUM_BITS_PER_WORD;
 	uint32_t bit_shift = shift % BIGNUM_BITS_PER_WORD;
 
@@ -23,6 +23,12 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 	if (r == NULL)
 	{
 		return NULL;
+	}
+
+	if (required_bits == 0)
+	{
+		bignum_zero(r);
+		return r;
 	}
 
 	uint32_t a_words = BIGNUM_WORD_COUNT(a);
@@ -100,7 +106,7 @@ bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 
 bignum_t *bignum_lshift1(bignum_t *r, bignum_t *a)
 {
-	uint32_t required_bits = a->bits + 1;
+	uint32_t required_bits = (a->bits != 0) ? (a->bits + 1) : 0;
 	uint32_t a_words = BIGNUM_WORD_COUNT(a);
 	uint32_t r_words = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
 
@@ -109,6 +115,12 @@ bignum_t *bignum_lshift1(bignum_t *r, bignum_t *a)
 	if (r == NULL)
 	{
 		return NULL;
+	}
+
+	if (required_bits == 0)
+	{
+		bignum_zero(r);
+		return r;
 	}
 
 	// Last word
@@ -134,6 +146,7 @@ bignum_t *bignum_lshift1(bignum_t *r, bignum_t *a)
 bignum_t *bignum_rshift1(bignum_t *r, bignum_t *a)
 {
 	uint32_t required_bits = (a->bits > 1) ? a->bits - 1 : 0;
+	uint32_t a_words = BIGNUM_WORD_COUNT(a);
 	uint32_t r_words = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
 
 	r = bignum_resize(r, required_bits);
@@ -155,7 +168,13 @@ bignum_t *bignum_rshift1(bignum_t *r, bignum_t *a)
 	}
 
 	// Last word
-	r->words[r_words - 1] = a->words[r_words - 1] >> 1;
+	r->words[r_words - 1] = (a->words[r_words - 1] >> 1) | ((r_words < a_words) ? a->words[r_words] << (BIGNUM_BITS_PER_WORD - 1) : 0);
+
+	// Zero the last word if a,r point to the same bignum
+	if (a == r)
+	{
+		r->words[a_words - 1] = 0;
+	}
 
 	r->bits = required_bits;
 	r->sign = a->sign;
