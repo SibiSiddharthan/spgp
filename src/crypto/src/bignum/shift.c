@@ -61,7 +61,7 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 
 bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 {
-	uint32_t required_bits = (shift < a->bits) ? a->bits - shift : 0;
+	uint32_t required_bits = (shift < a->bits) ? (a->bits - shift) : 0;
 	uint32_t word_shift = shift / BIGNUM_BITS_PER_WORD;
 	uint32_t bit_shift = shift % BIGNUM_BITS_PER_WORD;
 
@@ -145,7 +145,7 @@ bignum_t *bignum_lshift1(bignum_t *r, bignum_t *a)
 
 bignum_t *bignum_rshift1(bignum_t *r, bignum_t *a)
 {
-	uint32_t required_bits = (a->bits > 1) ? a->bits - 1 : 0;
+	uint32_t required_bits = (a->bits > 1) ? (a->bits - 1) : 0;
 	uint32_t a_words = BIGNUM_WORD_COUNT(a);
 	uint32_t r_words = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
 

@@ -200,6 +200,7 @@ bignum_t *bignum_usub_word(bignum_t *r, bignum_t *a, bn_word_t w)
 {
 	uint32_t required_bits = a->bits;
 	uint8_t borrow = 0;
+	int8_t sign = 1;
 
 	r = bignum_resize(r, required_bits);
 
@@ -213,11 +214,20 @@ bignum_t *bignum_usub_word(bignum_t *r, bignum_t *a, bn_word_t w)
 
 	if (borrow > 0)
 	{
-		bignum_decrement(&r->words[1], BIGNUM_WORD_COUNT(r) - 1);
+		if (a->bits <= BIGNUM_BITS_PER_WORD)
+		{
+			// 2's complement
+			r->words[0] = ~r->words[0] + 1;
+			sign = -1;
+		}
+		else
+		{
+			bignum_decrement(&r->words[1], BIGNUM_WORD_COUNT(r) - 1);
+		}
 	}
 
 	r->bits = bignum_bitcount(r);
-	r->sign = a->sign;
+	r->sign = sign * a->sign;
 
 	return r;
 }
