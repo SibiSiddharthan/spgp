@@ -173,7 +173,135 @@ int32_t bignum_bitcount_tests(void)
 	return status;
 }
 
+int32_t bignum_bit_tests(void)
+{
+	int32_t status = 0;
+	uint32_t bits = 0;
+	byte_t bit = 0;
+
+	bignum_t *bn = NULL;
+	char hex[128] = {0};
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(NULL, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	bn = bignum_set_bit(bn, 2);
+
+	bits = bignum_bitcount(bn);
+
+	memset(hex, 0, 128);
+	bignum_get_hex(bn, hex, 128);
+
+	status += CHECK_HEX(hex, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbae", 44);
+	status += CHECK_VALUE(bits, 165);
+
+	bignum_delete(bn);
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(NULL, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	bn = bignum_set_bit(bn, 165);
+
+	bits = bignum_bitcount(bn);
+
+	memset(hex, 0, 128);
+	bignum_get_hex(bn, hex, 128);
+
+	status += CHECK_HEX(hex, "0x302030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	status += CHECK_VALUE(bits, 166);
+
+	bignum_delete(bn);
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(NULL, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	bn = bignum_set_bit(bn, 220);
+
+	bits = bignum_bitcount(bn);
+
+	memset(hex, 0, 128);
+	bignum_get_hex(bn, hex, 128);
+
+	status += CHECK_HEX(hex, "0x10000000000000102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 58);
+	status += CHECK_VALUE(bits, 221);
+
+	bignum_delete(bn);
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(NULL, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	bn = bignum_clear_bit(bn, 220);
+
+	bits = bignum_bitcount(bn);
+
+	memset(hex, 0, 128);
+	bignum_get_hex(bn, hex, 128);
+
+	status += CHECK_HEX(hex, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	status += CHECK_VALUE(bits, 165);
+
+	bignum_delete(bn);
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(NULL, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	bn = bignum_clear_bit(bn, 1);
+
+	bits = bignum_bitcount(bn);
+
+	memset(hex, 0, 128);
+	bignum_get_hex(bn, hex, 128);
+
+	status += CHECK_HEX(hex, "0x102030405060708090a0b0c0d0e0f0ffeeddccbba8", 44);
+	status += CHECK_VALUE(bits, 165);
+
+	bignum_delete(bn);
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(NULL, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+	bn = bignum_clear_bit(bn, 164);
+
+	bits = bignum_bitcount(bn);
+
+	memset(hex, 0, 128);
+	bignum_get_hex(bn, hex, 128);
+
+	status += CHECK_HEX(hex, "0x2030405060708090a0b0c0d0e0f0ffeeddccbbaa", 42);
+	status += CHECK_VALUE(bits, 158);
+
+	bignum_delete(bn);
+
+	// --------------------------------------------------------------------------------------
+
+	bn = bignum_set_hex(NULL, "0x102030405060708090a0b0c0d0e0f0ffeeddccbbaa", 44);
+
+	bit = bignum_get_bit(bn, 0);
+	status += CHECK_VALUE(bit, 0);
+
+	bit = bignum_get_bit(bn, 1);
+	status += CHECK_VALUE(bit, 1);
+
+	bit = bignum_get_bit(bn, 77);
+	status += CHECK_VALUE(bit, 0);
+
+	bit = bignum_get_bit(bn, 78);
+	status += CHECK_VALUE(bit, 1);
+
+	bit = bignum_get_bit(bn, 200);
+	status += CHECK_VALUE(bit, 0);
+
+	bit = bignum_get_bit(bn, 400);
+	status += CHECK_VALUE(bit, 0);
+
+	bignum_delete(bn);
+
+	// --------------------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return bignum_byte_tests() + bignum_hex_tests() + bignum_bitcount_tests();
+	return bignum_byte_tests() + bignum_hex_tests() + bignum_bitcount_tests() + bignum_bit_tests();
 }
