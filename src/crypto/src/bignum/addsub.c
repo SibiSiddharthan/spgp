@@ -224,8 +224,9 @@ bignum_t *bignum_usub_word(bignum_t *r, bignum_t *a, bn_word_t w)
 		return NULL;
 	}
 
+	temp = a->words[0];
 	r->words[0] = a->words[0] - w;
-	borrow = (r->words[0] > w);
+	borrow = (r->words[0] > temp);
 
 	for (uint32_t pos = 1; pos < a_words; ++pos)
 	{

@@ -956,6 +956,36 @@ int32_t bignum_word_tests(void)
 
 	// ------------------------------------------------------------------------
 
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "123456789abcdefffedcba9876543210", 32);
+	r = bignum_usub_word(NULL, a, w);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(r, hex, 128);
+
+	status += CHECK_HEX(hex, "0x123456789abcdefefeeddccbbaa99888", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_delete(r);
+	bignum_delete(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "0123456789abcdef", 16);
+	r = bignum_usub_word(NULL, a, w);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(r, hex, 128);
+
+	status += CHECK_HEX(hex, "-0xfecb986531fecb99", 19);
+	status += CHECK_VALUE(result, 19);
+
+	bignum_delete(r);
+	bignum_delete(a);
+
+	// ------------------------------------------------------------------------
+
 	return status;
 }
 
