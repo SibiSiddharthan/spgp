@@ -173,6 +173,9 @@ bignum_t *bignum_sub(bignum_t *r, bignum_t *a, bignum_t *b)
 bignum_t *bignum_uadd_word(bignum_t *r, bignum_t *a, bn_word_t w)
 {
 	uint32_t required_bits = a->bits + 1;
+	uint32_t a_words = BIGNUM_WORD_COUNT(a);
+
+	bn_word_t temp = 0;
 	uint8_t carry = 0;
 
 	r = bignum_resize(r, required_bits);
@@ -182,12 +185,21 @@ bignum_t *bignum_uadd_word(bignum_t *r, bignum_t *a, bn_word_t w)
 		return NULL;
 	}
 
+	temp = a->words[0];
 	r->words[0] = a->words[0] + w;
-	carry = (r->words[0] < w);
+	carry = (r->words[0] < temp);
 
-	if (carry > 0)
+	for (uint32_t pos = 1; pos < a_words; ++pos)
 	{
-		bignum_increment(&r->words[1], BIGNUM_WORD_COUNT(r) - 1);
+		temp = a->words[pos];
+		r->words[pos] = a->words[pos] + carry;
+		carry = (r->words[pos] < temp);
+	}
+
+	if (carry)
+	{
+		// This will always be big enough.
+		r->words[a_words] = 1;
 	}
 
 	r->bits = bignum_bitcount(r);
@@ -199,6 +211,9 @@ bignum_t *bignum_uadd_word(bignum_t *r, bignum_t *a, bn_word_t w)
 bignum_t *bignum_usub_word(bignum_t *r, bignum_t *a, bn_word_t w)
 {
 	uint32_t required_bits = a->bits;
+	uint32_t a_words = BIGNUM_WORD_COUNT(a);
+
+	bn_word_t temp = 0;
 	uint8_t borrow = 0;
 	int8_t sign = 1;
 
@@ -212,17 +227,21 @@ bignum_t *bignum_usub_word(bignum_t *r, bignum_t *a, bn_word_t w)
 	r->words[0] = a->words[0] - w;
 	borrow = (r->words[0] > w);
 
-	if (borrow > 0)
+	for (uint32_t pos = 1; pos < a_words; ++pos)
 	{
+		temp = a->words[pos];
+		r->words[pos] = a->words[pos] - borrow;
+		borrow = (r->words[pos] > temp);
+	}
+
+	if (borrow)
+	{
+		// Only possible scenario if a < w.
 		if (a->bits <= BIGNUM_BITS_PER_WORD)
 		{
 			// 2's complement
 			r->words[0] = ~r->words[0] + 1;
 			sign = -1;
-		}
-		else
-		{
-			bignum_decrement(&r->words[1], BIGNUM_WORD_COUNT(r) - 1);
 		}
 	}
 
