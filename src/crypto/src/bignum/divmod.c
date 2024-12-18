@@ -326,7 +326,7 @@ bignum_t *bignum_umod2p(bignum_t *a, uint32_t bits)
 		a->words[top_word - 1] &= ((1ull << bits) - 1);
 	}
 
-	a->bits = MIN(a->bits, bits);
+	a->bits = bignum_bitcount(a);
 
 	return a;
 }
