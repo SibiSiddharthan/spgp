@@ -813,6 +813,20 @@ int32_t bignum_shift_tests(void)
 	// ------------------------------------------------------------------------
 
 	a = bignum_new(256);
+	a = bignum_set_hex(a, "0", 1);
+	a = bignum_lshift(a, a, 5);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x0", 3);
+	status += CHECK_VALUE(result, 3);
+
+	bignum_delete(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
 	a = bignum_set_hex(a, "10000001000000000100000001000000", 32);
 	a = bignum_lshift(a, a, 5);
 
@@ -849,6 +863,20 @@ int32_t bignum_shift_tests(void)
 
 	status += CHECK_HEX(hex, "0x100000010000000001000000010000000000000000000000", 50);
 	status += CHECK_VALUE(result, 50);
+
+	bignum_delete(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "c64f43042aeaca6e5836805be8c99b045d4836c2fd16c964f0", 50);
+	a = bignum_lshift(a, a, 90);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x3193d0c10abab29b960da016fa3266c117520db0bf45b2593c00000000000000000000000", 75);
+	status += CHECK_VALUE(result, 75);
 
 	bignum_delete(a);
 
@@ -908,6 +936,20 @@ int32_t bignum_shift_tests(void)
 
 	bignum_delete(a);
 
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "d9ce8dff4f2f39c216ea39a461080552ba01ab2d9b2f66c701", 50);
+	a = bignum_rshift(a, a, 6);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(a, hex, 128);
+
+	status += CHECK_HEX(hex, "0x3673a37fd3cbce7085ba8e6918420154ae806acb66cbd9b1c", 51);
+	status += CHECK_VALUE(result, 51);
+
+	bignum_delete(a);
+	
 	// ------------------------------------------------------------------------
 
 	return status;
