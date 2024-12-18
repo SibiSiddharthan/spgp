@@ -129,7 +129,7 @@ bignum_t *bignum_lshift1(bignum_t *r, bignum_t *a)
 		r->words[r_words - 1] = (a->words[r_words - 2] >> (BIGNUM_BITS_PER_WORD - 1));
 	}
 
-	for (uint32_t i = a_words - 1; i > 1; --i)
+	for (uint32_t i = a_words - 1; i > 0; --i)
 	{
 		r->words[i] = (a->words[i] << 1) | (a->words[i - 1] >> (BIGNUM_BITS_PER_WORD - 1));
 	}
@@ -173,7 +173,10 @@ bignum_t *bignum_rshift1(bignum_t *r, bignum_t *a)
 	// Zero the last word if a,r point to the same bignum
 	if (a == r)
 	{
-		r->words[a_words - 1] = 0;
+		if (r_words < a_words)
+		{
+			r->words[a_words - 1] = 0;
+		}
 	}
 
 	r->bits = required_bits;
