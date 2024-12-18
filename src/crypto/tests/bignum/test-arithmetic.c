@@ -913,8 +913,54 @@ int32_t bignum_shift_tests(void)
 	return status;
 }
 
+int32_t bignum_word_tests(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	bignum_t *a = NULL;
+	bignum_t *r = NULL;
+	bn_word_t w = 0xFFEEDDCCBBAA9988;
+
+	char hex[128] = {0};
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "123456789abcdefffedcba9876543210", 32);
+	r = bignum_uadd_word(NULL, a, w);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(r, hex, 128);
+
+	status += CHECK_HEX(hex, "0x123456789abcdf00fecb986531fecb98", 34);
+	status += CHECK_VALUE(result, 34);
+
+	bignum_delete(r);
+	bignum_delete(a);
+
+	// ------------------------------------------------------------------------
+
+	a = bignum_new(256);
+	a = bignum_set_hex(a, "fffffffffffffffffedcba9876543210", 32);
+	r = bignum_uadd_word(NULL, a, w);
+
+	memset(hex, 0, 128);
+	result = bignum_get_hex(r, hex, 128);
+
+	status += CHECK_HEX(hex, "0x10000000000000000fecb986531fecb98", 35);
+	status += CHECK_VALUE(result, 35);
+
+	bignum_delete(r);
+	bignum_delete(a);
+
+	// ------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
 	return bignum_cmp_tests() + bignum_add_tests() + bignum_sub_tests() + bignum_sqr_tests() + bignum_mul_tests() + bignum_div_tests() +
-		   bignum_shift_tests();
+		   bignum_shift_tests() + bignum_word_tests();
 }
