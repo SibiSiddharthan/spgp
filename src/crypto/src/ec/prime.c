@@ -8,6 +8,8 @@
 #include <bignum-internal.h>
 #include <bignum.h>
 #include <ec.h>
+#include <hash.h>
+#include <drbg.h>
 
 #include <ptr.h>
 
@@ -388,8 +390,7 @@ ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void
 
 		bignum_set_bytes_be(ep->x, PTR_OFFSET(buffer, 1), bytes_for_point);
 
-		bignum_ctx_start(eg->bctx, bignum_size(eg->p->bits * 2) + bignum_size(eg->p->bits * 3) +
-									   2 * bignum_size(eg->p->bits));
+		bignum_ctx_start(eg->bctx, bignum_size(eg->p->bits * 2) + bignum_size(eg->p->bits * 3) + 2 * bignum_size(eg->p->bits));
 
 		temp = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits * 3);
 		ysq = bignum_ctx_allocate_bignum(eg->bctx, eg->p->bits * 2);
@@ -464,4 +465,154 @@ ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void
 	default:
 		return NULL;
 	}
+}
+
+ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bignum_t *p, bignum_t *a, void *seed, size_t seed_size)
+{
+	ec_prime_curve *parameters = group->parameters;
+	drbg_ctx *drbg = get_default_drbg();
+
+	bignum_t *h = NULL, *j = NULL, *r = NULL, *t = NULL;
+	bignum_t *s1 = NULL, *s2 = NULL;
+
+	uint32_t g = 8 * hctx->hash_size;
+	uint32_t s = FLOOR_DIV(p->bits - 1, g);
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	if (drbg == NULL)
+	{
+		return NULL;
+	}
+
+	// Parameter checking
+	if (hctx->hash_size < seed_size)
+	{
+		return NULL;
+	}
+
+	// Generate seed
+	drbg_generate(drbg, 0, NULL, 0, seed, seed_size);
+
+	hash_reset(hctx);
+	hash_update(hctx, seed, seed_size);
+	hash_final(hctx, hash, hctx->hash_size);
+
+	bignum_ctx_start(group->bctx, bignum_size(g) + bignum_size(g + 1) + (2 * bignum_size(p->bits + 3)) + (2 * bignum_size(p->bits)));
+
+	h = bignum_ctx_allocate_bignum(group->bctx, bignum_size(g));
+	j = bignum_ctx_allocate_bignum(group->bctx, bignum_size(g + 1));
+	r = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits + 3));
+	t = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits + 3));
+	s1 = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits));
+	s2 = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits));
+
+	bignum_set_bytes_be(h, hash, hctx->hash_size);
+
+	for (uint32_t i = 0; i <= s; ++i)
+	{
+		uint32_t count = 0;
+
+		bignum_copy(j, h);
+		bignum_uadd_word(j, j, i);
+
+		if (i == s)
+		{
+			bignum_umod2p(j, p->bits - (s * g));
+		}
+		else
+		{
+			bignum_umod2p(j, g);
+		}
+
+		count = bignum_get_bytes_be(j, hash, hctx->hash_size);
+
+		hash_reset(hctx);
+		hash_update(hctx, hash, count);
+		hash_final(hctx, hash, hctx->hash_size);
+
+		bignum_set_bytes_be(j, hash, hctx->hash_size);
+		bignum_lshift(j, j, g * (s - i));
+
+		bignum_add(r, r, j);
+	}
+
+	r = bignum_mod(group->bctx, r, r, p);
+
+	// Even prime
+	if (p->words[0] % 2 == 0)
+	{
+		if (r->bits == 0)
+		{
+			bignum_ctx_end(group->bctx);
+			return NULL;
+		}
+
+		bignum_copy(parameters->b, r);
+	}
+	// Odd prime
+	else
+	{
+		if (a->bits == 0)
+		{
+			bignum_ctx_end(group->bctx);
+			return NULL;
+		}
+
+		t = bignum_lshift(t, r, 2);
+		t = bignum_uadd_word(t, t, 27);
+		t = bignum_mod(group->bctx, t, t, p);
+
+		if (t->bits == 0)
+		{
+			bignum_ctx_end(group->bctx);
+			return NULL;
+		}
+
+		t = bignum_modsqr(group->bctx, t, a, p);
+		t = bignum_modmul(group->bctx, t, t, a, p);
+		t = bignum_div(group->bctx, t, t, r);
+
+		if (bignum_modsqrt(group->bctx, s1, s2, t, p) == -1)
+		{
+			bignum_ctx_end(group->bctx);
+			return NULL;
+		}
+	}
+
+	group->bits = p->bits;
+
+	bignum_copy(group->p, p);
+	bignum_copy(parameters->a, a);
+	bignum_copy(parameters->b, s1);
+
+	// Generate base point
+	byte_t b = 1;
+
+	for (uint32_t i = 1; i < 256; ++i)
+	{
+		hash_reset(hctx);
+		hash_update(hctx, "Base point", 10);
+		hash_update(hctx, &b, 1);
+		hash_update(hctx, &i, 1);
+		hash_update(hctx, seed, seed_size);
+		hash_final(hctx, hash, hctx->hash_size);
+
+		r = bignum_set_bytes_be(r, hash, hctx->hash_size);
+		t = bignum_copy(t, p);
+
+		t = bignum_lshift1(t, t);
+		r = bignum_mod(group->bctx, r, r, t);
+
+		// TODO: Deduce the point
+	}
+
+	bignum_ctx_end(group->bctx);
+
+	return group;
+}
+
+uint32_t ec_prime_curve_validate_parameters(ec_group *group, hash_ctx *hctx, void *seed, size_t seed_size)
+{
+	
 }
