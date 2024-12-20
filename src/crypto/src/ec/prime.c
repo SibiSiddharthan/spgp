@@ -467,32 +467,20 @@ ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void
 	}
 }
 
-ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bignum_t *p, bignum_t *a, void *seed, size_t seed_size)
+static bignum_t *ec_prime_curve_generate_c(ec_group *group, hash_ctx *hctx, bignum_t *p, bignum_t *c, void *seed, size_t seed_size)
 {
-	ec_prime_curve *parameters = group->parameters;
-	drbg_ctx *drbg = get_default_drbg();
-
-	bignum_t *h = NULL, *j = NULL, *r = NULL, *t = NULL;
-	bignum_t *s1 = NULL, *s2 = NULL;
+	bignum_t *h = NULL, *j = NULL, *r = NULL;
 
 	uint32_t g = 8 * hctx->hash_size;
 	uint32_t s = FLOOR_DIV(p->bits - 1, g);
 
 	byte_t hash[MAX_HASH_SIZE] = {0};
 
-	if (drbg == NULL)
-	{
-		return NULL;
-	}
-
 	// Parameter checking
 	if (hctx->hash_size < seed_size)
 	{
 		return NULL;
 	}
-
-	// Generate seed
-	drbg_generate(drbg, 0, NULL, 0, seed, seed_size);
 
 	hash_reset(hctx);
 	hash_update(hctx, seed, seed_size);
@@ -503,9 +491,6 @@ ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bi
 	h = bignum_ctx_allocate_bignum(group->bctx, bignum_size(g));
 	j = bignum_ctx_allocate_bignum(group->bctx, bignum_size(g + 1));
 	r = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits + 3));
-	t = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits + 3));
-	s1 = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits));
-	s2 = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits));
 
 	bignum_set_bytes_be(h, hash, hctx->hash_size);
 
@@ -537,7 +522,41 @@ ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bi
 		bignum_add(r, r, j);
 	}
 
-	r = bignum_mod(group->bctx, r, r, p);
+	c = bignum_mod(group->bctx, r, r, p);
+
+	bignum_ctx_end(group->bctx);
+
+	return c;
+}
+
+ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bignum_t *p, bignum_t *a, void *seed, size_t seed_size)
+{
+	ec_prime_curve *parameters = group->parameters;
+	drbg_ctx *drbg = get_default_drbg();
+
+	bignum_t *r = NULL, *t = NULL;
+	bignum_t *s1 = NULL, *s2 = NULL;
+
+	uint32_t g = 8 * hctx->hash_size;
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	if (drbg == NULL)
+	{
+		return NULL;
+	}
+
+	// Generate seed
+	drbg_generate(drbg, 0, NULL, 0, seed, seed_size);
+
+	bignum_ctx_start(group->bctx, (3 * bignum_size(g + 2)) + (2 * bignum_size(p->bits)));
+
+	r = bignum_ctx_allocate_bignum(group->bctx, bignum_size(g + 2));
+	t = bignum_ctx_allocate_bignum(group->bctx, bignum_size(g + 2));
+	s1 = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits));
+	s2 = bignum_ctx_allocate_bignum(group->bctx, bignum_size(p->bits));
+
+	r = ec_prime_curve_generate_c(group, hctx, p, r, seed, seed_size);
 
 	// Even prime
 	if (p->words[0] % 2 == 0)
@@ -614,5 +633,43 @@ ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bi
 
 uint32_t ec_prime_curve_validate_parameters(ec_group *group, hash_ctx *hctx, void *seed, size_t seed_size)
 {
-	
+	ec_prime_curve *parameters = group->parameters;
+
+	bignum_t *c = NULL, *r = NULL, *t = NULL;
+
+	bignum_ctx_start(group->bctx, 3 * bignum_size(group->p->bits));
+
+	c = bignum_ctx_allocate_bignum(group->bctx, bignum_size(group->p->bits));
+	r = bignum_ctx_allocate_bignum(group->bctx, bignum_size(group->p->bits));
+	t = bignum_ctx_allocate_bignum(group->bctx, bignum_size(group->p->bits));
+
+	c = ec_prime_curve_generate_c(group, hctx, group->p, c, seed, seed_size);
+
+	if (c == NULL)
+	{
+		bignum_ctx_end(group->bctx);
+		return 0;
+	}
+
+	r = bignum_modsqr(group->bctx, r, parameters->b, group->p);
+	r = bignum_modmul(group->bctx, r, r, c, group->p);
+
+	t = bignum_copy(t, group->p);
+	t = bignum_usub_word(t, t, 27);
+
+	if (bignum_cmp(r, t) != 0)
+	{
+		bignum_ctx_end(group->bctx);
+		return 0;
+	}
+
+	if (ec_prime_point_on_curve(group, group->g) == 0)
+	{
+		bignum_ctx_end(group->bctx);
+		return 0;
+	}
+
+	bignum_ctx_end(group->bctx);
+
+	return 1;
 }
