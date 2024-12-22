@@ -61,3 +61,68 @@ uint32_t ec_edwards_point_on_curve(ec_group *eg, ec_point *a)
 
 	return result;
 }
+
+
+ec_point *ec_edwards_point_double(ec_group *eg, ec_point *r, ec_point *a)
+{
+	ec_edwards_curve *parameters = eg->parameters;
+
+	bignum_t *lambda = NULL, *inv = NULL;
+	bignum_t *x = NULL, *y = NULL, *t = NULL;
+
+	if (r == NULL)
+	{
+		r = ec_point_new(eg);
+
+		if (r == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	bignum_ctx_start(eg->bctx, 4 * bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+
+	lambda = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	inv = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	x = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	y = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	t = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+
+	// Compute lambda = (d*(x*y)^2)
+	x = bignum_mul(eg->bctx, x, a->x, a->y);
+	lambda = bignum_modsqr(eg->bctx, lambda, x, eg->p);
+	lambda = bignum_modmul(eg->bctx, lambda, lambda, parameters->d, eg->p);
+
+	// Compute (1/(1+lambda))
+	inv = bignum_copy(inv, lambda);
+	inv = bignum_uadd_word(inv, inv, 1);
+	inv = bignum_modinv(eg->bctx, inv, inv, eg->p);
+
+	// Compute 2x/(1+lambda)
+	x = bignum_lshift1(x, x);
+	x = bignum_modmul(eg->bctx, x, x, inv, eg->p);
+
+	// Compute 1/(1-lambda)
+	inv = bignum_copy(inv, lambda);
+	inv = bignum_usub_word(inv, inv, 1);
+	bignum_set_sign(inv, -1);
+	inv = bignum_mod(eg->bctx, inv, inv, eg->p);
+	inv = bignum_modinv(eg->bctx, inv, inv, eg->p);
+
+	// Compute y = y*y - a*x*x
+	t = bignum_sqr(eg->bctx, t, a->x);
+	t = bignum_mul(eg->bctx, t, t, parameters->a);
+	y = bignum_sqr(eg->bctx, y, a->y);
+	x = bignum_modsub(eg->bctx, y, y, t, eg->p);
+
+	// Compute y = (y*y - a*x*x)/(1-lambda)
+	y = bignum_modmul(eg->bctx, y, y, inv, eg->p);
+
+	// Copy results
+	bignum_copy(r->x, x);
+	bignum_copy(r->y, y);
+
+	bignum_ctx_end(eg->bctx);
+
+	return r;
+}
