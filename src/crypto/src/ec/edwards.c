@@ -62,7 +62,6 @@ uint32_t ec_edwards_point_on_curve(ec_group *eg, ec_point *a)
 	return result;
 }
 
-
 ec_point *ec_edwards_point_double(ec_group *eg, ec_point *r, ec_point *a)
 {
 	ec_edwards_curve *parameters = eg->parameters;
@@ -249,6 +248,42 @@ ec_point *ec_edwards_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bign
 	return r;
 }
 
+static int32_t ec_edwards_get_sqrts(ec_group *eg, bignum_t *s1, bignum_t *s2, bignum_t *y)
+{
+	ec_edwards_curve *parameters = eg->parameters;
+	bignum_t *temp = NULL, *num = NULL, *den = NULL;
+
+	bignum_ctx_start(eg->bctx, 3 * bignum_size(eg->bits * 2));
+
+	temp = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	num = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	den = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+
+	// Compute y^2
+	temp = bignum_sqr(eg->bctx, temp, y);
+
+	// Compute y^2 - 1
+	num = bignum_usub_word(num, temp, 1);
+
+	// Compute 1/(dy^2 + 1)
+	den = bignum_mul(eg->bctx, den, temp, parameters->d);
+	den = bignum_uadd_word(den, den, 1);
+	den = bignum_modinv(eg->bctx, den, den, eg->p);
+
+	// Compute (y^2 - 1)/(dy^2 + 1)
+	temp = bignum_modmul(eg->bctx, temp, num, den, eg->p);
+
+	if (bignum_modsqrt(eg->bctx, s1, s2, temp, eg->p) == -1)
+	{
+		bignum_ctx_end(eg->bctx);
+		return -1;
+	}
+
+	bignum_ctx_end(eg->bctx);
+
+	return 0;
+}
+
 uint32_t ec_ed25519_point_encode(ec_point *ep, void *buffer, uint32_t size)
 {
 	byte_t *out = buffer;
@@ -267,6 +302,48 @@ uint32_t ec_ed25519_point_encode(ec_point *ep, void *buffer, uint32_t size)
 	return 32;
 }
 
+ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size)
+{
+	bignum_t *s1 = NULL, *s2 = NULL;
+
+	byte_t *in = buffer;
+	byte_t x = 0;
+
+	bignum_ctx_start(eg->bctx, 2 * bignum_size(eg->bits));
+
+	s1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
+	s2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
+
+	if (size != 32)
+	{
+		return NULL;
+	}
+
+	x = in[31] >> 7;
+
+	// Copy y (Ignore the most significant byte)
+	bignum_set_bytes_le(ep->y, buffer, 31);
+
+	if (ec_edwards_get_sqrts(eg, s1, s2, ep->y) == -1)
+	{
+		bignum_ctx_end(eg->bctx);
+		return NULL;
+	}
+
+	if ((s1->words[0] & 1) == x)
+	{
+		bignum_copy(ep->x, s1);
+	}
+	else
+	{
+		bignum_copy(ep->x, s2);
+	}
+
+	bignum_ctx_end(eg->bctx);
+
+	return ep;
+}
+
 uint32_t ec_ed448_point_encode(ec_point *ep, void *buffer, uint32_t size)
 {
 	byte_t *out = buffer;
@@ -283,4 +360,46 @@ uint32_t ec_ed448_point_encode(ec_point *ep, void *buffer, uint32_t size)
 	out[56] = (ep->x->words[0] & 1) << 7;
 
 	return 57;
+}
+
+ec_point *ec_ed448_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size)
+{
+	bignum_t *s1 = NULL, *s2 = NULL;
+
+	byte_t *in = buffer;
+	byte_t x = 0;
+
+	bignum_ctx_start(eg->bctx, 2 * bignum_size(eg->bits));
+
+	s1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
+	s2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
+
+	if (size != 57)
+	{
+		return NULL;
+	}
+
+	x = in[56] >> 7;
+
+	// Copy y (Ignore the most significant byte)
+	bignum_set_bytes_le(ep->y, buffer, 56);
+
+	if (ec_edwards_get_sqrts(eg, s1, s2, ep->y) == -1)
+	{
+		bignum_ctx_end(eg->bctx);
+		return NULL;
+	}
+
+	if ((s1->words[0] & 1) == x)
+	{
+		bignum_copy(ep->x, s1);
+	}
+	else
+	{
+		bignum_copy(ep->x, s2);
+	}
+
+	bignum_ctx_end(eg->bctx);
+
+	return ep;
 }
