@@ -124,6 +124,13 @@ typedef struct _ec_prime_curve
 	bignum_t *b;
 } ec_prime_curve;
 
+typedef struct _ec_edwards_curve
+{
+	// constants
+	bignum_t *a;
+	bignum_t *d;
+} ec_edwards_curve;
+
 typedef struct _ec_point
 {
 	bignum_t *x, *y;
@@ -178,6 +185,7 @@ ec_point *ec_point_copy(ec_point *dst, ec_point *src);
 void ec_point_delete(ec_point *ep);
 
 void ec_point_infinity(ec_group *g, ec_point *r);
+void ec_point_identity(ec_group *g, ec_point *r);
 
 ec_point *ec_point_add(ec_group *g, ec_point *r, ec_point *a, ec_point *b);
 ec_point *ec_point_double(ec_group *g, ec_point *r, ec_point *a);

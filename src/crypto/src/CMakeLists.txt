@@ -32,6 +32,7 @@ ${bignum_asm}
 ec/ec.c
 ec/key.c
 ec/prime.c
+ec/edwards.c
 ec/x25519.c
 ec/x448.c
 #cipher
