@@ -248,3 +248,39 @@ ec_point *ec_edwards_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bign
 
 	return r;
 }
+
+uint32_t ec_ed25519_point_encode(ec_point *ep, void *buffer, uint32_t size)
+{
+	byte_t *out = buffer;
+
+	if (size < 32)
+	{
+		return 0;
+	}
+
+	// Copy y
+	memcpy(ep->y->words, buffer, 32);
+
+	// Set the most significant bit as the least significant bit of x
+	out[31] |= (ep->x->words[0] & 1) << 8;
+
+	return 32;
+}
+
+uint32_t ec_ed448_point_encode(ec_point *ep, void *buffer, uint32_t size)
+{
+	byte_t *out = buffer;
+
+	if (size < 57)
+	{
+		return 0;
+	}
+
+	// Copy y
+	memcpy(ep->y->words, buffer, 56);
+
+	// Set the most significant bit as the least significant bit of x
+	out[56] = (ep->x->words[0] & 1) << 7;
+
+	return 57;
+}
