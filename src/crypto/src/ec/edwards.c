@@ -248,42 +248,6 @@ ec_point *ec_edwards_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bign
 	return r;
 }
 
-static int32_t ec_edwards_get_sqrts(ec_group *eg, bignum_t *s1, bignum_t *s2, bignum_t *y)
-{
-	ec_edwards_curve *parameters = eg->parameters;
-	bignum_t *temp = NULL, *num = NULL, *den = NULL;
-
-	bignum_ctx_start(eg->bctx, 3 * bignum_size(eg->bits * 2));
-
-	temp = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	num = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	den = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-
-	// Compute y^2
-	temp = bignum_sqr(eg->bctx, temp, y);
-
-	// Compute y^2 - 1
-	num = bignum_usub_word(num, temp, 1);
-
-	// Compute 1/(dy^2 + 1)
-	den = bignum_mul(eg->bctx, den, temp, parameters->d);
-	den = bignum_uadd_word(den, den, 1);
-	den = bignum_modinv(eg->bctx, den, den, eg->p);
-
-	// Compute (y^2 - 1)/(dy^2 + 1)
-	temp = bignum_modmul(eg->bctx, temp, num, den, eg->p);
-
-	if (bignum_modsqrt(eg->bctx, s1, s2, temp, eg->p) == -1)
-	{
-		bignum_ctx_end(eg->bctx);
-		return -1;
-	}
-
-	bignum_ctx_end(eg->bctx);
-
-	return 0;
-}
-
 uint32_t ec_ed25519_point_encode(ec_point *ep, void *buffer, uint32_t size)
 {
 	byte_t *out = buffer;
@@ -351,9 +315,8 @@ ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint
 	w = bignum_modmul(eg->bctx, w, t2, u, eg->p);
 
 	// Compute (uv^7)^((p-5)/8)
-	t1 = bignum_modsqr(eg->bctx, t1, t1, eg->p);     // v^4
-	t1 = bignum_modmul(eg->bctx, t1, t1, t2, eg->p); // v^7
-	t2 = bignum_modmul(eg->bctx, t2, t1, u, eg->p);
+	t1 = bignum_modsqr(eg->bctx, t1, t1, eg->p);    // v^4
+	t2 = bignum_modmul(eg->bctx, t2, t1, w, eg->p); // uv^7
 
 	t3 = bignum_copy(t3, eg->p);
 	t3 = bignum_usub_word(t3, t3, 5);
@@ -439,15 +402,13 @@ uint32_t ec_ed448_point_encode(ec_point *ep, void *buffer, uint32_t size)
 
 ec_point *ec_ed448_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size)
 {
-	bignum_t *s1 = NULL, *s2 = NULL;
+	ec_edwards_curve *parameters = eg->parameters;
+
+	bignum_t *temp = NULL, *u = NULL, *v = NULL, *w = NULL;
+	bignum_t *t1 = NULL, *t2 = NULL, *t3 = NULL, *t4 = NULL;
 
 	byte_t *in = buffer;
 	byte_t x = 0;
-
-	bignum_ctx_start(eg->bctx, 2 * bignum_size(eg->bits));
-
-	s1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
-	s2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
 
 	if (size != 57)
 	{
@@ -459,19 +420,75 @@ ec_point *ec_ed448_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32
 	// Copy y (Ignore the most significant byte)
 	bignum_set_bytes_le(ep->y, buffer, 56);
 
-	if (ec_edwards_get_sqrts(eg, s1, s2, ep->y) == -1)
+	bignum_ctx_start(eg->bctx, 8 * bignum_size(eg->bits * 2));
+
+	temp = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	u = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	v = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	w = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+
+	t1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	t2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	t3 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	t4 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+
+	// Compute y^2
+	temp = bignum_sqr(eg->bctx, temp, ep->y);
+
+	// Compute y^2 - 1
+	u = bignum_usub_word(u, temp, 1);
+
+	// Compute dy^2 + 1
+	v = bignum_mul(eg->bctx, v, temp, parameters->d);
+	v = bignum_uadd_word(v, v, 1);
+
+	// p = 3 mod 4
+	// Compute u^3v
+	t1 = bignum_modsqr(eg->bctx, t1, u, eg->p);     // u^2
+	t2 = bignum_modmul(eg->bctx, t2, t1, u, eg->p); // u^3
+	w = bignum_modmul(eg->bctx, w, t2, v, eg->p);
+
+	// Compute (u^5v^3)^((p-3)/4)
+	t2 = bignum_modmul(eg->bctx, t2, t1, w, eg->p); // u^5v
+	t2 = bignum_modmul(eg->bctx, t2, t2, v, eg->p); // u^5v^2
+	t2 = bignum_modmul(eg->bctx, t2, t2, v, eg->p); // u^5v^3
+
+	t3 = bignum_copy(t3, eg->p);
+	t3 = bignum_usub_word(t3, t3, 3);
+	t3 = bignum_rshift(t3, t3, 2);
+
+	t2 = bignum_modexp(eg->bctx, t2, t2, t3, eg->p);
+
+	// Compute (u^3)v * (u^5v^3)^((p-3)/4)
+	w = bignum_modmul(eg->bctx, w, w, t2, eg->p);
+
+	// Compute vw^2
+	t4 = bignum_sqr(eg->bctx, t4, w);
+	t4 = bignum_modmul(eg->bctx, t4, t4, v, eg->p);
+
+	// Checking for sqrt
+	if (bignum_cmp(t4, u) != 0)
 	{
+		// No sqrt
 		bignum_ctx_end(eg->bctx);
 		return NULL;
 	}
 
-	if ((s1->words[0] & 1) == x)
+	if (w->bits == 0 && x == 1)
 	{
-		bignum_copy(ep->x, s1);
+		// No sqrt
+		bignum_ctx_end(eg->bctx);
+		return NULL;
+	}
+
+	if ((w->words[0] & 1) == x)
+	{
+		bignum_copy(ep->x, w);
 	}
 	else
 	{
-		bignum_copy(ep->x, s2);
+		bignum_sub(w, eg->p, w);
+		bignum_copy(ep->x, w);
 	}
 
 	bignum_ctx_end(eg->bctx);
