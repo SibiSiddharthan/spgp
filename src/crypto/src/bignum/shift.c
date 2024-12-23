@@ -31,6 +31,12 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 		return r;
 	}
 
+	if (shift == 0)
+	{
+		bignum_copy(r, a);
+		return r;
+	}
+
 	uint32_t a_words = BIGNUM_WORD_COUNT(a);
 	uint32_t r_words = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
 
@@ -75,6 +81,12 @@ bignum_t *bignum_rshift(bignum_t *r, bignum_t *a, uint32_t shift)
 	if (required_bits == 0)
 	{
 		bignum_zero(r);
+		return r;
+	}
+
+	if (shift == 0)
+	{
+		bignum_copy(r, a);
 		return r;
 	}
 
