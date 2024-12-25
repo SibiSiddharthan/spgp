@@ -13,5 +13,6 @@
 
 #define CEIL_DIV(x, y)  (((x) + (y) - 1) / (y))
 #define FLOOR_DIV(x, y) ((x) / (y))
+#define ROUND_DIV(x, y) (((x) + (y) / 2) / (y))
 
 #endif
