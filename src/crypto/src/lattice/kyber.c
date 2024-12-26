@@ -205,3 +205,116 @@ static void multiply_ntt(uint16_t h[256], uint16_t f[256], uint16_t g[256])
 	}
 }
 
+void kyber_keygen(kyber_key *key, byte_t seed[32])
+{
+	byte_t hash[SHA3_512_HASH_SIZE] = {0};
+	byte_t sample_ntt_seed[34] = {0};
+	byte_t sample_polycbd_seed[33] = {0};
+	byte_t sample_polycbd_input[256] = {0};
+
+	uint8_t n = 0;
+	uint16_t p = 0;
+
+	uint16_t *A = NULL;
+	uint16_t *S = NULL;
+	uint16_t *E = NULL;
+	uint16_t *T = NULL;
+
+	sha3_512_reset(key->g);
+	sha3_512_update(key->g, seed, 32);
+	sha3_512_update(key->g, &key->k, 1);
+	sha3_512_final(key->g, hash);
+
+	memcpy(sample_ntt_seed, hash, 32);
+	memcpy(sample_polycbd_seed, PTR_OFFSET(hash, 32), 32);
+
+	A = malloc(key->k * key->k * sizeof(uint16_t));
+
+	if (A == NULL)
+	{
+		return;
+	}
+
+	for (uint8_t i = 0; i < key->k; ++i)
+	{
+		for (uint8_t j = 0; j < key->k; ++j)
+		{
+			sample_ntt_seed[32] = j;
+			sample_ntt_seed[33] = i;
+
+			sample_ntt(key->h, A + ((i * key->k) + j) * 256, sample_ntt_seed);
+		}
+	}
+
+	S = malloc(key->k * sizeof(uint16_t));
+
+	if (S == NULL)
+	{
+		return;
+	}
+
+	for (uint8_t i = 0; i < key->k; ++i)
+	{
+		shake256_reset(key->h, 64 * key->e1);
+		shake256_update(key->h, sample_polycbd_seed, 32);
+		shake256_update(key->h, &n, 1);
+		shake256_final(key->h, sample_polycbd_input, 64 * key->e1);
+
+		sample_polycbd(S + (i * 256), sample_polycbd_input, key->e1);
+
+		++n;
+	}
+
+	E = malloc(key->k * sizeof(uint16_t));
+
+	if (E == NULL)
+	{
+		return;
+	}
+
+	for (uint8_t i = 0; i < key->k; ++i)
+	{
+		shake256_reset(key->h, 64 * key->e1);
+		shake256_update(key->h, sample_polycbd_seed, 32);
+		shake256_update(key->h, &n, 1);
+		shake256_final(key->h, sample_polycbd_input, 64 * key->e1);
+
+		sample_polycbd(E + (i * 256), sample_polycbd_input, key->e1);
+
+		++n;
+	}
+
+	for (uint8_t i = 0; i < key->k; ++i)
+	{
+		ntt(S + (i * 256), S + (i * 256));
+		ntt(E + (i * 256), E + (i * 256));
+	}
+
+	T = malloc(key->k * sizeof(uint16_t));
+
+	if (T == NULL)
+	{
+		return;
+	}
+
+	for (uint8_t i = 0; i < key->k; ++i)
+	{
+		multiply_ntt(T + (i * 256), A + ((i * key->k)) * 256, S + (i * 256));
+	}
+
+	p = 0;
+
+	for (uint8_t i = 0; i < key->k; ++i)
+	{
+		byte_encode(PTR_OFFSET(key->ek, p), T + (i * 256), 12);
+	}
+
+	memcpy(PTR_OFFSET(key->ek, p), sample_ntt_seed, 32);
+
+	p = 0;
+
+	for (uint8_t i = 0; i < key->k; ++i)
+	{
+		byte_encode(PTR_OFFSET(key->dk, p), S + (i * 256), 12);
+	}
+}
