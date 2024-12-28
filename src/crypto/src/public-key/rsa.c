@@ -1162,6 +1162,14 @@ static uint32_t get_digest_info_size(hash_algorithm algorithm)
 		return 19 + SHA512_224_HASH_SIZE;
 	case HASH_SHA512_256:
 		return 19 + SHA512_256_HASH_SIZE;
+	case HASH_SHA3_224:
+		return 19 + SHA3_224_HASH_SIZE;
+	case HASH_SHA3_256:
+		return 19 + SHA3_256_HASH_SIZE;
+	case HASH_SHA3_384:
+		return 19 + SHA3_384_HASH_SIZE;
+	case HASH_SHA3_512:
+		return 19 + SHA3_512_HASH_SIZE;
 	default:
 		return 0;
 	}
@@ -1194,6 +1202,18 @@ static uint32_t get_digest_info_prefix(hash_algorithm algorithm, void *ptr)
 		return 19;
 	case HASH_SHA512_256:
 		memcpy(ptr, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x06\x05\x00\x04\x20", 19);
+		return 19;
+	case HASH_SHA3_224:
+		memcpy(ptr, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x07\x05\x00\x04\x40", 19);
+		return 19;
+	case HASH_SHA3_256:
+		memcpy(ptr, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x08\x05\x00\x04\x40", 19);
+		return 19;
+	case HASH_SHA3_384:
+		memcpy(ptr, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x09\x05\x00\x04\x40", 19);
+		return 19;
+	case HASH_SHA3_512:
+		memcpy(ptr, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x0a\x05\x00\x04\x40", 19);
 		return 19;
 	default:
 		return 0;
