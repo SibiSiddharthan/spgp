@@ -38,7 +38,7 @@ typedef struct _rsa_pkcs_ctx
 {
 	rsa_key *key;
 	hash_ctx *hctx;
-	uint32_t der_size;
+	uint32_t digest_info_size;
 } rsa_pkcs_ctx;
 
 typedef struct _rsa_signature

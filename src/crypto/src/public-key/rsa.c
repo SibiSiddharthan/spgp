@@ -1142,7 +1142,7 @@ uint32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mas
 	return status;
 }
 
-static uint32_t get_der_size(hash_algorithm algorithm)
+static uint32_t get_digest_info_size(hash_algorithm algorithm)
 {
 	switch (algorithm)
 	{
@@ -1183,7 +1183,7 @@ static inline rsa_pkcs_ctx *rsa_pkcs_new(rsa_key *key, hash_ctx *hctx)
 		return NULL;
 	}
 
-	der_size = get_der_size(hctx->algorithm);
+	der_size = get_digest_info_size(hctx->algorithm);
 
 	if (der_size == 0)
 	{
@@ -1204,7 +1204,7 @@ static inline rsa_pkcs_ctx *rsa_pkcs_new(rsa_key *key, hash_ctx *hctx)
 
 	rctx->key = key;
 	rctx->hctx = hctx;
-	rctx->der_size = der_size;
+	rctx->digest_info_size = der_size;
 
 	hash_reset(rctx->hctx);
 
@@ -1215,7 +1215,7 @@ static inline void rsa_pkcs_reset(rsa_pkcs_ctx *rctx, rsa_key *key, hash_ctx *hc
 {
 	rctx->key = key;
 	rctx->hctx = hctx;
-	rctx->der_size = get_der_size(hctx->algorithm);
+	rctx->digest_info_size = get_digest_info_size(hctx->algorithm);
 
 	hash_reset(rctx->hctx);
 }
@@ -1248,7 +1248,7 @@ rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx, void *signature, size_t s
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
 	size_t hash_size = rctx->hctx->hash_size;
-	size_t der_size = rctx->der_size;
+	size_t der_size = rctx->digest_info_size;
 	size_t em_size = key_size;
 	size_t ps_size = key_size - der_size - 3;
 	size_t signature_size = sizeof(rsa_signature) + key_size;
@@ -1385,7 +1385,7 @@ uint32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign)
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
 	size_t hash_size = rctx->hctx->hash_size;
-	size_t der_size = rctx->der_size;
+	size_t der_size = rctx->digest_info_size;
 	size_t em_size = key_size;
 	size_t ps_size = key_size - der_size - 3;
 
