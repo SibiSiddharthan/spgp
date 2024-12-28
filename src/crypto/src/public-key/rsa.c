@@ -1167,6 +1167,39 @@ static uint32_t get_digest_info_size(hash_algorithm algorithm)
 	}
 }
 
+static uint32_t get_digest_info_prefix(hash_algorithm algorithm, void *ptr)
+{
+	switch (algorithm)
+	{
+	case HASH_MD5:
+		memcpy(ptr, "\x30\x20\x30\x0c\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00\x04\x10", 18);
+		return 18;
+	case HASH_SHA1:
+		memcpy(ptr, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
+		return 15;
+	case HASH_SHA224:
+		memcpy(ptr, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x04\x05\x00\x04\x1c", 19);
+		return 19;
+	case HASH_SHA256:
+		memcpy(ptr, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20", 19);
+		return 19;
+	case HASH_SHA384:
+		memcpy(ptr, "\x30\x41\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02\x05\x00\x04\x30", 19);
+		return 19;
+	case HASH_SHA512:
+		memcpy(ptr, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40", 19);
+		return 19;
+	case HASH_SHA512_224:
+		memcpy(ptr, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x05\x05\x00\x04\x1c", 19);
+		return 19;
+	case HASH_SHA512_256:
+		memcpy(ptr, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x06\x05\x00\x04\x20", 19);
+		return 19;
+	default:
+		return 0;
+	}
+}
+
 static inline rsa_pkcs_ctx *rsa_pkcs_new(rsa_key *key, hash_ctx *hctx)
 {
 	rsa_pkcs_ctx *rctx = NULL;
@@ -1248,13 +1281,13 @@ rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx, void *signature, size_t s
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
 	size_t hash_size = rctx->hctx->hash_size;
-	size_t der_size = rctx->digest_info_size;
+	size_t digest_info_size = rctx->digest_info_size;
 	size_t em_size = key_size;
-	size_t ps_size = key_size - der_size - 3;
+	size_t ps_size = key_size - digest_info_size - 3;
 	size_t signature_size = sizeof(rsa_signature) + key_size;
 
 	size_t ps_offset = 2;
-	size_t der_offset = em_size - der_size;
+	size_t digest_info_offset = em_size - digest_info_size;
 	size_t hash_offset = em_size - hash_size;
 
 	byte_t *em = NULL;
@@ -1289,36 +1322,7 @@ rsa_signature *rsa_sign_pkcs_final(rsa_pkcs_ctx *rctx, void *signature, size_t s
 	memset(em + ps_offset, 0xFF, ps_size);
 
 	// Finish Hash
-	switch (rctx->hctx->algorithm)
-	{
-	case HASH_MD5:
-		memcpy(em + der_offset, "\x30\x20\x30\x0c\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00\x04\x10", 18);
-		break;
-	case HASH_SHA1:
-		memcpy(em + der_offset, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
-		break;
-	case HASH_SHA224:
-		memcpy(em + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x04\x05\x00\x04\x1c", 19);
-		break;
-	case HASH_SHA256:
-		memcpy(em + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20", 19);
-		break;
-	case HASH_SHA384:
-		memcpy(em + der_offset, "\x30\x41\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02\x05\x00\x04\x30", 19);
-		break;
-	case HASH_SHA512:
-		memcpy(em + der_offset, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40", 19);
-		break;
-	case HASH_SHA512_224:
-		memcpy(em + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x05\x05\x00\x04\x1c", 19);
-		break;
-	case HASH_SHA512_256:
-		memcpy(em + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x06\x05\x00\x04\x20", 19);
-		break;
-	default:
-		break;
-	}
-
+	get_digest_info_prefix(rctx->hctx->algorithm, em + digest_info_offset);
 	hash_final(rctx->hctx, em + hash_offset, hash_size);
 
 	// Generate the signature.
@@ -1385,12 +1389,12 @@ uint32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign)
 	// Sizes
 	size_t key_size = rctx->key->bits / 8;
 	size_t hash_size = rctx->hctx->hash_size;
-	size_t der_size = rctx->digest_info_size;
+	size_t digest_info_size = rctx->digest_info_size;
 	size_t em_size = key_size;
-	size_t ps_size = key_size - der_size - 3;
+	size_t ps_size = key_size - digest_info_size - 3;
 
 	size_t ps_offset = 2;
-	size_t der_offset = em_size - der_size;
+	size_t digest_info_offset = em_size - digest_info_size;
 	size_t hash_offset = em_size - hash_size;
 
 	size_t ctx_size = 2 * em_size;
@@ -1410,36 +1414,7 @@ uint32_t rsa_verify_pkcs_final(rsa_pkcs_ctx *rctx, rsa_signature *rsign)
 	memset(em + ps_offset, 0xFF, ps_size);
 
 	// Finish Hash
-	switch (rctx->hctx->algorithm)
-	{
-	case HASH_MD5:
-		memcpy(emp + der_offset, "\x30\x20\x30\x0c\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00\x04\x10", 18);
-		break;
-	case HASH_SHA1:
-		memcpy(emp + der_offset, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
-		break;
-	case HASH_SHA224:
-		memcpy(emp + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x04\x05\x00\x04\x1c", 19);
-		break;
-	case HASH_SHA256:
-		memcpy(emp + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20", 19);
-		break;
-	case HASH_SHA384:
-		memcpy(emp + der_offset, "\x30\x41\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02\x05\x00\x04\x30", 19);
-		break;
-	case HASH_SHA512:
-		memcpy(emp + der_offset, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40", 19);
-		break;
-	case HASH_SHA512_224:
-		memcpy(emp + der_offset, "\x30\x2d\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x05\x05\x00\x04\x1c", 19);
-		break;
-	case HASH_SHA512_256:
-		memcpy(emp + der_offset, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x06\x05\x00\x04\x20", 19);
-		break;
-	default:
-		break;
-	}
-
+	get_digest_info_prefix(rctx->hctx->algorithm, em + digest_info_offset);
 	hash_final(rctx->hctx, emp + hash_offset, hash_size);
 
 	// Allocate for EM
