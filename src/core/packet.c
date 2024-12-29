@@ -598,6 +598,119 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
+static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, size_t size)
+{
+	pgp_user_attribute_subpacket_header *header = subpacket;
+
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	required_size = header->header_size + header->body_size;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// 1,2, or 5 octets of length
+	// 1 octed length
+	if (header->body_size < 192)
+	{
+		uint8_t size = (uint8_t)header->body_size;
+
+		LOAD_8(out + pos, &size);
+		pos += 1;
+	}
+	// 2 octet legnth
+	else if (header->body_size < 8384)
+	{
+		uint16_t size = (uint16_t)header->body_size - 192;
+		uint8_t o1 = (size >> 8) + 192;
+		uint8_t o2 = (size & 0xFF);
+
+		LOAD_8(out + pos, &o1);
+		pos += 1;
+
+		LOAD_8(out + pos, &o2);
+		pos += 1;
+	}
+	// 5 octet length
+	else
+	{
+		// 1st octet is 255
+		uint8_t byte = 255;
+		uint32_t size = BSWAP_32((uint32_t)header->body_size);
+
+		LOAD_8(out + pos, &byte);
+		pos += 1;
+
+		LOAD_32(out + pos, &size);
+		pos += 4;
+	}
+
+	// 1 octet subpacket type
+	LOAD_8(out + pos, &header->type);
+	pos += 1;
+
+	switch (header->type)
+	{
+	case PGP_USER_ATTRIBUTE_IMAGE:
+	{
+		pgp_user_attribute_image_subpacket *image_subpacket = subpacket;
+		uint32_t image_size = image_subpacket->header.body_size - 16;
+
+		// 2 octets of image length in little endian
+		LOAD_16(out + pos, image_subpacket->image_header_size);
+		pos += 2;
+
+		// 1 octet image header version
+		LOAD_8(out + pos, &image_subpacket->image_header_version);
+		pos += 1;
+
+		// 1 octet image encoding
+		LOAD_8(out + pos, &image_subpacket->image_encoding);
+		pos += 1;
+
+		// 12 octets of reserved zeros
+		memset(out + pos, 0, 12);
+		pos += 12;
+
+		// N octets of image data
+		memcpy(out + pos, image_subpacket->image_data, image_size);
+		pos += image_size;
+	}
+	break;
+	}
+
+	return pos;
+}
+
+size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	required_size = packet->header.header_size + packet->header.body_size;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Subpackets
+	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
+	{
+		pos += pgp_user_attribute_subpacket_write(packet->subpackets[i], out + pos, size - pos);
+	}
+
+	return pos;
+}
+
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
 {
 	// Copy the padding data.
