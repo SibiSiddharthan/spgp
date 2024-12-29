@@ -598,6 +598,94 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
+static void *pgp_user_attribute_subpacket_read(void *subpacket, void *ptr, size_t size)
+{
+	pgp_user_attribute_subpacket_header *header = subpacket;
+	byte_t *in = ptr;
+	size_t pos = 0;
+
+	// 1,2, or 5 octets of subpacket length
+	// 5 octet length
+	if (in[0] >= 255)
+	{
+		if (size < 6)
+		{
+			return NULL;
+		}
+
+		header->body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
+		header->header_size = 5;
+	}
+	// 2 octet legnth
+	else if (in[0] >= 192 && in[0] <= 233)
+	{
+		if (size < 3)
+		{
+			return NULL;
+		}
+
+		header->body_size = ((in[0] - 192) << 8) + in[1] + 192;
+		header->header_size = 2;
+	}
+	// 1 octed length
+	else if (in[0] < 192)
+	{
+		if (size < 2)
+		{
+			return NULL;
+		}
+
+		header->body_size = in[0];
+		header->header_size = 1;
+	}
+
+	pos += header->header_size;
+
+	if (size < pos + header->body_size)
+	{
+		return NULL;
+	}
+
+	// 1 octet subpacket type
+	LOAD_8(&header->type, in + pos);
+	pos += 1;
+
+	switch (header->type)
+	{
+	case PGP_USER_ATTRIBUTE_IMAGE:
+	{
+		pgp_user_attribute_image_subpacket *image_subpacket = subpacket;
+		uint32_t image_size = image_subpacket->header.body_size - 16;
+
+		// 2 octets of image length in little endian
+		LOAD_16(&image_subpacket->image_header_size, in + pos);
+		pos += 2;
+
+		// 1 octet image header version
+		LOAD_8(&image_subpacket->image_header_version, in + pos);
+		pos += 1;
+
+		// 1 octet image encoding
+		LOAD_8(&image_subpacket->image_encoding, in + pos);
+		pos += 1;
+
+		// 12 octets of reserved zeros
+		memset(in + pos, 0, 12);
+		pos += 12;
+
+		// N octets of image data
+		memcpy(in + pos, image_subpacket->image_data, image_size);
+		pos += image_size;
+
+		return image_subpacket;
+	}
+	default:
+		return NULL;
+	}
+
+	return NULL;
+}
+
 static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, size_t size)
 {
 	pgp_user_attribute_subpacket_header *header = subpacket;
@@ -613,7 +701,7 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 		return 0;
 	}
 
-	// 1,2, or 5 octets of length
+	// 1,2, or 5 octets of subpacket length
 	// 1 octed length
 	if (header->body_size < 192)
 	{
@@ -684,6 +772,33 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 	}
 
 	return pos;
+}
+
+pgp_user_attribute_packet *pgp_user_attribute_packet_read(pgp_user_attribute_packet *packet, void *data, size_t size)
+{
+	byte_t *in = data;
+	size_t pos = packet->header.header_size;
+	uint16_t subpacket_count = 0;
+
+	// Count the subpackets first
+	while (pos < packet->header.body_size)
+	{
+		pgp_user_attribute_subpacket_header *header = PTR_OFFSET(in, pos);
+
+		header = pgp_user_attribute_subpacket_read(header, in + pos, packet->header.body_size - pos);
+
+		if (header == NULL)
+		{
+			return NULL;
+		}
+
+		packet->subpackets[subpacket_count++] = header;
+		pos += header->header_size + header->body_size;
+	}
+
+	packet->subpacket_count = subpacket_count;
+
+	return packet;
 }
 
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size)
