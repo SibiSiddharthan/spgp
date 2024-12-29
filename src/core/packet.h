@@ -92,6 +92,41 @@ typedef struct _pgp_user_id_packet
 	byte_t user_id[1];
 } pgp_user_id_packet;
 
+typedef enum _pgp_user_attribute_subpacket_type
+{
+	PGP_USER_ATTRIBUTE_IMAGE = 1
+} pgp_user_attribute_subpacket_type;
+
+typedef enum _pgp_user_attribute_image_encoding
+{
+	PGP_USER_ATTRIBUTE_IMAGE_JPEG = 1
+} pgp_user_attribute_image_encoding;
+
+typedef struct _pgp_user_attribute_subpacket_header
+{
+	uint32_t size;
+	byte_t type;
+} pgp_user_attribute_subpacket_header;
+
+typedef struct _pgp_user_attribute_image_subpacket
+{
+	pgp_user_attribute_subpacket_header header;
+
+	uint16_t image_header_size;  // 1
+	byte_t image_header_version; // 1
+	byte_t image_encoding;
+	byte_t reserved[12]; // 12 zero octets
+
+} pgp_user_attribute_image_subpacket;
+
+typedef struct _pgp_user_attribute_packet
+{
+	pgp_packet_header header;
+
+	uint16_t subpacket_count;
+	void *subpackets;
+} pgp_user_attribute_packet;
+
 typedef struct _pgp_padding_packet
 {
 	pgp_packet_header header;
@@ -130,6 +165,9 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 
 pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size);
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
+
+pgp_user_id_packet *pgp_user_attribute_packet_read(pgp_user_id_packet *packet, void *data, size_t size);
+size_t pgp_user_attribute_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
 
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
