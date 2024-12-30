@@ -35,6 +35,10 @@ uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 	}
 }
 
+static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, uint32_t size)
+{
+}
+
 static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *out = ptr;
@@ -675,7 +679,7 @@ static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *
 	size_t pos = 0;
 
 	// A 1-octet version number with value 3.
-	// A 1-octet length of the following hashed material; it be 5:
+	// A 1-octet length of the following hashed material; it will be 5.
 	// A 1-octet Signature Type ID.
 	// A 4-octet creation time.
 	// An 8-octet Key ID of the signer.
@@ -846,6 +850,174 @@ static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, voi
 	pos += pgp_signature_data_write(packet, out + pos, size - pos);
 
 	return pos;
+}
+
+pgp_signature_packet *pgp_signature_packet_read(pgp_signature_packet *packet, void *data, size_t size)
+{
+	byte_t *in = data;
+	size_t pos = packet->header.header_size;
+
+	// 1 octet version
+	LOAD_8(&packet->version, in + pos);
+	pos += 1;
+
+	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
+	{
+		uint16_t hashed_subpacket_count = 0;
+		uint16_t unhashed_subpacket_count = 0;
+
+		uint32_t hashed_subpacket_data_read = 0;
+		uint32_t unhashed_subpacket_data_read = 0;
+
+		// 1 octet signature type
+		LOAD_8(&packet->type, in + pos);
+		pos += 1;
+
+		// 1 octet public key algorithm
+		LOAD_8(&packet->public_key_algorithm_id, in + pos);
+		pos += 1;
+
+		// 1 octet hash algorithm
+		LOAD_8(&packet->hash_algorithm_id, in + pos);
+		pos += 1;
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			// 4 octet count for the hashed subpacket data
+			uint32_t hashed_size = 0;
+			LOAD_32(&hashed_size, in + pos);
+			packet->hashed_size = BSWAP_32(hashed_size);
+			pos += 4;
+		}
+		else
+		{
+			// 2 octet count for the hashed subpacket data
+			uint32_t hashed_size = 0;
+			LOAD_16(&hashed_size, in + pos);
+			packet->hashed_size = BSWAP_16(hashed_size);
+			pos += 2;
+		}
+
+		// Hashed subpackets
+		while (hashed_subpacket_data_read < packet->hashed_size)
+		{
+			pgp_signature_subpacket_header *header = PTR_OFFSET(in, pos);
+
+			header = pgp_signature_subpacket_read(header, in + pos, packet->header.body_size - pos);
+
+			if (header == NULL)
+			{
+				return NULL;
+			}
+
+			packet->hashed_subpackets[hashed_subpacket_count++] = header;
+			hashed_subpacket_data_read += header->header_size + header->body_size;
+		}
+
+		packet->hashed_subpacket_count = hashed_subpacket_count;
+		pos += packet->hashed_size;
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			// 4 octet count for the hashed subpacket data
+			uint32_t uhashed_size = 0;
+			LOAD_32(&uhashed_size, in + pos);
+			packet->unhashed_size = BSWAP_32(uhashed_size);
+			pos += 4;
+		}
+		else
+		{
+			// 2 octet count for the hashed subpacket data
+			uint32_t unhashed_size = 0;
+			LOAD_16(&unhashed_size, in + pos);
+			packet->unhashed_size = BSWAP_16(unhashed_size);
+			pos += 2;
+		}
+
+		// Unhashed subpackets
+		while (unhashed_subpacket_data_read < packet->unhashed_size)
+		{
+			pgp_signature_subpacket_header *header = PTR_OFFSET(in, pos);
+
+			header = pgp_signature_subpacket_read(header, in + pos, packet->header.body_size - pos);
+
+			if (header == NULL)
+			{
+				return NULL;
+			}
+
+			packet->unhashed_subpackets[unhashed_subpacket_count++] = header;
+			unhashed_subpacket_data_read += header->header_size + header->body_size;
+		}
+
+		packet->unhashed_subpacket_count = unhashed_subpacket_count;
+		pos += packet->unhashed_size;
+
+		// 2 octet field holding left 16 bits of the signed hash value
+		LOAD_16(&packet->quick_hash, in + pos);
+		pos += 2;
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			// 1 octed salt size
+			LOAD_8(&packet->salt_size, in + pos);
+			pos += 1;
+
+			// Salt
+			memcpy(packet->salt, in + pos, packet->salt_size);
+			pos += packet->salt_size;
+		}
+
+		// Signature data
+		pgp_signature_data_read(packet, in + pos, size - pos);
+	}
+	else if (packet->version == PGP_SIGNATURE_V3)
+	{
+		// 1 octet hashed length (5)
+		LOAD_8(&packet->hashed_size, in + pos);
+		pos += 1;
+
+		if (packet->hashed_size != 5)
+		{
+			return NULL;
+		}
+
+		// 1 octet signature type
+		LOAD_8(&packet->type, in + pos);
+		pos += 1;
+
+		// 4 octet creation time
+		uint32_t timestamp = 0;
+		LOAD_32(&timestamp, in + pos);
+		packet->timestamp = BSWAP_32(timestamp);
+		pos += 4;
+
+		// 8 octet key-id
+		LOAD_64(&packet->key_id, in + pos);
+		pos += 8;
+
+		// 1 octet public key algorithm
+		LOAD_8(&packet->public_key_algorithm_id, in + pos);
+		pos += 1;
+
+		// 1 octet hash algorithm
+		LOAD_8(&packet->hash_algorithm_id, in + pos);
+		pos += 1;
+
+		// 2 octet field holding left 16 bits of the signed hash value
+		LOAD_16(&packet->quick_hash, in + pos);
+		pos += 2;
+
+		// Signature data
+		pgp_signature_data_read(packet, in + pos, size - pos);
+	}
+	else
+	{
+		// Unknown version.
+		return NULL;
+	}
+
+	return packet;
 }
 
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size)
