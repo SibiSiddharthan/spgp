@@ -37,6 +37,78 @@ uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 
 static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, uint32_t size)
 {
+	byte_t *in = ptr;
+	uint32_t pos = 0;
+
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		// MPI of (M^d)%n
+		pgp_rsa_signature *sig = packet->signature;
+		pos = mpi_read(sig->e, in, size);
+
+		if (pos == 0)
+		{
+			return NULL;
+		}
+
+		packet->signature_size = pos;
+		return sig;
+	}
+	case PGP_DSA:
+	case PGP_ECDSA:
+	{
+		// MPI of (r,s)
+		pgp_dsa_signature *sig = packet->signature;
+
+		pos += mpi_read(sig->r, in + pos, size - pos);
+
+		if (pos == 0)
+		{
+			return NULL;
+		}
+
+		pos += mpi_read(sig->s, in + pos, size - pos);
+
+		if (pos == 0)
+		{
+			return NULL;
+		}
+
+		packet->signature_size = pos;
+		return sig;
+	}
+	case PGP_ED25519:
+	{
+		// 64 octets of signature data
+		if (size < 64)
+		{
+			return NULL;
+		}
+
+		memcpy(packet->signature, in, 64);
+		packet->signature_size = 64;
+
+		return packet->signature;
+	}
+	case PGP_ED448:
+	{
+		// 114 octets of signature data
+		if (size < 114)
+		{
+			return NULL;
+		}
+
+		memcpy(packet->signature, in, 114);
+		packet->signature_size = 114;
+
+		return packet->signature;
+	}
+	default:
+		return NULL;
+	}
 }
 
 static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, uint32_t size)
@@ -969,7 +1041,12 @@ pgp_signature_packet *pgp_signature_packet_read(pgp_signature_packet *packet, vo
 		}
 
 		// Signature data
-		pgp_signature_data_read(packet, in + pos, size - pos);
+		packet->signature = pgp_signature_data_read(packet, in + pos, size - pos);
+
+		if (packet->signature == NULL)
+		{
+			return NULL;
+		}
 	}
 	else if (packet->version == PGP_SIGNATURE_V3)
 	{
@@ -1009,7 +1086,12 @@ pgp_signature_packet *pgp_signature_packet_read(pgp_signature_packet *packet, vo
 		pos += 2;
 
 		// Signature data
-		pgp_signature_data_read(packet, in + pos, size - pos);
+		packet->signature = pgp_signature_data_read(packet, in + pos, size - pos);
+
+		if (packet->signature == NULL)
+		{
+			return NULL;
+		}
 	}
 	else
 	{
