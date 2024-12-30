@@ -133,8 +133,11 @@ typedef struct _pgp_signature_packet
 	byte_t salt_size;
 	byte_t salt[32];
 
-	void *hashed_data;
-	void *unhashed_data;
+	uint16_t hashed_subpacket_count;
+	uint16_t unhashed_subpacket_count;
+
+	void **hashed_subpackets;
+	void **unhashed_subpackets;
 
 	uint32_t signature_size;
 	void *signature;

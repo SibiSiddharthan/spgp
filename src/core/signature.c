@@ -437,236 +437,232 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 	return NULL;
 }
 
-static size_t pgp_signature_subpackets_write(void *data, size_t size, void *ptr)
+static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t size)
 {
-	pgp_signature_subpacket_header *header = NULL;
-	signature_subpacket *subpacket = data;
+	pgp_signature_subpacket_header *header = subpacket;
 	byte_t *out = ptr;
+	size_t required_size = 0;
 	size_t pos = 0;
 
-	if (size == 0)
+	required_size = header->header_size + header->body_size;
+
+	if (size < required_size)
 	{
 		return 0;
 	}
 
-	while (subpacket != NULL)
+	pos += pgp_signature_subpacket_header_write(header, out + pos);
+
+	switch (header->type)
 	{
-		header = subpacket->data;
-		subpacket = subpacket->next;
+	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
+	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
+	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
+	{
+		struct _pgp_timestamp_subpacket *t = (struct _pgp_timestamp_subpacket *)header;
+		uint32_t timestamp = BSWAP_32(t->time);
 
-		pos += pgp_signature_subpacket_header_write(header, out + pos);
+		// 4 octet timestamp
+		LOAD_32(out + pos, &timestamp);
+		pos += 4;
+	}
+	break;
+	case PGP_EXPORTABLE_SUBPACKET:
+	case PGP_REVOCABLE_SUBPACKET:
+	case PGP_PRIMARY_USER_ID_SUBPACKET:
+	{
+		struct _pgp_boolean_subpacket *b = (struct _pgp_boolean_subpacket *)header;
+		byte_t value = b->state;
 
-		switch (header->type)
+		// 1 octet value
+		LOAD_8(out + pos, &value);
+		pos += 1;
+	}
+	break;
+	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+	case PGP_KEY_FLAGS_SUBPACKET:
+	case PGP_FEATURES_SUBPACKET:
+	{
+		struct _pgp_flags_subpacket *flags = (struct _pgp_flags_subpacket *)header;
+
+		// N octets of flags
+		memcpy(out + pos, flags->flags, flags->header.body_size);
+		pos += flags->header.body_size;
+	}
+	break;
+	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+	{
+		struct _pgp_preferred_algorithm_subpacket *p = (struct _pgp_preferred_algorithm_subpacket *)header;
+
+		// N octets of algorithms
+		memcpy(out + pos, p->preferred_algorithms, p->header.body_size);
+		pos += p->header.body_size;
+	}
+	break;
+	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+	{
+		struct _pgp_key_fingerprint_subpacket *kf = (struct _pgp_key_fingerprint_subpacket *)header;
+
+		// 1 octet key version
+		LOAD_8(out + pos, &kf->version);
+		pos += 1;
+
+		if (kf->version == PGP_KEY_V6)
 		{
-		case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
-		case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
-		case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
-		{
-			struct _pgp_timestamp_subpacket *t = (struct _pgp_timestamp_subpacket *)header;
-			uint32_t timestamp = BSWAP_32(t->time);
-
-			// 4 octet timestamp
-			LOAD_32(out + pos, &timestamp);
-			pos += 4;
+			// 32 octets of V6 key fingerprint
+			memcpy(out + pos, kf->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+			pos += PGP_KEY_V6_FINGERPRINT_SIZE;
 		}
-		break;
-		case PGP_EXPORTABLE_SUBPACKET:
-		case PGP_REVOCABLE_SUBPACKET:
-		case PGP_PRIMARY_USER_ID_SUBPACKET:
+		else
 		{
-			struct _pgp_boolean_subpacket *b = (struct _pgp_boolean_subpacket *)header;
-			byte_t value = b->state;
-
-			// 1 octet value
-			LOAD_8(out + pos, &value);
-			pos += 1;
-		}
-		break;
-		case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
-		case PGP_KEY_FLAGS_SUBPACKET:
-		case PGP_FEATURES_SUBPACKET:
-		{
-			struct _pgp_flags_subpacket *flags = (struct _pgp_flags_subpacket *)header;
-
-			// N octets of flags
-			memcpy(out + pos, flags->flags, flags->header.body_size);
-			pos += flags->header.body_size;
-		}
-		break;
-		case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
-		case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
-		case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
-		case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
-		{
-			struct _pgp_preferred_algorithm_subpacket *p = (struct _pgp_preferred_algorithm_subpacket *)header;
-
-			// N octets of algorithms
-			memcpy(out + pos, p->preferred_algorithms, p->header.body_size);
-			pos += p->header.body_size;
-		}
-		break;
-		case PGP_ISSUER_FINGERPRINT_SUBPACKET:
-		case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
-		{
-			struct _pgp_key_fingerprint_subpacket *kf = (struct _pgp_key_fingerprint_subpacket *)header;
-
-			// 1 octet key version
-			LOAD_8(out + pos, &kf->version);
-			pos += 1;
-
-			if (kf->version == PGP_KEY_V6)
-			{
-				// 32 octets of V6 key fingerprint
-				memcpy(out + pos, kf->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
-				pos += PGP_KEY_V6_FINGERPRINT_SIZE;
-			}
-			else
-			{
-				// 20 octets of V4 key fingerprint
-				memcpy(out + pos, kf->fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
-				pos += PGP_KEY_V4_FINGERPRINT_SIZE;
-			}
-		}
-		break;
-		case PGP_TRUST_SIGNATURE_SUBPACKET:
-		{
-			pgp_trust_signature_subpacket *trust = (pgp_trust_signature_subpacket *)header;
-
-			// 1 octet level
-			LOAD_8(out + pos, &trust->trust_level);
-			pos += 1;
-
-			// 1 octet amount
-			LOAD_8(out + pos, &trust->trust_amount);
-			pos += 1;
-		}
-		break;
-		case PGP_REGULAR_EXPRESSION_SUBPACKET:
-		{
-			pgp_regular_expression_subpacket *re = (pgp_regular_expression_subpacket *)header;
-
-			// Null terminated UTF-8 string
-			memcpy(out + pos, re->regex, re->header.body_size);
-			pos += re->header.body_size;
-		}
-		break;
-		case PGP_REVOCATION_KEY_SUBPACKET:
-		{
-			pgp_revocation_key_subpacket *rk = (pgp_revocation_key_subpacket *)header;
-
-			// 1 octet class
-			LOAD_8(out + pos, &rk->revocation_class);
-			pos += 1;
-
-			// 1 octet public key algorithm
-			LOAD_8(out + pos, &rk->algorithm_id);
-			pos += 1;
-
-			// 20 octets v4 key fingerprint
-			memcpy(out + pos, rk->key_fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
+			// 20 octets of V4 key fingerprint
+			memcpy(out + pos, kf->fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
 			pos += PGP_KEY_V4_FINGERPRINT_SIZE;
 		}
-		break;
-		case PGP_ISSUER_KEY_ID_SUBPACKET:
-		{
-			pgp_issuer_key_id_subpacket *ikid = (pgp_issuer_key_id_subpacket *)header;
+	}
+	break;
+	case PGP_TRUST_SIGNATURE_SUBPACKET:
+	{
+		pgp_trust_signature_subpacket *trust = (pgp_trust_signature_subpacket *)header;
 
-			// 8 octets of key id
-			LOAD_64(out + pos, ikid->key_id);
-			pos += 8;
-		}
-		break;
-		case PGP_NOTATION_DATA_SUBPACKET:
-		{
-			pgp_notation_data_subpacket *nd = (pgp_notation_data_subpacket *)header;
+		// 1 octet level
+		LOAD_8(out + pos, &trust->trust_level);
+		pos += 1;
 
-			uint32_t flags = BSWAP_32(nd->flags);
-			uint16_t name_size = BSWAP_16(nd->name_size);
-			uint16_t value_size = BSWAP_16(nd->value_size);
+		// 1 octet amount
+		LOAD_8(out + pos, &trust->trust_amount);
+		pos += 1;
+	}
+	break;
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+	{
+		pgp_regular_expression_subpacket *re = (pgp_regular_expression_subpacket *)header;
 
-			// 4 octets of flags
-			LOAD_32(out + pos, &flags);
-			pos += 4;
+		// Null terminated UTF-8 string
+		memcpy(out + pos, re->regex, re->header.body_size);
+		pos += re->header.body_size;
+	}
+	break;
+	case PGP_REVOCATION_KEY_SUBPACKET:
+	{
+		pgp_revocation_key_subpacket *rk = (pgp_revocation_key_subpacket *)header;
 
-			// 2 octets of name length(N)
-			LOAD_16(out + pos, &name_size);
-			pos += 2;
+		// 1 octet class
+		LOAD_8(out + pos, &rk->revocation_class);
+		pos += 1;
 
-			// 2 octets of value length(M)
-			LOAD_16(out + pos, &value_size);
-			pos += 2;
+		// 1 octet public key algorithm
+		LOAD_8(out + pos, &rk->algorithm_id);
+		pos += 1;
 
-			// (N + M) octets of data
-			memcpy(out + pos, nd->data, nd->name_size + nd->value_size);
-			pos += nd->name_size + nd->value_size;
-		}
-		break;
-		case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
-		{
-			pgp_preferred_key_server_subpacket *pks = (pgp_preferred_key_server_subpacket *)header;
+		// 20 octets v4 key fingerprint
+		memcpy(out + pos, rk->key_fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
+		pos += PGP_KEY_V4_FINGERPRINT_SIZE;
+	}
+	break;
+	case PGP_ISSUER_KEY_ID_SUBPACKET:
+	{
+		pgp_issuer_key_id_subpacket *ikid = (pgp_issuer_key_id_subpacket *)header;
 
-			// String
-			memcpy(out + pos, pks->server, pks->header.body_size);
-			pos += pks->header.body_size;
-		}
-		break;
-		case PGP_POLICY_URI_SUBPACKET:
-		{
-			pgp_policy_uri_subpacket *policy = (pgp_policy_uri_subpacket *)header;
+		// 8 octets of key id
+		LOAD_64(out + pos, ikid->key_id);
+		pos += 8;
+	}
+	break;
+	case PGP_NOTATION_DATA_SUBPACKET:
+	{
+		pgp_notation_data_subpacket *nd = (pgp_notation_data_subpacket *)header;
 
-			// String
-			memcpy(out + pos, policy->policy, policy->header.body_size);
-			pos += policy->header.body_size;
-		}
-		break;
-		case PGP_SIGNER_USER_ID_SUBPACKET:
-		{
-			pgp_signer_user_id_subpacket *uid = (pgp_signer_user_id_subpacket *)header;
+		uint32_t flags = BSWAP_32(nd->flags);
+		uint16_t name_size = BSWAP_16(nd->name_size);
+		uint16_t value_size = BSWAP_16(nd->value_size);
 
-			// String
-			memcpy(out + pos, uid->id, uid->header.body_size);
-			pos += uid->header.body_size;
-		}
-		break;
-		case PGP_REASON_FOR_REVOCATION_SUBPACKET:
-		{
-			pgp_reason_for_revocation_subpacket *rr = (pgp_reason_for_revocation_subpacket *)header;
+		// 4 octets of flags
+		LOAD_32(out + pos, &flags);
+		pos += 4;
 
-			// 1 octet of revocation code
-			LOAD_8(out + pos, &rr->code);
-			pos += 1;
+		// 2 octets of name length(N)
+		LOAD_16(out + pos, &name_size);
+		pos += 2;
 
-			// N octets of reason
-			memcpy(out + pos, rr->reason, rr->header.body_size - 1);
-			pos += (rr->header.body_size - 1);
-		}
-		break;
-		case PGP_SIGNATURE_TARGET_SUBPACKET:
-		{
-			pgp_signature_target_subpacket *st = (pgp_signature_target_subpacket *)header;
+		// 2 octets of value length(M)
+		LOAD_16(out + pos, &value_size);
+		pos += 2;
 
-			// 1 octet public key algorithm
-			LOAD_8(out + pos, &st->public_key_algorithm_id);
-			pos += 1;
+		// (N + M) octets of data
+		memcpy(out + pos, nd->data, nd->name_size + nd->value_size);
+		pos += nd->name_size + nd->value_size;
+	}
+	break;
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+	{
+		pgp_preferred_key_server_subpacket *pks = (pgp_preferred_key_server_subpacket *)header;
 
-			// 1 octet hash algorithm
-			LOAD_8(out + pos, &st->hash_algorithm_id);
-			pos += 1;
+		// String
+		memcpy(out + pos, pks->server, pks->header.body_size);
+		pos += pks->header.body_size;
+	}
+	break;
+	case PGP_POLICY_URI_SUBPACKET:
+	{
+		pgp_policy_uri_subpacket *policy = (pgp_policy_uri_subpacket *)header;
 
-			// N octets of hash
-			memcpy(out + pos, st->hash, st->header.body_size - 2);
-			pos += (st->header.body_size - 2);
-		}
-		break;
-		case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
-		{
-			pgp_embedded_signature_subpacket *es = (pgp_embedded_signature_subpacket *)header;
+		// String
+		memcpy(out + pos, policy->policy, policy->header.body_size);
+		pos += policy->header.body_size;
+	}
+	break;
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+	{
+		pgp_signer_user_id_subpacket *uid = (pgp_signer_user_id_subpacket *)header;
 
-			// The buffer should be big enough always.
-			pos += pgp_signature_packet_v4_v6_write(es->signature, out + pos, (uint32_t)-1);
-		}
-		break;
-		}
+		// String
+		memcpy(out + pos, uid->id, uid->header.body_size);
+		pos += uid->header.body_size;
+	}
+	break;
+	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
+	{
+		pgp_reason_for_revocation_subpacket *rr = (pgp_reason_for_revocation_subpacket *)header;
+
+		// 1 octet of revocation code
+		LOAD_8(out + pos, &rr->code);
+		pos += 1;
+
+		// N octets of reason
+		memcpy(out + pos, rr->reason, rr->header.body_size - 1);
+		pos += (rr->header.body_size - 1);
+	}
+	break;
+	case PGP_SIGNATURE_TARGET_SUBPACKET:
+	{
+		pgp_signature_target_subpacket *st = (pgp_signature_target_subpacket *)header;
+
+		// 1 octet public key algorithm
+		LOAD_8(out + pos, &st->public_key_algorithm_id);
+		pos += 1;
+
+		// 1 octet hash algorithm
+		LOAD_8(out + pos, &st->hash_algorithm_id);
+		pos += 1;
+
+		// N octets of hash
+		memcpy(out + pos, st->hash, st->header.body_size - 2);
+		pos += (st->header.body_size - 2);
+	}
+	break;
+	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
+	{
+		pgp_embedded_signature_subpacket *es = (pgp_embedded_signature_subpacket *)header;
+
+		// The buffer should be big enough always.
+		pos += pgp_signature_packet_v4_v6_write(es->signature, out + pos, (uint32_t)-1);
+	}
+	break;
 	}
 
 	return pos;
@@ -803,7 +799,10 @@ static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, voi
 	}
 
 	// Hashed subpackets
-	pos += pgp_signature_subpackets_write(packet->hashed_data, packet->hashed_size, out + pos);
+	for (uint16_t i = 0; i < packet->hashed_subpacket_count; ++i)
+	{
+		pos += pgp_signature_subpacket_write(packet->hashed_subpackets[i], out + pos, size - pos);
+	}
 
 	if (packet->version == PGP_SIGNATURE_V6)
 	{
@@ -823,7 +822,10 @@ static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, voi
 	}
 
 	// Unhashed subpackets
-	pos += pgp_signature_subpackets_write(packet->unhashed_data, packet->unhashed_size, out + pos);
+	for (uint16_t i = 0; i < packet->unhashed_subpacket_count; ++i)
+	{
+		pos += pgp_signature_subpacket_write(packet->unhashed_subpackets[i], out + pos, size - pos);
+	}
 
 	// 2 octets of the left 16 bits of signed hash value
 	LOAD_16(out + pos, &packet->quick_hash);
