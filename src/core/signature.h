@@ -187,7 +187,8 @@ typedef struct _pgp_signature_subpacket_header
 {
 	pgp_signature_subpacket_type type : 7;
 	byte_t critical : 1;
-	uint32_t size;
+	byte_t header_size;
+	uint32_t body_size;
 } pgp_signature_subpacket_header;
 
 typedef struct _signature_subpacket
