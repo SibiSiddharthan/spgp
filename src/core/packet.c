@@ -341,7 +341,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_PKESK:
 		return pgp_pkesk_packet_read(NULL, data, size);
 	case PGP_SIG:
-		return NULL; // pgp_signature_packet_read(NULL, data, size);
+		return pgp_signature_packet_read(NULL, data, size);
 	case PGP_SKESK:
 		return pgp_skesk_packet_read(NULL, data, size);
 	case PGP_OPS:
@@ -367,7 +367,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_PUBSUBKEY:
 		return pgp_public_key_packet_read(NULL, data, size);
 	case PGP_UAT:
-		return NULL; // pgp_uat_packet_read(NULL, data, size);
+		return pgp_user_attribute_packet_read(NULL, data, size);
 	case PGP_SEIPD:
 		return pgp_seipd_packet_read(NULL, data, size);
 	case PGP_MDC:
