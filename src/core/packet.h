@@ -54,7 +54,7 @@ typedef struct _pgp_compressed_packet
 	pgp_packet_header header;
 
 	byte_t compression_algorithm_id;
-	byte_t data[1];
+	void *data;
 } pgp_compresed_packet;
 
 typedef struct _pgp_marker_packet
@@ -157,8 +157,17 @@ typedef struct _pgp_trust_packet
 pgp_packet_header pgp_packet_header_read(void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 
+// Compressed Packet (Tag 8)
+pgp_compresed_packet *pgp_compressed_packet_new(byte_t header_format, byte_t compression_algorithm_id);
+void pgp_compressed_packet_delete(pgp_compresed_packet *packet);
+
+pgp_compresed_packet *pgp_compressed_packet_set_data(pgp_compresed_packet *packet, void *ptr, size_t size);
+size_t pgp_compressed_packet_get_data(pgp_compresed_packet *packet, void *ptr, size_t size);
+size_t pgp_compressed_packet_get_raw_data(pgp_compresed_packet *packet, void *ptr, size_t size);
+
 pgp_compresed_packet *pgp_compressed_packet_read(pgp_compresed_packet *packet, void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
+size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size);
 
 pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size);
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
