@@ -179,6 +179,17 @@ byte_t get_tag(pgp_packet_header_type header_type, pgp_packet_type packet_type, 
 	return tag;
 }
 
+static pgp_packet_header encode_packet_header(pgp_packet_header_type header_format, pgp_packet_type packet_type, size_t body_size)
+{
+	pgp_packet_header header = {0};
+
+	header.tag = get_tag(header_format, packet_type, body_size);
+	header.header_size = get_packet_header_size(header_format, body_size);
+	header.body_size = body_size;
+
+	return header;
+}
+
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 {
 	byte_t *out = ptr;
