@@ -778,6 +778,31 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
+pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, size_t size)
+{
+	pgp_user_id_packet *packet = NULL;
+	size_t required_size = sizeof(pgp_packet_header) + size;
+
+	packet = malloc(required_size);
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, required_size);
+
+	packet->header = encode_packet_header(header_format, PGP_UID, size);
+	memcpy(packet->user_id, data, size);
+
+	return packet;
+}
+
+void pgp_user_id_packet_delete(pgp_user_id_packet *packet)
+{
+	free(packet);
+}
+
 pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size)
 {
 	// Copy the user data.
@@ -807,6 +832,37 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 	// User data
 	memcpy(out + pos, packet->user_id, packet->header.body_size);
 	pos += packet->header.body_size;
+
+	return pos;
+}
+
+size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	memcpy(PTR_OFFSET(str, pos), "User ID Packet (Tag 13)", 24);
+	pos += 24;
+
+	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
+	{
+		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
+		pos += 7;
+	}
+	else
+	{
+		out[pos] = '\n';
+		pos += 1;
+	}
+
+	memcpy(PTR_OFFSET(str, pos), "User ID: ", 9);
+	pos += 9;
+
+	memcpy(PTR_OFFSET(str, pos), packet->user_id, packet->header.body_size);
+	pos += packet->header.body_size;
+
+	out[pos] = '\n';
+	pos += 1;
 
 	return pos;
 }

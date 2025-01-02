@@ -180,8 +180,13 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *data, size_t size);
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size);
 
+// User ID Packet (Tag 13)
+pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, size_t size);
+void pgp_user_id_packet_delete(pgp_user_id_packet *packet);
+
 pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size);
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
+size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size);
 
 pgp_user_attribute_packet *pgp_user_attribute_packet_read(pgp_user_attribute_packet *packet, void *data, size_t size);
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size);
