@@ -588,6 +588,32 @@ size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_
 	return pos;
 }
 
+pgp_marker_packet *pgp_marker_packet_new(byte_t header_format)
+{
+	pgp_marker_packet *packet = malloc(sizeof(pgp_marker_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_marker_packet));
+
+	packet->header = encode_packet_header(header_format, PGP_MARKER, 3);
+
+	// Set the marker
+	packet->marker[0] = 0x50; // P
+	packet->marker[1] = 0x47; // G
+	packet->marker[2] = 0x50; // P
+
+	return packet;
+}
+
+void pgp_marker_packet_delete(pgp_marker_packet *packet)
+{
+	free(packet);
+}
+
 pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size)
 {
 	byte_t marker[3] = {0x50, 0x47, 0x50};
@@ -635,6 +661,30 @@ size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size
 	// Padding data
 	memcpy(out + pos, packet->marker, 3);
 	pos += 3;
+
+	return pos;
+}
+
+size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	memcpy(PTR_OFFSET(str, pos), "Marker Packet (Tag 10)", 23);
+	pos += 23;
+
+	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
+	{
+		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
+		pos += 7;
+	}
+	else
+	{
+		out[pos] = '\n';
+		pos += 1;
+	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Marker: %c%c%c\n", packet->marker[0], packet->marker[1], packet->marker[2]);
 
 	return pos;
 }
