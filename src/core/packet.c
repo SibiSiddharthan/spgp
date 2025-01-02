@@ -391,6 +391,106 @@ void *pgp_packet_read(void *data, size_t size)
 	}
 }
 
+pgp_compresed_packet *pgp_compressed_packet_new(byte_t header_format, byte_t compression_algorithm_id)
+{
+	pgp_compresed_packet *packet = NULL;
+
+	packet = malloc(sizeof(pgp_compresed_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_compresed_packet));
+
+	packet->header.tag = get_tag(header_format, PGP_COMP, 0);
+	packet->compression_algorithm_id = compression_algorithm_id;
+
+	return packet;
+}
+
+void pgp_compressed_packet_delete(pgp_compresed_packet *packet)
+{
+	free(packet->data);
+	free(packet);
+}
+
+pgp_compresed_packet *pgp_compressed_packet_set_data(pgp_compresed_packet *packet, void *ptr, size_t size)
+{
+	pgp_packet_header_type header_type = get_packet_header_type(packet);
+
+	switch (packet->compression_algorithm_id)
+	{
+	case PGP_UNCOMPRESSED:
+	{
+		packet->data = malloc(size);
+
+		if (packet->data == NULL)
+		{
+			return NULL;
+		}
+
+		memcpy(packet->data, ptr, size);
+
+		// Set the header
+		packet->header = encode_packet_header(header_type, PGP_COMP, size + 1);
+
+		return packet;
+	}
+	case PGP_DEFALTE:
+	case PGP_ZLIB:
+	case PGP_BZIP2:
+		// TODO: Implement compression
+		return NULL;
+	default:
+		return NULL;
+	}
+}
+
+size_t pgp_compressed_packet_get_data(pgp_compresed_packet *packet, void *ptr, size_t size)
+{
+	size_t uncompressed_data_size = 0;
+
+	switch (packet->compression_algorithm_id)
+	{
+	case PGP_UNCOMPRESSED:
+	{
+		uncompressed_data_size = packet->header.body_size - 1;
+
+		if (size < uncompressed_data_size)
+		{
+			return 0;
+		}
+
+		memcpy(ptr, packet->data, uncompressed_data_size);
+
+		return uncompressed_data_size;
+	}
+	case PGP_DEFALTE:
+	case PGP_ZLIB:
+	case PGP_BZIP2:
+		// TODO: Implement decompression
+		return 0;
+	default:
+		return 0;
+	}
+}
+
+size_t pgp_compressed_packet_get_raw_data(pgp_compresed_packet *packet, void *ptr, size_t size)
+{
+	size_t data_size = packet->header.body_size - 1;
+
+	if (size < data_size)
+	{
+		return 0;
+	}
+
+	memcpy(ptr, packet->data, data_size);
+
+	return data_size;
+}
+
 pgp_compresed_packet *pgp_compressed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
