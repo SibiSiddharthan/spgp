@@ -199,8 +199,16 @@ pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *da
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
 size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size);
 
+// Modification Detection Code Packet (Tag 19)
+pgp_mdc_packet *pgp_mdc_packet_new(byte_t header_format);
+void pgp_mdc_packet_delete(pgp_mdc_packet *packet);
+
+void pgp_mdc_packet_get_hash(pgp_mdc_packet *packet, byte_t hash[20]);
+void pgp_mdc_packet_set_hash(pgp_mdc_packet *packet, byte_t hash[20]);
+
 pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size);
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
+size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size);
 
 pgp_trust_packet *pgp_trust_packet_read(pgp_trust_packet *packet, void *data, size_t size);
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);

@@ -1177,6 +1177,36 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 	return pos;
 }
 
+pgp_mdc_packet *pgp_mdc_packet_new(byte_t header_format)
+{
+	pgp_mdc_packet *packet = malloc(sizeof(pgp_mdc_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_mdc_packet));
+	packet->header = encode_packet_header(header_format, PGP_MDC, 20);
+
+	return packet;
+}
+
+void pgp_mdc_packet_delete(pgp_mdc_packet *packet)
+{
+	free(packet);
+}
+
+void pgp_mdc_packet_get_hash(pgp_mdc_packet *packet, byte_t hash[20])
+{
+	memcpy(hash, packet->sha1_hash, 20);
+}
+
+void pgp_mdc_packet_set_hash(pgp_mdc_packet *packet, byte_t hash[20])
+{
+	memcpy(packet->sha1_hash, hash, 20);
+}
+
 pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size)
 {
 	// Checks for a valid modification detection code packet.
@@ -1218,6 +1248,47 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
 	// Padding data
 	memcpy(out + pos, packet->sha1_hash, 20);
 	pos += 3;
+
+	return pos;
+}
+
+static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	memcpy(PTR_OFFSET(str, pos), "Modification Detection Code Packet (Tag 19)", 43);
+	pos += 43;
+
+	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
+	{
+		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
+		pos += 7;
+	}
+	else
+	{
+		out[pos] = '\n';
+		pos += 1;
+	}
+
+	memcpy(PTR_OFFSET(str, pos), "SHA-1 Hash: ", 12);
+	pos += 12;
+
+	for (uint8_t i = 0; i < 20; ++i)
+	{
+		byte_t a, b;
+
+		a = packet->sha1_hash[i] / 16;
+		b = packet->sha1_hash[i] % 16;
+
+		out[pos++] = hex_table[a];
+		out[pos++] = hex_table[b];
+	}
+
+	out[pos] = '\n';
+	pos += 1;
 
 	return pos;
 }
