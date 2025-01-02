@@ -6,6 +6,7 @@
 */
 
 #include <spgp.h>
+#include <algorithms.h>
 #include <packet.h>
 #include <key.h>
 #include <seipd.h>
@@ -13,6 +14,8 @@
 #include <signature.h>
 
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 // Refer RFC 9580 - OpenPGP, Section 4.2 Packet Headers
 
@@ -49,7 +52,7 @@ static uint32_t get_packet_body_size(void *packet, size_t packet_size)
 	if ((tag & 0xC0) == 0xC0)
 	{
 		// 5 octet length
-		if (byte[0] >= 255)
+		if (byte[0] == 255)
 		{
 			if (packet_size < 6)
 			{
@@ -532,6 +535,55 @@ size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size
 	// Compressed data
 	memcpy(out + pos, packet->data, packet->header.body_size - 1);
 	pos += packet->header.body_size;
+
+	return pos;
+}
+
+size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	memcpy(PTR_OFFSET(str, pos), "Compressed Data Packet (Tag 8)", 30);
+	pos += 30;
+
+	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
+	{
+		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
+		pos += 7;
+	}
+	else
+	{
+		out[pos] = '\n';
+		pos += 1;
+	}
+
+	memcpy(PTR_OFFSET(str, pos), "Compression Algorithm: ", 23);
+	pos += 23;
+
+	switch (packet->compression_algorithm_id)
+	{
+	case PGP_UNCOMPRESSED:
+		memcpy(PTR_OFFSET(str, pos), "Uncompressed (Tag 0)\n", 21);
+		pos += 21;
+		break;
+	case PGP_DEFALTE:
+		memcpy(PTR_OFFSET(str, pos), "Deflate (Tag 1)\n", 16);
+		pos += 16;
+		break;
+	case PGP_ZLIB:
+		memcpy(PTR_OFFSET(str, pos), "ZLIB (Tag 2)\n", 13);
+		pos += 13;
+		break;
+	case PGP_BZIP2:
+		memcpy(PTR_OFFSET(str, pos), "BZIP2 (Tag 3)\n", 14);
+		pos += 14;
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->compression_algorithm_id);
+	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size - 1);
 
 	return pos;
 }
