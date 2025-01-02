@@ -1039,6 +1039,31 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 	return pos;
 }
 
+pgp_padding_packet *pgp_padding_packet_new(byte_t header_format, void *data, size_t size)
+{
+	pgp_padding_packet *packet = NULL;
+	size_t required_size = sizeof(pgp_packet_header) + size;
+
+	packet = malloc(required_size);
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, required_size);
+
+	packet->header = encode_packet_header(header_format, PGP_PADDING, size);
+	memcpy(packet->data, data, size);
+
+	return packet;
+}
+
+void pgp_padding_packet_delete(pgp_padding_packet *packet)
+{
+	free(packet);
+}
+
 pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
 {
 	// Copy the padding data.
@@ -1068,6 +1093,30 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 	// Padding data
 	memcpy(out + pos, packet->data, packet->header.body_size);
 	pos += packet->header.body_size;
+
+	return pos;
+}
+
+size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	memcpy(PTR_OFFSET(str, pos), "Padding Packet (Tag 21)", 23);
+	pos += 23;
+
+	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
+	{
+		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
+		pos += 7;
+	}
+	else
+	{
+		out[pos] = '\n';
+		pos += 1;
+	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
 }
