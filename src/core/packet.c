@@ -193,6 +193,33 @@ static pgp_packet_header encode_packet_header(pgp_packet_header_type header_form
 	return header;
 }
 
+static pgp_user_attribute_subpacket_header encode_subpacket_header(pgp_user_attribute_subpacket_type type, size_t body_size)
+{
+	pgp_user_attribute_subpacket_header header = {0};
+
+	header.type = type;
+	header.body_size = body_size;
+
+	// 1,2, or 5 octets of subpacket length
+	// 1 octed length
+	if (body_size < 192)
+	{
+		header.header_size = 2;
+	}
+	// 2 octet legnth
+	else if (body_size < 8384)
+	{
+		header.header_size = 3;
+	}
+	// 5 octet length
+	else
+	{
+		header.header_size = 6;
+	}
+
+	return header;
+}
+
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 {
 	byte_t *out = ptr;
