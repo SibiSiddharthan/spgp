@@ -689,6 +689,202 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 	return pos;
 }
 
+pgp_literal_packet *pgp_literal_packet_new(byte_t header_format)
+{
+	pgp_literal_packet *packet = NULL;
+
+	packet = malloc(sizeof(pgp_literal_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_literal_packet));
+
+	packet->header = encode_packet_header(header_format, PGP_LIT, 0);
+
+	return packet;
+}
+
+void pgp_literal_packet_delete(pgp_literal_packet *packet)
+{
+	free(packet->filename);
+	free(packet->data);
+	free(packet);
+}
+
+size_t pgp_literal_packet_get_filename(pgp_literal_packet *packet, void *filename, size_t size)
+{
+	if (packet->filename == NULL)
+	{
+		return 0;
+	}
+
+	if (size < packet->filename_size)
+	{
+		return 0;
+	}
+
+	memcpy(filename, packet->filename, packet->filename_size);
+
+	return packet->filename_size;
+}
+
+pgp_literal_packet *pgp_literal_packet_set_filename(pgp_literal_packet *packet, void *filename, size_t size)
+{
+	pgp_packet_header_type header_format = get_packet_header_type(&packet->header);
+
+	if (size > 255)
+	{
+		return NULL;
+	}
+
+	packet->filename = malloc(size);
+
+	if (packet->filename == NULL)
+	{
+		return NULL;
+	}
+
+	packet->filename_size = size;
+	memcpy(packet->filename, filename, size);
+
+	// Update as if no data exists.
+	packet->header = encode_packet_header(header_format, PGP_LIT, 1 + 1 + size);
+
+	return packet;
+}
+
+size_t pgp_literal_packet_get_data(pgp_literal_packet *packet, void *data, size_t size)
+{
+	if (packet->data == NULL)
+	{
+		return 0;
+	}
+
+	if (size < packet->data_size)
+	{
+		return 0;
+	}
+
+	// Just return the data as stored since there is no way to know for sure if we require text conversions.
+	memcpy(data, packet->data, packet->data_size);
+
+	return packet->data_size;
+}
+
+pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_data_format format, uint32_t date, void *data,
+												size_t size)
+{
+	pgp_packet_header_type header_format = get_packet_header_type(&packet->header);
+	size_t required_size = size;
+	size_t max_size = (1ull << 32) - (1 + 1 + 4 + packet->filename_size) - 1;
+
+	if (format != PGP_LITERAL_DATA_BINARY && format != PGP_LITERAL_DATA_UTF8 && format != PGP_LITERAL_DATA_TEXT)
+	{
+		return NULL;
+	}
+
+	if (size > max_size)
+	{
+		return NULL;
+	}
+
+	if (format == PGP_LITERAL_DATA_TEXT || format == PGP_LITERAL_DATA_UTF8)
+	{
+		// Traverse the text data to determine the number of conversions required.
+		uint32_t convert_count = 0;
+		byte_t *pdata = data;
+		byte_t *pout = NULL;
+
+		for (size_t i = 0; i < size; ++i)
+		{
+			if (i != 0)
+			{
+				if (pdata[i] == '\n' && pdata[i - 1] != '\r')
+				{
+					++convert_count;
+				}
+			}
+			else
+			{
+				if (pdata[i] == '\n')
+				{
+					++convert_count;
+				}
+			}
+		}
+
+		required_size += convert_count;
+
+		// Make sure the converted text is less than 4GB
+		if (required_size > max_size)
+		{
+			return NULL;
+		}
+
+		packet->data = malloc(required_size);
+
+		if (packet->data == NULL)
+		{
+			return NULL;
+		}
+
+		// Copy the data byte by byte, we can't do any better.
+		pout = packet->data;
+		uint32_t pos = 0;
+
+		for (size_t i = 0; i < size; ++i)
+		{
+			if (i != 0)
+			{
+				if (pdata[i] == '\n' && pdata[i - 1] != '\r')
+				{
+					pout[pos++] = '\r';
+					pout[pos++] = '\n';
+				}
+				else
+				{
+					pout[pos++] = pdata[i];
+				}
+			}
+			else
+			{
+				if (pdata[i] == '\n')
+				{
+					pout[pos++] = '\r';
+					pout[pos++] = '\n';
+				}
+				else
+				{
+					pout[pos++] = pdata[i];
+				}
+			}
+		}
+	}
+	else // PGP_LITERAL_DATA_BINARY
+	{
+		// Just copy the data.
+		packet->data = malloc(required_size);
+
+		if (packet->data == NULL)
+		{
+			return NULL;
+		}
+
+		memcpy(packet->data, data, size);
+	}
+
+	packet->format = format;
+	packet->date = date;
+	packet->data_size = required_size;
+
+	packet->header = encode_packet_header(header_format, PGP_LIT, 1 + 1 + 4 + packet->filename_size + packet->data_size);
+
+	return packet;
+}
+
 pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
