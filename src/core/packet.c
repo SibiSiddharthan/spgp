@@ -1483,6 +1483,63 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 	return pos;
 }
 
+size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	memcpy(PTR_OFFSET(str, pos), "User Attribute Packet (Tag 17)", 30);
+	pos += 30;
+
+	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
+	{
+		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
+		pos += 7;
+	}
+	else
+	{
+		out[pos] = '\n';
+		pos += 1;
+	}
+
+	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
+	{
+		pgp_user_attribute_subpacket_header *subpacket_header = packet->subpackets[i];
+
+		switch (subpacket_header->type)
+		{
+		case PGP_USER_ATTRIBUTE_IMAGE:
+		{
+			pgp_user_attribute_image_subpacket *image_subpacket = subpacket_header;
+			uint32_t image_size = image_subpacket->header.body_size - 16;
+
+			memcpy(PTR_OFFSET(str, pos), "User Attribute Image Subpacket (Tag 1)\n", 39);
+			pos += 39;
+
+			switch (image_subpacket->image_encoding)
+			{
+			case PGP_USER_ATTRIBUTE_IMAGE_JPEG:
+			{
+				memcpy(PTR_OFFSET(str, pos), "Image Encoding: JPEG (Tag 1)\n", 30);
+				pos += 30;
+			}
+			break;
+			default:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Image Encoding (Tag %hhu)\n", image_subpacket->image_encoding);
+			}
+
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Image Size: %u bytes\n", image_size);
+		}
+		break;
+		default:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Subpacket (Tag %hhu) (%u bytes)\n", subpacket_header->type,
+							subpacket_header->body_size);
+		}
+	}
+
+	return pos;
+}
+
 pgp_padding_packet *pgp_padding_packet_new(byte_t header_format, void *data, size_t size)
 {
 	pgp_padding_packet *packet = NULL;
