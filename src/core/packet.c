@@ -974,6 +974,64 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
+size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	memcpy(PTR_OFFSET(str, pos), "Literal Data Packet (Tag 11)", 28);
+	pos += 28;
+
+	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
+	{
+		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
+		pos += 7;
+	}
+	else
+	{
+		out[pos] = '\n';
+		pos += 1;
+	}
+
+	memcpy(PTR_OFFSET(str, pos), "Format: ", 8);
+	pos += 8;
+
+	switch (packet->format)
+	{
+	case PGP_LITERAL_DATA_BINARY:
+		memcpy(PTR_OFFSET(str, pos), "Binary (Tag 0)\n", 15);
+		pos += 15;
+		break;
+	case PGP_LITERAL_DATA_TEXT:
+		memcpy(PTR_OFFSET(str, pos), "Text (Tag 1)\n", 13);
+		pos += 13;
+		break;
+	case PGP_LITERAL_DATA_UTF8:
+		memcpy(PTR_OFFSET(str, pos), "UTF-8 (Tag 2)\n", 14);
+		pos += 14;
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
+	}
+
+	// TODO format date
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "\nDate: %u\n", packet->date);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Filename (%u bytes): ", packet->filename_size);
+
+	if (packet->filename_size > 0)
+	{
+		memcpy(PTR_OFFSET(str, pos), packet->filename, packet->filename_size);
+		pos += packet->filename_size;
+	}
+
+	out[pos] = '\n';
+	pos += 1;
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->data_size);
+
+	return pos;
+}
+
 pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, size_t size)
 {
 	pgp_user_id_packet *packet = NULL;
