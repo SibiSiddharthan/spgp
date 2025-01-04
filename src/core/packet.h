@@ -69,7 +69,7 @@ typedef enum _pgp_literal_data_format
 	PGP_LITERAL_DATA_UTF8 = 0x75,   // 'u',
 	PGP_LITERAL_DATA_TEXT = 0x74    // 't'
 
-} _pgp_literal_data_format;
+} pgp_literal_data_format;
 
 typedef struct _pgp_literal_packet
 {
@@ -200,8 +200,16 @@ pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *da
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
 size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size);
 
+// User Attribute Packet (Tag 17)
+pgp_user_attribute_packet *pgp_user_attribute_packet_new(byte_t header_format);
+void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet);
+
+size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, void *image, size_t size);
+pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packet, byte_t format, void *image, size_t size);
+
 pgp_user_attribute_packet *pgp_user_attribute_packet_read(pgp_user_attribute_packet *packet, void *data, size_t size);
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size);
+size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *str, size_t size);
 
 // Padding Packet (Tag 21)
 pgp_padding_packet *pgp_padding_packet_new(byte_t header_format, void *data, size_t size);
