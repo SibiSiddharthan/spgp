@@ -177,8 +177,20 @@ pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data,
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
 size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size);
 
+// Literal Data Packet (Tag 11)
+pgp_literal_packet *pgp_literal_packet_new(byte_t header_format);
+void pgp_literal_packet_delete(pgp_literal_packet *packet);
+
+size_t pgp_literal_packet_get_filename(pgp_literal_packet *packet, void *filename, size_t size);
+pgp_literal_packet *pgp_literal_packet_set_filename(pgp_literal_packet *packet, void *filename, size_t size);
+
+size_t pgp_literal_packet_get_data(pgp_literal_packet *packet, void *data, size_t size);
+pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_data_format format, uint32_t date, void *data,
+												size_t size);
+
 pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *data, size_t size);
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size);
+size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t size);
 
 // User ID Packet (Tag 13)
 pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, size_t size);
