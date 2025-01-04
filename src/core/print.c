@@ -135,19 +135,7 @@ size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_
 	byte_t *out = str;
 	size_t pos = 0;
 
-	memcpy(PTR_OFFSET(str, pos), "Compressed Data Packet (Tag 8)", 30);
-	pos += 30;
-
-	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
-	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
-	}
-	else
-	{
-		out[pos] = '\n';
-		pos += 1;
-	}
+	pos += pgp_packet_header_print(packet->header, str, size);
 
 	memcpy(PTR_OFFSET(str, pos), "Compression Algorithm: ", 23);
 	pos += 23;
@@ -184,20 +172,7 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 	byte_t *out = str;
 	size_t pos = 0;
 
-	memcpy(PTR_OFFSET(str, pos), "Marker Packet (Tag 10)", 23);
-	pos += 23;
-
-	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
-	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
-	}
-	else
-	{
-		out[pos] = '\n';
-		pos += 1;
-	}
-
+	pos += pgp_packet_header_print(packet->header, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Marker: %c%c%c\n", packet->marker[0], packet->marker[1], packet->marker[2]);
 
 	return pos;
@@ -208,19 +183,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	memcpy(PTR_OFFSET(str, pos), "Literal Data Packet (Tag 11)", 28);
-	pos += 28;
-
-	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
-	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
-	}
-	else
-	{
-		out[pos] = '\n';
-		pos += 1;
-	}
+	pos += pgp_packet_header_print(packet->header, str, size);
 
 	memcpy(PTR_OFFSET(str, pos), "Format: ", 8);
 	pos += 8;
@@ -266,19 +229,7 @@ size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	memcpy(PTR_OFFSET(str, pos), "User ID Packet (Tag 13)", 24);
-	pos += 24;
-
-	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
-	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
-	}
-	else
-	{
-		out[pos] = '\n';
-		pos += 1;
-	}
+	pos += pgp_packet_header_print(packet->header, str, size);
 
 	memcpy(PTR_OFFSET(str, pos), "User ID: ", 9);
 	pos += 9;
@@ -297,19 +248,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 	byte_t *out = str;
 	size_t pos = 0;
 
-	memcpy(PTR_OFFSET(str, pos), "User Attribute Packet (Tag 17)", 30);
-	pos += 30;
-
-	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
-	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
-	}
-	else
-	{
-		out[pos] = '\n';
-		pos += 1;
-	}
+	pos += pgp_packet_header_print(packet->header, str, size);
 
 	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
 	{
@@ -354,20 +293,7 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	memcpy(PTR_OFFSET(str, pos), "Padding Packet (Tag 21)", 23);
-	pos += 23;
-
-	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
-	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
-	}
-	else
-	{
-		out[pos] = '\n';
-		pos += 1;
-	}
-
+	pos += pgp_packet_header_print(packet->header, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
@@ -378,19 +304,7 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 	byte_t *out = str;
 	size_t pos = 0;
 
-	memcpy(PTR_OFFSET(str, pos), "Modification Detection Code Packet (Tag 19)", 43);
-	pos += 43;
-
-	if (get_packet_header_type(packet) == PGP_LEGACY_HEADER)
-	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
-	}
-	else
-	{
-		out[pos] = '\n';
-		pos += 1;
-	}
+	pos += pgp_packet_header_print(packet->header, str, size);
 
 	memcpy(PTR_OFFSET(str, pos), "SHA-1 Hash: ", 12);
 	pos += 12;
