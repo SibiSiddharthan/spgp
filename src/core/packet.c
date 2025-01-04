@@ -1324,6 +1324,113 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 	return pos;
 }
 
+pgp_user_attribute_packet *pgp_user_attribute_packet_new(byte_t header_format)
+{
+	pgp_user_attribute_packet *packet = NULL;
+
+	packet = malloc(sizeof(pgp_user_attribute_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_user_attribute_packet));
+
+	packet->header = encode_packet_header(header_format, PGP_UAT, 0);
+
+	return packet;
+}
+
+void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet)
+{
+	// Free subpackets first.
+	for (size_t i = 0; i < packet->subpacket_count; ++i)
+	{
+		free(packet->subpackets[i]);
+	}
+
+	free(packet->subpackets);
+	free(packet);
+}
+
+size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, void *image, size_t size)
+{
+	pgp_user_attribute_subpacket_header *subpacket_header = NULL;
+
+	if (packet->subpackets == NULL)
+	{
+		return 0;
+	}
+
+	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
+	{
+		subpacket_header = packet->subpackets[i];
+
+		// Return the image data of the first image subpacket.
+		if (subpacket_header->type == PGP_USER_ATTRIBUTE_IMAGE)
+		{
+			pgp_user_attribute_image_subpacket *image_subpacket = packet->subpackets[i];
+			uint32_t image_size = image_subpacket->header.body_size - 16;
+
+			if (size < image_size)
+			{
+				return 0;
+			}
+
+			memcpy(image, image_subpacket->image_data, image_size);
+
+			return image_size;
+		}
+	}
+
+	return 0;
+}
+
+pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packet, byte_t format, void *image, size_t size)
+{
+	pgp_user_attribute_image_subpacket *image_subpacket = NULL;
+	pgp_packet_header_type header_format = get_packet_header_type(&packet->header);
+	size_t required_size = sizeof(pgp_user_attribute_image_subpacket) + size;
+
+	if (format != PGP_USER_ATTRIBUTE_IMAGE_JPEG)
+	{
+		return NULL;
+	}
+
+	// Allocate for atleast one subpacket.
+	packet->subpackets = malloc(sizeof(void *));
+
+	if (packet->subpackets == NULL)
+	{
+		return NULL;
+	}
+
+	// Set the image data
+	image_subpacket = malloc(required_size);
+
+	if (image_subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(image_subpacket, 0, required_size);
+
+	image_subpacket->image_header_size = 1;
+	image_subpacket->image_header_version = 1;
+	image_subpacket->image_encoding = format;
+	memcpy(image_subpacket->image_data, image, size);
+
+	image_subpacket->header = encode_subpacket_header(PGP_USER_ATTRIBUTE_IMAGE, 16 + size);
+
+	packet->subpackets[0] = image_subpacket;
+	packet->subpacket_count = 1;
+
+	packet->header = encode_packet_header(header_format, PGP_UAT, image_subpacket->header.body_size + image_subpacket->header.header_size);
+
+	return packet;
+}
+
 pgp_user_attribute_packet *pgp_user_attribute_packet_read(pgp_user_attribute_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
