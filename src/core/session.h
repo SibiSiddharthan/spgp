@@ -106,7 +106,19 @@ typedef struct _pgp_x448_encrypt
 pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, size_t size);
 size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size);
 
+
+// Symmetric Key Encrypted Session Key Packet (Tag 3)
+pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
+									   pgp_s2k *s2k);
+void pgp_skesk_packet_delete(pgp_skesk_packet *packet);
+
+pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
+													   size_t session_key_size);
+pgp_skesk_packet *pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
+													   size_t session_key_size);
+
 pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, size_t size);
 size_t pgp_skesk_packet_write(pgp_skesk_packet *packet, void *ptr, size_t size);
+size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size);
 
 #endif
