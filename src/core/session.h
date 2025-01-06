@@ -123,7 +123,7 @@ pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byt
 void pgp_skesk_packet_delete(pgp_skesk_packet *packet);
 
 pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
-													   size_t session_key_size);
+													   size_t session_key_size, void *iv, size_t iv_size);
 pgp_skesk_packet *pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
 													   size_t session_key_size);
 

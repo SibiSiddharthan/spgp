@@ -154,6 +154,8 @@ typedef struct _pgp_trust_packet
 	byte_t level;
 } pgp_trust_packet;
 
+#define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : PGP_LEGACY_HEADER)
+
 pgp_packet_header pgp_packet_header_read(void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 

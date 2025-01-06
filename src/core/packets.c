@@ -29,7 +29,6 @@ pgp_compresed_packet *pgp_compressed_packet_new(byte_t header_format, byte_t com
 
 	memset(packet, 0, sizeof(pgp_compresed_packet));
 
-	packet->header.tag = get_tag(header_format, PGP_COMP, 0);
 	packet->compression_algorithm_id = compression_algorithm_id;
 
 	return packet;
@@ -43,7 +42,7 @@ void pgp_compressed_packet_delete(pgp_compresed_packet *packet)
 
 pgp_compresed_packet *pgp_compressed_packet_set_data(pgp_compresed_packet *packet, void *ptr, size_t size)
 {
-	pgp_packet_header_type header_type = get_packet_header_type(packet);
+	pgp_packet_header_type header_type = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
 
 	switch (packet->compression_algorithm_id)
 	{
@@ -282,7 +281,7 @@ size_t pgp_literal_packet_get_filename(pgp_literal_packet *packet, void *filenam
 
 pgp_literal_packet *pgp_literal_packet_set_filename(pgp_literal_packet *packet, void *filename, size_t size)
 {
-	pgp_packet_header_type header_format = get_packet_header_type(&packet->header);
+	pgp_packet_header_type header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
 
 	if (size > 255)
 	{
@@ -326,7 +325,7 @@ size_t pgp_literal_packet_get_data(pgp_literal_packet *packet, void *data, size_
 pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_data_format format, uint32_t date, void *data,
 												size_t size)
 {
-	pgp_packet_header_type header_format = get_packet_header_type(&packet->header);
+	pgp_packet_header_type header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
 	size_t required_size = size;
 	size_t max_size = (1ull << 32) - (1 + 1 + 4 + packet->filename_size) - 1;
 
@@ -732,7 +731,7 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 		uint32_t image_size = image_subpacket->header.body_size - 16;
 
 		// 2 octets of image length in little endian
-		LOAD_16(out + pos, image_subpacket->image_header_size);
+		LOAD_16(out + pos, &image_subpacket->image_header_size);
 		pos += 2;
 
 		// 1 octet image header version
@@ -823,7 +822,7 @@ size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, vo
 pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packet, byte_t format, void *image, size_t size)
 {
 	pgp_user_attribute_image_subpacket *image_subpacket = NULL;
-	pgp_packet_header_type header_format = get_packet_header_type(&packet->header);
+	pgp_packet_header_type header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
 	size_t required_size = sizeof(pgp_user_attribute_image_subpacket) + size;
 
 	if (format != PGP_USER_ATTRIBUTE_IMAGE_JPEG)

@@ -224,7 +224,7 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 	byte_t *out = ptr;
 	uint32_t pos = 0;
 
-	if (get_packet_header_type(header) == PGP_HEADER)
+	if (PGP_PACKET_HEADER_FORMAT(header->tag) == PGP_HEADER)
 	{
 		// 1 byte tag
 		LOAD_8(out + pos, &header->tag);

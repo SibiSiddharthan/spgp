@@ -16,8 +16,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-pgp_packet_header encode_packet_header(pgp_packet_header_type header_format, pgp_packet_type packet_type, size_t body_size);
-
 static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
