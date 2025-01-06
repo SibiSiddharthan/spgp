@@ -59,9 +59,9 @@ typedef struct _pgp_skesk_packet
 	uint16_t iv_size;
 	uint16_t tag_size;
 
-	void *iv;
-	void *tag;
-	void *session_key;
+	byte_t iv[16];
+	byte_t tag[16];
+	byte_t session_key[32];
 
 } pgp_skesk_packet;
 
@@ -103,9 +103,19 @@ typedef struct _pgp_x448_encrypt
 	void *encrypted_session_key;
 } pgp_x448_encrypt;
 
+// Public Key Encrypted Session Key Packet (Tag 1)
+pgp_pkesk_packet *pgp_pkesk_packet_new(byte_t header_format, byte_t version, byte_t public_key_algorithm_id,
+									   byte_t session_key_algorithm_id);
+void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet);
+
+pgp_pkesk_packet *pgp_pkesk_packet_set_key(pgp_pkesk_packet *packet, byte_t key_version, void *key, size_t size);
+pgp_pkesk_packet *pgp_pkesk_packet_session_key_generate(pgp_pkesk_packet *packet);
+
+size_t pgp_pkesk_packet_get_session_key(pgp_pkesk_packet *packet, void *key, size_t size);
+
 pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, size_t size);
 size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size);
-
+size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size);
 
 // Symmetric Key Encrypted Session Key Packet (Tag 3)
 pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
