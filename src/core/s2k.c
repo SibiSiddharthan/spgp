@@ -194,6 +194,44 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 	return 0;
 }
 
+pgp_s2k *pgp_s2k_simple_init(pgp_s2k *s2k, byte_t hash_id)
+{
+	s2k->id = PGP_S2K_SIMPLE;
+	s2k->simple.hash_id = hash_id;
+
+	return s2k;
+}
+
+pgp_s2k *pgp_s2k_salted_init(pgp_s2k *s2k, byte_t hash_id, byte_t salt[8])
+{
+	s2k->id = PGP_S2K_SALTED;
+	s2k->salted.hash_id = hash_id;
+	memcpy(&s2k->salted.salt, salt, 8);
+
+	return s2k;
+}
+
+pgp_s2k *pgp_s2k_iterated_init(pgp_s2k *s2k, byte_t hash_id, byte_t salt[8], byte_t count)
+{
+	s2k->id = PGP_S2K_ITERATED;
+	s2k->iterated.hash_id = hash_id;
+	s2k->iterated.count = count;
+	memcpy(&s2k->iterated.salt, salt, 8);
+
+	return s2k;
+}
+
+pgp_s2k *pgp_s2k_argon2_init(pgp_s2k *s2k, byte_t salt[16], byte_t t, byte_t p, byte_t m)
+{
+	s2k->id = PGP_S2K_ARGON2;
+	s2k->argon2.t = t;
+	s2k->argon2.p = p;
+	s2k->argon2.m = m;
+	memcpy(&s2k->argon2.salt, salt, 16);
+
+	return s2k;
+}
+
 static byte_t get_hash_id(pgp_hash_algorithms algorithm)
 {
 	switch (algorithm)
@@ -345,7 +383,7 @@ static uint32_t s2k_argon2_hash(void *password, uint32_t password_size, byte_t s
 	return argon2id(password, password_size, salt, 16, parallel, memory, iterations, NULL, 0, NULL, 0, key, key_size);
 }
 
-uint32_t s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size)
+uint32_t pgp_s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size)
 {
 	switch (s2k->id)
 	{
