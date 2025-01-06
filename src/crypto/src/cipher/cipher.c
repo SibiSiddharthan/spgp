@@ -122,6 +122,50 @@ size_t cipher_ctx_size(cipher_algorithm algorithm)
 	return sizeof(cipher_ctx) + get_ctx_size(algorithm);
 }
 
+size_t cipher_key_size(cipher_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case CIPHER_AES128:
+	case CIPHER_ARIA128:
+	case CIPHER_CAMELLIA128:
+	case CIPHER_TWOFISH128:
+		return 16;
+	case CIPHER_AES192:
+	case CIPHER_ARIA192:
+	case CIPHER_CAMELLIA192:
+	case CIPHER_TWOFISH192:
+		return 24;
+	case CIPHER_AES256:
+	case CIPHER_ARIA256:
+	case CIPHER_CAMELLIA256:
+	case CIPHER_TWOFISH256:
+	case CIPHER_CHACHA20:
+		return 32;
+	case CIPHER_TDES:
+		return 24;
+	default:
+		return 0;
+	}
+}
+
+size_t cipher_iv_size(cipher_algorithm algorithm)
+{
+	if (algorithm == CIPHER_CHACHA20)
+	{
+		return 12;
+	}
+
+	// 64 bit block ciphers
+	if (algorithm == CIPHER_TDES)
+	{
+		return 8;
+	}
+
+	// Rest are all 128 bit block ciphers
+	return 16;
+}
+
 cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size)
 {
 	cipher_ctx *cctx = (cipher_ctx *)ptr;

@@ -81,6 +81,8 @@ typedef struct _cipher_ctx
 } cipher_ctx;
 
 size_t cipher_ctx_size(cipher_algorithm algorithm);
+size_t cipher_key_size(cipher_algorithm algorithm);
+size_t cipher_iv_size(cipher_algorithm algorithm);
 
 cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size);
 cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size);
