@@ -493,6 +493,67 @@ static size_t pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, siz
 	return pos;
 }
 
+pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
+									   pgp_s2k *s2k)
+{
+	pgp_skesk_packet *packet = NULL;
+
+	if (version != PGP_SKESK_V6 && version != PGP_SKESK_V4)
+	{
+		return NULL;
+	}
+
+	if (pgp_symmetric_cipher_valid(symmetric_key_algorithm_id) == 0)
+	{
+		return NULL;
+	}
+
+	if (version == PGP_SKESK_V6)
+	{
+		// Unsupported ciphers for AEAD.
+		if (symmetric_key_algorithm_id == PGP_PLAINTEXT || symmetric_key_algorithm_id == PGP_BLOWFISH ||
+			symmetric_key_algorithm_id == PGP_TDES || symmetric_key_algorithm_id == PGP_IDEA)
+		{
+			return NULL;
+		}
+	}
+
+	packet = malloc(sizeof(pgp_skesk_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_skesk_packet));
+
+	packet->version = version;
+	packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
+
+	if (version == PGP_SKESK_V6)
+	{
+		packet->aead_algorithm_id = aead_algorithm_id;
+		packet->tag_size = 16;
+	}
+	else
+	{
+		packet->aead_algorithm_id = 0;
+		packet->tag_size = 0;
+	}
+
+	memcpy(&packet->s2k_algorithm, s2k, sizeof(pgp_s2k));
+
+	return packet;
+}
+
+void pgp_skesk_packet_delete(pgp_skesk_packet *packet)
+{
+	free(packet->session_key);
+	free(packet);
+}
+
+
+
 pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
