@@ -15,6 +15,80 @@
 
 #include <hkdf.h>
 
+pgp_sed_packet *pgp_sed_packet_new()
+{
+	return malloc(sizeof(pgp_sed_packet));
+}
+
+void pgp_sed_packet_delete(pgp_sed_packet *packet)
+{
+	free(packet->data);
+	free(packet);
+}
+
+pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key,
+									   size_t session_key_size, void *iv, size_t iv_size, void *data, size_t data_size)
+{
+	size_t total_data_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id) + 2 + data_size;
+
+	byte_t *pdata = NULL;
+	byte_t *piv = iv;
+
+	byte_t zero_iv[16] = {0};
+	byte_t message_iv[32] = {0};
+
+	if (iv_size != pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id))
+	{
+		return NULL;
+	}
+
+	packet->data = malloc(total_data_size);
+
+	if (packet->data == NULL)
+	{
+		return NULL;
+	}
+
+	pdata = packet->data;
+
+	packet->header = encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, total_data_size);
+
+	// Copy the IV
+	memcpy(packet->data, iv, iv_size);
+
+	// Last 2 octets
+	pdata[iv_size] = piv[iv_size - 2];
+	pdata[iv_size + 1] = piv[iv_size - 1];
+
+	// Generate the iv
+	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, packet->data, iv_size + 2, message_iv, 32);
+
+	// Encrypt the data
+	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(message_iv, 2), iv_size, data, data_size,
+					PTR_OFFSET(pdata, iv_size + 2), data_size);
+
+	return packet;
+}
+
+size_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
+							  void *data, size_t data_size)
+{
+	size_t iv_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id);
+	size_t plaintext_size = packet->header.body_size - (iv_size + 2);
+
+	byte_t zero_iv[16] = {0};
+	byte_t message_iv[32] = {0};
+
+	// Generate the iv
+	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, packet->data, iv_size + 2, message_iv, 32);
+
+	// Encrypt the data
+	pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(message_iv, 2), iv_size,
+					PTR_OFFSET(packet->data, iv_size + 2), plaintext_size, data, plaintext_size);
+
+	return plaintext_size;
+}
+
 pgp_sed_packet *pgp_sed_packet_read(pgp_sed_packet *packet, void *data, size_t size)
 {
 	// Copy the packet data.

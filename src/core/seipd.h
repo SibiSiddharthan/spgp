@@ -44,7 +44,7 @@ typedef struct _pgp_seipd_packet
 
 } pgp_seipd_packet;
 
-pgp_sed_packet *pgp_sed_packet_new(pgp_packet_header_type format);
+pgp_sed_packet *pgp_sed_packet_new();
 void pgp_sed_packet_delete(pgp_sed_packet *packet);
 
 pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key,
