@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include <hkdf.h>
+#include <sha.h>
 
 pgp_sed_packet *pgp_sed_packet_new()
 {
@@ -206,6 +207,143 @@ static size_t pgp_seipd_packet_v2_write(pgp_seipd_packet *packet, void *ptr, siz
 
 	return pos;
 }
+static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
+													 size_t data_size)
+{
+	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
+
+	byte_t *pdata = NULL;
+	byte_t zero_iv[16] = {0};
+	byte_t prefix[32] = {0};
+	byte_t mdc[SHA1_HASH_SIZE] = {0};
+
+	packet->data_size = block_size + 2 + data_size + 2 + SHA1_HASH_SIZE;
+	packet->data = malloc(packet->data_size);
+
+	if (packet->data == NULL)
+	{
+		return NULL;
+	}
+
+	pdata = packet->data;
+
+	// Generate random prefix of block size
+
+	// Copy the prefix
+	memcpy(packet->data, prefix, block_size);
+
+	// Copy last 2 octets
+	pdata[block_size] = prefix[block_size - 2];
+	pdata[block_size + 1] = prefix[block_size - 1];
+
+	// Copy the remaining plaintext
+	memcpy(PTR_OFFSET(packet->data, block_size + 2), data, data_size);
+
+	// Append the trailer
+	pdata[block_size + 2 + data_size] = 0xD3;
+	pdata[block_size + 2 + data_size + 1] = 0x14;
+
+	// Hash first
+	sha1_hash(packet->data, packet->data_size, mdc);
+
+	// Copy the hash to the end
+	memcpy(PTR_OFFSET(packet->data, packet->data_size - SHA1_HASH_SIZE), mdc, SHA1_HASH_SIZE);
+
+	// Encrypt
+	pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
+					packet->data, packet->data_size);
+
+	packet->header = encode_packet_header(PGP_LEGACY_HEADER, PGP_SEIPD, packet->data_size + 1);
+
+	return packet;
+}
+
+static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
+													 void *data, size_t data_size)
+{
+	uint32_t chunk_size = 1u << (packet->chunk_size + 6);
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
+
+	size_t in_pos = 0;
+	size_t out_pos = 0;
+	size_t count = 0;
+
+	byte_t derived_key[48] = {0};
+	byte_t info[5] = {0};
+
+	byte_t *in = data;
+	byte_t *out = NULL;
+
+	info[0] = packet->header.tag;
+	info[1] = packet->version;
+	info[2] = packet->symmetric_key_algorithm_id;
+	info[3] = packet->aead_algorithm_id;
+	info[4] = packet->chunk_size;
+
+	// Copy the salt
+	memcpy(packet->salt, salt, 32);
+
+	// Derive the message key
+	hkdf(HASH_SHA256, session_key, session_key_size, salt, 32, info, 5, derived_key, key_size + iv_size - 8);
+
+	// Encrypt the data paritioned by chunk size
+	packet->data_size = data_size + (CEIL_DIV(data_size, chunk_size) * PGP_AEAD_TAG_SIZE);
+	packet->data = malloc(packet->data_size);
+
+	if (packet->data == NULL)
+	{
+		return NULL;
+	}
+
+	out = packet->data;
+
+	while (in_pos < data_size)
+	{
+		byte_t tag[PGP_AEAD_TAG_SIZE] = {0};
+		uint32_t in_size = MIN(chunk_size, data_size - in_pos);
+
+		// Encrypt the data
+		pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
+						 PTR_OFFSET(derived_key, key_size), (iv_size - 8), info, 5, in + in_pos, in_size, out + out_pos, in_size, tag,
+						 PGP_AEAD_TAG_SIZE);
+
+		// Copy the tag to the end
+		memcpy(out + in_size, tag, PGP_AEAD_TAG_SIZE);
+
+		in_pos += in_size;
+		out_pos += in_size + PGP_AEAD_TAG_SIZE;
+		++count;
+	}
+
+	// Final authentication tag
+	byte_t aad[16] = {0};
+	byte_t *pc = (byte_t *)count;
+
+	packet->tag_size = PGP_AEAD_TAG_SIZE;
+
+	// Same as info
+	aad[0] = info[0];
+	aad[1] = info[1];
+	aad[2] = info[2];
+	aad[3] = info[3];
+	aad[4] = info[4];
+
+	// Store number of chunks as 8 byte big endian
+	aad[5] = pc[7];
+	aad[6] = pc[6];
+	aad[7] = pc[5];
+	aad[8] = pc[4];
+	aad[9] = pc[3];
+	aad[10] = pc[2];
+	aad[11] = pc[1];
+	aad[12] = pc[0];
+
+	pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
+					 PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
+
+	packet->header = encode_packet_header(PGP_HEADER, PGP_SEIPD, 4 + 32 + packet->tag_size + packet->data_size);
+}
 
 pgp_seipd_packet *pgp_seipd_packet_new(pgp_packet_header_type format, byte_t version, byte_t symmetric_key_algorithm_id,
 									   byte_t aead_algorithm_id, byte_t chunk_size)
@@ -241,8 +379,8 @@ pgp_seipd_packet *pgp_seipd_packet_new(pgp_packet_header_type format, byte_t ver
 	}
 	else
 	{
-		// Only set the version.
 		packet->version = PGP_SEIPD_V1;
+		packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
 	}
 
 	return packet;
@@ -254,104 +392,22 @@ void pgp_seipd_packet_delete(pgp_seipd_packet *packet)
 	free(packet);
 }
 
-pgp_seipd_packet *pgp_seipd_packet_encrypt(pgp_seipd_packet *packet, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
-										   byte_t salt[32], void *session_key, size_t session_key_size, void *data, size_t data_size)
+pgp_seipd_packet *pgp_seipd_packet_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
+										   void *data, size_t data_size)
 {
-	byte_t *in = data;
-	byte_t *out = NULL;
 
-	if (packet->version == PGP_SEIPD_V2)
+	switch (packet->version)
 	{
-		uint32_t chunk_size = 1u << (packet->chunk_size + 6);
-		byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
-		byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
-
-		size_t in_pos = 0;
-		size_t out_pos = 0;
-		size_t count = 0;
-
-		byte_t derived_key[48] = {0};
-		byte_t info[5] = {0};
-
-		info[0] = packet->header.tag;
-		info[1] = packet->version;
-		info[2] = packet->symmetric_key_algorithm_id;
-		info[3] = packet->aead_algorithm_id;
-		info[4] = packet->chunk_size;
-
-		// Copy the salt
-		memcpy(packet->salt, salt, 32);
-
-		// Derive the message key
-		hkdf(HASH_SHA256, session_key, session_key_size, salt, 32, info, 5, derived_key, key_size + iv_size - 8);
-
-		// Encrypt the data paritioned by chunk size
-		packet->data_size = data_size + (CEIL_DIV(data_size, chunk_size) * PGP_AEAD_TAG_SIZE);
-		packet->data = malloc(packet->data_size);
-
-		if (packet->data == NULL)
-		{
-			return NULL;
-		}
-
-		out = packet->data;
-
-		while (in_pos < data_size)
-		{
-			byte_t tag[PGP_AEAD_TAG_SIZE] = {0};
-			uint32_t in_size = MIN(chunk_size, data_size - in_pos);
-
-			// Encrypt the data
-			pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
-							 PTR_OFFSET(derived_key, key_size), (iv_size - 8), info, 5, in + in_pos, in_size, out + out_pos, in_size, tag,
-							 PGP_AEAD_TAG_SIZE);
-
-			// Copy the tag to the end
-			memcpy(out + in_size, tag, PGP_AEAD_TAG_SIZE);
-
-			in_pos += in_size;
-			out_pos += in_size + PGP_AEAD_TAG_SIZE;
-			++count;
-		}
-
-		// Final authentication tag
-		byte_t aad[16] = {0};
-		byte_t *pc = (byte_t *)count;
-
-		packet->tag_size = PGP_AEAD_TAG_SIZE;
-
-		// Same as info
-		aad[0] = info[0];
-		aad[1] = info[1];
-		aad[2] = info[2];
-		aad[3] = info[3];
-		aad[4] = info[4];
-
-		// Store number of chunks as 8 byte big endian
-		aad[5] = pc[7];
-		aad[6] = pc[6];
-		aad[7] = pc[5];
-		aad[8] = pc[4];
-		aad[9] = pc[3];
-		aad[10] = pc[2];
-		aad[11] = pc[1];
-		aad[12] = pc[0];
-
-		pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
-						 PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
-
-		packet->header = encode_packet_header(PGP_HEADER, PGP_SEIPD, 4 + 32 + packet->tag_size + packet->data_size);
-	}
-	else
-	{
-		// TODO
+	case PGP_SEIPD_V1:
+		return pgp_seipd_packet_v1_encrypt(packet, session_key, session_key_size, data, data_size);
+	case PGP_SEIPD_V2:
+		return pgp_seipd_packet_v2_encrypt(packet, salt, session_key, session_key_size, data, data_size);
 	}
 
-	return packet;
+	return NULL;
 }
 
-size_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, void *session_key,
-								size_t session_key_size, void *data, size_t data_size)
+size_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data, size_t data_size)
 {
 	byte_t *in = packet->data;
 	byte_t *out = data;
