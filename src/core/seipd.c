@@ -8,8 +8,12 @@
 #include <spgp.h>
 #include <packet.h>
 #include <seipd.h>
-#include <round.h>
+#include <ciphers.h>
+
+#include <stdlib.h>
 #include <string.h>
+
+#include <hkdf.h>
 
 pgp_sed_packet *pgp_sed_packet_read(pgp_sed_packet *packet, void *data, size_t size)
 {
@@ -129,6 +133,53 @@ static size_t pgp_seipd_packet_v2_write(pgp_seipd_packet *packet, void *ptr, siz
 	return pos;
 }
 
+pgp_seipd_packet *pgp_seipd_packet_new(pgp_packet_header_type format, byte_t version, byte_t symmetric_key_algorithm_id,
+									   byte_t aead_algorithm_id, byte_t chunk_size)
+{
+	pgp_seipd_packet *packet = NULL;
+
+	if (version != PGP_SEIPD_V2 && version != PGP_SEIPD_V1)
+	{
+		return NULL;
+	}
+
+	if (version == PGP_SEIPD_V2)
+	{
+		if (chunk_size > 16)
+		{
+			return NULL;
+		}
+	}
+
+	packet = malloc(sizeof(pgp_seipd_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	if (version == PGP_SEIPD_V2)
+	{
+		packet->version = PGP_SEIPD_V2;
+		packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
+		packet->aead_algorithm_id = aead_algorithm_id;
+		packet->chunk_size = chunk_size;
+	}
+	else
+	{
+		// Only set the version.
+		packet->version = PGP_SEIPD_V1;
+	}
+
+	return packet;
+}
+
+void pgp_seipd_packet_delete(pgp_seipd_packet *packet)
+{
+	free(packet->data);
+	free(packet);
+}
+
 pgp_seipd_packet *pgp_seipd_packet_read(pgp_seipd_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
@@ -165,7 +216,7 @@ pgp_seipd_packet *pgp_seipd_packet_read(pgp_seipd_packet *packet, void *data, si
 		pos += packet->data_size;
 
 		// Tag
-		packet->tag_size = 16;
+		packet->tag_size = PGP_AEAD_TAG_SIZE;
 		memcpy(packet->tag, in + pos, packet->tag_size);
 		pos += packet->tag_size;
 	}
