@@ -157,4 +157,7 @@ size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, siz
 pgp_secret_key_packet *pgp_secret_key_packet_read(pgp_secret_key_packet *packet, void *data, size_t size);
 size_t pgp_secret_key_packet_write(pgp_secret_key_packet *packet, void *ptr, size_t size);
 
+uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size);
+uint32_t pgp_key_id(void *key, byte_t id[8]);
+
 #endif
