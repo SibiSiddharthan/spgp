@@ -1205,7 +1205,98 @@ static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint
 	return SHA256_HASH_SIZE;
 }
 
-uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size);
+uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
+{
+	pgp_packet_header *header = key;
+	byte_t tag = pgp_packet_get_type(header->tag);
+
+	if (tag == PGP_PUBKEY || tag == PGP_PUBSUBKEY)
+	{
+		pgp_public_key_packet *packet = key;
+
+		switch (packet->version)
+		{
+		case PGP_KEY_V2:
+		case PGP_KEY_V3:
+		{
+			if (size < MD5_HASH_SIZE)
+			{
+				return 0;
+			}
+
+			return pgp_key_fingerprint_v3(packet->public_key_algorithm_id, packet->key_data, fingerprint);
+		}
+		case PGP_KEY_V4:
+		{
+			if (size < SHA1_HASH_SIZE)
+			{
+				return 0;
+			}
+
+			return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time, (uint16_t)packet->key_data_size + 6,
+										  packet->key_data, fingerprint);
+		}
+		case PGP_KEY_V6:
+		{
+			if (size < SHA256_HASH_SIZE)
+			{
+				return 0;
+			}
+
+			return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->key_data_size + 9,
+										  packet->key_data_size, packet->key_data, fingerprint);
+		}
+		default:
+			return 0;
+		}
+	}
+	else if (tag == PGP_SECKEY || tag == PGP_SECSUBKEY)
+	{
+		pgp_secret_key_packet *packet = key;
+
+		switch (packet->version)
+		{
+		case PGP_KEY_V2:
+		case PGP_KEY_V3:
+		{
+			if (size < MD5_HASH_SIZE)
+			{
+				return 0;
+			}
+
+			return pgp_key_fingerprint_v3(packet->public_key_algorithm_id, packet->public_key_data, fingerprint);
+		}
+		case PGP_KEY_V4:
+		{
+			if (size < SHA1_HASH_SIZE)
+			{
+				return 0;
+			}
+
+			return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time,
+										  (uint16_t)packet->public_key_data_size + 6, packet->public_key_data, fingerprint);
+		}
+		case PGP_KEY_V6:
+		{
+			if (size < SHA256_HASH_SIZE)
+			{
+				return 0;
+			}
+
+			return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_size + 9,
+										  packet->public_key_data_size, packet->public_key_data_size, fingerprint);
+		}
+		default:
+			return 0;
+		}
+	}
+	else
+	{
+		return 0;
+	}
+
+	return 0;
+}
 
 uint32_t pgp_key_id(void *key, byte_t id[8])
 {
