@@ -149,6 +149,24 @@ size_t cipher_key_size(cipher_algorithm algorithm)
 	}
 }
 
+size_t cipher_block_size(cipher_algorithm algorithm)
+{
+	// Stream ciphers
+	if (algorithm == CIPHER_CHACHA20)
+	{
+		return 0;
+	}
+
+	// 64 bit block ciphers
+	if (algorithm == CIPHER_TDES)
+	{
+		return 8;
+	}
+
+	// Rest are all 128 bit block ciphers
+	return 16;
+}
+
 size_t cipher_iv_size(cipher_algorithm algorithm)
 {
 	if (algorithm == CIPHER_CHACHA20)

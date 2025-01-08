@@ -21,7 +21,13 @@ byte_t pgp_signature_algorithm_validate(pgp_public_key_algorithms algorithm);
 byte_t pgp_aead_algorithm_validate(pgp_aead_algorithms algorithm);
 
 byte_t pgp_symmetric_cipher_key_size(pgp_symmetric_key_algorithms algorithm);
-byte_t pgp_symmetric_cipher_iv_size(pgp_symmetric_key_algorithms algorithm);
+byte_t pgp_symmetric_cipher_block_size(pgp_symmetric_key_algorithms algorithm);
+byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm);
+
+size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
+					   void *in, size_t in_size, void *out, size_t out_size);
+size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
+					   void *in, size_t in_size, void *out, size_t out_size);
 
 size_t pgp_aead_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, pgp_aead_algorithms aead_algorithm_id, void *key,
 						size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in, size_t in_size,

@@ -111,7 +111,7 @@ byte_t pgp_symmetric_cipher_key_size(pgp_symmetric_key_algorithms algorithm)
 	return (byte_t)cipher_key_size(pgp_algorithm_to_cipher_algorithm(algorithm));
 }
 
-byte_t pgp_symmetric_cipher_iv_size(pgp_symmetric_key_algorithms algorithm)
+byte_t pgp_symmetric_cipher_block_size(pgp_symmetric_key_algorithms algorithm)
 {
-	return (byte_t)cipher_iv_size(pgp_algorithm_to_cipher_algorithm(algorithm));
+	return (byte_t)cipher_block_size(pgp_algorithm_to_cipher_algorithm(algorithm));
 }
