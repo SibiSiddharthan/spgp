@@ -13,7 +13,12 @@
 
 #include <cipher.h>
 
-byte_t pgp_symmetric_cipher_valid(pgp_symmetric_key_algorithms algorithm);
+#define PGP_AEAD_TAG_SIZE 16
+
+byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algorithm);
+byte_t pgp_asymmetric_cipher_algorithm_validate(pgp_public_key_algorithms algorithm);
+byte_t pgp_signature_algorithm_validate(pgp_public_key_algorithms algorithm);
+byte_t pgp_aead_algorithm_validate(pgp_aead_algorithms algorithm);
 
 byte_t pgp_symmetric_cipher_key_size(pgp_symmetric_key_algorithms algorithm);
 byte_t pgp_symmetric_cipher_iv_size(pgp_symmetric_key_algorithms algorithm);

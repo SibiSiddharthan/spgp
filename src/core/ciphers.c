@@ -38,7 +38,7 @@ static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algo
 	}
 }
 
-byte_t pgp_symmetric_cipher_valid(pgp_symmetric_key_algorithms algorithm)
+byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algorithm)
 {
 	switch (algorithm)
 	{
@@ -54,6 +54,52 @@ byte_t pgp_symmetric_cipher_valid(pgp_symmetric_key_algorithms algorithm)
 	case PGP_CAMELLIA_128:
 	case PGP_CAMELLIA_192:
 	case PGP_CAMELLIA_256:
+		return 1;
+	}
+
+	return 0;
+}
+
+byte_t pgp_asymmetric_cipher_algorithm_validate(pgp_public_key_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	case PGP_ECDH:
+	case PGP_X25519:
+	case PGP_X448:
+		return 1;
+	}
+
+	return 0;
+}
+
+byte_t pgp_signature_algorithm_validate(pgp_public_key_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_SIGN_ONLY:
+	case PGP_DSA:
+	case PGP_ECDSA:
+	case PGP_EDDSA_LEGACY:
+	case PGP_ED25519:
+	case PGP_ED448:
+		return 1;
+	}
+
+	return 0;
+}
+
+byte_t pgp_aead_algorithm_validate(pgp_aead_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_AEAD_EAX:
+	case PGP_AEAD_OCB:
+	case PGP_AEAD_GCM:
 		return 1;
 	}
 
