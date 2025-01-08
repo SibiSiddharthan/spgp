@@ -926,7 +926,7 @@ static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint
 	byte_t constant = 0x99;
 	byte_t version = 4;
 	uint16_t octet_count_be = BSWAP_16(octet_count);
-	uint32_t creation_time_be = BSWAP32(creation_time);
+	uint32_t creation_time_be = BSWAP_32(creation_time);
 
 	sha1_update(&sha1, &constant, 1);
 	sha1_update(&sha1, &octet_count_be, 2);
@@ -1058,6 +1058,151 @@ static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint
 	}
 
 	return SHA1_HASH_SIZE;
+}
+
+static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint32_t octet_count,
+									   uint32_t material_count, void *key, byte_t figerprint_v6[SHA256_HASH_SIZE])
+{
+	sha256_ctx sha256;
+	sha256_init(&sha256, sizeof(md5_ctx));
+
+	byte_t constant = 0x9B;
+	byte_t version = 4;
+	uint32_t octet_count_be = BSWAP_32(octet_count);
+	uint32_t material_count_be = BSWAP_32(octet_count);
+	uint32_t creation_time_be = BSWAP_32(creation_time);
+
+	sha256_update(&sha256, &constant, 1);
+	sha256_update(&sha256, &octet_count_be, 4);
+	sha256_update(&sha256, &version, 1);
+	sha256_update(&sha256, &creation_time_be, 4);
+	sha256_update(&sha256, &algorithm, 1);
+	sha256_update(&sha256, &material_count_be, 4);
+
+	switch (algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_rsa_key *pkey = key;
+		uint16_t bits_be = 0;
+		uint32_t bytes = 0;
+
+		// n
+		bits_be = BSWAP_16(pkey->n->bits);
+		bytes = CEIL_DIV(pkey->n->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->n->bytes, bytes);
+
+		// e
+		bits_be = BSWAP_16(pkey->e->bits);
+		bytes = CEIL_DIV(pkey->e->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->e->bytes, bytes);
+
+		sha256_final(&sha256, figerprint_v6);
+	}
+	break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_elgamal_key *pkey = key;
+		uint16_t bits_be = 0;
+		uint32_t bytes = 0;
+
+		// p
+		bits_be = BSWAP_16(pkey->p->bits);
+		bytes = CEIL_DIV(pkey->p->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->p->bytes, bytes);
+
+		// g
+		bits_be = BSWAP_16(pkey->g->bits);
+		bytes = CEIL_DIV(pkey->g->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->g->bytes, bytes);
+
+		// y
+		bits_be = BSWAP_16(pkey->y->bits);
+		bytes = CEIL_DIV(pkey->y->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->y->bytes, bytes);
+
+		sha256_final(&sha256, figerprint_v6);
+	}
+	break;
+	case PGP_DSA:
+	{
+		pgp_dsa_key *pkey = key;
+		uint16_t bits_be = 0;
+		uint32_t bytes = 0;
+
+		// p
+		bits_be = BSWAP_16(pkey->p->bits);
+		bytes = CEIL_DIV(pkey->p->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->p->bytes, bytes);
+
+		// q
+		bits_be = BSWAP_16(pkey->q->bits);
+		bytes = CEIL_DIV(pkey->q->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->q->bytes, bytes);
+
+		// g
+		bits_be = BSWAP_16(pkey->g->bits);
+		bytes = CEIL_DIV(pkey->g->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->g->bytes, bytes);
+
+		// y
+		bits_be = BSWAP_16(pkey->y->bits);
+		bytes = CEIL_DIV(pkey->y->bits, 8);
+		sha256_update(&sha256, &bits_be, 2);
+		sha256_update(&sha256, pkey->y->bytes, bytes);
+
+		sha256_final(&sha256, figerprint_v6);
+	}
+	break;
+	case PGP_ECDH:
+	case PGP_ECDSA:
+	case PGP_EDDSA_LEGACY:
+		// TODO
+		break;
+	case PGP_X25519:
+	{
+		pgp_x25519_key *pkey = key;
+		sha256_update(&sha256, pkey->public_key, 32);
+		sha256_final(&sha256, figerprint_v6);
+	}
+	break;
+	case PGP_X448:
+	{
+		pgp_x448_key *pkey = key;
+		sha256_update(&sha256, pkey->public_key, 56);
+		sha256_final(&sha256, figerprint_v6);
+	}
+	break;
+	case PGP_ED25519:
+	{
+
+		pgp_ed25519_key *pkey = key;
+		sha256_update(&sha256, pkey->public_key, 32);
+		sha256_final(&sha256, figerprint_v6);
+	}
+	break;
+	case PGP_ED448:
+	{
+		pgp_ed448_key *pkey = key;
+		sha1_update(&sha256, pkey->public_key, 57);
+		sha256_final(&sha256, figerprint_v6);
+	}
+	break;
+	default:
+		return 0;
+	}
+
+	return SHA256_HASH_SIZE;
 }
 
 uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size);
