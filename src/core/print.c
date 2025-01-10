@@ -16,23 +16,9 @@ pgp_packet_type pgp_packet_get_type(byte_t tag);
 
 static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-static pgp_packet_header_type get_packet_header_type(void *packet)
-{
-	pgp_packet_header *header = packet;
-	byte_t tag = header->tag;
-
-	// Bit 6 and 7 are set
-	if ((tag & 0xC0) == 0xC0)
-	{
-		return PGP_HEADER;
-	}
-
-	return PGP_LEGACY_HEADER;
-}
-
 static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size)
 {
-	pgp_packet_header_type format = get_packet_header_type(&header);
+	pgp_packet_header_type format = PGP_PACKET_HEADER_FORMAT(header.tag);
 	pgp_packet_type type = pgp_packet_get_type(header.tag);
 
 	byte_t *out = str;

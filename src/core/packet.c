@@ -18,20 +18,6 @@
 
 // Refer RFC 9580 - OpenPGP, Section 4.2 Packet Headers
 
-static pgp_packet_header_type get_packet_header_type(void *packet)
-{
-	pgp_packet_header *header = packet;
-	byte_t tag = header->tag;
-
-	// Bit 6 and 7 are set
-	if ((tag & 0xC0) == 0xC0)
-	{
-		return PGP_HEADER;
-	}
-
-	return PGP_LEGACY_HEADER;
-}
-
 static uint32_t get_packet_body_size(void *packet, size_t packet_size)
 {
 	pgp_packet_header *header = packet;
@@ -219,6 +205,66 @@ pgp_user_attribute_subpacket_header encode_subpacket_header(pgp_user_attribute_s
 	return header;
 }
 
+pgp_packet_type pgp_packet_get_type(byte_t tag)
+{
+	pgp_packet_type ptype = 0;
+
+	// Bit 6 and 7 are set
+	if ((tag & 0xC0) == 0xC0)
+	{
+		ptype = tag & 0x3F;
+	}
+	else
+	{
+		ptype = (tag >> 2) & 0x0F;
+	}
+
+	switch (ptype)
+	{
+	case PGP_PKESK:
+	case PGP_SIG:
+	case PGP_SKESK:
+	case PGP_OPS:
+	case PGP_SECKEY:
+	case PGP_PUBKEY:
+	case PGP_SECSUBKEY:
+	case PGP_COMP:
+	case PGP_SED:
+	case PGP_MARKER:
+	case PGP_LIT:
+	case PGP_TRUST:
+	case PGP_UID:
+	case PGP_PUBSUBKEY:
+	case PGP_UAT:
+	case PGP_SEIPD:
+	case PGP_MDC:
+	case PGP_PADDING:
+		break;
+	default:
+		// Error
+		ptype = PGP_RESERVED;
+	}
+
+	return ptype;
+}
+
+pgp_packet_header pgp_packet_header_read(void *data, size_t size)
+{
+	byte_t *pdata = data;
+	pgp_packet_header header = {0};
+
+	if (size == 0)
+	{
+		return header;
+	}
+
+	header.tag = pdata[0];
+	header.header_size = get_packet_header_size(PGP_PACKET_HEADER_FORMAT(header.tag), size);
+	header.body_size = get_packet_body_size(data, size);
+
+	return header;
+}
+
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 {
 	byte_t *out = ptr;
@@ -300,66 +346,6 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 	return pos;
 }
 
-pgp_packet_type pgp_packet_get_type(byte_t tag)
-{
-	pgp_packet_type ptype = 0;
-
-	// Bit 6 and 7 are set
-	if ((tag & 0xC0) == 0xC0)
-	{
-		ptype = tag & 0x3F;
-	}
-	else
-	{
-		ptype = (tag >> 2) & 0x0F;
-	}
-
-	switch (ptype)
-	{
-	case PGP_PKESK:
-	case PGP_SIG:
-	case PGP_SKESK:
-	case PGP_OPS:
-	case PGP_SECKEY:
-	case PGP_PUBKEY:
-	case PGP_SECSUBKEY:
-	case PGP_COMP:
-	case PGP_SED:
-	case PGP_MARKER:
-	case PGP_LIT:
-	case PGP_TRUST:
-	case PGP_UID:
-	case PGP_PUBSUBKEY:
-	case PGP_UAT:
-	case PGP_SEIPD:
-	case PGP_MDC:
-	case PGP_PADDING:
-		break;
-	default:
-		// Error
-		ptype = PGP_RESERVED;
-	}
-
-	return ptype;
-}
-
-pgp_packet_header pgp_packet_header_read(void *data, size_t size)
-{
-	byte_t *pdata = data;
-	pgp_packet_header header = {0};
-
-	if (size == 0)
-	{
-		return header;
-	}
-
-	header.tag = pdata[0];
-	header.header_size = get_packet_header_size(get_packet_header_type(data), size);
-	header.body_size = get_packet_body_size(data, size);
-
-	return header;
-}
-
 void *pgp_packet_read(void *data, size_t size)
 {
 	pgp_packet_header header = pgp_packet_header_read(data, size);
@@ -370,7 +356,7 @@ void *pgp_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (get_packet_header_size(get_packet_header_type(&header), header.body_size) + header.body_size))
+	if (size < (get_packet_header_size(PGP_PACKET_HEADER_FORMAT(header.tag), header.body_size) + header.body_size))
 	{
 		// Invalid packet
 		return NULL;
@@ -419,4 +405,3 @@ void *pgp_packet_read(void *data, size_t size)
 		return NULL;
 	}
 }
-
