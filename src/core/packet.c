@@ -93,9 +93,9 @@ static uint32_t get_packet_body_size(void *packet, size_t packet_size)
 	return size;
 }
 
-byte_t get_packet_header_size(pgp_packet_header_type type, size_t size)
+byte_t get_packet_header_size(pgp_packet_header_format format, size_t size)
 {
-	if (type == PGP_HEADER)
+	if (format == PGP_HEADER)
 	{
 		// New format packet lengths
 		// 1 octed length
@@ -135,7 +135,7 @@ byte_t get_packet_header_size(pgp_packet_header_type type, size_t size)
 	}
 }
 
-byte_t get_tag(pgp_packet_header_type header_type, pgp_packet_type packet_type, size_t size)
+byte_t get_tag(pgp_packet_header_format header_type, pgp_packet_type packet_type, size_t size)
 {
 	byte_t tag = 0;
 	if (header_type == PGP_HEADER)
@@ -167,7 +167,7 @@ byte_t get_tag(pgp_packet_header_type header_type, pgp_packet_type packet_type, 
 	return tag;
 }
 
-pgp_packet_header encode_packet_header(pgp_packet_header_type header_format, pgp_packet_type packet_type, size_t body_size)
+pgp_packet_header encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size)
 {
 	pgp_packet_header header = {0};
 

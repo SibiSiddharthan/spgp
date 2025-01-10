@@ -484,7 +484,7 @@ static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *sessio
 	return out_pos;
 }
 
-pgp_seipd_packet *pgp_seipd_packet_new(pgp_packet_header_type format, byte_t version, byte_t symmetric_key_algorithm_id,
+pgp_seipd_packet *pgp_seipd_packet_new(pgp_packet_header_format format, byte_t version, byte_t symmetric_key_algorithm_id,
 									   byte_t aead_algorithm_id, byte_t chunk_size)
 {
 	pgp_seipd_packet *packet = NULL;
