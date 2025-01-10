@@ -168,7 +168,7 @@ byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type pack
 	return tag;
 }
 
-pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size)
+pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, uint32_t body_size)
 {
 	pgp_packet_header header = {0};
 
@@ -179,11 +179,11 @@ pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_forma
 	return header;
 }
 
-pgp_user_attribute_subpacket_header pgp_encode_subpacket_header(pgp_user_attribute_subpacket_type type, size_t body_size)
+pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critical, uint32_t body_size)
 {
-	pgp_user_attribute_subpacket_header header = {0};
+	pgp_subpacket_header header = {0};
 
-	header.type = type;
+	header.tag = type | ((set_critical & 0x1) << 7);
 	header.body_size = body_size;
 
 	// 1,2, or 5 octets of subpacket length
