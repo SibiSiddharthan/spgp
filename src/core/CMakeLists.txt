@@ -10,7 +10,7 @@ add_library(spgp OBJECT
 			base64.c base64.h
 			crc24.c crc24.h
 			mpi.c mpi.h
-			ciphers.h ciphers.c
+			crypto.h crypto.c
 			packet.c packet.h
 			packets.c print.c
 			key.c key.h

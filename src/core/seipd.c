@@ -8,7 +8,7 @@
 #include <spgp.h>
 #include <packet.h>
 #include <seipd.h>
-#include <ciphers.h>
+#include <crypto.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -390,6 +390,7 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 	// Quick
 	if (pdata[block_size] != pdata[block_size - 2] || pdata[block_size + 1] != pdata[block_size - 1])
 	{
+		free(temp);
 		return 0;
 	}
 
@@ -398,11 +399,13 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 
 	if (memcmp(mdc, PTR_OFFSET(packet->data, packet->data_size - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
 	{
+		free(temp);
 		return 0;
 	}
 
 	// Copy the decrypted text
 	memcpy(data, PTR_OFFSET(temp, block_size + 2), plaintext_size);
+	free(temp);
 
 	return plaintext_size;
 }

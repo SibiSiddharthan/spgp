@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef SPGP_CIPHERS_H
-#define SPGP_CIPHERS_H
+#ifndef SPGP_CRYPTO_H
+#define SPGP_CRYPTO_H
 
 #include <spgp.h>
 #include <algorithms.h>

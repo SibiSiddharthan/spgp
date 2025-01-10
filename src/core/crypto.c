@@ -6,7 +6,7 @@
 */
 
 #include <spgp.h>
-#include <ciphers.h>
+#include <crypto.h>
 
 static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algorithms algorithm)
 {
