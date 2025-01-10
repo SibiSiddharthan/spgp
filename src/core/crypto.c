@@ -115,3 +115,18 @@ byte_t pgp_symmetric_cipher_block_size(pgp_symmetric_key_algorithms algorithm)
 {
 	return (byte_t)cipher_block_size(pgp_algorithm_to_cipher_algorithm(algorithm));
 }
+
+byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_AEAD_EAX:
+		return 16;
+	case PGP_AEAD_OCB:
+		return 15;
+	case PGP_AEAD_GCM:
+		return 12;
+	}
+
+	return 0;
+}
