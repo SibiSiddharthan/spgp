@@ -159,9 +159,10 @@ typedef struct _pgp_trust_packet
 pgp_packet_header pgp_packet_header_read(void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 
-pgp_packet_header encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size);
-pgp_user_attribute_subpacket_header encode_subpacket_header(pgp_user_attribute_subpacket_type type, size_t body_size);
+pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size);
+pgp_user_attribute_subpacket_header pgp_encode_subpacket_header(pgp_user_attribute_subpacket_type type, size_t body_size);
 
+byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type packet_type, uint32_t size);
 pgp_packet_type pgp_packet_get_type(byte_t tag);
 
 // Compressed Packet (Tag 8)

@@ -53,7 +53,7 @@ pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_
 
 	pdata = packet->data;
 
-	packet->header = encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, total_data_size);
+	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, total_data_size);
 
 	// Copy the IV
 	memcpy(packet->data, iv, iv_size);
@@ -264,7 +264,7 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 	pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
 					packet->data, packet->data_size);
 
-	packet->header = encode_packet_header(PGP_LEGACY_HEADER, PGP_SEIPD, packet->data_size + 1);
+	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SEIPD, packet->data_size + 1);
 
 	return packet;
 }
@@ -353,7 +353,7 @@ static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, b
 	pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
 					 PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
 
-	packet->header = encode_packet_header(PGP_HEADER, PGP_SEIPD, 4 + 32 + packet->tag_size + packet->data_size);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, 4 + 32 + packet->tag_size + packet->data_size);
 }
 
 static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
