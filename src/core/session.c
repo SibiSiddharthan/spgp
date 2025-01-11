@@ -7,7 +7,7 @@
 
 #include <spgp.h>
 #include <algorithms.h>
-#include <ciphers.h>
+#include <crypto.h>
 #include <packet.h>
 #include <session.h>
 
@@ -314,6 +314,101 @@ static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, siz
 	return pos;
 }
 
+pgp_pkesk_packet *pgp_pkesk_packet_new(byte_t version, byte_t public_key_algorithm_id, byte_t session_key_algorithm_id)
+{
+	pgp_pkesk_packet *packet = NULL;
+
+	if (version != PGP_PKESK_V6 && version != PGP_PKESK_V3)
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_pkesk_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_pkesk_packet));
+
+	packet->version = version;
+	packet->public_key_algorithm_id = public_key_algorithm_id;
+	packet->session_key_algorithm_id = session_key_algorithm_id;
+
+	return packet;
+}
+
+void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet)
+{
+	free(packet->session_key);
+	free(packet);
+}
+
+pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key, void *session_key,
+													   size_t session_key_size, byte_t anonymous)
+{
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->session_key_algorithm_id);
+	uint16_t checksum = 0;
+
+	byte_t *pkey = session_key;
+	byte_t data[64] = {0};
+
+	size_t pos;
+
+	// Check the algorithms
+	if (packet->public_key_algorithm_id != public_key->public_key_algorithm_id)
+	{
+		return NULL;
+	}
+
+	if (session_key_size != key_size)
+	{
+		return NULL;
+	}
+
+	for (uint16_t i = 0; i < session_key_size; ++i)
+	{
+		checksum += pkey[i];
+	}
+
+	packet->key_version = public_key->version;
+	packet->key_checksum[0] = checksum << 8;
+	packet->key_checksum[1] = checksum & 0xFF;
+
+	// Construct the data
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		if (packet->version == PGP_PKESK_V3)
+		{
+			// 1 octet algorithm id
+			LOAD_8(data + pos, &packet->session_key_algorithm_id);
+			pos += 1;
+		}
+
+		// Session key
+		memcpy(data + pos, session_key, session_key_size);
+		pos += session_key_size;
+
+		// 2 octet session key checksum
+		LOAD_16(data + pos, packet->key_checksum);
+		pos += 2;
+	}
+	break;
+	case PGP_ECDH:
+	case PGP_X25519:
+	case PGP_X448:
+		// TODO
+		return NULL;
+	}
+
+	return packet;
+}
+
 pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
@@ -507,7 +602,7 @@ pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byt
 		return NULL;
 	}
 
-	if (pgp_symmetric_cipher_valid(symmetric_key_algorithm_id) == 0)
+	if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 	{
 		return NULL;
 	}
@@ -590,7 +685,7 @@ pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet,
 						 packet->tag, packet->tag_size);
 
 		// Fill up the header now, we have enough information.
-		packet->header = encode_packet_header(PGP_HEADER, PGP_SKESK,
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SKESK,
 											  1 + 1 + 1 + 1 + 1 + pgp_s2k_size(&packet->s2k_algorithm) + packet->iv_size +
 												  packet->tag_size + packet->session_key_size);
 	}
@@ -599,7 +694,7 @@ pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet,
 		if (session_key == NULL)
 		{
 			// No crypto operations to do here.
-			packet->header = encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 1 + 1 + pgp_s2k_size(&packet->s2k_algorithm));
+			packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 1 + 1 + pgp_s2k_size(&packet->s2k_algorithm));
 		}
 		else
 		{

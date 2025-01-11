@@ -10,6 +10,7 @@
 
 #include <spgp.h>
 #include <packet.h>
+#include <key.h>
 #include <mpi.h>
 #include <s2k.h>
 
@@ -104,12 +105,13 @@ typedef struct _pgp_x448_encrypt
 } pgp_x448_encrypt;
 
 // Public Key Encrypted Session Key Packet (Tag 1)
-pgp_pkesk_packet *pgp_pkesk_packet_new(byte_t header_format, byte_t version, byte_t public_key_algorithm_id,
-									   byte_t session_key_algorithm_id);
+pgp_pkesk_packet *pgp_pkesk_packet_new(byte_t version, byte_t public_key_algorithm_id, byte_t session_key_algorithm_id);
 void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet);
 
-pgp_pkesk_packet *pgp_pkesk_packet_set_key(pgp_pkesk_packet *packet, byte_t key_version, void *key, size_t size);
-pgp_pkesk_packet *pgp_pkesk_packet_session_key_generate(pgp_pkesk_packet *packet);
+pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key, void *session_key,
+													   size_t session_key_size, byte_t anonymous);
+pgp_pkesk_packet *pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_secret_key_packet *secret_key, void *session_key,
+													   size_t session_key_size);
 
 size_t pgp_pkesk_packet_get_session_key(pgp_pkesk_packet *packet, void *key, size_t size);
 
