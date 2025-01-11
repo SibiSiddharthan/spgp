@@ -17,6 +17,7 @@
 #include <chacha20.h>
 
 #include <ptr.h>
+#include <round.h>
 
 static inline size_t get_ctx_size(cipher_algorithm algorithm)
 {
@@ -190,6 +191,7 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 
 	size_t ctx_size = get_ctx_size(algorithm);
 	size_t required_size = sizeof(cipher_ctx) + ctx_size;
+	size_t total_size = ROUND_UP(required_size, 16);
 
 	uint32_t block_size = 16;
 
@@ -205,6 +207,12 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 	if (size < required_size)
 	{
 		return NULL;
+	}
+
+	// Use the extra space for aead construction.
+	if (size > (total_size + 256))
+	{
+		total_size = ROUND_DOWN(size, 16);
 	}
 
 	memset(cctx, 0, sizeof(cipher_ctx));
@@ -277,7 +285,11 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 
 	cctx->algorithm = algorithm;
 	cctx->block_size = block_size;
-	cctx->ctx_size = required_size;
+	cctx->ctx_size = total_size;
+
+	cctx->aead_size = total_size - ROUND_UP(required_size, 16);
+	cctx->aead_realloc = 0;
+	cctx->aead = cctx->aead_size > 0 ? PTR_OFFSET(ptr, ROUND_UP(required_size, 16)) : NULL;
 
 	cctx->_key = _ctx;
 	cctx->_encrypt = _encrypt;
