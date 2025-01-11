@@ -12,8 +12,6 @@
 #include <stdio.h>
 #include <string.h>
 
-pgp_packet_type pgp_packet_get_type(byte_t tag);
-
 static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size)
@@ -238,9 +236,9 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 
 	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
 	{
-		pgp_user_attribute_subpacket_header *subpacket_header = packet->subpackets[i];
+		pgp_subpacket_header *subpacket_header = packet->subpackets[i];
 
-		switch (subpacket_header->type)
+		switch (subpacket_header->tag)
 		{
 		case PGP_USER_ATTRIBUTE_IMAGE:
 		{
@@ -266,7 +264,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 		}
 		break;
 		default:
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Subpacket (Tag %hhu) (%u bytes)\n", subpacket_header->type,
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Subpacket (Tag %hhu) (%u bytes)\n", subpacket_header->tag,
 							subpacket_header->body_size);
 		}
 	}

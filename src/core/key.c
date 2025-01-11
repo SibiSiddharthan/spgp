@@ -1177,7 +1177,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 			}
 
 			return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_size + 9,
-										  packet->public_key_data_size, packet->public_key_data_size, fingerprint);
+										  packet->public_key_data_size, packet->public_key_data, fingerprint);
 		}
 		default:
 			return 0;

@@ -29,6 +29,7 @@ pgp_compresed_packet *pgp_compressed_packet_new(byte_t header_format, byte_t com
 
 	memset(packet, 0, sizeof(pgp_compresed_packet));
 
+	packet->header.tag = pgp_packet_tag(header_format, PGP_COMP, 0);
 	packet->compression_algorithm_id = compression_algorithm_id;
 
 	return packet;
@@ -115,10 +116,46 @@ size_t pgp_compressed_packet_get_raw_data(pgp_compresed_packet *packet, void *pt
 	return data_size;
 }
 
-pgp_compresed_packet *pgp_compressed_packet_read(pgp_compresed_packet *packet, void *data, size_t size)
+pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+
+	pgp_compresed_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+	uint32_t data_size = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+	data_size = header.body_size - 1;
+
+	if (pgp_packet_get_type(header.tag) != PGP_COMP)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_compresed_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	packet->data = malloc(data_size);
+
+	if (packet->data == NULL)
+	{
+		pgp_compressed_packet_delete(packet);
+	}
+
+	// Copy the header
+	packet->header = header;
 
 	// Get the compression algorithm
 	LOAD_8(&packet->compression_algorithm_id, in + pos);
@@ -186,27 +223,47 @@ void pgp_marker_packet_delete(pgp_marker_packet *packet)
 	free(packet);
 }
 
-pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size)
+pgp_marker_packet *pgp_marker_packet_read(void *data, size_t size)
 {
-	byte_t marker[3] = {0x50, 0x47, 0x50};
+	byte_t *in = data;
 
-	// Checks for a valid marker packet.
-	if (packet->header.header_size != 2)
+	pgp_marker_packet *packet = NULL;
+	pgp_packet_header header = {0};
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_MARKER)
 	{
 		return NULL;
 	}
 
-	if (packet->header.body_size != 3)
+	if (size < (header.header_size + header.body_size))
 	{
 		return NULL;
 	}
 
-	if (memcmp((byte_t *)data + packet->header.header_size, marker, 3) != 0)
+	// Marker packets have only 3 bytes of marker data
+	if (header.body_size != 3)
 	{
 		return NULL;
 	}
 
-	memcpy(packet->marker, marker, 3);
+	packet = malloc(sizeof(pgp_marker_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
+
+	// Copy the marker data
+	packet->marker[0] = in[pos + 0];
+	packet->marker[1] = in[pos + 1];
+	packet->marker[2] = in[pos + 2];
 
 	return packet;
 }
@@ -433,19 +490,41 @@ pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_
 	return packet;
 }
 
-pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *data, size_t size)
+pgp_literal_packet *pgp_literal_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+
+	pgp_literal_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_LIT)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_literal_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
 
 	// 1-octet format specifier
 	LOAD_8(&packet->format, in + pos);
 	pos += 1;
-
-	if (packet->format != PGP_LITERAL_DATA_BINARY && packet->format != PGP_LITERAL_DATA_UTF8 && packet->format != PGP_LITERAL_DATA_TEXT)
-	{
-		return NULL;
-	}
 
 	// A 1-octet denoting file name length
 	LOAD_8(&packet->filename_size, in + pos);
@@ -454,6 +533,13 @@ pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *da
 	// N-octets of filename
 	if (packet->filename_size > 0)
 	{
+		packet->filename = malloc(packet->filename_size);
+
+		if (packet->filename == NULL)
+		{
+			pgp_literal_packet_delete(packet);
+		}
+
 		memcpy(packet->filename, in + pos, packet->filename_size);
 		pos += packet->filename_size;
 	}
@@ -465,9 +551,21 @@ pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *da
 	packet->date = BSWAP_32(date_be);
 	pos += 4;
 
+	packet->data_size = header.body_size - (4 + 1 + 1 + packet->filename_size);
+
 	// Literal data
-	memcpy(packet->data, in + pos, packet->data_size);
-	pos += packet->data_size;
+	if (packet->data_size > 0)
+	{
+		packet->data = malloc(packet->data_size);
+
+		if (packet->data == NULL)
+		{
+			pgp_literal_packet_delete(packet);
+		}
+
+		memcpy(packet->data, in + pos, packet->data_size);
+		pos += packet->data_size;
+	}
 
 	return packet;
 }
@@ -547,10 +645,35 @@ void pgp_user_id_packet_delete(pgp_user_id_packet *packet)
 	free(packet);
 }
 
-pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size)
+pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size)
 {
+	pgp_user_id_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_UID)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_user_id_packet) + header.body_size);
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
+
 	// Copy the user data.
-	memcpy(packet->user_id, (byte_t *)data + packet->header.header_size, packet->header.body_size);
+	memcpy(packet->user_id, PTR_OFFSET(data, header.header_size), header.body_size);
 
 	return packet;
 }
@@ -944,10 +1067,35 @@ void pgp_padding_packet_delete(pgp_padding_packet *packet)
 	free(packet);
 }
 
-pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size)
+pgp_padding_packet *pgp_padding_packet_read(void *data, size_t size)
 {
+	pgp_padding_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_PADDING)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_padding_packet) + header.body_size);
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
+
 	// Copy the padding data.
-	memcpy(packet->data, (byte_t *)data + packet->header.header_size, packet->header.body_size);
+	memcpy(packet->data, PTR_OFFSET(data, header.header_size), header.body_size);
 
 	return packet;
 }
@@ -1007,8 +1155,23 @@ void pgp_mdc_packet_set_hash(pgp_mdc_packet *packet, byte_t hash[20])
 	memcpy(packet->sha1_hash, hash, 20);
 }
 
-pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size)
+pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
 {
+	pgp_mdc_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_MDC)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
 	// Checks for a valid modification detection code packet.
 	if (packet->header.header_size != 2)
 	{
@@ -1020,8 +1183,18 @@ pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t s
 		return NULL;
 	}
 
+	packet = malloc(sizeof(pgp_mdc_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
+
 	// Copy the SHA-1 hash
-	memcpy(packet->sha1_hash, (byte_t *)data + packet->header.header_size, 20);
+	memcpy(packet->sha1_hash, PTR_OFFSET(data, header.header_size), 20);
 
 	return packet;
 }
@@ -1052,10 +1225,37 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
-pgp_trust_packet *pgp_trust_packet_read(pgp_trust_packet *packet, void *data, size_t size)
+pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+
+	pgp_trust_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_TRUST)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_trust_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
 
 	LOAD_8(&packet->level, in + pos);
 	pos += 1;

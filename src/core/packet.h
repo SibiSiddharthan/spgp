@@ -166,7 +166,7 @@ pgp_compresed_packet *pgp_compressed_packet_set_data(pgp_compresed_packet *packe
 size_t pgp_compressed_packet_get_data(pgp_compresed_packet *packet, void *ptr, size_t size);
 size_t pgp_compressed_packet_get_raw_data(pgp_compresed_packet *packet, void *ptr, size_t size);
 
-pgp_compresed_packet *pgp_compressed_packet_read(pgp_compresed_packet *packet, void *data, size_t size);
+pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
 size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size);
 
@@ -174,7 +174,7 @@ size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_
 pgp_marker_packet *pgp_marker_packet_new(byte_t header_format);
 void pgp_marker_packet_delete(pgp_marker_packet *packet);
 
-pgp_marker_packet *pgp_marker_packet_read(pgp_marker_packet *packet, void *data, size_t size);
+pgp_marker_packet *pgp_marker_packet_read(void *data, size_t size);
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
 size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size);
 
@@ -189,7 +189,7 @@ size_t pgp_literal_packet_get_data(pgp_literal_packet *packet, void *data, size_
 pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_data_format format, uint32_t date, void *data,
 												size_t size);
 
-pgp_literal_packet *pgp_literal_packet_read(pgp_literal_packet *packet, void *data, size_t size);
+pgp_literal_packet *pgp_literal_packet_read(void *data, size_t size);
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size);
 size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t size);
 
@@ -197,7 +197,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, size_t size);
 void pgp_user_id_packet_delete(pgp_user_id_packet *packet);
 
-pgp_user_id_packet *pgp_user_id_packet_read(pgp_user_id_packet *packet, void *data, size_t size);
+pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size);
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
 size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size);
 
@@ -216,7 +216,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 pgp_padding_packet *pgp_padding_packet_new(byte_t header_format, void *data, size_t size);
 void pgp_padding_packet_delete(pgp_padding_packet *packet);
 
-pgp_padding_packet *pgp_padding_packet_read(pgp_padding_packet *packet, void *data, size_t size);
+pgp_padding_packet *pgp_padding_packet_read(void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
 size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size);
 
@@ -227,11 +227,11 @@ void pgp_mdc_packet_delete(pgp_mdc_packet *packet);
 void pgp_mdc_packet_get_hash(pgp_mdc_packet *packet, byte_t hash[20]);
 void pgp_mdc_packet_set_hash(pgp_mdc_packet *packet, byte_t hash[20]);
 
-pgp_mdc_packet *pgp_mdc_packet_read(pgp_mdc_packet *packet, void *data, size_t size);
+pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size);
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
 size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size);
 
-pgp_trust_packet *pgp_trust_packet_read(pgp_trust_packet *packet, void *data, size_t size);
+pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size);
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 
 #endif

@@ -387,17 +387,17 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SECSUBKEY:
 		return pgp_secret_key_packet_read(NULL, data, size);
 	case PGP_COMP:
-		return pgp_compressed_packet_read(NULL, data, size);
+		return pgp_compressed_packet_read(data, size);
 	case PGP_SED:
 		return pgp_sed_packet_read(NULL, data, size);
 	case PGP_MARKER:
-		return pgp_marker_packet_read(NULL, data, size);
+		return pgp_marker_packet_read(data, size);
 	case PGP_LIT:
-		return pgp_literal_packet_read(NULL, data, size);
+		return pgp_literal_packet_read(data, size);
 	case PGP_TRUST:
-		return pgp_trust_packet_read(NULL, data, size);
+		return pgp_trust_packet_read(data, size);
 	case PGP_UID:
-		return pgp_user_id_packet_read(NULL, data, size);
+		return pgp_user_id_packet_read(data, size);
 	case PGP_PUBSUBKEY:
 		return pgp_public_key_packet_read(NULL, data, size);
 	case PGP_UAT:
@@ -405,9 +405,9 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SEIPD:
 		return pgp_seipd_packet_read(NULL, data, size);
 	case PGP_MDC:
-		return pgp_mdc_packet_read(NULL, data, size);
+		return pgp_mdc_packet_read(data, size);
 	case PGP_PADDING:
-		return pgp_padding_packet_read(NULL, data, size);
+		return pgp_padding_packet_read(data, size);
 		break;
 	default:
 		return NULL;
