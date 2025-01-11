@@ -23,9 +23,9 @@ typedef uint8_t aes_round_key[16];
 
 typedef enum _aes_type
 {
-	AES128,
-	AES192,
-	AES256
+	AES128 = 1,
+	AES192 = 2,
+	AES256 = 3
 } aes_type;
 
 typedef struct _aes_key
