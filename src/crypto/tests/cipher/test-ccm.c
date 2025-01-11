@@ -22,6 +22,7 @@ int32_t aes128_ccm_suite(void)
 	byte_t key[16];
 	byte_t nonce[16];
 	byte_t ad[64];
+	byte_t tag[16];
 	byte_t plaintext[64];
 	byte_t ciphertext[64];
 
@@ -31,13 +32,15 @@ int32_t aes128_ccm_suite(void)
 	hex_to_block(nonce, 7, "10111213141516");
 	hex_to_block(ad, 8, "0001020304050607");
 	hex_to_block(plaintext, 4, "20212223");
+	memset(tag, 0, 16);
 
-	result = aes128_ccm_encrypt(key, 16, 4, nonce, 7, ad, 8, plaintext, 4, ciphertext, 64);
-	status += CHECK_VALUE(result, 8);
-	status += CHECK_BLOCK(ciphertext, 8, "7162015b4dac255d");
+	result = aes128_ccm_encrypt(key, 16, nonce, 7, ad, 8, plaintext, 4, ciphertext, 64, tag, 4);
+	status += CHECK_VALUE(result, 4);
+	status += CHECK_BLOCK(ciphertext, 4, "7162015b");
+	status += CHECK_BLOCK(tag, 4, "4dac255d");
 
 	memset(plaintext, 0, 64);
-	result = aes128_ccm_decrypt(key, 16, 4, nonce, 7, ad, 8, ciphertext, 8, plaintext, 64);
+	result = aes128_ccm_decrypt(key, 16, nonce, 7, ad, 8, ciphertext, 4, plaintext, 64, tag, 4);
 	status += CHECK_VALUE(result, 4);
 	status += CHECK_BLOCK(plaintext, 4, "20212223");
 
@@ -47,13 +50,15 @@ int32_t aes128_ccm_suite(void)
 	hex_to_block(nonce, 8, "1011121314151617");
 	hex_to_block(ad, 16, "000102030405060708090a0b0c0d0e0f");
 	hex_to_block(plaintext, 16, "202122232425262728292a2b2c2d2e2f");
+	memset(tag, 0, 16);
 
-	result = aes128_ccm_encrypt(key, 16, 6, nonce, 8, ad, 16, plaintext, 16, ciphertext, 64);
-	status += CHECK_VALUE(result, 22);
-	status += CHECK_BLOCK(ciphertext, 22, "d2a1f0e051ea5f62081a7792073d593d1fc64fbfaccd");
+	result = aes128_ccm_encrypt(key, 16, nonce, 8, ad, 16, plaintext, 16, ciphertext, 64, tag, 6);
+	status += CHECK_VALUE(result, 16);
+	status += CHECK_BLOCK(ciphertext, 16, "d2a1f0e051ea5f62081a7792073d593d");
+	status += CHECK_BLOCK(tag, 6, "1fc64fbfaccd");
 
 	memset(plaintext, 0, 64);
-	result = aes128_ccm_decrypt(key, 16, 6, nonce, 8, ad, 16, ciphertext, 22, plaintext, 64);
+	result = aes128_ccm_decrypt(key, 16, nonce, 8, ad, 16, ciphertext, 16, plaintext, 64, tag, 6);
 	status += CHECK_VALUE(result, 16);
 	status += CHECK_BLOCK(plaintext, 16, "202122232425262728292a2b2c2d2e2f");
 
@@ -63,13 +68,15 @@ int32_t aes128_ccm_suite(void)
 	hex_to_block(nonce, 12, "101112131415161718191a1b");
 	hex_to_block(ad, 20, "000102030405060708090a0b0c0d0e0f10111213");
 	hex_to_block(plaintext, 24, "202122232425262728292a2b2c2d2e2f3031323334353637");
+	memset(tag, 0, 16);
 
-	result = aes128_ccm_encrypt(key, 16, 8, nonce, 12, ad, 20, plaintext, 24, ciphertext, 64);
-	status += CHECK_VALUE(result, 32);
-	status += CHECK_BLOCK(ciphertext, 32, "e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951");
+	result = aes128_ccm_encrypt(key, 16, nonce, 12, ad, 20, plaintext, 24, ciphertext, 64, tag, 8);
+	status += CHECK_VALUE(result, 24);
+	status += CHECK_BLOCK(ciphertext, 24, "e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5");
+	status += CHECK_BLOCK(tag, 8, "484392fbc1b09951");
 
 	memset(plaintext, 0, 64);
-	result = aes128_ccm_decrypt(key, 16, 8, nonce, 12, ad, 20, ciphertext, 32, plaintext, 64);
+	result = aes128_ccm_decrypt(key, 16, nonce, 12, ad, 20, ciphertext, 24, plaintext, 64, tag, 8);
 	status += CHECK_VALUE(result, 24);
 	status += CHECK_BLOCK(plaintext, 24, "202122232425262728292a2b2c2d2e2f3031323334353637");
 
@@ -86,18 +93,20 @@ int32_t aes128_ccm_suite(void)
 		"82838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2"
 		"c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff");
 	hex_to_block(plaintext, 32, "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f");
+	memset(tag, 0, 16);
 
 	for (uint32_t i = 256; i < 65536; i += 256)
 	{
 		memcpy(big_ad + i, big_ad, 256);
 	}
 
-	result = aes128_ccm_encrypt(key, 16, 14, nonce, 13, big_ad, 65536, plaintext, 32, ciphertext, 64);
-	status += CHECK_VALUE(result, 46);
-	status += CHECK_BLOCK(ciphertext, 46, "69915dad1e84c6376a68c2967e4dab615ae0fd1faec44cc484828529463ccf72b4ac6bec93e8598e7f0dadbcea5b");
+	result = aes128_ccm_encrypt(key, 16, nonce, 13, big_ad, 65536, plaintext, 32, ciphertext, 64, tag, 14);
+	status += CHECK_VALUE(result, 32);
+	status += CHECK_BLOCK(ciphertext, 32, "69915dad1e84c6376a68c2967e4dab615ae0fd1faec44cc484828529463ccf72");
+	status += CHECK_BLOCK(tag, 14, "b4ac6bec93e8598e7f0dadbcea5b");
 
 	memset(plaintext, 0, 64);
-	result = aes128_ccm_decrypt(key, 16, 14, nonce, 13, big_ad, 65536, ciphertext, 46, plaintext, 64);
+	result = aes128_ccm_decrypt(key, 16, nonce, 13, big_ad, 65536, ciphertext, 32, plaintext, 64, tag, 14);
 	status += CHECK_VALUE(result, 32);
 	status += CHECK_BLOCK(plaintext, 32, "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f");
 
