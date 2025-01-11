@@ -260,6 +260,154 @@ size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 	return 0;
 }
 
+size_t pgp_aead_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, pgp_aead_algorithms aead_algorithm_id, void *key,
+						size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in, size_t in_size,
+						void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	cipher_algorithm algorithm = pgp_algorithm_to_cipher_algorithm(symmetric_key_algorithm_id);
+	byte_t expected_iv_size = pgp_aead_iv_size(aead_algorithm_id);
+	byte_t block_size = cipher_block_size(algorithm);
+
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[2048] = {0};
+
+	// Preliminary checks
+	if (algorithm == 0)
+	{
+		return 0;
+	}
+
+	if (block_size != 16)
+	{
+		return 0;
+	}
+
+	if (expected_iv_size == 0)
+	{
+		return 0;
+	}
+
+	if (expected_iv_size != iv_size)
+	{
+		return 0;
+	}
+
+	if (tag_size != PGP_AEAD_TAG_SIZE)
+	{
+		return 0;
+	}
+
+	if (out_size < in_size)
+	{
+		return 0;
+	}
+
+	cctx = cipher_init(buffer, 2048, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	switch (aead_algorithm_id)
+	{
+	case PGP_AEAD_EAX:
+	{
+		cipher_gcm_encrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_gcm_encrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+	}
+	break;
+	case PGP_AEAD_OCB:
+	{
+		cipher_gcm_encrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_gcm_encrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+	}
+	break;
+	case PGP_AEAD_GCM:
+	{
+		cipher_gcm_encrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_gcm_encrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+	}
+	break;
+	}
+
+	return in_size;
+}
+
+size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, pgp_aead_algorithms aead_algorithm_id, void *key,
+						size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in, size_t in_size,
+						void *out, size_t out_size, void *tag, size_t tag_size)
+{
+	cipher_algorithm algorithm = pgp_algorithm_to_cipher_algorithm(symmetric_key_algorithm_id);
+	byte_t expected_iv_size = pgp_aead_iv_size(aead_algorithm_id);
+	byte_t block_size = cipher_block_size(algorithm);
+
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[2048] = {0};
+
+	// Preliminary checks
+	if (algorithm == 0)
+	{
+		return 0;
+	}
+
+	if (block_size != 16)
+	{
+		return 0;
+	}
+
+	if (expected_iv_size == 0)
+	{
+		return 0;
+	}
+
+	if (expected_iv_size != iv_size)
+	{
+		return 0;
+	}
+
+	if (tag_size != PGP_AEAD_TAG_SIZE)
+	{
+		return 0;
+	}
+
+	if (out_size < in_size)
+	{
+		return 0;
+	}
+
+	cctx = cipher_init(buffer, 2048, algorithm, key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	switch (aead_algorithm_id)
+	{
+	case PGP_AEAD_EAX:
+	{
+		cipher_gcm_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_gcm_decrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+	}
+	break;
+	case PGP_AEAD_OCB:
+	{
+		cipher_gcm_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_gcm_decrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+	}
+	break;
+	case PGP_AEAD_GCM:
+	{
+		cipher_gcm_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_gcm_decrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+	}
+	break;
+	}
+
+	return in_size;
+}
+
 uint32_t pgp_rand(void *buffer, uint32_t size)
 {
 	if (pgp_drbg == NULL)

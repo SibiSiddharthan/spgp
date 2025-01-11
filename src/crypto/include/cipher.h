@@ -23,11 +23,15 @@ typedef enum _cipher_padding
 
 typedef struct _cipher_ctx
 {
-	cipher_algorithm algorithm;
-	cipher_padding padding;
+	cipher_algorithm algorithm : 8;
+	cipher_padding padding : 8;
 	uint16_t ctx_size;
 	uint16_t block_size;
 	byte_t buffer[32];
+
+	uint16_t aead_size;
+	uint16_t aead_realloc;
+	void *aead;
 
 	union {
 		struct _gcm
@@ -81,6 +85,8 @@ typedef struct _cipher_ctx
 } cipher_ctx;
 
 size_t cipher_ctx_size(cipher_algorithm algorithm);
+size_t cipher_aead_ctx_size(cipher_algorithm algorithm, cipher_aead_algorithm aead);
+
 size_t cipher_key_size(cipher_algorithm algorithm);
 size_t cipher_block_size(cipher_algorithm algorithm);
 size_t cipher_iv_size(cipher_algorithm algorithm);
@@ -92,7 +98,6 @@ void cipher_delete(cipher_ctx *cctx);
 cipher_ctx *cipher_reset(cipher_ctx *cctx, void *key, size_t key_size);
 
 // Electronic Code Book (ECB)
-
 cipher_ctx *cipher_ecb_encrypt_init(cipher_ctx *cctx, cipher_padding padding);
 uint64_t cipher_ecb_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t cipher_ecb_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
@@ -104,7 +109,6 @@ uint64_t cipher_ecb_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, vo
 uint64_t cipher_ecb_decrypt(cipher_ctx *cctx, cipher_padding padding, void *in, size_t in_size, void *out, size_t out_size);
 
 // Cipher Block Chaining (CBC)
-
 cipher_ctx *cipher_cbc_encrypt_init(cipher_ctx *cctx, cipher_padding padding, void *iv, size_t iv_size);
 uint64_t cipher_cbc_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t cipher_cbc_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
@@ -118,7 +122,6 @@ uint64_t cipher_cbc_decrypt(cipher_ctx *cctx, cipher_padding padding, void *iv, 
 							size_t out_size);
 
 // Cipher Feedback (CFB{1,8,64,128})
-
 cipher_ctx *cipher_cfb1_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_cfb1_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t cipher_cfb1_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
@@ -164,7 +167,6 @@ uint64_t cipher_cfb128_decrypt(cipher_ctx *cctx, cipher_padding padding, void *i
 							   size_t out_size);
 
 // Output Feedback (OFB)
-
 cipher_ctx *cipher_ofb_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_ofb_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t cipher_ofb_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
@@ -176,7 +178,6 @@ uint64_t cipher_ofb_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, vo
 uint64_t cipher_ofb_decrypt(cipher_ctx *cctx, void *iv, size_t iv_size, void *in, size_t in_size, void *out, size_t out_size);
 
 // Counter (CTR)
-
 cipher_ctx *cipher_ctr_encrypt_init(cipher_ctx *cctx, void *iv, size_t iv_size);
 uint64_t cipher_ctr_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
 uint64_t cipher_ctr_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
