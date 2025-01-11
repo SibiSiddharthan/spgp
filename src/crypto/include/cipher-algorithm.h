@@ -11,7 +11,7 @@
 typedef enum _cipher_algorithm
 {
 	// AES
-	CIPHER_AES128,
+	CIPHER_AES128 = 1,
 	CIPHER_AES192,
 	CIPHER_AES256,
 	// ARIA
@@ -31,5 +31,16 @@ typedef enum _cipher_algorithm
 	CIPHER_TWOFISH192,
 	CIPHER_TWOFISH256,
 } cipher_algorithm;
+
+typedef enum _cipher_aead_algorithm
+{
+	CIPHER_AEAD_EAX = 1,
+	CIPHER_AEAD_CCM,
+	CIPHER_AEAD_GCM,
+	CIPHER_AEAD_OCB,
+	CIPHER_AEAD_KW,
+	CIPHER_AEAD_SIV_CMAC,
+	CIPHER_AEAD_SIV_GCM
+} cipher_aead_algorithm;
 
 #endif
