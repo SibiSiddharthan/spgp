@@ -8,6 +8,11 @@
 #include <spgp.h>
 #include <crypto.h>
 
+#include <cipher.h>
+#include <drbg.h>
+
+void *pgp_drbg = NULL;
+
 static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algorithms algorithm)
 {
 	switch (algorithm)
@@ -129,4 +134,19 @@ byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm)
 	}
 
 	return 0;
+}
+
+uint32_t pgp_rand(void *buffer, uint32_t size)
+{
+	if (pgp_drbg == NULL)
+	{
+		pgp_drbg = hmac_drbg_new(NULL, HASH_SHA512, 1u << 12, "PGP", 3);
+
+		if (pgp_drbg == NULL)
+		{
+			return 0;
+		}
+	}
+
+	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
 }

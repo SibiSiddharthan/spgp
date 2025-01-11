@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <drbg.h>
 #include <hkdf.h>
 #include <sha.h>
 
@@ -213,7 +212,6 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 {
 	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
-	drbg_ctx *drbg = NULL;
 	byte_t *pdata = NULL;
 
 	byte_t zero_iv[16] = {0};
@@ -231,14 +229,7 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 	pdata = packet->data;
 
 	// Generate random prefix of block size
-	drbg = get_default_drbg();
-
-	if (drbg == NULL)
-	{
-		return NULL;
-	}
-
-	drbg_generate(drbg, 0, NULL, 0, prefix, block_size);
+	pgp_rand(prefix, block_size);
 
 	// Copy the prefix
 	memcpy(packet->data, prefix, block_size);

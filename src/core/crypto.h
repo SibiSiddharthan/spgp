@@ -11,8 +11,6 @@
 #include <spgp.h>
 #include <algorithms.h>
 
-#include <cipher.h>
-
 #define PGP_AEAD_TAG_SIZE 16
 
 byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algorithm);
@@ -36,5 +34,7 @@ size_t pgp_aead_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, pgp_aead_algorithms aead_algorithm_id, void *key,
 						size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in, size_t in_size,
 						void *out, size_t out_size, void *tag, size_t tag_size);
+
+uint32_t pgp_rand(void *buffer, uint32_t size);
 
 #endif
