@@ -60,9 +60,9 @@ byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algo
 	case PGP_CAMELLIA_192:
 	case PGP_CAMELLIA_256:
 		return 1;
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 byte_t pgp_asymmetric_cipher_algorithm_validate(pgp_public_key_algorithms algorithm)
@@ -76,9 +76,9 @@ byte_t pgp_asymmetric_cipher_algorithm_validate(pgp_public_key_algorithms algori
 	case PGP_X25519:
 	case PGP_X448:
 		return 1;
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 byte_t pgp_signature_algorithm_validate(pgp_public_key_algorithms algorithm)
@@ -93,9 +93,9 @@ byte_t pgp_signature_algorithm_validate(pgp_public_key_algorithms algorithm)
 	case PGP_ED25519:
 	case PGP_ED448:
 		return 1;
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 byte_t pgp_aead_algorithm_validate(pgp_aead_algorithms algorithm)
@@ -106,9 +106,9 @@ byte_t pgp_aead_algorithm_validate(pgp_aead_algorithms algorithm)
 	case PGP_AEAD_OCB:
 	case PGP_AEAD_GCM:
 		return 1;
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 byte_t pgp_symmetric_cipher_key_size(pgp_symmetric_key_algorithms algorithm)
@@ -131,6 +131,130 @@ byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm)
 		return 15;
 	case PGP_AEAD_GCM:
 		return 12;
+	default:
+		return 0;
+	}
+}
+
+size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
+					   void *in, size_t in_size, void *out, size_t out_size)
+{
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cipher_algorithm algorithm = 0;
+	byte_t block_size = 0;
+
+	algorithm = pgp_algorithm_to_cipher_algorithm(symmetric_key_algorithm_id);
+
+	if (algorithm == 0)
+	{
+		return 0;
+	}
+
+	block_size = cipher_block_size(algorithm);
+
+	if (block_size == 16)
+	{
+		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		cctx = cipher_cfb128_encrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		return cipher_cfb128_encrypt_final(cctx, in, in_size, out, out_size);
+	}
+	else if (block_size == 8)
+	{
+		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		cctx = cipher_cfb64_encrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		return cipher_cfb64_encrypt_final(cctx, in, in_size, out, out_size);
+	}
+	else
+	{
+		return 0;
+	}
+
+	return 0;
+}
+
+size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
+					   void *in, size_t in_size, void *out, size_t out_size)
+{
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512];
+
+	cipher_algorithm algorithm = 0;
+	byte_t block_size = 0;
+
+	algorithm = pgp_algorithm_to_cipher_algorithm(symmetric_key_algorithm_id);
+
+	if (algorithm == 0)
+	{
+		return 0;
+	}
+
+	block_size = cipher_block_size(algorithm);
+
+	if (block_size == 16)
+	{
+		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		cctx = cipher_cfb128_decrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		return cipher_cfb128_decrypt_final(cctx, in, in_size, out, out_size);
+	}
+	else if (block_size == 8)
+	{
+		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		cctx = cipher_cfb64_decrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+
+		if (cctx == NULL)
+		{
+			return 0;
+		}
+
+		return cipher_cfb64_decrypt_final(cctx, in, in_size, out, out_size);
+	}
+	else
+	{
+		return 0;
 	}
 
 	return 0;
