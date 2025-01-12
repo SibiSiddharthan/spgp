@@ -446,7 +446,6 @@ uint64_t cipher_cfb64_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, 
 {
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
-	uint16_t block_size = 8;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
@@ -525,7 +524,6 @@ uint64_t cipher_cfb64_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, 
 {
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
-	uint16_t block_size = 8;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
@@ -608,7 +606,6 @@ uint64_t cipher_cfb128_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size,
 {
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
-	uint16_t block_size = 16;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
@@ -691,7 +688,6 @@ uint64_t cipher_cfb128_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size,
 {
 	uint64_t processed = 0;
 	uint64_t remaining = 0;
-	uint16_t block_size = 16;
 
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;

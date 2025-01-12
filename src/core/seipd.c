@@ -28,20 +28,15 @@ void pgp_sed_packet_delete(pgp_sed_packet *packet)
 }
 
 pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key,
-									   size_t session_key_size, void *iv, size_t iv_size, void *data, size_t data_size)
+									   size_t session_key_size, void *data, size_t data_size)
 {
-	size_t total_data_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id) + 2 + data_size;
+	byte_t iv_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id);
+	size_t total_data_size = iv_size + 2 + data_size;
 
-	byte_t *pdata = NULL;
-	byte_t *piv = iv;
+	uint32_t result = 0;
 
 	byte_t zero_iv[16] = {0};
 	byte_t message_iv[32] = {0};
-
-	if (iv_size != pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id))
-	{
-		return NULL;
-	}
 
 	packet->data = malloc(total_data_size);
 
@@ -50,23 +45,27 @@ pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_
 		return NULL;
 	}
 
-	pdata = packet->data;
-
 	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, total_data_size);
 
-	// Copy the IV
-	memcpy(packet->data, iv, iv_size);
+	// Generate the IV
+	result = pgp_rand(message_iv, iv_size);
+
+	if (result != iv_size)
+	{
+		return 0;
+	}
 
 	// Last 2 octets
-	pdata[iv_size] = piv[iv_size - 2];
-	pdata[iv_size + 1] = piv[iv_size - 1];
+	message_iv[iv_size] = message_iv[iv_size - 2];
+	message_iv[iv_size + 1] = message_iv[iv_size - 1];
 
 	// Generate the iv
-	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, packet->data, iv_size + 2, message_iv, 32);
+	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, message_iv, iv_size + 2, packet->data,
+					iv_size + 2);
 
 	// Encrypt the data
-	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(message_iv, 2), iv_size, data, data_size,
-					PTR_OFFSET(pdata, iv_size + 2), data_size);
+	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size, data, data_size,
+					PTR_OFFSET(packet->data, iv_size + 2), data_size);
 
 	return packet;
 }
@@ -80,20 +79,65 @@ size_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algor
 	byte_t zero_iv[16] = {0};
 	byte_t message_iv[32] = {0};
 
-	// Generate the iv
-	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, packet->data, iv_size + 2, message_iv, 32);
+	if (data_size < plaintext_size)
+	{
+		return 0;
+	}
 
-	// Encrypt the data
-	pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(message_iv, 2), iv_size,
+	// Decrypt the iv
+	pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, packet->data, iv_size + 2, message_iv,
+					iv_size + 2);
+
+	// Check if key is correct
+	if (message_iv[iv_size + 1] != message_iv[iv_size - 1] || message_iv[iv_size] != message_iv[iv_size - 2])
+	{
+		return 0;
+	}
+
+	// Decrypt the data
+	pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
 					PTR_OFFSET(packet->data, iv_size + 2), plaintext_size, data, plaintext_size);
 
 	return plaintext_size;
 }
 
-pgp_sed_packet *pgp_sed_packet_read(pgp_sed_packet *packet, void *data, size_t size)
+pgp_sed_packet *pgp_sed_packet_read(void *data, size_t size)
 {
+	pgp_sed_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_SED)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_sed_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	packet->data = malloc(sizeof(header.body_size));
+
+	if (packet->data == NULL)
+	{
+		free(packet);
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
+
 	// Copy the packet data.
-	memcpy(packet->data, (byte_t *)data + packet->header.header_size, packet->header.body_size);
+	memcpy(packet->data, PTR_OFFSET(data, header.header_size), packet->header.body_size);
 
 	return packet;
 }

@@ -52,11 +52,11 @@ pgp_sed_packet *pgp_sed_packet_new();
 void pgp_sed_packet_delete(pgp_sed_packet *packet);
 
 pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key,
-									   size_t session_key_size, void *iv, size_t iv_size, void *data, size_t data_size);
+									   size_t session_key_size, void *data, size_t data_size);
 size_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
 							  void *data, size_t data_size);
 
-pgp_sed_packet *pgp_sed_packet_read(pgp_sed_packet *packet, void *data, size_t size);
+pgp_sed_packet *pgp_sed_packet_read(void *data, size_t size);
 size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size);
 size_t pgp_sed_packet_print(pgp_sed_packet *packet, void *str, size_t size);
 

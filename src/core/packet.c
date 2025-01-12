@@ -389,7 +389,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_COMP:
 		return pgp_compressed_packet_read(data, size);
 	case PGP_SED:
-		return pgp_sed_packet_read(NULL, data, size);
+		return pgp_sed_packet_read(data, size);
 	case PGP_MARKER:
 		return pgp_marker_packet_read(data, size);
 	case PGP_LIT:
