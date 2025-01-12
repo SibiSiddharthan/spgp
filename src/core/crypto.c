@@ -163,7 +163,7 @@ size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 			return 0;
 		}
 
-		cctx = cipher_cfb128_encrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+		cctx = cipher_cfb128_encrypt_init(cctx, iv, iv_size);
 
 		if (cctx == NULL)
 		{
@@ -181,7 +181,7 @@ size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 			return 0;
 		}
 
-		cctx = cipher_cfb64_encrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+		cctx = cipher_cfb64_encrypt_init(cctx, iv, iv_size);
 
 		if (cctx == NULL)
 		{
@@ -225,7 +225,7 @@ size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 			return 0;
 		}
 
-		cctx = cipher_cfb128_decrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+		cctx = cipher_cfb128_decrypt_init(cctx, iv, iv_size);
 
 		if (cctx == NULL)
 		{
@@ -243,7 +243,7 @@ size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 			return 0;
 		}
 
-		cctx = cipher_cfb64_decrypt_init(cctx, PADDING_ZERO, iv, iv_size);
+		cctx = cipher_cfb64_decrypt_init(cctx, iv, iv_size);
 
 		if (cctx == NULL)
 		{

@@ -90,7 +90,7 @@ int32_t aes128_cfb128_test_suite(void)
 	hex_to_block(
 		plaintext, 64,
 		"6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710");
-	aes128_cfb128_encrypt(key, 16, iv, 16, plaintext, 64, ciphertext, 64, PADDING_NONE);
+	aes128_cfb128_encrypt(key, 16, iv, 16, plaintext, 64, ciphertext, 64);
 
 	status += CHECK_BLOCK(
 		ciphertext, 64,
@@ -103,7 +103,7 @@ int32_t aes128_cfb128_test_suite(void)
 	hex_to_block(
 		ciphertext, 64,
 		"3b3fd92eb72dad20333449f8e83cfb4ac8a64537a0b3a93fcde3cdad9f1ce58b26751f67a3cbb140b1808cf187a4f4dfc04b05357c5d1c0eeac4c66f9ff7f2e6");
-	aes128_cfb128_decrypt(key, 16, iv, 16, ciphertext, 64, plaintext, 64, PADDING_NONE);
+	aes128_cfb128_decrypt(key, 16, iv, 16, ciphertext, 64, plaintext, 64);
 
 	status += CHECK_BLOCK(
 		plaintext, 64,
