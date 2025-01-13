@@ -101,8 +101,7 @@ typedef struct _pgp_public_ecdsa_key
 	byte_t oid_size;
 	byte_t oid[16];
 
-	byte_t point_size;
-	void *point;
+	mpi_t *point;
 } pgp_public_ecdsa_key;
 
 typedef struct _pgp_private_ecdsa_key
@@ -123,8 +122,7 @@ typedef struct _pgp_public_ecdh_key
 		byte_t symmetric_key_algorithm_id;
 	} kdf;
 
-	byte_t point_size;
-	void *point;
+	mpi_t *point;
 } pgp_public_ecdh_key;
 
 typedef struct _pgp_private_ecdh_key

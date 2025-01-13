@@ -71,8 +71,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 		pos += key->oid_size;
 
 		// EC point
-		memcpy(key->point, in + pos, key->point_size);
-		pos += key->point_size;
+		pos += mpi_read(key->point, in + pos, size - pos);
 
 		// KDF
 		LOAD_8(&key->kdf.size, in + pos);
@@ -102,8 +101,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 		pos += key->oid_size;
 
 		// EC point
-		memcpy(key->point, in + pos, key->point_size);
-		pos += key->point_size;
+		pos += mpi_read(key->point, in + pos, size - pos);
 
 		return pos;
 	}
@@ -196,8 +194,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 		pos += key->oid_size;
 
 		// EC point
-		memcpy(out + pos, key->point, key->point_size);
-		pos += key->point_size;
+		pos += mpi_write(key->point, out + pos, size - pos);
 
 		// KDF
 		LOAD_8(out + pos, &key->kdf.size);
@@ -227,8 +224,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 		pos += key->oid_size;
 
 		// EC point
-		memcpy(out + pos, key->point, key->point_size);
-		pos += key->point_size;
+		pos += mpi_write(key->point, out + pos, size - pos);
 
 		return pos;
 	}
@@ -922,10 +918,47 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	}
 	break;
 	case PGP_ECDH:
+	{
+		pgp_public_ecdh_key *pkey = key;
+
+		uint16_t bits_be = 0;
+		uint32_t bytes = 0;
+
+		// OID
+		hash_update(hctx, &pkey->oid_size, 1);
+		hash_update(hctx, pkey->oid, pkey->oid_size);
+
+		// EC point
+		bits_be = BSWAP_16(pkey->point->bits);
+		bytes = CEIL_DIV(pkey->point->bits, 8);
+		hash_update(hctx, &bits_be, 2);
+		hash_update(hctx, pkey->point->bytes, bytes);
+
+		// KDF
+		hash_update(hctx, &pkey->kdf.size, 1);
+		hash_update(hctx, &pkey->kdf.extensions, 1);
+		hash_update(hctx, &pkey->kdf.hash_algorithm_id, 1);
+		hash_update(hctx, &pkey->kdf.symmetric_key_algorithm_id, 1);
+	}
+	break;
 	case PGP_ECDSA:
 	case PGP_EDDSA_LEGACY:
-		// TODO
-		break;
+	{
+		pgp_public_ecdsa_key *pkey = key;
+		uint16_t bits_be = 0;
+		uint32_t bytes = 0;
+
+		// OID
+		hash_update(hctx, &pkey->oid_size, 1);
+		hash_update(hctx, pkey->oid, pkey->oid_size);
+
+		// EC point
+		bits_be = BSWAP_16(pkey->point->bits);
+		bytes = CEIL_DIV(pkey->point->bits, 8);
+		hash_update(hctx, &bits_be, 2);
+		hash_update(hctx, pkey->point->bytes, bytes);
+	}
+	break;
 	case PGP_X25519:
 	{
 		pgp_public_x25519_key *pkey = key;
