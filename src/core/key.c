@@ -30,7 +30,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *key = packet->key_data;
+		pgp_public_rsa_key *key = packet->key_data;
 
 		pos += mpi_read(key->n, in + pos, size - pos);
 		pos += mpi_read(key->e, in + pos, size - pos);
@@ -39,7 +39,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *key = packet->key_data;
+		pgp_public_elgamal_key *key = packet->key_data;
 
 		pos += mpi_read(key->p, in + pos, size - pos);
 		pos += mpi_read(key->g, in + pos, size - pos);
@@ -49,7 +49,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_DSA:
 	{
-		pgp_dsa_key *key = packet->key_data;
+		pgp_public_dsa_key *key = packet->key_data;
 
 		pos += mpi_read(key->p, in + pos, size - pos);
 		pos += mpi_read(key->q, in + pos, size - pos);
@@ -60,7 +60,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_ECDH:
 	{
-		pgp_ecdh_key *key = packet->key_data;
+		pgp_public_ecdh_key *key = packet->key_data;
 
 		// 1-octet oid size
 		LOAD_8(&key->oid_size, in + pos);
@@ -91,7 +91,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_ECDSA:
 	{
-		pgp_ecdsa_key *key = packet->key_data;
+		pgp_public_ecdsa_key *key = packet->key_data;
 
 		// 1-octet oid size
 		LOAD_8(&key->oid_size, in + pos);
@@ -109,7 +109,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_X25519:
 	{
-		pgp_x25519_key *key = packet->key_data;
+		pgp_public_x25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(key->public_key, in, 32);
@@ -117,7 +117,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_X448:
 	{
-		pgp_x448_key *key = packet->key_data;
+		pgp_public_x448_key *key = packet->key_data;
 
 		// 56 octets
 		memcpy(key->public_key, in, 56);
@@ -125,7 +125,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_ED25519:
 	{
-		pgp_ed25519_key *key = packet->key_data;
+		pgp_public_ed25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(key->public_key, in, 32);
@@ -133,7 +133,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 	}
 	case PGP_ED448:
 	{
-		pgp_ed448_key *key = packet->key_data;
+		pgp_public_ed448_key *key = packet->key_data;
 
 		// 57 octets
 		memcpy(key->public_key, in, 57);
@@ -155,7 +155,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *key = packet->key_data;
+		pgp_public_rsa_key *key = packet->key_data;
 
 		pos += mpi_write(key->n, out + pos, size - pos);
 		pos += mpi_write(key->e, out + pos, size - pos);
@@ -164,7 +164,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *key = packet->key_data;
+		pgp_public_elgamal_key *key = packet->key_data;
 
 		pos += mpi_write(key->p, out + pos, size - pos);
 		pos += mpi_write(key->g, out + pos, size - pos);
@@ -174,7 +174,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_DSA:
 	{
-		pgp_dsa_key *key = packet->key_data;
+		pgp_public_dsa_key *key = packet->key_data;
 
 		pos += mpi_write(key->p, out + pos, size - pos);
 		pos += mpi_write(key->q, out + pos, size - pos);
@@ -185,7 +185,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ECDH:
 	{
-		pgp_ecdh_key *key = packet->key_data;
+		pgp_public_ecdh_key *key = packet->key_data;
 
 		// 1-octet oid size
 		LOAD_8(out + pos, &key->oid_size);
@@ -216,7 +216,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ECDSA:
 	{
-		pgp_ecdsa_key *key = packet->key_data;
+		pgp_public_ecdsa_key *key = packet->key_data;
 
 		// 1-octet oid size
 		LOAD_8(out + pos, &key->oid_size);
@@ -234,7 +234,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_X25519:
 	{
-		pgp_x25519_key *key = packet->key_data;
+		pgp_public_x25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(out, key->public_key, 32);
@@ -242,7 +242,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_X448:
 	{
-		pgp_x448_key *key = packet->key_data;
+		pgp_public_x448_key *key = packet->key_data;
 
 		// 56 octets
 		memcpy(out, key->public_key, 56);
@@ -250,7 +250,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ED25519:
 	{
-		pgp_ed25519_key *key = packet->key_data;
+		pgp_public_ed25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(out, key->public_key, 32);
@@ -258,7 +258,7 @@ static uint32_t pgp_public_key_material_write(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ED448:
 	{
-		pgp_ed448_key *key = packet->key_data;
+		pgp_public_ed448_key *key = packet->key_data;
 
 		// 57 octets
 		memcpy(out, key->public_key, 57);
@@ -280,7 +280,7 @@ static uint32_t pgp_private_key_material_read(pgp_public_key_packet *packet, voi
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *key = packet->key_data;
+		pgp_private_rsa_key *key = packet->key_data;
 
 		pos += mpi_read(key->d, in + pos, size - pos);
 		pos += mpi_read(key->p, in + pos, size - pos);
@@ -291,35 +291,35 @@ static uint32_t pgp_private_key_material_read(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *key = packet->key_data;
+		pgp_private_elgamal_key *key = packet->key_data;
 
 		pos += mpi_read(key->x, in, size);
 		return pos;
 	}
 	case PGP_DSA:
 	{
-		pgp_dsa_key *key = packet->key_data;
+		pgp_private_dsa_key *key = packet->key_data;
 
 		pos += mpi_read(key->x, in, size);
 		return pos;
 	}
 	case PGP_ECDH:
 	{
-		pgp_ecdh_key *key = packet->key_data;
+		pgp_private_ecdh_key *key = packet->key_data;
 
 		pos += mpi_read(key->x, in, size);
 		return pos;
 	}
 	case PGP_ECDSA:
 	{
-		pgp_ecdsa_key *key = packet->key_data;
+		pgp_private_ecdsa_key *key = packet->key_data;
 
 		pos += mpi_read(key->x, in, size);
 		return pos;
 	}
 	case PGP_X25519:
 	{
-		pgp_x25519_key *key = packet->key_data;
+		pgp_private_x25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(key->private_key, in, 32);
@@ -327,7 +327,7 @@ static uint32_t pgp_private_key_material_read(pgp_public_key_packet *packet, voi
 	}
 	case PGP_X448:
 	{
-		pgp_x448_key *key = packet->key_data;
+		pgp_private_x448_key *key = packet->key_data;
 
 		// 56 octets
 		memcpy(key->private_key, in, 56);
@@ -335,7 +335,7 @@ static uint32_t pgp_private_key_material_read(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ED25519:
 	{
-		pgp_ed25519_key *key = packet->key_data;
+		pgp_private_ed25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(key->private_key, in, 32);
@@ -343,7 +343,7 @@ static uint32_t pgp_private_key_material_read(pgp_public_key_packet *packet, voi
 	}
 	case PGP_ED448:
 	{
-		pgp_ed448_key *key = packet->key_data;
+		pgp_private_ed448_key *key = packet->key_data;
 
 		// 57 octets
 		memcpy(key->private_key, in, 57);
@@ -365,7 +365,7 @@ static uint32_t pgp_private_key_material_write(pgp_public_key_packet *packet, vo
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *key = packet->key_data;
+		pgp_private_rsa_key *key = packet->key_data;
 
 		pos += mpi_write(key->d, out + pos, size - pos);
 		pos += mpi_write(key->p, out + pos, size - pos);
@@ -376,35 +376,35 @@ static uint32_t pgp_private_key_material_write(pgp_public_key_packet *packet, vo
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *key = packet->key_data;
+		pgp_private_elgamal_key *key = packet->key_data;
 
 		pos += mpi_write(key->x, out, size);
 		return pos;
 	}
 	case PGP_DSA:
 	{
-		pgp_dsa_key *key = packet->key_data;
+		pgp_private_dsa_key *key = packet->key_data;
 
 		pos += mpi_write(key->x, out, size);
 		return pos;
 	}
 	case PGP_ECDH:
 	{
-		pgp_ecdh_key *key = packet->key_data;
+		pgp_private_ecdh_key *key = packet->key_data;
 
 		pos += mpi_write(key->x, out, size);
 		return pos;
 	}
 	case PGP_ECDSA:
 	{
-		pgp_ecdsa_key *key = packet->key_data;
+		pgp_private_ecdsa_key *key = packet->key_data;
 
 		pos += mpi_write(key->x, out, size);
 		return pos;
 	}
 	case PGP_X25519:
 	{
-		pgp_x25519_key *key = packet->key_data;
+		pgp_private_x25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(out, key->private_key, 32);
@@ -412,7 +412,7 @@ static uint32_t pgp_private_key_material_write(pgp_public_key_packet *packet, vo
 	}
 	case PGP_X448:
 	{
-		pgp_x448_key *key = packet->key_data;
+		pgp_private_x448_key *key = packet->key_data;
 
 		// 56 octets
 		memcpy(out, key->private_key, 56);
@@ -420,7 +420,7 @@ static uint32_t pgp_private_key_material_write(pgp_public_key_packet *packet, vo
 	}
 	case PGP_ED25519:
 	{
-		pgp_ed25519_key *key = packet->key_data;
+		pgp_private_ed25519_key *key = packet->key_data;
 
 		// 32 octets
 		memcpy(out, key->private_key, 32);
@@ -428,7 +428,7 @@ static uint32_t pgp_private_key_material_write(pgp_public_key_packet *packet, vo
 	}
 	case PGP_ED448:
 	{
-		pgp_ed448_key *key = packet->key_data;
+		pgp_private_ed448_key *key = packet->key_data;
 
 		// 57 octets
 		memcpy(out, key->private_key, 57);
@@ -848,7 +848,7 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *pkey = key;
+		pgp_public_rsa_key *pkey = key;
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
 
@@ -867,7 +867,7 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *pkey = key;
+		pgp_public_elgamal_key *pkey = key;
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
 
@@ -892,7 +892,7 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	break;
 	case PGP_DSA:
 	{
-		pgp_dsa_key *pkey = key;
+		pgp_public_dsa_key *pkey = key;
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
 
@@ -928,26 +928,26 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 		break;
 	case PGP_X25519:
 	{
-		pgp_x25519_key *pkey = key;
+		pgp_public_x25519_key *pkey = key;
 		hash_update(hctx, pkey->public_key, 32);
 	}
 	break;
 	case PGP_X448:
 	{
-		pgp_x448_key *pkey = key;
+		pgp_public_x448_key *pkey = key;
 		hash_update(hctx, pkey->public_key, 56);
 	}
 	break;
 	case PGP_ED25519:
 	{
 
-		pgp_ed25519_key *pkey = key;
+		pgp_public_ed25519_key *pkey = key;
 		hash_update(hctx, pkey->public_key, 32);
 	}
 	break;
 	case PGP_ED448:
 	{
-		pgp_ed448_key *pkey = key;
+		pgp_public_ed448_key *pkey = key;
 		hash_update(hctx, pkey->public_key, 57);
 	}
 	break;
@@ -969,7 +969,7 @@ static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *pkey = key;
+		pgp_public_rsa_key *pkey = key;
 		uint32_t bytes = 0;
 
 		// n
@@ -985,7 +985,7 @@ static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *pkey = key;
+		pgp_public_elgamal_key *pkey = key;
 		uint32_t bytes = 0;
 
 		// p
@@ -1005,7 +1005,7 @@ static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void
 	break;
 	case PGP_DSA:
 	{
-		pgp_dsa_key *pkey = key;
+		pgp_public_dsa_key *pkey = key;
 		uint32_t bytes = 0;
 
 		// p
@@ -1210,7 +1210,7 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 				packet->public_key_algorithm_id == PGP_RSA_SIGN_ONLY)
 			{
 				// Low 64 bits of public modulus
-				pgp_rsa_key *rsa_key = packet->key_data;
+				pgp_public_rsa_key *rsa_key = packet->key_data;
 				uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
 
 				LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
@@ -1227,7 +1227,7 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 				packet->public_key_algorithm_id == PGP_RSA_SIGN_ONLY)
 			{
 				// Low 64 bits of public modulus
-				pgp_rsa_key *rsa_key = packet->public_key_data;
+				pgp_public_rsa_key *rsa_key = packet->public_key_data;
 				uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
 
 				LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
