@@ -14,6 +14,7 @@
 #include <rsa.h>
 #include <sha.h>
 #include <md5.h>
+#include <ripemd.h>
 #include <bignum-internal.h>
 
 #include <bitscan.h>
@@ -1148,6 +1149,8 @@ static uint32_t get_digest_info_size(hash_algorithm algorithm)
 	{
 	case HASH_MD5:
 		return 18 + MD5_HASH_SIZE;
+	case HASH_RIPEMD160:
+		return 15 + RIPEMD160_HASH_SIZE;
 	case HASH_SHA1:
 		return 15 + SHA1_HASH_SIZE;
 	case HASH_SHA224:
@@ -1182,7 +1185,10 @@ static uint32_t get_digest_info_prefix(hash_algorithm algorithm, void *ptr)
 	case HASH_MD5:
 		memcpy(ptr, "\x30\x20\x30\x0c\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00\x04\x10", 18);
 		return 18;
+	case HASH_RIPEMD160:
+		memcpy(ptr, "\x30\x21\x30\x09\x06\x05\x2b\x24\x03\x02\x01\x05\x00\x04\x14", 15);
 	case HASH_SHA1:
+		return 15;
 		memcpy(ptr, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
 		return 15;
 	case HASH_SHA224:
