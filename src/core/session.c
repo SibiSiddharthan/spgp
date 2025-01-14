@@ -269,7 +269,7 @@ static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, siz
 	// A 1-octet public key algorithm.
 	// Session key
 
-	required_size = packet->header.header_size + 1 + 1 + 1 + packet->anonymous + packet->session_key_size;
+	required_size = packet->header.header_size + 1 + 1 + 1 + packet->key_octet_count + packet->session_key_size;
 
 	if (size < required_size)
 	{
@@ -283,17 +283,17 @@ static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, siz
 	LOAD_8(out + pos, &packet->version);
 	pos += 1;
 
-	// 1 octet anonymous flag
-	LOAD_8(out + pos, &packet->anonymous);
+	// 1 octet octet count flag
+	LOAD_8(out + pos, &packet->key_octet_count);
 	pos += 1;
 
-	if (packet->anonymous > 0)
+	if (packet->key_octet_count > 0)
 	{
 		// 1 octet key version
 		LOAD_8(out + pos, &packet->key_version);
 		pos += 1;
 
-		if ((packet->anonymous - 1) == 32) // V6 key
+		if ((packet->key_octet_count - 1) == 32) // V6 key
 		{
 			memcpy(out + pos, packet->key_fingerprint, 32);
 			pos += 32;
@@ -376,6 +376,31 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	packet->key_checksum[0] = checksum << 8;
 	packet->key_checksum[1] = checksum & 0xFF;
 
+	if (anonymous == 0)
+	{
+		if (packet->version == PGP_PKESK_V6)
+		{
+			packet->key_octet_count = 1;
+
+			switch (public_key->version)
+			{
+			case PGP_KEY_V6:
+				packet->key_octet_count += PGP_KEY_V6_FINGERPRINT_SIZE;
+				pgp_key_fingerprint(public_key, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+				break;
+			case PGP_KEY_V4:
+				packet->key_octet_count += PGP_KEY_V4_FINGERPRINT_SIZE;
+				pgp_key_fingerprint(public_key, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+			default:
+				return NULL;
+			}
+		}
+		else
+		{
+			pgp_key_id(public_key, packet->key_id);
+		}
+	}
+
 	// Construct the data
 	switch (packet->public_key_algorithm_id)
 	{
@@ -448,21 +473,21 @@ pgp_pkesk_packet *pgp_pkesk_packet_read(void *data, size_t size)
 	if (packet->version == PGP_PKESK_V6)
 	{
 		// 1 octet anonymous flag
-		LOAD_8(&packet->anonymous, in + pos);
+		LOAD_8(&packet->key_octet_count, in + pos);
 		pos += 1;
 
-		if (packet->anonymous > 0)
+		if (packet->key_octet_count > 0)
 		{
 			// 1 octet key version
 			LOAD_8(&packet->key_version, in + pos);
 			pos += 1;
 
-			if ((packet->anonymous - 1) == 32) // V6 key
+			if ((packet->key_octet_count - 1) == 32) // V6 key
 			{
 				memcpy(packet->key_fingerprint, in + pos, 32);
 				pos += 32;
 			}
-			else if ((packet->anonymous - 1) == 20) // V4 key
+			else if ((packet->key_octet_count - 1) == 20) // V4 key
 			{
 				memcpy(packet->key_fingerprint, in + pos, 20);
 				pos += 20;
