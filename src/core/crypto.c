@@ -65,6 +65,28 @@ byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algo
 	}
 }
 
+byte_t pgp_public_cipher_algorithm_validate(pgp_public_key_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	case PGP_DSA:
+	case PGP_ECDH:
+	case PGP_ECDSA:
+	case PGP_EDDSA_LEGACY:
+	case PGP_X25519:
+	case PGP_X448:
+	case PGP_ED25519:
+	case PGP_ED448:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 byte_t pgp_asymmetric_cipher_algorithm_validate(pgp_public_key_algorithms algorithm)
 {
 	switch (algorithm)
