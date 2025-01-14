@@ -373,7 +373,7 @@ void *pgp_packet_read(void *data, size_t size)
 	switch (ptype)
 	{
 	case PGP_PKESK:
-		return pgp_pkesk_packet_read(NULL, data, size);
+		return pgp_pkesk_packet_read(data, size);
 	case PGP_SIG:
 		return pgp_signature_packet_read(NULL, data, size);
 	case PGP_SKESK:

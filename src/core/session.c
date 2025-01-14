@@ -354,7 +354,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	byte_t *pkey = session_key;
 	byte_t data[64] = {0};
 
-	size_t pos;
+	size_t pos = 0;
 
 	// Check the algorithms
 	if (packet->public_key_algorithm_id != public_key->public_key_algorithm_id)
@@ -409,10 +409,37 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	return packet;
 }
 
-pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, size_t size)
+pgp_pkesk_packet *pgp_pkesk_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+
+	pgp_pkesk_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_pkesk_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
 
 	// 1 octet version
 	LOAD_8(&packet->version, in + pos);
@@ -462,6 +489,14 @@ pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, si
 	// 1 octet public-key algorithm
 	LOAD_8(&packet->public_key_algorithm_id, in + pos);
 	pos += 1;
+
+	packet->session_key = malloc(packet->header.body_size - pos);
+
+	if (packet->session_key == NULL)
+	{
+		free(packet);
+		return NULL;
+	}
 
 	pgp_session_key_read(packet, in + pos, packet->header.body_size - pos);
 

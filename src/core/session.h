@@ -115,7 +115,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet,
 
 size_t pgp_pkesk_packet_get_session_key(pgp_pkesk_packet *packet, void *key, size_t size);
 
-pgp_pkesk_packet *pgp_pkesk_packet_read(pgp_pkesk_packet *packet, void *data, size_t size);
+pgp_pkesk_packet *pgp_pkesk_packet_read(void *data, size_t size);
 size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size);
 size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size);
 
