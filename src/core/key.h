@@ -53,8 +53,9 @@ typedef struct _pgp_secret_key_packet
 	byte_t aead_algorithm_id;
 
 	byte_t s2k_usage;
-	pgp_s2k s2k_algorithm;
+	pgp_s2k s2k;
 
+	byte_t iv_size;
 	byte_t iv[16];
 	byte_t key_checksum[2];
 

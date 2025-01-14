@@ -12,6 +12,7 @@
 #include <s2k.h>
 #include <crypto.h>
 
+#include <hkdf.h>
 #include <hash.h>
 #include <sha.h>
 #include <md5.h>
@@ -269,7 +270,6 @@ static uint16_t mpi_checksum(mpi_t *mpi)
 static uint16_t pgp_public_key_material_checksum(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
 {
 	uint16_t checksum = 0;
-	uint16_t bytes = 0;
 
 	switch (public_key_algorithm_id)
 	{
@@ -1009,34 +1009,256 @@ size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, siz
 	return pos;
 }
 
-static uint32_t pgp_secret_key_material_encrypt_legacy_cfb_v3(void *ptr, byte_t hash[MD5_HASH_SIZE], byte_t symmetric_key_algorithm_id,
-															  void *iv, byte_t iv_size, void *private_key_data,
-															  uint32_t private_key_data_size)
+static uint32_t pgp_secret_key_material_encrypt_legacy_cfb_v3(pgp_secret_key_packet *packet, byte_t hash[MD5_HASH_SIZE],
+															  void *private_key_data)
 {
 	// Only RSA keys
 	pgp_private_rsa_key *skey = private_key_data;
 	uint32_t pos = 0;
 
 	// d
-	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->d->bytes, CEIL_DIV(skey->d->bits, 8),
-						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->d->bits, 8));
+	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, packet->iv, packet->iv_size, skey->d->bytes,
+						   CEIL_DIV(skey->d->bits, 8), PTR_OFFSET(packet->private_key_data, pos), CEIL_DIV(skey->d->bits, 8));
 
 	// p
-	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->p->bytes, CEIL_DIV(skey->p->bits, 8),
-						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->p->bits, 8));
+	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, packet->iv, packet->iv_size, skey->p->bytes,
+						   CEIL_DIV(skey->p->bits, 8), PTR_OFFSET(packet->private_key_data, pos), CEIL_DIV(skey->p->bits, 8));
 
 	// q
-	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->q->bytes, CEIL_DIV(skey->q->bits, 8),
-						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->q->bits, 8));
+	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, packet->iv, packet->iv_size, skey->q->bytes,
+						   CEIL_DIV(skey->q->bits, 8), PTR_OFFSET(packet->private_key_data, pos), CEIL_DIV(skey->q->bits, 8));
 
 	// u
-	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->u->bytes, CEIL_DIV(skey->u->bits, 8),
-						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->u->bits, 8));
+	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, packet->iv, packet->iv_size, skey->u->bytes,
+						   CEIL_DIV(skey->u->bits, 8), PTR_OFFSET(packet->private_key_data, pos), CEIL_DIV(skey->u->bits, 8));
+
+	// Store the checksum at the end
+	LOAD_16(PTR_OFFSET(packet->private_key_data, pos), packet->key_checksum);
 
 	return pos;
 }
 
-pgp_secret_key_packet *pgp_secret_key_packet_read(pgp_secret_key_packet *packet, void *data, size_t size)
+static uint32_t pgp_secret_key_material_encrypt_legacy_cfb(pgp_secret_key_packet *packet, void *passphrase, size_t passphrase_size,
+														   void *private_key_data)
+{
+	byte_t hash[MD5_HASH_SIZE] = {0};
+	byte_t *buffer = NULL;
+
+	uint32_t count = 0;
+	size_t result = 0;
+
+	// Hash the passphrase
+	md5_hash(passphrase, passphrase_size, hash);
+
+	if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
+	{
+		return pgp_secret_key_material_encrypt_legacy_cfb_v3(packet, hash, private_key_data);
+	}
+
+	count = get_private_key_material_octets(packet->public_key_algorithm_id, private_key_data);
+	buffer = malloc(ROUND_UP(count + 2, 16));
+
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	// Write the octets to the buffer
+	pgp_private_key_material_write(packet->public_key_algorithm_id, private_key_data, buffer, count);
+
+	// Store the checksum at the end
+	LOAD_16(PTR_OFFSET(packet->private_key_data, count), packet->key_checksum);
+
+	// Encrypt using CFB
+	result = pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, packet->iv, packet->iv_size, buffer, count + 2,
+							 packet->private_key_data, count + 2);
+
+	if (result == 0)
+	{
+		return 0;
+	}
+
+	return count + 2;
+}
+
+static uint32_t pgp_secret_key_material_encrypt_malleable_cfb(pgp_secret_key_packet *packet, void *passphrase, size_t passphrase_size,
+															  void *private_key_data)
+{
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+	uint32_t count = 0;
+	size_t result = 0;
+
+	byte_t key[32] = {0};
+	byte_t *buffer = NULL;
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	count = get_private_key_material_octets(packet->public_key_algorithm_id, private_key_data);
+	buffer = malloc(ROUND_UP(count + 2, 16));
+
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	// Write the octets to the buffer
+	pgp_private_key_material_write(packet->public_key_algorithm_id, private_key_data, buffer, count);
+
+	// Store the checksum at the end
+	LOAD_16(PTR_OFFSET(packet->private_key_data, count), packet->key_checksum);
+
+	// Encrypt using CFB
+	result = pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, buffer, count + 2,
+							 packet->private_key_data, count + 2);
+
+	if (result == 0)
+	{
+		return 0;
+	}
+
+	return count + 2;
+}
+
+static uint32_t pgp_secret_key_material_encrypt_cfb(pgp_secret_key_packet *packet, void *passphrase, size_t passphrase_size,
+													void *private_key_data)
+{
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+	uint32_t count = 0;
+	size_t result = 0;
+
+	byte_t key[32] = {0};
+	byte_t *buffer = NULL;
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	count = get_private_key_material_octets(packet->public_key_algorithm_id, private_key_data);
+	buffer = malloc(ROUND_UP(count + SHA1_HASH_SIZE, 16));
+
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	// Write the octets to the buffer
+	pgp_private_key_material_write(packet->public_key_algorithm_id, private_key_data, buffer, count);
+
+	// Calculate the hash and store it the end
+	sha1_hash(buffer, count, PTR_OFFSET(buffer, count));
+
+	// Encrypt using CFB
+	result = pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, buffer, count + SHA1_HASH_SIZE,
+							 packet->private_key_data, count + SHA1_HASH_SIZE);
+
+	if (result == 0)
+	{
+		return 0;
+	}
+
+	return count + SHA1_HASH_SIZE;
+}
+
+static uint32_t pgp_secret_key_material_encrypt_aead(pgp_secret_key_packet *packet, void *passphrase, size_t passphrase_size,
+													 void *private_key_data)
+{
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+	uint32_t aad_count = packet->public_key_data_octets + 1 + 6 + (packet->version == PGP_KEY_V6 ? 4 : 0);
+	uint32_t count = 0;
+
+	size_t pos = 0;
+	size_t result = 0;
+
+	byte_t ikey[32] = {0};
+	byte_t key[32] = {0};
+	byte_t info[4] = {0};
+
+	byte_t *buffer = NULL;
+
+	// Generate the key
+	info[0] = packet->header.tag;
+	info[1] = packet->version;
+	info[2] = packet->symmetric_key_algorithm_id;
+	info[3] = packet->aead_algorithm_id;
+
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
+	hkdf(HASH_SHA256, key, key_size, NULL, 0, info, 4, key, key_size);
+
+	count = get_private_key_material_octets(packet->public_key_algorithm_id, private_key_data);
+	buffer = malloc(ROUND_UP(count + aad_count, 16));
+
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	// Write the private octets to the buffer
+	pgp_private_key_material_write(packet->public_key_algorithm_id, private_key_data, buffer, count);
+
+	// Prepare the associated data
+	pos = count;
+
+	LOAD_8(buffer + pos, &packet->header.tag);
+	pos += 1;
+
+	LOAD_8(buffer + pos, &packet->version);
+	pos += 1;
+
+	uint32_t creation_time_be = BSWAP_32(packet->key_creation_time);
+	LOAD_32(buffer + pos, &creation_time_be);
+	pos += 4;
+
+	if (packet->version == PGP_KEY_V6)
+	{
+		uint32_t public_key_octets_be = BSWAP_32(packet->public_key_data_octets);
+		LOAD_32(buffer + pos, &public_key_octets_be);
+		pos += 4;
+	}
+
+	pgp_public_key_material_write(packet->public_key_algorithm_id, packet->public_key_data, PTR_OFFSET(buffer, pos),
+								  packet->public_key_data_octets);
+
+	// Encrypt using AEAD (Store the tag at the end)
+	result = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
+							  PTR_OFFSET(buffer, count), aad_count, buffer, count, packet->private_key_data, count,
+							  PTR_OFFSET(packet->private_key_data, count), PGP_AEAD_TAG_SIZE);
+
+	if (result == 0)
+	{
+		return 0;
+	}
+
+	return count + PGP_AEAD_TAG_SIZE;
+}
+
+static uint32_t pgp_secret_key_material_encrypt(pgp_secret_key_packet *packet, void *passphrase, size_t passphrase_size,
+												void *private_key_data)
+{
+	if (packet->s2k_usage >= PGP_IDEA && packet->s2k_usage <= PGP_CAMELLIA_256)
+	{
+		return pgp_secret_key_material_encrypt_legacy_cfb(packet, passphrase, passphrase_size, private_key_data);
+	}
+
+	if (packet->s2k_usage == 253)
+	{
+		return pgp_secret_key_material_encrypt_aead(packet, passphrase, passphrase_size, private_key_data);
+	}
+
+	if (packet->s2k_usage == 254)
+	{
+		return pgp_secret_key_material_encrypt_cfb(packet, passphrase, passphrase_size, private_key_data);
+	}
+
+	if (packet->s2k_usage == 255)
+	{
+		return pgp_secret_key_material_encrypt_malleable_cfb(packet, passphrase, passphrase_size, private_key_data);
+	}
+
+	return 0;
+}
+
+
+pgp_secret_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
 
@@ -1149,14 +1371,14 @@ pgp_secret_key_packet *pgp_secret_key_packet_read(pgp_secret_key_packet *packet,
 		// S2K specifier
 		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
 		{
-			result = pgp_s2k_read(&packet->s2k_algorithm, in + pos, s2k_size != 0 ? s2k_size : (packet->header.body_size - pos));
+			result = pgp_s2k_read(&packet->s2k, in + pos, s2k_size != 0 ? s2k_size : (packet->header.body_size - pos));
 
 			if (result == NULL)
 			{
 				return NULL;
 			}
 
-			pos += pgp_s2k_size(&packet->s2k_algorithm);
+			pos += pgp_s2k_size(&packet->s2k);
 		}
 
 		// IV
@@ -1218,7 +1440,7 @@ size_t pgp_secret_key_packet_write(pgp_secret_key_packet *packet, void *ptr, siz
 	// (Plaintext or encrypted) Private key data.
 	// (For V3 and V4) A 2-octet checksum of private key if not encrypted
 
-	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_size(&packet->s2k_algorithm) : 0;
+	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_size(&packet->s2k) : 0;
 
 	required_size = 1 + 4 + 1 + 1 + packet->public_key_data_octets + packet->private_key_data_octets;
 	required_size += (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3) ? 2 : 0;
@@ -1343,7 +1565,7 @@ size_t pgp_secret_key_packet_write(pgp_secret_key_packet *packet, void *ptr, siz
 		}
 
 		// S2K specifier
-		pos += pgp_s2k_write(&packet->s2k_algorithm, out + pos);
+		pos += pgp_s2k_write(&packet->s2k, out + pos);
 
 		// IV
 		memcpy(out + pos, packet->iv, 16);
