@@ -245,6 +245,139 @@ static uint32_t get_private_key_material_size(pgp_public_key_algorithms public_k
 	}
 }
 
+static uint16_t mpi_checksum(mpi_t *mpi)
+{
+	uint16_t checksum = 0;
+	uint16_t bytes = 0;
+
+	checksum += mpi->bits >> 8;
+	checksum += mpi->bits & 0xFF;
+	bytes = CEIL_DIV(mpi->bits, 8);
+
+	for (uint16_t i = 0; i < bytes; ++i)
+	{
+		checksum += mpi->bytes[i];
+	}
+
+	return checksum;
+}
+
+static uint16_t pgp_public_key_material_checksum(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
+{
+	uint16_t checksum = 0;
+	uint16_t bytes = 0;
+
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_public_rsa_key *key = key_data;
+
+		checksum += mpi_checksum(key->n);
+		checksum += mpi_checksum(key->e);
+	}
+	break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_public_elgamal_key *key = key_data;
+
+		checksum += mpi_checksum(key->p);
+		checksum += mpi_checksum(key->g);
+		checksum += mpi_checksum(key->y);
+	}
+	break;
+	case PGP_DSA:
+	{
+		pgp_public_dsa_key *key = key_data;
+
+		checksum += mpi_checksum(key->p);
+		checksum += mpi_checksum(key->q);
+		checksum += mpi_checksum(key->g);
+		checksum += mpi_checksum(key->y);
+	}
+	break;
+	case PGP_ECDH:
+	{
+		pgp_public_ecdh_key *key = key_data;
+
+		checksum += key->oid_size;
+
+		for (uint16_t i = 0; i < key->oid_size; ++i)
+		{
+			checksum += key->oid[i];
+		}
+
+		checksum += mpi_checksum(key->point);
+
+		checksum += key->kdf.size;
+		checksum += key->kdf.extensions;
+		checksum += key->kdf.hash_algorithm_id;
+		checksum += key->kdf.symmetric_key_algorithm_id;
+	}
+	break;
+	case PGP_ECDSA:
+	{
+		pgp_public_ecdsa_key *key = key_data;
+
+		checksum += key->oid_size;
+
+		for (uint16_t i = 0; i < key->oid_size; ++i)
+		{
+			checksum += key->oid[i];
+		}
+
+		checksum += mpi_checksum(key->point);
+	}
+	break;
+	case PGP_X25519:
+	{
+		pgp_public_x25519_key *key = key_data;
+
+		for (uint16_t i = 0; i < 32; ++i)
+		{
+			checksum += key->public_key[i];
+		}
+	}
+	break;
+	case PGP_X448:
+	{
+		pgp_public_x448_key *key = key_data;
+
+		for (uint16_t i = 0; i < 56; ++i)
+		{
+			checksum += key->public_key[i];
+		}
+	}
+	break;
+	case PGP_ED25519:
+	{
+		pgp_public_ed25519_key *key = key_data;
+
+		for (uint16_t i = 0; i < 32; ++i)
+		{
+			checksum += key->public_key[i];
+		}
+	}
+	break;
+	case PGP_ED448:
+	{
+		pgp_public_ed448_key *key = key_data;
+
+		for (uint16_t i = 0; i < 57; ++i)
+		{
+			checksum += key->public_key[i];
+		}
+	}
+	break;
+	default:
+		return 0;
+	}
+
+	return BSWAP_16(checksum);
+}
+
 static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
