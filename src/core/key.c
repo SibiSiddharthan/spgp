@@ -74,6 +74,177 @@ static uint32_t get_public_key_material_octets(pgp_public_key_algorithms public_
 	}
 }
 
+static uint32_t get_public_key_material_size(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
+{
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_public_rsa_key *key = key_data;
+
+		return sizeof(pgp_public_rsa_key) + mpi_size(key->n) + mpi_size(key->e);
+	}
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_public_elgamal_key *key = key_data;
+
+		return sizeof(pgp_public_elgamal_key) + mpi_size(key->p) + mpi_size(key->g) + mpi_size(key->y);
+	}
+	case PGP_DSA:
+	{
+		pgp_public_dsa_key *key = key_data;
+
+		return sizeof(pgp_public_dsa_key) + mpi_size(key->p) + mpi_size(key->q) + mpi_size(key->g) + mpi_size(key->y);
+	}
+	case PGP_ECDH:
+	{
+		pgp_public_ecdh_key *key = key_data;
+
+		return sizeof(pgp_public_ecdh_key) + mpi_size(key->point);
+	}
+	case PGP_ECDSA:
+	{
+		pgp_public_ecdsa_key *key = key_data;
+
+		return sizeof(pgp_public_ecdsa_key) + mpi_size(key->point);
+	}
+	case PGP_X25519:
+	{
+		return 32;
+	}
+	case PGP_X448:
+	{
+		return 56;
+	}
+	case PGP_ED25519:
+	{
+		return 32;
+	}
+	case PGP_ED448:
+	{
+		return 57;
+	}
+	default:
+		return 0;
+	}
+}
+
+static uint32_t get_private_key_material_octets(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
+{
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_private_rsa_key *key = key_data;
+
+		return mpi_octets(key->d) + mpi_octets(key->p) + mpi_octets(key->q) + mpi_octets(key->u);
+	}
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_private_elgamal_key *key = key_data;
+
+		return mpi_octets(key->x);
+	}
+	case PGP_DSA:
+	{
+		pgp_private_dsa_key *key = key_data;
+
+		return mpi_octets(key->x);
+	}
+	case PGP_ECDH:
+	{
+		pgp_private_ecdh_key *key = key_data;
+
+		return mpi_octets(key->x);
+	}
+	case PGP_ECDSA:
+	{
+		pgp_private_ecdsa_key *key = key_data;
+
+		return mpi_octets(key->x);
+	}
+	case PGP_X25519:
+	{
+		return 32;
+	}
+	case PGP_X448:
+	{
+		return 56;
+	}
+	case PGP_ED25519:
+	{
+		return 32;
+	}
+	case PGP_ED448:
+	{
+		return 57;
+	}
+	default:
+		return 0;
+	}
+}
+
+static uint32_t get_private_key_material_size(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
+{
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_private_rsa_key *key = key_data;
+
+		return sizeof(pgp_private_rsa_key) + mpi_size(key->d) + mpi_size(key->p) + mpi_size(key->q) + mpi_size(key->u);
+	}
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_private_elgamal_key *key = key_data;
+
+		return sizeof(pgp_private_elgamal_key) + mpi_size(key->x);
+	}
+	case PGP_DSA:
+	{
+		pgp_private_dsa_key *key = key_data;
+
+		return sizeof(pgp_private_dsa_key) + mpi_size(key->x);
+	}
+	case PGP_ECDH:
+	{
+		pgp_private_ecdh_key *key = key_data;
+
+		return sizeof(pgp_private_ecdh_key) + mpi_size(key->x);
+	}
+	case PGP_ECDSA:
+	{
+		pgp_private_ecdsa_key *key = key_data;
+
+		return sizeof(pgp_private_ecdsa_key) + mpi_size(key->x);
+	}
+	case PGP_X25519:
+	{
+		return 32;
+	}
+	case PGP_X448:
+	{
+		return 56;
+	}
+	case PGP_ED25519:
+	{
+		return 32;
+	}
+	case PGP_ED448:
+	{
+		return 57;
+	}
+	default:
+		return 0;
+	}
+}
+
 static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
