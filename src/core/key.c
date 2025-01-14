@@ -98,7 +98,8 @@ static uint32_t get_public_key_material_size(pgp_public_key_algorithms public_ke
 	{
 		pgp_public_dsa_key *key = key_data;
 
-		return sizeof(pgp_public_dsa_key) + mpi_size(key->p->bits) + mpi_size(key->q->bits) + mpi_size(key->g->bits) + mpi_size(key->y->bits);
+		return sizeof(pgp_public_dsa_key) + mpi_size(key->p->bits) + mpi_size(key->q->bits) + mpi_size(key->g->bits) +
+			   mpi_size(key->y->bits);
 	}
 	case PGP_ECDH:
 	{
@@ -200,7 +201,8 @@ static uint32_t get_private_key_material_size(pgp_public_key_algorithms public_k
 	{
 		pgp_private_rsa_key *key = key_data;
 
-		return sizeof(pgp_private_rsa_key) + mpi_size(key->d->bits) + mpi_size(key->p->bits) + mpi_size(key->q->bits) + mpi_size(key->u->bits);
+		return sizeof(pgp_private_rsa_key) + mpi_size(key->d->bits) + mpi_size(key->p->bits) + mpi_size(key->q->bits) +
+			   mpi_size(key->u->bits);
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
@@ -1002,7 +1004,34 @@ size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, siz
 		pos += 4;
 	}
 
-	pos += pgp_public_key_material_write(packet, out + pos, size - pos);
+	pos += pgp_public_key_material_write(packet->public_key_algorithm_id, packet->key_data, out + pos, size - pos);
+
+	return pos;
+}
+
+static uint32_t pgp_secret_key_material_encrypt_legacy_cfb_v3(void *ptr, byte_t hash[MD5_HASH_SIZE], byte_t symmetric_key_algorithm_id,
+															  void *iv, byte_t iv_size, void *private_key_data,
+															  uint32_t private_key_data_size)
+{
+	// Only RSA keys
+	pgp_private_rsa_key *skey = private_key_data;
+	uint32_t pos = 0;
+
+	// d
+	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->d->bytes, CEIL_DIV(skey->d->bits, 8),
+						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->d->bits, 8));
+
+	// p
+	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->p->bytes, CEIL_DIV(skey->p->bits, 8),
+						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->p->bits, 8));
+
+	// q
+	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->q->bytes, CEIL_DIV(skey->q->bits, 8),
+						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->q->bits, 8));
+
+	// u
+	pos += pgp_cfb_encrypt(symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, iv, iv_size, skey->u->bytes, CEIL_DIV(skey->u->bits, 8),
+						   PTR_OFFSET(ptr, pos), CEIL_DIV(skey->u->bits, 8));
 
 	return pos;
 }
@@ -1493,7 +1522,7 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	}
 }
 
-static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void *key, byte_t figerprint_v3[PGP_KEY_V3_FINGERPRINT_SIZE])
+static uint32_t pgp_key_fingerprint_v3(void *key, byte_t figerprint_v3[PGP_KEY_V3_FINGERPRINT_SIZE])
 {
 	// MD5 of mpi without length octets
 	hash_ctx *hctx = NULL;
@@ -1501,74 +1530,19 @@ static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void
 
 	hash_init(buffer, 512, HASH_MD5);
 
-	// Support only these types for v3 keys
-	switch (algorithm)
-	{
-	case PGP_RSA_ENCRYPT_OR_SIGN:
-	case PGP_RSA_ENCRYPT_ONLY:
-	case PGP_RSA_SIGN_ONLY:
-	{
-		pgp_public_rsa_key *pkey = key;
-		uint32_t bytes = 0;
+	// V3 keys only support RSA
+	pgp_public_rsa_key *pkey = key;
+	uint32_t bytes = 0;
 
-		// n
-		bytes = CEIL_DIV(pkey->n->bits, 8);
-		hash_update(hctx, pkey->n->bytes, bytes);
+	// n
+	bytes = CEIL_DIV(pkey->n->bits, 8);
+	hash_update(hctx, pkey->n->bytes, bytes);
 
-		// e
-		bytes = CEIL_DIV(pkey->e->bits, 8);
-		hash_update(hctx, pkey->e->bytes, bytes);
+	// e
+	bytes = CEIL_DIV(pkey->e->bits, 8);
+	hash_update(hctx, pkey->e->bytes, bytes);
 
-		hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
-	}
-	break;
-	case PGP_ELGAMAL_ENCRYPT_ONLY:
-	{
-		pgp_public_elgamal_key *pkey = key;
-		uint32_t bytes = 0;
-
-		// p
-		bytes = CEIL_DIV(pkey->p->bits, 8);
-		hash_update(hctx, pkey->p->bytes, bytes);
-
-		// g
-		bytes = CEIL_DIV(pkey->g->bits, 8);
-		hash_update(hctx, pkey->g->bytes, bytes);
-
-		// y
-		bytes = CEIL_DIV(pkey->y->bits, 8);
-		hash_update(hctx, pkey->y->bytes, bytes);
-
-		hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
-	}
-	break;
-	case PGP_DSA:
-	{
-		pgp_public_dsa_key *pkey = key;
-		uint32_t bytes = 0;
-
-		// p
-		bytes = CEIL_DIV(pkey->p->bits, 8);
-		hash_update(hctx, pkey->p->bytes, bytes);
-
-		// q
-		bytes = CEIL_DIV(pkey->q->bits, 8);
-		hash_update(hctx, pkey->q->bytes, bytes);
-
-		// g
-		bytes = CEIL_DIV(pkey->g->bits, 8);
-		hash_update(hctx, pkey->g->bytes, bytes);
-
-		// y
-		bytes = CEIL_DIV(pkey->y->bits, 8);
-		hash_update(hctx, pkey->y->bytes, bytes);
-
-		hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
-	}
-	break;
-	default:
-		return 0;
-	}
+	hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
 
 	return PGP_KEY_V3_FINGERPRINT_SIZE;
 }
@@ -1656,7 +1630,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 				return 0;
 			}
 
-			return pgp_key_fingerprint_v3(packet->public_key_algorithm_id, packet->key_data, fingerprint);
+			return pgp_key_fingerprint_v3(packet->key_data, fingerprint);
 		}
 		case PGP_KEY_V4:
 		{
@@ -1696,7 +1670,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 				return 0;
 			}
 
-			return pgp_key_fingerprint_v3(packet->public_key_algorithm_id, packet->public_key_data, fingerprint);
+			return pgp_key_fingerprint_v3(packet->public_key_data, fingerprint);
 		}
 		case PGP_KEY_V4:
 		{
@@ -1745,15 +1719,11 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 
 		if (packet->version == PGP_KEY_V3)
 		{
-			if (packet->public_key_algorithm_id == PGP_RSA_ENCRYPT_OR_SIGN || packet->public_key_algorithm_id == PGP_RSA_ENCRYPT_ONLY ||
-				packet->public_key_algorithm_id == PGP_RSA_SIGN_ONLY)
-			{
-				// Low 64 bits of public modulus
-				pgp_public_rsa_key *rsa_key = packet->key_data;
-				uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
+			// Low 64 bits of public modulus
+			pgp_public_rsa_key *rsa_key = packet->key_data;
+			uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
 
-				LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
-			}
+			LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
 		}
 	}
 	else if (tag == PGP_SECKEY || tag == PGP_SECSUBKEY)
@@ -1762,15 +1732,11 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 
 		if (packet->version == PGP_KEY_V3)
 		{
-			if (packet->public_key_algorithm_id == PGP_RSA_ENCRYPT_OR_SIGN || packet->public_key_algorithm_id == PGP_RSA_ENCRYPT_ONLY ||
-				packet->public_key_algorithm_id == PGP_RSA_SIGN_ONLY)
-			{
-				// Low 64 bits of public modulus
-				pgp_public_rsa_key *rsa_key = packet->public_key_data;
-				uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
+			// Low 64 bits of public modulus
+			pgp_public_rsa_key *rsa_key = packet->public_key_data;
+			uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
 
-				LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
-			}
+			LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
 		}
 	}
 	else
