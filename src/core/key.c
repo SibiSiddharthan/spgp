@@ -10,14 +10,71 @@
 #include <packet.h>
 #include <key.h>
 #include <s2k.h>
+#include <crypto.h>
 
 #include <md5.h>
 #include <sha.h>
 #include <hash.h>
 
+#include <stdlib.h>
 #include <string.h>
 
-static uint32_t get_public_key_material_size(pgp_public_key_algorithms algorithm, uint32_t bits);
+static uint32_t get_public_key_material_octets(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
+{
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_public_rsa_key *key = key_data;
+
+		return mpi_octets(key->n) + mpi_octets(key->e);
+	}
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_public_elgamal_key *key = key_data;
+
+		return mpi_octets(key->p) + mpi_octets(key->g) + mpi_octets(key->y);
+	}
+	case PGP_DSA:
+	{
+		pgp_public_dsa_key *key = key_data;
+
+		return mpi_octets(key->p) + mpi_octets(key->q) + mpi_octets(key->g) + mpi_octets(key->y);
+	}
+	case PGP_ECDH:
+	{
+		pgp_public_ecdh_key *key = key_data;
+
+		return 5 + key->oid_size + mpi_octets(key->point);
+	}
+	case PGP_ECDSA:
+	{
+		pgp_public_ecdsa_key *key = key_data;
+
+		return 1 + key->oid_size + mpi_octets(key->point);
+	}
+	case PGP_X25519:
+	{
+		return 32;
+	}
+	case PGP_X448:
+	{
+		return 56;
+	}
+	case PGP_ED25519:
+	{
+		return 32;
+	}
+	case PGP_ED448:
+	{
+		return 57;
+	}
+	default:
+		return 0;
+	}
+}
 
 static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void *ptr, uint32_t size)
 {
@@ -35,6 +92,8 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 		pos += mpi_read(key->n, in + pos, size - pos);
 		pos += mpi_read(key->e, in + pos, size - pos);
 
+		packet->key_data_size = sizeof(pgp_public_rsa_key) + mpi_size(key->n->bits) + mpi_size(key->e->bits);
+
 		return pos;
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
@@ -44,6 +103,8 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 		pos += mpi_read(key->p, in + pos, size - pos);
 		pos += mpi_read(key->g, in + pos, size - pos);
 		pos += mpi_read(key->y, in + pos, size - pos);
+
+		packet->key_data_size = sizeof(pgp_public_elgamal_key) + mpi_size(key->p->bits) + mpi_size(key->g->bits) + mpi_size(key->y->bits);
 
 		return pos;
 	}
@@ -55,6 +116,9 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 		pos += mpi_read(key->q, in + pos, size - pos);
 		pos += mpi_read(key->g, in + pos, size - pos);
 		pos += mpi_read(key->y, in + pos, size - pos);
+
+		packet->key_data_size =
+			sizeof(pgp_public_dsa_key) + mpi_size(key->p->bits) + mpi_size(key->q->bits) + mpi_size(key->g->bits) + mpi_size(key->y->bits);
 
 		return pos;
 	}
@@ -86,6 +150,8 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 		LOAD_8(&key->kdf.symmetric_key_algorithm_id, in + pos);
 		pos += 1;
 
+		packet->key_data_size = sizeof(pgp_public_ecdh_key) + mpi_size(key->point->bits);
+
 		return pos;
 	}
 	case PGP_ECDSA:
@@ -103,6 +169,8 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 		// EC point
 		pos += mpi_read(key->point, in + pos, size - pos);
 
+		packet->key_data_size = sizeof(pgp_public_ecdsa_key) + mpi_size(key->point->bits);
+
 		return pos;
 	}
 	case PGP_X25519:
@@ -111,6 +179,8 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 
 		// 32 octets
 		memcpy(key->public_key, in, 32);
+		packet->key_data_size = 32;
+
 		return 32;
 	}
 	case PGP_X448:
@@ -119,6 +189,8 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 
 		// 56 octets
 		memcpy(key->public_key, in, 56);
+		packet->key_data_size = 56;
+
 		return 56;
 	}
 	case PGP_ED25519:
@@ -127,6 +199,8 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 
 		// 32 octets
 		memcpy(key->public_key, in, 32);
+		packet->key_data_size = 32;
+
 		return 32;
 	}
 	case PGP_ED448:
@@ -135,10 +209,14 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_packet *packet, void
 
 		// 57 octets
 		memcpy(key->public_key, in, 57);
+		packet->key_data_size = 57;
+
 		return 57;
 	}
 	default:
-		return 0;
+		// Copy unknown stuff directly
+		memcpy(packet->key_data, ptr, size);
+		return size;
 	}
 }
 
@@ -435,19 +513,109 @@ static uint32_t pgp_private_key_material_write(pgp_public_key_packet *packet, vo
 	}
 }
 
-pgp_public_key_packet *pgp_public_key_packet_read(pgp_public_key_packet *packet, void *data, size_t size)
+pgp_public_key_packet *pgp_public_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
+												 uint16_t key_expiry_days, byte_t public_key_algorithm_id, void *key_data,
+												 uint32_t key_data_size)
+{
+	pgp_public_key_packet *packet = NULL;
+	pgp_packet_header_format format = PGP_HEADER;
+	uint32_t body_size = 0;
+
+	if (type != PGP_PUBKEY && type != PGP_PUBSUBKEY)
+	{
+		return NULL;
+	}
+
+	if (version != PGP_KEY_V6 && version != PGP_KEY_V4 && version != PGP_KEY_V3 && version != PGP_KEY_V2)
+	{
+		return NULL;
+	}
+
+	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return 0;
+	}
+
+	if (version == PGP_KEY_V6)
+	{
+		body_size = 10;
+	}
+	else if (version == PGP_KEY_V4)
+	{
+		body_size = 6;
+	}
+	else // (version == PGP_KEY_V3 || version == PGP_KEY_V2)
+	{
+		body_size = 8;
+		format = PGP_LEGACY_HEADER;
+	}
+
+	packet = malloc(sizeof(pgp_public_key_packet) + key_data_size);
+
+	if (packet == NULL)
+	{
+		return 0;
+	}
+
+	memset(packet, 0, sizeof(pgp_public_key_packet) + key_data_size);
+
+	packet->key_creation_time = key_creation_time;
+	packet->key_expiry_days = key_expiry_days;
+	packet->public_key_algorithm_id = public_key_algorithm_id;
+
+	memcpy(packet->key_data, key_data, key_data_size);
+	packet->key_data_size = key_data_size;
+	packet->key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key_data);
+
+	body_size += packet->key_data_octets;
+
+	packet->header = pgp_encode_packet_header(format, type, body_size);
+
+	return packet;
+}
+
+void pgp_public_key_packet_delete(pgp_public_key_packet *packet)
+{
+	free(packet);
+}
+
+pgp_public_key_packet *pgp_public_key_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+
+	pgp_public_key_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_PUBKEY && pgp_packet_get_type(header.tag) != PGP_PUBSUBKEY)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_public_key_packet) + header.body_size);
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	packet->key_data = PTR_OFFSET(packet, sizeof(pgp_public_key_packet));
+
+	// Copy the header
+	packet->header = header;
 
 	// 1 octet version
 	LOAD_8(&packet->version, in + pos);
 	pos += 1;
-
-	if (packet->version != PGP_KEY_V2 && packet->version != PGP_KEY_V3 && packet->version != PGP_KEY_V4 && packet->version != PGP_KEY_V6)
-	{
-		return 0;
-	}
 
 	// 4-octet number denoting the time that the key was created.
 	uint32_t key_creation_time_be;
@@ -473,14 +641,18 @@ pgp_public_key_packet *pgp_public_key_packet_read(pgp_public_key_packet *packet,
 	if (packet->version == PGP_KEY_V6)
 	{
 		// 4-octet scalar count for the public key material
-		uint32_t key_data_size_be;
+		uint32_t key_data_octets_be;
 
-		LOAD_32(&key_data_size_be, in + pos);
-		packet->key_data_size = BSWAP_32(key_data_size_be);
+		LOAD_32(&key_data_octets_be, in + pos);
+		packet->key_data_octets = BSWAP_32(key_data_octets_be);
 		pos += 4;
 	}
+	else
+	{
+		packet->key_data_octets = (header.body_size + header.header_size) - pos;
+	}
 
-	pos += pgp_public_key_material_read(packet, in + pos, packet->header.body_size - pos);
+	pos += pgp_public_key_material_read(packet, in + pos, packet->key_data_octets);
 
 	return packet;
 }
@@ -498,7 +670,7 @@ size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, siz
 	// (For V6) A 4-octet scalar count for the public key material
 	// One or more MPIs comprising the key.
 
-	required_size = 1 + 4 + 1 + packet->key_data_size;
+	required_size = 1 + 4 + 1 + packet->key_data_octets;
 	required_size += (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3) ? 2 : 0;
 	required_size += (packet->version == PGP_KEY_V6) ? 4 : 0;
 	required_size += packet->header.header_size;
@@ -537,9 +709,9 @@ size_t pgp_public_key_packet_write(pgp_public_key_packet *packet, void *ptr, siz
 	if (packet->version == PGP_KEY_V6)
 	{
 		// 4-octet scalar count for the public key material
-		uint32_t key_data_size = BSWAP_32(packet->key_data_size);
+		uint32_t key_data_octets = BSWAP_32(packet->key_data_octets);
 
-		LOAD_32(out + pos, &key_data_size);
+		LOAD_32(out + pos, &key_data_octets);
 		pos += 4;
 	}
 
@@ -586,10 +758,10 @@ pgp_secret_key_packet *pgp_secret_key_packet_read(pgp_secret_key_packet *packet,
 	if (packet->version == PGP_KEY_V6)
 	{
 		// 4-octet scalar count for the public key material
-		uint32_t public_key_data_size_be;
+		uint32_t public_key_data_octets_be;
 
-		LOAD_32(&public_key_data_size_be, in + pos);
-		packet->public_key_data_size = BSWAP_32(public_key_data_size_be);
+		LOAD_32(&public_key_data_octets_be, in + pos);
+		packet->public_key_data_octets = BSWAP_32(public_key_data_octets_be);
 		pos += 4;
 	}
 
@@ -646,8 +818,8 @@ pgp_secret_key_packet *pgp_secret_key_packet_read(pgp_secret_key_packet *packet,
 		pos += 16;
 
 		// Encrypted private key
-		memcpy(packet->private_key_data, in + pos, packet->private_key_data_size);
-		pos += packet->private_key_data_size;
+		memcpy(packet->private_key_data, in + pos, packet->private_key_data_octets);
+		pos += packet->private_key_data_octets;
 	}
 	else
 	{
@@ -687,7 +859,7 @@ size_t pgp_secret_key_packet_write(pgp_secret_key_packet *packet, void *ptr, siz
 
 	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_size(&packet->s2k_algorithm) : 0;
 
-	required_size = 1 + 4 + 1 + 1 + packet->public_key_data_size + packet->private_key_data_size;
+	required_size = 1 + 4 + 1 + 1 + packet->public_key_data_octets + packet->private_key_data_octets;
 	required_size += (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3) ? 2 : 0;
 
 	if (packet->s2k_usage == 0)
@@ -770,9 +942,9 @@ size_t pgp_secret_key_packet_write(pgp_secret_key_packet *packet, void *ptr, siz
 	if (packet->version == PGP_KEY_V6)
 	{
 		// 4-octet scalar count for the public key material
-		uint32_t public_key_data_size = BSWAP_32(packet->public_key_data_size);
+		uint32_t public_key_data_octets_be = BSWAP_32(packet->public_key_data_octets);
 
-		LOAD_32(out + pos, &public_key_data_size);
+		LOAD_32(out + pos, &public_key_data_octets_be);
 		pos += 4;
 	}
 
@@ -817,8 +989,8 @@ size_t pgp_secret_key_packet_write(pgp_secret_key_packet *packet, void *ptr, siz
 		pos += 16;
 
 		// Encrypted private key
-		memcpy(out + pos, packet->private_key_data, packet->private_key_data_size);
-		pos += packet->private_key_data_size;
+		memcpy(out + pos, packet->private_key_data, packet->private_key_data_octets);
+		pos += packet->private_key_data_octets;
 	}
 	else
 	{
@@ -1159,7 +1331,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 				return 0;
 			}
 
-			return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time, (uint16_t)packet->key_data_size + 6,
+			return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time, (uint16_t)packet->key_data_octets + 6,
 										  packet->key_data, fingerprint);
 		}
 		case PGP_KEY_V6:
@@ -1169,8 +1341,8 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 				return 0;
 			}
 
-			return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->key_data_size + 9,
-										  packet->key_data_size, packet->key_data, fingerprint);
+			return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->key_data_octets + 9,
+										  packet->key_data_octets, packet->key_data, fingerprint);
 		}
 		default:
 			return 0;
