@@ -12,8 +12,6 @@
 #include <s2k.h>
 #include <crypto.h>
 
-#include <md5.h>
-#include <sha.h>
 #include <hash.h>
 
 #include <stdlib.h>
@@ -1161,11 +1159,13 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	}
 }
 
-static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void *key, byte_t figerprint_v3[MD5_HASH_SIZE])
+static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void *key, byte_t figerprint_v3[PGP_KEY_V3_FINGERPRINT_SIZE])
 {
 	// MD5 of mpi without length octets
-	md5_ctx md5;
-	md5_init(&md5, sizeof(md5_ctx));
+	hash_ctx *hctx = NULL;
+	byte_t buffer[512] = {0};
+
+	hash_init(buffer, 512, HASH_MD5);
 
 	// Support only these types for v3 keys
 	switch (algorithm)
@@ -1179,13 +1179,13 @@ static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void
 
 		// n
 		bytes = CEIL_DIV(pkey->n->bits, 8);
-		md5_update(&md5, pkey->n->bytes, bytes);
+		hash_update(hctx, pkey->n->bytes, bytes);
 
 		// e
 		bytes = CEIL_DIV(pkey->e->bits, 8);
-		md5_update(&md5, pkey->e->bytes, bytes);
+		hash_update(hctx, pkey->e->bytes, bytes);
 
-		md5_final(&md5, figerprint_v3);
+		hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
@@ -1195,17 +1195,17 @@ static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void
 
 		// p
 		bytes = CEIL_DIV(pkey->p->bits, 8);
-		md5_update(&md5, pkey->p->bytes, bytes);
+		hash_update(hctx, pkey->p->bytes, bytes);
 
 		// g
 		bytes = CEIL_DIV(pkey->g->bits, 8);
-		md5_update(&md5, pkey->g->bytes, bytes);
+		hash_update(hctx, pkey->g->bytes, bytes);
 
 		// y
 		bytes = CEIL_DIV(pkey->y->bits, 8);
-		md5_update(&md5, pkey->y->bytes, bytes);
+		hash_update(hctx, pkey->y->bytes, bytes);
 
-		md5_final(&md5, figerprint_v3);
+		hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
 	}
 	break;
 	case PGP_DSA:
@@ -1215,32 +1215,32 @@ static uint32_t pgp_key_fingerprint_v3(pgp_public_key_algorithms algorithm, void
 
 		// p
 		bytes = CEIL_DIV(pkey->p->bits, 8);
-		md5_update(&md5, pkey->p->bytes, bytes);
+		hash_update(hctx, pkey->p->bytes, bytes);
 
 		// q
 		bytes = CEIL_DIV(pkey->q->bits, 8);
-		md5_update(&md5, pkey->q->bytes, bytes);
+		hash_update(hctx, pkey->q->bytes, bytes);
 
 		// g
 		bytes = CEIL_DIV(pkey->g->bits, 8);
-		md5_update(&md5, pkey->g->bytes, bytes);
+		hash_update(hctx, pkey->g->bytes, bytes);
 
 		// y
 		bytes = CEIL_DIV(pkey->y->bits, 8);
-		md5_update(&md5, pkey->y->bytes, bytes);
+		hash_update(hctx, pkey->y->bytes, bytes);
 
-		md5_final(&md5, figerprint_v3);
+		hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
 	}
 	break;
 	default:
 		return 0;
 	}
 
-	return MD5_HASH_SIZE;
+	return PGP_KEY_V3_FINGERPRINT_SIZE;
 }
 
 static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint16_t octet_count, void *key,
-									   byte_t figerprint_v4[SHA1_HASH_SIZE])
+									   byte_t figerprint_v4[PGP_KEY_V4_FINGERPRINT_SIZE])
 {
 	hash_ctx *hctx = NULL;
 	byte_t buffer[512] = {0};
@@ -1265,13 +1265,13 @@ static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint
 		return 0;
 	}
 
-	hash_final(hctx, figerprint_v4, SHA1_HASH_SIZE);
+	hash_final(hctx, figerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
 
-	return SHA1_HASH_SIZE;
+	return PGP_KEY_V4_FINGERPRINT_SIZE;
 }
 
 static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint32_t octet_count,
-									   uint32_t material_count, void *key, byte_t figerprint_v6[SHA256_HASH_SIZE])
+									   uint32_t material_count, void *key, byte_t figerprint_v6[PGP_KEY_V6_FINGERPRINT_SIZE])
 {
 	hash_ctx *hctx = NULL;
 	byte_t buffer[512] = {0};
@@ -1298,9 +1298,9 @@ static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint
 		return 0;
 	}
 
-	hash_final(hctx, figerprint_v6, SHA256_HASH_SIZE);
+	hash_final(hctx, figerprint_v6, PGP_KEY_V6_FINGERPRINT_SIZE);
 
-	return SHA256_HASH_SIZE;
+	return PGP_KEY_V6_FINGERPRINT_SIZE;
 }
 
 uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
@@ -1317,7 +1317,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 		case PGP_KEY_V2:
 		case PGP_KEY_V3:
 		{
-			if (size < MD5_HASH_SIZE)
+			if (size < PGP_KEY_V3_FINGERPRINT_SIZE)
 			{
 				return 0;
 			}
@@ -1326,7 +1326,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 		}
 		case PGP_KEY_V4:
 		{
-			if (size < SHA1_HASH_SIZE)
+			if (size < PGP_KEY_V4_FINGERPRINT_SIZE)
 			{
 				return 0;
 			}
@@ -1336,7 +1336,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 		}
 		case PGP_KEY_V6:
 		{
-			if (size < SHA256_HASH_SIZE)
+			if (size < PGP_KEY_V6_FINGERPRINT_SIZE)
 			{
 				return 0;
 			}
@@ -1357,7 +1357,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 		case PGP_KEY_V2:
 		case PGP_KEY_V3:
 		{
-			if (size < MD5_HASH_SIZE)
+			if (size < PGP_KEY_V3_FINGERPRINT_SIZE)
 			{
 				return 0;
 			}
@@ -1366,7 +1366,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 		}
 		case PGP_KEY_V4:
 		{
-			if (size < SHA1_HASH_SIZE)
+			if (size < PGP_KEY_V4_FINGERPRINT_SIZE)
 			{
 				return 0;
 			}
@@ -1376,7 +1376,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 		}
 		case PGP_KEY_V6:
 		{
-			if (size < SHA256_HASH_SIZE)
+			if (size < PGP_KEY_V6_FINGERPRINT_SIZE)
 			{
 				return 0;
 			}

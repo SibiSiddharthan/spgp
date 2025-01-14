@@ -383,7 +383,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SECKEY:
 		return pgp_secret_key_packet_read(NULL, data, size);
 	case PGP_PUBKEY:
-		return pgp_public_key_packet_read(NULL, data, size);
+		return pgp_public_key_packet_read(data, size);
 	case PGP_SECSUBKEY:
 		return pgp_secret_key_packet_read(NULL, data, size);
 	case PGP_COMP:
@@ -399,7 +399,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_UID:
 		return pgp_user_id_packet_read(data, size);
 	case PGP_PUBSUBKEY:
-		return pgp_public_key_packet_read(NULL, data, size);
+		return pgp_public_key_packet_read(data, size);
 	case PGP_UAT:
 		return pgp_user_attribute_packet_read(NULL, data, size);
 	case PGP_SEIPD:

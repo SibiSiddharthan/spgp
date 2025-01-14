@@ -111,10 +111,6 @@ typedef enum _pgp_revocation_code
 #define PGP_REVOCATION_CLASS_NORMAL    0x80
 #define PGP_REVOCATION_CLASS_SENSITIVE 0x40
 
-// Key Fingerprint Sizes
-#define PGP_KEY_V4_FINGERPRINT_SIZE 20
-#define PGP_KEY_V6_FINGERPRINT_SIZE 32
-
 typedef struct _pgp_signature_packet
 {
 	pgp_packet_header header;
