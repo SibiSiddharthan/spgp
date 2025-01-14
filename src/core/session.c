@@ -492,7 +492,7 @@ static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, siz
 	// A S2K specifier
 	// (Optional) Encrypted Session key
 
-	required_size = packet->header.header_size + 1 + 1 + pgp_s2k_size(&packet->s2k_algorithm) + packet->session_key_size;
+	required_size = packet->header.header_size + 1 + 1 + pgp_s2k_size(&packet->s2k) + packet->session_key_size;
 
 	if (size < required_size)
 	{
@@ -511,7 +511,7 @@ static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, siz
 	pos += 1;
 
 	// S2K specifier
-	pos += pgp_s2k_write(&packet->s2k_algorithm, out + pos);
+	pos += pgp_s2k_write(&packet->s2k, out + pos);
 
 	// (Optional) Session key
 	if (packet->session_key_size > 0)
@@ -540,7 +540,7 @@ static size_t pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, siz
 	// Encrypted session key.
 	// Authetication key tag.
 
-	s2k_size = pgp_s2k_size(&packet->s2k_algorithm);
+	s2k_size = pgp_s2k_size(&packet->s2k);
 	required_size =
 		packet->header.header_size + 1 + 1 + 1 + 1 + 1 + s2k_size + packet->iv_size + packet->session_key_size + packet->tag_size;
 
@@ -575,7 +575,7 @@ static size_t pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, siz
 	pos += 1;
 
 	// S2K specifier
-	pos += pgp_s2k_write(&packet->s2k_algorithm, out + pos);
+	pos += pgp_s2k_write(&packet->s2k, out + pos);
 
 	// IV
 	memcpy(out + pos, packet->iv, packet->iv_size);
@@ -592,8 +592,154 @@ static size_t pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, siz
 	return pos;
 }
 
-pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
-									   pgp_s2k *s2k)
+static pgp_skesk_packet *pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size,
+																 void *session_key, size_t session_key_size)
+{
+	byte_t key[32] = {0};
+	byte_t buffer[48] = {0};
+	byte_t zero_iv[16] = {0};
+
+	byte_t iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
+
+	if (session_key == NULL)
+	{
+		// No crypto operations to do here.
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 1 + 1 + pgp_s2k_size(&packet->s2k));
+	}
+	else
+	{
+		pgp_s2k_hash(&packet->s2k, password, password_size, key, session_key_size);
+
+		// Encrypt symmetric algorithm id followed by session key
+		buffer[0] = packet->symmetric_key_algorithm_id;
+		memcpy(PTR_OFFSET(buffer, 1), session_key, session_key_size);
+
+		pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, key, session_key_size, zero_iv, iv_size, buffer, session_key_size + 1,
+						packet->session_key, session_key_size + 1);
+
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 1 + 1 + 1 + session_key_size + pgp_s2k_size(&packet->s2k));
+	}
+
+	return packet;
+}
+
+static uint32_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
+														size_t session_key_size)
+{
+	byte_t key[32] = {0};
+	byte_t buffer[48] = {0};
+	byte_t zero_iv[16] = {0};
+
+	byte_t iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
+
+	if (session_key == NULL)
+	{
+		return pgp_s2k_hash(&packet->s2k, password, password_size, session_key, session_key_size);
+	}
+	else
+	{
+		if ((packet->session_key_size + 1) != session_key_size)
+		{
+			return 0;
+		}
+
+		pgp_s2k_hash(&packet->s2k, password, password_size, session_key, session_key_size);
+
+		// Decrypt the session key
+		pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, session_key_size, zero_iv, iv_size, packet->session_key,
+						session_key_size + 1, buffer, session_key_size + 1);
+
+		memcpy(session_key, PTR_OFFSET(buffer, 1), session_key_size);
+	}
+
+	return 0;
+}
+
+static pgp_skesk_packet *pgp_skesk_packet_session_key_v6_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size,
+																 void *session_key, size_t session_key_size, void *iv, size_t iv_size)
+{
+	byte_t ik[32] = {0};
+	byte_t sk[32] = {0};
+	byte_t info[4] = {0};
+
+	size_t result = 0;
+
+	if (iv_size != pgp_aead_iv_size(packet->aead_algorithm_id))
+	{
+		return NULL;
+	}
+
+	info[0] = packet->header.tag;
+	info[1] = packet->version;
+	info[2] = packet->symmetric_key_algorithm_id;
+	info[3] = packet->aead_algorithm_id;
+
+	packet->iv_size = iv_size;
+	packet->session_key_size = session_key_size;
+
+	memcpy(packet->iv, iv, iv_size);
+
+	pgp_s2k_hash(&packet->s2k, password, password_size, ik, packet->session_key_size);
+	hkdf(HASH_SHA256, ik, 16, NULL, 0, info, 4, sk, packet->session_key_size);
+
+	result = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, sk, packet->session_key_size, packet->iv,
+							  packet->iv_size, info, 4, session_key, session_key_size, packet->session_key, packet->session_key_size,
+							  packet->tag, packet->tag_size);
+
+	if (result == 0)
+	{
+		return NULL;
+	}
+
+	// Fill up the header now, we have enough information.
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SKESK,
+											  1 + 1 + 1 + 1 + 1 + pgp_s2k_size(&packet->s2k) + packet->iv_size + packet->tag_size +
+												  packet->session_key_size);
+
+	return packet;
+}
+
+static uint32_t pgp_skesk_packet_session_key_v6_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
+														size_t session_key_size)
+{
+	byte_t ik[32] = {0};
+	byte_t sk[32] = {0};
+	byte_t temp[32] = {0};
+	byte_t tag[PGP_AEAD_TAG_SIZE] = {0};
+	byte_t info[4] = {0};
+
+	size_t result = 0;
+
+	info[0] = packet->header.tag;
+	info[1] = packet->version;
+	info[2] = packet->symmetric_key_algorithm_id;
+	info[3] = packet->aead_algorithm_id;
+
+	pgp_s2k_hash(&packet->s2k, password, password_size, ik, session_key_size);
+	hkdf(HASH_SHA256, ik, 16, NULL, 0, info, 4, sk, session_key_size);
+
+	result =
+		pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, sk, session_key_size, packet->iv, packet->iv_size,
+						 info, 4, packet->session_key, session_key_size, temp, session_key_size, tag, PGP_AEAD_TAG_SIZE);
+
+	if (result == 0)
+	{
+		return 0;
+	}
+
+	// Check tag
+	if (memcmp(tag, packet->tag, PGP_AEAD_TAG_SIZE) != 0)
+	{
+		return 0;
+	}
+
+	// Copy the session key to the output
+	memcpy(session_key, temp, session_key_size);
+
+	return session_key_size;
+}
+
+pgp_skesk_packet *pgp_skesk_packet_new(byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, pgp_s2k *s2k)
 {
 	pgp_skesk_packet *packet = NULL;
 
@@ -615,6 +761,11 @@ pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byt
 		{
 			return NULL;
 		}
+
+		if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
+		{
+			return NULL;
+		}
 	}
 
 	packet = malloc(sizeof(pgp_skesk_packet));
@@ -632,22 +783,22 @@ pgp_skesk_packet *pgp_skesk_packet_new(byte_t header_format, byte_t version, byt
 	if (version == PGP_SKESK_V6)
 	{
 		packet->aead_algorithm_id = aead_algorithm_id;
-		packet->tag_size = 16;
+		packet->tag_size = PGP_AEAD_TAG_SIZE;
 	}
 	else
 	{
 		packet->aead_algorithm_id = 0;
+		packet->iv_size = 0;
 		packet->tag_size = 0;
 	}
 
-	memcpy(&packet->s2k_algorithm, s2k, sizeof(pgp_s2k));
+	memcpy(&packet->s2k, s2k, sizeof(pgp_s2k));
 
 	return packet;
 }
 
 void pgp_skesk_packet_delete(pgp_skesk_packet *packet)
 {
-	free(packet->session_key);
 	free(packet);
 }
 
@@ -661,97 +812,73 @@ pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet,
 		return NULL;
 	}
 
-	if (packet->version == PGP_SKESK_V6)
+	switch (packet->version)
 	{
-		byte_t ik[32] = {0};
-		byte_t sk[32] = {0};
-		byte_t info[4] = {0};
-
-		info[0] = packet->header.tag;
-		info[1] = packet->version;
-		info[2] = packet->symmetric_key_algorithm_id;
-		info[3] = packet->aead_algorithm_id;
-
-		packet->iv_size = iv_size;
-		packet->session_key_size = key_size;
-
-		memcpy(packet->iv, iv, iv_size);
-
-		pgp_s2k_hash(&packet->s2k_algorithm, password, password_size, ik, packet->session_key_size);
-		hkdf(HASH_SHA256, ik, 16, NULL, 0, info, 4, sk, packet->session_key_size);
-
-		pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, sk, packet->session_key_size, packet->iv,
-						 packet->iv_size, info, 4, session_key, session_key_size, packet->session_key, packet->session_key_size,
-						 packet->tag, packet->tag_size);
-
-		// Fill up the header now, we have enough information.
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SKESK,
-											  1 + 1 + 1 + 1 + 1 + pgp_s2k_size(&packet->s2k_algorithm) + packet->iv_size +
-												  packet->tag_size + packet->session_key_size);
-	}
-	else // PGP_SKESK_V4
-	{
-		if (session_key == NULL)
-		{
-			// No crypto operations to do here.
-			packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 1 + 1 + pgp_s2k_size(&packet->s2k_algorithm));
-		}
-		else
-		{
-			// TODO
-		}
+	case PGP_SKESK_V6:
+		return pgp_skesk_packet_session_key_v6_encrypt(packet, password, password_size, session_key, session_key_size, iv, iv_size);
+	case PGP_SKESK_V4:
+		return pgp_skesk_packet_session_key_v4_encrypt(packet, password, password_size, session_key, session_key_size);
+	default:
+		return NULL;
 	}
 
-	return packet;
+	return NULL;
 }
 
-pgp_skesk_packet *pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
-													   size_t session_key_size)
+uint32_t pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
+											  size_t session_key_size)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
 	if (session_key_size < key_size)
 	{
+		return 0;
+	}
+
+	switch (packet->version)
+	{
+	case PGP_SKESK_V6:
+		return pgp_skesk_packet_session_key_v6_decrypt(packet, password, password_size, session_key, key_size);
+	case PGP_SKESK_V4:
+		return pgp_skesk_packet_session_key_v4_decrypt(packet, password, password_size, session_key, key_size);
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+
+pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
+{
+	byte_t *in = data;
+
+	pgp_skesk_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_SKESK)
+	{
 		return NULL;
 	}
 
-	if (packet->version == PGP_SKESK_V6)
+	if (size < (header.header_size + header.body_size))
 	{
-		byte_t ik[32] = {0};
-		byte_t sk[32] = {0};
-		byte_t info[4] = {0};
-
-		info[0] = packet->header.tag;
-		info[1] = packet->version;
-		info[2] = packet->symmetric_key_algorithm_id;
-		info[3] = packet->aead_algorithm_id;
-
-		pgp_s2k_hash(&packet->s2k_algorithm, password, password_size, ik, packet->session_key_size);
-		hkdf(HASH_SHA256, ik, 16, NULL, 0, info, 4, sk, packet->session_key_size);
-
-		pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, sk, packet->session_key_size, packet->iv,
-						 packet->iv_size, info, 4, packet->session_key, packet->session_key_size, session_key, session_key_size,
-						 packet->tag, packet->tag_size);
-	}
-	else // PGP_SKESK_V4
-	{
-		if (session_key == NULL)
-		{
-			pgp_s2k_hash(&packet->s2k_algorithm, password, password_size, session_key, key_size);
-		}
-		else
-		{
-			// TODO
-		}
+		return NULL;
 	}
 
-	return packet;
-}
+	packet = malloc(sizeof(pgp_skesk_packet) + header.body_size);
 
-pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, size_t size)
-{
-	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
 
 	// 1 octet version
 	LOAD_8(&packet->version, in + pos);
@@ -780,7 +907,7 @@ pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, si
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(&packet->s2k_algorithm, in + pos, packet->header.body_size - pos);
+		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - pos);
 
 		if (result == NULL)
 		{
@@ -790,7 +917,7 @@ pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, si
 		pos += s2k_size;
 
 		// IV
-		packet->iv_size = count - (1 + 1 + 1 + s2k_size);
+		packet->iv_size = PGP_AEAD_TAG_SIZE;
 		memcpy(packet->iv, in + pos, packet->iv_size);
 		pos += packet->iv_size;
 
@@ -813,14 +940,14 @@ pgp_skesk_packet *pgp_skesk_packet_read(pgp_skesk_packet *packet, void *data, si
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(&packet->s2k_algorithm, in + pos, packet->header.body_size - pos);
+		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - pos);
 
 		if (result == NULL)
 		{
 			return NULL;
 		}
 
-		pos += pgp_s2k_size(&packet->s2k_algorithm);
+		pos += pgp_s2k_size(&packet->s2k);
 
 		// (Optional) Session key
 		packet->session_key_size = packet->header.body_size - pos;
