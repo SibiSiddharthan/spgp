@@ -703,67 +703,42 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-static void *pgp_user_attribute_subpacket_read(void *subpacket, void *ptr, size_t size)
+static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 {
-	pgp_subpacket_header *header = subpacket;
-	byte_t *in = ptr;
+	byte_t *in = data;
+
+	pgp_packet_header header = {0};
 	size_t pos = 0;
 
-	// 1,2, or 5 octets of subpacket length
-	// 5 octet length
-	if (in[0] >= 255)
-	{
-		if (size < 6)
-		{
-			return NULL;
-		}
+	header = pgp_subpacket_header_read(data, size);
+	pos = header.header_size;
 
-		header->body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
-		header->header_size = 5;
-	}
-	// 2 octet legnth
-	else if (in[0] >= 192 && in[0] <= 233)
-	{
-		if (size < 3)
-		{
-			return NULL;
-		}
-
-		header->body_size = ((in[0] - 192) << 8) + in[1] + 192;
-		header->header_size = 2;
-	}
-	// 1 octed length
-	else if (in[0] < 192)
-	{
-		if (size < 2)
-		{
-			return NULL;
-		}
-
-		header->body_size = in[0];
-		header->header_size = 1;
-	}
-
-	pos += header->header_size;
-
-	if (size < pos + header->body_size)
+	if (header.tag == 0)
 	{
 		return NULL;
 	}
 
-	// 1 octet subpacket type
-	LOAD_8(&header->tag, in + pos);
-	pos += 1;
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
 
-	// Ignore the critical bit
-	header->tag &= 0x7F;
-
-	switch (header->tag)
+	switch (header.tag & 0x7F)
 	{
 	case PGP_USER_ATTRIBUTE_IMAGE:
 	{
-		pgp_user_attribute_image_subpacket *image_subpacket = subpacket;
+		pgp_user_attribute_image_subpacket *image_subpacket = NULL;
 		uint32_t image_size = image_subpacket->header.body_size - 16;
+
+		image_subpacket = malloc(sizeof(pgp_user_attribute_image_subpacket) + image_size);
+
+		if (image_subpacket == NULL)
+		{
+			return NULL;
+		}
+
+		// Copy the header
+		image_subpacket->header = header;
 
 		// 2 octets of image length in little endian
 		LOAD_16(&image_subpacket->image_header_size, in + pos);
@@ -788,7 +763,19 @@ static void *pgp_user_attribute_subpacket_read(void *subpacket, void *ptr, size_
 		return image_subpacket;
 	}
 	default:
-		return NULL;
+	{
+		pgp_unknown_subpacket *subpacket = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
+
+		if (subpacket == NULL)
+		{
+			return NULL;
+		}
+
+		subpacket->header = header;
+		memcpy(subpacket->data, in + pos, header.body_size);
+
+		return subpacket;
+	}
 	}
 
 	return NULL;
@@ -809,45 +796,7 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 		return 0;
 	}
 
-	// 1,2, or 5 octets of subpacket length
-	// 1 octed length
-	if (header->body_size < 192)
-	{
-		uint8_t size = (uint8_t)header->body_size;
-
-		LOAD_8(out + pos, &size);
-		pos += 1;
-	}
-	// 2 octet legnth
-	else if (header->body_size < 8384)
-	{
-		uint16_t size = (uint16_t)header->body_size - 192;
-		uint8_t o1 = (size >> 8) + 192;
-		uint8_t o2 = (size & 0xFF);
-
-		LOAD_8(out + pos, &o1);
-		pos += 1;
-
-		LOAD_8(out + pos, &o2);
-		pos += 1;
-	}
-	// 5 octet length
-	else
-	{
-		// 1st octet is 255
-		uint8_t byte = 255;
-		uint32_t size = BSWAP_32((uint32_t)header->body_size);
-
-		LOAD_8(out + pos, &byte);
-		pos += 1;
-
-		LOAD_32(out + pos, &size);
-		pos += 4;
-	}
-
-	// 1 octet subpacket type
-	LOAD_8(out + pos, &header->tag);
-	pos += 1;
+	pos += pgp_subpacket_header_write(header, ptr);
 
 	switch (header->tag)
 	{
@@ -982,7 +931,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 	image_subpacket->header = pgp_encode_subpacket_header(PGP_USER_ATTRIBUTE_IMAGE, 0, 16 + size);
 
 	packet->subpackets[0] = image_subpacket;
-	packet->subpacket_count = 1;
+	packet->subpacket_count += 1;
 
 	packet->header =
 		pgp_encode_packet_header(header_format, PGP_UAT, image_subpacket->header.body_size + image_subpacket->header.header_size);
@@ -990,26 +939,78 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 	return packet;
 }
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_read(pgp_user_attribute_packet *packet, void *data, size_t size)
+pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+
+	pgp_user_attribute_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+	size_t subpacket_pos = 0;
 	uint16_t subpacket_count = 0;
+	uint16_t subpacket_size = 0;
 
-	// Count the subpackets first
-	while (pos < packet->header.body_size)
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_UAT)
 	{
-		pgp_subpacket_header *header = PTR_OFFSET(in, pos);
+		return NULL;
+	}
 
-		header = pgp_user_attribute_subpacket_read(header, in + pos, packet->header.body_size - pos);
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
 
-		if (header == NULL)
+	packet = malloc(sizeof(pgp_user_attribute_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
+
+	while (subpacket_pos < packet->header.body_size)
+	{
+		void *subpacket = pgp_user_attribute_subpacket_read(PTR_OFFSET(in, pos), packet->header.body_size - subpacket_pos);
+		pgp_subpacket_header *subpacket_header = subpacket;
+
+		if (subpacket == NULL)
 		{
+			pgp_user_attribute_packet_delete(packet);
 			return NULL;
 		}
 
-		packet->subpackets[subpacket_count++] = header;
-		pos += header->header_size + header->body_size;
+		if (subpacket_count == subpacket_size)
+		{
+
+			if (packet->subpackets == NULL)
+			{
+				subpacket_size += 1;
+				packet->subpackets = malloc(sizeof(void *) * subpacket_size);
+			}
+			else
+			{
+				subpacket_size *= 2;
+				packet->subpackets = realloc(packet->subpackets, sizeof(void *) * subpacket_size);
+			}
+
+			if (packet->subpackets == NULL)
+			{
+				pgp_user_attribute_packet_delete(packet);
+				return NULL;
+			}
+		}
+
+		packet->subpackets[subpacket_count] = subpacket;
+
+		subpacket_pos += subpacket_header->header_size + subpacket_header->body_size;
+		pos += subpacket_header->header_size + subpacket_header->body_size;
+		subpacket_count += 1;
 	}
 
 	packet->subpacket_count = subpacket_count;

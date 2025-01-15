@@ -49,6 +49,12 @@ typedef struct _pgp_packet_header
 	uint32_t body_size;
 } pgp_packet_header, pgp_subpacket_header;
 
+typedef struct _pgp_unknown_subpacket
+{
+	pgp_subpacket_header header;
+	void *data;
+} pgp_unknown_subpacket;
+
 typedef struct _pgp_compressed_packet
 {
 	pgp_packet_header header;
@@ -211,7 +217,7 @@ void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet);
 size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, void *image, size_t size);
 pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packet, byte_t format, void *image, size_t size);
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_read(pgp_user_attribute_packet *packet, void *data, size_t size);
+pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t size);
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size);
 size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *str, size_t size);
 

@@ -497,7 +497,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_PUBSUBKEY:
 		return pgp_public_key_packet_read(data, size);
 	case PGP_UAT:
-		return pgp_user_attribute_packet_read(NULL, data, size);
+		return pgp_user_attribute_packet_read(data, size);
 	case PGP_SEIPD:
 		return pgp_seipd_packet_read(data, size);
 	case PGP_MDC:
