@@ -133,6 +133,25 @@ byte_t pgp_aead_algorithm_validate(pgp_aead_algorithms algorithm)
 	}
 }
 
+byte_t pgp_hash_algorithm_validate(pgp_hash_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_MD5:
+	case PGP_SHA1:
+	case PGP_RIPEMD_160:
+	case PGP_SHA2_256:
+	case PGP_SHA2_384:
+	case PGP_SHA2_512:
+	case PGP_SHA2_224:
+	case PGP_SHA3_256:
+	case PGP_SHA3_512:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 byte_t pgp_symmetric_cipher_key_size(pgp_symmetric_key_algorithms algorithm)
 {
 	return (byte_t)cipher_key_size(pgp_algorithm_to_cipher_algorithm(algorithm));

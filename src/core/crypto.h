@@ -18,6 +18,7 @@ byte_t pgp_public_cipher_algorithm_validate(pgp_public_key_algorithms algorithm)
 byte_t pgp_asymmetric_cipher_algorithm_validate(pgp_public_key_algorithms algorithm);
 byte_t pgp_signature_algorithm_validate(pgp_public_key_algorithms algorithm);
 byte_t pgp_aead_algorithm_validate(pgp_aead_algorithms algorithm);
+byte_t pgp_hash_algorithm_validate(pgp_hash_algorithms algorithm);
 
 byte_t pgp_symmetric_cipher_key_size(pgp_symmetric_key_algorithms algorithm);
 byte_t pgp_symmetric_cipher_block_size(pgp_symmetric_key_algorithms algorithm);
