@@ -21,6 +21,8 @@ typedef enum _pgp_key_version
 	PGP_KEY_V6 = 6
 } pgp_key_version;
 
+#define PGP_KEY_ID_SIZE 8
+
 // Key Fingerprint Sizes
 #define PGP_KEY_V3_FINGERPRINT_SIZE 16
 #define PGP_KEY_V4_FINGERPRINT_SIZE 20

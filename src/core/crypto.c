@@ -177,6 +177,27 @@ byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm)
 	}
 }
 
+byte_t pgp_hash_salt_size(pgp_hash_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_SHA2_256:
+		return 16;
+	case PGP_SHA2_384:
+		return 24;
+	case PGP_SHA2_512:
+		return 32;
+	case PGP_SHA2_224:
+		return 16;
+	case PGP_SHA3_256:
+		return 16;
+	case PGP_SHA3_512:
+		return 32;
+	default:
+		return 0;
+	}
+}
+
 size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
 					   void *in, size_t in_size, void *out, size_t out_size)
 {

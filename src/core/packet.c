@@ -379,7 +379,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SKESK:
 		return pgp_skesk_packet_read(data, size);
 	case PGP_OPS:
-		return pgp_one_pass_signature_packet_read(NULL, data, size);
+		return pgp_one_pass_signature_packet_read(data, size);
 	case PGP_SECKEY:
 		return pgp_secret_key_packet_read(data, size);
 	case PGP_PUBKEY:

@@ -8,9 +8,38 @@
 #include <spgp.h>
 #include <algorithms.h>
 #include <packet.h>
+#include <key.h>
 #include <signature.h>
 
+#include <crypto.h>
+
+#include <stdlib.h>
 #include <string.h>
+
+static byte_t pgp_signature_type_validate(pgp_signature_type type)
+{
+	switch (type)
+	{
+	case PGP_BINARY_SIGNATURE:
+	case PGP_TEXT_SIGNATURE:
+	case PGP_STANDALONE_SIGNATURE:
+	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
+	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
+	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
+	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+	case PGP_SUBKEY_BINDING_SIGNATURE:
+	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
+	case PGP_DIRECT_KEY_SIGNATURE:
+	case PGP_KEY_REVOCATION_SIGNATURE:
+	case PGP_SUBKEY_REVOCATION_SIGNATURE:
+	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
+	case PGP_TIMESTAMP_SIGNATURE:
+	case PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE:
+		return 1;
+	default:
+		return 0;
+	}
+}
 
 static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
@@ -1116,10 +1145,121 @@ size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_
 	}
 }
 
-pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet *packet, void *data, size_t size)
+pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
+																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
+																 void *key_fingerprint, byte_t key_fingerprint_size)
+{
+	pgp_one_pass_signature_packet *packet = NULL;
+
+	if (version != PGP_ONE_PASS_SIGNATURE_V3 && version != PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		return NULL;
+	}
+
+	if (pgp_signature_type_validate(type) == 0)
+	{
+		return NULL;
+	}
+
+	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return NULL;
+	}
+
+	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
+	{
+		return NULL;
+	}
+
+	if (version == PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		if (key_fingerprint_size != PGP_KEY_V6_FINGERPRINT_SIZE)
+		{
+			return NULL;
+		}
+
+		if (pgp_hash_salt_size(hash_algorithm_id) == 0 || pgp_hash_salt_size(hash_algorithm_id) != salt_size)
+		{
+			return NULL;
+		}
+	}
+	else
+	{
+		if (key_fingerprint_size != PGP_KEY_ID_SIZE)
+		{
+			return NULL;
+		}
+	}
+
+	packet = malloc(sizeof(pgp_one_pass_signature_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_one_pass_signature_packet));
+
+	packet->version = version;
+	packet->type = type;
+	packet->nested = nested;
+	packet->public_key_algorithm_id = public_key_algorithm_id;
+	packet->hash_algorithm_id = hash_algorithm_id;
+
+	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		packet->salt_size = salt_size;
+		memcpy(packet->salt, salt, packet->salt_size);
+
+		memcpy(packet->key_fingerprint, key_fingerprint, key_fingerprint_size);
+
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
+	}
+	else // packet->version == PGP_ONE_PASS_SIGNATURE_V3
+	{
+		memcpy(packet->key_fingerprint, key_fingerprint, key_fingerprint_size);
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 5 + PGP_KEY_ID_SIZE);
+	}
+
+	return packet;
+}
+
+void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
+{
+	free(packet);
+}
+
+pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+
+	pgp_one_pass_signature_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_one_pass_signature_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Copy the header
+	packet->header = header;
 
 	// 1 octet version
 	LOAD_8(&packet->version, in + pos);

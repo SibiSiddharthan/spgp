@@ -145,6 +145,7 @@ typedef struct _pgp_one_pass_signature_packet
 
 	byte_t version;
 	byte_t type;
+	byte_t nested;
 	byte_t public_key_algorithm_id;
 	byte_t hash_algorithm_id;
 
@@ -155,8 +156,6 @@ typedef struct _pgp_one_pass_signature_packet
 
 	byte_t salt_size;
 	byte_t salt[32];
-
-	byte_t nested;
 
 } pgp_one_pass_signature_packet;
 
@@ -306,7 +305,12 @@ typedef struct _pgp_embedded_signature_subpacket
 pgp_signature_packet *pgp_signature_packet_read(pgp_signature_packet *packet, void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
-pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet *packet, void *data, size_t size);
+pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
+																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
+																 void *key_fingerprint, byte_t key_fingerprint_size);
+void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet);
+
+pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, size_t size);
 size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
 
 #endif
