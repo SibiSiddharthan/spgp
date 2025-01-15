@@ -354,6 +354,102 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 	return pos;
 }
 
+pgp_subpacket_header pgp_subpacket_header_read(void *data, size_t size)
+{
+	pgp_subpacket_header header = {0};
+	pgp_subpacket_header error = {0};
+
+	byte_t *in = data;
+
+	// 1,2, or 5 octets of subpacket length
+	// 5 octet length
+	if (in[0] >= 255)
+	{
+		if (size < 6)
+		{
+			return error;
+		}
+
+		header.body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
+		header.header_size = 5;
+	}
+	// 2 octet legnth
+	else if (in[0] >= 192 && in[0] <= 233)
+	{
+		if (size < 3)
+		{
+			return error;
+		}
+
+		header.body_size = ((in[0] - 192) << 8) + in[1] + 192;
+		header.header_size = 2;
+	}
+	// 1 octed length
+	else if (in[0] < 192)
+	{
+		if (size < 2)
+		{
+			return error;
+		}
+
+		header.body_size = in[0];
+		header.header_size = 1;
+	}
+
+	// 1 octet subpacket type
+	header.tag = in[header.header_size - 1];
+
+	return header;
+}
+
+uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
+{
+	byte_t *out = ptr;
+	uint32_t pos = 0;
+
+	// 1,2, or 5 octets of subpacket length
+	// 1 octed length
+	if (header->body_size < 192)
+	{
+		uint8_t size = (uint8_t)header->body_size;
+
+		LOAD_8(out + pos, &size);
+		pos += 1;
+	}
+	// 2 octet legnth
+	else if (header->body_size < 8384)
+	{
+		uint16_t size = (uint16_t)header->body_size - 192;
+		uint8_t o1 = (size >> 8) + 192;
+		uint8_t o2 = (size & 0xFF);
+
+		LOAD_8(out + pos, &o1);
+		pos += 1;
+
+		LOAD_8(out + pos, &o2);
+		pos += 1;
+	}
+	// 5 octet length
+	else
+	{
+		// 1st octet is 255
+		uint8_t byte = 255;
+		uint32_t size = BSWAP_32((uint32_t)header->body_size);
+
+		LOAD_8(out + pos, &byte);
+		pos += 1;
+
+		LOAD_32(out + pos, &size);
+		pos += 4;
+	}
+
+	// 1 octet subpacket type
+	LOAD_8(out + pos, &header->tag);
+	pos += 1;
+
+	return pos;
+}
+
 void *pgp_packet_read(void *data, size_t size)
 {
 	pgp_packet_header header = pgp_packet_header_read(data, size);

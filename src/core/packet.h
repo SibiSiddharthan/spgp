@@ -152,6 +152,9 @@ typedef struct _pgp_trust_packet
 pgp_packet_header pgp_packet_header_read(void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 
+pgp_subpacket_header pgp_subpacket_header_read(void *data, size_t size);
+uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr);
+
 pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, uint32_t body_size);
 pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critical, uint32_t body_size);
 
