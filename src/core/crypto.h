@@ -10,6 +10,7 @@
 
 #include <spgp.h>
 #include <algorithms.h>
+#include <key.h>
 
 #define PGP_AEAD_TAG_SIZE 16
 
@@ -39,5 +40,9 @@ size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 						void *out, size_t out_size, void *tag, size_t tag_size);
 
 uint32_t pgp_rand(void *buffer, uint32_t size);
+
+uint32_t pgp_rsa_encrypt_(pgp_public_rsa_key *public_key, void *in, uint32_t in_size, void *out, uint32_t out_size);
+uint32_t pgp_rsa_decrypt(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key, void *in, uint32_t in_size, void *out,
+						 uint32_t out_size);
 
 #endif

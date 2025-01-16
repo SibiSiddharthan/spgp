@@ -11,7 +11,11 @@
 #include <cipher.h>
 #include <drbg.h>
 
+#include <rsa.h>
+
 void *pgp_drbg = NULL;
+
+static bignum_t *mpi_to_bignum(mpi_t *mpi);
 
 static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algorithms algorithm)
 {
@@ -483,4 +487,94 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	}
 
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
+}
+
+static rsa_key *pgp_rsa_key_convert(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key)
+{
+	uint32_t bits = ROUND_UP(public_key->n->bits, 1024);
+
+	rsa_key *key = NULL;
+	bignum_t *n = NULL, *p = NULL, *q = NULL;
+	bignum_t *e = NULL, *d = NULL;
+
+	key = rsa_key_new(bits);
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	n = mpi_to_bignum(public_key->n);
+	e = mpi_to_bignum(public_key->e);
+
+	if (n == NULL || e == NULL)
+	{
+		bignum_delete(n);
+		bignum_delete(e);
+	}
+
+	key->n = n;
+	key->e = e;
+
+	if (private_key != NULL)
+	{
+		d = mpi_to_bignum(private_key->d);
+		p = mpi_to_bignum(private_key->p);
+		q = mpi_to_bignum(private_key->q);
+
+		key->d = d;
+		key->p = p;
+		key->q = q;
+	}
+
+	return key;
+}
+
+uint32_t pgp_rsa_encrypt_(pgp_public_rsa_key *public_key, void *in, uint32_t in_size, void *out, uint32_t out_size)
+{
+	uint32_t bytes = CEIL_DIV(public_key->n->bits, 8);
+	uint32_t required_size = sizeof(mpi_t) + bytes;
+
+	rsa_key *key = NULL;
+	mpi_t *mpi = out;
+
+	if (out_size < required_size)
+	{
+		return 0;
+	}
+
+	key = pgp_rsa_key_convert(public_key, NULL);
+
+	if (key == NULL)
+	{
+		return 0;
+	}
+
+	rsa_encrypt_pkcs(key, in, in_size, PTR_OFFSET(out, sizeof(mpi_t)), bytes, NULL);
+
+	mpi->bytes = PTR_OFFSET(mpi, sizeof(mpi_t));
+	mpi->bits = mpi_bitcount(mpi->bytes, bytes);
+
+	rsa_key_delete(key);
+
+	return required_size;
+}
+
+uint32_t pgp_rsa_decrypt(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key, void *in, uint32_t in_size, void *out,
+						 uint32_t out_size)
+{
+	rsa_key *key = NULL;
+
+	key = pgp_rsa_key_convert(public_key, private_key);
+
+	if (key == NULL)
+	{
+		return 0;
+	}
+
+	rsa_decrypt_pkcs(key, in, in_size, out, out_size);
+
+	rsa_key_delete(key);
+
+	return 0;
 }

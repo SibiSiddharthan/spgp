@@ -36,4 +36,6 @@ mpi_t *mpi_from_bn(mpi_t *mpi, bignum_t *bn);
 uint32_t mpi_read(mpi_t *mpi, void *ptr, size_t size);
 uint32_t mpi_write(mpi_t *mpi, void *ptr, size_t size);
 
+uint32_t mpi_bitcount(void *ptr, size_t size);
+
 #endif
