@@ -32,7 +32,7 @@ typedef struct _pgp_pkesk_packet
 
 	byte_t version; // 3 or 6
 	byte_t public_key_algorithm_id;
-	byte_t session_key_algorithm_id;
+	byte_t symmetric_key_algorithm_id;
 	byte_t key_octet_count;
 	byte_t key_version;
 
@@ -41,8 +41,8 @@ typedef struct _pgp_pkesk_packet
 		byte_t key_fingerprint[32];
 	};
 
-	uint16_t session_key_size;
-	void *session_key;
+	uint16_t encrypted_session_key_size;
+	void *encrypted_session_key;
 
 } pgp_pkesk_packet;
 
