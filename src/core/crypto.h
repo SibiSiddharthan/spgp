@@ -10,7 +10,9 @@
 
 #include <spgp.h>
 #include <algorithms.h>
+
 #include <key.h>
+#include <session.h>
 
 #define PGP_AEAD_TAG_SIZE 16
 
@@ -41,8 +43,29 @@ size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 
 uint32_t pgp_rand(void *buffer, uint32_t size);
 
-uint32_t pgp_rsa_encrypt_(pgp_public_rsa_key *public_key, void *in, uint32_t in_size, void *out, uint32_t out_size);
-uint32_t pgp_rsa_decrypt(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key, void *in, uint32_t in_size, void *out,
-						 uint32_t out_size);
+pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_public_rsa_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+								 byte_t session_key_size);
+uint32_t pgp_rsa_kex_decrypt(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key, pgp_rsa_kex *kex,
+							 byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
+
+pgp_elgamal_kex *pgp_elgamal_kex_encrypt(pgp_public_elgamal_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+										 byte_t session_key_size);
+uint32_t pgp_elgamal_kex_decrypt(pgp_public_elgamal_key *public_key, pgp_private_elgamal_key *private_key, pgp_elgamal_kex *kex,
+								 byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
+
+pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_public_ecdh_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+								   byte_t session_key_size);
+uint32_t pgp_ecdh_kex_decrypt(pgp_public_ecdh_key *public_key, pgp_private_ecdh_key *private_key, pgp_ecdh_kex *kex,
+							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
+
+pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_public_x25519_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+									 byte_t session_key_size);
+uint32_t pgp_x25519_kex_decrypt(pgp_public_x25519_key *public_key, pgp_private_x25519_key *private_key, pgp_x25519_kex *kex,
+							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
+
+pgp_x448_kex *pgp_x448_kex_encrypt(pgp_public_x448_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+								   byte_t session_key_size);
+uint32_t pgp_x448_kex_decrypt(pgp_public_x448_key *public_key, pgp_private_x448_key *private_key, pgp_x448_kex *kex,
+							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
 
 #endif
