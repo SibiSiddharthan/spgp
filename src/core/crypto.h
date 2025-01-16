@@ -13,6 +13,7 @@
 
 #include <key.h>
 #include <session.h>
+#include <signature.h>
 
 #define PGP_AEAD_TAG_SIZE 16
 
@@ -67,5 +68,22 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_public_x448_key *public_key, byte_t symme
 								   byte_t session_key_size);
 uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_public_x448_key *public_key, pgp_private_x448_key *private_key,
 							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
+
+pgp_rsa_signature *pgp_rsa_sign(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key, byte_t hash_algorithm_id, void *hash,
+								uint32_t hash_size);
+uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_public_rsa_key *public_key, void *hash, uint32_t hash_size);
+
+pgp_dsa_signature *pgp_dsa_sign(pgp_public_dsa_key *public_key, pgp_private_dsa_key *private_key, void *hash, uint32_t hash_size);
+uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_public_dsa_key *public_key, void *hash, uint32_t hash_size);
+
+pgp_dsa_signature *pgp_ecdsa_sign(pgp_public_ecdsa_key *public_key, pgp_private_ecdsa_key *private_key, void *hash, uint32_t hash_size);
+uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_public_ecdsa_key *public_key, void *hash, uint32_t hash_size);
+
+pgp_ed25519_signature *pgp_ed25519_sign(pgp_public_ed25519_key *public_key, pgp_private_ed25519_key *private_key, void *hash,
+										uint32_t hash_size);
+uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_public_ed25519_key *public_key, void *hash, uint32_t hash_size);
+
+pgp_ed448_signature *pgp_ed448_sign(pgp_public_ed448_key *public_key, pgp_private_ed448_key *private_key, void *hash, uint32_t hash_size);
+uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_public_ed448_key *public_key, void *hash, uint32_t hash_size);
 
 #endif
