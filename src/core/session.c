@@ -347,12 +347,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 													   size_t session_key_size, byte_t anonymous)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->session_key_algorithm_id);
-	uint16_t checksum = 0;
-
-	byte_t *pkey = session_key;
-	byte_t data[64] = {0};
-
-	size_t pos = 0;
+	byte_t symmetric_key_algorithm_id = packet->version == PGP_PKESK_V6 ? 0 : packet->session_key_algorithm_id;
 
 	// Check the algorithms
 	if (packet->public_key_algorithm_id != public_key->public_key_algorithm_id)
@@ -365,14 +360,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 		return NULL;
 	}
 
-	for (uint16_t i = 0; i < session_key_size; ++i)
-	{
-		checksum += pkey[i];
-	}
-
 	packet->key_version = public_key->version;
-	packet->key_checksum[0] = checksum << 8;
-	packet->key_checksum[1] = checksum & 0xFF;
 
 	if (anonymous == 0)
 	{
@@ -399,33 +387,31 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 		}
 	}
 
-	// Construct the data
+	// Encrypt
 	switch (packet->public_key_algorithm_id)
 	{
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_ENCRYPT_OR_SIGN:
+		packet->session_key = pgp_rsa_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-	{
-		if (packet->version == PGP_PKESK_V3)
-		{
-			// 1 octet algorithm id
-			LOAD_8(data + pos, &packet->session_key_algorithm_id);
-			pos += 1;
-		}
-
-		// Session key
-		memcpy(data + pos, session_key, session_key_size);
-		pos += session_key_size;
-
-		// 2 octet session key checksum
-		LOAD_16(data + pos, packet->key_checksum);
-		pos += 2;
-	}
-	break;
+		packet->session_key = pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		break;
 	case PGP_ECDH:
+		packet->session_key = pgp_ecdh_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		break;
 	case PGP_X25519:
+		packet->session_key = pgp_x25519_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		break;
 	case PGP_X448:
-		// TODO
+		packet->session_key = pgp_x448_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		break;
+	default:
+		return NULL;
+	}
+
+	if (packet->session_key == NULL)
+	{
 		return NULL;
 	}
 

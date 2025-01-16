@@ -35,7 +35,6 @@ typedef struct _pgp_pkesk_packet
 	byte_t session_key_algorithm_id;
 	byte_t key_octet_count;
 	byte_t key_version;
-	byte_t key_checksum[2];
 
 	union {
 		byte_t key_id[8];
