@@ -66,43 +66,48 @@ typedef struct _pgp_skesk_packet
 
 } pgp_skesk_packet;
 
-typedef struct _pgp_rsa_encrypt
+typedef struct _pgp_rsa_kex
 {
 	mpi_t *c; // (m^e) mod n.
-} pgp_rsa_encrypt;
+} pgp_rsa_kex;
 
-typedef struct _pgp_elgamal_encrypt
+typedef struct _pgp_elgamal_kex
 {
 	mpi_t *r; // (g^k) mod p
 	mpi_t *s; // m * (y^k) mod p
-} pgp_elgamal_encrypt;
+} pgp_elgamal_kex;
 
-typedef struct _pgp_ecdh_encrypt
+typedef struct _pgp_ecdh_kex_plaintext
 {
 	byte_t ephemeral_key_size;
 	byte_t encrypted_session_key_size;
 
 	void *ephemeral_key;
 	void *encrypted_session_key;
-} pgp_ecdh_encrypt;
+} pgp_ecdh_kex_plaintext;
 
-typedef struct _pgp_x25519_encrypt
+typedef struct _pgp_ecdh_kex
 {
-	byte_t ephemeral[32];
-	byte_t size;
-	byte_t algorithm;
+	mpi_t *ephemeral_point;
+	byte_t encoded_session_key_size;
+	byte_t encoded_session_key[40];
+} pgp_ecdh_kex;
 
-	void *encrypted_session_key;
-} pgp_x25519_encrypt;
-
-typedef struct _pgp_x448_encrypt
+typedef struct _pgp_x25519_kex
 {
-	byte_t ephemeral[56];
-	byte_t size;
-	byte_t algorithm;
+	byte_t symmetric_key_algorithm_id;
+	byte_t octet_count;
+	byte_t ephemeral_key[32];
+	byte_t encrypted_session_key[32];
+} pgp_x25519_kex;
 
-	void *encrypted_session_key;
-} pgp_x448_encrypt;
+typedef struct _pgp_x448_kex
+{
+	byte_t symmetric_key_algorithm_id;
+	byte_t octet_count;
+	byte_t ephemeral_key[56];
+	byte_t encrypted_session_key[32];
+} pgp_x448_kex;
 
 // Public Key Encrypted Session Key Packet (Tag 1)
 pgp_pkesk_packet *pgp_pkesk_packet_new(byte_t version, byte_t public_key_algorithm_id, byte_t session_key_algorithm_id);
