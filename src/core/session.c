@@ -418,6 +418,64 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	return packet;
 }
 
+uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key, void *private_key,
+											  void *session_key, size_t session_key_size)
+{
+	uint32_t result = 0;
+
+	byte_t symmetric_key_algorithm_id = 0;
+	byte_t key_fingerprint_size = 0;
+	byte_t key_fingerprint[32] = {0};
+
+	// Check fingerprint
+	key_fingerprint_size = pgp_key_fingerprint(public_key, key_fingerprint, 32);
+
+	// Incorrect key for decryption.
+	if (memcmp(packet->key_fingerprint, key_fingerprint, key_fingerprint_size) != 0)
+	{
+		return 0;
+	}
+
+	// Decrypt
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+		result = pgp_rsa_kex_decrypt(packet->session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id, session_key,
+									 session_key_size);
+		break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		result = pgp_elgamal_kex_decrypt(packet->session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id, session_key,
+										 session_key_size);
+		break;
+	case PGP_ECDH:
+		result = pgp_ecdh_kex_decrypt(packet->session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id, session_key,
+									  session_key_size);
+		break;
+	case PGP_X25519:
+		result = pgp_x25519_kex_decrypt(packet->session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id, session_key,
+										session_key_size);
+		break;
+	case PGP_X448:
+		result = pgp_x448_kex_decrypt(packet->session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id, session_key,
+									  session_key_size);
+		break;
+	default:
+		return 0;
+	}
+
+	// Check symmetric algorithm ids
+	if (packet->version == PGP_PKESK_V3)
+	{
+		if (packet->session_key_algorithm_id != symmetric_key_algorithm_id)
+		{
+			return 0;
+		}
+	}
+
+	return result;
+}
+
 pgp_pkesk_packet *pgp_pkesk_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;

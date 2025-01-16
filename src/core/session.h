@@ -114,8 +114,8 @@ void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet);
 
 pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key, void *session_key,
 													   size_t session_key_size, byte_t anonymous);
-pgp_pkesk_packet *pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_secret_key_packet *secret_key, void *session_key,
-													   size_t session_key_size);
+uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key,
+													   void *private_key, void *session_key, size_t session_key_size);
 
 size_t pgp_pkesk_packet_get_session_key(pgp_pkesk_packet *packet, void *key, size_t size);
 
