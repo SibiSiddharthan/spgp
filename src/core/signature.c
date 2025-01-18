@@ -11,6 +11,7 @@
 #include <key.h>
 #include <signature.h>
 
+#include <hash.h>
 #include <crypto.h>
 
 #include <stdlib.h>
@@ -1318,6 +1319,71 @@ void pgp_signature_packet_delete(pgp_signature_packet *packet)
 
 	free(packet->signature);
 	free(packet);
+}
+
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *private_key, void *data,
+								   size_t size)
+{
+	byte_t hash_size = 0;
+	byte_t hash[64] = {0};
+
+	hash_size = pgp_compute_hash(packet, data, size, hash);
+
+	if (hash_size == 0)
+	{
+		return 0;
+	}
+
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_SIGN_ONLY:
+		packet->signature = pgp_rsa_sign(public_key->key_data, private_key, packet->hash_algorithm_id, hash, hash_size);
+	case PGP_DSA:
+		packet->signature = pgp_dsa_sign(public_key->key_data, private_key, hash, hash_size);
+	case PGP_ECDSA:
+		packet->signature = pgp_ecdsa_sign(public_key->key_data, private_key, hash, hash_size);
+	case PGP_ED25519:
+		packet->signature = pgp_ed25519_sign(public_key->key_data, private_key, hash, hash_size);
+	case PGP_ED448:
+		packet->signature = pgp_ed448_sign(public_key->key_data, private_key, hash, hash_size);
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+
+uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *data, size_t size)
+{
+	byte_t hash_size = 0;
+	byte_t hash[64] = {0};
+
+	hash_size = pgp_compute_hash(packet, data, size, hash);
+
+	if (hash_size == 0)
+	{
+		return 0;
+	}
+
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_SIGN_ONLY:
+		return pgp_rsa_verify(packet->signature, public_key->key_data, packet->hash_algorithm_id, hash, hash_size);
+	case PGP_DSA:
+		return pgp_dsa_verify(packet->signature, public_key->key_data, hash, hash_size);
+	case PGP_ECDSA:
+		return pgp_ecdsa_verify(packet->signature, public_key->key_data, hash, hash_size);
+	case PGP_ED25519:
+		return pgp_ed25519_verify(packet->signature, public_key->key_data, hash, hash_size);
+	case PGP_ED448:
+		return pgp_ed448_verify(packet->signature, public_key->key_data, hash, hash_size);
+	default:
+		return 0;
+	}
+
+	return 0;
 }
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
