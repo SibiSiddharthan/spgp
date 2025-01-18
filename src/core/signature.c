@@ -916,6 +916,348 @@ static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, voi
 	return pos;
 }
 
+static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_t data_size, byte_t hash[64])
+{
+	hash_ctx *hctx = NULL;
+
+	byte_t hash_buffer[1024] = {0};
+	byte_t hash_algorithm = 0;
+
+	uint32_t hashed_size = 0;
+
+	switch (packet->hash_algorithm_id)
+	{
+	case PGP_MD5:
+		hash_algorithm = HASH_MD5;
+		break;
+	case PGP_SHA1:
+		hash_algorithm = HASH_SHA1;
+		break;
+	case PGP_RIPEMD_160:
+		hash_algorithm = HASH_RIPEMD160;
+		break;
+	case PGP_SHA2_256:
+		hash_algorithm = HASH_SHA256;
+		break;
+	case PGP_SHA2_384:
+		hash_algorithm = HASH_SHA384;
+		break;
+	case PGP_SHA2_512:
+		hash_algorithm = HASH_SHA512;
+		break;
+	case PGP_SHA2_224:
+		hash_algorithm = HASH_SHA224;
+		break;
+	case PGP_SHA3_256:
+		hash_algorithm = HASH_SHA3_256;
+		break;
+	case PGP_SHA3_512:
+		hash_algorithm = HASH_SHA3_512;
+		break;
+	default:
+		return 0;
+	}
+
+	hctx = hash_init(hash_buffer, 1024, hash_algorithm);
+
+	if (hctx == NULL)
+	{
+		return 0;
+	}
+
+	// Hash the data first
+	hash_update(hctx, data, data_size);
+	hashed_size += data_size;
+
+	// Hash the trailer
+	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
+	{
+		// 1 octet signature version
+		hash_update(hctx, &packet->version, 1);
+		hashed_size += 1;
+
+		// 1 octet signature type
+		hash_update(hctx, &packet->type, 1);
+		hashed_size += 1;
+
+		// 1 octet public key algorithm
+		hash_update(hctx, &packet->public_key_algorithm_id, 1);
+		hashed_size += 1;
+
+		// 1 octet hash algorithm
+		hash_update(hctx, &packet->hash_algorithm_id, 1);
+		hashed_size += 1;
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			uint32_t hashed_subpacket_size_be = BSWAP_32(packet->hashed_size);
+
+			// 4 octet hashed subpacket size
+			hash_update(hctx, &hashed_subpacket_size_be, 4);
+			hashed_size += 4;
+		}
+		else
+		{
+			uint16_t hashed_subpacket_size_be = BSWAP_16((uint16_t)packet->hashed_size);
+
+			// 2 octet hashed subpacket size
+			hash_update(hctx, &hashed_subpacket_size_be, 2);
+			hashed_size += 2;
+		}
+
+		// Hash the subpackets
+		for (uint16_t i = 0; i > packet->hashed_subpackets; ++i)
+		{
+			byte_t buffer[8];
+			pgp_subpacket_header *header = packet->hashed_subpackets[i];
+
+			// Hash the header first
+			pgp_subpacket_header_write(header, buffer);
+			hash_update(hctx, buffer, header->header_size);
+			hashed_size += header->header_size;
+
+			switch (header->tag & PGP_SUBPACKET_TAG_MASK)
+			{
+			case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
+			case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
+			case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
+			{
+				struct _pgp_timestamp_subpacket *subpacket = packet->hashed_subpackets[i];
+				uint32_t timestamp_be = BSWAP_32(subpacket->time);
+
+				// 4 octet timestamp
+				hash_update(hctx, &timestamp_be, 4);
+				hashed_size += 4;
+			}
+			break;
+			case PGP_EXPORTABLE_SUBPACKET:
+			case PGP_REVOCABLE_SUBPACKET:
+			case PGP_PRIMARY_USER_ID_SUBPACKET:
+			{
+				struct _pgp_boolean_subpacket *subpacket = packet->hashed_subpackets[i];
+				byte_t value = subpacket->state;
+
+				// 1 octet value
+				hash_update(hctx, &value, 1);
+				hashed_size += 1;
+			}
+			break;
+			case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+			case PGP_KEY_FLAGS_SUBPACKET:
+			case PGP_FEATURES_SUBPACKET:
+			{
+				struct _pgp_flags_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// N octets of flags
+				hash_update(hctx, subpacket->flags, header->body_size);
+				hashed_size += header->body_size;
+			}
+			break;
+			case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+			case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+			case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+			case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+			{
+				struct _pgp_preferred_algorithm_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// N octets of algorithms
+				hash_update(hctx, subpacket->preferred_algorithms, header->body_size);
+				hashed_size += header->body_size;
+			}
+			break;
+			case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+			case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+			{
+				struct _pgp_key_fingerprint_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// 1 octet key version
+				hash_update(hctx, &subpacket->version, 1);
+				hashed_size += 1;
+
+				if (subpacket->version == PGP_KEY_V6)
+				{
+					// 32 octets of V6 key fingerprint
+					hash_update(hctx, subpacket->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+					hashed_size += PGP_KEY_V6_FINGERPRINT_SIZE;
+				}
+				else
+				{
+					// 20 octets of V4 key fingerprint
+					hash_update(hctx, subpacket->fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+					hashed_size += PGP_KEY_V4_FINGERPRINT_SIZE;
+				}
+			}
+			break;
+			case PGP_TRUST_SIGNATURE_SUBPACKET:
+			{
+				pgp_trust_signature_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// 1 octet level
+				hash_update(hctx, &subpacket->trust_level, 1);
+				hashed_size += 1;
+
+				// 1 octet amount
+				hash_update(hctx, &subpacket->trust_amount, 1);
+				hashed_size += 1;
+			}
+			break;
+			case PGP_REGULAR_EXPRESSION_SUBPACKET:
+			{
+				pgp_regular_expression_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// Null terminated UTF-8 string
+				hash_update(hctx, subpacket->regex, header->body_size);
+				hashed_size += header->body_size;
+			}
+			break;
+			case PGP_REVOCATION_KEY_SUBPACKET:
+			{
+				pgp_revocation_key_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// 1 octet class
+				hash_update(hctx, &subpacket->revocation_class, 1);
+				hashed_size += 1;
+
+				// 1 octet public key algorithm
+				hash_update(hctx, &subpacket->algorithm_id, 1);
+				hashed_size += 1;
+
+				// 20 octets v4 key fingerprint
+				hash_update(hctx, subpacket->key_fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
+				hashed_size += PGP_KEY_V4_FINGERPRINT_SIZE;
+			}
+			break;
+			case PGP_ISSUER_KEY_ID_SUBPACKET:
+			{
+				pgp_issuer_key_id_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// 8 octets of key id
+				hash_update(hctx, subpacket->key_id, 8);
+				hashed_size += 8;
+			}
+			break;
+			case PGP_NOTATION_DATA_SUBPACKET:
+			{
+				pgp_notation_data_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				uint32_t flags_be = BSWAP_32(subpacket->flags);
+				uint16_t name_size_be = BSWAP_16(subpacket->name_size);
+				uint16_t value_size_be = BSWAP_16(subpacket->value_size);
+
+				// 4 octets of flags
+				hash_update(hctx, &flags_be, 4);
+				hashed_size += 4;
+
+				// 2 octets of name length(N)
+				hash_update(hctx, &name_size_be, 2);
+				hashed_size += 2;
+
+				// 2 octets of value length(M)
+				hash_update(hctx, &value_size_be, 2);
+				hashed_size += 2;
+
+				// (N + M) octets of data
+				hash_update(hctx, subpacket->data, subpacket->name_size + subpacket->value_size);
+				hashed_size += subpacket->name_size + subpacket->value_size;
+			}
+			break;
+			case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+			{
+				pgp_preferred_key_server_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// String
+				hash_update(hctx, subpacket->server, header->body_size);
+				hashed_size += header->body_size;
+			}
+			break;
+			case PGP_POLICY_URI_SUBPACKET:
+			{
+				pgp_policy_uri_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// String
+				hash_update(hctx, subpacket->policy, header->body_size);
+				hashed_size += header->body_size;
+			}
+			break;
+			case PGP_SIGNER_USER_ID_SUBPACKET:
+			{
+				pgp_signer_user_id_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// String
+				hash_update(hctx, subpacket->id, header->body_size);
+				hashed_size += header->body_size;
+			}
+			break;
+			case PGP_REASON_FOR_REVOCATION_SUBPACKET:
+			{
+				pgp_reason_for_revocation_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// 1 octet of revocation code
+				hash_update(hctx, &subpacket->code, 1);
+				hashed_size += 1;
+
+				// N octets of reason
+				hash_update(hctx, subpacket->reason, header->body_size - 1);
+				hashed_size += header->body_size - 1;
+			}
+			break;
+			case PGP_SIGNATURE_TARGET_SUBPACKET:
+			{
+				pgp_signature_target_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// 1 octet public key algorithm
+				hash_update(hctx, &subpacket->public_key_algorithm_id, 1);
+				hashed_size += 1;
+
+				// 1 octet hash algorithm
+				hash_update(hctx, &subpacket->hash_algorithm_id, 1);
+				hashed_size += 1;
+
+				// N octets of hash
+				hash_update(hctx, subpacket->hash, header->body_size - 2);
+				hashed_size += header->body_size - 2;
+			}
+			break;
+			case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
+			{
+				pgp_embedded_signature_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// TODO
+			}
+			break;
+			default:
+				break;
+			}
+		}
+
+		// Stop counting the hashed size from here on
+		uint32_t hashed_size_be = BSWAP_32(hashed_size);
+
+		// 1 octet signature version (again)
+		hash_update(hctx, &packet->version, 1);
+
+		// 1 octet 0xFF
+		byte_t byte = 0xFF;
+		hash_update(hctx, &byte, 1);
+
+		// 4 octet hashed size
+		hash_update(hctx, &hashed_size_be, 4);
+	}
+	else // packet->version == PGP_SIGNATURE_V3
+	{
+		// 1 octet signature type
+		hash_update(hctx, &packet->type, 1);
+
+		// 4 octet signature creation time
+		uint32_t timestamp_be = BSWAP_32(packet->timestamp);
+		hash_update(hctx, &timestamp_be, 4);
+	}
+
+	hash_final(hctx, hash, 64);
+
+	return hctx->hash_size;
+}
+
 pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id)
 {
 	pgp_signature_packet *packet = NULL;
