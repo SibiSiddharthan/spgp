@@ -41,6 +41,42 @@ static byte_t pgp_signature_type_validate(pgp_signature_type type)
 	}
 }
 
+static byte_t pgp_signature_subpacket_validate(pgp_signature_subpacket_type type)
+{
+	switch (type)
+	{
+	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
+	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
+	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
+	case PGP_EXPORTABLE_SUBPACKET:
+	case PGP_REVOCABLE_SUBPACKET:
+	case PGP_PRIMARY_USER_ID_SUBPACKET:
+	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+	case PGP_KEY_FLAGS_SUBPACKET:
+	case PGP_FEATURES_SUBPACKET:
+	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+	case PGP_TRUST_SIGNATURE_SUBPACKET:
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+	case PGP_REVOCATION_KEY_SUBPACKET:
+	case PGP_ISSUER_KEY_ID_SUBPACKET:
+	case PGP_NOTATION_DATA_SUBPACKET:
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+	case PGP_POLICY_URI_SUBPACKET:
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
+	case PGP_SIGNATURE_TARGET_SUBPACKET:
+	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
+	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
 uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
@@ -176,42 +212,6 @@ static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, 
 		memcpy(ptr, packet->signature, 114);
 		return 114;
 	}
-	default:
-		return 0;
-	}
-}
-
-static byte_t is_valid_signature_subpacket(pgp_subpacket_header *header)
-{
-	switch (header->tag & PGP_SUBPACKET_TAG_MASK)
-	{
-	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
-	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
-	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
-	case PGP_EXPORTABLE_SUBPACKET:
-	case PGP_REVOCABLE_SUBPACKET:
-	case PGP_PRIMARY_USER_ID_SUBPACKET:
-	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
-	case PGP_KEY_FLAGS_SUBPACKET:
-	case PGP_FEATURES_SUBPACKET:
-	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
-	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
-	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
-	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
-	case PGP_TRUST_SIGNATURE_SUBPACKET:
-	case PGP_REGULAR_EXPRESSION_SUBPACKET:
-	case PGP_REVOCATION_KEY_SUBPACKET:
-	case PGP_ISSUER_KEY_ID_SUBPACKET:
-	case PGP_NOTATION_DATA_SUBPACKET:
-	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
-	case PGP_POLICY_URI_SUBPACKET:
-	case PGP_SIGNER_USER_ID_SUBPACKET:
-	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
-	case PGP_SIGNATURE_TARGET_SUBPACKET:
-	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
-	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
-	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
-		return 1;
 	default:
 		return 0;
 	}
@@ -914,6 +914,68 @@ static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, voi
 	pos += pgp_signature_data_write(packet, out + pos, size - pos);
 
 	return pos;
+}
+
+pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id)
+{
+	pgp_signature_packet *packet = NULL;
+
+	if (version != PGP_SIGNATURE_V6 && version != PGP_SIGNATURE_V4 && version != PGP_SIGNATURE_V3)
+	{
+		return NULL;
+	}
+
+	if (pgp_signature_type_validate(type) == 0)
+	{
+		return NULL;
+	}
+
+	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return NULL;
+	}
+
+	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_signature_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_signature_packet));
+
+	packet->version = version;
+	packet->type = type;
+	packet->public_key_algorithm_id = public_key_algorithm_id;
+	packet->hash_algorithm_id = hash_algorithm_id;
+
+	return packet;
+}
+
+void pgp_signature_packet_delete(pgp_signature_packet *packet)
+{
+	// Free the subpackets first
+	for (uint16_t i = 0; i < packet->hashed_subpacket_count; ++i)
+	{
+		free(packet->hashed_subpackets[i]);
+	}
+
+	free(packet->hashed_subpackets);
+
+	for (uint16_t i = 0; i < packet->unhashed_subpacket_count; ++i)
+	{
+		free(packet->unhashed_subpackets[i]);
+	}
+
+	free(packet->unhashed_subpackets);
+
+	free(packet->signature);
+	free(packet);
 }
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)

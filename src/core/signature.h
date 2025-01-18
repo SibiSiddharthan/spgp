@@ -123,11 +123,11 @@ typedef struct _pgp_signature_packet
 	byte_t key_id[8];
 	byte_t quick_hash[2];
 
-	uint32_t hashed_size;
-	uint32_t unhashed_size;
-
 	byte_t salt_size;
 	byte_t salt[32];
+
+	uint32_t hashed_size;
+	uint32_t unhashed_size;
 
 	uint16_t hashed_subpacket_count;
 	uint16_t unhashed_subpacket_count;
@@ -294,8 +294,15 @@ typedef struct _pgp_embedded_signature_subpacket
 	pgp_signature_packet *signature;
 } pgp_embedded_signature_subpacket;
 
+pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id);
+void pgp_signature_packet_delete(pgp_signature_packet *packet);
+
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *private_key, void *data, size_t size);
+uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *data, size_t size);
+
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
+size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size);
 
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
 																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
@@ -304,5 +311,6 @@ void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
 
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, size_t size);
 size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
+size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
 
 #endif
