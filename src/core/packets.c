@@ -723,7 +723,7 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 		return NULL;
 	}
 
-	switch (header.tag & 0x7F)
+	switch (header.tag & PGP_SUBPACKET_TAG_MASK)
 	{
 	case PGP_USER_ATTRIBUTE_IMAGE:
 	{
@@ -875,7 +875,7 @@ size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, vo
 		subpacket_header = packet->subpackets[i];
 
 		// Return the image data of the first image subpacket.
-		if ((subpacket_header->tag & 0x7F) == PGP_USER_ATTRIBUTE_IMAGE)
+		if ((subpacket_header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_USER_ATTRIBUTE_IMAGE)
 		{
 			pgp_user_attribute_image_subpacket *image_subpacket = packet->subpackets[i];
 			uint32_t image_size = image_subpacket->header.body_size - 16;

@@ -36,6 +36,8 @@ typedef enum _pgp_packet_type
 
 } pgp_packet_type;
 
+#define PGP_SUBPACKET_TAG_MASK 0x7F
+
 typedef enum _pgp_packet_header_format
 {
 	PGP_HEADER = 0,

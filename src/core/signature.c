@@ -183,7 +183,7 @@ static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, 
 
 static byte_t is_valid_signature_subpacket(pgp_subpacket_header *header)
 {
-	switch (header->tag & 0x7F)
+	switch (header->tag & PGP_SUBPACKET_TAG_MASK)
 	{
 	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
 	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
@@ -237,7 +237,7 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 		return NULL;
 	}
 
-	switch (header.tag & 0x7F)
+	switch (header.tag & PGP_SUBPACKET_TAG_MASK)
 	{
 	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
 	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
@@ -521,7 +521,7 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 
 	pos += pgp_subpacket_header_write(header, out + pos);
 
-	switch (header->tag & 0x7F)
+	switch (header->tag & PGP_SUBPACKET_TAG_MASK)
 	{
 	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
 	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
