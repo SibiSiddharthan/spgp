@@ -181,14 +181,6 @@ typedef struct _pgp_ed448_signature
 
 // Signature subpackets
 
-typedef struct _pgp_signature_subpacket_header
-{
-	pgp_signature_subpacket_type type : 7;
-	byte_t critical : 1;
-	byte_t header_size;
-	uint32_t body_size;
-} pgp_signature_subpacket_header;
-
 typedef struct _signature_subpacket
 {
 	struct _signature_subpacket *next;
@@ -197,52 +189,52 @@ typedef struct _signature_subpacket
 
 typedef struct _pgp_timestamp_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	uint32_t time;
 } pgp_signature_creation_time_subpacket, pgp_signature_expiry_time_subpacket, pgp_key_expiration_time_subpacket;
 
 typedef struct _pgp_boolean_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t state : 1; // 1 for yes, 0 for no.
 } pgp_exportable_subpacket, pgp_revocable_subpacket, pgp_primary_user_id_subpacket;
 
 typedef struct _pgp_preferred_algorithm_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t preferred_algorithms[1];
 } pgp_preferred_symmetric_ciphers_subpacket, pgp_preferred_hash_algorithms_subpacket, pgp_preferred_compression_algorithms_subpacket,
 	pgp_preferred_aead_ciphersuites_subpacket;
 
 typedef struct _pgp_flags_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t flags[1];
 } pgp_key_server_preferences_subpacket, pgp_key_flags_subpacket, pgp_features_subpacket;
 
 typedef struct _pgp_key_fingerprint_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	pgp_key_version version;
 	byte_t fingerprint[32];
 } pgp_issuer_fingerprint_subpacket, pgp_recipient_fingerprint_subpacket;
 
 typedef struct _pgp_trust_signature_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t trust_level;
 	byte_t trust_amount;
 } pgp_trust_signature_subpacket;
 
 typedef struct _pgp_regular_expression_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t *regex;
 } pgp_regular_expression_subpacket;
 
 typedef struct _pgp_revocation_key_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t revocation_class;
 	byte_t algorithm_id;
 	byte_t key_fingerprint_v4[20];
@@ -250,13 +242,13 @@ typedef struct _pgp_revocation_key_subpacket
 
 typedef struct _pgp_issuer_key_id_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t key_id[8];
 } pgp_issuer_key_id_subpacket;
 
 typedef struct _pgp_notation_data_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	uint32_t flags;
 	uint16_t name_size;
 	uint16_t value_size;
@@ -265,32 +257,32 @@ typedef struct _pgp_notation_data_subpacket
 
 typedef struct _pgp_preferred_key_server_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t *server;
 } pgp_preferred_key_server_subpacket;
 
 typedef struct _pgp_policy_uri_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t *policy;
 } pgp_policy_uri_subpacket;
 
 typedef struct _pgp_signer_user_id_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t *id;
 } pgp_signer_user_id_subpacket;
 
 typedef struct _reason_for_revocation_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	pgp_revocation_code code;
 	byte_t *reason;
 } pgp_reason_for_revocation_subpacket;
 
 typedef struct _pgp_signature_target_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	byte_t public_key_algorithm_id;
 	byte_t hash_algorithm_id;
 	byte_t hash[1];
@@ -298,11 +290,11 @@ typedef struct _pgp_signature_target_subpacket
 
 typedef struct _pgp_embedded_signature_subpacket
 {
-	pgp_signature_subpacket_header header;
+	pgp_subpacket_header header;
 	pgp_signature_packet *signature;
 } pgp_embedded_signature_subpacket;
 
-pgp_signature_packet *pgp_signature_packet_read(pgp_signature_packet *packet, void *data, size_t size);
+pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
