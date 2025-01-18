@@ -27,6 +27,7 @@ byte_t pgp_hash_algorithm_validate(pgp_hash_algorithms algorithm);
 byte_t pgp_symmetric_cipher_key_size(pgp_symmetric_key_algorithms algorithm);
 byte_t pgp_symmetric_cipher_block_size(pgp_symmetric_key_algorithms algorithm);
 byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm);
+byte_t pgp_hash_size(pgp_hash_algorithms algorithm);
 byte_t pgp_hash_salt_size(pgp_hash_algorithms algorithm);
 
 size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
@@ -87,7 +88,8 @@ uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_public_key *public_key
 
 pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key, byte_t hash_algorithm_id, void *hash,
 								uint32_t hash_size);
-uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public_key, void *hash, uint32_t hash_size);
+uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public_key, byte_t hash_algorithm_id, void *hash,
+						uint32_t hash_size);
 
 pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_public_key *public_key, pgp_dsa_private_key *private_key, void *hash, uint32_t hash_size);
 uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_public_key *public_key, void *hash, uint32_t hash_size);
