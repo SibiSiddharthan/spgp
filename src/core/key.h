@@ -72,56 +72,56 @@ typedef struct _pgp_secret_key_packet
 
 } pgp_secret_key_packet, _pgp_secret_subkey_packet;
 
-typedef struct _pgp_public_rsa_key
+typedef struct _pgp_rsa_public_key
 {
 	mpi_t *n, *e;
-} pgp_public_rsa_key;
+} pgp_rsa_public_key;
 
-typedef struct _pgp_private_rsa_key
+typedef struct _pgp_rsa_private_key
 {
 	mpi_t *d;
 	mpi_t *p, *q;
 	mpi_t *u;
-} pgp_private_rsa_key;
+} pgp_rsa_private_key;
 
-typedef struct _pgp_public_dsa_key
+typedef struct _pgp_dsa_public_key
 {
 	mpi_t *p, *q;
 	mpi_t *g;
 	mpi_t *y;
-} pgp_public_dsa_key;
+} pgp_dsa_public_key;
 
-typedef struct _pgp_private_dsa_key
+typedef struct _pgp_dsa_private_key
 {
 	mpi_t *x;
-} pgp_private_dsa_key;
+} pgp_dsa_private_key;
 
-typedef struct _pgp_public_elgamal_key
+typedef struct _pgp_elgamal_public_key
 {
 	mpi_t *p;
 	mpi_t *g;
 	mpi_t *y;
-} pgp_public_elgamal_key;
+} pgp_elgamal_public_key;
 
-typedef struct _pgp_private_elgamal_key
+typedef struct _pgp_elgamal_private_key
 {
 	mpi_t *x;
-} pgp_private_elgamal_key;
+} pgp_elgamal_private_key;
 
-typedef struct _pgp_public_ecdsa_key
+typedef struct _pgp_ecdsa_public_key
 {
 	byte_t oid_size;
 	byte_t oid[16];
 
 	mpi_t *point;
-} pgp_public_ecdsa_key;
+} pgp_ecdsa_public_key;
 
-typedef struct _pgp_private_ecdsa_key
+typedef struct _pgp_ecdsa_private_key
 {
 	mpi_t *x;
-} pgp_private_ecdsa_key;
+} pgp_ecdsa_private_key;
 
-typedef struct _pgp_public_ecdh_key
+typedef struct _pgp_ecdh_public_key
 {
 	byte_t oid_size;
 	byte_t oid[16];
@@ -135,52 +135,52 @@ typedef struct _pgp_public_ecdh_key
 	} kdf;
 
 	mpi_t *point;
-} pgp_public_ecdh_key;
+} pgp_ecdh_public_key;
 
-typedef struct _pgp_private_ecdh_key
+typedef struct _pgp_ecdh_private_key
 {
 	mpi_t *x;
-} pgp_private_ecdh_key;
+} pgp_ecdh_private_key;
 
-typedef struct _pgp_public_x25519_key
+typedef struct _pgp_x25519_public_key
 {
 	byte_t public_key[32];
-} pgp_public_x25519_key;
+} pgp_x25519_public_key;
 
-typedef struct _pgp_private_x25519_key
+typedef struct _pgp_x25519_private_key
 {
 	byte_t private_key[32];
-} pgp_private_x25519_key;
+} pgp_x25519_private_key;
 
-typedef struct _pgp_public_x448_key
+typedef struct _pgp_x448_public_key
 {
 	byte_t public_key[56];
-} pgp_public_x448_key;
+} pgp_x448_public_key;
 
-typedef struct _pgp_private_x448_key
+typedef struct _pgp_x448_private_key
 {
 	byte_t private_key[56];
-} pgp_private_x448_key;
+} pgp_x448_private_key;
 
-typedef struct _pgp_public_ed25519_key
+typedef struct _pgp_ed25519_public_key
 {
 	byte_t public_key[32];
-} pgp_public_ed25519_key;
+} pgp_ed25519_public_key;
 
-typedef struct _pgp_private_ed25519_key
+typedef struct _pgp_ed25519_private_key
 {
 	byte_t private_key[32];
-} pgp_private_ed25519_key;
+} pgp_ed25519_private_key;
 
-typedef struct _pgp_public_ed448_key
+typedef struct _pgp_ed448_public_key
 {
 	byte_t public_key[57];
-} pgp_public_ed448_key;
+} pgp_ed448_public_key;
 
-typedef struct _pgp_private_ed448_key
+typedef struct _pgp_ed448_private_key
 {
 	byte_t private_key[57];
-} pgp_private_ed448_key;
+} pgp_ed448_private_key;
 
 pgp_public_key_packet *pgp_public_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
 												 uint16_t key_expiry_days, byte_t public_key_algorithm_id, void *key_data,

@@ -44,46 +44,46 @@ size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 
 uint32_t pgp_rand(void *buffer, uint32_t size);
 
-pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_public_rsa_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 								 byte_t session_key_size);
-uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key,
+uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key,
 							 byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
 
-pgp_elgamal_kex *pgp_elgamal_kex_encrypt(pgp_public_elgamal_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+pgp_elgamal_kex *pgp_elgamal_kex_encrypt(pgp_elgamal_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 										 byte_t session_key_size);
-uint32_t pgp_elgamal_kex_decrypt(pgp_elgamal_kex *kex, pgp_public_elgamal_key *public_key, pgp_private_elgamal_key *private_key,
+uint32_t pgp_elgamal_kex_decrypt(pgp_elgamal_kex *kex, pgp_elgamal_public_key *public_key, pgp_elgamal_private_key *private_key,
 								 byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
 
-pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_public_ecdh_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 								   byte_t session_key_size);
-uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_public_ecdh_key *public_key, pgp_private_ecdh_key *private_key,
+uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key, pgp_ecdh_private_key *private_key,
 							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
 
-pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_public_x25519_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 									   byte_t session_key_size);
-uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_public_x25519_key *public_key, pgp_private_x25519_key *private_key,
+uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_x25519_public_key *public_key, pgp_x25519_private_key *private_key,
 								byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
 
-pgp_x448_kex *pgp_x448_kex_encrypt(pgp_public_x448_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 								   byte_t session_key_size);
-uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_public_x448_key *public_key, pgp_private_x448_key *private_key,
+uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_public_key *public_key, pgp_x448_private_key *private_key,
 							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size);
 
-pgp_rsa_signature *pgp_rsa_sign(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key, byte_t hash_algorithm_id, void *hash,
+pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key, byte_t hash_algorithm_id, void *hash,
 								uint32_t hash_size);
-uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_public_rsa_key *public_key, void *hash, uint32_t hash_size);
+uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public_key, void *hash, uint32_t hash_size);
 
-pgp_dsa_signature *pgp_dsa_sign(pgp_public_dsa_key *public_key, pgp_private_dsa_key *private_key, void *hash, uint32_t hash_size);
-uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_public_dsa_key *public_key, void *hash, uint32_t hash_size);
+pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_public_key *public_key, pgp_dsa_private_key *private_key, void *hash, uint32_t hash_size);
+uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_public_key *public_key, void *hash, uint32_t hash_size);
 
-pgp_dsa_signature *pgp_ecdsa_sign(pgp_public_ecdsa_key *public_key, pgp_private_ecdsa_key *private_key, void *hash, uint32_t hash_size);
-uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_public_ecdsa_key *public_key, void *hash, uint32_t hash_size);
+pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_public_key *public_key, pgp_ecdsa_private_key *private_key, void *hash, uint32_t hash_size);
+uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_public_key *public_key, void *hash, uint32_t hash_size);
 
-pgp_ed25519_signature *pgp_ed25519_sign(pgp_public_ed25519_key *public_key, pgp_private_ed25519_key *private_key, void *hash,
+pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_public_key *public_key, pgp_ed25519_private_key *private_key, void *hash,
 										uint32_t hash_size);
-uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_public_ed25519_key *public_key, void *hash, uint32_t hash_size);
+uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_public_key *public_key, void *hash, uint32_t hash_size);
 
-pgp_ed448_signature *pgp_ed448_sign(pgp_public_ed448_key *public_key, pgp_private_ed448_key *private_key, void *hash, uint32_t hash_size);
-uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_public_ed448_key *public_key, void *hash, uint32_t hash_size);
+pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_private_key *private_key, void *hash, uint32_t hash_size);
+uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_public_key *public_key, void *hash, uint32_t hash_size);
 
 #endif

@@ -489,7 +489,7 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
 }
 
-static rsa_key *pgp_rsa_key_convert(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key)
+static rsa_key *pgp_rsa_key_convert(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key)
 {
 	uint32_t bits = ROUND_UP(public_key->n->bits, 1024);
 
@@ -530,7 +530,7 @@ static rsa_key *pgp_rsa_key_convert(pgp_public_rsa_key *public_key, pgp_private_
 	return key;
 }
 
-uint32_t pgp_rsa_encrypt_(pgp_public_rsa_key *public_key, void *in, uint32_t in_size, void *out, uint32_t out_size)
+uint32_t pgp_rsa_encrypt_(pgp_rsa_public_key *public_key, void *in, uint32_t in_size, void *out, uint32_t out_size)
 {
 	uint32_t bytes = CEIL_DIV(public_key->n->bits, 8);
 	uint32_t required_size = sizeof(mpi_t) + bytes;
@@ -560,7 +560,7 @@ uint32_t pgp_rsa_encrypt_(pgp_public_rsa_key *public_key, void *in, uint32_t in_
 	return required_size;
 }
 
-uint32_t pgp_rsa_decrypt(pgp_public_rsa_key *public_key, pgp_private_rsa_key *private_key, void *in, uint32_t in_size, void *out,
+uint32_t pgp_rsa_decrypt(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key, void *in, uint32_t in_size, void *out,
 						 uint32_t out_size)
 {
 	rsa_key *key = NULL;
