@@ -182,6 +182,8 @@ typedef struct _pgp_ed448_private_key
 	byte_t private_key[57];
 } pgp_ed448_private_key;
 
+uint32_t pgp_generate_key(byte_t public_key_algorithm_id, void **public_key, void **private_key);
+
 pgp_public_key_packet *pgp_public_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
 												 uint16_t key_expiry_days, byte_t public_key_algorithm_id, void *key_data,
 												 uint32_t key_data_size);
