@@ -226,16 +226,16 @@ uint64_t cipher_eax_decrypt(cipher_ctx *cctx, void *nonce, size_t nonce_size, vo
 cipher_ctx *cipher_ocb_encrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
 									size_t ad_size);
 uint64_t cipher_ocb_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_ocb_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_ocb_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-							void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_ocb_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t cipher_ocb_encrypt(cipher_ctx *cctx, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
 cipher_ctx *cipher_ocb_decrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
 									size_t ad_size);
 uint64_t cipher_ocb_decrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_ocb_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_ocb_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-							void *in, size_t in_size, void *out, size_t out_size);
+uint64_t cipher_ocb_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t cipher_ocb_decrypt(cipher_ctx *cctx, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
 // Synthetic Initialization Vector (SIV)
 int32_t cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_size, void *ci_ctx, size_t cipher_ctx_size, void *cm_ctx,
@@ -392,20 +392,20 @@ uint64_t aes256_eax_decrypt(void *key, size_t key_size, void *nonce, byte_t nonc
 							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
 // AES-OCB
-uint64_t aes128_ocb_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes128_ocb_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes128_ocb_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t aes128_ocb_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
-uint64_t aes192_ocb_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes192_ocb_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes192_ocb_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t aes192_ocb_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
-uint64_t aes256_ocb_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes256_ocb_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes256_ocb_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t aes256_ocb_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
 // AES-SIV-CMAC
 uint64_t aes256_siv_cmac_encrypt(void *key, size_t key_size, void **associated_data, size_t *ad_size, uint32_t ad_count, void *nonce,

@@ -163,7 +163,7 @@ uint64_t octr_update(cipher_ctx *cctx, void (*cipher_op)(void *, void *, void *)
 	return processed;
 }
 
-static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, size_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
+static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
 										  size_t ad_size)
 {
 	byte_t zero[16] = {0};
@@ -250,12 +250,18 @@ uint64_t cipher_ocb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t pla
 	return result;
 }
 
-uint64_t cipher_ocb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint64_t cipher_ocb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size,
+								  void *tag, byte_t tag_size)
 {
 	uint64_t result = 0;
-	byte_t tag[16];
+	byte_t computed_tag[16];
 
-	if (ciphertext_size < (plaintext_size + cctx->ocb.tag_size))
+	if (ciphertext_size < plaintext_size)
+	{
+		return 0;
+	}
+
+	if (tag_size < cctx->ocb.tag_size)
 	{
 		return 0;
 	}
@@ -265,20 +271,20 @@ uint64_t cipher_ocb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 
 	ocb_checksum_update(cctx, plaintext, result);
 
-	XOR16(tag, cctx->ocb.checksum, cctx->ocb.offset);
-	XOR16(tag, tag, cctx->ocb.ls[1]);
+	XOR16(computed_tag, cctx->ocb.checksum, cctx->ocb.offset);
+	XOR16(computed_tag, computed_tag, cctx->ocb.ls[1]);
 
-	cctx->_encrypt(cctx->_key, tag, tag);
+	cctx->_encrypt(cctx->_key, computed_tag, computed_tag);
 
-	XOR16(tag, tag, cctx->ocb.osum);
+	XOR16(computed_tag, computed_tag, cctx->ocb.osum);
 
-	memcpy(PTR_OFFSET(ciphertext, result), tag, cctx->ocb.tag_size);
+	memcpy(tag, computed_tag, cctx->ocb.tag_size);
 
-	return result + cctx->ocb.tag_size;
+	return result;
 }
 
-uint64_t cipher_ocb_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-							void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+uint64_t cipher_ocb_encrypt(cipher_ctx *cctx, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *plaintext,
+							size_t plaintext_size, void *ciphertext, size_t ciphertext_size, void *tag, byte_t tag_size)
 {
 	cctx = cipher_ocb_init_common(cctx, tag_size, nonce, nonce_size, associated_data, ad_size);
 
@@ -287,7 +293,7 @@ uint64_t cipher_ocb_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size
 		return 0;
 	}
 
-	return cipher_ocb_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size);
+	return cipher_ocb_encrypt_final(cctx, plaintext, plaintext_size, ciphertext, ciphertext_size, tag, tag_size);
 }
 
 cipher_ctx *cipher_ocb_decrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
@@ -313,41 +319,41 @@ uint64_t cipher_ocb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ci
 	return result;
 }
 
-uint64_t cipher_ocb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ocb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size,
+								  void *tag, byte_t tag_size)
 {
 	uint64_t result = 0;
-	byte_t actual_tag[16];
-	byte_t expected_tag[16];
+	byte_t computed_tag[16];
 
-	if (plaintext_size < (ciphertext_size - cctx->ocb.tag_size))
+	if (plaintext_size < ciphertext_size)
 	{
 		return 0;
 	}
 
-	memcpy(actual_tag, PTR_OFFSET(ciphertext, ciphertext_size - cctx->ocb.tag_size), cctx->ocb.tag_size);
+	if (tag_size < cctx->ocb.tag_size)
+	{
+		return 0;
+	}
 
-	result = octr_update(cctx, cctx->_decrypt, ciphertext, plaintext, ciphertext_size - cctx->ocb.tag_size);
+	result = octr_update(cctx, cctx->_decrypt, ciphertext, plaintext, ciphertext_size);
 	cctx->ocb.data_size += result;
 
 	ocb_checksum_update(cctx, plaintext, result);
 
-	XOR16(expected_tag, cctx->ocb.checksum, cctx->ocb.offset);
-	XOR16(expected_tag, expected_tag, cctx->ocb.ls[1]);
+	XOR16(computed_tag, cctx->ocb.checksum, cctx->ocb.offset);
+	XOR16(computed_tag, computed_tag, cctx->ocb.ls[1]);
 
-	cctx->_encrypt(cctx->_key, expected_tag, expected_tag);
+	cctx->_encrypt(cctx->_key, computed_tag, computed_tag);
 
-	XOR16(expected_tag, expected_tag, cctx->ocb.osum);
+	XOR16(computed_tag, computed_tag, cctx->ocb.osum);
 
-	if (memcmp(actual_tag, expected_tag, cctx->ocb.tag_size) != 0)
-	{
-		return 0;
-	}
+	memcpy(tag, computed_tag, cctx->ocb.tag_size);
 
 	return result;
 }
 
-uint64_t cipher_ocb_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data, size_t ad_size,
-							void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+uint64_t cipher_ocb_decrypt(cipher_ctx *cctx, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *ciphertext,
+							size_t ciphertext_size, void *plaintext, size_t plaintext_size, void *tag, byte_t tag_size)
 {
 	cctx = cipher_ocb_init_common(cctx, tag_size, nonce, nonce_size, associated_data, ad_size);
 
@@ -356,11 +362,12 @@ uint64_t cipher_ocb_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size
 		return 0;
 	}
 
-	return cipher_ocb_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size);
+	return cipher_ocb_decrypt_final(cctx, ciphertext, ciphertext_size, plaintext, plaintext_size, tag, tag_size);
 }
 
-static uint64_t ocb_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size,
-								   void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+static uint64_t ocb_encrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, byte_t nonce_size,
+								   void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size, void *tag,
+								   byte_t tag_size)
 {
 	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
@@ -373,11 +380,12 @@ static uint64_t ocb_encrypt_common(cipher_algorithm algorithm, void *key, size_t
 		return 0;
 	}
 
-	return cipher_ocb_encrypt(cctx, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+	return cipher_ocb_encrypt(cctx, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag, tag_size);
 }
 
-static uint64_t ocb_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size,
-								   void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+static uint64_t ocb_decrypt_common(cipher_algorithm algorithm, void *key, size_t key_size, void *nonce, byte_t nonce_size,
+								   void *associated_data, size_t ad_size, void *in, size_t in_size, void *out, size_t out_size, void *tag,
+								   byte_t tag_size)
 {
 	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
@@ -390,47 +398,47 @@ static uint64_t ocb_decrypt_common(cipher_algorithm algorithm, void *key, size_t
 		return 0;
 	}
 
-	return cipher_ocb_decrypt(cctx, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size);
+	return cipher_ocb_decrypt(cctx, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag, tag_size);
 }
 
-uint64_t aes128_ocb_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+uint64_t aes128_ocb_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size)
 {
-	return ocb_encrypt_common(CIPHER_AES128, key, key_size, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out,
-							  out_size);
+	return ocb_encrypt_common(CIPHER_AES128, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
 }
 
-uint64_t aes128_ocb_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+uint64_t aes128_ocb_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size)
 {
-	return ocb_decrypt_common(CIPHER_AES128, key, key_size, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out,
-							  out_size);
+	return ocb_decrypt_common(CIPHER_AES128, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
 }
 
-uint64_t aes192_ocb_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+uint64_t aes192_ocb_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size)
 {
-	return ocb_encrypt_common(CIPHER_AES192, key, key_size, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out,
-							  out_size);
+	return ocb_encrypt_common(CIPHER_AES192, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
 }
 
-uint64_t aes192_ocb_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+uint64_t aes192_ocb_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size)
 {
-	return ocb_decrypt_common(CIPHER_AES192, key, key_size, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out,
-							  out_size);
+	return ocb_decrypt_common(CIPHER_AES192, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
 }
 
-uint64_t aes256_ocb_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+uint64_t aes256_ocb_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size)
 {
-	return ocb_encrypt_common(CIPHER_AES256, key, key_size, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out,
-							  out_size);
+	return ocb_encrypt_common(CIPHER_AES256, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
 }
 
-uint64_t aes256_ocb_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
-							size_t ad_size, void *in, size_t in_size, void *out, size_t out_size)
+uint64_t aes256_ocb_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *associated_data, size_t ad_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size)
 {
-	return ocb_decrypt_common(CIPHER_AES256, key, key_size, tag_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out,
-							  out_size);
+	return ocb_decrypt_common(CIPHER_AES256, key, key_size, nonce, nonce_size, associated_data, ad_size, in, in_size, out, out_size, tag,
+							  tag_size);
 }
