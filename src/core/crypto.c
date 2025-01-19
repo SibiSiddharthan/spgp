@@ -406,14 +406,14 @@ size_t pgp_aead_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 	{
 	case PGP_AEAD_EAX:
 	{
-		cipher_gcm_encrypt_init(cctx, iv, iv_size, associated_data, ad_size);
-		cipher_gcm_encrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+		cipher_eax_encrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_eax_encrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
 	}
 	break;
 	case PGP_AEAD_OCB:
 	{
-		cipher_gcm_encrypt_init(cctx, iv, iv_size, associated_data, ad_size);
-		cipher_gcm_encrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+		cipher_ocb_encrypt_init(cctx, tag_size, iv, iv_size, associated_data, ad_size);
+		cipher_ocb_encrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
 	}
 	break;
 	case PGP_AEAD_GCM:
@@ -480,14 +480,14 @@ size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 	{
 	case PGP_AEAD_EAX:
 	{
-		cipher_gcm_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
-		cipher_gcm_decrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+		cipher_eax_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
+		cipher_eax_decrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
 	}
 	break;
 	case PGP_AEAD_OCB:
 	{
-		cipher_gcm_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
-		cipher_gcm_decrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
+		cipher_ocb_decrypt_init(cctx, tag_size, iv, iv_size, associated_data, ad_size);
+		cipher_ocb_decrypt_final(cctx, in, in_size, out, out_size, tag, tag_size);
 	}
 	break;
 	case PGP_AEAD_GCM:
