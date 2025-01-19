@@ -49,7 +49,7 @@ static void omac(cipher_ctx *cctx, byte_t mac[16], uint64_t n, void *message, si
 	// Last block
 	if (remaining == block_size)
 	{
-		XOR16(buffer, in + processed, cctx->eax.b);
+		XOR16(buffer, in + processed, cctx->eax->b);
 		XOR16(mac, mac, buffer);
 		cctx->_encrypt(cctx->_key, mac, mac);
 	}
@@ -58,7 +58,7 @@ static void omac(cipher_ctx *cctx, byte_t mac[16], uint64_t n, void *message, si
 		memcpy(buffer, in + processed, remaining);
 		buffer[remaining] = 0x80;
 
-		XOR16(buffer, buffer, cctx->eax.p);
+		XOR16(buffer, buffer, cctx->eax->p);
 		XOR16(mac, mac, buffer);
 		cctx->_encrypt(cctx->_key, mac, mac);
 	}
@@ -73,16 +73,16 @@ static void ohash_update(cipher_ctx *cctx, void *message, size_t size)
 
 	while (processed <= size)
 	{
-		if (cctx->eax.t_size == block_size)
+		if (cctx->eax->t_size == block_size)
 		{
-			XOR16(cctx->eax.c, cctx->eax.c, cctx->eax.t);
-			cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
+			XOR16(cctx->eax->c, cctx->eax->c, cctx->eax->t);
+			cctx->_encrypt(cctx->_key, cctx->eax->c, cctx->eax->c);
 
-			cctx->eax.t_size = 0;
+			cctx->eax->t_size = 0;
 		}
 
-		memcpy(cctx->eax.t, in + processed, block_size);
-		cctx->eax.t_size += block_size;
+		memcpy(cctx->eax->t, in + processed, block_size);
+		cctx->eax->t_size += block_size;
 
 		processed += block_size;
 	}
@@ -99,16 +99,16 @@ static void ohash_final(cipher_ctx *cctx, void *message, size_t size)
 
 	while ((processed + block_size) <= size)
 	{
-		if (cctx->eax.t_size == block_size)
+		if (cctx->eax->t_size == block_size)
 		{
-			XOR16(cctx->eax.c, cctx->eax.c, cctx->eax.t);
-			cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
+			XOR16(cctx->eax->c, cctx->eax->c, cctx->eax->t);
+			cctx->_encrypt(cctx->_key, cctx->eax->c, cctx->eax->c);
 
-			cctx->eax.t_size = 0;
+			cctx->eax->t_size = 0;
 		}
 
-		memcpy(cctx->eax.t, in + processed, block_size);
-		cctx->eax.t_size += block_size;
+		memcpy(cctx->eax->t, in + processed, block_size);
+		cctx->eax->t_size += block_size;
 
 		processed += block_size;
 	}
@@ -118,32 +118,32 @@ static void ohash_final(cipher_ctx *cctx, void *message, size_t size)
 	// Last block
 	if (remaining == 0)
 	{
-		if (cctx->eax.t_size == block_size)
+		if (cctx->eax->t_size == block_size)
 		{
-			XOR16(cctx->eax.t, cctx->eax.t, cctx->eax.b);
-			XOR16(cctx->eax.c, cctx->eax.c, cctx->eax.t);
-			cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
+			XOR16(cctx->eax->t, cctx->eax->t, cctx->eax->b);
+			XOR16(cctx->eax->c, cctx->eax->c, cctx->eax->t);
+			cctx->_encrypt(cctx->_key, cctx->eax->c, cctx->eax->c);
 
-			cctx->eax.t_size = 0;
+			cctx->eax->t_size = 0;
 		}
 	}
 	else
 	{
-		if (cctx->eax.t_size == block_size)
+		if (cctx->eax->t_size == block_size)
 		{
-			XOR16(cctx->eax.c, cctx->eax.c, cctx->eax.t);
-			cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
+			XOR16(cctx->eax->c, cctx->eax->c, cctx->eax->t);
+			cctx->_encrypt(cctx->_key, cctx->eax->c, cctx->eax->c);
 
-			cctx->eax.t_size = 0;
+			cctx->eax->t_size = 0;
 		}
 
-		memset(cctx->eax.t, 0, 16);
-		memcpy(cctx->eax.t, in + processed, remaining);
-		cctx->eax.t[remaining] = 0x80;
+		memset(cctx->eax->t, 0, 16);
+		memcpy(cctx->eax->t, in + processed, remaining);
+		cctx->eax->t[remaining] = 0x80;
 
-		XOR16(cctx->eax.t, cctx->eax.t, cctx->eax.p);
-		XOR16(cctx->eax.c, cctx->eax.c, cctx->eax.t);
-		cctx->_encrypt(cctx->_key, cctx->eax.c, cctx->eax.c);
+		XOR16(cctx->eax->t, cctx->eax->t, cctx->eax->p);
+		XOR16(cctx->eax->c, cctx->eax->c, cctx->eax->t);
+		cctx->_encrypt(cctx->_key, cctx->eax->c, cctx->eax->c);
 	}
 }
 
@@ -157,14 +157,14 @@ uint64_t ectr_update(cipher_ctx *cctx, void *in, void *out, size_t size)
 	byte_t *pin = (byte_t *)in;
 	byte_t *pout = (byte_t *)out;
 
-	uint32_t *pc = PTR_OFFSET(cctx->eax.icb, 12);
+	uint32_t *pc = PTR_OFFSET(cctx->eax->icb, 12);
 	uint32_t counter = BSWAP_32(*pc);
 
 	byte_t buffer[16];
 
 	while ((processed + block_size) <= size)
 	{
-		cctx->_encrypt(cctx->_key, cctx->eax.icb, buffer);
+		cctx->_encrypt(cctx->_key, cctx->eax->icb, buffer);
 		XOR16(pout + processed, pin + processed, buffer);
 
 		++counter;
@@ -178,7 +178,7 @@ uint64_t ectr_update(cipher_ctx *cctx, void *in, void *out, size_t size)
 	// Last block
 	if (remaining > 0)
 	{
-		cctx->_encrypt(cctx->_key, cctx->eax.icb, buffer);
+		cctx->_encrypt(cctx->_key, cctx->eax->icb, buffer);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{
@@ -202,21 +202,21 @@ static cipher_ctx *cipher_eax_init_common(cipher_ctx *cctx, void *nonce, size_t 
 	cctx->_encrypt(cctx->_key, buffer, l);
 
 	// Initialize B
-	double_block(cctx->eax.b, l);
+	double_block(cctx->eax->b, l);
 
 	// Initialize P
-	double_block(cctx->eax.p, cctx->eax.b);
+	double_block(cctx->eax->p, cctx->eax->b);
 
 	// Initialize N
-	omac(cctx, cctx->eax.n, 0, nonce, nonce_size);
-	memcpy(cctx->eax.icb, cctx->eax.n, 16);
+	omac(cctx, cctx->eax->n, 0, nonce, nonce_size);
+	memcpy(cctx->eax->icb, cctx->eax->n, 16);
 
 	// Initialize H
-	omac(cctx, cctx->eax.h, 1, header, header_size);
+	omac(cctx, cctx->eax->h, 1, header, header_size);
 
 	// Initialize T
-	cctx->eax.t[15] = 0x2;
-	cctx->eax.t_size = 16;
+	cctx->eax->t[15] = 0x2;
+	cctx->eax->t_size = 16;
 
 	return cctx;
 }
@@ -236,7 +236,7 @@ uint64_t cipher_eax_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t pla
 	}
 
 	result = ectr_update(cctx, plaintext, ciphertext, ROUND_DOWN(plaintext_size, cctx->block_size));
-	cctx->eax.data_size += result;
+	cctx->eax->data_size += result;
 
 	ohash_update(cctx, ciphertext, ROUND_DOWN(plaintext_size, cctx->block_size));
 
@@ -255,12 +255,12 @@ uint64_t cipher_eax_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 	}
 
 	result = ectr_update(cctx, plaintext, ciphertext, plaintext_size);
-	cctx->eax.data_size += result;
+	cctx->eax->data_size += result;
 
 	ohash_final(cctx, ciphertext, plaintext_size);
 
-	XOR16(computed_tag, cctx->eax.n, cctx->eax.c);
-	XOR16(computed_tag, computed_tag, cctx->eax.h);
+	XOR16(computed_tag, cctx->eax->n, cctx->eax->c);
+	XOR16(computed_tag, computed_tag, cctx->eax->h);
 
 	memcpy(tag, computed_tag, MIN(tag_size, 16));
 
@@ -295,7 +295,7 @@ uint64_t cipher_eax_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ci
 	}
 
 	result = ectr_update(cctx, ciphertext, plaintext, ROUND_DOWN(ciphertext_size, cctx->block_size));
-	cctx->eax.data_size += result;
+	cctx->eax->data_size += result;
 
 	ohash_update(cctx, ciphertext, ROUND_DOWN(ciphertext_size, cctx->block_size));
 
@@ -314,12 +314,12 @@ uint64_t cipher_eax_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	}
 
 	result = ectr_update(cctx, ciphertext, plaintext, ciphertext_size);
-	cctx->eax.data_size += result;
+	cctx->eax->data_size += result;
 
 	ohash_final(cctx, ciphertext, ciphertext_size);
 
-	XOR16(computed_tag, cctx->eax.n, cctx->eax.c);
-	XOR16(computed_tag, computed_tag, cctx->eax.h);
+	XOR16(computed_tag, cctx->eax->n, cctx->eax->c);
+	XOR16(computed_tag, computed_tag, cctx->eax->h);
 
 	memcpy(tag, computed_tag, MIN(tag_size, 16));
 

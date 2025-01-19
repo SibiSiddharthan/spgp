@@ -38,17 +38,17 @@ static void calculate_hash(cipher_ctx *cctx, void *associated_data, size_t ad_si
 	{
 		ntz = block_count == 0 ? 0 : (BSF_64(block_count) + 1);
 
-		if (ntz > cctx->ocb.max_ntz)
+		if (ntz > cctx->ocb->max_ntz)
 		{
-			double_block(cctx->ocb.ls[2 + ntz], cctx->ocb.ls[1 + ntz]);
-			cctx->ocb.max_ntz += 1;
+			double_block(cctx->ocb->ls[2 + ntz], cctx->ocb->ls[1 + ntz]);
+			cctx->ocb->max_ntz += 1;
 		}
 
-		XOR16(offset, offset, cctx->ocb.ls[2 + ntz]);
+		XOR16(offset, offset, cctx->ocb->ls[2 + ntz]);
 		XOR16(buffer, offset, pdata + processed);
 
 		cctx->_encrypt(cctx->_key, buffer, buffer);
-		XOR16(cctx->ocb.osum, cctx->ocb.osum, buffer);
+		XOR16(cctx->ocb->osum, cctx->ocb->osum, buffer);
 
 		processed += block_size;
 		block_count += 1;
@@ -60,7 +60,7 @@ static void calculate_hash(cipher_ctx *cctx, void *associated_data, size_t ad_si
 	{
 		memset(buffer, 0, block_size);
 
-		XOR16(offset, offset, cctx->ocb.ls[0]);
+		XOR16(offset, offset, cctx->ocb->ls[0]);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{
@@ -75,7 +75,7 @@ static void calculate_hash(cipher_ctx *cctx, void *associated_data, size_t ad_si
 		}
 
 		cctx->_encrypt(cctx->_key, buffer, buffer);
-		XOR16(cctx->ocb.osum, cctx->ocb.osum, buffer);
+		XOR16(cctx->ocb->osum, cctx->ocb->osum, buffer);
 
 		processed += remaining;
 	}
@@ -90,7 +90,7 @@ static void ocb_checksum_update(cipher_ctx *cctx, void *data, size_t size)
 
 	while ((processed + block_size) <= size)
 	{
-		XOR16(cctx->ocb.checksum, cctx->ocb.checksum, PTR_OFFSET(data, processed));
+		XOR16(cctx->ocb->checksum, cctx->ocb->checksum, PTR_OFFSET(data, processed));
 		processed += block_size;
 	}
 
@@ -102,10 +102,10 @@ static void ocb_checksum_update(cipher_ctx *cctx, void *data, size_t size)
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{
-			cctx->ocb.checksum[i] ^= pdata[processed + i];
+			cctx->ocb->checksum[i] ^= pdata[processed + i];
 		}
 
-		cctx->ocb.checksum[remaining] ^= 0x80;
+		cctx->ocb->checksum[remaining] ^= 0x80;
 	}
 }
 
@@ -125,32 +125,32 @@ uint64_t octr_update(cipher_ctx *cctx, void (*cipher_op)(void *, void *, void *)
 
 	while ((processed + block_size) <= size)
 	{
-		ntz = cctx->ocb.block_count == 0 ? 0 : (BSF_64(cctx->ocb.block_count) + 1);
+		ntz = cctx->ocb->block_count == 0 ? 0 : (BSF_64(cctx->ocb->block_count) + 1);
 
-		if (ntz > cctx->ocb.max_ntz)
+		if (ntz > cctx->ocb->max_ntz)
 		{
-			double_block(cctx->ocb.ls[2 + ntz], cctx->ocb.ls[1 + ntz]);
-			cctx->ocb.max_ntz += 1;
+			double_block(cctx->ocb->ls[2 + ntz], cctx->ocb->ls[1 + ntz]);
+			cctx->ocb->max_ntz += 1;
 		}
 
-		XOR16(cctx->ocb.offset, cctx->ocb.offset, cctx->ocb.ls[2 + ntz]);
-		XOR16(buffer, cctx->ocb.offset, pin + processed);
+		XOR16(cctx->ocb->offset, cctx->ocb->offset, cctx->ocb->ls[2 + ntz]);
+		XOR16(buffer, cctx->ocb->offset, pin + processed);
 
 		cipher_op(cctx->_key, buffer, buffer);
 
-		XOR16(pout + processed, buffer, cctx->ocb.offset);
+		XOR16(pout + processed, buffer, cctx->ocb->offset);
 
 		processed += block_size;
-		cctx->ocb.block_count += 1;
+		cctx->ocb->block_count += 1;
 	}
 
 	remaining = size - processed;
 
 	if (remaining > 0)
 	{
-		XOR16(cctx->ocb.offset, cctx->ocb.offset, cctx->ocb.ls[0]);
+		XOR16(cctx->ocb->offset, cctx->ocb->offset, cctx->ocb->ls[0]);
 
-		cctx->_encrypt(cctx->_key, cctx->ocb.offset, buffer);
+		cctx->_encrypt(cctx->_key, cctx->ocb->offset, buffer);
 
 		for (uint8_t i = 0; i < remaining; ++i)
 		{
@@ -189,18 +189,18 @@ static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, byte_t tag_size, voi
 
 	memset(&cctx->ocb, 0, sizeof(cctx->ocb));
 
-	cctx->ocb.tag_size = tag_size;
+	cctx->ocb->tag_size = tag_size;
 
 	// Initialize L
-	cctx->_encrypt(cctx->_key, zero, cctx->ocb.ls[0]); // L*
-	double_block(cctx->ocb.ls[1], cctx->ocb.ls[0]);    // L$
-	double_block(cctx->ocb.ls[2], cctx->ocb.ls[1]);    // L0
+	cctx->_encrypt(cctx->_key, zero, cctx->ocb->ls[0]); // L*
+	double_block(cctx->ocb->ls[1], cctx->ocb->ls[0]);    // L$
+	double_block(cctx->ocb->ls[2], cctx->ocb->ls[1]);    // L0
 
 	// Calculate sum
 	calculate_hash(cctx, associated_data, ad_size);
 
 	// Initialize offset
-	memset(cctx->ocb.offset, 0, 16);
+	memset(cctx->ocb->offset, 0, 16);
 
 	buffer[0] = ((tag_size * 8) % 128) << 1;
 	buffer[15 - nonce_size] |= 0x1;
@@ -220,7 +220,7 @@ static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, byte_t tag_size, voi
 	{
 		for (uint8_t j = 0; j < 8; ++j)
 		{
-			cctx->ocb.offset[i] |= (stretch[((i * 8) + j + bottom) / 8] >> (7 - ((j + bottom) % 8))) << (7 - j);
+			cctx->ocb->offset[i] |= (stretch[((i * 8) + j + bottom) / 8] >> (7 - ((j + bottom) % 8))) << (7 - j);
 		}
 	}
 
@@ -243,7 +243,7 @@ uint64_t cipher_ocb_encrypt_update(cipher_ctx *cctx, void *plaintext, size_t pla
 	}
 
 	result = octr_update(cctx, cctx->_encrypt, plaintext, ciphertext, ROUND_DOWN(plaintext_size, cctx->block_size));
-	cctx->ocb.data_size += result;
+	cctx->ocb->data_size += result;
 
 	ocb_checksum_update(cctx, plaintext, result);
 
@@ -261,24 +261,24 @@ uint64_t cipher_ocb_encrypt_final(cipher_ctx *cctx, void *plaintext, size_t plai
 		return 0;
 	}
 
-	if (tag_size < cctx->ocb.tag_size)
+	if (tag_size < cctx->ocb->tag_size)
 	{
 		return 0;
 	}
 
 	result = octr_update(cctx, cctx->_encrypt, plaintext, ciphertext, plaintext_size);
-	cctx->ocb.data_size += result;
+	cctx->ocb->data_size += result;
 
 	ocb_checksum_update(cctx, plaintext, result);
 
-	XOR16(computed_tag, cctx->ocb.checksum, cctx->ocb.offset);
-	XOR16(computed_tag, computed_tag, cctx->ocb.ls[1]);
+	XOR16(computed_tag, cctx->ocb->checksum, cctx->ocb->offset);
+	XOR16(computed_tag, computed_tag, cctx->ocb->ls[1]);
 
 	cctx->_encrypt(cctx->_key, computed_tag, computed_tag);
 
-	XOR16(computed_tag, computed_tag, cctx->ocb.osum);
+	XOR16(computed_tag, computed_tag, cctx->ocb->osum);
 
-	memcpy(tag, computed_tag, cctx->ocb.tag_size);
+	memcpy(tag, computed_tag, cctx->ocb->tag_size);
 
 	return result;
 }
@@ -312,7 +312,7 @@ uint64_t cipher_ocb_decrypt_update(cipher_ctx *cctx, void *ciphertext, size_t ci
 	}
 
 	result = octr_update(cctx, cctx->_decrypt, ciphertext, plaintext, ROUND_DOWN(ciphertext_size, cctx->block_size));
-	cctx->ocb.data_size += result;
+	cctx->ocb->data_size += result;
 
 	ocb_checksum_update(cctx, plaintext, result);
 
@@ -330,24 +330,24 @@ uint64_t cipher_ocb_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 		return 0;
 	}
 
-	if (tag_size < cctx->ocb.tag_size)
+	if (tag_size < cctx->ocb->tag_size)
 	{
 		return 0;
 	}
 
 	result = octr_update(cctx, cctx->_decrypt, ciphertext, plaintext, ciphertext_size);
-	cctx->ocb.data_size += result;
+	cctx->ocb->data_size += result;
 
 	ocb_checksum_update(cctx, plaintext, result);
 
-	XOR16(computed_tag, cctx->ocb.checksum, cctx->ocb.offset);
-	XOR16(computed_tag, computed_tag, cctx->ocb.ls[1]);
+	XOR16(computed_tag, cctx->ocb->checksum, cctx->ocb->offset);
+	XOR16(computed_tag, computed_tag, cctx->ocb->ls[1]);
 
 	cctx->_encrypt(cctx->_key, computed_tag, computed_tag);
 
-	XOR16(computed_tag, computed_tag, cctx->ocb.osum);
+	XOR16(computed_tag, computed_tag, cctx->ocb->osum);
 
-	memcpy(tag, computed_tag, cctx->ocb.tag_size);
+	memcpy(tag, computed_tag, cctx->ocb->tag_size);
 
 	return result;
 }
