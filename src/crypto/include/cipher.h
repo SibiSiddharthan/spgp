@@ -31,9 +31,10 @@ typedef struct _cipher_ctx
 
 	uint16_t aead_size;
 	uint16_t aead_realloc;
-	void *aead;
 
 	union {
+		void *aead;
+
 		struct _gcm
 		{
 			byte_t h[16];
@@ -43,7 +44,7 @@ typedef struct _cipher_ctx
 
 			size_t data_size;
 			size_t ad_size;
-		} gcm;
+		} *gcm;
 
 		struct _eax
 		{
@@ -58,12 +59,11 @@ typedef struct _cipher_ctx
 			byte_t t_size;
 			size_t data_size;
 			size_t ad_size;
-		} eax;
+		} *eax;
 
 		struct _ocb
 		{
-			// TODO: Fix AEAD limitations
-			byte_t ls[6][16];
+			byte_t ls[66][16]; // ($, *, 0-63)
 			byte_t offset[16];
 			byte_t checksum[16];
 			byte_t osum[16];
@@ -75,7 +75,7 @@ typedef struct _cipher_ctx
 			size_t data_size;
 			size_t ad_size;
 
-		} ocb;
+		} *ocb;
 	};
 
 	void *_key;

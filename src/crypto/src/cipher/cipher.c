@@ -19,7 +19,7 @@
 #include <ptr.h>
 #include <round.h>
 
-static inline size_t get_ctx_size(cipher_algorithm algorithm)
+static inline size_t key_ctx_size(cipher_algorithm algorithm)
 {
 	switch (algorithm)
 	{
@@ -120,7 +120,37 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 
 size_t cipher_ctx_size(cipher_algorithm algorithm)
 {
-	return sizeof(cipher_ctx) + get_ctx_size(algorithm);
+	return sizeof(cipher_ctx) + key_ctx_size(algorithm);
+}
+
+size_t cipher_aead_ctx_size(cipher_algorithm algorithm, cipher_aead_algorithm aead)
+{
+	size_t size = sizeof(cipher_ctx) + key_ctx_size(algorithm);
+
+	switch (aead)
+	{
+	case CIPHER_AEAD_EAX:
+		size += sizeof(*((cipher_ctx *)NULL)->eax);
+		break;
+	case CIPHER_AEAD_GCM:
+		size += sizeof(*((cipher_ctx *)NULL)->gcm);
+		break;
+	case CIPHER_AEAD_OCB:
+		size += sizeof(*((cipher_ctx *)NULL)->ocb);
+		break;
+	case CIPHER_AEAD_SIV_GCM:
+		// TODO determine for optimizations
+		break;
+	case CIPHER_AEAD_KW:
+	case CIPHER_AEAD_CCM:
+	case CIPHER_AEAD_SIV_CMAC:
+		size += 0;
+		break;
+	default:
+		return 0;
+	}
+
+	return size;
 }
 
 size_t cipher_key_size(cipher_algorithm algorithm)
@@ -189,7 +219,7 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 {
 	cipher_ctx *cctx = (cipher_ctx *)ptr;
 
-	size_t ctx_size = get_ctx_size(algorithm);
+	size_t ctx_size = key_ctx_size(algorithm);
 	size_t required_size = sizeof(cipher_ctx) + ctx_size;
 	size_t total_size = ROUND_UP(required_size, 16);
 
@@ -310,7 +340,7 @@ cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size)
 	cipher_ctx *cctx = NULL;
 	cipher_ctx *result = NULL;
 
-	size_t ctx_size = get_ctx_size(algorithm);
+	size_t ctx_size = key_ctx_size(algorithm);
 	size_t required_size = sizeof(cipher_ctx) + ctx_size;
 
 	cctx = (cipher_ctx *)malloc(required_size);
