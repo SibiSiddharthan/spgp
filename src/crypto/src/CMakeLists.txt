@@ -25,6 +25,7 @@ bignum/mod.c
 bignum/divmod.c
 bignum/shift.c
 bignum/gcd.c
+bignum/lcm.c
 bignum/prime.c
 bignum/rand.c
 ${bignum_asm}
