@@ -196,7 +196,30 @@ static cipher_ctx *cipher_eax_init_common(cipher_ctx *cctx, void *nonce, size_t 
 	byte_t buffer[16] = {0};
 	byte_t l[16] = {0};
 
-	memset(&cctx->eax, 0, sizeof(cctx->eax));
+	size_t required_aead_ctx_size = sizeof(*((cipher_ctx *)NULL)->eax);
+
+	if (cctx->block_size != 16)
+	{
+		return NULL;
+	}
+
+	if (cctx->aead == NULL)
+	{
+		cctx->aead_size = required_aead_ctx_size;
+		cctx->aead = malloc(cctx->aead_size);
+
+		if (cctx->aead == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (cctx->aead_size < required_aead_ctx_size)
+	{
+		return NULL;
+	}
+
+	memset(cctx->eax, 0, required_aead_ctx_size);
 
 	// Initialize L
 	cctx->_encrypt(cctx->_key, buffer, l);

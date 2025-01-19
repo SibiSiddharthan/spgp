@@ -121,13 +121,31 @@ static cipher_ctx *cipher_gcm_init_common(cipher_ctx *cctx, void *iv, size_t iv_
 	byte_t zero[16] = {0};
 	byte_t buffer[16];
 
+	size_t required_aead_ctx_size = sizeof(*((cipher_ctx *)NULL)->gcm);
+
 	// Check block size
 	if (cctx->block_size != 16)
 	{
 		return NULL;
 	}
 
-	memset(&cctx->gcm, 0, sizeof(cctx->gcm));
+	if (cctx->aead == NULL)
+	{
+		cctx->aead_size = required_aead_ctx_size;
+		cctx->aead = malloc(cctx->aead_size);
+
+		if (cctx->aead == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (cctx->aead_size < required_aead_ctx_size)
+	{
+		return NULL;
+	}
+
+	memset(cctx->gcm, 0, required_aead_ctx_size);
 
 	// Initialize H
 	cctx->_encrypt(cctx->_key, zero, cctx->gcm->h);

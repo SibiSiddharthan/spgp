@@ -152,7 +152,7 @@ size_t cipher_ctx_size(cipher_algorithm algorithm)
 
 size_t cipher_aead_ctx_size(cipher_algorithm algorithm, cipher_aead_algorithm aead)
 {
-	size_t size = sizeof(cipher_ctx) + key_ctx_size(algorithm) + aead_ctx_size(aead);
+	return sizeof(cipher_ctx) + key_ctx_size(algorithm) + aead_ctx_size(aead);
 }
 
 size_t cipher_key_size(cipher_algorithm algorithm)
@@ -243,9 +243,13 @@ cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm
 	}
 
 	// Use the extra space for aead construction.
-	if (size > (total_size + 256))
+	if (flags & CIPHER_AEAD_INIT)
 	{
-		total_size = ROUND_DOWN(size, 16);
+		if (size > (ROUND_UP(required_size, 16) + 128))
+		{
+			aead_size = size - ROUND_UP(required_size, 16);
+			total_size += aead_size;
+		}
 	}
 
 	memset(cctx, 0, sizeof(cipher_ctx));
@@ -319,8 +323,8 @@ cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm
 	cctx->algorithm = algorithm;
 	cctx->block_size = block_size;
 	cctx->ctx_size = total_size;
+	cctx->aead_size = aead_size;
 
-	cctx->aead_size = total_size - ROUND_UP(required_size, 16);
 	cctx->aead = cctx->aead_size > 0 ? PTR_OFFSET(ptr, ROUND_UP(required_size, 16)) : NULL;
 
 	cctx->_key = _ctx;

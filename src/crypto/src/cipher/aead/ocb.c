@@ -171,6 +171,8 @@ static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, byte_t tag_size, voi
 	byte_t stretch[24] = {0};
 	byte_t bottom = 0;
 
+	size_t required_aead_ctx_size = sizeof(*((cipher_ctx *)NULL)->ocb);
+
 	// Check paramters size
 	if (cctx->block_size != 16)
 	{
@@ -187,7 +189,23 @@ static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, byte_t tag_size, voi
 		return NULL;
 	}
 
-	memset(&cctx->ocb, 0, sizeof(cctx->ocb));
+	if (cctx->aead == NULL)
+	{
+		cctx->aead_size = required_aead_ctx_size;
+		cctx->aead = malloc(cctx->aead_size);
+
+		if (cctx->aead == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (cctx->aead_size < required_aead_ctx_size)
+	{
+		return NULL;
+	}
+
+	memset(cctx->ocb, 0, required_aead_ctx_size);
 
 	cctx->ocb->tag_size = tag_size;
 
