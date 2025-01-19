@@ -40,9 +40,12 @@ int32_t aes128_ccm_suite(void)
 	status += CHECK_BLOCK(tag, 4, "4dac255d");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_ccm_decrypt(key, 16, nonce, 7, ad, 8, ciphertext, 4, plaintext, 64, tag, 4);
 	status += CHECK_VALUE(result, 4);
 	status += CHECK_BLOCK(plaintext, 4, "20212223");
+	status += CHECK_BLOCK(tag, 4, "4dac255d");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -58,9 +61,12 @@ int32_t aes128_ccm_suite(void)
 	status += CHECK_BLOCK(tag, 6, "1fc64fbfaccd");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_ccm_decrypt(key, 16, nonce, 8, ad, 16, ciphertext, 16, plaintext, 64, tag, 6);
 	status += CHECK_VALUE(result, 16);
 	status += CHECK_BLOCK(plaintext, 16, "202122232425262728292a2b2c2d2e2f");
+	status += CHECK_BLOCK(tag, 6, "1fc64fbfaccd");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -76,9 +82,12 @@ int32_t aes128_ccm_suite(void)
 	status += CHECK_BLOCK(tag, 8, "484392fbc1b09951");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_ccm_decrypt(key, 16, nonce, 12, ad, 20, ciphertext, 24, plaintext, 64, tag, 8);
 	status += CHECK_VALUE(result, 24);
 	status += CHECK_BLOCK(plaintext, 24, "202122232425262728292a2b2c2d2e2f3031323334353637");
+	status += CHECK_BLOCK(tag, 8, "484392fbc1b09951");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -106,9 +115,12 @@ int32_t aes128_ccm_suite(void)
 	status += CHECK_BLOCK(tag, 14, "b4ac6bec93e8598e7f0dadbcea5b");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_ccm_decrypt(key, 16, nonce, 13, big_ad, 65536, ciphertext, 32, plaintext, 64, tag, 14);
 	status += CHECK_VALUE(result, 32);
 	status += CHECK_BLOCK(plaintext, 32, "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f");
+	status += CHECK_BLOCK(tag, 14, "b4ac6bec93e8598e7f0dadbcea5b");
 
 	free(big_ad);
 

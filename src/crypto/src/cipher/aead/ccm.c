@@ -245,8 +245,8 @@ uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, void *nonce, byte_t nonce_size, vo
 	byte_t *blocks = NULL;
 	byte_t *ptag = tag;
 
-	byte_t expected_tag[16] = {0};
-	byte_t actual_tag[16] = {0};
+	byte_t computed_tag[16] = {0};
+	byte_t first_block[16] = {0};
 	byte_t t = 0;
 	byte_t n = 0;
 	byte_t q = 0;
@@ -254,11 +254,10 @@ uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, void *nonce, byte_t nonce_size, vo
 	size_t blocks_size = ROUND_UP(10 + ad_size, 16) + ROUND_UP(ciphertext_size, 16) + 16;
 	size_t counters_size = ROUND_UP(ciphertext_size, 16) + 16;
 	size_t payload_blocks_size = 0;
-	size_t total_blocks_size = blocks_size + ROUND_UP(ciphertext_size, 16);
-	size_t plaintext_offset = blocks_size;
+	size_t total_blocks_size = blocks_size;
 
 	byte_t *pin = ciphertext;
-	byte_t *ptemp = NULL;
+	byte_t *pout = plaintext;
 
 	if (cctx->block_size != 16)
 	{
@@ -294,39 +293,32 @@ uint64_t cipher_ccm_decrypt(cipher_ctx *cctx, void *nonce, byte_t nonce_size, vo
 		return 0;
 	}
 
-	ptemp = blocks + plaintext_offset;
-
 	// Generate counters
 	memset(blocks, 0, blocks_size);
 
 	generate_counter_blocks(blocks, counters_size, nonce, nonce_size, q);
 	encrypt_counters(cctx, blocks, blocks, counters_size);
 
-	for (size_t i = 0; i < tag_size; ++i)
-	{
-		actual_tag[i] = ptag[i] ^ blocks[i];
-	}
+	// Copy the first block
+	memcpy(first_block, blocks, 16);
 
 	// Output plaintext to temporary.
 	for (size_t i = 0; i < ciphertext_size; ++i)
 	{
-		ptemp[i] = pin[i] ^ blocks[i + 16];
+		pout[i] = pin[i] ^ blocks[i + 16];
 	}
 
 	// Generate tag
 	memset(blocks, 0, blocks_size);
 
-	payload_blocks_size = generate_payload_blocks(blocks, nonce, nonce_size, associated_data, ad_size, ptemp, ciphertext_size, t, q);
-	generate_tag(cctx, blocks, payload_blocks_size, expected_tag, tag_size);
+	payload_blocks_size = generate_payload_blocks(blocks, nonce, nonce_size, associated_data, ad_size, plaintext, ciphertext_size, t, q);
+	generate_tag(cctx, blocks, payload_blocks_size, computed_tag, tag_size);
 
-	if (memcmp(actual_tag, expected_tag, tag_size) != 0)
+	for (size_t i = 0; i < tag_size; ++i)
 	{
-		free(blocks);
-		return 0;
+		ptag[i] = computed_tag[i] ^ first_block[i];
 	}
 
-	// Copy plaintext from temporary.
-	memcpy(plaintext, ptemp, ciphertext_size);
 	free(blocks);
 
 	return ciphertext_size;
