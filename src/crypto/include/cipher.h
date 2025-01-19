@@ -55,7 +55,6 @@ typedef struct _cipher_ctx
 			byte_t t[16];
 			byte_t icb[16];
 
-			byte_t tag_size;
 			byte_t t_size;
 			size_t data_size;
 			size_t ad_size;
@@ -211,17 +210,17 @@ uint32_t cipher_key_wrap_pad_encrypt(cipher_ctx *cctx, void *in, size_t in_size,
 uint32_t cipher_key_wrap_pad_decrypt(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
 
 // Encrypt Authenticate Translate (EAX)
-cipher_ctx *cipher_eax_encrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size);
+cipher_ctx *cipher_eax_encrypt_init(cipher_ctx *cctx, void *nonce, size_t nonce_size, void *header, size_t header_size);
 uint64_t cipher_eax_encrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_eax_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_eax_encrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size, void *in,
-							size_t in_size, void *out, size_t out_size);
+uint64_t cipher_eax_encrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t cipher_eax_encrypt(cipher_ctx *cctx, void *nonce, size_t nonce_size, void *header, size_t header_size, void *in, size_t in_size,
+							void *out, size_t out_size, void *tag, byte_t tag_size);
 
-cipher_ctx *cipher_eax_decrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size);
+cipher_ctx *cipher_eax_decrypt_init(cipher_ctx *cctx, void *nonce, size_t nonce_size, void *header, size_t header_size);
 uint64_t cipher_eax_decrypt_update(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_eax_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size);
-uint64_t cipher_eax_decrypt(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *header, size_t header_size, void *in,
-							size_t in_size, void *out, size_t out_size);
+uint64_t cipher_eax_decrypt_final(cipher_ctx *cctx, void *in, size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t cipher_eax_decrypt(cipher_ctx *cctx, void *nonce, size_t nonce_size, void *header, size_t header_size, void *in, size_t in_size,
+							void *out, size_t out_size, void *tag, byte_t tag_size);
 
 // Offset CodeBook (OCB)
 cipher_ctx *cipher_ocb_encrypt_init(cipher_ctx *cctx, byte_t tag_size, void *nonce, size_t nonce_size, void *associated_data,
@@ -377,20 +376,20 @@ uint32_t aes256_key_wrap_pad_encrypt(void *key, size_t key_size, void *in, size_
 uint32_t aes256_key_wrap_pad_decrypt(void *key, size_t key_size, void *in, size_t in_size, void *out, size_t out_size);
 
 // AES-EAX
-uint64_t aes128_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header, size_t header_size,
-							void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes128_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header, size_t header_size,
-							void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes128_eax_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *header, size_t header_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t aes128_eax_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *header, size_t header_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
-uint64_t aes192_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header, size_t header_size,
-							void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes192_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header, size_t header_size,
-							void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes192_eax_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *header, size_t header_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t aes192_eax_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *header, size_t header_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
-uint64_t aes256_eax_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header, size_t header_size,
-							void *in, size_t in_size, void *out, size_t out_size);
-uint64_t aes256_eax_decrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *header, size_t header_size,
-							void *in, size_t in_size, void *out, size_t out_size);
+uint64_t aes256_eax_encrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *header, size_t header_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
+uint64_t aes256_eax_decrypt(void *key, size_t key_size, void *nonce, byte_t nonce_size, void *header, size_t header_size, void *in,
+							size_t in_size, void *out, size_t out_size, void *tag, byte_t tag_size);
 
 // AES-OCB
 uint64_t aes128_ocb_encrypt(void *key, size_t key_size, byte_t tag_size, void *nonce, byte_t nonce_size, void *associated_data,
