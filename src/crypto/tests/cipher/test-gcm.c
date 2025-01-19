@@ -28,8 +28,15 @@ int32_t aes128_gcm_suite(void)
 
 	hex_to_block(key, 16, "00000000000000000000000000000000");
 	hex_to_block(iv, 12, "000000000000000000000000");
+	memset(tag, 0, 16);
 
-	result = aes128_gcm_encrypt(key, 16, iv, 12, NULL, 0, NULL, 0, ciphertext, 64, tag, 32);
+	result = aes128_gcm_encrypt(key, 16, iv, 12, NULL, 0, NULL, 0, ciphertext, 64, tag, 16);
+	status += CHECK_VALUE(result, 0);
+	status += CHECK_BLOCK(tag, 16, "58e2fccefa7e3061367f1d57a4e7455a");
+
+	memset(tag, 0, 16);
+
+	result = aes128_gcm_decrypt(key, 16, iv, 12, NULL, 0, ciphertext, 0, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 0);
 	status += CHECK_BLOCK(tag, 16, "58e2fccefa7e3061367f1d57a4e7455a");
 
@@ -37,6 +44,7 @@ int32_t aes128_gcm_suite(void)
 
 	hex_to_block(key, 16, "00000000000000000000000000000000");
 	hex_to_block(iv, 12, "000000000000000000000000");
+	memset(tag, 0, 16);
 	hex_to_block(plaintext, 16, "00000000000000000000000000000000");
 
 	result = aes128_gcm_encrypt(key, 16, iv, 12, NULL, 0, plaintext, 16, ciphertext, 64, tag, 16);
@@ -45,14 +53,18 @@ int32_t aes128_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "ab6e47d42cec13bdf53a67b21257bddf");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_gcm_decrypt(key, 16, iv, 12, NULL, 0, ciphertext, 16, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 16);
 	status += CHECK_BLOCK(plaintext, 16, "00000000000000000000000000000000");
+	status += CHECK_BLOCK(tag, 16, "ab6e47d42cec13bdf53a67b21257bddf");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 16, "feffe9928665731c6d6a8f9467308308");
 	hex_to_block(iv, 12, "cafebabefacedbaddecaf888");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 64,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
@@ -65,17 +77,21 @@ int32_t aes128_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "4d5c2af327cd64a62cf35abd2ba6fab4");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_gcm_decrypt(key, 16, iv, 12, NULL, 0, ciphertext, 64, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 64);
 	status += CHECK_BLOCK(
 		plaintext, 64,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
+	status += CHECK_BLOCK(tag, 16, "4d5c2af327cd64a62cf35abd2ba6fab4");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 16, "feffe9928665731c6d6a8f9467308308");
 	hex_to_block(iv, 12, "cafebabefacedbaddecaf888");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -88,17 +104,21 @@ int32_t aes128_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "5bc94fbc3221a5db94fae95ae7121a47");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_gcm_decrypt(key, 16, iv, 12, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "5bc94fbc3221a5db94fae95ae7121a47");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 16, "feffe9928665731c6d6a8f9467308308");
 	hex_to_block(iv, 8, "cafebabefacedbad");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -111,11 +131,14 @@ int32_t aes128_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "3612d2e79e3b0785561be14aaca2fccb");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_gcm_decrypt(key, 16, iv, 8, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "3612d2e79e3b0785561be14aaca2fccb");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -123,6 +146,7 @@ int32_t aes128_gcm_suite(void)
 	hex_to_block(
 		iv, 60, "9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -135,11 +159,14 @@ int32_t aes128_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "619cc5aefffe0bfa462af43c1699d050");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes128_gcm_decrypt(key, 16, iv, 60, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "619cc5aefffe0bfa462af43c1699d050");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -162,8 +189,15 @@ int32_t aes192_gcm_suite(void)
 
 	hex_to_block(key, 24, "000000000000000000000000000000000000000000000000");
 	hex_to_block(iv, 12, "000000000000000000000000");
+	memset(tag, 0, 16);
 
-	result = aes192_gcm_encrypt(key, 24, iv, 12, NULL, 0, NULL, 0, ciphertext, 64, tag, 32);
+	result = aes192_gcm_encrypt(key, 24, iv, 12, NULL, 0, NULL, 0, ciphertext, 64, tag, 16);
+	status += CHECK_VALUE(result, 0);
+	status += CHECK_BLOCK(tag, 16, "cd33b28ac773f74ba00ed1f312572435");
+
+	memset(tag, 0, 16);
+
+	result = aes192_gcm_decrypt(key, 24, iv, 12, NULL, 0, ciphertext, 0, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 0);
 	status += CHECK_BLOCK(tag, 16, "cd33b28ac773f74ba00ed1f312572435");
 
@@ -172,6 +206,7 @@ int32_t aes192_gcm_suite(void)
 	hex_to_block(key, 24, "000000000000000000000000000000000000000000000000");
 	hex_to_block(iv, 12, "000000000000000000000000");
 	hex_to_block(plaintext, 16, "00000000000000000000000000000000");
+	memset(tag, 0, 16);
 
 	result = aes192_gcm_encrypt(key, 24, iv, 12, NULL, 0, plaintext, 16, ciphertext, 64, tag, 16);
 	status += CHECK_VALUE(result, 16);
@@ -179,14 +214,18 @@ int32_t aes192_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "2ff58d80033927ab8ef4d4587514f0fb");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes192_gcm_decrypt(key, 24, iv, 12, NULL, 0, ciphertext, 16, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 16);
 	status += CHECK_BLOCK(plaintext, 16, "00000000000000000000000000000000");
+	status += CHECK_BLOCK(tag, 16, "2ff58d80033927ab8ef4d4587514f0fb");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 24, "feffe9928665731c6d6a8f9467308308feffe9928665731c");
 	hex_to_block(iv, 12, "cafebabefacedbaddecaf888");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 64,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
@@ -199,17 +238,21 @@ int32_t aes192_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "9924a7c8587336bfb118024db8674a14");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes192_gcm_decrypt(key, 24, iv, 12, NULL, 0, ciphertext, 64, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 64);
 	status += CHECK_BLOCK(
 		plaintext, 64,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
+	status += CHECK_BLOCK(tag, 16, "9924a7c8587336bfb118024db8674a14");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 24, "feffe9928665731c6d6a8f9467308308feffe9928665731c");
 	hex_to_block(iv, 12, "cafebabefacedbaddecaf888");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -222,17 +265,21 @@ int32_t aes192_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "2519498e80f1478f37ba55bd6d27618c");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes192_gcm_decrypt(key, 24, iv, 12, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "2519498e80f1478f37ba55bd6d27618c");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 24, "feffe9928665731c6d6a8f9467308308feffe9928665731c");
 	hex_to_block(iv, 8, "cafebabefacedbad");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -245,11 +292,14 @@ int32_t aes192_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "65dcc57fcf623a24094fcca40d3533f8");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes192_gcm_decrypt(key, 24, iv, 8, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "65dcc57fcf623a24094fcca40d3533f8");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -257,6 +307,7 @@ int32_t aes192_gcm_suite(void)
 	hex_to_block(
 		iv, 60, "9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -269,11 +320,14 @@ int32_t aes192_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "dcf566ff291c25bbb8568fc3d376a6d9");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes192_gcm_decrypt(key, 24, iv, 60, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "dcf566ff291c25bbb8568fc3d376a6d9");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -296,8 +350,15 @@ int32_t aes256_gcm_suite(void)
 
 	hex_to_block(key, 32, "0000000000000000000000000000000000000000000000000000000000000000");
 	hex_to_block(iv, 12, "000000000000000000000000");
+	memset(tag, 0, 16);
 
-	result = aes256_gcm_encrypt(key, 32, iv, 12, NULL, 0, NULL, 0, ciphertext, 64, tag, 32);
+	result = aes256_gcm_encrypt(key, 32, iv, 12, NULL, 0, NULL, 0, ciphertext, 64, tag, 16);
+	status += CHECK_VALUE(result, 0);
+	status += CHECK_BLOCK(tag, 16, "530f8afbc74536b9a963b4f1c4cb738b");
+
+	memset(tag, 0, 16);
+
+	result = aes256_gcm_decrypt(key, 32, iv, 12, NULL, 0, ciphertext, 0, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 0);
 	status += CHECK_BLOCK(tag, 16, "530f8afbc74536b9a963b4f1c4cb738b");
 
@@ -305,6 +366,7 @@ int32_t aes256_gcm_suite(void)
 
 	hex_to_block(key, 32, "0000000000000000000000000000000000000000000000000000000000000000");
 	hex_to_block(iv, 12, "000000000000000000000000");
+	memset(tag, 0, 16);
 	hex_to_block(plaintext, 16, "00000000000000000000000000000000");
 
 	result = aes256_gcm_encrypt(key, 32, iv, 12, NULL, 0, plaintext, 16, ciphertext, 64, tag, 16);
@@ -313,14 +375,18 @@ int32_t aes256_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "d0d1c8a799996bf0265b98b5d48ab919");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes256_gcm_decrypt(key, 32, iv, 12, NULL, 0, ciphertext, 16, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 16);
 	status += CHECK_BLOCK(plaintext, 16, "00000000000000000000000000000000");
+	status += CHECK_BLOCK(tag, 16, "d0d1c8a799996bf0265b98b5d48ab919");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 32, "feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308");
 	hex_to_block(iv, 12, "cafebabefacedbaddecaf888");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 64,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
@@ -333,17 +399,21 @@ int32_t aes256_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "b094dac5d93471bdec1a502270e3cc6c");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes256_gcm_decrypt(key, 32, iv, 12, NULL, 0, ciphertext, 64, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 64);
 	status += CHECK_BLOCK(
 		plaintext, 64,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
+	status += CHECK_BLOCK(tag, 16, "b094dac5d93471bdec1a502270e3cc6c");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 32, "feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308");
 	hex_to_block(iv, 12, "cafebabefacedbaddecaf888");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -356,17 +426,21 @@ int32_t aes256_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "76fc6ece0f4e1768cddf8853bb2d551b");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes256_gcm_decrypt(key, 32, iv, 12, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "76fc6ece0f4e1768cddf8853bb2d551b");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
 	hex_to_block(key, 32, "feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308");
 	hex_to_block(iv, 8, "cafebabefacedbad");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -379,11 +453,14 @@ int32_t aes256_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "3a337dbf46a792c45e454913fe2ea8f2");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes256_gcm_decrypt(key, 32, iv, 8, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "3a337dbf46a792c45e454913fe2ea8f2");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 
@@ -391,6 +468,7 @@ int32_t aes256_gcm_suite(void)
 	hex_to_block(
 		iv, 60, "9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b");
 	hex_to_block(ad, 20, "feedfacedeadbeeffeedfacedeadbeefabaddad2");
+	memset(tag, 0, 16);
 	hex_to_block(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
@@ -403,11 +481,14 @@ int32_t aes256_gcm_suite(void)
 	status += CHECK_BLOCK(tag, 16, "a44a8266ee1c8eb0c8b5d4cf5ae9f19a");
 
 	memset(plaintext, 0, 64);
+	memset(tag, 0, 16);
+
 	result = aes256_gcm_decrypt(key, 32, iv, 60, ad, 20, ciphertext, 60, plaintext, 64, tag, 16);
 	status += CHECK_VALUE(result, 60);
 	status += CHECK_BLOCK(
 		plaintext, 60,
 		"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+	status += CHECK_BLOCK(tag, 16, "a44a8266ee1c8eb0c8b5d4cf5ae9f19a");
 
 	// ------------------------------------------------------------------------------------------------------------------------------------
 

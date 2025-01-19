@@ -323,10 +323,7 @@ uint64_t cipher_gcm_decrypt_final(cipher_ctx *cctx, void *ciphertext, size_t cip
 	cctx->_encrypt(cctx->_key, cctx->gcm.j, cctx->gcm.j);
 	XOR16(buffer, cctx->gcm.s, cctx->gcm.j);
 
-	if (memcmp(tag, buffer, tag_size) != 0)
-	{
-		return 0;
-	}
+	memcpy(tag, buffer, MIN(tag_size, 16));
 
 	return result;
 }
