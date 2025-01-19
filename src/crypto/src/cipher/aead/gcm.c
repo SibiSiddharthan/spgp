@@ -348,7 +348,7 @@ static uint64_t gcm_ecnrypt_common(cipher_algorithm algorithm, void *key, size_t
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -365,7 +365,7 @@ static uint64_t gcm_decrypt_common(cipher_algorithm algorithm, void *key, size_t
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{

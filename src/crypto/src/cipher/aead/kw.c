@@ -308,7 +308,7 @@ static uint32_t key_wrap_encrypt_common(cipher_algorithm algorithm, void *key, s
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -325,7 +325,7 @@ static uint32_t key_wrap_decrypt_common(cipher_algorithm algorithm, void *key, s
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -342,7 +342,7 @@ static uint32_t key_wrap_pad_encrypt_common(cipher_algorithm algorithm, void *ke
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -359,7 +359,7 @@ static uint32_t key_wrap_pad_decrypt_common(cipher_algorithm algorithm, void *ke
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{

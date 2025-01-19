@@ -344,9 +344,9 @@ static uint64_t eax_encrypt_common(cipher_algorithm algorithm, void *key, size_t
 {
 	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
-	byte_t buffer[512];
+	byte_t buffer[1024];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 1024, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -361,9 +361,9 @@ static uint64_t eax_decrypt_common(cipher_algorithm algorithm, void *key, size_t
 {
 	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
-	byte_t buffer[512];
+	byte_t buffer[1024];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 1024, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{

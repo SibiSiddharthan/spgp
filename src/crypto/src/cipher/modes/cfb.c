@@ -741,7 +741,7 @@ static uint64_t cfb1_encrypt(cipher_algorithm algorithm, void *key, size_t key_s
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -765,7 +765,7 @@ static uint64_t cfb1_decrypt(cipher_algorithm algorithm, void *key, size_t key_s
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -789,7 +789,7 @@ static uint64_t cfb8_encrypt(cipher_algorithm algorithm, void *key, size_t key_s
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -813,7 +813,7 @@ static uint64_t cfb8_decrypt(cipher_algorithm algorithm, void *key, size_t key_s
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -837,7 +837,7 @@ static uint64_t cfb128_encrypt(cipher_algorithm algorithm, void *key, size_t key
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -861,7 +861,7 @@ static uint64_t cfb128_decrypt(cipher_algorithm algorithm, void *key, size_t key
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{

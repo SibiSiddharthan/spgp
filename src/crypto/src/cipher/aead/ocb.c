@@ -193,8 +193,8 @@ static cipher_ctx *cipher_ocb_init_common(cipher_ctx *cctx, byte_t tag_size, voi
 
 	// Initialize L
 	cctx->_encrypt(cctx->_key, zero, cctx->ocb->ls[0]); // L*
-	double_block(cctx->ocb->ls[1], cctx->ocb->ls[0]);    // L$
-	double_block(cctx->ocb->ls[2], cctx->ocb->ls[1]);    // L0
+	double_block(cctx->ocb->ls[1], cctx->ocb->ls[0]);   // L$
+	double_block(cctx->ocb->ls[2], cctx->ocb->ls[1]);   // L0
 
 	// Calculate sum
 	calculate_hash(cctx, associated_data, ad_size);
@@ -371,9 +371,9 @@ static uint64_t ocb_encrypt_common(cipher_algorithm algorithm, void *key, size_t
 {
 	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
-	byte_t buffer[512];
+	byte_t buffer[2048];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 2048, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -389,9 +389,9 @@ static uint64_t ocb_decrypt_common(cipher_algorithm algorithm, void *key, size_t
 {
 	// A big enough buffer for the cipher_ctx.
 	cipher_ctx *cctx = NULL;
-	byte_t buffer[512];
+	byte_t buffer[2048];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 2048, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{

@@ -147,7 +147,7 @@ int32_t cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_s
 
 	// First half of the key is the cmac key. Second half is the encryption key.
 	cm_ctx = cmac_init(cm_ctx, cipher_ctx_size, algorithm, key, key_size / 2);
-	ci_ctx = cipher_init(ci_ctx, cmac_ctx_size, algorithm, PTR_OFFSET(key, key_size / 2), key_size / 2);
+	ci_ctx = cipher_init(ci_ctx, cmac_ctx_size, 0, algorithm, PTR_OFFSET(key, key_size / 2), key_size / 2);
 
 	if (ci_ctx == NULL || cm_ctx == NULL)
 	{
@@ -444,7 +444,7 @@ static byte_t cipher_siv_gcm_derive_keys(cipher_algorithm algorithm, void *key, 
 	byte_t block[16] = {0};
 	uint32_t *oc = (uint32_t *)&block[0];
 
-	cctx = cipher_init(cipher_buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(cipher_buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -522,7 +522,7 @@ uint64_t cipher_siv_gcm_encrypt(cipher_algorithm algorithm, void *key, size_t ke
 		return 0;
 	}
 
-	cctx = cipher_init(cipher_buffer, 512, algorithm, encryption_key, encryption_key_size);
+	cctx = cipher_init(cipher_buffer, 512, CIPHER_AEAD_INIT, algorithm, encryption_key, encryption_key_size);
 
 	if (cctx == NULL)
 	{
@@ -588,7 +588,7 @@ uint64_t cipher_siv_gcm_decrypt(cipher_algorithm algorithm, void *key, size_t ke
 		return 0;
 	}
 
-	cctx = cipher_init(cipher_buffer, 512, algorithm, encryption_key, encryption_key_size);
+	cctx = cipher_init(cipher_buffer, 512, CIPHER_AEAD_INIT, algorithm, encryption_key, encryption_key_size);
 
 	if (cctx == NULL)
 	{

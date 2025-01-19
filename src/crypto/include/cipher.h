@@ -27,10 +27,9 @@ typedef struct _cipher_ctx
 	cipher_padding padding : 8;
 	uint16_t ctx_size;
 	uint16_t block_size;
-	byte_t buffer[32];
-
 	uint16_t aead_size;
-	uint16_t aead_realloc;
+	uint16_t flags;
+	byte_t buffer[32];
 
 	union {
 		void *aead;
@@ -83,6 +82,8 @@ typedef struct _cipher_ctx
 	void (*_decrypt)(void *, void *, void *);
 } cipher_ctx;
 
+#define CIPHER_AEAD_INIT 0x1
+
 size_t cipher_ctx_size(cipher_algorithm algorithm);
 size_t cipher_aead_ctx_size(cipher_algorithm algorithm, cipher_aead_algorithm aead);
 
@@ -90,7 +91,7 @@ size_t cipher_key_size(cipher_algorithm algorithm);
 size_t cipher_block_size(cipher_algorithm algorithm);
 size_t cipher_iv_size(cipher_algorithm algorithm);
 
-cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size);
+cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm algorithm, void *key, size_t key_size);
 cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size);
 void cipher_delete(cipher_ctx *cctx);
 

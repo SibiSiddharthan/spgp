@@ -249,7 +249,7 @@ size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 
 	if (block_size == 16)
 	{
-		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+		cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 		if (cctx == NULL)
 		{
@@ -267,7 +267,7 @@ size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 	}
 	else if (block_size == 8)
 	{
-		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+		cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 		if (cctx == NULL)
 		{
@@ -311,7 +311,7 @@ size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 
 	if (block_size == 16)
 	{
-		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+		cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 		if (cctx == NULL)
 		{
@@ -329,7 +329,7 @@ size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, 
 	}
 	else if (block_size == 8)
 	{
-		cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+		cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 		if (cctx == NULL)
 		{
@@ -395,7 +395,7 @@ size_t pgp_aead_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 		return 0;
 	}
 
-	cctx = cipher_init(buffer, 2048, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 2048, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -469,7 +469,7 @@ size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 		return 0;
 	}
 
-	cctx = cipher_init(buffer, 2048, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 2048, CIPHER_AEAD_INIT, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{

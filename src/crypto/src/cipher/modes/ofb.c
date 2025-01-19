@@ -149,7 +149,7 @@ static uint64_t ofb_common(cipher_algorithm algorithm, void *key, size_t key_siz
 		return 0;
 	}
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{

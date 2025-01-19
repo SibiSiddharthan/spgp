@@ -54,6 +54,33 @@ static inline size_t key_ctx_size(cipher_algorithm algorithm)
 	}
 }
 
+static inline size_t aead_ctx_size(cipher_aead_algorithm aead)
+{
+	switch (aead)
+	{
+	case CIPHER_AEAD_EAX:
+		return sizeof(*((cipher_ctx *)NULL)->eax);
+		break;
+	case CIPHER_AEAD_GCM:
+		return sizeof(*((cipher_ctx *)NULL)->gcm);
+		break;
+	case CIPHER_AEAD_OCB:
+		return sizeof(*((cipher_ctx *)NULL)->ocb);
+		break;
+	case CIPHER_AEAD_SIV_GCM:
+		// TODO determine for optimizations
+		return 0;
+		break;
+	case CIPHER_AEAD_KW:
+	case CIPHER_AEAD_CCM:
+	case CIPHER_AEAD_SIV_CMAC:
+		return 0;
+		break;
+	default:
+		return 0;
+	}
+}
+
 static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 {
 	switch (cctx->algorithm)
@@ -125,32 +152,7 @@ size_t cipher_ctx_size(cipher_algorithm algorithm)
 
 size_t cipher_aead_ctx_size(cipher_algorithm algorithm, cipher_aead_algorithm aead)
 {
-	size_t size = sizeof(cipher_ctx) + key_ctx_size(algorithm);
-
-	switch (aead)
-	{
-	case CIPHER_AEAD_EAX:
-		size += sizeof(*((cipher_ctx *)NULL)->eax);
-		break;
-	case CIPHER_AEAD_GCM:
-		size += sizeof(*((cipher_ctx *)NULL)->gcm);
-		break;
-	case CIPHER_AEAD_OCB:
-		size += sizeof(*((cipher_ctx *)NULL)->ocb);
-		break;
-	case CIPHER_AEAD_SIV_GCM:
-		// TODO determine for optimizations
-		break;
-	case CIPHER_AEAD_KW:
-	case CIPHER_AEAD_CCM:
-	case CIPHER_AEAD_SIV_CMAC:
-		size += 0;
-		break;
-	default:
-		return 0;
-	}
-
-	return size;
+	size_t size = sizeof(cipher_ctx) + key_ctx_size(algorithm) + aead_ctx_size(aead);
 }
 
 size_t cipher_key_size(cipher_algorithm algorithm)
@@ -215,13 +217,14 @@ size_t cipher_iv_size(cipher_algorithm algorithm)
 	return 16;
 }
 
-cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void *key, size_t key_size)
+cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm algorithm, void *key, size_t key_size)
 {
 	cipher_ctx *cctx = (cipher_ctx *)ptr;
 
 	size_t ctx_size = key_ctx_size(algorithm);
 	size_t required_size = sizeof(cipher_ctx) + ctx_size;
-	size_t total_size = ROUND_UP(required_size, 16);
+	size_t total_size = required_size;
+	size_t aead_size = 0;
 
 	uint32_t block_size = 16;
 
@@ -318,7 +321,6 @@ cipher_ctx *cipher_init(void *ptr, size_t size, cipher_algorithm algorithm, void
 	cctx->ctx_size = total_size;
 
 	cctx->aead_size = total_size - ROUND_UP(required_size, 16);
-	cctx->aead_realloc = 0;
 	cctx->aead = cctx->aead_size > 0 ? PTR_OFFSET(ptr, ROUND_UP(required_size, 16)) : NULL;
 
 	cctx->_key = _ctx;
@@ -350,7 +352,7 @@ cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size)
 		return NULL;
 	}
 
-	result = cipher_init(cctx, required_size, algorithm, key, key_size);
+	result = cipher_init(cctx, required_size, 0, algorithm, key, key_size);
 
 	if (result == NULL)
 	{
@@ -362,8 +364,10 @@ cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size)
 
 void cipher_delete(cipher_ctx *cctx)
 {
-	// Set these to invalid values.
-	cctx->algorithm = -1;
+	if (cctx->flags & CIPHER_AEAD_INIT)
+	{
+		free(cctx->aead);
+	}
 
 	memset(cctx->_key, 0, cctx->ctx_size);
 	free(cctx);

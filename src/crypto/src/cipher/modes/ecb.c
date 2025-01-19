@@ -224,7 +224,7 @@ static uint64_t ecb_encrypt_common(cipher_algorithm algorithm, void *key, size_t
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
@@ -248,7 +248,7 @@ static uint64_t ecb_decrypt_common(cipher_algorithm algorithm, void *key, size_t
 	cipher_ctx *cctx = NULL;
 	byte_t buffer[512];
 
-	cctx = cipher_init(buffer, 512, algorithm, key, key_size);
+	cctx = cipher_init(buffer, 512, 0, algorithm, key, key_size);
 
 	if (cctx == NULL)
 	{
