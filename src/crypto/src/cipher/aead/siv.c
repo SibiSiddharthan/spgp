@@ -132,17 +132,17 @@ static uint64_t siv_cmac_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, v
 	return processed;
 }
 
-int32_t cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_size, void *ci_ctx, size_t cipher_ctx_size, void *cm_ctx,
+uint32_t cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_size, void *ci_ctx, size_t cipher_ctx_size, void *cm_ctx,
 							 size_t cmac_ctx_size)
 {
 	if (key_size != 32 && key_size != 48 && key_size != 64)
 	{
-		return -1;
+		return -1u;
 	}
 
 	if (ci_ctx == NULL || cm_ctx == NULL)
 	{
-		return -1;
+		return -1u;
 	}
 
 	// First half of the key is the cmac key. Second half is the encryption key.
@@ -151,12 +151,12 @@ int32_t cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_s
 
 	if (ci_ctx == NULL || cm_ctx == NULL)
 	{
-		return -1;
+		return -1u;
 	}
 
 	if (((cipher_ctx *)ci_ctx)->block_size != 16)
 	{
-		return -1;
+		return -1u;
 	}
 
 	return 0;
