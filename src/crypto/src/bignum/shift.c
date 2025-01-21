@@ -41,13 +41,15 @@ bignum_t *bignum_lshift(bignum_t *r, bignum_t *a, uint32_t shift)
 	uint32_t r_words = CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD);
 
 	// Last word
-	r->words[r_words - 1] = ((r_words - 1 - word_shift) < a_words) ? (a->words[r_words - 1 - word_shift] << bit_shift) : 0;
-	r->words[r_words - 1] |= (bit_shift != 0) ? (a->words[r_words - 2 - word_shift] >> (BIGNUM_BITS_PER_WORD - bit_shift)) : 0;
+	// r->words[r_words - 1] = ((r_words - 1 - word_shift) < a_words) ? (a->words[r_words - 1 - word_shift] << bit_shift) : 0;
+	// r->words[r_words - 1] |= (bit_shift != 0) ? (a->words[r_words - 2 - word_shift] >> (BIGNUM_BITS_PER_WORD - bit_shift)) : 0;
 
-	for (uint32_t i = r_words - 2; i > word_shift; --i)
+	for (uint32_t i = r_words - 1; i > word_shift; --i)
 	{
-		r->words[i] = a->words[i - word_shift] << bit_shift;
-		r->words[i] |= (bit_shift != 0) ? (a->words[i - 1 - word_shift] >> (BIGNUM_BITS_PER_WORD - bit_shift)) : 0;
+		r->words[i] = (a_words > (i - word_shift)) ? (a->words[i - word_shift] << bit_shift) : 0;
+		r->words[i] |= (bit_shift != 0)
+						   ? ((a_words > (i - 1 - word_shift)) ? (a->words[i - 1 - word_shift] >> (BIGNUM_BITS_PER_WORD - bit_shift)) : 0)
+						   : 0;
 	}
 
 	// First word after zeroes
