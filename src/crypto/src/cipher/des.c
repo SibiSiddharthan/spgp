@@ -279,7 +279,7 @@ static inline uint32_t PP(uint32_t r)
 	byte_t *rp = (byte_t *)&r;
 	byte_t *op = (byte_t *)&o;
 
-	for (uint8_t i = 0; i < 48; ++i)
+	for (uint8_t i = 0; i < 32; ++i)
 	{
 		SET_BIT(op, i, GET_BIT(rp, P[i]));
 	}
