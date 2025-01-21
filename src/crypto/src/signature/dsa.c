@@ -635,7 +635,7 @@ dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size)
 	}
 
 	dsign->r = PTR_OFFSET(dsign, sizeof(dsa_signature));
-	dsign->s = PTR_OFFSET(dsign, sizeof(dsa_signature) + bignum_size(key->p->bits));
+	dsign->s = PTR_OFFSET(dsign, sizeof(dsa_signature) + bignum_size(key->q->bits));
 
 	dsign->r = bignum_init(dsign->r, bignum_size(key->q->bits), key->q->bits);
 	dsign->s = bignum_init(dsign->s, bignum_size(key->q->bits), key->q->bits);
