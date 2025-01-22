@@ -13,6 +13,7 @@
 #include <round.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 size_t ec_group_size(uint32_t bits);
 
@@ -114,6 +115,7 @@ ec_group *ec_group_new(curve_id id)
 		return NULL;
 	}
 
+	group->bits = bits;
 	group->bctx = bignum_ctx_new(32 * bignum_size(bits));
 
 	switch (id)
@@ -135,6 +137,9 @@ ec_group *ec_group_new(curve_id id)
 
 		paramters->a = PTR_OFFSET(paramters, sizeof(ec_prime_curve));
 		paramters->b = PTR_OFFSET(paramters, sizeof(ec_prime_curve) + bignum_size(bits));
+
+		bignum_init(paramters->a, bignum_size(bits), bits);
+		bignum_init(paramters->b, bignum_size(bits), bits);
 
 		paramters->a = bignum_set_hex(paramters->a, "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 64);
 		paramters->b = bignum_set_hex(paramters->b, "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 64);
@@ -201,4 +206,64 @@ void ec_group_delete(ec_group *eg)
 	bignum_ctx_delete(eg->bctx);
 	free(eg->parameters);
 	free(eg);
+}
+
+ec_point *ec_point_new(ec_group *eg)
+{
+	ec_point *point = NULL;
+	uint32_t bits = eg->bits;
+
+	point = malloc(sizeof(ec_point) + (2 * bignum_size(bits)));
+
+	if (point == NULL)
+	{
+		return NULL;
+	}
+
+	memset(point, 0, sizeof(ec_point) + (2 * bignum_size(bits)));
+
+	point->x = PTR_OFFSET(point, sizeof(ec_point));
+	bignum_init(point->x, bignum_size(bits), bits);
+
+	point->y = PTR_OFFSET(point, sizeof(ec_point) + bignum_size(bits));
+	bignum_init(point->y, bignum_size(bits), bits);
+
+	return point;
+}
+
+ec_point *ec_point_copy(ec_point *dst, ec_point *src)
+{
+	void *result = NULL;
+
+	if (dst == src)
+	{
+		return dst;
+	}
+
+	result = bignum_copy(dst->x, src->x);
+
+	if (result == NULL)
+	{
+		return NULL;
+	}
+
+	result = bignum_copy(dst->y, src->y);
+
+	if (result == NULL)
+	{
+		return NULL;
+	}
+
+	return dst;
+}
+
+void ec_point_infinity(ec_group *g, ec_point *r)
+{
+	bignum_zero(r->x);
+	bignum_zero(r->y);
+}
+
+void ec_point_delete(ec_point *ep)
+{
+	free(ep);
 }
