@@ -73,26 +73,31 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 
 	bignum_ctx_start(eg->bctx, 3 * bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
 
-	lambda = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
-	x = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
-	y = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	lambda = bignum_ctx_allocate_bignum(eg->bctx, 3 * eg->bits);
+	x = bignum_ctx_allocate_bignum(eg->bctx, 3 * eg->bits);
+	y = bignum_ctx_allocate_bignum(eg->bctx, 3 * eg->bits);
 
 	// Compute lambda = (3(x^2) + A )/ 2y
 	x = bignum_sqr(eg->bctx, x, a->x);
-	x = bignum_lshift(x, x, 1);
+	y = bignum_lshift(y, x, 1);
+	x = bignum_add(x, x, y);
 	x = bignum_add(x, x, parameters->a);
 
+	bignum_zero(y);
 	y = bignum_lshift(y, a->y, 1);
 	y = bignum_modinv(eg->bctx, y, y, eg->p);
 
 	lambda = bignum_modmul(eg->bctx, lambda, x, y, eg->p);
 
 	// Compute x' = lambda^2 - 2x
+	bignum_zero(x);
+	bignum_zero(y);
 	x = bignum_sqr(eg->bctx, x, lambda);
 	y = bignum_lshift(y, a->x, 1);
 	x = bignum_modsub(eg->bctx, x, x, y, eg->p);
 
 	// Compute y' = lambda(x - x') - y
+	bignum_zero(y);
 	y = bignum_sub(y, a->x, x);
 	y = bignum_mul(eg->bctx, y, y, lambda);
 	y = bignum_modsub(eg->bctx, y, y, a->y, eg->p);
@@ -160,9 +165,9 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 
 	bignum_ctx_start(eg->bctx, 3 * bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
 
-	lambda = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
-	x = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
-	y = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(3 * ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	lambda = bignum_ctx_allocate_bignum(eg->bctx, 3 * eg->bits);
+	x = bignum_ctx_allocate_bignum(eg->bctx, 3 * eg->bits);
+	y = bignum_ctx_allocate_bignum(eg->bctx, 3 * eg->bits);
 
 	// Compute lambda = (y2 - y1)/ (x2 - x1)
 	y = bignum_sub(y, b->y, a->y);
@@ -173,11 +178,13 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 	lambda = bignum_modmul(eg->bctx, lambda, y, x, eg->p);
 
 	// Compute x' = lambda^2 - x1 - x2
+	bignum_zero(x);
 	x = bignum_sqr(eg->bctx, x, lambda);
 	x = bignum_sub(x, x, a->x);
 	x = bignum_modsub(eg->bctx, x, x, b->x, eg->p);
 
 	// Compute y' = lambda(x - x') - y
+	bignum_zero(y);
 	y = bignum_sub(y, a->x, x);
 	y = bignum_mul(eg->bctx, y, y, lambda);
 	y = bignum_modsub(eg->bctx, y, y, a->y, eg->p);
@@ -208,18 +215,28 @@ ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum
 		}
 	}
 
-	bignum_ctx_start(eg->bctx, 4 * bignum_size(ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	bignum_ctx_start(eg->bctx, 4 * bignum_size(ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)) + (2 * sizeof(ec_point)));
 
-	x0 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
-	y0 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	x0 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
+	y0 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
 
-	x1 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
-	y1 = bignum_ctx_allocate_bignum(eg->bctx, bignum_size(ROUND_UP(eg->bits, BIGNUM_BITS_PER_WORD)));
+	x1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
+	y1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits);
+
+	r0 = bignum_ctx_allocate_raw(eg->bctx, sizeof(ec_point));
+	r1 = bignum_ctx_allocate_raw(eg->bctx, sizeof(ec_point));
 
 	r0->x = x0;
 	r0->y = y0;
 
-	ec_point_infinity(eg, r0);
+	if ((n->words[0] & 0x1) != 0x1)
+	{
+		ec_point_infinity(eg, r0);
+	}
+	else
+	{
+		ec_point_copy(r0, a);
+	}
 
 	r1->x = x1;
 	r1->y = y1;
@@ -229,16 +246,21 @@ ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum
 
 	for (uint32_t i = 1; i < n->bits; ++i)
 	{
+		r1 = ec_prime_point_double(eg, r1, r1);
+
 		if (n->words[i / BIGNUM_BITS_PER_WORD] & ((bn_word_t)1 << (i % BIGNUM_BITS_PER_WORD)))
 		{
 			r0 = ec_prime_point_add(eg, r0, r0, r1);
-			r1 = ec_prime_point_double(eg, r1, r1);
 		}
-		else
-		{
-			r1 = ec_prime_point_add(eg, r1, r0, r1);
-			r0 = ec_prime_point_double(eg, r0, r0);
-		}
+		//{
+		//	r0 = ec_prime_point_add(eg, r0, r0, r1);
+		//	r1 = ec_prime_point_double(eg, r1, r1);
+		// }
+		// else
+		//{
+		//	r1 = ec_prime_point_add(eg, r1, r0, r1);
+		//	r0 = ec_prime_point_double(eg, r0, r0);
+		// }
 	}
 
 	ec_point_copy(r, r0);
@@ -672,4 +694,9 @@ uint32_t ec_prime_curve_validate_parameters(ec_group *group, hash_ctx *hctx, voi
 	bignum_ctx_end(group->bctx);
 
 	return 1;
+}
+
+int32_t bignum_modsqrt(bignum_ctx *bctx, bignum_t *r1, bignum_t *r2, bignum_t *a, bignum_t *m)
+{
+	return 0;
 }
