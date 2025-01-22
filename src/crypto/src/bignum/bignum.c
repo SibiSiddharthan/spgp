@@ -243,9 +243,14 @@ void bignum_set_word(bignum_t *bn, bn_word_t value)
 	// Zero the words.
 	memset(bn->words, 0, bn->size);
 
+	if (value == 0)
+	{
+		return;
+	}
+
 	// Set the least significant word.
 	bn->words[0] = value;
-	bn->bits = bsr_64(value);
+	bn->bits = bsr_64(value) + 1;
 }
 
 void bignum_set_sign(bignum_t *bn, int8_t sign)
