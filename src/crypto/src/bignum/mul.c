@@ -63,6 +63,8 @@ bignum_t *bignum_mul(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)
 	memset(words, 0, ctx_size);
 
 	bignum_mul_words(words, a->words, b->words, BIGNUM_WORD_COUNT(a), BIGNUM_WORD_COUNT(b));
+
+	memset(r->words, 0, r->size);
 	memcpy(r->words, words, CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE);
 
 	r->sign = a->sign * b->sign;
@@ -121,6 +123,8 @@ bignum_t *bignum_sqr(bignum_ctx *bctx, bignum_t *r, bignum_t *a)
 	memset(words, 0, ctx_size);
 
 	bignum_sqr_words(words, a->words, BIGNUM_WORD_COUNT(a));
+
+	memset(r->words, 0, r->size);
 	memcpy(r->words, words, CEIL_DIV(required_bits, BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE);
 
 	r->sign = 1;
