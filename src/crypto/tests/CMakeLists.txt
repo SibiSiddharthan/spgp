@@ -24,6 +24,15 @@ function(crypto_cipher_tests ...)
 	endforeach()
 endfunction()
 
+function(crypto_ec_tests ...)
+	foreach(test ${ARGV})
+		add_executable(test-${test} ec/test-${test}.c)
+		target_include_directories(test-${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+		target_link_libraries(test-${test} crypto)
+		add_test(NAME test-${test} COMMAND test-${test} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	endforeach()
+endfunction()
+
 function(crypto_hash_tests ...)
 	foreach(test ${ARGV})
 		add_executable(test-${test} hash/test-${test}.c)
@@ -98,6 +107,10 @@ gcm
 ocb
 siv
 kw
+)
+
+crypto_ec_tests(
+ecc
 )
 
 crypto_hash_tests(
