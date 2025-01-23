@@ -85,6 +85,7 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 
 	bignum_zero(y);
 	y = bignum_lshift(y, a->y, 1);
+	y = bignum_mod(eg->bctx, y, y, eg->p);
 	y = bignum_modinv(eg->bctx, y, y, eg->p);
 
 	lambda = bignum_modmul(eg->bctx, lambda, x, y, eg->p);
@@ -173,6 +174,7 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 	y = bignum_sub(y, b->y, a->y);
 	x = bignum_sub(x, b->x, a->x);
 
+	x = bignum_mod(eg->bctx, x, x, eg->p);
 	x = bignum_modinv(eg->bctx, x, x, eg->p);
 
 	lambda = bignum_modmul(eg->bctx, lambda, y, x, eg->p);
@@ -694,9 +696,4 @@ uint32_t ec_prime_curve_validate_parameters(ec_group *group, hash_ctx *hctx, voi
 	bignum_ctx_end(group->bctx);
 
 	return 1;
-}
-
-int32_t bignum_modsqrt(bignum_ctx *bctx, bignum_t *r1, bignum_t *r2, bignum_t *a, bignum_t *m)
-{
-	return 0;
 }

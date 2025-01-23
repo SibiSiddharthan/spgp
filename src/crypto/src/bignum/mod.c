@@ -367,9 +367,11 @@ bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignu
 
 bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 {
-	int32_t status = 0;
+	size_t ctx_size = 6 * bignum_size(2 * m->bits);
+	bignum_t *i = NULL, *j = NULL;
+	bignum_t *qt = NULL, *rd = NULL;
+	bignum_t *y = NULL, *y1 = NULL, *y2 = NULL;
 
-	bignum_t *u = NULL, *v = NULL, *gcd = NULL;
 	bignum_ctx *obctx = bctx;
 
 	r = bignum_resize(r, m->bits);
@@ -389,26 +391,43 @@ bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 		}
 	}
 
-	bignum_ctx_start(bctx, 3 * bignum_size(m->bits));
+	bignum_ctx_start(bctx, ctx_size);
 
-	u = bignum_ctx_allocate_bignum(bctx, m->bits);
-	v = bignum_ctx_allocate_bignum(bctx, m->bits);
-	gcd = bignum_ctx_allocate_bignum(bctx, m->bits);
+	i = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	j = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	qt = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	rd = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	y = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	y1 = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	y2 = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
 
-	status = bignum_euclid_gcdex(bctx, gcd, u, v, m, a);
+	bignum_copy(i, m);
+	bignum_copy(j, a);
 
-	if (status != 0)
+	bignum_one(y1);
+	bignum_zero(y2);
+
+	while (j->bits > 0)
 	{
-		bignum_ctx_end(bctx);
-		return NULL;
+		bignum_divmod(bctx, i, j, qt, rd);
+
+		y = bignum_mul(bctx, y, y1, qt);
+		y = bignum_sub(y, y2, y);
+
+		bignum_copy(i, j);
+		bignum_copy(j, rd);
+
+		bignum_copy(y2, y1);
+		bignum_copy(y1, y);
 	}
 
-	if (v->sign != m->sign)
-	{
-		v = bignum_add(v, v, m);
-	}
+	r = bignum_mod(bctx, r, y2, m);
 
-	r = bignum_copy(r, v);
+	// This will only happen if a is not coprime to m
+	if (i->bits != 1)
+	{
+		r = NULL;
+	}
 
 	bignum_ctx_end(bctx);
 
@@ -419,3 +438,4 @@ bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 
 	return r;
 }
+
