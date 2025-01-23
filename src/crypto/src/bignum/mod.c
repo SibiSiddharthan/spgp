@@ -367,12 +367,12 @@ bignum_t *bignum_barret_modexp(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignu
 
 bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 {
+	bignum_ctx *obctx = bctx;
+
 	size_t ctx_size = 6 * bignum_size(2 * m->bits);
 	bignum_t *i = NULL, *j = NULL;
 	bignum_t *qt = NULL, *rd = NULL;
 	bignum_t *y = NULL, *y1 = NULL, *y2 = NULL;
-
-	bignum_ctx *obctx = bctx;
 
 	r = bignum_resize(r, m->bits);
 
@@ -439,3 +439,142 @@ bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 	return r;
 }
 
+int32_t bignum_modsqrt(bignum_ctx *bctx, bignum_t *r1, bignum_t *r2, bignum_t *a, bignum_t *m)
+{
+	int32_t status = -1;
+	bignum_ctx *obctx = bctx;
+
+	size_t ctx_size = 11 * bignum_size(2 * m->bits);
+	bignum_t *pm1 = NULL, *q = NULL;
+	bignum_t *e1 = NULL, *e2 = NULL;
+	bignum_t *x = NULL, *z = NULL, *r = NULL;
+	bignum_t *t = NULL, *c = NULL;
+	bignum_t *b = NULL, *d = NULL;
+	uint32_t s = 0;
+
+	r1 = bignum_resize(r1, m->bits);
+	r2 = bignum_resize(r2, m->bits);
+
+	if (r1 == NULL || r2 == NULL)
+	{
+		return -1;
+	}
+
+	if (obctx == NULL)
+	{
+		bctx = bignum_ctx_new(0);
+
+		if (bctx == NULL)
+		{
+			return -1;
+		}
+	}
+
+	bignum_ctx_start(bctx, ctx_size);
+
+	pm1 = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	q = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	e1 = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	e2 = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	x = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	z = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	r = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	t = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	b = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	c = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+	d = bignum_ctx_allocate_bignum(bctx, 2 * m->bits);
+
+	pm1 = bignum_usub_word(pm1, m, 1);
+	s = bignum_ctz(pm1);
+
+	bignum_one(q);
+	q = bignum_lshift(q, q, s);
+	q = bignum_div(bctx, q, pm1, q);
+
+	// m%4 = 3
+	if (s == 1)
+	{
+		e1 = bignum_modexp(bctx, e1, a, q, m);
+
+		if (e1->bits == 1)
+		{
+			e2 = bignum_uadd_word(e2, q, 1);
+			e2 = bignum_rshift1(e2, e2);
+
+			x = bignum_modexp(bctx, x, a, e2, m);
+
+			r1 = bignum_copy(r1, x);
+			r2 = bignum_sub(r2, m, x);
+
+			status = 0;
+
+			goto end;
+		}
+	}
+
+	// Select z
+	bignum_set_word(z, 2);
+	d = bignum_lshift1(d, pm1);
+
+	while (bignum_cmp(r, pm1) == 0)
+	{
+		r = bignum_modexp(bctx, r, z, d, m);
+		bignum_uadd_word(z, z, 1);
+	}
+
+	// Compute
+	e2 = bignum_uadd_word(e2, q, 1);
+	e2 = bignum_rshift1(e2, e2);
+
+	x = bignum_modexp(bctx, x, a, e2, m);
+	t = bignum_modexp(bctx, t, a, q, m);
+	c = bignum_modexp(bctx, c, z, q, m);
+
+	while (t->bits > 1)
+	{
+		uint32_t i = 1;
+		bignum_set_word(d, 2);
+
+	retry:
+		for (i = 1; i < s; ++i)
+		{
+			b = bignum_modexp(bctx, b, t, d, m);
+
+			if (b->bits == 1)
+			{
+				goto update;
+			}
+		}
+
+		bignum_lshift1(d, d);
+		goto retry;
+
+	update:
+		bignum_one(d);
+		d = bignum_lshift(d, d, s - i - 1);
+
+		b = bignum_modexp(bctx, b, c, d, m);
+		x = bignum_modmul(bctx, x, x, b, m);
+		c = bignum_modsqr(bctx, c, b, m);
+		t = bignum_modmul(bctx, t, t, c, m);
+
+		s = i;
+	}
+
+	r1 = bignum_copy(r1, x);
+	r2 = bignum_sub(r2, m, x);
+
+	status = 0;
+
+	goto end;
+
+end:
+	bignum_ctx_end(bctx);
+
+	if (obctx == NULL)
+	{
+		bignum_ctx_delete(bctx);
+	}
+
+	return status;
+}
