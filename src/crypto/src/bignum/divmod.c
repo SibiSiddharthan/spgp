@@ -226,7 +226,7 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 
 	void *q1 = NULL, *q2 = NULL, *qt = NULL;
 	void *r1 = NULL, *r2 = NULL, *rt = NULL;
-	void *dv_copy = NULL;
+	void *dv_copy1 = NULL, *dv_copy2 = NULL;
 
 	uint32_t dd_words = BIGNUM_WORD_COUNT(dd);
 	uint32_t dv_words = BIGNUM_WORD_COUNT(dv);
@@ -248,15 +248,19 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 		return 0;
 	}
 
-	bignum_ctx_start(bctx, (q2_words + r2_words + rt_words) * BIGNUM_WORD_SIZE);
+	bignum_ctx_start(bctx, (q2_words + (2 * r2_words) + (2 * rt_words)) * BIGNUM_WORD_SIZE);
 
 	q2 = bignum_ctx_allocate_raw(bctx, q2_words * BIGNUM_WORD_SIZE);
+	r1 = bignum_ctx_allocate_raw(bctx, r2_words * BIGNUM_WORD_SIZE);
 	r2 = bignum_ctx_allocate_raw(bctx, r2_words * BIGNUM_WORD_SIZE);
-	dv_copy = bignum_ctx_allocate_raw(bctx, rt_words * BIGNUM_WORD_SIZE);
+	dv_copy1 = bignum_ctx_allocate_raw(bctx, rt_words * BIGNUM_WORD_SIZE);
+	dv_copy2 = bignum_ctx_allocate_raw(bctx, rt_words * BIGNUM_WORD_SIZE);
 
 	memset(q2, 0, q2_words * BIGNUM_WORD_SIZE);
+	memset(r1, 0, r2_words * BIGNUM_WORD_SIZE);
 	memset(r2, 0, r2_words * BIGNUM_WORD_SIZE);
-	memset(dv_copy, 0, rt_words * BIGNUM_WORD_SIZE);
+	memset(dv_copy1, 0, rt_words * BIGNUM_WORD_SIZE);
+	memset(dv_copy2, 0, rt_words * BIGNUM_WORD_SIZE);
 
 	// TODO: Partial multiplications
 
@@ -270,7 +274,7 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 	qt = (bn_word_t *)q2 + (dv_words + 1);
 
 	// r1 / dd % 2^(words + 1)
-	r1 = dd->words;
+	memcpy(r1, dd->words, MIN(dd_words, dv_words + 1) * BIGNUM_WORD_SIZE);
 
 	// r2 = (qt*dv) % 2^(words + 1)
 	bignum_mul_words(r2, qt, dv->words, qt_words, dv_words);
@@ -281,12 +285,13 @@ int32_t bignum_barret_udivmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bign
 	bignum_sub_words(rt, r1, r2, rt_words);
 
 	// Create copy of the divisor for easier subraction.
-	memcpy(dv_copy, dv->words, dv_words * BIGNUM_WORD_SIZE);
+	memcpy(dv_copy1, dv->words, dv_words * BIGNUM_WORD_SIZE);
+	memcpy(dv_copy2, dv->words, dv_words * BIGNUM_WORD_SIZE);
 
-	while (bignum_cmp_words(rt, dv->words, rt_words) >= 0)
+	while (bignum_cmp_words(rt, dv_copy2, rt_words) >= 0)
 	{
 		// (q,r) = (q + 1,r − dv)
-		bignum_sub_words(rt, rt, dv_copy, rt_words);
+		bignum_sub_words(rt, rt, dv_copy1, rt_words);
 		bignum_increment(qt, qt_words);
 	}
 
