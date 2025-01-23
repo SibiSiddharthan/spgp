@@ -16,6 +16,7 @@
 
 bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {
+
 	if (bn == NULL)
 	{
 		bn = bignum_new(size * 8);
@@ -31,10 +32,10 @@ bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 		{
 			return NULL;
 		}
-
-		// Zero the words.
-		memset(bn->words, 0, bn->size);
 	}
+
+	// Zero the words.
+	memset(bn->words, 0, bn->size);
 
 	// Just copy the bytes straight to the word buffer.
 	memcpy(bn->words, bytes, size);
@@ -66,10 +67,10 @@ bignum_t *bignum_set_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 		{
 			return NULL;
 		}
-
-		// Zero the words.
-		memset(bn->words, 0, bn->size);
 	}
+
+	// Zero the words.
+	memset(bn->words, 0, bn->size);
 
 	while (size >= BIGNUM_WORD_SIZE)
 	{
@@ -295,10 +296,10 @@ bignum_t *bignum_set_hex(bignum_t *bn, char *hex, size_t size)
 		{
 			return NULL;
 		}
-
-		// Zero the words.
-		memset(bn->words, 0, bn->size);
 	}
+
+	// Zero the words.
+	memset(bn->words, 0, bn->size);
 
 	size_t i = size - 1;
 	uint32_t j = 0;
