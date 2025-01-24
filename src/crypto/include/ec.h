@@ -106,7 +106,7 @@ typedef enum _curve_id
 	EC_BRAINPOOL_512R1 = 38,
 	EC_BRAINPOOL_512T1 = 39,
 
-	// Special
+	// Montgomery
 	EC_CURVE25519 = 40,
 	EC_CURVE448 = 41,
 
