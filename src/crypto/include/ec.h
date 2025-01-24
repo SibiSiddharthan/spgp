@@ -124,6 +124,23 @@ typedef struct _ec_prime_curve
 	bignum_t *b;
 } ec_prime_curve;
 
+// y^2 + xy = (x^3 + Ax^2 + B) % p
+typedef struct _ec_binary_curve
+{
+	// constants
+	bignum_t *a;
+	bignum_t *b;
+} ec_binary_curve;
+
+// By^2 = (x^3 + Ax^2 + x) % p
+typedef struct _ec_montgomery_curve
+{
+	// constants
+	bignum_t *a;
+	bignum_t *b;
+} ec_montgomery_curve;
+
+// Ax^2 + y^2 = (1 + Dx^2y^2) % p
 typedef struct _ec_edwards_curve
 {
 	// constants
@@ -140,13 +157,22 @@ typedef struct _ec_group
 {
 	curve_id id;
 	uint32_t bits;
+	uint32_t cofactor;
 
 	bignum_t *p; // prime
 	bignum_t *n; // order
 
 	ec_point *g; // generator
 
-	void *parameters;
+	union
+	{
+		ec_prime_curve *prime_parameters;
+		ec_binary_curve *binary_parameters;
+		ec_montgomery_curve *montgomery_parameters;
+		ec_edwards_curve *edwards_parameters;
+		void *parameters;
+	};
+
 	bignum_ctx *bctx;
 
 	ec_point *(*_add)(struct _ec_group *, struct _ec_point *, struct _ec_point *, struct _ec_point *);
