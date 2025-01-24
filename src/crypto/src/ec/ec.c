@@ -43,6 +43,23 @@ uint32_t ec_group_bits(curve_id id)
 	case EC_NIST_P521:
 		return 521;
 
+	// Binary curves
+	case EC_NIST_K163:
+	case EC_NIST_B163:
+		return 163;
+	case EC_NIST_K233:
+	case EC_NIST_B233:
+		return 233;
+	case EC_NIST_K283:
+	case EC_NIST_B283:
+		return 283;
+	case EC_NIST_K409:
+	case EC_NIST_B409:
+		return 409;
+	case EC_NIST_K571:
+	case EC_NIST_B571:
+		return 571;
+
 	// SECG
 	case EC_SECP_160K1:
 		return 160;
@@ -59,35 +76,28 @@ uint32_t ec_group_bits(curve_id id)
 
 	// Brainpool
 	case EC_BRAINPOOL_160R1:
-		return 160;
 	case EC_BRAINPOOL_160T1:
 		return 160;
 	case EC_BRAINPOOL_192R1:
-		return 192;
 	case EC_BRAINPOOL_192T1:
 		return 192;
 	case EC_BRAINPOOL_224R1:
-		return 224;
 	case EC_BRAINPOOL_224T1:
 		return 224;
 	case EC_BRAINPOOL_256R1:
-		return 256;
 	case EC_BRAINPOOL_256T1:
 		return 256;
 	case EC_BRAINPOOL_320R1:
-		return 320;
 	case EC_BRAINPOOL_320T1:
 		return 320;
 	case EC_BRAINPOOL_384R1:
-		return 384;
 	case EC_BRAINPOOL_384T1:
 		return 384;
 	case EC_BRAINPOOL_512R1:
-		return 512;
 	case EC_BRAINPOOL_512T1:
 		return 512;
 
-	// Special
+	// Montgomery
 	case EC_CURVE25519:
 		return 255;
 	case EC_CURVE448:
