@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "curves/prime.h"
+
 size_t ec_group_size(uint32_t bits);
 
 uint32_t ec_group_bits(curve_id id)
@@ -82,9 +84,9 @@ uint32_t ec_group_bits(curve_id id)
 		return 512;
 
 	// Special
-	case EC_X25519:
+	case EC_CURVE25519:
 		return 255;
-	case EC_X448:
+	case EC_CURVE448:
 		return 448;
 
 	// Twisted Edwards
@@ -123,6 +125,55 @@ ec_group *ec_group_new(curve_id id)
 	// NIST
 	// Prime curves
 	case EC_NIST_P192:
+	{
+		// p
+		group->p->bits = 192;
+		group->p->size = 24;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)nist_p192_p_words;
+
+		// n
+		group->n->bits = 192;
+		group->n->size = 24;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)nist_p192_n_words;
+
+		// prime_paramters->a
+		group->prime_parameters->a->bits = 192;
+		group->prime_parameters->a->size = 24;
+		group->prime_parameters->a->sign = 1;
+		group->prime_parameters->a->resize = 0;
+		group->prime_parameters->a->flags = 0;
+		group->prime_parameters->a->words = (bn_word_t *)nist_p192_a_words;
+
+		// prime_paramters->b
+		group->prime_parameters->b->bits = 192;
+		group->prime_parameters->b->size = 24;
+		group->prime_parameters->b->sign = 1;
+		group->prime_parameters->b->resize = 0;
+		group->prime_parameters->b->flags = 0;
+		group->prime_parameters->b->words = (bn_word_t *)nist_p192_b_words;
+
+		// g->x
+		group->g->x->bits = 189;
+		group->g->x->size = 24;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)nist_p192_gx_words;
+
+		// g->y
+		group->g->y->bits = 187;
+		group->g->y->size = 24;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)nist_p192_gy_words;
+	}
 	case EC_NIST_P224:
 		break;
 	case EC_NIST_P256:

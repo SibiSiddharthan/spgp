@@ -107,8 +107,8 @@ typedef enum _curve_id
 	EC_BRAINPOOL_512T1 = 39,
 
 	// Special
-	EC_X25519 = 40,
-	EC_X448 = 41,
+	EC_CURVE25519 = 40,
+	EC_CURVE448 = 41,
 
 	// Twisted Edwards
 	EC_ED25519 = 42,
