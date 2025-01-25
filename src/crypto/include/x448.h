@@ -11,6 +11,7 @@
 #include <types.h>
 
 #define X448_OCTET_SIZE 56
+#define X448_BITS       448
 
 typedef struct _x448_key
 {

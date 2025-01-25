@@ -5,46 +5,28 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <bignum.h>
 #include <bignum-internal.h>
-#include <string.h>
+#include <x448.h>
+
+#include "curves/montgomery.h"
+
 #include <xor.h>
 
-#define X448_OCTET_SIZE 56
-#define X448_WORD_COUNT 7
+#include <string.h>
 
-static inline void and8(void *r, void *a, void *b, size_t n)
-{
-	uint64_t *r64 = r;
-	uint64_t *a64 = a;
-	uint64_t *b64 = b;
+#define GET_BIT(K, I) ((K[(I) / 8] >> (I) % 8) & 0x1)
 
-	while (n != 0)
-	{
-		*r64 = *a64 & *b64;
-
-		r64++;
-		a64++;
-		b64++;
-		n -= 8;
-	}
-}
-
-#define AND8_N(R, A, B, N) and8(R, A, B, N)
-
-#define CSWAP(SWAP, X, Y)                                                 \
-	{                                                                     \
-		bn_word_t mask[X448_WORD_COUNT] = {0};                            \
-		bn_word_t temp[X448_WORD_COUNT] = {0};                            \
-                                                                          \
-		bignum_sub_words(mask, mask, (bn_word_t *)SWAP, X448_WORD_COUNT); \
-		XOR8_N(temp, X, Y, X448_WORD_COUNT);                              \
-		AND8_N(mask, X, Y, X448_WORD_COUNT);                              \
-                                                                          \
-		XOR8_N(X, X, mask, X448_WORD_COUNT);                              \
-		XOR8_N(Y, Y, mask, X448_WORD_COUNT);                              \
+#define CSWAP(swap, x, y)                                           \
+	{                                                               \
+		uintptr_t mask = 0 - swap;                                  \
+		uintptr_t dummy = mask & ((uintptr_t)(x) ^ (uintptr_t)(y)); \
+                                                                    \
+		(x) = (void *)((uintptr_t)(x) ^ dummy);                     \
+		(y) = (void *)((uintptr_t)(y) ^ dummy);                     \
 	}
 
-void x448_decode_scalar(byte_t k[X448_OCTET_SIZE])
+static void x448_decode_scalar(byte_t k[X448_OCTET_SIZE])
 {
 	// Set the 2 least significant bits of first byte to 0
 	k[0] &= 252;
@@ -53,87 +35,138 @@ void x448_decode_scalar(byte_t k[X448_OCTET_SIZE])
 	k[55] |= 128;
 }
 
-void x448_point_multiply(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OCTET_SIZE])
+void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OCTET_SIZE])
 {
+	bignum_t p = {.bits = 448, .flags = 0, .resize = 0, .sign = 1, .size = X448_OCTET_SIZE, .words = (bn_word_t *)curve448_p_words};
 	const uint32_t a24 = 39081;
 
-	byte_t swap[X448_OCTET_SIZE] = {0};
+	bignum_ctx *bctx = NULL;
 
-	bn_word_t x1[X448_WORD_COUNT * 2] = {0};
-	bn_word_t x2[X448_WORD_COUNT * 2] = {0};
-	bn_word_t z1[X448_WORD_COUNT * 2] = {0};
-	bn_word_t z2[X448_WORD_COUNT * 2] = {0};
+	bignum_t *x1 = NULL, *x2 = NULL, *x3 = NULL;
+	bignum_t *z2 = NULL, *z3 = NULL;
+	bignum_t *pm2 = NULL, *t24 = NULL;
 
-	bn_word_t a[X448_WORD_COUNT] = {0};
-	bn_word_t b[X448_WORD_COUNT] = {0};
-	bn_word_t c[X448_WORD_COUNT] = {0};
-	bn_word_t d[X448_WORD_COUNT] = {0};
-	bn_word_t e[X448_WORD_COUNT] = {0};
+	bignum_t *a = NULL;
+	bignum_t *b = NULL;
+	bignum_t *c = NULL;
+	bignum_t *d = NULL;
+	bignum_t *e = NULL;
 
-	bn_word_t aa[X448_WORD_COUNT * 2] = {0};
-	bn_word_t bb[X448_WORD_COUNT * 2] = {0};
-	bn_word_t da[X448_WORD_COUNT * 2] = {0};
-	bn_word_t cb[X448_WORD_COUNT * 2] = {0};
+	bignum_t *aa = NULL;
+	bignum_t *bb = NULL;
+	bignum_t *da = NULL;
+	bignum_t *cb = NULL;
 
-	bn_word_t t1[X448_WORD_COUNT * 2] = {0};
-	bn_word_t t2[X448_WORD_COUNT * 2] = {0};
+	byte_t ucopy[X448_OCTET_SIZE] = {0};
+	byte_t kcopy[X448_OCTET_SIZE] = {0};
+
+	uintptr_t swap = 0;
 
 	byte_t kt = 0;
 	byte_t t = 0;
 
-	x1[0] = 1;
-	z2[0] = 1;
+	size_t ctx_size = 16 * bignum_size(X448_BITS);
 
-	memcpy(x2, u, X448_OCTET_SIZE);
+	// Zero output
+	memset(v, 0, X448_OCTET_SIZE);
 
-	x448_decode_scalar(k);
+	// Initialize arena
+	bctx = bignum_ctx_new(ctx_size + 128);
 
-	for (uint32_t i = 0; i < 255; ++i)
+	if (bctx == NULL)
 	{
-		t = 255 - (i + 1);
-		kt = (k[t / 8] >> (t & 8)) & 0x1;
-
-		swap[0] ^= kt;
-
-		CSWAP(swap, x1, x2);
-		CSWAP(swap, z1, z2);
-
-		swap[0] = kt;
-
-		memset(aa, 0, X448_WORD_COUNT * 2);
-		memset(bb, 0, X448_WORD_COUNT * 2);
-		memset(da, 0, X448_WORD_COUNT * 2);
-		memset(cb, 0, X448_WORD_COUNT * 2);
-		memset(t1, 0, X448_WORD_COUNT * 2);
-		memset(t2, 0, X448_WORD_COUNT * 2);
-
-		bignum_add_words(a, x1, z1, X448_WORD_COUNT);
-		bignum_sqr_words(aa, a, X448_WORD_COUNT);
-		bignum_sub_words(b, x1, z1, X448_WORD_COUNT);
-		bignum_sqr_words(bb, b, X448_WORD_COUNT);
-		bignum_sub_words(e, aa, bb, X448_WORD_COUNT);
-		bignum_add_words(c, x2, z2, X448_WORD_COUNT);
-		bignum_sub_words(d, x2, z2, X448_WORD_COUNT);
-		bignum_mul_words(da, d, a, X448_WORD_COUNT, X448_WORD_COUNT);
-		bignum_mul_words(cb, c, b, X448_WORD_COUNT, X448_WORD_COUNT);
-
-		bignum_add_words(t1, da, cb, X448_WORD_COUNT);
-		bignum_sqr_words(x2, t1, X448_WORD_COUNT);
-
-		bignum_sub_words(t1, da, cb, X448_WORD_COUNT);
-		bignum_sqr_words(t2, t1, X448_WORD_COUNT);
-		bignum_mul_words(z2, x1, t2, X448_WORD_COUNT, X448_WORD_COUNT);
-
-		bignum_mul_words(x1, aa, bb, X448_WORD_COUNT, X448_WORD_COUNT);
-
-		memset(t1, 0, X448_OCTET_SIZE * 2);
-		bignum_mul32((uint32_t *)t1, (uint32_t *)e, X448_WORD_COUNT * 2, a24);
-		bignum_add_words(t2, aa, t1, X448_WORD_COUNT);
-		bignum_mul_words(z1, e, t2, X448_WORD_COUNT, X448_WORD_COUNT);
+		return;
 	}
 
-	CSWAP(swap, x1, x2);
-	CSWAP(swap, z1, z2);
+	bignum_ctx_start(bctx, ctx_size);
 
-	bignum_mul_words((bn_word_t *)v, x1, z1, X448_WORD_COUNT, X448_WORD_COUNT);
+	x1 = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	x2 = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	x3 = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+
+	z2 = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	z3 = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+
+	pm2 = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	t24 = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+
+	a = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	b = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	c = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	d = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	e = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+
+	aa = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	bb = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	da = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+	cb = bignum_ctx_allocate_bignum(bctx, X448_BITS);
+
+	// Decode u and k
+	memcpy(ucopy, u, X448_OCTET_SIZE);
+	memcpy(kcopy, k, X448_OCTET_SIZE);
+
+	x448_decode_scalar(ucopy);
+	x448_decode_scalar(kcopy);
+
+	// Initialization
+	bignum_set_bytes_le(x1, ucopy, X448_OCTET_SIZE);
+	bignum_set_word(x2, 1);
+	bignum_copy(x3, x1);
+
+	bignum_set_word(z2, 0);
+	bignum_set_word(z3, 1);
+
+	bignum_set_word(t24, a24);
+
+	for (uint32_t i = 0; i < X448_BITS; ++i)
+	{
+		t = X448_BITS - (i + 1);
+		kt = GET_BIT(kcopy, t);
+
+		swap ^= kt;
+
+		CSWAP(swap, x2, x3);
+		CSWAP(swap, z2, z3);
+
+		swap = kt;
+
+		a = bignum_modadd(bctx, a, x2, z2, &p);
+		aa = bignum_modsqr(bctx, aa, a, &p);
+		b = bignum_modsub(bctx, b, x2, z2, &p);
+		bb = bignum_modsqr(bctx, bb, b, &p);
+		e = bignum_modsub(bctx, e, aa, bb, &p);
+		c = bignum_modadd(bctx, c, x3, z3, &p);
+		d = bignum_modsub(bctx, d, x3, z3, &p);
+		da = bignum_modmul(bctx, da, d, a, &p);
+		cb = bignum_modmul(bctx, cb, c, b, &p);
+
+		x3 = bignum_modadd(bctx, x3, da, cb, &p);
+		x3 = bignum_modsqr(bctx, x3, x3, &p);
+
+		z3 = bignum_modsub(bctx, z3, da, cb, &p);
+		z3 = bignum_modsqr(bctx, z3, z3, &p);
+		z3 = bignum_modmul(bctx, z3, x1, z3, &p);
+
+		x2 = bignum_modmul(bctx, x2, aa, bb, &p);
+
+		z2 = bignum_copy(z2, e);
+		z2 = bignum_modmul(bctx, z2, z2, t24, &p);
+		z2 = bignum_modadd(bctx, z2, aa, z2, &p);
+		z2 = bignum_modmul(bctx, z2, e, z2, &p);
+	}
+
+	CSWAP(swap, x2, x3);
+	CSWAP(swap, z2, z3);
+
+	bignum_copy(pm2, &p);
+	bignum_usub_word(pm2, pm2, 2);
+
+	x1 = bignum_modexp(bctx, x1, z2, pm2, &p);
+	x1 = bignum_modmul(bctx, x1, x1, x2, &p);
+
+	memcpy(v, x1->words, X448_OCTET_SIZE);
+
+	// Cleanup
+	bignum_ctx_end(bctx);
+	bignum_ctx_delete(bctx);
 }

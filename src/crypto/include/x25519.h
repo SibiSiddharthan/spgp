@@ -11,14 +11,15 @@
 #include <types.h>
 
 #define X25519_OCTET_SIZE 32
+#define X25519_BITS       255
 
-typedef struct _x448_key
+typedef struct _x25519_key
 {
 	byte_t private_key[X25519_OCTET_SIZE];
 	byte_t public_key[X25519_OCTET_SIZE];
-} x448_key;
+} x25519_key;
 
-void x25519_key_generate(x448_key *key);
+void x25519_key_generate(x25519_key *key);
 void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X25519_OCTET_SIZE]);
 
 #endif
