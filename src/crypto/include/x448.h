@@ -19,7 +19,7 @@ typedef struct _x448_key
 	byte_t public_key[X448_OCTET_SIZE];
 } x448_key;
 
-void x448_key_generate(x448_key *key);
+uint32_t x448_key_generate(x448_key *key);
 void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OCTET_SIZE]);
 
 #endif

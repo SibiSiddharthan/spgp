@@ -8,6 +8,7 @@
 #include <bignum.h>
 #include <bignum-internal.h>
 #include <x25519.h>
+#include <drbg.h>
 
 #include "curves/montgomery.h"
 
@@ -172,4 +173,29 @@ void x25519_point_multiply(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SI
 	// Cleanup
 	bignum_ctx_end(bctx);
 	bignum_ctx_delete(bctx);
+}
+
+uint32_t x25519_key_generate(x25519_key *key)
+{
+	uint32_t result = 0;
+	drbg_ctx *drbg = get_default_drbg();
+
+	byte_t base[X25519_OCTET_SIZE] = {0};
+	base[0] = 0x09;
+
+	if (drbg == NULL)
+	{
+		return -1u;
+	}
+
+	result = drbg_generate(drbg, 0, "X25519 Key Generation", 21, key->private_key, X25519_OCTET_SIZE);
+
+	if (result != X25519_OCTET_SIZE)
+	{
+		return -1u;
+	}
+
+	x25519(key->public_key, base, key->private_key);
+
+	return 0;
 }

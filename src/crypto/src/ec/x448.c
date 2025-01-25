@@ -8,6 +8,7 @@
 #include <bignum.h>
 #include <bignum-internal.h>
 #include <x448.h>
+#include <drbg.h>
 
 #include "curves/montgomery.h"
 
@@ -169,4 +170,29 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	// Cleanup
 	bignum_ctx_end(bctx);
 	bignum_ctx_delete(bctx);
+}
+
+uint32_t x448_key_generate(x448_key *key)
+{
+	uint32_t result = 0;
+	drbg_ctx *drbg = get_default_drbg();
+
+	byte_t base[X448_OCTET_SIZE] = {0};
+	base[0] = 0x05;
+
+	if (drbg == NULL)
+	{
+		return -1u;
+	}
+
+	result = drbg_generate(drbg, 0, "X448 Key Generation", 19, key->private_key, X448_OCTET_SIZE);
+
+	if (result != X448_OCTET_SIZE)
+	{
+		return -1u;
+	}
+
+	x448(key->public_key, base, key->private_key);
+
+	return 0;
 }
