@@ -27,7 +27,7 @@
 		(y) = (void *)((uintptr_t)(y) ^ dummy);                     \
 	}
 
-void x25519_decode_scalar(byte_t k[X25519_OCTET_SIZE])
+static void x25519_decode_scalar(byte_t k[X25519_OCTET_SIZE])
 {
 	// Set the 3 least significant bits of first byte to 0
 	k[0] &= 248;
@@ -39,7 +39,7 @@ void x25519_decode_scalar(byte_t k[X25519_OCTET_SIZE])
 	k[31] |= 64;
 }
 
-void x25519_point_multiply(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X25519_OCTET_SIZE])
+void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X25519_OCTET_SIZE])
 {
 	bignum_t p = {.bits = 255, .flags = 0, .resize = 0, .sign = 1, .size = X25519_OCTET_SIZE, .words = (bn_word_t *)curve25519_p_words};
 	const uint32_t a24 = 121665;

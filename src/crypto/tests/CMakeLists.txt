@@ -111,6 +111,8 @@ kw
 
 crypto_ec_tests(
 ecc
+x25519
+x448
 )
 
 crypto_hash_tests(
