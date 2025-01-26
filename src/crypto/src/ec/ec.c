@@ -21,8 +21,6 @@
 #include "curves/montgomery.h"
 #include "curves/edwards.h"
 
-size_t ec_group_size(uint32_t bits);
-
 uint32_t ec_group_bits(curve_id id)
 {
 	switch (id)
@@ -119,20 +117,61 @@ ec_group *ec_group_new(curve_id id)
 	ec_group *group = NULL;
 	uint32_t bits = ec_group_bits(id);
 
+	// For prime and order p,n
+	// For base point gx,gy
+	// For curve parameters a,b
+	size_t ec_group_size = sizeof(ec_group) + (4 * sizeof(bignum_t *)) + (6 * sizeof(bignum_t));
+
 	if (bits == 0)
 	{
 		return NULL;
 	}
 
-	group = malloc(sizeof(ec_group));
+	group = malloc(ec_group_size);
 
 	if (group == NULL)
 	{
 		return NULL;
 	}
 
+	memset(group, 0, ec_group_size);
+
 	group->bits = bits;
 	group->bctx = bignum_ctx_new(32 * bignum_size(bits));
+
+	if (group->bctx == NULL)
+	{
+		free(group);
+		return NULL;
+	}
+
+	size_t offset = sizeof(ec_group);
+
+	// Store the pointers first
+	group->g = PTR_OFFSET(group, offset);
+	offset += sizeof(ec_point);
+
+	group->parameters = PTR_OFFSET(group, offset);
+	offset += 2 * sizeof(bignum_t *); // All parameters consist of 2 bignums only
+
+	// Assign the memory region for the pointers
+	group->p = PTR_OFFSET(group, offset);
+	offset += sizeof(bignum_t);
+
+	group->n = PTR_OFFSET(group, offset);
+	offset += sizeof(bignum_t);
+
+	group->g->x = PTR_OFFSET(group, offset);
+	offset += sizeof(bignum_t);
+
+	group->g->y = PTR_OFFSET(group, offset);
+	offset += sizeof(bignum_t);
+
+	group->parameters->a = PTR_OFFSET(group, offset);
+	offset += sizeof(bignum_t);
+
+	group->parameters->b = PTR_OFFSET(group, offset);
+	offset += sizeof(bignum_t);
 
 	switch (id)
 	{
@@ -187,6 +226,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_p192_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_NIST_P224:
@@ -238,6 +279,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_p224_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_NIST_P256:
@@ -289,6 +332,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_p256_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_NIST_P384:
@@ -340,6 +385,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_p384_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_NIST_P521:
@@ -391,6 +438,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_p521_gy_words;
+
+		goto prime_init;
 	}
 	break;
 
@@ -444,6 +493,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_k163_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_K233:
@@ -495,6 +546,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_k233_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_K283:
@@ -546,6 +599,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_k283_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_K409:
@@ -597,6 +652,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_k409_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_K571:
@@ -648,6 +705,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_k571_gy_words;
+
+		goto binary_init;
 	}
 	break;
 
@@ -701,6 +760,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_b163_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_B233:
@@ -752,6 +813,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_b233_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_B283:
@@ -803,6 +866,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_b283_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_B409:
@@ -854,6 +919,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_b409_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_NIST_B571:
@@ -905,6 +972,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)nist_b571_gy_words;
+
+		goto binary_init;
 	}
 	break;
 
@@ -958,6 +1027,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_160r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_160T1:
@@ -1009,6 +1080,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_160t1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_192R1:
@@ -1060,6 +1133,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_192r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_192T1:
@@ -1111,6 +1186,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_192t1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_224R1:
@@ -1162,6 +1239,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_224r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_224T1:
@@ -1213,6 +1292,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_224t1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_256R1:
@@ -1264,6 +1345,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_256r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_256T1:
@@ -1315,6 +1398,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_256t1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_320R1:
@@ -1366,6 +1451,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_320r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_320T1:
@@ -1417,6 +1504,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_320t1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_384R1:
@@ -1468,6 +1557,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_384r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_384T1:
@@ -1519,6 +1610,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_384t1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_512R1:
@@ -1570,6 +1663,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_512r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_BRAINPOOL_512T1:
@@ -1621,6 +1716,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_512t1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 
@@ -1674,6 +1771,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)curve25519_gy_words;
+
+		goto montgomery_init;
 	}
 	break;
 	case EC_CURVE448:
@@ -1725,6 +1824,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)curve448_gy_words;
+
+		goto montgomery_init;
 	}
 	break;
 
@@ -1778,6 +1879,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)ed25519_gy_words;
+
+		goto edwards_init;
 	}
 	break;
 	case EC_ED448:
@@ -1829,6 +1932,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)ed448_gy_words;
+
+		goto edwards_init;
 	}
 	break;
 
@@ -1836,13 +1941,30 @@ ec_group *ec_group_new(curve_id id)
 		break;
 	}
 
+end:
 	return group;
+
+prime_init:
+	group->_add = ec_prime_point_add;
+	group->_double = ec_prime_point_double;
+	group->_multiply = ec_prime_point_multiply;
+	group->_on_curve = ec_prime_point_on_curve;
+	group->_is_identity = ec_prime_point_at_infinity;
+	group->_encode = ec_prime_point_encode;
+	group->_decode = ec_prime_point_decode;
+	goto end;
+
+edwards_init:
+	goto end;
+binary_init:
+	goto end;
+montgomery_init:
+	goto end;
 }
 
 void ec_group_delete(ec_group *eg)
 {
 	bignum_ctx_delete(eg->bctx);
-	free(eg->parameters);
 	free(eg);
 }
 

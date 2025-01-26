@@ -200,10 +200,8 @@ typedef struct _ec_key
 	ec_point *q; // Public
 } ec_key;
 
-size_t ec_group_size(uint32_t bits);
 uint32_t ec_group_bits(curve_id id);
 
-ec_group *ec_group_init(void *ptr, size_t size, curve_id id);
 ec_group *ec_group_new(curve_id id);
 void ec_group_delete(ec_group *eg);
 
