@@ -31,6 +31,7 @@ bignum/rand.c
 ${bignum_asm}
 #ec
 ec/ec.c
+ec/point.c
 ec/key.c
 ec/prime.c
 ec/edwards.c
