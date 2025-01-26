@@ -72,3 +72,38 @@ void ec_point_delete(ec_point *ep)
 {
 	free(ep);
 }
+
+uint32_t ec_point_encode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size, uint32_t compression)
+{
+	return eg->_encode(eg, ep, buffer, size, compression);
+}
+
+ec_point *ec_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size)
+{
+	return eg->_decode(eg, ep, buffer, size);
+}
+
+ec_point *ec_point_add(ec_group *g, ec_point *r, ec_point *a, ec_point *b)
+{
+	return g->_add(g, r, a, b);
+}
+
+ec_point *ec_point_double(ec_group *g, ec_point *r, ec_point *a)
+{
+	return g->_double(g, r, a);
+}
+
+ec_point *ec_point_multiply(ec_group *g, ec_point *r, ec_point *a, bignum_t *n)
+{
+	return g->_multiply(g, r, a, n);
+}
+
+uint32_t ec_point_on_curve(ec_group *g, ec_point *a)
+{
+	return g->_on_curve(g, a);
+}
+
+uint32_t ec_point_is_identity(ec_group *g, ec_point *a)
+{
+	return g->_is_identity(g, a);
+}
