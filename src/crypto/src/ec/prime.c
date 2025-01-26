@@ -15,7 +15,7 @@
 
 #include <string.h>
 
-uint32_t ec_prime_point_at_infinity(ec_point *a)
+uint32_t ec_prime_point_at_infinity(ec_group *eg, ec_point *a)
 {
 	if (a->x->bits == 0 && a->y->bits == 0)
 	{
@@ -27,8 +27,6 @@ uint32_t ec_prime_point_at_infinity(ec_point *a)
 
 ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 {
-	ec_prime_curve *parameters = eg->parameters;
-
 	bignum_t *lambda = NULL;
 	bignum_t *x = NULL, *y = NULL;
 
@@ -43,7 +41,7 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 	}
 
 	// If the point is at infinity O + O = O
-	if (ec_prime_point_at_infinity(a))
+	if (ec_prime_point_at_infinity(eg, a))
 	{
 		ec_point_infinity(eg, r);
 		return r;
@@ -66,7 +64,7 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 	x = bignum_sqr(eg->bctx, x, a->x);
 	y = bignum_lshift(y, x, 1);
 	x = bignum_add(x, x, y);
-	x = bignum_add(x, x, parameters->a);
+	x = bignum_add(x, x, eg->prime_parameters->a);
 
 	bignum_zero(y);
 	y = bignum_lshift(y, a->y, 1);
@@ -99,8 +97,6 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 
 ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b)
 {
-	ec_prime_curve *parameters = eg->parameters;
-
 	bignum_t *lambda = NULL;
 	bignum_t *x = NULL, *y = NULL;
 
@@ -115,19 +111,19 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 	}
 
 	// If the point is at infinity O + O = O
-	if (ec_prime_point_at_infinity(a) && ec_prime_point_at_infinity(b))
+	if (ec_prime_point_at_infinity(eg, a) && ec_prime_point_at_infinity(eg, b))
 	{
 		ec_point_infinity(eg, r);
 		return r;
 	}
 
-	if (ec_prime_point_at_infinity(a))
+	if (ec_prime_point_at_infinity(eg, a))
 	{
 		ec_point_copy(r, b);
 		return r;
 	}
 
-	if (ec_prime_point_at_infinity(b))
+	if (ec_prime_point_at_infinity(eg, b))
 	{
 		ec_point_copy(r, a);
 		return r;
@@ -260,7 +256,6 @@ ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum
 uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a)
 {
 	uint32_t result = 0;
-	ec_prime_curve *parameters = eg->parameters;
 
 	bignum_t *lhs = NULL;
 	bignum_t *rhs = NULL;
@@ -276,8 +271,8 @@ uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a)
 	lhs = bignum_modsqr(eg->bctx, lhs, a->y, eg->p);
 
 	// Compute Ax + B % p
-	rhs = bignum_mul(eg->bctx, rhs, a->x, parameters->a);
-	rhs = bignum_modadd(eg->bctx, rhs, rhs, parameters->b, eg->p);
+	rhs = bignum_mul(eg->bctx, rhs, a->x, eg->prime_parameters->a);
+	rhs = bignum_modadd(eg->bctx, rhs, rhs, eg->prime_parameters->b, eg->p);
 
 	// Compute x^3 %p
 	xcube = bignum_sqr(eg->bctx, xcube, a->x);
@@ -304,7 +299,7 @@ uint32_t ec_prime_point_encode(struct _ec_group *eg, struct _ec_point *ep, void 
 	uint32_t bytes_for_point = ROUND_UP(eg->bits, 8);
 
 	// Check for infinity
-	if (ec_prime_point_at_infinity(ep))
+	if (ec_prime_point_at_infinity(eg, ep))
 	{
 		if (size < 1)
 		{
@@ -355,7 +350,6 @@ uint32_t ec_prime_point_encode(struct _ec_group *eg, struct _ec_point *ep, void 
 
 ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size)
 {
-	ec_prime_curve *parameters = eg->parameters;
 	byte_t *in = buffer;
 	ec_point *p = ep;
 
@@ -412,8 +406,8 @@ ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void
 		temp = bignum_modmul(eg->bctx, temp, temp, ep->x, eg->p);
 
 		// Compute Ax + B % p
-		ysq = bignum_mul(eg->bctx, ysq, ep->x, parameters->a);
-		ysq = bignum_modadd(eg->bctx, ysq, ysq, parameters->b, eg->p);
+		ysq = bignum_mul(eg->bctx, ysq, ep->x, eg->prime_parameters->a);
+		ysq = bignum_modadd(eg->bctx, ysq, ysq, eg->prime_parameters->b, eg->p);
 
 		ysq = bignum_modadd(eg->bctx, ysq, temp, ysq, eg->p);
 
@@ -540,7 +534,6 @@ static bignum_t *ec_prime_curve_generate_c(ec_group *group, hash_ctx *hctx, bign
 
 ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bignum_t *p, bignum_t *a, void *seed, size_t seed_size)
 {
-	ec_prime_curve *parameters = group->parameters;
 	drbg_ctx *drbg = get_default_drbg();
 
 	bignum_t *r = NULL, *t = NULL;
@@ -576,7 +569,7 @@ ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bi
 			return NULL;
 		}
 
-		bignum_copy(parameters->b, r);
+		bignum_copy(group->prime_parameters->b, r);
 	}
 	// Odd prime
 	else
@@ -611,8 +604,8 @@ ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bi
 	group->bits = p->bits;
 
 	bignum_copy(group->p, p);
-	bignum_copy(parameters->a, a);
-	bignum_copy(parameters->b, s1);
+	bignum_copy(group->prime_parameters->a, a);
+	bignum_copy(group->prime_parameters->b, s1);
 
 	// Generate base point
 	byte_t b = 1;
@@ -642,8 +635,6 @@ ec_group *ec_prime_curve_generate_parameters(ec_group *group, hash_ctx *hctx, bi
 
 uint32_t ec_prime_curve_validate_parameters(ec_group *group, hash_ctx *hctx, void *seed, size_t seed_size)
 {
-	ec_prime_curve *parameters = group->parameters;
-
 	bignum_t *c = NULL, *r = NULL, *t = NULL;
 
 	bignum_ctx_start(group->bctx, 3 * bignum_size(group->p->bits));
@@ -660,7 +651,7 @@ uint32_t ec_prime_curve_validate_parameters(ec_group *group, hash_ctx *hctx, voi
 		return 0;
 	}
 
-	r = bignum_modsqr(group->bctx, r, parameters->b, group->p);
+	r = bignum_modsqr(group->bctx, r, group->prime_parameters->b, group->p);
 	r = bignum_modmul(group->bctx, r, r, c, group->p);
 
 	t = bignum_copy(t, group->p);
