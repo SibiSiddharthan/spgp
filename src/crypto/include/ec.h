@@ -148,6 +148,13 @@ typedef struct _ec_edwards_curve
 	bignum_t *d;
 } ec_edwards_curve;
 
+// Placeholder struct
+typedef struct _ec_generic_parameters
+{
+	bignum_t *a;
+	bignum_t *b;
+} ec_generic_parameters;
+
 typedef struct _ec_point
 {
 	bignum_t *x, *y;
@@ -170,7 +177,7 @@ typedef struct _ec_group
 		ec_binary_curve *binary_parameters;
 		ec_montgomery_curve *montgomery_parameters;
 		ec_edwards_curve *edwards_parameters;
-		void *parameters;
+		ec_generic_parameters *parameters;
 	};
 
 	bignum_ctx *bctx;

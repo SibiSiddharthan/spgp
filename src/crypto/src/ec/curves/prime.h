@@ -5,7 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#ifndef CRYPTO_EC_CURVES_PRIME_H
+#define CRYPTO_EC_CURVES_PRIME_H
+
 #include <bignum.h>
+#include <ec.h>
 
 // clang-format off
 
@@ -50,3 +54,16 @@ const bn_word_t nist_p521_gx_words[9] = {0xF97E7E31C2E5BD66, 0x3348B3C1856A429B,
 const bn_word_t nist_p521_gy_words[9] = {0x88BE94769FD16650, 0x353C7086A272C240, 0xC550B9013FAD0761, 0x97EE72995EF42640, 0x17AFBD17273E662C, 0x98F54449579B4468, 0x5C8A5FB42C7D1BD9, 0x39296A789A3BC004, 0x0000000000000118};
 
 // clang-format on
+
+// Functions
+uint32_t ec_prime_point_encode(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size, uint32_t compression);
+ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void *buffer, uint32_t size);
+
+uint32_t ec_prime_point_at_infinity(ec_group *eg, ec_point *a);
+uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a);
+
+ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a);
+ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b);
+ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum_t *n);
+
+#endif
