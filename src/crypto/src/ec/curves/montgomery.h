@@ -5,6 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#ifndef CRYPTO_EC_CURVES_MONTGOMERY_H
+#define CRYPTO_EC_CURVES_MONTGOMERY_H
+
 #include <bignum.h>
 
 // clang-format off
@@ -26,3 +29,5 @@ const bn_word_t curve448_gx_words[1] = {0x0000000000000005};
 const bn_word_t curve448_gy_words[7] = {0x6FD7223D457B5B1A, 0x1312C4B150677AF7, 0xB8027E2346430D21, 0x60F75DC28DF3F6ED, 0xCBAE5D34F55545D0, 0x6C98AB6E58326FCE, 0x7D235D1295F5B1F6};
 
 // clang-format on
+
+#endif

@@ -5,6 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#ifndef CRYPTO_EC_CURVES_BRAINPOOL_H
+#define CRYPTO_EC_CURVES_BRAINPOOL_H
+
 #include <bignum.h>
 
 // clang-format off
@@ -122,3 +125,5 @@ const bn_word_t brainpool_512t1_gx_words[8] = {0x1BAA2696FA9035DA, 0xF7A3F25FE26
 const bn_word_t brainpool_512t1_gy_words[8] = {0xE198B61E00F8B332, 0x306ECFF96DBB8BAC, 0xD71DF2DADF86A627, 0xD9932184BEEF216B, 0x1131159CAE03CEE9, 0xBB4E3019B71634C0, 0xA2C892376C84ACE1, 0x5B534BD595F5AF0F};
 
 // clang-format on
+
+#endif

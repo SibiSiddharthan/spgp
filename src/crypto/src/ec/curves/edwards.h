@@ -5,6 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#ifndef CRYPTO_EC_CURVES_EDWARDS_H
+#define CRYPTO_EC_CURVES_EDWARDS_H
+
 #include <bignum.h>
 
 // clang-format off
@@ -26,3 +29,5 @@ const bn_word_t ed448_gx_words[7] = {0x698713093E9C04FC, 0x9DE732F38496CD11, 0xE
 const bn_word_t ed448_gy_words[7] = {0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0xFFFFFFFF80000000, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF};
 
 // clang-format on
+
+#endif

@@ -5,6 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#ifndef CRYPTO_EC_CURVES_BINARY_H
+#define CRYPTO_EC_CURVES_BINARY_H
+
 #include <bignum.h>
 
 // clang-format off
@@ -89,3 +92,5 @@ const bn_word_t nist_b571_gx_words[9] = {0xE1E7769C8EEC2D19, 0x4ABFA3B4C850D927,
 const bn_word_t nist_b571_gy_words[9] = {0x1A4827AF1B8AC15B, 0x16E2F1516E23DD3C, 0xB3531D2F0485C19B, 0x6291AF8F461BB2A8, 0x84423E43BAB08A57, 0x1980F8533921E8A6, 0x8C6C27A6009CBBCA, 0x6DCCFFFEB73D69D7, 0x037BF27342DA639B};
 
 // clang-format on
+
+#endif
