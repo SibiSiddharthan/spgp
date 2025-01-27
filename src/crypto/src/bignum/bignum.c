@@ -245,6 +245,7 @@ void bignum_set_word(bignum_t *bn, bn_word_t value)
 
 	if (value == 0)
 	{
+		bn->bits = 0;
 		return;
 	}
 
