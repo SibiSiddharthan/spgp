@@ -10,6 +10,7 @@
 #include <bignum.h>
 #include <bitscan.h>
 #include <round.h>
+#include <minmax.h>
 
 uint8_t bignum_add_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
 uint8_t bignum_sub_words(bn_word_t *r, bn_word_t *a, bn_word_t *b, uint32_t count);
@@ -21,10 +22,7 @@ void bignum_mul32(uint32_t *r32, uint32_t *a32, uint32_t a32_words, uint32_t w);
 // Perform division with a 64 bit dividend with a 32 bit divisor.
 static inline uint32_t div_3_words(uint64_t dd, uint32_t dv_high)
 {
-	// NOTE: This will work.
-	// Since dv_high is normalized (i.e >= UINT32_MAX/2) and dd has conditional padding,
-	// the quotient will always be <= UINT32_MAX.
-	return dd / dv_high;
+	return MIN(dd / dv_high, 0xFFFFFFFF);
 }
 
 void bignum_div_words(void *scratch, bn_word_t *dd, bn_word_t *dv, bn_word_t *q, bn_word_t *r, uint32_t dd_words, uint32_t dv_words)

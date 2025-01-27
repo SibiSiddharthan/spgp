@@ -189,6 +189,22 @@ int32_t bignum_modsqr_tests(void)
 
 	// ------------------------------------------------------------------------
 
+	a = bignum_set_hex(NULL, "7ffffffffffffffffffffffffffffffffffffffffffffffffffffffff69a11cd", 64);
+	m = bignum_set_hex(NULL, "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed", 64);
+	r = bignum_modsqr(NULL, NULL, a, m);
+
+	memset(hex, 0, 512);
+	result = bignum_get_hex(r, hex, 512);
+
+	status += CHECK_HEX(hex, "0x58535402bf8400", 16);
+	status += CHECK_VALUE(result, 16);
+
+	bignum_delete(a);
+	bignum_delete(m);
+	bignum_delete(r);
+
+	// ------------------------------------------------------------------------
+
 	return status;
 }
 
