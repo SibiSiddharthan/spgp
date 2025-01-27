@@ -58,19 +58,48 @@ uint32_t ec_group_bits(curve_id id)
 	case EC_NIST_B571:
 		return 571;
 
-	// SECG
+	// SEC
+	// Prime curves
 	case EC_SECP_160K1:
-		return 160;
 	case EC_SECP_160R1:
-		return 160;
 	case EC_SECP_160R2:
 		return 160;
 	case EC_SECP_192K1:
+	case EC_SECP_192R1:
 		return 192;
 	case EC_SECP_224K1:
+	case EC_SECP_224R1:
 		return 224;
 	case EC_SECP_256K1:
+	case EC_SECP_256R1:
 		return 256;
+	case EC_SECP_384R1:
+		return 384;
+	case EC_SECP_521R1:
+		return 521;
+
+	// Binary curves
+	case EC_SECT_163K1:
+	case EC_SECT_163R1:
+	case EC_SECT_163R2:
+		return 163;
+	case EC_SECT_193R1:
+	case EC_SECT_193R2:
+		return 193;
+	case EC_SECT_233K1:
+	case EC_SECT_233R1:
+		return 233;
+	case EC_SECT_239K1:
+		return 239;
+	case EC_SECT_283K1:
+	case EC_SECT_283R1:
+		return 283;
+	case EC_SECT_409K1:
+	case EC_SECT_409R1:
+		return 409;
+	case EC_SECT_571K1:
+	case EC_SECT_571R1:
+		return 571;
 
 	// Brainpool
 	case EC_BRAINPOOL_160R1:
@@ -180,6 +209,7 @@ ec_group *ec_group_new(curve_id id)
 	// Prime curves
 	case EC_NIST_P192:
 	{
+	ec_nist_p192:
 		// p
 		group->p->bits = 192;
 		group->p->size = 24;
@@ -233,6 +263,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_P224:
 	{
+	ec_nist_p224:
 		// p
 		group->p->bits = 224;
 		group->p->size = 32;
@@ -286,6 +317,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_P256:
 	{
+	ec_nist_p256:
 		// p
 		group->p->bits = 256;
 		group->p->size = 32;
@@ -339,6 +371,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_P384:
 	{
+	ec_nist_p384:
 		// p
 		group->p->bits = 384;
 		group->p->size = 48;
@@ -392,6 +425,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_P521:
 	{
+	ec_nist_p521:
 		// p
 		group->p->bits = 521;
 		group->p->size = 72;
@@ -447,6 +481,7 @@ ec_group *ec_group_new(curve_id id)
 	// Binary curves (Koblitz)
 	case EC_NIST_K163:
 	{
+	ec_nist_k163:
 		// p
 		group->p->bits = 164;
 		group->p->size = 24;
@@ -500,6 +535,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_K233:
 	{
+	ec_nist_k233:
 		// p
 		group->p->bits = 234;
 		group->p->size = 32;
@@ -553,6 +589,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_K283:
 	{
+	ec_nist_k283:
 		// p
 		group->p->bits = 284;
 		group->p->size = 40;
@@ -606,6 +643,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_K409:
 	{
+	ec_nist_k409:
 		// p
 		group->p->bits = 410;
 		group->p->size = 56;
@@ -659,6 +697,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_K571:
 	{
+	ec_nist_k571:
 		// p
 		group->p->bits = 572;
 		group->p->size = 72;
@@ -714,6 +753,7 @@ ec_group *ec_group_new(curve_id id)
 	// Binary curves (Psuedo random)
 	case EC_NIST_B163:
 	{
+	ec_nist_b163:
 		// p
 		group->p->bits = 164;
 		group->p->size = 24;
@@ -767,6 +807,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_B233:
 	{
+	ec_nist_b233:
 		// p
 		group->p->bits = 234;
 		group->p->size = 32;
@@ -820,6 +861,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_B283:
 	{
+	ec_nist_b283:
 		// p
 		group->p->bits = 284;
 		group->p->size = 40;
@@ -873,6 +915,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_B409:
 	{
+	ec_nist_b409:
 		// p
 		group->p->bits = 410;
 		group->p->size = 56;
@@ -926,6 +969,7 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_NIST_B571:
 	{
+	ec_nist_b571:
 		// p
 		group->p->bits = 572;
 		group->p->size = 72;
@@ -977,6 +1021,551 @@ ec_group *ec_group_new(curve_id id)
 		goto binary_init;
 	}
 	break;
+
+	// SEC
+	// Prime curves
+	case EC_SECP_160K1:
+	{
+		// p
+		group->p->bits = 160;
+		group->p->size = 24;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)secp_160k1_p_words;
+
+		// n
+		group->n->bits = 160;
+		group->n->size = 24;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)secp_160k1_n_words;
+
+		// prime_parameters->a
+		group->prime_parameters->a->bits = 160;
+		group->prime_parameters->a->size = 24;
+		group->prime_parameters->a->sign = 1;
+		group->prime_parameters->a->resize = 0;
+		group->prime_parameters->a->flags = 0;
+		group->prime_parameters->a->words = (bn_word_t *)secp_160k1_a_words;
+
+		// prime_parameters->b
+		group->prime_parameters->b->bits = 160;
+		group->prime_parameters->b->size = 24;
+		group->prime_parameters->b->sign = 1;
+		group->prime_parameters->b->resize = 0;
+		group->prime_parameters->b->flags = 0;
+		group->prime_parameters->b->words = (bn_word_t *)secp_160k1_b_words;
+
+		// g->x
+		group->g->x->bits = 158;
+		group->g->x->size = 24;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)secp_160k1_gx_words;
+
+		// g->y
+		group->g->y->bits = 160;
+		group->g->y->size = 24;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)secp_160k1_gy_words;
+	}
+	break;
+	case EC_SECP_160R1:
+	{
+		// p
+		group->p->bits = 160;
+		group->p->size = 24;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)secp_160r1_p_words;
+
+		// n
+		group->n->bits = 160;
+		group->n->size = 24;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)secp_160r1_n_words;
+
+		// prime_parameters->a
+		group->prime_parameters->a->bits = 160;
+		group->prime_parameters->a->size = 24;
+		group->prime_parameters->a->sign = 1;
+		group->prime_parameters->a->resize = 0;
+		group->prime_parameters->a->flags = 0;
+		group->prime_parameters->a->words = (bn_word_t *)secp_160r1_a_words;
+
+		// prime_parameters->b
+		group->prime_parameters->b->bits = 160;
+		group->prime_parameters->b->size = 24;
+		group->prime_parameters->b->sign = 1;
+		group->prime_parameters->b->resize = 0;
+		group->prime_parameters->b->flags = 0;
+		group->prime_parameters->b->words = (bn_word_t *)secp_160r1_b_words;
+
+		// g->x
+		group->g->x->bits = 159;
+		group->g->x->size = 24;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)secp_160r1_gx_words;
+
+		// g->y
+		group->g->y->bits = 158;
+		group->g->y->size = 24;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)secp_160r1_gy_words;
+	}
+	break;
+	case EC_SECP_160R2:
+	{
+		// p
+		group->p->bits = 160;
+		group->p->size = 24;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)secp_160r2_p_words;
+
+		// n
+		group->n->bits = 160;
+		group->n->size = 24;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)secp_160r2_n_words;
+
+		// prime_parameters->a
+		group->prime_parameters->a->bits = 160;
+		group->prime_parameters->a->size = 24;
+		group->prime_parameters->a->sign = 1;
+		group->prime_parameters->a->resize = 0;
+		group->prime_parameters->a->flags = 0;
+		group->prime_parameters->a->words = (bn_word_t *)secp_160r2_a_words;
+
+		// prime_parameters->b
+		group->prime_parameters->b->bits = 160;
+		group->prime_parameters->b->size = 24;
+		group->prime_parameters->b->sign = 1;
+		group->prime_parameters->b->resize = 0;
+		group->prime_parameters->b->flags = 0;
+		group->prime_parameters->b->words = (bn_word_t *)secp_160r2_b_words;
+
+		// g->x
+		group->g->x->bits = 159;
+		group->g->x->size = 24;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)secp_160r2_gx_words;
+
+		// g->y
+		group->g->y->bits = 160;
+		group->g->y->size = 24;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)secp_160r2_gy_words;
+	}
+	break;
+	case EC_SECP_192K1:
+	{
+		// p
+		group->p->bits = 192;
+		group->p->size = 24;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)secp_192k1_p_words;
+
+		// n
+		group->n->bits = 192;
+		group->n->size = 24;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)secp_192k1_n_words;
+
+		// prime_parameters->a
+		group->prime_parameters->a->bits = 192;
+		group->prime_parameters->a->size = 24;
+		group->prime_parameters->a->sign = 1;
+		group->prime_parameters->a->resize = 0;
+		group->prime_parameters->a->flags = 0;
+		group->prime_parameters->a->words = (bn_word_t *)secp_192k1_a_words;
+
+		// prime_parameters->b
+		group->prime_parameters->b->bits = 192;
+		group->prime_parameters->b->size = 24;
+		group->prime_parameters->b->sign = 1;
+		group->prime_parameters->b->resize = 0;
+		group->prime_parameters->b->flags = 0;
+		group->prime_parameters->b->words = (bn_word_t *)secp_192k1_b_words;
+
+		// g->x
+		group->g->x->bits = 192;
+		group->g->x->size = 24;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)secp_192k1_gx_words;
+
+		// g->y
+		group->g->y->bits = 192;
+		group->g->y->size = 24;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)secp_192k1_gy_words;
+	}
+	break;
+	case EC_SECP_192R1:
+		goto ec_nist_p192;
+	case EC_SECP_224K1:
+	{
+		// p
+		group->p->bits = 224;
+		group->p->size = 32;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)secp_224k1_p_words;
+
+		// n
+		group->n->bits = 224;
+		group->n->size = 32;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)secp_224k1_n_words;
+
+		// prime_parameters->a
+		group->prime_parameters->a->bits = 224;
+		group->prime_parameters->a->size = 32;
+		group->prime_parameters->a->sign = 1;
+		group->prime_parameters->a->resize = 0;
+		group->prime_parameters->a->flags = 0;
+		group->prime_parameters->a->words = (bn_word_t *)secp_224k1_a_words;
+
+		// prime_parameters->b
+		group->prime_parameters->b->bits = 224;
+		group->prime_parameters->b->size = 32;
+		group->prime_parameters->b->sign = 1;
+		group->prime_parameters->b->resize = 0;
+		group->prime_parameters->b->flags = 0;
+		group->prime_parameters->b->words = (bn_word_t *)secp_224k1_b_words;
+
+		// g->x
+		group->g->x->bits = 224;
+		group->g->x->size = 32;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)secp_224k1_gx_words;
+
+		// g->y
+		group->g->y->bits = 223;
+		group->g->y->size = 32;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)secp_224k1_gy_words;
+	}
+	break;
+	case EC_SECP_224R1:
+		goto ec_nist_p224;
+	case EC_SECP_256K1:
+	{
+		// p
+		group->p->bits = 256;
+		group->p->size = 32;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)secp_256k1_p_words;
+
+		// n
+		group->n->bits = 256;
+		group->n->size = 32;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)secp_256k1_n_words;
+
+		// prime_parameters->a
+		group->prime_parameters->a->bits = 256;
+		group->prime_parameters->a->size = 32;
+		group->prime_parameters->a->sign = 1;
+		group->prime_parameters->a->resize = 0;
+		group->prime_parameters->a->flags = 0;
+		group->prime_parameters->a->words = (bn_word_t *)secp_256k1_a_words;
+
+		// prime_parameters->b
+		group->prime_parameters->b->bits = 256;
+		group->prime_parameters->b->size = 32;
+		group->prime_parameters->b->sign = 1;
+		group->prime_parameters->b->resize = 0;
+		group->prime_parameters->b->flags = 0;
+		group->prime_parameters->b->words = (bn_word_t *)secp_256k1_b_words;
+
+		// g->x
+		group->g->x->bits = 255;
+		group->g->x->size = 32;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)secp_256k1_gx_words;
+
+		// g->y
+		group->g->y->bits = 255;
+		group->g->y->size = 32;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)secp_256k1_gy_words;
+	}
+	break;
+	case EC_SECP_256R1:
+		goto ec_nist_p256;
+	case EC_SECP_384R1:
+		goto ec_nist_p384;
+	case EC_SECP_521R1:
+		goto ec_nist_p521;
+
+	// Binary curves
+	case EC_SECT_163K1:
+		goto ec_nist_k163;
+	case EC_SECT_163R1:
+	{
+		// p
+		group->p->bits = 164;
+		group->p->size = 24;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)sect_163r1_p_words;
+
+		// n
+		group->n->bits = 164;
+		group->n->size = 24;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)sect_163r1_n_words;
+
+		// binary_parameters->a
+		group->binary_parameters->a->bits = 164;
+		group->binary_parameters->a->size = 24;
+		group->binary_parameters->a->sign = 1;
+		group->binary_parameters->a->resize = 0;
+		group->binary_parameters->a->flags = 0;
+		group->binary_parameters->a->words = (bn_word_t *)sect_163r1_a_words;
+
+		// binary_parameters->b
+		group->binary_parameters->b->bits = 164;
+		group->binary_parameters->b->size = 24;
+		group->binary_parameters->b->sign = 1;
+		group->binary_parameters->b->resize = 0;
+		group->binary_parameters->b->flags = 0;
+		group->binary_parameters->b->words = (bn_word_t *)sect_163r1_b_words;
+
+		// g->x
+		group->g->x->bits = 162;
+		group->g->x->size = 24;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)sect_163r1_gx_words;
+
+		// g->y
+		group->g->y->bits = 159;
+		group->g->y->size = 24;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)sect_163r1_gy_words;
+	}
+	break;
+	case EC_SECT_163R2:
+		goto ec_nist_b163;
+	case EC_SECT_193R1:
+	{
+		// p
+		group->p->bits = 194;
+		group->p->size = 32;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)sect_193r1_p_words;
+
+		// n
+		group->n->bits = 194;
+		group->n->size = 32;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)sect_193r1_n_words;
+
+		// binary_parameters->a
+		group->binary_parameters->a->bits = 194;
+		group->binary_parameters->a->size = 32;
+		group->binary_parameters->a->sign = 1;
+		group->binary_parameters->a->resize = 0;
+		group->binary_parameters->a->flags = 0;
+		group->binary_parameters->a->words = (bn_word_t *)sect_193r1_a_words;
+
+		// binary_parameters->b
+		group->binary_parameters->b->bits = 194;
+		group->binary_parameters->b->size = 32;
+		group->binary_parameters->b->sign = 1;
+		group->binary_parameters->b->resize = 0;
+		group->binary_parameters->b->flags = 0;
+		group->binary_parameters->b->words = (bn_word_t *)sect_193r1_b_words;
+
+		// g->x
+		group->g->x->bits = 193;
+		group->g->x->size = 32;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)sect_193r1_gx_words;
+
+		// g->y
+		group->g->y->bits = 190;
+		group->g->y->size = 24;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)sect_193r1_gy_words;
+	}
+	break;
+	case EC_SECT_193R2:
+	{
+		// p
+		group->p->bits = 194;
+		group->p->size = 32;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)sect_193r2_p_words;
+
+		// n
+		group->n->bits = 194;
+		group->n->size = 32;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)sect_193r2_n_words;
+
+		// binary_parameters->a
+		group->binary_parameters->a->bits = 194;
+		group->binary_parameters->a->size = 32;
+		group->binary_parameters->a->sign = 1;
+		group->binary_parameters->a->resize = 0;
+		group->binary_parameters->a->flags = 0;
+		group->binary_parameters->a->words = (bn_word_t *)sect_193r2_a_words;
+
+		// binary_parameters->b
+		group->binary_parameters->b->bits = 194;
+		group->binary_parameters->b->size = 32;
+		group->binary_parameters->b->sign = 1;
+		group->binary_parameters->b->resize = 0;
+		group->binary_parameters->b->flags = 0;
+		group->binary_parameters->b->words = (bn_word_t *)sect_193r2_b_words;
+
+		// g->x
+		group->g->x->bits = 192;
+		group->g->x->size = 24;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)sect_193r2_gx_words;
+
+		// g->y
+		group->g->y->bits = 193;
+		group->g->y->size = 32;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)sect_193r2_gy_words;
+	}
+	break;
+	case EC_SECT_233K1:
+		goto ec_nist_k233;
+	case EC_SECT_233R1:
+		goto ec_nist_b233;
+	case EC_SECT_239K1:
+	{
+		// p
+		group->p->bits = 240;
+		group->p->size = 32;
+		group->p->sign = 1;
+		group->p->resize = 0;
+		group->p->flags = 0;
+		group->p->words = (bn_word_t *)sect_239k1_p_words;
+
+		// n
+		group->n->bits = 240;
+		group->n->size = 32;
+		group->n->sign = 1;
+		group->n->resize = 0;
+		group->n->flags = 0;
+		group->n->words = (bn_word_t *)sect_239k1_n_words;
+
+		// binary_parameters->a
+		group->binary_parameters->a->bits = 240;
+		group->binary_parameters->a->size = 32;
+		group->binary_parameters->a->sign = 1;
+		group->binary_parameters->a->resize = 0;
+		group->binary_parameters->a->flags = 0;
+		group->binary_parameters->a->words = (bn_word_t *)sect_239k1_a_words;
+
+		// binary_parameters->b
+		group->binary_parameters->b->bits = 240;
+		group->binary_parameters->b->size = 32;
+		group->binary_parameters->b->sign = 1;
+		group->binary_parameters->b->resize = 0;
+		group->binary_parameters->b->flags = 0;
+		group->binary_parameters->b->words = (bn_word_t *)sect_239k1_b_words;
+
+		// g->x
+		group->g->x->bits = 238;
+		group->g->x->size = 32;
+		group->g->x->sign = 1;
+		group->g->x->resize = 0;
+		group->g->x->flags = 0;
+		group->g->x->words = (bn_word_t *)sect_239k1_gx_words;
+
+		// g->y
+		group->g->y->bits = 239;
+		group->g->y->size = 32;
+		group->g->y->sign = 1;
+		group->g->y->resize = 0;
+		group->g->y->flags = 0;
+		group->g->y->words = (bn_word_t *)sect_239k1_gy_words;
+	}
+	break;
+	case EC_SECT_283K1:
+		goto ec_nist_k283;
+	case EC_SECT_283R1:
+		goto ec_nist_b283;
+	case EC_SECT_409K1:
+		goto ec_nist_k409;
+	case EC_SECT_409R1:
+		goto ec_nist_b409;
+	case EC_SECT_571K1:
+		goto ec_nist_k571;
+	case EC_SECT_571R1:
+		goto ec_nist_b571;
 
 	// Brainpool
 	case EC_BRAINPOOL_160R1:
@@ -1968,4 +2557,3 @@ void ec_group_delete(ec_group *eg)
 	bignum_ctx_delete(eg->bctx);
 	free(eg);
 }
-
