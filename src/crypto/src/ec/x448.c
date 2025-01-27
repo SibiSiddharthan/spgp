@@ -58,13 +58,12 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	bignum_t *da = NULL;
 	bignum_t *cb = NULL;
 
-	byte_t ucopy[X448_OCTET_SIZE] = {0};
 	byte_t kcopy[X448_OCTET_SIZE] = {0};
 
 	uintptr_t swap = 0;
 
 	byte_t kt = 0;
-	byte_t t = 0;
+	uint32_t t = 0;
 
 	size_t ctx_size = 16 * bignum_size(X448_BITS);
 
@@ -102,15 +101,12 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	da = bignum_ctx_allocate_bignum(bctx, X448_BITS);
 	cb = bignum_ctx_allocate_bignum(bctx, X448_BITS);
 
-	// Decode u and k
-	memcpy(ucopy, u, X448_OCTET_SIZE);
+	// Decode k
 	memcpy(kcopy, k, X448_OCTET_SIZE);
-
-	x448_decode_scalar(ucopy);
 	x448_decode_scalar(kcopy);
 
 	// Initialization
-	bignum_set_bytes_le(x1, ucopy, X448_OCTET_SIZE);
+	bignum_set_bytes_le(x1, u, X448_OCTET_SIZE);
 	bignum_set_word(x2, 1);
 	bignum_copy(x3, x1);
 

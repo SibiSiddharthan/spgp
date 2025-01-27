@@ -73,7 +73,7 @@ void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X
 	uintptr_t swap = 0;
 
 	byte_t kt = 0;
-	byte_t t = 0;
+	uint32_t t = 0;
 
 	size_t ctx_size = 16 * bignum_size(X25519_BITS);
 
