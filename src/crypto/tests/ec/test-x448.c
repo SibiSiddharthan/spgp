@@ -94,19 +94,19 @@ int32_t x448_ecdh(void)
 
 	x448(bob_public_key, base_point, bob_private_key);
 	status +=
-		CHECK_BLOCK(alice_public_key, X448_OCTET_SIZE,
+		CHECK_BLOCK(bob_public_key, X448_OCTET_SIZE,
 					"3eb7a829b0cd20f5bcfc0b599b6feccf6da4627107bdb0d4f345b43027d8b972fc3e34fb4232a13ca706dcb57aec3dae07bdc1c67bf33609");
 
 	// ---------------------------------------------------------------------------------------------------
 
-	x448(alice_shared, alice_private_key, bob_public_key);
+	x448(alice_shared, bob_public_key, alice_private_key);
 	status +=
 		CHECK_BLOCK(alice_shared, X448_OCTET_SIZE,
 					"07fff4181ac6cc95ec1c16a94a0f74d12da232ce40a77552281d282bb60c0b56fd2464c335543936521c24403085d59a449a5037514a879d");
 
 	// ---------------------------------------------------------------------------------------------------
 
-	x448(bob_shared, bob_private_key, alice_public_key);
+	x448(bob_shared, alice_public_key, bob_private_key);
 	status +=
 		CHECK_BLOCK(bob_shared, X448_OCTET_SIZE,
 					"07fff4181ac6cc95ec1c16a94a0f74d12da232ce40a77552281d282bb60c0b56fd2464c335543936521c24403085d59a449a5037514a879d");

@@ -80,16 +80,16 @@ int32_t x25519_ecdh(void)
 	// ---------------------------------------------------------------------------------------------------
 
 	x25519(bob_public_key, base_point, bob_private_key);
-	status += CHECK_BLOCK(alice_public_key, X25519_OCTET_SIZE, "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f");
+	status += CHECK_BLOCK(bob_public_key, X25519_OCTET_SIZE, "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f");
 
 	// ---------------------------------------------------------------------------------------------------
 
-	x25519(alice_shared, alice_private_key, bob_public_key);
+	x25519(alice_shared, bob_public_key, alice_private_key);
 	status += CHECK_BLOCK(alice_shared, X25519_OCTET_SIZE, "4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742");
 
 	// ---------------------------------------------------------------------------------------------------
 
-	x25519(bob_shared, bob_private_key, alice_public_key);
+	x25519(bob_shared, alice_public_key, bob_private_key);
 	status += CHECK_BLOCK(bob_shared, X25519_OCTET_SIZE, "4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742");
 
 	// ---------------------------------------------------------------------------------------------------
