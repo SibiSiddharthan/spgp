@@ -27,6 +27,12 @@
 		(y) = (void *)((uintptr_t)(y) ^ dummy);                     \
 	}
 
+static void x25519_decode_u_coordinate(byte_t k[X25519_OCTET_SIZE])
+{
+	// Mask the most significant bit
+	k[31] &= 127;
+}
+
 static void x25519_decode_scalar(byte_t k[X25519_OCTET_SIZE])
 {
 	// Set the 3 least significant bits of first byte to 0
@@ -109,7 +115,7 @@ void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X
 	memcpy(ucopy, u, X25519_OCTET_SIZE);
 	memcpy(kcopy, k, X25519_OCTET_SIZE);
 
-	x25519_decode_scalar(ucopy);
+	x25519_decode_u_coordinate(ucopy);
 	x25519_decode_scalar(kcopy);
 
 	// Initialization
