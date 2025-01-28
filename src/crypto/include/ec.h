@@ -228,10 +228,10 @@ uint32_t ec_point_is_identity(ec_group *g, ec_point *a);
 uint32_t ec_point_encode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size, uint32_t compression);
 ec_point *ec_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size);
 
-ec_key *ec_key_generate(ec_key *ek, ec_group *eg);
+ec_key *ec_key_generate(ec_group *eg, bignum_t *d);
 uint32_t ec_public_key_validate(ec_key *ek, uint32_t full);
 
-ec_key *ec_key_new(ec_group *eg);
+ec_key *ec_key_new(ec_group *eg, bignum_t *d, ec_point *q);
 void ec_key_delete(ec_key *ek);
 
 #endif

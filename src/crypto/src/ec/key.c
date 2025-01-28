@@ -11,49 +11,70 @@
 
 #include <round.h>
 
-#include <drbg.h>
+#include <stdlib.h>
+#include <string.h>
 
-ec_key *ec_key_generate(ec_key *ek, ec_group *eg)
+ec_key *ec_key_new(ec_group *eg, bignum_t *d, ec_point *q)
 {
-	uint32_t bytes = CEIL_DIV(eg->bits, 8);
-	drbg_ctx *drbg = get_default_drbg();
+	ec_key *key = malloc(sizeof(ec_key));
 
-	byte_t buffer[64] = {0};
-
-	if (ek == NULL)
-	{
-		ek = ec_key_new(eg);
-
-		if (ek == NULL)
-		{
-			return NULL;
-		}
-	}
-
-	if (drbg == NULL)
+	if (key == NULL)
 	{
 		return NULL;
 	}
 
-	// Generate private key
-	while (1)
+	memset(key, 0, sizeof(ec_key));
+
+	key->eg = eg;
+	key->d = d;
+	key->q = q;
+
+	return key;
+}
+
+void ec_key_delete(ec_key *ek)
+{
+	ec_group_delete(ek->eg);
+	ec_point_delete(ek->q);
+	bignum_delete(ek->d);
+	free(ek);
+}
+
+ec_key *ec_key_generate(ec_group *eg, bignum_t *d)
+{
+	ec_key *key = NULL;
+
+	key = malloc(sizeof(ec_key));
+
+	if (key == NULL)
 	{
-		// Generate random bytes
-		drbg_generate(drbg, 0, NULL, 0, buffer, bytes);
+		free(key);
+	}
 
-		// The generated key should less than the order of the elliptic curve
-		bignum_set_bytes_be(ek->d, buffer, bytes);
+	memset(key, 0, sizeof(ec_key));
 
-		if (bignum_cmp_abs(ek->d, eg->n) < 0)
+	// Generate private key
+	if (d == NULL)
+	{
+		d = bignum_rand_max(NULL, d, eg->n);
+
+		if (d == NULL)
 		{
-			break;
+			free(key);
+			return NULL;
 		}
 	}
 
-	// Calculate the public key
-	ek->q = ec_point_multiply(eg, ek->q, ek->eg->g, ek->d);
+	// Set the group
+	key->eg = eg;
 
-	return ek;
+	// Set the private key
+	key->d = d;
+
+	// Calculate the public key
+	key->q = ec_point_multiply(eg, key->q, eg->g, d);
+
+	return key;
 }
 
 uint32_t ec_public_key_validate(ec_key *ek, uint32_t full)
