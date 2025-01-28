@@ -409,6 +409,9 @@ bignum_t *bignum_modinv(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *m)
 
 	while (j->bits > 0)
 	{
+		bignum_zero(qt);
+		bignum_zero(rd);
+
 		bignum_divmod(bctx, i, j, qt, rd);
 
 		y = bignum_mul(bctx, y, y1, qt);
