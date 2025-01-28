@@ -111,6 +111,7 @@ kw
 
 crypto_ec_tests(
 ecc
+ec-key
 x25519
 x448
 )
