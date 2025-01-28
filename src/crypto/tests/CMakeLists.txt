@@ -112,6 +112,7 @@ kw
 crypto_ec_tests(
 ecc
 ec-key
+ec-point
 x25519
 x448
 )
