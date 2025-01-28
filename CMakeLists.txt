@@ -28,6 +28,15 @@ endif()
 option(ENABLE_ASAN "Use address sanitizer" OFF)
 
 if(ENABLE_ASAN)
+	if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+		add_compile_options(-fsanitize=address)
+		add_link_options(-fsanitize=address)
+		
+		if(WIN32)
+			add_link_options(-Xlinker /ignore:4217)
+		endif()
+
+	endif()
 	if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 		add_compile_options(/fsanitize=address)
 		add_link_options(/incremental:no)
