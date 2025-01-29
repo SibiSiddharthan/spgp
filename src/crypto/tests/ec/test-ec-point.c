@@ -91,7 +91,102 @@ int32_t ec_nist_p384_test_suite(void)
 	return status;
 }
 
+int32_t ec_point_encode_test_suite(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	ec_group *group = ec_group_new(EC_NIST_P256);
+	bignum_t *x = NULL, *y = NULL;
+	ec_point p;
+
+	byte_t buffer[256] = {0};
+
+	// ---------------------------------------------------------------------------------------------------
+
+	x = bignum_set_hex(NULL, "0x0", 3);
+	y = bignum_set_hex(NULL, "0x0", 3);
+
+	p.x = x;
+	p.y = y;
+
+	result = 0;
+	memset(buffer, 0, 256);
+
+	result = ec_point_encode(group, &p, buffer, 256, 0);
+	CHECK_VALUE(result, 1);
+	CHECK_BLOCK(buffer, 1, "00");
+
+	result = 0;
+	memset(buffer, 0, 256);
+
+	result = ec_point_encode(group, &p, buffer, 256, 1);
+	CHECK_VALUE(result, 1);
+	CHECK_BLOCK(buffer, 1, "00");
+
+	bignum_delete(x);
+	bignum_delete(y);
+
+	// ---------------------------------------------------------------------------------------------------
+
+	x = bignum_set_hex(NULL, "741dd5bda817d95e4626537320e5d55179983028b2f82c99d500c5ee8624e3c4", 64);
+	y = bignum_set_hex(NULL, "f88f4b9463c7a024a98c7caab7784eab71146ed4ca45a358e66a00dd32bb7e2c", 64);
+
+	p.x = x;
+	p.y = y;
+
+	result = 0;
+	memset(buffer, 0, 256);
+
+	result = ec_point_encode(group, &p, buffer, 256, 0);
+	CHECK_VALUE(result, 65);
+	CHECK_BLOCK(buffer, 65,
+				"04741dd5bda817d95e4626537320e5d55179983028b2f82c99d500c5ee8624e3c4f88f4b9463c7a024a98c7caab7784eab71146ed4ca45a358e66a00dd"
+				"32bb7e2c");
+
+	result = 0;
+	memset(buffer, 0, 256);
+
+	result = ec_point_encode(group, &p, buffer, 256, 1);
+	CHECK_VALUE(result, 33);
+	CHECK_BLOCK(buffer, 33, "02741dd5bda817d95e4626537320e5d55179983028b2f82c99d500c5ee8624e3c4");
+
+	bignum_delete(x);
+	bignum_delete(y);
+
+	// ---------------------------------------------------------------------------------------------------
+
+	x = bignum_set_hex(NULL, "3ed113b7883b4c590638379db0c21cda16742ed0255048bf433391d374bc21d1", 64);
+	y = bignum_set_hex(NULL, "6f66df64333b375edb37bc505b0b3975f6f2fb26a16776251d07110317d5c8bf", 64);
+
+	p.x = x;
+	p.y = y;
+
+	result = 0;
+	memset(buffer, 0, 256);
+
+	result = ec_point_encode(group, &p, buffer, 256, 0);
+	CHECK_VALUE(result, 65);
+	CHECK_BLOCK(buffer, 65,
+				"043ed113b7883b4c590638379db0c21cda16742ed0255048bf433391d374bc21d16f66df64333b375edb37bc505b0b3975f6f2fb26a16776251d071103"
+				"17d5c8bf");
+
+	result = 0;
+	memset(buffer, 0, 256);
+
+	result = ec_point_encode(group, &p, buffer, 256, 1);
+	CHECK_VALUE(result, 33);
+	CHECK_BLOCK(buffer, 33, "033ed113b7883b4c590638379db0c21cda16742ed0255048bf433391d374bc21d1");
+
+	bignum_delete(x);
+	bignum_delete(y);
+
+	// ---------------------------------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return ec_nist_p384_test_suite();
+	return ec_nist_p384_test_suite() + ec_point_encode_test_suite();
 }
