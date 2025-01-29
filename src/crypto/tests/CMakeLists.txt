@@ -148,5 +148,6 @@ drbg
 crypto_signature_tests(
 dsa
 ecdsa
+eddsa
 rsa-sig
 )
