@@ -296,7 +296,7 @@ uint32_t ec_prime_point_encode(struct _ec_group *eg, struct _ec_point *ep, void 
 	byte_t *out = buffer;
 	uint32_t pos = 0;
 
-	uint32_t bytes_for_point = ROUND_UP(eg->bits, 8);
+	uint32_t bytes_for_point = CEIL_DIV(eg->bits, 8);
 
 	// Check for infinity
 	if (ec_prime_point_at_infinity(eg, ep))
@@ -353,7 +353,7 @@ ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void
 	byte_t *in = buffer;
 	ec_point *p = ep;
 
-	uint32_t bytes_for_point = ROUND_UP(eg->bits, 8);
+	uint32_t bytes_for_point = CEIL_DIV(eg->bits, 8);
 
 	if (size < 1)
 	{
