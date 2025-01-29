@@ -68,6 +68,12 @@ void ec_point_infinity(ec_group *g, ec_point *r)
 	bignum_zero(r->y);
 }
 
+void ec_point_identity(ec_group *g, ec_point *r)
+{
+	bignum_zero(r->x);
+	bignum_one(r->y);
+}
+
 void ec_point_delete(ec_point *ep)
 {
 	free(ep);

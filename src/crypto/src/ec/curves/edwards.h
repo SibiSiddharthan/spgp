@@ -30,4 +30,17 @@ const bn_word_t ed448_gy_words[7] = {0x0000000000000001, 0x0000000000000000, 0x0
 
 // clang-format on
 
+uint32_t ec_edwards_point_is_identity(ec_group *eg, ec_point *a);
+uint32_t ec_edwards_point_on_curve(ec_group *eg, ec_point *a);
+
+ec_point *ec_edwards_point_double(ec_group *eg, ec_point *r, ec_point *a);
+ec_point *ec_edwards_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b);
+ec_point *ec_edwards_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum_t *n);
+
+uint32_t ec_ed25519_point_encode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size, uint32_t flags);
+ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size);
+
+uint32_t ec_ed448_point_encode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size, uint32_t flags);
+ec_point *ec_ed448_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size);
+
 #endif

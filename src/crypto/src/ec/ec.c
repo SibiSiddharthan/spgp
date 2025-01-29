@@ -2470,6 +2470,9 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)ed25519_gy_words;
 
+		group->_encode = ec_ed25519_point_encode;
+		group->_decode = ec_ed25519_point_decode;
+
 		goto edwards_init;
 	}
 	break;
@@ -2523,6 +2526,9 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)ed448_gy_words;
 
+		group->_encode = ec_ed448_point_encode;
+		group->_decode = ec_ed448_point_decode;
+
 		goto edwards_init;
 	}
 	break;
@@ -2545,6 +2551,11 @@ prime_init:
 	goto end;
 
 edwards_init:
+	group->_add = ec_edwards_point_add;
+	group->_double = ec_edwards_point_double;
+	group->_multiply = ec_edwards_point_multiply;
+	group->_on_curve = ec_edwards_point_on_curve;
+	group->_is_identity = ec_edwards_point_is_identity;
 	goto end;
 binary_init:
 	goto end;

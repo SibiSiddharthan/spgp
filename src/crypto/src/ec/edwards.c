@@ -10,11 +10,14 @@
 #include <ec.h>
 
 #include <ptr.h>
+#include <unused.h>
 
 #include <string.h>
 
-uint32_t ec_edwards_point_is_identity(ec_point *a)
+uint32_t ec_edwards_point_is_identity(ec_group *eg, ec_point *a)
 {
+	UNUSED(eg);
+
 	// (x,y) = (0,1)
 	if (a->x->bits == 0 && a->y->bits == 1)
 	{
@@ -27,7 +30,7 @@ uint32_t ec_edwards_point_is_identity(ec_point *a)
 uint32_t ec_edwards_point_on_curve(ec_group *eg, ec_point *a)
 {
 	uint32_t result = 0;
-	ec_edwards_curve *parameters = eg->parameters;
+	ec_edwards_curve *parameters = eg->edwards_parameters;
 
 	bignum_t *lhs = NULL, *rhs = NULL;
 	bignum_t *xsq = NULL, *ysq = NULL;
@@ -64,7 +67,7 @@ uint32_t ec_edwards_point_on_curve(ec_group *eg, ec_point *a)
 
 ec_point *ec_edwards_point_double(ec_group *eg, ec_point *r, ec_point *a)
 {
-	ec_edwards_curve *parameters = eg->parameters;
+	ec_edwards_curve *parameters = eg->edwards_parameters;
 
 	bignum_t *lambda = NULL, *inv = NULL;
 	bignum_t *x = NULL, *y = NULL, *t = NULL;
@@ -128,7 +131,7 @@ ec_point *ec_edwards_point_double(ec_group *eg, ec_point *r, ec_point *a)
 
 ec_point *ec_edwards_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b)
 {
-	ec_edwards_curve *parameters = eg->parameters;
+	ec_edwards_curve *parameters = eg->edwards_parameters;
 
 	bignum_t *lambda = NULL, *inv = NULL, *t1 = NULL, *t2 = NULL;
 	bignum_t *x = NULL, *y = NULL;
@@ -248,9 +251,12 @@ ec_point *ec_edwards_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bign
 	return r;
 }
 
-uint32_t ec_ed25519_point_encode(ec_point *ep, void *buffer, uint32_t size)
+uint32_t ec_ed25519_point_encode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size, uint32_t flags)
 {
 	byte_t *out = buffer;
+
+	UNUSED(eg);
+	UNUSED(flags);
 
 	if (size < 32)
 	{
@@ -268,7 +274,7 @@ uint32_t ec_ed25519_point_encode(ec_point *ep, void *buffer, uint32_t size)
 
 ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size)
 {
-	ec_edwards_curve *parameters = eg->parameters;
+	ec_edwards_curve *parameters = eg->edwards_parameters;
 
 	bignum_t *temp = NULL, *u = NULL, *v = NULL, *w = NULL;
 	bignum_t *t1 = NULL, *t2 = NULL, *t3 = NULL, *t4 = NULL;
@@ -382,9 +388,12 @@ ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint
 	return ep;
 }
 
-uint32_t ec_ed448_point_encode(ec_point *ep, void *buffer, uint32_t size)
+uint32_t ec_ed448_point_encode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size, uint32_t flags)
 {
 	byte_t *out = buffer;
+
+	UNUSED(eg);
+	UNUSED(flags);
 
 	if (size < 57)
 	{
@@ -402,7 +411,7 @@ uint32_t ec_ed448_point_encode(ec_point *ep, void *buffer, uint32_t size)
 
 ec_point *ec_ed448_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32_t size)
 {
-	ec_edwards_curve *parameters = eg->parameters;
+	ec_edwards_curve *parameters = eg->edwards_parameters;
 
 	bignum_t *temp = NULL, *u = NULL, *v = NULL, *w = NULL;
 	bignum_t *t1 = NULL, *t2 = NULL, *t3 = NULL, *t4 = NULL;
