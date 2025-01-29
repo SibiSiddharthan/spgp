@@ -517,12 +517,13 @@ int32_t bignum_modsqrt(bignum_ctx *bctx, bignum_t *r1, bignum_t *r2, bignum_t *a
 
 	// Select z
 	bignum_set_word(z, 2);
-	d = bignum_lshift1(d, pm1);
+	d = bignum_rshift1(d, pm1);
+	r = bignum_modexp(bctx, r, z, d, m);
 
-	while (bignum_cmp(r, pm1) == 0)
+	while (bignum_cmp(r, pm1) != 0)
 	{
-		r = bignum_modexp(bctx, r, z, d, m);
 		bignum_uadd_word(z, z, 1);
+		r = bignum_modexp(bctx, r, z, d, m);
 	}
 
 	// Compute
@@ -547,9 +548,10 @@ int32_t bignum_modsqrt(bignum_ctx *bctx, bignum_t *r1, bignum_t *r2, bignum_t *a
 			{
 				goto update;
 			}
+
+			bignum_lshift1(d, d);
 		}
 
-		bignum_lshift1(d, d);
 		goto retry;
 
 	update:
