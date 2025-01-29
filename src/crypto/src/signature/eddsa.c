@@ -13,6 +13,8 @@
 #include <eddsa.h>
 #include <bignum-internal.h>
 
+#include <drbg.h>
+
 #include <sha.h>
 #include <shake.h>
 
@@ -33,6 +35,141 @@ static void dom4_shake256_update(shake256_ctx *hctx, byte_t octet, void *context
 	shake256_update(hctx, &octet, 1);
 	shake256_update(hctx, &context_size, 1);
 	shake256_update(hctx, context, context_size);
+}
+
+ed25519_key *ed25519_key_generate(ed25519_key *key, byte_t private_key[ED25519_KEY_OCTETS])
+{
+	ec_group *group = NULL;
+	ec_point *a = NULL;
+	bignum_t *s = NULL;
+
+	uint32_t result = 0;
+
+	byte_t hash[SHA512_HASH_SIZE] = {0};
+	byte_t zero[ED25519_KEY_OCTETS] = {0};
+
+	if (memcmp(zero, private_key, ED25519_KEY_OCTETS) == 0)
+	{
+		result = drbg_generate(get_default_drbg(), 0, NULL, 0, key->private_key, ED25519_KEY_OCTETS);
+
+		if (result != ED25519_KEY_OCTETS)
+		{
+			return NULL;
+		}
+	}
+	else
+	{
+		memcpy(key->private_key, private_key, ED25519_KEY_OCTETS);
+	}
+
+	// Hash the 32 byte private key
+	sha512_hash(key->private_key, ED25519_KEY_OCTETS, hash);
+
+	// Clear the lowest 3 bits of the first octet
+	hash[0] &= 0xF8;
+
+	// Clear the highest bit of the last octet
+	hash[ED25519_KEY_OCTETS - 1] &= 0x7F;
+
+	// Set the second highest bit of the last octet
+	hash[ED25519_KEY_OCTETS - 1] |= 0x40;
+
+	s = bignum_set_bytes_le(NULL, hash, ED25519_KEY_OCTETS);
+
+	if (s == NULL)
+	{
+		return NULL;
+	}
+
+	group = ec_group_new(EC_ED25519);
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	a = ec_point_multiply(group, NULL, group->g, s);
+
+	if (a == NULL)
+	{
+		ec_group_delete(group);
+		return NULL;
+	}
+
+	ec_point_encode(group, a, key->public_key, ED25519_KEY_OCTETS, 0);
+
+	ec_point_delete(a);
+	ec_group_delete(group);
+
+	return key;
+}
+
+ed448_key *ed448_key_generate(ed448_key *key, byte_t private_key[ED448_KEY_OCTETS])
+{
+	ec_group *group = NULL;
+	ec_point *a = NULL;
+	bignum_t *s = NULL;
+
+	uint32_t result = 0;
+
+	byte_t hash[ED448_SIGN_OCTETS] = {0};
+	byte_t zero[ED448_KEY_OCTETS] = {0};
+
+	if (memcmp(zero, private_key, ED448_KEY_OCTETS) == 0)
+	{
+		result = drbg_generate(get_default_drbg(), 0, NULL, 0, key->private_key, ED448_KEY_OCTETS);
+
+		if (result != ED448_KEY_OCTETS)
+		{
+			return NULL;
+		}
+	}
+	else
+	{
+		memcpy(key->private_key, private_key, ED448_KEY_OCTETS);
+	}
+
+	// Hash the 32 byte private key
+	shake256_xof(key->private_key, ED448_KEY_OCTETS, hash, ED448_SIGN_OCTETS);
+
+	// Clear the lowest 2 bits of the first octet
+	hash[0] &= 0xFC;
+
+	// Clear the last octet
+	hash[ED448_KEY_OCTETS - 1] = 0;
+
+	// Set the  highest bit of the second last octet
+	hash[ED448_KEY_OCTETS - 2] |= 0x80;
+
+	s = bignum_set_bytes_le(NULL, hash, ED448_KEY_OCTETS);
+
+	if (s == NULL)
+	{
+		return NULL;
+	}
+
+	group = ec_group_new(EC_ED25519);
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	a = ec_point_multiply(group, NULL, group->g, s);
+
+	if (a == NULL)
+	{
+		ec_group_delete(group);
+		return NULL;
+	}
+
+	ec_point_encode(group, a, key->public_key, ED448_KEY_OCTETS, 0);
+
+	bignum_delete(s);
+	ec_point_delete(a);
+	ec_group_delete(group);
+
+	return key;
 }
 
 static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *key, ed25519_signature *edsign, void *message, size_t size)
