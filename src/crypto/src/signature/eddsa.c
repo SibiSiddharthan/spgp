@@ -225,6 +225,8 @@ static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *ke
 	k = bignum_set_bytes_le(k, hash, SHA512_HASH_SIZE);
 	s = bignum_set_bytes_le(s, prehash, ED25519_KEY_OCTETS);
 
+	k = bignum_mod(bctx, k, k, group->n);
+
 	// R = [k]G.
 	r.x = x;
 	r.y = y;
@@ -426,6 +428,8 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 
 	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
 	s = bignum_set_bytes_le(s, prehash, ED448_KEY_OCTETS);
+
+	k = bignum_mod(bctx, k, k, group->n);
 
 	// R = [k]G.
 	r.x = x;
@@ -647,6 +651,8 @@ static ed25519_signature *ed25519ph_sign_internal(ec_group *group, ed25519_key *
 	k = bignum_set_bytes_le(k, hash, SHA512_HASH_SIZE);
 	s = bignum_set_bytes_le(s, prehash, ED25519_KEY_OCTETS);
 
+	k = bignum_mod(bctx, k, k, group->n);
+
 	// R = [k]G.
 	r.x = x;
 	r.y = y;
@@ -863,6 +869,8 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 
 	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
 	s = bignum_set_bytes_le(s, prehash, ED448_KEY_OCTETS);
+
+	k = bignum_mod(bctx, k, k, group->n);
 
 	// R = [k]G.
 	r.x = x;
