@@ -21,6 +21,30 @@
 #include <minmax.h>
 #include <ptr.h>
 
+static void ed25519_encode_scalar(byte_t scalar[ED25519_KEY_OCTETS])
+{
+	// Clear the lowest 3 bits of the first octet
+	scalar[0] &= 0xF8;
+
+	// Clear the highest bit of the last octet
+	scalar[ED25519_KEY_OCTETS - 1] &= 0x7F;
+
+	// Set the second highest bit of the last octet
+	scalar[ED25519_KEY_OCTETS - 1] |= 0x40;
+}
+
+static void ed448_encode_scalar(byte_t scalar[ED448_KEY_OCTETS])
+{
+	// Clear the lowest 2 bits of the first octet
+	scalar[0] &= 0xFC;
+
+	// Clear the last octet
+	scalar[ED448_KEY_OCTETS - 1] = 0;
+
+	// Set the highest bit of the second last octet
+	scalar[ED448_KEY_OCTETS - 2] |= 0x80;
+}
+
 static void dom2_sha512_update(sha512_ctx *hctx, byte_t octet, void *context, byte_t context_size)
 {
 	sha512_update(hctx, "SigEd25519 no Ed25519 collisions", 32);
@@ -64,15 +88,7 @@ ed25519_key *ed25519_key_generate(ed25519_key *key, byte_t private_key[ED25519_K
 
 	// Hash the 32 byte private key
 	sha512_hash(key->private_key, ED25519_KEY_OCTETS, hash);
-
-	// Clear the lowest 3 bits of the first octet
-	hash[0] &= 0xF8;
-
-	// Clear the highest bit of the last octet
-	hash[ED25519_KEY_OCTETS - 1] &= 0x7F;
-
-	// Set the second highest bit of the last octet
-	hash[ED25519_KEY_OCTETS - 1] |= 0x40;
+	ed25519_encode_scalar(hash);
 
 	s = bignum_set_bytes_le(NULL, hash, ED25519_KEY_OCTETS);
 
@@ -131,15 +147,7 @@ ed448_key *ed448_key_generate(ed448_key *key, byte_t private_key[ED448_KEY_OCTET
 
 	// Hash the 32 byte private key
 	shake256_xof(key->private_key, ED448_KEY_OCTETS, hash, ED448_SIGN_OCTETS);
-
-	// Clear the lowest 2 bits of the first octet
-	hash[0] &= 0xFC;
-
-	// Clear the last octet
-	hash[ED448_KEY_OCTETS - 1] = 0;
-
-	// Set the highest bit of the second last octet
-	hash[ED448_KEY_OCTETS - 2] |= 0x80;
+	ed448_encode_scalar(hash);
 
 	s = bignum_set_bytes_le(NULL, hash, ED448_KEY_OCTETS);
 
@@ -212,14 +220,7 @@ static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *ke
 	sha512_final(&hctx, hash);
 	sha512_reset(&hctx);
 
-	// Clear the lowest 3 bits of the first octet
-	prehash[0] &= 0xF8;
-
-	// Clear the highest bit of the last octet
-	prehash[ED25519_KEY_OCTETS - 1] &= 0x7F;
-
-	// Set the second highest bit of the last octet
-	prehash[ED25519_KEY_OCTETS - 1] |= 0x40;
+	ed25519_encode_scalar(prehash);
 
 	k = bignum_set_bytes_le(k, hash, SHA512_HASH_SIZE);
 	s = bignum_set_bytes_le(s, prehash, ED25519_KEY_OCTETS);
@@ -421,14 +422,7 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	shake256_update(&hctx, message, message_size);
 	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
 
-	// Clear the lowest 2 bits of the first octet
-	prehash[0] &= 0xFC;
-
-	// Clear the last octet
-	prehash[ED448_KEY_OCTETS - 1] = 0;
-
-	// Set the highest bit of the second last octet
-	prehash[ED448_KEY_OCTETS - 2] |= 0x80;
+	ed448_encode_scalar(prehash);
 
 	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
 	s = bignum_set_bytes_le(s, prehash, ED448_KEY_OCTETS);
@@ -648,14 +642,7 @@ static ed25519_signature *ed25519ph_sign_internal(ec_group *group, ed25519_key *
 	sha512_update(&hctx, mhash, SHA512_HASH_SIZE);
 	sha512_final(&hctx, hash);
 
-	// Clear the lowest 3 bits of the first octet
-	prehash[0] &= 0xF8;
-
-	// Clear the highest bit of the last octet
-	prehash[ED25519_KEY_OCTETS - 1] &= 0x7F;
-
-	// Set the second highest bit of the last octet
-	prehash[ED25519_KEY_OCTETS - 1] |= 0x40;
+	ed25519_encode_scalar(prehash);
 
 	k = bignum_set_bytes_le(k, hash, SHA512_HASH_SIZE);
 	s = bignum_set_bytes_le(s, prehash, ED25519_KEY_OCTETS);
@@ -872,14 +859,7 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 	shake256_update(&hctx, mhash, 64);
 	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
 
-	// Clear the lowest 2 bits of the first octet
-	prehash[0] &= 0xFC;
-
-	// Clear the last octet
-	prehash[ED448_KEY_OCTETS - 1] = 0;
-
-	// Set the highest bit of the second last octet
-	prehash[ED448_KEY_OCTETS - 2] |= 0x80;
+	ed448_encode_scalar(prehash);
 
 	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
 	s = bignum_set_bytes_le(s, prehash, ED448_KEY_OCTETS);
