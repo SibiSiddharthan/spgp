@@ -59,20 +59,26 @@ int32_t ed448_keygen_tests(void)
 	memset(&key, 0, sizeof(ed448_key));
 	memset(private_key, 0, ED448_KEY_OCTETS);
 
-	hex_to_block(private_key, 57, "6c82a562cb808d10d632be89c8513ebf6c929f34ddfa8c9f63c9960ef6e348a3528c8a3fcc2f044e39a3fc5b94492f8f032e7549a20098f95b");
+	hex_to_block(private_key, 57,
+				 "6c82a562cb808d10d632be89c8513ebf6c929f34ddfa8c9f63c9960ef6e348a3528c8a3fcc2f044e39a3fc5b94492f8f032e7549a20098f95b");
 	ed448_key_generate(&key, private_key);
 
-	status += CHECK_BLOCK(key.public_key, 57, "5fd7449b59b461fd2ce787ec616ad46a1da1342485a70e1f8a0ea75d80e96778edf124769b46c7061bd6783df1e50f6cd1fa1abeafe8256180");
+	status +=
+		CHECK_BLOCK(key.public_key, 57,
+					"5fd7449b59b461fd2ce787ec616ad46a1da1342485a70e1f8a0ea75d80e96778edf124769b46c7061bd6783df1e50f6cd1fa1abeafe8256180");
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
 	memset(&key, 0, sizeof(ed448_key));
 	memset(private_key, 0, ED448_KEY_OCTETS);
 
-	hex_to_block(private_key, 57, "258cdd4ada32ed9c9ff54e63756ae582fb8fab2ac721f2c8e676a72768513d939f63dddb55609133f29adf86ec9929dccb52c1c5fd2ff7e21b");
+	hex_to_block(private_key, 57,
+				 "cd23d24f714274e744343237b93290f511f6425f98e64459ff203e8985083ffdf60500553abc0e05cd02184bdb89c4ccd67e187951267eb328");
 	ed448_key_generate(&key, private_key);
 
-	status += CHECK_BLOCK(key.public_key, 57, "3ba16da0c6f2cc1f30187740756f5e798d6bc5fc015d7c63cc9510ee3fd44adc24d8e968b6e46e6f94d19b945361726bd75e149ef09817f580");
+	status +=
+		CHECK_BLOCK(key.public_key, 57,
+					"dcea9e78f35a1bf3499a831b10b86c90aac01cd84b67a0109b55a36e9328b1e365fce161d71ce7131a543ea4cb5f7e9f1d8b00696447001400");
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -480,7 +486,150 @@ int32_t eddsa_448_sign_tests(void)
 	return status;
 }
 
+int32_t eddsa_25519_verify_tests(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	ed25519_signature edsign = {0};
+	ed25519_key key = {0};
+	byte_t message[1024] = {0};
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed25519_key));
+	memset(&edsign, 0, sizeof(ed25519_signature));
+	memset(message, 0, 1024);
+
+	hex_to_block(key.private_key, 32, "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb");
+	hex_to_block(key.public_key, 32, "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c");
+	hex_to_block(
+		edsign.sign, 64,
+		"92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00");
+
+	hex_to_block(message, 1, "72");
+
+	result = ed25519_verify(&key, &edsign, message, 1);
+	status += CHECK_VALUE(result, 1);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed25519_key));
+	memset(&edsign, 0, sizeof(ed25519_signature));
+	memset(message, 0, 1024);
+
+	hex_to_block(key.private_key, 32, "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7");
+	hex_to_block(key.public_key, 32, "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025");
+	hex_to_block(
+		edsign.sign, 64,
+		"6291d657deec24024827e69c3abe01a30ce548a284743a445e3680d7db5ac3ac18ff9b538d16f290ae67f760984dc6594a7c15e9716ed28dc027beceea1ec40a");
+
+	hex_to_block(message, 2, "af82");
+
+	result = ed25519_verify(&key, &edsign, message, 1);
+	status += CHECK_VALUE(result, 1);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed25519_key));
+	memset(&edsign, 0, sizeof(ed25519_signature));
+	memset(message, 0, 1024);
+
+	hex_to_block(key.private_key, 32, "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42");
+	hex_to_block(key.public_key, 32, "ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf");
+	hex_to_block(
+		edsign.sign, 64,
+		"98a70222f0b8121aa9d30f813d683f809e462b469c7ff87639499bb94e6dae4131f85042463c2a355a2003d062adf5aaa10b8c61e636062aaad11c2a26083406");
+
+	hex_to_block(message, 3, "616263");
+
+	result = ed25519ph_verify(&key, &edsign, NULL, 0, message, 3);
+	status += CHECK_VALUE(result, 1);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	return status;
+}
+
+int32_t eddsa_448_verify_tests(void)
+{
+	int32_t status = 0;
+	uint32_t result = 0;
+
+	ed448_signature edsign = {0};
+	ed448_key key = {0};
+	byte_t message[1024] = {0};
+	byte_t context[1024] = {0};
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed448_key));
+	memset(&edsign, 0, sizeof(ed448_signature));
+	memset(message, 0, 1024);
+	memset(context, 0, 1024);
+
+	hex_to_block(key.private_key, 57,
+				 "c4eab05d357007c632f3dbb48489924d552b08fe0c353a0d4a1f00acda2c463afbea67c5e8d2877c5e3bc397a659949ef8021e954e0a12274e");
+	hex_to_block(key.public_key, 57,
+				 "43ba28f430cdff456ae531545f7ecd0ac834a55d9358c0372bfa0c6c6798c0866aea01eb00742802b8438ea4cb82169c235160627b4c3a9480");
+	hex_to_block(edsign.sign, 114,
+				 "d4f8f6131770dd46f40867d6fd5d5055de43541f8c5e35abbcd001b32a89f7d2151f7647f11d8ca2ae279fb842d607217fce6e042f6815ea000c85"
+				 "741de5c8da1144a6a1aba7f96de42505d7a7298524fda538fccbbb754f578c1cad10d54d0d5428407e85dcbc98a49155c13764e66c3c00");
+
+	hex_to_block(message, 1, "03");
+	hex_to_block(context, 3, "666f6f");
+
+	result = ed448_verify(&key, &edsign, context, 3, message, 1);
+	status += CHECK_VALUE(result, 1);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed448_key));
+	memset(&edsign, 0, sizeof(ed448_signature));
+	memset(message, 0, 1024);
+	memset(context, 0, 1024);
+
+	hex_to_block(key.private_key, 57,
+				 "cd23d24f714274e744343237b93290f511f6425f98e64459ff203e8985083ffdf60500553abc0e05cd02184bdb89c4ccd67e187951267eb328");
+	hex_to_block(key.public_key, 57,
+				 "dcea9e78f35a1bf3499a831b10b86c90aac01cd84b67a0109b55a36e9328b1e365fce161d71ce7131a543ea4cb5f7e9f1d8b00696447001400");
+	hex_to_block(edsign.sign, 114,
+				 "1f0a8888ce25e8d458a21130879b840a9089d999aaba039eaf3e3afa090a09d389dba82c4ff2ae8ac5cdfb7c55e94d5d961a29fe0109941e00b8db"
+				 "deea6d3b051068df7254c0cdc129cbe62db2dc957dbb47b51fd3f213fb8698f064774250a5028961c9bf8ffd973fe5d5c206492b140e00");
+
+	hex_to_block(message, 11, "0c3e544074ec63b0265e0c");
+
+	result = ed448_verify(&key, &edsign, NULL, 0, message, 11);
+	status += CHECK_VALUE(result, 1);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed448_key));
+	memset(&edsign, 0, sizeof(ed448_signature));
+	memset(message, 0, 1024);
+	memset(context, 0, 1024);
+
+	hex_to_block(key.private_key, 57,
+				 "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42ef7822e0d5104127dc05d6dbefde69e3ab2cec7c867c6e2c49");
+	hex_to_block(key.public_key, 57,
+				 "259b71c19f83ef77a7abd26524cbdb3161b590a48f7d17de3ee0ba9c52beb743c09428a131d6b1b57303d90d8132c276d5ed3d5d01c0f53880");
+	hex_to_block(edsign.sign, 114,
+				 "c32299d46ec8ff02b54540982814dce9a05812f81962b649d528095916a2aa481065b1580423ef927ecf0af5888f90da0f6a9a85ad5dc3f280d912"
+				 "24ba9911a3653d00e484e2ce232521481c8658df304bb7745a73514cdb9bf3e15784ab71284f8d0704a608c54a6b62d97beb511d132100");
+
+	hex_to_block(message, 3, "616263");
+	hex_to_block(context, 3, "666f6f");
+
+	result = ed448ph_verify(&key, &edsign, context, 3, message, 3);
+	status += CHECK_VALUE(result, 1);
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	return status;
+}
+
 int main()
 {
-	return ed25519_keygen_tests() + ed448_keygen_tests() + eddsa_25519_sign_tests() + eddsa_448_sign_tests();
+	return ed25519_keygen_tests() + ed448_keygen_tests() + eddsa_25519_sign_tests() + eddsa_448_sign_tests() + eddsa_25519_verify_tests() +
+		   eddsa_448_verify_tests();
 }
