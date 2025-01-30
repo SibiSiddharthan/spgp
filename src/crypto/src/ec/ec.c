@@ -235,7 +235,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)nist_p192_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 192;
+		group->prime_parameters->b->bits = 191;
 		group->prime_parameters->b->size = 24;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -343,7 +343,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)nist_p256_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 256;
+		group->prime_parameters->b->bits = 255;
 		group->prime_parameters->b->size = 32;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -451,7 +451,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)nist_p521_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 521;
+		group->prime_parameters->b->bits = 519;
 		group->prime_parameters->b->size = 72;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -491,7 +491,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_k163_p_words;
 
 		// n
-		group->n->bits = 164;
+		group->n->bits = 163;
 		group->n->size = 24;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -499,16 +499,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_k163_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 164;
-		group->binary_parameters->a->size = 24;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_k163_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 164;
-		group->binary_parameters->b->size = 24;
+		group->binary_parameters->b->bits = 1;
+		group->binary_parameters->b->size = 8;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -545,7 +545,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_k233_p_words;
 
 		// n
-		group->n->bits = 234;
+		group->n->bits = 232;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -553,16 +553,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_k233_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 234;
-		group->binary_parameters->a->size = 32;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_k233_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 234;
-		group->binary_parameters->b->size = 32;
+		group->binary_parameters->b->bits = 1;
+		group->binary_parameters->b->size = 8;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -599,7 +599,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_k283_p_words;
 
 		// n
-		group->n->bits = 284;
+		group->n->bits = 281;
 		group->n->size = 40;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -607,16 +607,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_k283_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 284;
-		group->binary_parameters->a->size = 40;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_k283_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 284;
-		group->binary_parameters->b->size = 40;
+		group->binary_parameters->b->bits = 1;
+		group->binary_parameters->b->size = 8;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -653,7 +653,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_k409_p_words;
 
 		// n
-		group->n->bits = 410;
+		group->n->bits = 407;
 		group->n->size = 56;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -661,16 +661,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_k409_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 410;
-		group->binary_parameters->a->size = 56;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_k409_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 410;
-		group->binary_parameters->b->size = 56;
+		group->binary_parameters->b->bits = 1;
+		group->binary_parameters->b->size = 8;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -707,7 +707,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_k571_p_words;
 
 		// n
-		group->n->bits = 572;
+		group->n->bits = 570;
 		group->n->size = 72;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -715,16 +715,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_k571_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 572;
-		group->binary_parameters->a->size = 72;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_k571_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 572;
-		group->binary_parameters->b->size = 72;
+		group->binary_parameters->b->bits = 1;
+		group->binary_parameters->b->size = 8;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -763,7 +763,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_b163_p_words;
 
 		// n
-		group->n->bits = 164;
+		group->n->bits = 163;
 		group->n->size = 24;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -771,15 +771,15 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_b163_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 164;
-		group->binary_parameters->a->size = 24;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_b163_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 164;
+		group->binary_parameters->b->bits = 162;
 		group->binary_parameters->b->size = 24;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
@@ -817,7 +817,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_b233_p_words;
 
 		// n
-		group->n->bits = 234;
+		group->n->bits = 233;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -825,15 +825,15 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_b233_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 234;
-		group->binary_parameters->a->size = 32;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_b233_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 234;
+		group->binary_parameters->b->bits = 231;
 		group->binary_parameters->b->size = 32;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
@@ -871,7 +871,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_b283_p_words;
 
 		// n
-		group->n->bits = 284;
+		group->n->bits = 282;
 		group->n->size = 40;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -879,15 +879,15 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_b283_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 284;
-		group->binary_parameters->a->size = 40;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_b283_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 284;
+		group->binary_parameters->b->bits = 282;
 		group->binary_parameters->b->size = 40;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
@@ -925,7 +925,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_b409_p_words;
 
 		// n
-		group->n->bits = 410;
+		group->n->bits = 409;
 		group->n->size = 56;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -933,15 +933,15 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_b409_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 410;
-		group->binary_parameters->a->size = 56;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_b409_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 410;
+		group->binary_parameters->b->bits = 406;
 		group->binary_parameters->b->size = 56;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
@@ -979,7 +979,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)nist_b571_p_words;
 
 		// n
-		group->n->bits = 572;
+		group->n->bits = 570;
 		group->n->size = 72;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -987,15 +987,15 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)nist_b571_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 572;
-		group->binary_parameters->a->size = 72;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)nist_b571_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 572;
+		group->binary_parameters->b->bits = 570;
 		group->binary_parameters->b->size = 72;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
@@ -1035,7 +1035,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)secp_160k1_p_words;
 
 		// n
-		group->n->bits = 160;
+		group->n->bits = 161;
 		group->n->size = 24;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1043,16 +1043,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)secp_160k1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 160;
-		group->prime_parameters->a->size = 24;
+		group->prime_parameters->a->bits = 1;
+		group->prime_parameters->a->size = 8;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
 		group->prime_parameters->a->flags = 0;
 		group->prime_parameters->a->words = (bn_word_t *)secp_160k1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 160;
-		group->prime_parameters->b->size = 24;
+		group->prime_parameters->b->bits = 3;
+		group->prime_parameters->b->size = 8;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
 		group->prime_parameters->b->flags = 0;
@@ -1073,6 +1073,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)secp_160k1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_SECP_160R1:
@@ -1086,7 +1088,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)secp_160r1_p_words;
 
 		// n
-		group->n->bits = 160;
+		group->n->bits = 161;
 		group->n->size = 24;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1102,7 +1104,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)secp_160r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 160;
+		group->prime_parameters->b->bits = 157;
 		group->prime_parameters->b->size = 24;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1124,6 +1126,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)secp_160r1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_SECP_160R2:
@@ -1137,7 +1141,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)secp_160r2_p_words;
 
 		// n
-		group->n->bits = 160;
+		group->n->bits = 161;
 		group->n->size = 24;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1175,6 +1179,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)secp_160r2_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_SECP_192K1:
@@ -1196,16 +1202,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)secp_192k1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 192;
-		group->prime_parameters->a->size = 24;
+		group->prime_parameters->a->bits = 1;
+		group->prime_parameters->a->size = 8;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
 		group->prime_parameters->a->flags = 0;
 		group->prime_parameters->a->words = (bn_word_t *)secp_192k1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 192;
-		group->prime_parameters->b->size = 24;
+		group->prime_parameters->b->bits = 2;
+		group->prime_parameters->b->size = 8;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
 		group->prime_parameters->b->flags = 0;
@@ -1226,6 +1232,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)secp_192k1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_SECP_192R1:
@@ -1241,7 +1249,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)secp_224k1_p_words;
 
 		// n
-		group->n->bits = 224;
+		group->n->bits = 225;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1249,16 +1257,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)secp_224k1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 224;
-		group->prime_parameters->a->size = 32;
+		group->prime_parameters->a->bits = 1;
+		group->prime_parameters->a->size = 8;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
 		group->prime_parameters->a->flags = 0;
 		group->prime_parameters->a->words = (bn_word_t *)secp_224k1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 224;
-		group->prime_parameters->b->size = 32;
+		group->prime_parameters->b->bits = 3;
+		group->prime_parameters->b->size = 8;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
 		group->prime_parameters->b->flags = 0;
@@ -1279,6 +1287,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)secp_224k1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_SECP_224R1:
@@ -1302,16 +1312,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)secp_256k1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 256;
-		group->prime_parameters->a->size = 32;
+		group->prime_parameters->a->bits = 1;
+		group->prime_parameters->a->size = 8;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
 		group->prime_parameters->a->flags = 0;
 		group->prime_parameters->a->words = (bn_word_t *)secp_256k1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 256;
-		group->prime_parameters->b->size = 32;
+		group->prime_parameters->b->bits = 3;
+		group->prime_parameters->b->size = 8;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
 		group->prime_parameters->b->flags = 0;
@@ -1332,6 +1342,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)secp_256k1_gy_words;
+
+		goto prime_init;
 	}
 	break;
 	case EC_SECP_256R1:
@@ -1355,7 +1367,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)sect_163r1_p_words;
 
 		// n
-		group->n->bits = 164;
+		group->n->bits = 162;
 		group->n->size = 24;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1363,7 +1375,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)sect_163r1_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 164;
+		group->binary_parameters->a->bits = 163;
 		group->binary_parameters->a->size = 24;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
@@ -1371,7 +1383,7 @@ ec_group *ec_group_new(curve_id id)
 		group->binary_parameters->a->words = (bn_word_t *)sect_163r1_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 164;
+		group->binary_parameters->b->bits = 163;
 		group->binary_parameters->b->size = 24;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
@@ -1393,6 +1405,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)sect_163r1_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_SECT_163R2:
@@ -1408,7 +1422,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)sect_193r1_p_words;
 
 		// n
-		group->n->bits = 194;
+		group->n->bits = 193;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1416,16 +1430,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)sect_193r1_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 194;
-		group->binary_parameters->a->size = 32;
+		group->binary_parameters->a->bits = 189;
+		group->binary_parameters->a->size = 24;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)sect_193r1_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 194;
-		group->binary_parameters->b->size = 32;
+		group->binary_parameters->b->bits = 192;
+		group->binary_parameters->b->size = 24;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -1446,6 +1460,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)sect_193r1_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_SECT_193R2:
@@ -1459,7 +1475,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)sect_193r2_p_words;
 
 		// n
-		group->n->bits = 194;
+		group->n->bits = 193;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1467,7 +1483,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)sect_193r2_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 194;
+		group->binary_parameters->a->bits = 193;
 		group->binary_parameters->a->size = 32;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
@@ -1475,8 +1491,8 @@ ec_group *ec_group_new(curve_id id)
 		group->binary_parameters->a->words = (bn_word_t *)sect_193r2_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 194;
-		group->binary_parameters->b->size = 32;
+		group->binary_parameters->b->bits = 192;
+		group->binary_parameters->b->size = 24;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -1497,6 +1513,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)sect_193r2_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_SECT_233K1:
@@ -1514,7 +1532,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)sect_239k1_p_words;
 
 		// n
-		group->n->bits = 240;
+		group->n->bits = 238;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -1522,16 +1540,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)sect_239k1_n_words;
 
 		// binary_parameters->a
-		group->binary_parameters->a->bits = 240;
-		group->binary_parameters->a->size = 32;
+		group->binary_parameters->a->bits = 1;
+		group->binary_parameters->a->size = 8;
 		group->binary_parameters->a->sign = 1;
 		group->binary_parameters->a->resize = 0;
 		group->binary_parameters->a->flags = 0;
 		group->binary_parameters->a->words = (bn_word_t *)sect_239k1_a_words;
 
 		// binary_parameters->b
-		group->binary_parameters->b->bits = 240;
-		group->binary_parameters->b->size = 32;
+		group->binary_parameters->b->bits = 1;
+		group->binary_parameters->b->size = 8;
 		group->binary_parameters->b->sign = 1;
 		group->binary_parameters->b->resize = 0;
 		group->binary_parameters->b->flags = 0;
@@ -1552,6 +1570,8 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)sect_239k1_gy_words;
+
+		goto binary_init;
 	}
 	break;
 	case EC_SECT_283K1:
@@ -1587,7 +1607,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)brainpool_160r1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 160;
+		group->prime_parameters->a->bits = 158;
 		group->prime_parameters->a->size = 24;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
@@ -1595,7 +1615,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_160r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 160;
+		group->prime_parameters->b->bits = 157;
 		group->prime_parameters->b->size = 24;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1648,7 +1668,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_160t1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 160;
+		group->prime_parameters->b->bits = 159;
 		group->prime_parameters->b->size = 24;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1693,7 +1713,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)brainpool_192r1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 192;
+		group->prime_parameters->a->bits = 191;
 		group->prime_parameters->a->size = 24;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
@@ -1701,7 +1721,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_192r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 192;
+		group->prime_parameters->b->bits = 191;
 		group->prime_parameters->b->size = 24;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1723,7 +1743,6 @@ ec_group *ec_group_new(curve_id id)
 		group->g->y->resize = 0;
 		group->g->y->flags = 0;
 		group->g->y->words = (bn_word_t *)brainpool_192r1_gy_words;
-
 		goto prime_init;
 	}
 	break;
@@ -1754,7 +1773,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_192t1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 192;
+		group->prime_parameters->b->bits = 189;
 		group->prime_parameters->b->size = 24;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1799,7 +1818,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)brainpool_224r1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 224;
+		group->prime_parameters->a->bits = 223;
 		group->prime_parameters->a->size = 32;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
@@ -1807,7 +1826,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_224r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 224;
+		group->prime_parameters->b->bits = 222;
 		group->prime_parameters->b->size = 32;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1860,7 +1879,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_224t1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 224;
+		group->prime_parameters->b->bits = 223;
 		group->prime_parameters->b->size = 32;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1905,7 +1924,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)brainpool_256r1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 256;
+		group->prime_parameters->a->bits = 255;
 		group->prime_parameters->a->size = 32;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
@@ -1913,7 +1932,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_256r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 256;
+		group->prime_parameters->b->bits = 254;
 		group->prime_parameters->b->size = 32;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -1966,7 +1985,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_256t1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 256;
+		group->prime_parameters->b->bits = 255;
 		group->prime_parameters->b->size = 32;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -2011,7 +2030,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)brainpool_320r1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 320;
+		group->prime_parameters->a->bits = 318;
 		group->prime_parameters->a->size = 40;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
@@ -2019,7 +2038,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_320r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 320;
+		group->prime_parameters->b->bits = 319;
 		group->prime_parameters->b->size = 40;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -2117,7 +2136,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)brainpool_384r1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 384;
+		group->prime_parameters->a->bits = 383;
 		group->prime_parameters->a->size = 48;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
@@ -2125,7 +2144,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_384r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 384;
+		group->prime_parameters->b->bits = 379;
 		group->prime_parameters->b->size = 48;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -2178,7 +2197,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_384t1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 384;
+		group->prime_parameters->b->bits = 383;
 		group->prime_parameters->b->size = 48;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -2223,7 +2242,7 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)brainpool_512r1_n_words;
 
 		// prime_parameters->a
-		group->prime_parameters->a->bits = 512;
+		group->prime_parameters->a->bits = 511;
 		group->prime_parameters->a->size = 64;
 		group->prime_parameters->a->sign = 1;
 		group->prime_parameters->a->resize = 0;
@@ -2231,7 +2250,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_512r1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 512;
+		group->prime_parameters->b->bits = 510;
 		group->prime_parameters->b->size = 64;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -2284,7 +2303,7 @@ ec_group *ec_group_new(curve_id id)
 		group->prime_parameters->a->words = (bn_word_t *)brainpool_512t1_a_words;
 
 		// prime_parameters->b
-		group->prime_parameters->b->bits = 512;
+		group->prime_parameters->b->bits = 511;
 		group->prime_parameters->b->size = 64;
 		group->prime_parameters->b->sign = 1;
 		group->prime_parameters->b->resize = 0;
@@ -2323,7 +2342,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)curve25519_p_words;
 
 		// n
-		group->n->bits = 255;
+		group->n->bits = 253;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -2331,16 +2350,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)curve25519_n_words;
 
 		// montgomery_parameters->a
-		group->montgomery_parameters->a->bits = 255;
-		group->montgomery_parameters->a->size = 32;
+		group->montgomery_parameters->a->bits = 19;
+		group->montgomery_parameters->a->size = 8;
 		group->montgomery_parameters->a->sign = 1;
 		group->montgomery_parameters->a->resize = 0;
 		group->montgomery_parameters->a->flags = 0;
 		group->montgomery_parameters->a->words = (bn_word_t *)curve25519_a_words;
 
 		// montgomery_parameters->b
-		group->montgomery_parameters->b->bits = 255;
-		group->montgomery_parameters->b->size = 32;
+		group->montgomery_parameters->b->bits = 1;
+		group->montgomery_parameters->b->size = 8;
 		group->montgomery_parameters->b->sign = 1;
 		group->montgomery_parameters->b->resize = 0;
 		group->montgomery_parameters->b->flags = 0;
@@ -2376,7 +2395,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)curve448_p_words;
 
 		// n
-		group->n->bits = 448;
+		group->n->bits = 446;
 		group->n->size = 56;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -2384,16 +2403,16 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)curve448_n_words;
 
 		// montgomery_parameters->a
-		group->montgomery_parameters->a->bits = 448;
-		group->montgomery_parameters->a->size = 56;
+		group->montgomery_parameters->a->bits = 18;
+		group->montgomery_parameters->a->size = 8;
 		group->montgomery_parameters->a->sign = 1;
 		group->montgomery_parameters->a->resize = 0;
 		group->montgomery_parameters->a->flags = 0;
 		group->montgomery_parameters->a->words = (bn_word_t *)curve448_a_words;
 
 		// montgomery_parameters->b
-		group->montgomery_parameters->b->bits = 448;
-		group->montgomery_parameters->b->size = 56;
+		group->montgomery_parameters->b->bits = 1;
+		group->montgomery_parameters->b->size = 8;
 		group->montgomery_parameters->b->sign = 1;
 		group->montgomery_parameters->b->resize = 0;
 		group->montgomery_parameters->b->flags = 0;
@@ -2431,7 +2450,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)ed25519_p_words;
 
 		// n
-		group->n->bits = 255;
+		group->n->bits = 253;
 		group->n->size = 32;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -2446,7 +2465,7 @@ ec_group *ec_group_new(curve_id id)
 		group->edwards_parameters->a->flags = 0;
 		group->edwards_parameters->a->words = (bn_word_t *)ed25519_a_words;
 
-		// edwards_parameters->b
+		// edwards_parameters->d
 		group->edwards_parameters->d->bits = 255;
 		group->edwards_parameters->d->size = 32;
 		group->edwards_parameters->d->sign = 1;
@@ -2487,7 +2506,7 @@ ec_group *ec_group_new(curve_id id)
 		group->p->words = (bn_word_t *)ed448_p_words;
 
 		// n
-		group->n->bits = 448;
+		group->n->bits = 446;
 		group->n->size = 56;
 		group->n->sign = 1;
 		group->n->resize = 0;
@@ -2495,14 +2514,14 @@ ec_group *ec_group_new(curve_id id)
 		group->n->words = (bn_word_t *)ed448_n_words;
 
 		// edwards_parameters->a
-		group->edwards_parameters->a->bits = 448;
-		group->edwards_parameters->a->size = 56;
+		group->edwards_parameters->a->bits = 1;
+		group->edwards_parameters->a->size = 8;
 		group->edwards_parameters->a->sign = 1;
 		group->edwards_parameters->a->resize = 0;
 		group->edwards_parameters->a->flags = 0;
 		group->edwards_parameters->a->words = (bn_word_t *)ed448_a_words;
 
-		// edwards_parameters->b
+		// edwards_parameters->d
 		group->edwards_parameters->d->bits = 448;
 		group->edwards_parameters->d->size = 56;
 		group->edwards_parameters->d->sign = 1;
