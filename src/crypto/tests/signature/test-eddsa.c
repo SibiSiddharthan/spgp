@@ -526,7 +526,7 @@ int32_t eddsa_25519_verify_tests(void)
 
 	hex_to_block(message, 2, "af82");
 
-	result = ed25519_verify(&key, &edsign, message, 1);
+	result = ed25519_verify(&key, &edsign, message, 2);
 	status += CHECK_VALUE(result, 1);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------

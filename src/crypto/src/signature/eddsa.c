@@ -314,7 +314,10 @@ static uint32_t ed25519_verify_internal(ec_group *group, ed25519_key *key, ed255
 
 	bignum_ctx_start(bctx, ctx_size);
 
-	t = bignum_ctx_allocate_bignum(bctx, group->bits);
+	r = ec_point_new(group);
+	q = ec_point_new(group);
+
+	t = bignum_ctx_allocate_bignum(bctx, ED25519_SIGN_OCTETS * 8);
 	u = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
 
 	t = bignum_set_bytes_le(t, PTR_OFFSET(edsign, ED25519_KEY_OCTETS), ED25519_KEY_OCTETS);
@@ -358,6 +361,8 @@ static uint32_t ed25519_verify_internal(ec_group *group, ed25519_key *key, ed255
 	}
 
 end:
+	ec_point_delete(r);
+	ec_point_delete(q);
 	bignum_ctx_end(bctx);
 
 	return status;
@@ -528,7 +533,10 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 
 	bignum_ctx_start(bctx, ctx_size);
 
-	t = bignum_ctx_allocate_bignum(bctx, group->bits);
+	r = ec_point_new(group);
+	q = ec_point_new(group);
+
+	t = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
 	u = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
 
 	t = bignum_set_bytes_le(t, PTR_OFFSET(edsign, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
@@ -552,7 +560,7 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 		goto end;
 	}
 
-	shake256_init(&hctx, sizeof(sha512_ctx), 912);
+	shake256_init(&hctx, sizeof(shake256_ctx), 912);
 
 	shake256_reset(&hctx, 912);
 	dom4_shake256_update(&hctx, 0, context, context_size);
@@ -574,6 +582,8 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 	}
 
 end:
+	ec_point_delete(r);
+	ec_point_delete(q);
 	bignum_ctx_end(bctx);
 
 	return status;
@@ -744,7 +754,10 @@ static uint32_t ed25519ph_verify_internal(ec_group *group, ed25519_key *key, ed2
 
 	bignum_ctx_start(bctx, ctx_size);
 
-	t = bignum_ctx_allocate_bignum(bctx, group->bits);
+	r = ec_point_new(group);
+	q = ec_point_new(group);
+
+	t = bignum_ctx_allocate_bignum(bctx, ED25519_SIGN_OCTETS * 8);
 	u = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
 
 	t = bignum_set_bytes_le(t, PTR_OFFSET(edsign, ED25519_KEY_OCTETS), ED25519_KEY_OCTETS);
@@ -793,6 +806,8 @@ static uint32_t ed25519ph_verify_internal(ec_group *group, ed25519_key *key, ed2
 	}
 
 end:
+	ec_point_delete(r);
+	ec_point_delete(q);
 	bignum_ctx_end(bctx);
 
 	return status;
@@ -969,7 +984,10 @@ static uint32_t ed448ph_verify_internal(ec_group *group, ed448_key *key, ed448_s
 
 	bignum_ctx_start(bctx, ctx_size);
 
-	t = bignum_ctx_allocate_bignum(bctx, group->bits);
+	r = ec_point_new(group);
+	q = ec_point_new(group);
+
+	t = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
 	u = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
 
 	t = bignum_set_bytes_le(t, PTR_OFFSET(edsign, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
@@ -993,7 +1011,7 @@ static uint32_t ed448ph_verify_internal(ec_group *group, ed448_key *key, ed448_s
 		goto end;
 	}
 
-	shake256_init(&hctx, sizeof(sha512_ctx), 512);
+	shake256_init(&hctx, sizeof(shake256_ctx), 512);
 	shake256_update(&hctx, message, message_size);
 	shake256_final(&hctx, hash, 64);
 
@@ -1017,6 +1035,8 @@ static uint32_t ed448ph_verify_internal(ec_group *group, ed448_key *key, ed448_s
 	}
 
 end:
+	ec_point_delete(r);
+	ec_point_delete(q);
 	bignum_ctx_end(bctx);
 
 	return status;

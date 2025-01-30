@@ -284,9 +284,10 @@ ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint
 {
 	ec_edwards_curve *parameters = eg->edwards_parameters;
 
-	bignum_t *temp = NULL, *u = NULL, *v = NULL, *w = NULL;
+	bignum_t *temp = NULL, *one = NULL, *u = NULL, *v = NULL, *w = NULL;
 	bignum_t *t1 = NULL, *t2 = NULL, *t3 = NULL, *t4 = NULL;
 
+	byte_t buffer_copy[32] = {0};
 	byte_t *in = buffer;
 	byte_t x = 0;
 
@@ -295,32 +296,50 @@ ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint
 		return NULL;
 	}
 
+	if (ep == NULL)
+	{
+		ep = ec_point_new(eg);
+
+		if (ep == NULL)
+		{
+			return NULL;
+		}
+	}
+
 	x = in[31] >> 7;
 
-	// Copy y (Ignore the most significant byte)
-	bignum_set_bytes_le(ep->y, buffer, 31);
+	memcpy(buffer_copy, buffer, 32);
 
-	bignum_ctx_start(eg->bctx, 8 * bignum_size(eg->bits * 2));
+	// Mask the last bit.
+	buffer_copy[31] &= 0x7F;
 
-	temp = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	u = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	v = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	w = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	// Copy y (Ignore the most significant bit)
+	bignum_set_bytes_le(ep->y, buffer_copy, 32);
 
-	t1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	t2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	t3 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	t4 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	bignum_ctx_start(eg->bctx, 10 * bignum_size(eg->bits * 3));
+
+	temp = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	u = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	v = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	w = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	one = bignum_ctx_allocate_bignum(eg->bctx, 1);
+
+	t1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	t2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	t3 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	t4 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+
+	bignum_one(one);
 
 	// Compute y^2
 	temp = bignum_sqr(eg->bctx, temp, ep->y);
 
 	// Compute y^2 - 1
-	u = bignum_usub_word(u, temp, 1);
+	u = bignum_modsub(eg->bctx, u, temp, one, eg->p);
 
 	// Compute dy^2 + 1
 	v = bignum_mul(eg->bctx, v, temp, parameters->d);
-	v = bignum_uadd_word(v, v, 1);
+	v = bignum_modadd(eg->bctx, v, v, one, eg->p);
 
 	// p = 5 mod 8
 	// Compute uv^3
@@ -360,9 +379,7 @@ ec_point *ec_ed25519_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint
 		t3 = bignum_usub_word(t3, t3, 1);
 		t3 = bignum_rshift(t3, t3, 2);
 
-		bignum_one(t4);
-		bignum_lshift1(t4, t4);
-
+		bignum_set_word(t4, 2);
 		t4 = bignum_modexp(eg->bctx, t4, t4, t3, eg->p);
 
 		w = bignum_modmul(eg->bctx, w, w, t4, eg->p);
@@ -421,7 +438,7 @@ ec_point *ec_ed448_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32
 {
 	ec_edwards_curve *parameters = eg->edwards_parameters;
 
-	bignum_t *temp = NULL, *u = NULL, *v = NULL, *w = NULL;
+	bignum_t *temp = NULL, *one = NULL, *u = NULL, *v = NULL, *w = NULL;
 	bignum_t *t1 = NULL, *t2 = NULL, *t3 = NULL, *t4 = NULL;
 
 	byte_t *in = buffer;
@@ -432,32 +449,45 @@ ec_point *ec_ed448_point_decode(ec_group *eg, ec_point *ep, void *buffer, uint32
 		return NULL;
 	}
 
+	if (ep == NULL)
+	{
+		ep = ec_point_new(eg);
+
+		if (ep == NULL)
+		{
+			return NULL;
+		}
+	}
+
 	x = in[56] >> 7;
 
 	// Copy y (Ignore the most significant byte)
 	bignum_set_bytes_le(ep->y, buffer, 56);
 
-	bignum_ctx_start(eg->bctx, 8 * bignum_size(eg->bits * 2));
+	bignum_ctx_start(eg->bctx, 10 * bignum_size(eg->bits * 3));
 
-	temp = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	u = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	v = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	w = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	temp = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	u = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	v = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	w = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	one = bignum_ctx_allocate_bignum(eg->bctx, 1);
 
-	t1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	t2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	t3 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
-	t4 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 2);
+	t1 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	t2 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	t3 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+	t4 = bignum_ctx_allocate_bignum(eg->bctx, eg->bits * 3);
+
+	bignum_one(one);
 
 	// Compute y^2
 	temp = bignum_sqr(eg->bctx, temp, ep->y);
 
 	// Compute y^2 - 1
-	u = bignum_usub_word(u, temp, 1);
+	u = bignum_modsub(eg->bctx, u, temp, one, eg->p);
 
-	// Compute dy^2 + 1
+	// Compute dy^2 - 1
 	v = bignum_mul(eg->bctx, v, temp, parameters->d);
-	v = bignum_uadd_word(v, v, 1);
+	v = bignum_modsub(eg->bctx, v, v, one, eg->p);
 
 	// p = 3 mod 4
 	// Compute u^3v
