@@ -15,6 +15,70 @@
 
 // Refer RFC 8032: Edwards-Curve Digital Signature Algorithm (EdDSA) for test vectors
 
+int32_t ed25519_keygen_tests(void)
+{
+	int32_t status = 0;
+
+	ed25519_key key = {0};
+	byte_t private_key[ED25519_KEY_OCTETS] = {0};
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed25519_key));
+	memset(private_key, 0, ED25519_KEY_OCTETS);
+
+	hex_to_block(private_key, 32, "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60");
+	ed25519_key_generate(&key, private_key);
+
+	status += CHECK_BLOCK(key.public_key, 32, "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a");
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed25519_key));
+	memset(private_key, 0, ED25519_KEY_OCTETS);
+
+	hex_to_block(private_key, 32, "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb");
+	ed25519_key_generate(&key, private_key);
+
+	status += CHECK_BLOCK(key.public_key, 32, "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c");
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	return status;
+}
+
+int32_t ed448_keygen_tests(void)
+{
+	int32_t status = 0;
+
+	ed448_key key = {0};
+	byte_t private_key[ED448_KEY_OCTETS] = {0};
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed448_key));
+	memset(private_key, 0, ED448_KEY_OCTETS);
+
+	hex_to_block(private_key, 57, "6c82a562cb808d10d632be89c8513ebf6c929f34ddfa8c9f63c9960ef6e348a3528c8a3fcc2f044e39a3fc5b94492f8f032e7549a20098f95b");
+	ed448_key_generate(&key, private_key);
+
+	status += CHECK_BLOCK(key.public_key, 57, "5fd7449b59b461fd2ce787ec616ad46a1da1342485a70e1f8a0ea75d80e96778edf124769b46c7061bd6783df1e50f6cd1fa1abeafe8256180");
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	memset(&key, 0, sizeof(ed448_key));
+	memset(private_key, 0, ED448_KEY_OCTETS);
+
+	hex_to_block(private_key, 57, "258cdd4ada32ed9c9ff54e63756ae582fb8fab2ac721f2c8e676a72768513d939f63dddb55609133f29adf86ec9929dccb52c1c5fd2ff7e21b");
+	ed448_key_generate(&key, private_key);
+
+	status += CHECK_BLOCK(key.public_key, 57, "3ba16da0c6f2cc1f30187740756f5e798d6bc5fc015d7c63cc9510ee3fd44adc24d8e968b6e46e6f94d19b945361726bd75e149ef09817f580");
+
+	// ----------------------------------------------------------------------------------------------------------------------------------------
+
+	return status;
+}
+
 int32_t eddsa_25519_sign_tests(void)
 {
 	int32_t status = 0;
@@ -418,5 +482,5 @@ int32_t eddsa_448_sign_tests(void)
 
 int main()
 {
-	return eddsa_25519_sign_tests() + eddsa_448_sign_tests();
+	return ed25519_keygen_tests() + ed448_keygen_tests() + eddsa_25519_sign_tests() + eddsa_448_sign_tests();
 }
