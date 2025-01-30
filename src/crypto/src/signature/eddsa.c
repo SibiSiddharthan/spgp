@@ -138,7 +138,7 @@ ed448_key *ed448_key_generate(ed448_key *key, byte_t private_key[ED448_KEY_OCTET
 	// Clear the last octet
 	hash[ED448_KEY_OCTETS - 1] = 0;
 
-	// Set the  highest bit of the second last octet
+	// Set the highest bit of the second last octet
 	hash[ED448_KEY_OCTETS - 2] |= 0x80;
 
 	s = bignum_set_bytes_le(NULL, hash, ED448_KEY_OCTETS);
@@ -148,7 +148,7 @@ ed448_key *ed448_key_generate(ed448_key *key, byte_t private_key[ED448_KEY_OCTET
 		return NULL;
 	}
 
-	group = ec_group_new(EC_ED25519);
+	group = ec_group_new(EC_ED448);
 
 	if (group == NULL)
 	{
@@ -212,9 +212,17 @@ static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *ke
 	sha512_final(&hctx, hash);
 	sha512_reset(&hctx);
 
+	// Clear the lowest 3 bits of the first octet
+	prehash[0] &= 0xF8;
+
+	// Clear the highest bit of the last octet
+	prehash[ED25519_KEY_OCTETS - 1] &= 0x7F;
+
+	// Set the second highest bit of the last octet
+	prehash[ED25519_KEY_OCTETS - 1] |= 0x40;
+
 	k = bignum_set_bytes_le(k, hash, SHA512_HASH_SIZE);
-	s = bignum_set_bytes_le(s, prehash, SHA512_HASH_SIZE);
-	d = bignum_set_bytes_le(d, prehash, SHA512_HASH_SIZE);
+	s = bignum_set_bytes_le(s, prehash, ED25519_KEY_OCTETS);
 
 	// R = [k]G.
 	r.x = x;
@@ -376,7 +384,7 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 											void *message, size_t message_size)
 {
 	bignum_ctx *bctx = group->bctx;
-	size_t ctx_size = 2 * bignum_size(group->bits) + 3 * bignum_size(SHA512_HASH_SIZE * 8);
+	size_t ctx_size = 2 * bignum_size(group->bits) + 3 * bignum_size(ED448_SIGN_OCTETS * 8);
 
 	bignum_t *k = NULL;
 	bignum_t *s = NULL;
@@ -398,9 +406,9 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 
 	x = bignum_ctx_allocate_bignum(bctx, group->bits);
 	y = bignum_ctx_allocate_bignum(bctx, group->bits);
-	k = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
-	s = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
-	d = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
+	k = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
+	s = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
+	d = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
 
 	// Compute the prehash
 	shake256_update(&hctx, key->private_key, ED448_KEY_OCTETS);
@@ -413,8 +421,17 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	shake256_update(&hctx, message, message_size);
 	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
 
+	// Clear the lowest 2 bits of the first octet
+	prehash[0] &= 0xFC;
+
+	// Clear the last octet
+	prehash[ED448_KEY_OCTETS - 1] = 0;
+
+	// Set the highest bit of the second last octet
+	prehash[ED448_KEY_OCTETS - 2] |= 0x80;
+
 	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
-	s = bignum_set_bytes_le(d, prehash, ED448_SIGN_OCTETS);
+	s = bignum_set_bytes_le(s, prehash, ED448_KEY_OCTETS);
 
 	// R = [k]G.
 	r.x = x;
@@ -631,8 +648,17 @@ static ed25519_signature *ed25519ph_sign_internal(ec_group *group, ed25519_key *
 	sha512_update(&hctx, mhash, SHA512_HASH_SIZE);
 	sha512_final(&hctx, hash);
 
+	// Clear the lowest 3 bits of the first octet
+	prehash[0] &= 0xF8;
+
+	// Clear the highest bit of the last octet
+	prehash[ED25519_KEY_OCTETS - 1] &= 0x7F;
+
+	// Set the second highest bit of the last octet
+	prehash[ED25519_KEY_OCTETS - 1] |= 0x40;
+
 	k = bignum_set_bytes_le(k, hash, SHA512_HASH_SIZE);
-	s = bignum_set_bytes_le(s, prehash, SHA512_HASH_SIZE);
+	s = bignum_set_bytes_le(s, prehash, ED25519_KEY_OCTETS);
 
 	// R = [k]G.
 	r.x = x;
@@ -804,7 +830,7 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 											  void *message, size_t message_size)
 {
 	bignum_ctx *bctx = group->bctx;
-	size_t ctx_size = 2 * bignum_size(group->bits) + 3 * bignum_size(SHA512_HASH_SIZE * 8);
+	size_t ctx_size = 2 * bignum_size(group->bits) + 3 * bignum_size(ED448_SIGN_OCTETS * 8);
 
 	bignum_t *k = NULL;
 	bignum_t *s = NULL;
@@ -825,9 +851,9 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 
 	x = bignum_ctx_allocate_bignum(bctx, group->bits);
 	y = bignum_ctx_allocate_bignum(bctx, group->bits);
-	k = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
-	s = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
-	d = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
+	k = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
+	s = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
+	d = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
 
 	// Hash the message
 	shake256_init(&hctx, sizeof(shake256_ctx), 512);
@@ -843,10 +869,20 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 	shake256_reset(&hctx, 912);
 	dom4_shake256_update(&hctx, 1, context, context_size);
 	shake256_update(&hctx, PTR_OFFSET(prehash, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
+	shake256_update(&hctx, mhash, 64);
 	shake256_final(&hctx, hash, ED448_SIGN_OCTETS);
 
+	// Clear the lowest 2 bits of the first octet
+	prehash[0] &= 0xFC;
+
+	// Clear the last octet
+	prehash[ED448_KEY_OCTETS - 1] = 0;
+
+	// Set the highest bit of the second last octet
+	prehash[ED448_KEY_OCTETS - 2] |= 0x80;
+
 	k = bignum_set_bytes_le(k, hash, ED448_SIGN_OCTETS);
-	s = bignum_set_bytes_le(s, prehash, ED448_SIGN_OCTETS);
+	s = bignum_set_bytes_le(s, prehash, ED448_KEY_OCTETS);
 
 	// R = [k]G.
 	r.x = x;
