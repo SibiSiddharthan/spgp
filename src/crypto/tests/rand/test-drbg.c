@@ -10,12 +10,15 @@
 
 #include <drbg.h>
 #include <test.h>
+#include <unused.h>
 
 // Tests taken from NIST
 
 static uint32_t hmac_drbg_sha256_entropy(void *state, void *buffer, uint32_t size)
 {
 	static uint32_t count = 0;
+
+	UNUSED(state);
 
 	switch (count)
 	{
@@ -206,6 +209,8 @@ int32_t hmac_drbg_test_suite()
 static uint32_t hash_drbg_sha256_entropy(void *state, void *buffer, uint32_t size)
 {
 	static uint32_t count = 0;
+
+	UNUSED(state);
 
 	switch (count)
 	{
@@ -423,6 +428,8 @@ int32_t hash_drbg_test_suite()
 static uint32_t ctr_drbg_aes256_entropy(void *state, void *buffer, uint32_t size)
 {
 	static uint32_t count = 0;
+
+	UNUSED(state);
 
 	switch (count)
 	{

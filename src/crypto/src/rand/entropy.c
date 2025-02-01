@@ -8,12 +8,15 @@
 #include <string.h>
 #include <intrin.h>
 #include <types.h>
+#include <unused.h>
 
 uint32_t get_entropy(void *state, void *buffer, uint32_t size)
 {
 	uint32_t status = 0;
 	uint32_t count = 0;
 	byte_t *bp = buffer;
+
+	UNUSED(state);
 
 	while ((count + sizeof(uint64_t)) < size)
 	{
