@@ -1,0 +1,81 @@
+name: spgp CI/CD
+
+on: workflow_dispatch
+
+jobs:
+  clang-asan:
+    runs-on: windows-2025
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        SET CC=clang
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
+        ninja
+        ctest -VV
+
+  clang-release:
+    runs-on: windows-2025
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        SET CC=clang
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+        ninja
+        ctest -VV
+
+  msvc-release:
+    runs-on: windows-2025
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
+        SET CC=cl
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+        ninja
+        ctest -VV
+
+  gcc-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ninja
+        shell: bash
+        run: apt install ninja-build
+      - name: Build & Test
+        shell: bash
+        run: |
+          CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
+          export CC=gcc
+          cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+          ninja
+          ctest -VV
+
+  macos-arm64:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ninja
+        shell: bash
+        run: brew install ninja
+      - name: Build & Test
+        shell: bash
+        run: |
+          export CC=clang
+          cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+          ninja
+          ctest -VV
