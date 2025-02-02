@@ -17,7 +17,7 @@
 static uint32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32_t count)
 {
 	uint32_t k = 0;
-	bignum_t *nm1 = NULL, *q = NULL, *a = NULL, *d = NULL, *m = NULL;
+	bignum_t *nm1 = NULL, *q = NULL, *a = NULL, *d = NULL;
 
 	nm1 = bignum_ctx_allocate_bignum(bctx, n->bits);
 	q = bignum_ctx_allocate_bignum(bctx, n->bits);
@@ -25,14 +25,14 @@ static uint32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint3
 	d = bignum_ctx_allocate_bignum(bctx, n->bits);
 
 	bignum_copy(nm1, n);
-	bignum_decrement(nm1->words, BIGNUM_WORD_COUNT(nm1));
+	bignum_usub_word(nm1, nm1, 1);
 
 	k = bignum_ctz(nm1);
 	q = bignum_rshift(q, nm1, k);
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		a = bignum_rand(a, NULL, n->bits);
+		a = bignum_rand_max(NULL, a, n);
 		d = bignum_gcd(bctx, d, a, n);
 
 		// Check if greater than 1
@@ -41,28 +41,28 @@ static uint32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint3
 			return 0;
 		}
 
-		a = bignum_mod(bctx, a, a, n);
+		a = bignum_modexp(bctx, a, a, q, n);
 
-		if (a->bits == 1)
+		if (a->bits == 1 || bignum_cmp(nm1, a) == 0)
 		{
-			// a = 1 mod n
+			// a = 1 mod n or -1 mod n
 			goto next_witness;
 		}
 
-		if (bignum_cmp(nm1, a) == 0)
-		{
-			// a = -1 mod n
-			goto next_witness;
-		}
-
-		for (uint32_t j = 1; j <= k - 1; ++j)
+		for (uint32_t j = 1; j < k; ++j)
 		{
 			a = bignum_modsqr(bctx, a, a, n);
 
-			if (bignum_cmp(nm1, m) == 0)
+			if (bignum_cmp(nm1, a) == 0)
 			{
 				// a = -1 mod n
 				goto next_witness;
+			}
+
+			if (a->bits == 1)
+			{
+				// a = 1 mod n
+				return 0;
 			}
 		}
 
@@ -124,8 +124,20 @@ uint32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn)
 		return 0;
 	}
 
+	// Check zero
+	if (bn->bits == 0)
+	{
+		return 0;
+	}
+
 	// Check if even
 	if (bn->words[0] % 2 == 0)
+	{
+		return 0;
+	}
+
+	// Check divisibility by 5
+	if (bn->words[0] % 5 == 0)
 	{
 		return 0;
 	}
