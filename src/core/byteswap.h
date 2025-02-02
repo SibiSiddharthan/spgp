@@ -8,25 +8,27 @@
 #ifndef SPGP_BYTESWAP_H
 #define SPGP_BYTESWAP_H
 
+#include <stdint.h>
+
 // Given an unsigned N-bit argument X, reverse the byte order and return.
 
 // clang-format off
-#define BSWAP_16(x) ((((x) & 0x00ffui16) << 8) | \
-                     (((x) & 0xff00ui16) >> 8))
+#define BSWAP_16(x) ((((uint16_t)(x) & (uint16_t)0x00FF) << 8) | \
+                     (((uint16_t)(x) & (uint16_t)0xFF00) >> 8))
 
-#define BSWAP_32(x) ((((x) & 0x000000ffui32) << 24) | \
-                     (((x) & 0x0000ff00ui32) << 8)  | \
-                     (((x) & 0x00ff0000ui32) >> 8)  | \
-                     (((x) & 0xff000000ui32) >> 24))
+#define BSWAP_32(x) ((((uint32_t)(x) & (uint32_t)0x000000FF) << 24) | \
+                     (((uint32_t)(x) & (uint32_t)0x0000FF00) << 8)  | \
+                     (((uint32_t)(x) & (uint32_t)0x00FF0000) >> 8)  | \
+                     (((uint32_t)(x) & (uint32_t)0xFF000000) >> 24))
 
-#define BSWAP_64(x) ((((x) & 0x00000000000000ffui64) << 56) | \
-                     (((x) & 0x000000000000ff00ui64) << 40) | \
-                     (((x) & 0x0000000000ff0000ui64) << 24) | \
-                     (((x) & 0x00000000ff000000ui64) << 8)  | \
-                     (((x) & 0x000000ff00000000ui64) >> 8)  | \
-                     (((x) & 0x0000ff0000000000ui64) >> 24) | \
-                     (((x) & 0x00ff000000000000ui64) >> 40) | \
-                     (((x) & 0xff00000000000000ui64) >> 56))
+#define BSWAP_64(x) ((((uint64_t)(x) & (uint64_t)0x00000000000000FF) << 56) | \
+                     (((uint64_t)(x) & (uint64_t)0x000000000000FF00) << 40) | \
+                     (((uint64_t)(x) & (uint64_t)0x0000000000FF0000) << 24) | \
+                     (((uint64_t)(x) & (uint64_t)0x00000000FF000000) << 8)  | \
+                     (((uint64_t)(x) & (uint64_t)0x000000FF00000000) >> 8)  | \
+                     (((uint64_t)(x) & (uint64_t)0x0000FF0000000000) >> 24) | \
+                     (((uint64_t)(x) & (uint64_t)0x00FF000000000000) >> 40) | \
+                     (((uint64_t)(x) & (uint64_t)0xFF00000000000000) >> 56))
 
 // clang-format on
 #endif
