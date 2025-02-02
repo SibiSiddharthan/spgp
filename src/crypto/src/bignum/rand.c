@@ -68,7 +68,7 @@ bignum_t *bignum_rand_max(void *drbg, bignum_t *bn, bignum_t *limit)
 
 		bn->bits = bignum_bitcount(bn);
 
-		// bn < limit
+		// bn > limit
 		if (bignum_cmp_abs(bn, limit) >= 0)
 		{
 			continue;
@@ -79,6 +79,8 @@ bignum_t *bignum_rand_max(void *drbg, bignum_t *bn, bignum_t *limit)
 		{
 			continue;
 		}
+
+		break;
 	}
 
 	return bn;
