@@ -83,6 +83,7 @@ arithmetic
 basic
 mod
 gcd
+prime
 )
 
 crypto_cipher_tests(
