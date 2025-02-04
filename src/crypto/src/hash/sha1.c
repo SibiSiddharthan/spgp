@@ -5,12 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <sha.h>
+
 #include <stdlib.h>
 #include <string.h>
-
-#include <byteswap.h>
-#include <rotate.h>
-#include <sha.h>
 
 // See NIST FIPS 180-4 : Secure Hash Standard (SHS)
 // See RFC 3174 : The Secure Hash Algorithm (SHA1)

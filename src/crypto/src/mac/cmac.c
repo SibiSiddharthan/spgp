@@ -5,20 +5,18 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <cmac.h>
+
 #include <aes.h>
 #include <aria.h>
 #include <camellia.h>
 #include <des.h>
 #include <twofish.h>
 
-#include <byteswap.h>
-#include <minmax.h>
-#include <ptr.h>
 #include <xor.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 // See NIST SP 800-38B Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication
 

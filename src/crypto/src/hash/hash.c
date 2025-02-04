@@ -5,17 +5,15 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <hash.h>
+
 #include <stdlib.h>
 #include <string.h>
 
-#include <hash.h>
 #include <md5.h>
 #include <ripemd.h>
 #include <sha.h>
 #include <blake2.h>
-
-#include <minmax.h>
-#include <ptr.h>
 
 static inline size_t get_ctx_size(hash_algorithm algorithm)
 {

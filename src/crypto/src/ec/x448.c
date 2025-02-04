@@ -10,11 +10,10 @@
 #include <x448.h>
 #include <drbg.h>
 
-#include "curves/montgomery.h"
-
 #include <xor.h>
-
 #include <string.h>
+
+#include "curves/montgomery.h"
 
 #define GET_BIT(K, I) ((K[(I) / 8] >> (I) % 8) & 0x1)
 

@@ -5,12 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <bignum-internal.h>
-#include <bignum.h>
 #include <ec.h>
-
-#include <ptr.h>
-#include <unused.h>
+#include <bignum.h>
+#include <bignum-internal.h>
 
 #include <string.h>
 

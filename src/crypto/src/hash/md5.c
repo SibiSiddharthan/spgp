@@ -5,11 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <md5.h>
+
 #include <stdlib.h>
 #include <string.h>
-
-#include <rotate.h>
-#include <md5.h>
 
 // See RFC 1321 : The MD5 Message-Digest Algorithm
 

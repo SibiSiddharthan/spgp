@@ -5,10 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <bignum.h>
 #include <ec.h>
-
-#include <ptr.h>
+#include <bignum.h>
 
 #include <stdlib.h>
 #include <string.h>

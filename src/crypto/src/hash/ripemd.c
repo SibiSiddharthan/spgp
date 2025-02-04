@@ -5,11 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <ripemd.h>
+
 #include <stdlib.h>
 #include <string.h>
-
-#include <rotate.h>
-#include <ripemd.h>
 
 // See RIPEMD-160: A Strengthened Version of RIPEMD
 

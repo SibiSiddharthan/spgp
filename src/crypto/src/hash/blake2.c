@@ -5,13 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <blake2.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-#include <minmax.h>
-#include <rotate.h>
-#include <blake2.h>
 
 // See RFC 7693 : The BLAKE2 Cryptographic Hash and Message Authentication Code
 

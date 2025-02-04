@@ -5,16 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <hmac.h>
+
 #include <sha.h>
 #include <md5.h>
 #include <ripemd.h>
 
-#include <minmax.h>
-#include <ptr.h>
+#include <stdlib.h>
+#include <string.h>
 
 // See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (HMAC)
 
