@@ -5,16 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
+#include <ecdsa.h>
 
 #include <bignum.h>
 #include <hash.h>
-#include <ecdsa.h>
 #include <bignum-internal.h>
 
-#include <minmax.h>
-#include <ptr.h>
+#include <stdlib.h>
+#include <string.h>
 
 ecdsa_ctx *ecdsa_sign_new(ec_key *key, hash_ctx *hctx, void *salt, size_t salt_size)
 {

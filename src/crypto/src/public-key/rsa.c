@@ -5,22 +5,20 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
+#include <rsa.h>
 
 #include <bignum.h>
 #include <drbg.h>
 #include <hash.h>
-#include <rsa.h>
 #include <sha.h>
 #include <md5.h>
 #include <ripemd.h>
 #include <bignum-internal.h>
 
 #include <bitscan.h>
-#include <byteswap.h>
-#include <minmax.h>
-#include <ptr.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 static uint32_t rsa_public_op(rsa_key *key, void *in, size_t in_size, void *out, size_t out_size)
 {

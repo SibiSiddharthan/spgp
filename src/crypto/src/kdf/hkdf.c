@@ -5,14 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <hkdf.h>
 #include <hmac.h>
 
-#include <minmax.h>
-#include <round.h>
+#include <string.h>
 
 // Refer RFC 5869 : HMAC-based Extract-and-Expand Key Derivation Function (HKDF)
 

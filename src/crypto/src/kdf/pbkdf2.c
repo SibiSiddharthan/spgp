@@ -5,14 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
+#include <crypt.h>
 
 #include <pbkdf2.h>
 #include <hmac.h>
-#include <byteswap.h>
-#include <minmax.h>
-#include <round.h>
+
+#include <stdlib.h>
+#include <string.h>
+
 
 // See NIST SP 800-132 Recommendation for Password-Based Key Derivation
 

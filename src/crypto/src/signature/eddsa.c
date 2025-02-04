@@ -5,12 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
-#include <bignum.h>
-#include <ec.h>
 #include <eddsa.h>
+#include <ec.h>
+#include <bignum.h>
 #include <bignum-internal.h>
 
 #include <drbg.h>
@@ -18,8 +15,8 @@
 #include <sha.h>
 #include <shake.h>
 
-#include <minmax.h>
-#include <ptr.h>
+#include <stdlib.h>
+#include <string.h>
 
 static void ed25519_encode_scalar(byte_t scalar[ED25519_KEY_OCTETS])
 {

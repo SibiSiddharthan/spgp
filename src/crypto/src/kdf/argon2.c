@@ -5,17 +5,13 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
+#include <crypt.h>
 
 #include <argon2.h>
 #include <blake2.h>
 
-#include <byteswap.h>
-#include <minmax.h>
-#include <ptr.h>
-#include <rotate.h>
-#include <round.h>
+#include <stdlib.h>
+#include <string.h>
 
 // Refer RFC 9106 : Argon2 Memory-Hard Function for Password Hashing and Proof-of-Work Applications
 

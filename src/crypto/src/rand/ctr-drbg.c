@@ -5,16 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <drbg.h>
 #include <cipher.h>
 #include <aes.h>
 
-#include <byteswap.h>
-#include <ptr.h>
-#include <round.h>
+#include <stdlib.h>
+#include <string.h>
 
 // Refer to NIST Special Publication 800-90A : Recommendation for Random Number Generation Using Deterministic Random Bit Generators
 // Section 10.2.1

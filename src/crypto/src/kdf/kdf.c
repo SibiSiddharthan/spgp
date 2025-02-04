@@ -5,17 +5,13 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <kdf.h>
+
 #include <hmac.h>
 #include <cmac.h>
 #include <kmac.h>
 
-#include <byteswap.h>
-#include <minmax.h>
-#include <round.h>
+#include <string.h>
 
 // See NIST SP 800-108 Recommendation for Key Derivation Using Pseudorandom Functions
 

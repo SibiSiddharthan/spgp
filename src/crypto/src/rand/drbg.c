@@ -4,20 +4,17 @@
    Distributed under the MIT license.
    Refer to the LICENSE file at the root directory for details.
 */
-
-#include <stdlib.h>
-#include <string.h>
-
 #include <drbg.h>
+
 #include <hash.h>
 #include <hmac.h>
 #include <cipher.h>
+
 #include <sha.h>
 #include <aes.h>
 
-#include <byteswap.h>
-#include <ptr.h>
-#include <round.h>
+#include <stdlib.h>
+#include <string.h>
 
 drbg_ctx *default_drbg = NULL;
 
@@ -61,16 +58,16 @@ static drbg_ctx *drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*entrop
 	{
 	case HASH_DRBG:
 		_drbg = hash_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
-		_reseed = (uint32_t(*)(void *, void *, size_t))hash_drbg_reseed;
-		_generate = (uint32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hash_drbg_generate;
+		_reseed = (uint32_t (*)(void *, void *, size_t))hash_drbg_reseed;
+		_generate = (uint32_t (*)(void *, uint32_t, void *, size_t, void *, size_t))hash_drbg_generate;
 		break;
 	case HMAC_DRBG:
 		_drbg = hmac_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
-		_generate = (uint32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))hmac_drbg_generate;
+		_generate = (uint32_t (*)(void *, uint32_t, void *, size_t, void *, size_t))hmac_drbg_generate;
 		break;
 	case CTR_DRBG:
 		_drbg = ctr_drbg_init(drbg->_drbg, ctx_size, entropy, algorithm, reseed_interval, personalization, personalization_size);
-		_generate = (uint32_t(*)(void *, uint32_t, void *, size_t, void *, size_t))ctr_drbg_generate;
+		_generate = (uint32_t (*)(void *, uint32_t, void *, size_t, void *, size_t))ctr_drbg_generate;
 		break;
 	}
 

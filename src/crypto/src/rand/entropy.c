@@ -5,8 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <string.h>
 #include <intrin.h>
+
+#include <string.h>
 #include <types.h>
 #include <unused.h>
 

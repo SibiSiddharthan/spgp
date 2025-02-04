@@ -5,19 +5,16 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
+#include <dsa.h>
 
 #include <bignum.h>
 #include <hash.h>
 #include <sha.h>
 #include <drbg.h>
-#include <dsa.h>
 #include <bignum-internal.h>
 
-#include <byteswap.h>
-#include <minmax.h>
-#include <ptr.h>
+#include <stdlib.h>
+#include <string.h>
 
 static uint32_t dsa_valid_pq_lengths(uint32_t p_bits, uint32_t q_bits)
 {

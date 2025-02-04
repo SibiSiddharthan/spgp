@@ -5,16 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
+#include <crypt.h>
 #include <scrypt.h>
 #include <pbkdf2.h>
-#include <hmac.h>
-#include <byteswap.h>
-#include <minmax.h>
-#include <rotate.h>
-#include <round.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 // Refer RFC 7914 : The scrypt Password-Based Key Derivation Function
 
