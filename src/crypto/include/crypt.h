@@ -15,8 +15,10 @@
 #include <compiler.h>
 #include <types.h>
 
+#include <byteswap.h>
 #include <minmax.h>
 #include <ptr.h>
+#include <rotate.h>
 #include <round.h>
 #include <unused.h>
 
