@@ -499,12 +499,72 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 	return pos;
 }
 
-size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size)
+size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 {
+	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
+
+	memcpy(PTR_OFFSET(str, pos), "Version: ", 9);
+	pos += 9;
+
+	if (packet->version == PGP_SEIPD_V2)
+	{
+		memcpy(PTR_OFFSET(str, pos), "2\n", 2);
+		pos += 2;
+
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Chunk Size: %hhu\n", packet->chunk_size);
+
+		memcpy(PTR_OFFSET(str, pos), "Salt: ", 6);
+		pos += 6;
+
+		for (uint8_t i = 0; i < 32; ++i)
+		{
+			byte_t a, b;
+
+			a = packet->salt[i] / 16;
+			b = packet->salt[i] % 16;
+
+			out[pos++] = hex_table[a];
+			out[pos++] = hex_table[b];
+		}
+
+		out[pos] = '\n';
+		pos += 1;
+
+		memcpy(PTR_OFFSET(str, pos), "Tag: ", 5);
+		pos += 5;
+
+		for (uint8_t i = 0; i < 16; ++i)
+		{
+			byte_t a, b;
+
+			a = packet->tag[i] / 16;
+			b = packet->tag[i] % 16;
+
+			out[pos++] = hex_table[a];
+			out[pos++] = hex_table[b];
+		}
+
+		out[pos] = '\n';
+		pos += 1;
+
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->data_size);
+	}
+	else if (packet->version == PGP_SEIPD_V1)
+	{
+		memcpy(PTR_OFFSET(str, pos), "1\n", 2);
+		pos += 2;
+
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->header.body_size - 1);
+	}
+	else
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "%hhu (Unknown)\n", packet->version);
+	}
 
 	return pos;
 }
@@ -532,6 +592,16 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 
 	out[pos] = '\n';
 	pos += 1;
+
+	return pos;
+}
+
+size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
 }
