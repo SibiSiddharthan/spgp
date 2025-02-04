@@ -8,7 +8,7 @@
 #ifndef CRYPTO_BITSCAN_H
 #define CRYPTO_BITSCAN_H
 
-#include <types.h>
+#include <stdint.h>
 
 static inline uint32_t bsf_8(uint8_t x)
 {
