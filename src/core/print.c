@@ -8,6 +8,7 @@
 #include <spgp.h>
 #include <algorithms.h>
 #include <packet.h>
+#include <seipd.h>
 #include <session.h>
 
 #include <stdio.h>
@@ -365,6 +366,16 @@ size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_
 	}
 
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size - 1);
+
+	return pos;
+}
+
+size_t pgp_sed_packet_print(pgp_sed_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
 }
