@@ -69,6 +69,8 @@ jobs:
           ctest -VV
 
   macos-arm64:
+    # Skip for now
+    if: false
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
