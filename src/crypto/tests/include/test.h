@@ -119,7 +119,7 @@ int32_t check_value(intmax_t actual, intmax_t expected, const char *expression, 
 {
 	if (actual != expected)
 	{
-		printf("Value does not match in %s:%d.\n(%s) -> (%lld == %lld)\n", function, line, expression, actual, expected);
+		printf("Value does not match in %s:%d.\n(%s) -> (%jd == %jd)\n", function, line, expression, actual, expected);
 		return 1;
 	}
 
