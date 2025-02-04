@@ -116,7 +116,6 @@ static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_
 
 size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
@@ -153,7 +152,6 @@ size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_
 
 size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
@@ -229,7 +227,6 @@ size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t si
 
 size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
@@ -242,7 +239,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 		{
 		case PGP_USER_ATTRIBUTE_IMAGE:
 		{
-			pgp_user_attribute_image_subpacket *image_subpacket = subpacket_header;
+			pgp_user_attribute_image_subpacket *image_subpacket = (pgp_user_attribute_image_subpacket *)subpacket_header;
 			uint32_t image_size = image_subpacket->header.body_size - 16;
 
 			memcpy(PTR_OFFSET(str, pos), "User Attribute Image Subpacket (Tag 1)\n", 39);
@@ -274,7 +271,6 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 
 size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
