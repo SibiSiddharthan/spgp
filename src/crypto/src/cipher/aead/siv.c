@@ -5,15 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <cipher.h>
 #include <cmac.h>
-
-#include <byteswap.h>
-#include <ptr.h>
 #include <xor.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 #include "double-block.h"
 
@@ -133,7 +130,7 @@ static uint64_t siv_cmac_ctr_update(cipher_ctx *cctx, byte_t iv[16], void *in, v
 }
 
 uint32_t cipher_siv_cmac_init(cipher_algorithm algorithm, void *key, size_t key_size, void *ci_ctx, size_t cipher_ctx_size, void *cm_ctx,
-							 size_t cmac_ctx_size)
+							  size_t cmac_ctx_size)
 {
 	if (key_size != 32 && key_size != 48 && key_size != 64)
 	{

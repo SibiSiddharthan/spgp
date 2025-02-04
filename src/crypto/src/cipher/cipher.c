@@ -5,6 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <crypt.h>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,9 +17,6 @@
 #include <des.h>
 #include <twofish.h>
 #include <chacha20.h>
-
-#include <ptr.h>
-#include <round.h>
 
 static inline size_t key_ctx_size(cipher_algorithm algorithm)
 {

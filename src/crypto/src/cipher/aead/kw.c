@@ -5,12 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <cipher.h>
+
 #include <stdlib.h>
 #include <string.h>
-
-#include <cipher.h>
-#include <byteswap.h>
-#include <round.h>
 
 // See NIST SP 800-38F Recommendation for Block Cipher Modes of Operation: Methods for Key Wrapping
 

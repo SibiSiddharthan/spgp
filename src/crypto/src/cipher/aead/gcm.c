@@ -5,15 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <cipher.h>
+#include <xor.h>
+
 #include <stdlib.h>
 #include <string.h>
-
-#include <cipher.h>
-#include <byteswap.h>
-#include <minmax.h>
-#include <ptr.h>
-#include <round.h>
-#include <xor.h>
 
 // See NIST SP 800-38D Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC
 

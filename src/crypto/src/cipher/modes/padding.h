@@ -8,8 +8,8 @@
 #ifndef CRYPTO_CIPHER_PADDING_H
 #define CRYPTO_CIPHER_PADDING_H
 
-#include <string.h>
 #include <cipher.h>
+#include <string.h>
 
 static inline void fill_padding_block(cipher_padding padding, byte_t *block, uint16_t block_size, uint16_t offset)
 {

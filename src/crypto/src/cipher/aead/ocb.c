@@ -5,15 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <cipher.h>
 #include <bitscan.h>
-#include <minmax.h>
-#include <ptr.h>
-#include <round.h>
 #include <xor.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 #include "double-block.h"
 
