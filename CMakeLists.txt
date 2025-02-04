@@ -14,6 +14,12 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 						-std=c11)
 endif()
 
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+	add_compile_options(-fdiagnostics-color
+						-Wall -Wextra
+						-std=c11)
+endif()
+
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/W4
 						/wd4098 # 'void' function returning a value
@@ -23,24 +29,28 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 						/std:c11)
 endif()
 
-
-# Only enable the address sanitizer with MSVC.
 option(ENABLE_ASAN "Use address sanitizer" OFF)
 
 if(ENABLE_ASAN)
+
 	if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 		add_compile_options(-fsanitize=address)
 		add_link_options(-fsanitize=address)
-		
 		if(WIN32)
 			add_link_options(-Xlinker /ignore:4217)
 		endif()
-
 	endif()
+
+	if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+		add_compile_options(-fsanitize=address)
+		add_link_options(-fsanitize=address)
+	endif()
+
 	if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 		add_compile_options(/fsanitize=address)
 		add_link_options(/incremental:no)
 	endif()
+
 endif()
 
 add_subdirectory(src)

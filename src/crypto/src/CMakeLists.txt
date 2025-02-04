@@ -86,7 +86,7 @@ signature/ecdsa.c
 signature/eddsa.c
 )
 
-if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	set_source_files_properties(rand/entropy.c PROPERTIES COMPILE_FLAGS "-mrdseed")
 endif()
 
