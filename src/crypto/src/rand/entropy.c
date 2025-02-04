@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <intrin.h>
+#include <immintrin.h>
 
 #include <string.h>
 #include <types.h>

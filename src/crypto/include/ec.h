@@ -206,7 +206,7 @@ uint32_t ec_group_bits(curve_id id);
 ec_group *ec_group_new(curve_id id);
 void ec_group_delete(ec_group *eg);
 
-inline size_t ec_point_size(uint32_t bits)
+static inline size_t ec_point_size(uint32_t bits)
 {
 	return sizeof(ec_point) + (2 * bignum_size(bits));
 }

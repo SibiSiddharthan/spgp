@@ -32,7 +32,7 @@ typedef struct _bignum_t
 
 typedef struct _bignum_ctx bignum_ctx;
 
-inline size_t bignum_size(uint32_t bits)
+static inline size_t bignum_size(uint32_t bits)
 {
 	return sizeof(bignum_t) + CEIL_DIV(MAX(bits, 1), BIGNUM_BITS_PER_WORD) * BIGNUM_WORD_SIZE;
 }
