@@ -5,14 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <bignum.h>
-#include <round.h>
-#include <minmax.h>
-
 #include <bignum-internal.h>
+
+#include <string.h>
 
 int32_t bignum_divmod(bignum_ctx *bctx, bignum_t *dd, bignum_t *dv, bignum_t *q, bignum_t *r)
 {

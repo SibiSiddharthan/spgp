@@ -5,13 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
 #include <bignum.h>
-#include <bitscan.h>
-#include <round.h>
-#include <minmax.h>
-
 #include <bignum-internal.h>
 
 static uint32_t miller_rabin_primality_test(bignum_ctx *bctx, bignum_t *n, uint32_t count)

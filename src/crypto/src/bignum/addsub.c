@@ -5,11 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
 #include <bignum.h>
-#include <round.h>
-
 #include <bignum-internal.h>
 
 void bignum_uadd(bignum_t *r, bignum_t *a, bignum_t *b, uint32_t min_words, uint32_t total_words)

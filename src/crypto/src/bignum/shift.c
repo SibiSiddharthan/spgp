@@ -5,10 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
 #include <bignum.h>
-#include <round.h>
 
 // NOTE: These routines should also work when r,a point to the same location.
 

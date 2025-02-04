@@ -5,10 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
 #include <bignum.h>
-#include <round.h>
 #include <drbg.h>
 
 bignum_t *bignum_rand(void *drbg, bignum_t *bn, uint32_t bits)

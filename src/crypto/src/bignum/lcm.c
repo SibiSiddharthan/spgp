@@ -5,13 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
 #include <bignum.h>
-#include <bitscan.h>
-#include <round.h>
-#include <minmax.h>
-
 #include <bignum-internal.h>
 
 bignum_t *bignum_lcm(bignum_ctx *bctx, bignum_t *r, bignum_t *a, bignum_t *b)

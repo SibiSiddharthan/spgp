@@ -5,12 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <bignum.h>
+
 #include <stdlib.h>
 #include <string.h>
-
-#include <bignum.h>
-#include <minmax.h>
-#include <round.h>
 
 #define BIGNUM_CTX_ALIGNMENT 32
 

@@ -5,14 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <bignum.h>
+
 #include <bitscan.h>
 #include <byteswap.h>
-#include <minmax.h>
-#include <round.h>
+
+#include <string.h>
 
 bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {

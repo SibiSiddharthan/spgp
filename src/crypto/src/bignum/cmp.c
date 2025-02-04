@@ -6,7 +6,6 @@
 */
 
 #include <bignum.h>
-#include <round.h>
 
 // If a > b ->  1
 // If a < b -> -1

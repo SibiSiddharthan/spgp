@@ -5,13 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <bignum.h>
 #include <bitscan.h>
-#include <minmax.h>
-#include <round.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 #include <bignum-internal.h>
 
