@@ -8,8 +8,8 @@
 #ifndef CRYPTO_HASH_H
 #define CRYPTO_HASH_H
 
+#include <crypt.h>
 #include <hash-algorithm.h>
-#include <types.h>
 
 typedef struct _hash_ctx
 {

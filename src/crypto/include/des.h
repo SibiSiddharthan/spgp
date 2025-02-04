@@ -8,8 +8,8 @@
 #ifndef CRYPTO_DES_H
 #define CRYPTO_DES_H
 
+#include <crypt.h>
 #include <stdbool.h>
-#include <types.h>
 
 // See NIST FIPS 46-3 Data Encryption Standard (DES)
 

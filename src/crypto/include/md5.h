@@ -8,7 +8,7 @@
 #ifndef CRYPTO_MD5_H
 #define CRYPTO_MD5_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See RFC 1321 : The MD5 Message-Digest Algorithm
 

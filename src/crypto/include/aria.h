@@ -8,7 +8,7 @@
 #ifndef CRYPTO_ARIA_H
 #define CRYPTO_ARIA_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See RFC 5794: A Description of the ARIA Encryption Algorithm
 

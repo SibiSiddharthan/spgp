@@ -8,7 +8,7 @@
 #ifndef CRYPTO_CAMELLIA_H
 #define CRYPTO_CAMELLIA_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See RFC 3713: A Description of the Camellia Encryption Algorithm
 

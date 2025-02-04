@@ -8,6 +8,7 @@
 #ifndef CRYPTO_EC_H
 #define CRYPTO_EC_H
 
+#include <crypt.h>
 #include <bignum.h>
 
 typedef enum _curve_id

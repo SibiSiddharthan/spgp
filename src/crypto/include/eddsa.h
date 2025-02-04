@@ -8,6 +8,7 @@
 #ifndef CRYPTO_ed25519_H
 #define CRYPTO_ed25519_H
 
+#include <crypt.h>
 #include <bignum.h>
 #include <ec.h>
 #include <sha.h>

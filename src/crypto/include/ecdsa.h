@@ -8,6 +8,7 @@
 #ifndef CRYPTO_ECDSA_H
 #define CRYPTO_ECDSA_H
 
+#include <crypt.h>
 #include <bignum.h>
 #include <ec.h>
 #include <hash.h>

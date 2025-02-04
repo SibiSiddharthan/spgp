@@ -8,7 +8,7 @@
 #ifndef CRYPTO_DSA_H
 #define CRYPTO_DSA_H
 
-#include <types.h>
+#include <crypt.h>
 #include <bignum.h>
 #include <hash.h>
 

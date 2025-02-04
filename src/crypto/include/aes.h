@@ -8,7 +8,7 @@
 #ifndef CRYPTO_AES_H
 #define CRYPTO_AES_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See NIST FIPS-197 Advanced Encryption Standard (AES)
 

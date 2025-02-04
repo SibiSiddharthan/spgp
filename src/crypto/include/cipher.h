@@ -8,10 +8,9 @@
 #ifndef CRYPTO_CIPHER_H
 #define CRYPTO_CIPHER_H
 
-#include <cipher-algorithm.h>
-#include <types.h>
-
+#include <crypt.h>
 #include <cmac.h>
+#include <cipher-algorithm.h>
 
 typedef enum _cipher_padding
 {

@@ -8,8 +8,8 @@
 #ifndef CRYPTO_HMAC_H
 #define CRYPTO_HMAC_H
 
+#include <crypt.h>
 #include <hash-algorithm.h>
-#include <types.h>
 
 // See NIST FIPS 198-1 The Keyed-Hash Message Authentication Code (HMAC)
 

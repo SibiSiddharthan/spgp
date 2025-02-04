@@ -8,7 +8,7 @@
 #ifndef CRYPTO_CHACHA20_H
 #define CRYPTO_CHACHA20_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See RFC 8439: ChaCha20 and Poly1305 for IETF Protocols
 

@@ -8,7 +8,7 @@
 #ifndef CRYPTO_BLAKE2_H
 #define CRYPTO_BLAKE2_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See RFC 7693 : The BLAKE2 Cryptographic Hash and Message Authentication Code
 

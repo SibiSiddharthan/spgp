@@ -8,7 +8,7 @@
 #ifndef CRYPTO_X448_H
 #define CRYPTO_X448_H
 
-#include <types.h>
+#include <crypt.h>
 
 #define X448_OCTET_SIZE 56
 #define X448_BITS       448

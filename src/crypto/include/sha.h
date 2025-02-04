@@ -8,7 +8,7 @@
 #ifndef CRYPTO_SHA_H
 #define CRYPTO_SHA_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See NIST FIPS 180-4 : Secure Hash Standard (SHS)
 // See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions

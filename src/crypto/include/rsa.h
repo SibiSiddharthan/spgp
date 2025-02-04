@@ -8,7 +8,7 @@
 #ifndef CRYPTO_RSA_H
 #define CRYPTO_RSA_H
 
-#include <types.h>
+#include <crypt.h>
 #include <bignum.h>
 #include <hash.h>
 #include <drbg.h>

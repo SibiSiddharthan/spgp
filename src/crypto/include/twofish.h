@@ -8,7 +8,7 @@
 #ifndef CRYPTO_TWOFISH_H
 #define CRYPTO_TWOFISH_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See Twofish: A 128-Bit Block Cipher
 

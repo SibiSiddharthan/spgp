@@ -8,7 +8,7 @@
 #ifndef CRYPTO_DRBG_H
 #define CRYPTO_DRBG_H
 
-#include <types.h>
+#include <crypt.h>
 #include <cipher.h>
 #include <hash.h>
 #include <hmac.h>

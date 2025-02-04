@@ -8,8 +8,8 @@
 #ifndef CRYPTO_cmac_H
 #define CRYPTO_cmac_H
 
+#include <crypt.h>
 #include <cipher-algorithm.h>
-#include <types.h>
 
 // See NIST FIPS 800-38B Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication (CMAC)
 

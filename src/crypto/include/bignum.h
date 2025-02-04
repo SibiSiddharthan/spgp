@@ -8,9 +8,7 @@
 #ifndef CRYPTO_BIGNUM_H
 #define CRYPTO_BIGNUM_H
 
-#include <types.h>
-#include <minmax.h>
-#include <round.h>
+#include <crypt.h>
 
 #define BIGNUM_WORD_SIZE     8
 #define BIGNUM_BITS_PER_WORD (8 * BIGNUM_WORD_SIZE)

@@ -8,7 +8,7 @@
 #ifndef CRYPTO_RIPEMD_H
 #define CRYPTO_RIPEMD_H
 
-#include <types.h>
+#include <crypt.h>
 
 // See RIPEMD-160: A Strengthened Version of RIPEMD
 

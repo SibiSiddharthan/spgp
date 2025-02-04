@@ -8,7 +8,7 @@
 #ifndef CRYPTO_X25519_H
 #define CRYPTO_X25519_H
 
-#include <types.h>
+#include <crypt.h>
 
 #define X25519_OCTET_SIZE 32
 #define X25519_BITS       255
