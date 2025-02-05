@@ -11,6 +11,7 @@
 #include <seipd.h>
 #include <session.h>
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -21,82 +22,64 @@ static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header.tag);
 	pgp_packet_type type = pgp_packet_get_type(header.tag);
 
-	byte_t *out = str;
+	char *footer = NULL;
 	size_t pos = 0;
 
 	switch (type)
 	{
 	case PGP_PKESK:
-		memcpy(PTR_OFFSET(str, pos), "Public Key Encrypted Session Key Packet (Tag 1)", 47);
-		pos += 47;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Public Key Encrypted Session Key Packet (Tag 1)");
 		break;
 	case PGP_SIG:
-		memcpy(PTR_OFFSET(str, pos), "Signature Packet (Tag 2)", 24);
-		pos += 25;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Signature Packet (Tag 2)");
 		break;
 	case PGP_SKESK:
-		memcpy(PTR_OFFSET(str, pos), "Symmetric Key Encrypted Session Key Packet (Tag 3)", 50);
-		pos += 51;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Symmetric Key Encrypted Session Key Packet (Tag 3)");
 		break;
 	case PGP_OPS:
-		memcpy(PTR_OFFSET(str, pos), "One-Pass Signature Packet (Tag 4)", 33);
-		pos += 34;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "One-Pass Signature Packet (Tag 4)");
 		break;
 	case PGP_SECKEY:
-		memcpy(PTR_OFFSET(str, pos), "Secret Key Packet (Tag 5)", 25);
-		pos += 26;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Secret Key Packet (Tag 5)");
 		break;
 	case PGP_PUBKEY:
-		memcpy(PTR_OFFSET(str, pos), "Public Key Packet (Tag 6)", 25);
-		pos += 26;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Public Key Packet (Tag 6)");
 		break;
 	case PGP_SECSUBKEY:
-		memcpy(PTR_OFFSET(str, pos), "Secret Subkey Packet (Tag 7)", 28);
-		pos += 29;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Secret Subkey Packet (Tag 7)");
 		break;
 	case PGP_COMP:
-		memcpy(PTR_OFFSET(str, pos), "Compressed Data Packet (Tag 8)", 30);
-		pos += 30;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Compressed Data Packet (Tag 8)");
 		break;
 	case PGP_SED:
-		memcpy(PTR_OFFSET(str, pos), "Symmetrically Encrypted Data Packet (Tag 9)", 43);
-		pos += 44;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Symmetrically Encrypted Data Packet (Tag 9)");
 		break;
 	case PGP_MARKER:
-		memcpy(PTR_OFFSET(str, pos), "Marker Packet (Tag 10)", 22);
-		pos += 23;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Marker Packet (Tag 10)");
 		break;
 	case PGP_LIT:
-		memcpy(PTR_OFFSET(str, pos), "Literal Data Packet (Tag 11)", 28);
-		pos += 28;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Literal Data Packet (Tag 11)");
 		break;
 	case PGP_TRUST:
-		memcpy(PTR_OFFSET(str, pos), "Trust Packet (Tag 12)", 21);
-		pos += 22;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Trust Packet (Tag 12)");
 		break;
 	case PGP_UID:
-		memcpy(PTR_OFFSET(str, pos), "User ID Packet (Tag 13)", 23);
-		pos += 24;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "User ID Packet (Tag 13)");
 		break;
 	case PGP_PUBSUBKEY:
-		memcpy(PTR_OFFSET(str, pos), "Public Subkey Packet (Tag 14)", 29);
-		pos += 30;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Public Subkey Packet (Tag 14)");
 		break;
 	case PGP_UAT:
-		memcpy(PTR_OFFSET(str, pos), "User Attribute Packet (Tag 17)", 30);
-		pos += 31;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "User Attribute Packet (Tag 17)");
 		break;
 	case PGP_SEIPD:
-		memcpy(PTR_OFFSET(str, pos), "Symmetrically Encrypted and Integrity Protected Data Packet (Tag 18)", 68);
-		pos += 68;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Symmetrically Encrypted and Integrity Protected Data Packet (Tag 18)");
 		break;
 	case PGP_MDC:
-		memcpy(PTR_OFFSET(str, pos), "Modification Detection Code Packet (Tag 19)", 45);
-		pos += 45;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Modification Detection Code Packet (Tag 19)");
 		break;
 	case PGP_PADDING:
-		memcpy(PTR_OFFSET(str, pos), "Padding Packet (Tag 21)", 23);
-		pos += 24;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Packet (Tag 21)");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Packet (Tag %hhu)", header.tag);
@@ -104,14 +87,14 @@ static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_
 
 	if (format == PGP_LEGACY_HEADER)
 	{
-		memcpy(PTR_OFFSET(str, pos), " (Old)\n", 7);
-		pos += 7;
+		footer = " (Old)";
 	}
 	else
 	{
-		out[pos] = '\n';
-		pos += 1;
+		footer = "";
 	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "%s\n", footer);
 
 	return pos;
 }
@@ -123,28 +106,22 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		memcpy(PTR_OFFSET(str, pos), "RSA Encrypt (Tag 1)\n", 20);
-		pos += 20;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt (Tag 1)\n");
 		break;
 	case PGP_RSA_ENCRYPT_ONLY:
-		memcpy(PTR_OFFSET(str, pos), "RSA (Encrypt Only) (Tag 2)\n", 27);
-		pos += 27;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Encrypt Only) (Tag 2)\n");
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		memcpy(PTR_OFFSET(str, pos), "Elgamal (Encrypt Only) (Tag 16)\n", 32);
-		pos += 32;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Elgamal (Encrypt Only) (Tag 16)\n");
 		break;
 	case PGP_ECDH:
-		memcpy(PTR_OFFSET(str, pos), "ECDH (Tag 18)\n", 14);
-		pos += 14;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDH (Tag 18)\n");
 		break;
 	case PGP_X25519:
-		memcpy(PTR_OFFSET(str, pos), "X25519 (Tag 22)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "X25519 (Tag 22)\n");
 		break;
 	case PGP_X448:
-		memcpy(PTR_OFFSET(str, pos), "X448 (Tag 23)\n", 14);
-		pos += 14;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "X448 (Tag 23)\n");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Public Key Algorithm (Tag %hhu)\n", algorithm);
@@ -161,32 +138,25 @@ static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm,
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		memcpy(PTR_OFFSET(str, pos), "RSA Encrypt (Tag 1)\n", 20);
-		pos += 20;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt (Tag 1)\n");
 		break;
 	case PGP_RSA_SIGN_ONLY:
-		memcpy(PTR_OFFSET(str, pos), "RSA (Sign Only) (Tag 2)\n", 27);
-		pos += 27;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Sign Only) (Tag 2)\n");
 		break;
 	case PGP_DSA:
-		memcpy(PTR_OFFSET(str, pos), "DSA (Tag 17)\n", 13);
-		pos += 13;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "DSA (Tag 17)\n");
 		break;
 	case PGP_ECDSA:
-		memcpy(PTR_OFFSET(str, pos), "ECDSA (Tag 19)\n", 15);
-		pos += 15;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDSA (Tag 19)\n");
 		break;
 	case PGP_EDDSA_LEGACY:
-		memcpy(PTR_OFFSET(str, pos), "EdDSA (Legacy) (Tag 22)\n", 25);
-		pos += 25;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Legacy) (Tag 22)\n");
 		break;
 	case PGP_ED25519:
-		memcpy(PTR_OFFSET(str, pos), "Ed25519 (Tag 27)\n", 18);
-		pos += 18;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Ed25519 (Tag 27)\n");
 		break;
 	case PGP_ED448:
-		memcpy(PTR_OFFSET(str, pos), "Ed448 (Tag 28)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Ed448 (Tag 28)\n");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Signature algorithm (Tag %hhu)\n", algorithm);
@@ -203,52 +173,40 @@ static size_t pgp_symmetric_key_algorithm_print(pgp_symmetric_key_algorithms alg
 	switch (algorithm)
 	{
 	case PGP_PLAINTEXT:
-		memcpy(PTR_OFFSET(str, pos), "Plaintext (Tag 0)\n", 18);
-		pos += 18;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Plaintext (Tag 0)\n");
 		break;
 	case PGP_IDEA:
-		memcpy(PTR_OFFSET(str, pos), "IDEA (Tag 1)\n", 13);
-		pos += 13;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "IDEA (Tag 1)\n");
 		break;
 	case PGP_TDES:
-		memcpy(PTR_OFFSET(str, pos), "TDES (Tag 2)\n", 13);
-		pos += 13;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "TDES (Tag 2)\n");
 		break;
 	case PGP_CAST5_128:
-		memcpy(PTR_OFFSET(str, pos), "CAST5 (Tag 3)\n", 14);
-		pos += 14;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "CAST5 (Tag 3)\n");
 		break;
 	case PGP_BLOWFISH:
-		memcpy(PTR_OFFSET(str, pos), "Blowfish (Tag 4)\n", 17);
-		pos += 17;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Blowfish (Tag 4)\n");
 		break;
 	case PGP_AES_128:
-		memcpy(PTR_OFFSET(str, pos), "AES-128 (Tag 7)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-128 (Tag 7)\n");
 		break;
 	case PGP_AES_192:
-		memcpy(PTR_OFFSET(str, pos), "AES-192 (Tag 8)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-192 (Tag 8)\n");
 		break;
 	case PGP_AES_256:
-		memcpy(PTR_OFFSET(str, pos), "AES-256 (Tag 9)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-256 (Tag 9)\n");
 		break;
 	case PGP_TWOFISH:
-		memcpy(PTR_OFFSET(str, pos), "Twofish (Tag 10)\n", 17);
-		pos += 17;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Twofish (Tag 10)\n");
 		break;
 	case PGP_CAMELLIA_128:
-		memcpy(PTR_OFFSET(str, pos), "Camellia-128 (Tag 11)\n", 21);
-		pos += 21;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-128 (Tag 11)\n");
 		break;
 	case PGP_CAMELLIA_192:
-		memcpy(PTR_OFFSET(str, pos), "Camellia-192 (Tag 12)\n", 21);
-		pos += 21;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-192 (Tag 12)\n");
 		break;
 	case PGP_CAMELLIA_256:
-		memcpy(PTR_OFFSET(str, pos), "Camellia-256 (Tag 13)\n", 21);
-		pos += 21;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-256 (Tag 13)\n");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Symmetric Key Algorithm (Tag %hhu)\n", algorithm);
@@ -265,16 +223,13 @@ static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, void *str,
 	switch (algorithm)
 	{
 	case PGP_AEAD_EAX:
-		memcpy(PTR_OFFSET(str, pos), "EAX (Tag 1)\n", 11);
-		pos += 11;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EAX (Tag 1)\n");
 		break;
 	case PGP_AEAD_OCB:
-		memcpy(PTR_OFFSET(str, pos), "OCB (Tag 2)\n", 11);
-		pos += 11;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "OCB (Tag 2)\n");
 		break;
 	case PGP_AEAD_GCM:
-		memcpy(PTR_OFFSET(str, pos), "GCM (Tag 3)\n", 11);
-		pos += 11;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "GCM (Tag 3)\n");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown AEAD Algorithm (Tag %hhu)\n", algorithm);
@@ -291,40 +246,31 @@ static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str,
 	switch (algorithm)
 	{
 	case PGP_MD5:
-		memcpy(PTR_OFFSET(str, pos), "MD5 (Tag 1)\n", 11);
-		pos += 11;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "MD5 (Tag 1)\n");
 		break;
 	case PGP_SHA1:
-		memcpy(PTR_OFFSET(str, pos), "SHA-1 (Tag 2)\n", 13);
-		pos += 13;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-1 (Tag 2)\n");
 		break;
 	case PGP_RIPEMD_160:
-		memcpy(PTR_OFFSET(str, pos), "RIPEMD-160 (Tag 3)\n", 19);
-		pos += 19;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RIPEMD-160 (Tag 3)\n");
 		break;
 	case PGP_SHA2_256:
-		memcpy(PTR_OFFSET(str, pos), "SHA-256 (Tag 8)\n", 15);
-		pos += 15;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-256 (Tag 8)\n");
 		break;
 	case PGP_SHA2_384:
-		memcpy(PTR_OFFSET(str, pos), "SHA-384 (Tag 9)\n", 15);
-		pos += 15;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-384 (Tag 9)\n");
 		break;
 	case PGP_SHA2_512:
-		memcpy(PTR_OFFSET(str, pos), "SHA-512 (Tag 10)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-512 (Tag 10)\n");
 		break;
 	case PGP_SHA2_224:
-		memcpy(PTR_OFFSET(str, pos), "SHA-224 (Tag 11)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-224 (Tag 11)\n");
 		break;
 	case PGP_SHA3_256:
-		memcpy(PTR_OFFSET(str, pos), "SHA3-256 (Tag 12)\n", 17);
-		pos += 17;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA3-256 (Tag 12)\n");
 		break;
 	case PGP_SHA3_512:
-		memcpy(PTR_OFFSET(str, pos), "SHA3-512 (Tag 14)\n", 17);
-		pos += 17;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA3-512 (Tag 14)\n");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Hash Algorithm (Tag %hhu)\n", algorithm);
