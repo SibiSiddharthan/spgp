@@ -17,6 +17,54 @@
 
 static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
+static size_t print_bytes(void *str, size_t str_size, void *data, size_t data_size, uint16_t offset, uint16_t columns)
+{
+	byte_t *out = str;
+
+	uint16_t row = 0;
+	size_t pos = 0;
+
+	if (str_size < (data_size * 3) + ((offset + 1) * (data_size / columns)))
+	{
+		return 0;
+	}
+
+	for (uint32_t i = 0; i < data_size; ++i)
+	{
+		byte_t a, b;
+
+		a = ((byte_t *)data)[i] / 16;
+		b = ((byte_t *)data)[i] % 16;
+
+		if (row != 0)
+		{
+			memset(PTR_OFFSET(str, pos), ' ', offset);
+			pos += offset;
+		}
+
+		out[pos++] = hex_table[a];
+		out[pos++] = hex_table[b];
+
+		if ((i + 1) % columns != 0)
+		{
+			out[pos++] = ' ';
+		}
+		else
+		{
+			out[pos++] = '\n';
+			row += 1;
+		}
+	}
+
+	// Only add a newline if the last character is not one and the printed bytes is multiline
+	if (out[pos - 1] != '\n' && row != 0)
+	{
+		out[pos++] = '\n';
+	}
+
+	return pos;
+}
+
 static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size)
 {
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header.tag);
