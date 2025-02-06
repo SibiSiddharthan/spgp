@@ -569,23 +569,10 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-1 Hash: ");
+	pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20, 0, 20);
 
-	memcpy(PTR_OFFSET(str, pos), "SHA-1 Hash: ", 12);
-	pos += 12;
-
-	for (uint8_t i = 0; i < 20; ++i)
-	{
-		byte_t a, b;
-
-		a = packet->sha1_hash[i] / 16;
-		b = packet->sha1_hash[i] % 16;
-
-		out[pos++] = hex_table[a];
-		out[pos++] = hex_table[b];
-	}
-
-	out[pos] = '\n';
-	pos += 1;
+	out[pos++] = '\n';
 
 	return pos;
 }
