@@ -429,6 +429,50 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 	return pos;
 }
 
+size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, str, size);
+
+	if (packet->version == PGP_SKESK_V6)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 6\n");
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos);
+
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "IV: ");
+		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->iv, packet->iv_size, 0, packet->iv_size);
+
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Tag: ");
+		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size, 0, packet->tag_size);
+
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Encrypted Session Key: ");
+		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->session_key, packet->session_key_size, 0, packet->session_key_size);
+	}
+	else if (packet->version == PGP_SKESK_V4)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 4 (Deprecated)\n");
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos);
+
+		if (packet->session_key_size > 0)
+		{
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Encrypted Session Key: ");
+			pos +=
+				print_bytes(PTR_OFFSET(str, pos), size - pos, packet->session_key, packet->session_key_size, 0, packet->session_key_size);
+		}
+	}
+	else
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
+	}
+
+	return pos;
+}
+
 size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
