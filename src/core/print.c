@@ -133,6 +133,10 @@ static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Packet (Tag %hhu)", header.tag);
 	}
 
+	// Add packet size
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%u bytes)", header.body_size);
+
+	// Mention if packet is having legacy header format
 	if (format == PGP_LEGACY_HEADER)
 	{
 		footer = " (Old)";
