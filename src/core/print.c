@@ -372,6 +372,72 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size)
 	return pos;
 }
 
+static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorithm, void *public_key, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	switch (public_key_algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+		break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		break;
+	case PGP_DSA:
+		break;
+	case PGP_ECDH:
+		break;
+	case PGP_ECDSA:
+		break;
+	case PGP_X25519:
+		break;
+	case PGP_X448:
+		break;
+	case PGP_ED25519:
+		break;
+	case PGP_ED448:
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Public Key Algorithm (Tag %hhu)\n", public_key_algorithm);
+		break;
+	}
+	return pos;
+}
+
+static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorithm, void *private_key, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	switch (public_key_algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+		break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		break;
+	case PGP_DSA:
+		break;
+	case PGP_ECDH:
+		break;
+	case PGP_ECDSA:
+		break;
+	case PGP_X25519:
+		break;
+	case PGP_X448:
+		break;
+	case PGP_ED25519:
+		break;
+	case PGP_ED448:
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Public Key Algorithm (Tag %hhu)\n", public_key_algorithm);
+		break;
+	}
+	return pos;
+}
+
 static size_t pgp_signature_type_print(pgp_signature_type type, void *str, size_t size)
 {
 	size_t pos = 0;
@@ -588,7 +654,7 @@ size_t pgp_public_key_packet_print(pgp_public_key_packet *packet, void *str, siz
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
-		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data_size, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, PTR_OFFSET(str, pos), size - pos);
 	}
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
@@ -596,7 +662,38 @@ size_t pgp_public_key_packet_print(pgp_public_key_packet *packet, void *str, siz
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Expiry : %hu days\n", packet->key_expiry_days);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
-		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data_size, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, PTR_OFFSET(str, pos), size - pos);
+	}
+	else
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
+	}
+
+	return pos;
+}
+
+size_t pgp_secret_key_packet_print(pgp_secret_key_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, str, size);
+
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->public_key_data, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->private_key_data, PTR_OFFSET(str, pos), size - pos);
+	}
+	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Expiry : %hu days\n", packet->key_expiry_days);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->public_key_data, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->private_key_data, PTR_OFFSET(str, pos), size - pos);
 	}
 	else
 	{
