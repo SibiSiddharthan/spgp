@@ -332,6 +332,64 @@ static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str,
 	return pos;
 }
 
+size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, str, size);
+
+	if (packet->version == PGP_PKESK_V6)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 6\n");
+
+		switch (packet->key_version)
+		{
+		case PGP_KEY_V2:
+		case PGP_KEY_V3:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Deprecated)\n", packet->key_version);
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Fingerprint: ");
+			pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE, 0,
+							   PGP_KEY_V3_FINGERPRINT_SIZE);
+			out[pos++] = '\n';
+			break;
+		case PGP_KEY_V4:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Fingerprint: ");
+			pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE, 0,
+							   PGP_KEY_V4_FINGERPRINT_SIZE);
+			out[pos++] = '\n';
+			break;
+		case PGP_KEY_V6:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Fingerprint: ");
+			pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE, 0,
+							   PGP_KEY_V6_FINGERPRINT_SIZE);
+			out[pos++] = '\n';
+			break;
+		default:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Unknown)\n", packet->key_version);
+			break;
+		}
+
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+	}
+	else if (packet->version == PGP_PKESK_V3)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key ID: ");
+		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_id, 8, 0, 8);
+	}
+	else
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
+	}
+
+	return pos;
+}
+
 size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
