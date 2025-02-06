@@ -10,6 +10,7 @@
 #include <packet.h>
 #include <seipd.h>
 #include <session.h>
+#include <signature.h>
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -430,7 +431,6 @@ static size_t pgp_signature_type_print(pgp_signature_type type, void *str, size_
 	return pos;
 }
 
-
 size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
@@ -524,6 +524,55 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
 	}
+
+	return pos;
+}
+
+size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, ptr, size);
+
+	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Version: 6\n");
+		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Salt: ");
+		pos += print_bytes(PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size, 0, packet->salt_size);
+
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Key Fingerprint: ");
+		pos += print_bytes(PTR_OFFSET(ptr, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE, 0,
+						   PGP_KEY_V6_FINGERPRINT_SIZE);
+
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Nested: %s\n", packet->nested ? "Yes" : "No");
+	}
+	else if (packet->version == PGP_ONE_PASS_SIGNATURE_V3)
+	{
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Key ID: ");
+		pos += print_bytes(PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8, 0, 8);
+
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Nested: %s\n", packet->nested ? "Yes" : "No");
+	}
+	else
+	{
+		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
+	}
+
+	pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu\n", packet->version);
+	pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos);
+	pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+	pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+	pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Key ID: ");
+	pos += print_bytes(PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8, 0, 8);
 
 	return pos;
 }
