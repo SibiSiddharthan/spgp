@@ -332,6 +332,45 @@ static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str,
 	return pos;
 }
 
+static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	switch (s2k->id)
+	{
+	case PGP_S2K_SIMPLE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Simple S2K (Tag 0)\n");
+		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos);
+		break;
+	case PGP_S2K_SALTED:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salted S2K (Tag 1)\n");
+		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salt: ");
+		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, s2k->salted.salt, 8, 0, 8);
+		break;
+	case PGP_S2K_ITERATED:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Iterated and Salted S2K (Tag 3)\n");
+		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salt: ");
+		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, s2k->iterated.salt, 8, 0, 8);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Count: %hhu\n", s2k->iterated.count);
+		break;
+	case PGP_S2K_ARGON2:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Argon2 S2K (Tag 4)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salt: ");
+		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, s2k->argon2.salt, 16, 0, 16);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Iterations: %hhu\n", s2k->argon2.t);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Parallelism: %hhu\n", s2k->argon2.p);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Memory: %hhu\n", s2k->argon2.m);
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown S2K Specifier (Tag %hhu)\n", s2k->id);
+		break;
+	}
+
+	return pos;
+}
+
 size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 {
 	byte_t *out = str;
