@@ -434,11 +434,10 @@ size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t si
 	memcpy(PTR_OFFSET(str, pos), "User ID: ", 9);
 	pos += 9;
 
-	memcpy(PTR_OFFSET(str, pos), packet->user_id, packet->header.body_size);
+	memcpy(PTR_OFFSET(str, pos), packet->user_data, packet->header.body_size);
 	pos += packet->header.body_size;
 
-	out[pos] = '\n';
-	pos += 1;
+	out[pos++] = '\n';
 
 	return pos;
 }

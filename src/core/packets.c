@@ -620,10 +620,28 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, size_t size)
+pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *user_name, uint16_t user_name_size, void *user_comment,
+										   uint16_t user_comment_size, void *user_email, uint16_t user_email_size)
 {
 	pgp_user_id_packet *packet = NULL;
-	size_t required_size = sizeof(pgp_packet_header) + size;
+	size_t required_size = sizeof(pgp_packet_header) + user_name_size + user_comment_size + user_email_size;
+	size_t pos = 0;
+
+	// Require user_name atleast
+	if (user_name_size == 0)
+	{
+		return NULL;
+	}
+
+	if(user_comment_size > 0)
+	{
+		required_size += 3; // '(' and ')' and ' '
+	}
+
+	if(user_email_size > 0)
+	{
+		required_size += 3; // '<' and '>' and ' '
+	}
 
 	packet = malloc(required_size);
 
@@ -634,8 +652,44 @@ pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, siz
 
 	memset(packet, 0, required_size);
 
-	packet->header = pgp_encode_packet_header(header_format, PGP_UID, size);
-	memcpy(packet->user_id, data, size);
+	packet->header = pgp_encode_packet_header(header_format, PGP_UID, user_name_size + user_comment_size + user_email_size);
+
+	// Data is stored as "user_name (user_comment) <user_email>"
+	memcpy(packet->user_data + pos, user_name, user_name_size);
+	pos += user_name_size;
+
+	packet->user_data[pos] = ' ';
+	pos += 1;
+
+	if (user_comment_size > 0)
+	{
+		packet->user_data[pos] = '(';
+		pos += 1;
+
+		memcpy(packet->user_data + pos, user_comment, user_comment_size);
+		pos += user_comment_size;
+
+		packet->user_data[pos] = '(';
+		pos += 1;
+
+		if (user_email_size > 0)
+		{
+			packet->user_data[pos] = ' ';
+			pos += 1;
+		}
+	}
+
+	if (user_email_size > 0)
+	{
+		packet->user_data[pos] = '<';
+		pos += 1;
+
+		memcpy(packet->user_data + pos, user_email, user_email_size);
+		pos += user_email_size;
+
+		packet->user_data[pos] = '>';
+		pos += 1;
+	}
 
 	return packet;
 }
@@ -673,7 +727,7 @@ pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size)
 	packet->header = header;
 
 	// Copy the user data.
-	memcpy(packet->user_id, PTR_OFFSET(data, header.header_size), header.body_size);
+	memcpy(packet->user_data, PTR_OFFSET(data, header.header_size), header.body_size);
 
 	return packet;
 }
@@ -697,7 +751,7 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
 	// User data
-	memcpy(out + pos, packet->user_id, packet->header.body_size);
+	memcpy(out + pos, packet->user_data, packet->header.body_size);
 	pos += packet->header.body_size;
 
 	return pos;

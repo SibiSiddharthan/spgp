@@ -97,7 +97,7 @@ typedef struct _pgp_literal_packet
 typedef struct _pgp_user_id_packet
 {
 	pgp_packet_header header;
-	byte_t user_id[1];
+	byte_t user_data[1];
 } pgp_user_id_packet;
 
 typedef enum _pgp_user_attribute_subpacket_type
@@ -205,7 +205,8 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t size);
 
 // User ID Packet (Tag 13)
-pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *data, size_t size);
+pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *user_name, uint16_t user_name_size, void *user_comment,
+										   uint16_t user_comment_size, void *user_email, uint16_t user_email_size);
 void pgp_user_id_packet_delete(pgp_user_id_packet *packet);
 
 pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size);
