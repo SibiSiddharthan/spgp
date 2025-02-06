@@ -371,6 +371,66 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size)
 	return pos;
 }
 
+static size_t pgp_signature_type_print(pgp_signature_type type, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	switch (type)
+	{
+	case PGP_BINARY_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Binary Signature (Tag 0x00)\n");
+		break;
+	case PGP_TEXT_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Text Signature (Tag 0x01)\n");
+		break;
+	case PGP_STANDALONE_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Standalone Signature (Tag 0x02)\n");
+		break;
+	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Generic Certification Signature (Tag 0x10)\n");
+		break;
+	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Persona Certification Signature (Tag 0x11)\n");
+		break;
+	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Casual Certification Signature (Tag 0x12)\n");
+		break;
+	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Positive Certification Signature (Tag 0x13)\n");
+		break;
+	case PGP_SUBKEY_BINDING_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Subkey Binding Signature (Tag 0x18)\n");
+		break;
+	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Primary Key Binding Signature (Tag 0x19)\n");
+		break;
+	case PGP_DIRECT_KEY_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Direct Key Signature (Tag 0x1F)\n");
+		break;
+	case PGP_KEY_REVOCATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Revocation Signature (Tag 0x20)\n");
+		break;
+	case PGP_SUBKEY_REVOCATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Subkey Revocation Signature (Tag 0x28)\n");
+		break;
+	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Certificate Revocation Signature (Tag 0x30)\n");
+		break;
+	case PGP_TIMESTAMP_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Timestamp Signature (Tag 0x40)\n");
+		break;
+	case PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Third Party Confirmation Signature (Tag 0x50)\n");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Signature Type (Tag 0x%02X)\n", type);
+		break;
+	}
+
+	return pos;
+}
+
+
 size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
