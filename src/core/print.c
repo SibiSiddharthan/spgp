@@ -56,8 +56,8 @@ static size_t print_bytes(void *str, size_t str_size, void *data, size_t data_si
 		}
 	}
 
-	// Only add a newline if the last character is not one and the printed bytes is multiline
-	if (out[pos - 1] != '\n' && row != 0)
+	// Only add a newline if the last character is not one.
+	if (out[pos - 1] != '\n')
 	{
 		out[pos++] = '\n';
 	}
@@ -373,7 +373,6 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size)
 
 size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
@@ -390,21 +389,18 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Fingerprint: ");
 			pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE, 0,
 							   PGP_KEY_V3_FINGERPRINT_SIZE);
-			out[pos++] = '\n';
 			break;
 		case PGP_KEY_V4:
 			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
 			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Fingerprint: ");
 			pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE, 0,
 							   PGP_KEY_V4_FINGERPRINT_SIZE);
-			out[pos++] = '\n';
 			break;
 		case PGP_KEY_V6:
 			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
 			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Fingerprint: ");
 			pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE, 0,
 							   PGP_KEY_V6_FINGERPRINT_SIZE);
-			out[pos++] = '\n';
 			break;
 		default:
 			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Unknown)\n", packet->key_version);
@@ -431,7 +427,6 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 
 size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
@@ -699,14 +694,11 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 
 size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-1 Hash: ");
 	pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20, 0, 20);
-
-	out[pos++] = '\n';
 
 	return pos;
 }
