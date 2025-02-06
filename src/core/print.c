@@ -338,26 +338,21 @@ size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_
 
 	pos += pgp_packet_header_print(packet->header, str, size);
 
-	memcpy(PTR_OFFSET(str, pos), "Compression Algorithm: ", 23);
-	pos += 23;
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Compression Algorithm: ");
 
 	switch (packet->compression_algorithm_id)
 	{
 	case PGP_UNCOMPRESSED:
-		memcpy(PTR_OFFSET(str, pos), "Uncompressed (Tag 0)\n", 21);
-		pos += 21;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Uncompressed (Tag 0)\n");
 		break;
 	case PGP_DEFALTE:
-		memcpy(PTR_OFFSET(str, pos), "Deflate (Tag 1)\n", 16);
-		pos += 16;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Deflate (Tag 1)\n");
 		break;
 	case PGP_ZLIB:
-		memcpy(PTR_OFFSET(str, pos), "ZLIB (Tag 2)\n", 13);
-		pos += 13;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ZLIB (Tag 2)\n");
 		break;
 	case PGP_BZIP2:
-		memcpy(PTR_OFFSET(str, pos), "BZIP2 (Tag 3)\n", 14);
-		pos += 14;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "BZIP2 (Tag 3)\n");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->compression_algorithm_id);
@@ -395,22 +390,18 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 
 	pos += pgp_packet_header_print(packet->header, str, size);
 
-	memcpy(PTR_OFFSET(str, pos), "Format: ", 8);
-	pos += 8;
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Format: ");
 
 	switch (packet->format)
 	{
 	case PGP_LITERAL_DATA_BINARY:
-		memcpy(PTR_OFFSET(str, pos), "Binary (Tag 0)\n", 15);
-		pos += 15;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Binary (Tag 0)\n");
 		break;
 	case PGP_LITERAL_DATA_TEXT:
-		memcpy(PTR_OFFSET(str, pos), "Text (Tag 1)\n", 13);
-		pos += 13;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Text (Tag 1)\n");
 		break;
 	case PGP_LITERAL_DATA_UTF8:
-		memcpy(PTR_OFFSET(str, pos), "UTF-8 (Tag 2)\n", 14);
-		pos += 14;
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "UTF-8 (Tag 2)\n");
 		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
@@ -426,8 +417,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 		pos += packet->filename_size;
 	}
 
-	out[pos] = '\n';
-	pos += 1;
+	out[pos++] = '\n';
 
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->data_size);
 
