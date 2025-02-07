@@ -177,6 +177,78 @@ ed448_key *ed448_key_generate(ed448_key *key, byte_t private_key[ED448_KEY_OCTET
 	return key;
 }
 
+uint32_t ed25519_key_validate(ed25519_key *key)
+{
+	uint32_t status = 0;
+
+	ec_group *group = NULL;
+	ec_point *point = NULL;
+
+	group = ec_group_new(EC_ED25519);
+
+	if (group == NULL)
+	{
+		return 0;
+	}
+
+	point = ec_point_new(group);
+
+	if (point == NULL)
+	{
+		ec_group_delete(group);
+		return 0;
+	}
+
+	// Check if point decoding works
+	point = ec_point_decode(group, point, key->public_key, ED25519_KEY_OCTETS);
+
+	if (point != NULL)
+	{
+		status = 1;
+	}
+
+	ec_point_delete(point);
+	ec_group_delete(group);
+
+	return status;
+}
+
+uint32_t ed448_key_validate(ed448_key *key)
+{
+	uint32_t status = 0;
+
+	ec_group *group = NULL;
+	ec_point *point = NULL;
+
+	group = ec_group_new(EC_ED448);
+
+	if (group == NULL)
+	{
+		return 0;
+	}
+
+	point = ec_point_new(group);
+
+	if (point == NULL)
+	{
+		ec_group_delete(group);
+		return 0;
+	}
+
+	// Check if point decoding works
+	point = ec_point_decode(group, point, key->public_key, ED448_KEY_OCTETS);
+
+	if (point != NULL)
+	{
+		status = 1;
+	}
+
+	ec_point_delete(point);
+	ec_group_delete(group);
+
+	return status;
+}
+
 static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *key, ed25519_signature *edsign, void *message, size_t size)
 {
 	bignum_ctx *bctx = group->bctx;

@@ -45,6 +45,9 @@ typedef struct _ed448_signature
 ed25519_key *ed25519_key_generate(ed25519_key *key, byte_t private_key[ED25519_KEY_OCTETS]);
 ed448_key *ed448_key_generate(ed448_key *key, byte_t private_key[ED448_KEY_OCTETS]);
 
+uint32_t ed25519_key_validate(ed25519_key *key);
+uint32_t ed448_key_validate(ed448_key *key);
+
 ed25519_signature *ed25519_sign(ed25519_key *key, void *message, size_t message_size, void *signature, size_t signature_size);
 uint32_t ed25519_verify(ed25519_key *key, ed25519_signature *edsign, void *message, size_t size);
 
