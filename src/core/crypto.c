@@ -12,6 +12,9 @@
 #include <drbg.h>
 
 #include <rsa.h>
+#include <eddsa.h>
+
+#include <string.h>
 
 void *pgp_drbg = NULL;
 
@@ -617,3 +620,55 @@ uint32_t pgp_rsa_decrypt(pgp_rsa_public_key *public_key, pgp_rsa_private_key *pr
 
 	return 0;
 }
+
+pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_public_key *public_key, pgp_ed25519_private_key *private_key, void *hash,
+										uint32_t hash_size)
+{
+	void *status = NULL;
+
+	ed25519_key key = {0};
+	pgp_ed25519_signature *sign = NULL;
+
+	sign = malloc(sizeof(pgp_ed25519_signature));
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	// Set the key
+	memcpy(key.private_key, private_key->private_key, ED25519_KEY_OCTETS);
+	memcpy(key.public_key, public_key->public_key, ED25519_KEY_OCTETS);
+
+	status = ed25519_sign(&key, hash, hash_size, sign, sizeof(ed25519_signature));
+
+	if (status == NULL)
+	{
+		free(sign);
+		return NULL;
+	}
+
+	return sign;
+}
+
+uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_public_key *public_key, void *hash, uint32_t hash_size)
+{
+	uint32_t status = NULL;
+
+	ed25519_key key = {0};
+	ed25519_signature sign = {0};
+
+	// Set the key
+	memcpy(key.public_key, public_key->public_key, ED25519_KEY_OCTETS);
+
+	// Set the signature
+	memcpy(sign.sign, signature->sig, ED25519_SIGN_OCTETS);
+
+	// TODO key validation
+	status = ed25519_verify(&key, &sign, hash, hash_size);
+	
+	return status;
+}
+
+pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_private_key *private_key, void *hash, uint32_t hash_size);
+uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_public_key *public_key, void *hash, uint32_t hash_size);
