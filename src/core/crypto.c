@@ -15,7 +15,19 @@
 
 void *pgp_drbg = NULL;
 
-bignum_t *mpi_to_bignum(mpi_t *mpi);
+static bignum_t *mpi_to_bignum(mpi_t *mpi)
+{
+	bignum_t *bn = bignum_new(mpi->bits);
+
+	if (bn == NULL)
+	{
+		return NULL;
+	}
+
+	bn = bignum_set_bytes_be(bn, mpi->bytes, CEIL_DIV(mpi->bits, 8));
+
+	return bn;
+}
 
 static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algorithms algorithm)
 {
