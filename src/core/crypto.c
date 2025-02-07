@@ -666,9 +666,54 @@ uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_public
 
 	// TODO key validation
 	status = ed25519_verify(&key, &sign, hash, hash_size);
-	
+
 	return status;
 }
 
-pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_private_key *private_key, void *hash, uint32_t hash_size);
-uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_public_key *public_key, void *hash, uint32_t hash_size);
+pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_private_key *private_key, void *hash, uint32_t hash_size)
+{
+	void *status = NULL;
+
+	ed448_key key = {0};
+	pgp_ed448_signature *sign = NULL;
+
+	sign = malloc(sizeof(pgp_ed448_signature));
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	// Set the key
+	memcpy(key.private_key, private_key->private_key, ED448_KEY_OCTETS);
+	memcpy(key.public_key, public_key->public_key, ED448_KEY_OCTETS);
+
+	status = ed448_sign(&key, NULL, 0, hash, hash_size, sign, sizeof(ed448_signature));
+
+	if (status == NULL)
+	{
+		free(sign);
+		return NULL;
+	}
+
+	return sign;
+}
+
+uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_public_key *public_key, void *hash, uint32_t hash_size)
+{
+	uint32_t status = NULL;
+
+	ed448_key key = {0};
+	ed448_signature sign = {0};
+
+	// Set the key
+	memcpy(key.public_key, public_key->public_key, ED448_KEY_OCTETS);
+
+	// Set the signature
+	memcpy(sign.sign, signature->sig, ED448_SIGN_OCTETS);
+
+	// TODO key validation
+	status = ed448_verify(&key, &sign, NULL, 0, hash, hash_size);
+
+	return status;
+}
