@@ -18,32 +18,25 @@ uint32_t ec_curve_oid_size(curve_id id)
 	// NIST
 	// Prime curves
 	case EC_NIST_P192:
-		return 8;
-	case EC_NIST_P224:
-		return 5;
 	case EC_NIST_P256:
 		return 8;
+	case EC_NIST_P224:
 	case EC_NIST_P384:
-		return 5;
 	case EC_NIST_P521:
 		return 5;
 
 	// Binary curves
 	case EC_NIST_K163:
 	case EC_NIST_B163:
-		return 163;
 	case EC_NIST_K233:
 	case EC_NIST_B233:
-		return 233;
 	case EC_NIST_K283:
 	case EC_NIST_B283:
-		return 283;
 	case EC_NIST_K409:
 	case EC_NIST_B409:
-		return 409;
 	case EC_NIST_K571:
 	case EC_NIST_B571:
-		return 571;
+		return 5;
 
 	// SEC
 	// Prime curves
@@ -91,22 +84,16 @@ uint32_t ec_curve_oid_size(curve_id id)
 	// Brainpool
 	case EC_BRAINPOOL_160R1:
 	case EC_BRAINPOOL_160T1:
-		return 9;
 	case EC_BRAINPOOL_192R1:
 	case EC_BRAINPOOL_192T1:
-		return 9;
 	case EC_BRAINPOOL_224R1:
 	case EC_BRAINPOOL_224T1:
-		return 9;
 	case EC_BRAINPOOL_256R1:
 	case EC_BRAINPOOL_256T1:
-		return 9;
 	case EC_BRAINPOOL_320R1:
 	case EC_BRAINPOOL_320T1:
-		return 9;
 	case EC_BRAINPOOL_384R1:
 	case EC_BRAINPOOL_384T1:
-		return 9;
 	case EC_BRAINPOOL_512R1:
 	case EC_BRAINPOOL_512T1:
 		return 9;
@@ -152,32 +139,52 @@ uint32_t ec_curve_oid(curve_id id, void *buffer, uint32_t size)
 	// NIST
 	// Prime curves
 	case EC_NIST_P192:
+		memcpy(buffer, "\x2A\x86\x48\xCE\x3D\x03\x01\x01", 8);
 		return 8;
 	case EC_NIST_P224:
+		memcpy(buffer, "\x2B\x81\x04\x00\x21", 5);
 		return 5;
 	case EC_NIST_P256:
+		memcpy(buffer, "\x2A\x86\x48\xCE\x3D\x03\x01\x07", 8);
 		return 8;
 	case EC_NIST_P384:
+		memcpy(buffer, "\x2B\x81\x04\x00\x22", 5);
 		return 5;
 	case EC_NIST_P521:
+		memcpy(buffer, "\x2B\x81\x04\x00\x23", 5);
 		return 5;
 
 	// Binary curves
 	case EC_NIST_K163:
+		memcpy(buffer, "\x2B\x81\x04\x00\x01", 5);
+		return 5;
 	case EC_NIST_B163:
-		return 163;
+		memcpy(buffer, "\x2B\x81\x04\x00\x0F", 5);
+		return 5;
 	case EC_NIST_K233:
+		memcpy(buffer, "\x2B\x81\x04\x00\x1A", 5);
+		return 5;
 	case EC_NIST_B233:
-		return 233;
+		memcpy(buffer, "\x2B\x81\x04\x00\x1B", 5);
+		return 5;
 	case EC_NIST_K283:
+		memcpy(buffer, "\x2B\x81\x04\x00\x10", 5);
+		return 5;
 	case EC_NIST_B283:
-		return 283;
+		memcpy(buffer, "\x2B\x81\x04\x00\x11", 5);
+		return 5;
 	case EC_NIST_K409:
+		memcpy(buffer, "\x2B\x81\x04\x00\x24", 5);
+		return 5;
 	case EC_NIST_B409:
-		return 409;
+		memcpy(buffer, "\x2B\x81\x04\x00\x25", 5);
+		return 5;
 	case EC_NIST_K571:
+		memcpy(buffer, "\x2B\x81\x04\x00\x26", 5);
+		return 5;
 	case EC_NIST_B571:
-		return 571;
+		memcpy(buffer, "\x2B\x81\x04\x00\x27", 5);
+		return 5;
 
 	// SEC
 	// Prime curves
