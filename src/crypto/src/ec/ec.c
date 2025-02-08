@@ -207,6 +207,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_P192:
 	{
 	ec_nist_p192:
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 192;
 		group->p->size = 24;
@@ -261,6 +264,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_P224:
 	{
 	ec_nist_p224:
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 224;
 		group->p->size = 32;
@@ -315,6 +321,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_P256:
 	{
 	ec_nist_p256:
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 256;
 		group->p->size = 32;
@@ -369,6 +378,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_P384:
 	{
 	ec_nist_p384:
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 384;
 		group->p->size = 48;
@@ -423,6 +435,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_P521:
 	{
 	ec_nist_p521:
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 521;
 		group->p->size = 72;
@@ -479,6 +494,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_K163:
 	{
 	ec_nist_k163:
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 164;
 		group->p->size = 24;
@@ -533,6 +551,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_K233:
 	{
 	ec_nist_k233:
+		// cofactor (h)
+		group->cofactor = 4;
+
 		// p
 		group->p->bits = 234;
 		group->p->size = 32;
@@ -587,6 +608,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_K283:
 	{
 	ec_nist_k283:
+		// cofactor (h)
+		group->cofactor = 4;
+
 		// p
 		group->p->bits = 284;
 		group->p->size = 40;
@@ -641,6 +665,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_K409:
 	{
 	ec_nist_k409:
+		// cofactor (h)
+		group->cofactor = 4;
+
 		// p
 		group->p->bits = 410;
 		group->p->size = 56;
@@ -695,6 +722,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_K571:
 	{
 	ec_nist_k571:
+		// cofactor (h)
+		group->cofactor = 4;
+
 		// p
 		group->p->bits = 572;
 		group->p->size = 72;
@@ -751,6 +781,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_B163:
 	{
 	ec_nist_b163:
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 164;
 		group->p->size = 24;
@@ -805,6 +838,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_B233:
 	{
 	ec_nist_b233:
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 234;
 		group->p->size = 32;
@@ -859,6 +895,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_B283:
 	{
 	ec_nist_b283:
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 284;
 		group->p->size = 40;
@@ -913,6 +952,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_B409:
 	{
 	ec_nist_b409:
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 410;
 		group->p->size = 56;
@@ -967,6 +1009,9 @@ ec_group *ec_group_new(curve_id id)
 	case EC_NIST_B571:
 	{
 	ec_nist_b571:
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 572;
 		group->p->size = 72;
@@ -1023,6 +1068,9 @@ ec_group *ec_group_new(curve_id id)
 	// Prime curves
 	case EC_SECP_160K1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 160;
 		group->p->size = 24;
@@ -1076,6 +1124,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_SECP_160R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 160;
 		group->p->size = 24;
@@ -1129,6 +1180,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_SECP_160R2:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 160;
 		group->p->size = 24;
@@ -1182,6 +1236,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_SECP_192K1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 192;
 		group->p->size = 24;
@@ -1237,6 +1294,9 @@ ec_group *ec_group_new(curve_id id)
 		goto ec_nist_p192;
 	case EC_SECP_224K1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 224;
 		group->p->size = 32;
@@ -1292,6 +1352,9 @@ ec_group *ec_group_new(curve_id id)
 		goto ec_nist_p224;
 	case EC_SECP_256K1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 256;
 		group->p->size = 32;
@@ -1355,6 +1418,9 @@ ec_group *ec_group_new(curve_id id)
 		goto ec_nist_k163;
 	case EC_SECT_163R1:
 	{
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 164;
 		group->p->size = 24;
@@ -1410,6 +1476,9 @@ ec_group *ec_group_new(curve_id id)
 		goto ec_nist_b163;
 	case EC_SECT_193R1:
 	{
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 194;
 		group->p->size = 32;
@@ -1463,6 +1532,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_SECT_193R2:
 	{
+		// cofactor (h)
+		group->cofactor = 2;
+
 		// p
 		group->p->bits = 194;
 		group->p->size = 32;
@@ -1520,6 +1592,9 @@ ec_group *ec_group_new(curve_id id)
 		goto ec_nist_b233;
 	case EC_SECT_239K1:
 	{
+		// cofactor (h)
+		group->cofactor = 4;
+
 		// p
 		group->p->bits = 240;
 		group->p->size = 32;
@@ -1587,6 +1662,9 @@ ec_group *ec_group_new(curve_id id)
 	// Brainpool
 	case EC_BRAINPOOL_160R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 160;
 		group->p->size = 24;
@@ -1640,6 +1718,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_160T1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 160;
 		group->p->size = 24;
@@ -1693,6 +1774,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_192R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 192;
 		group->p->size = 24;
@@ -1745,6 +1829,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_192T1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 192;
 		group->p->size = 24;
@@ -1798,6 +1885,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_224R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 224;
 		group->p->size = 32;
@@ -1851,6 +1941,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_224T1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 224;
 		group->p->size = 32;
@@ -1904,6 +1997,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_256R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 256;
 		group->p->size = 32;
@@ -1957,6 +2053,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_256T1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 256;
 		group->p->size = 32;
@@ -2010,6 +2109,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_320R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 320;
 		group->p->size = 40;
@@ -2063,6 +2165,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_320T1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 320;
 		group->p->size = 40;
@@ -2116,6 +2221,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_384R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 384;
 		group->p->size = 48;
@@ -2169,6 +2277,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_384T1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 384;
 		group->p->size = 48;
@@ -2222,6 +2333,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_512R1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 512;
 		group->p->size = 64;
@@ -2275,6 +2389,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_BRAINPOOL_512T1:
 	{
+		// cofactor (h)
+		group->cofactor = 1;
+
 		// p
 		group->p->bits = 512;
 		group->p->size = 64;
@@ -2330,6 +2447,9 @@ ec_group *ec_group_new(curve_id id)
 	// Montgomery
 	case EC_CURVE25519:
 	{
+		// cofactor (h)
+		group->cofactor = 8;
+
 		// p
 		group->p->bits = 255;
 		group->p->size = 32;
@@ -2383,6 +2503,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_CURVE448:
 	{
+		// cofactor (h)
+		group->cofactor = 4;
+
 		// p
 		group->p->bits = 448;
 		group->p->size = 56;
@@ -2438,6 +2561,9 @@ ec_group *ec_group_new(curve_id id)
 	// Twisted Edwards
 	case EC_ED25519:
 	{
+		// cofactor (h)
+		group->cofactor = 8;
+
 		// p
 		group->p->bits = 255;
 		group->p->size = 32;
@@ -2494,6 +2620,9 @@ ec_group *ec_group_new(curve_id id)
 	break;
 	case EC_ED448:
 	{
+		// cofactor (h)
+		group->cofactor = 4;
+
 		// p
 		group->p->bits = 448;
 		group->p->size = 56;
