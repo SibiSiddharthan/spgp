@@ -40,46 +40,36 @@ uint32_t ec_curve_oid_size(curve_id id)
 
 	// SEC
 	// Prime curves
+	case EC_SECP_192R1:
+	case EC_SECP_256R1:
+		return 8;
 	case EC_SECP_160K1:
 	case EC_SECP_160R1:
 	case EC_SECP_160R2:
-		return 160;
 	case EC_SECP_192K1:
-	case EC_SECP_192R1:
-		return 192;
 	case EC_SECP_224K1:
 	case EC_SECP_224R1:
-		return 224;
 	case EC_SECP_256K1:
-	case EC_SECP_256R1:
-		return 256;
 	case EC_SECP_384R1:
-		return 384;
 	case EC_SECP_521R1:
-		return 521;
+		return 5;
 
 	// Binary curves
 	case EC_SECT_163K1:
 	case EC_SECT_163R1:
 	case EC_SECT_163R2:
-		return 163;
 	case EC_SECT_193R1:
 	case EC_SECT_193R2:
-		return 193;
 	case EC_SECT_233K1:
 	case EC_SECT_233R1:
-		return 233;
 	case EC_SECT_239K1:
-		return 239;
 	case EC_SECT_283K1:
 	case EC_SECT_283R1:
-		return 283;
 	case EC_SECT_409K1:
 	case EC_SECT_409R1:
-		return 409;
 	case EC_SECT_571K1:
 	case EC_SECT_571R1:
-		return 571;
+		return 5;
 
 	// Brainpool
 	case EC_BRAINPOOL_160R1:
@@ -189,45 +179,82 @@ uint32_t ec_curve_oid(curve_id id, void *buffer, uint32_t size)
 	// SEC
 	// Prime curves
 	case EC_SECP_160K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x09", 5);
+		return 5;
 	case EC_SECP_160R1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x08", 5);
+		return 5;
 	case EC_SECP_160R2:
-		return 160;
+		memcpy(buffer, "\x2B\x81\x04\x00\x1E", 5);
+		return 5;
 	case EC_SECP_192K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x1F", 5);
+		return 5;
 	case EC_SECP_192R1:
-		return 192;
+		memcpy(buffer, "\x2A\x86\x48\xCE\x3D\x03\x01\x01", 8);
+		return 8;
 	case EC_SECP_224K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x20", 5);
+		return 5;
 	case EC_SECP_224R1:
-		return 224;
+		memcpy(buffer, "\x2B\x81\x04\x00\x21", 5);
+		return 5;
 	case EC_SECP_256K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x0A", 5);
+		return 5;
 	case EC_SECP_256R1:
-		return 256;
+		memcpy(buffer, "\x2A\x86\x48\xCE\x3D\x03\x01\x07", 8);
+		return 8;
 	case EC_SECP_384R1:
-		return 384;
+		memcpy(buffer, "\x2B\x81\x04\x00\x22", 5);
+		return 5;
 	case EC_SECP_521R1:
-		return 521;
+		memcpy(buffer, "\x2B\x81\x04\x00\x23", 5);
+		return 5;
 
 	// Binary curves
 	case EC_SECT_163K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x01", 5);
+		return 5;
 	case EC_SECT_163R1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x02", 5);
+		return 5;
 	case EC_SECT_163R2:
-		return 163;
+		memcpy(buffer, "\x2B\x81\x04\x00\x0F", 5);
+		return 5;
 	case EC_SECT_193R1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x18", 5);
+		return 5;
 	case EC_SECT_193R2:
-		return 193;
+		memcpy(buffer, "\x2B\x81\x04\x00\x19", 5);
+		return 5;
 	case EC_SECT_233K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x1A", 5);
+		return 5;
 	case EC_SECT_233R1:
-		return 233;
+		memcpy(buffer, "\x2B\x81\x04\x00\x1B", 5);
+		return 5;
 	case EC_SECT_239K1:
-		return 239;
+		memcpy(buffer, "\x2B\x81\x04\x00\x03", 5);
+		return 5;
 	case EC_SECT_283K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x10", 5);
+		return 5;
 	case EC_SECT_283R1:
-		return 283;
+		memcpy(buffer, "\x2B\x81\x04\x00\x11", 5);
+		return 5;
 	case EC_SECT_409K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x24", 5);
+		return 5;
 	case EC_SECT_409R1:
-		return 409;
+		memcpy(buffer, "\x2B\x81\x04\x00\x25", 5);
+		return 5;
 	case EC_SECT_571K1:
+		memcpy(buffer, "\x2B\x81\x04\x00\x26", 5);
+		return 5;
 	case EC_SECT_571R1:
-		return 571;
+		memcpy(buffer, "\x2B\x81\x04\x00\x27", 5);
+		return 5;
 
 	// Brainpool
 	case EC_BRAINPOOL_160R1:
