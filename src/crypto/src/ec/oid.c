@@ -88,18 +88,6 @@ uint32_t ec_curve_oid_size(curve_id id)
 	case EC_BRAINPOOL_512T1:
 		return 9;
 
-	// Montgomery
-	case EC_CURVE25519:
-		return 255;
-	case EC_CURVE448:
-		return 448;
-
-	// Twisted Edwards
-	case EC_ED25519:
-		return 255;
-	case EC_ED448:
-		return 448;
-
 	default:
 		return 0;
 	}
@@ -299,18 +287,6 @@ uint32_t ec_curve_oid(curve_id id, void *buffer, uint32_t size)
 	case EC_BRAINPOOL_512T1:
 		memcpy(buffer, "\x2B\x24\x03\x03\x02\x08\x01\x01\x0E", 9);
 		return 9;
-
-	// Montgomery
-	case EC_CURVE25519:
-		return 255;
-	case EC_CURVE448:
-		return 448;
-
-	// Twisted Edwards
-	case EC_ED25519:
-		return 255;
-	case EC_ED448:
-		return 448;
 
 	default:
 		return 0;
