@@ -20,10 +20,9 @@ int32_t rsa2048_pkcs_sig_tests(void)
 	rsa_key *key = NULL;
 	bignum_t *n = NULL, *e = NULL, *d = NULL;
 
-	hash_ctx *hctx = NULL;
 	rsa_signature *rsign = NULL;
+	byte_t hash[64] = {0};
 	byte_t message[512] = {0};
-	byte_t sign[1024] = {0};
 
 	n = bignum_set_hex(
 		NULL,
@@ -56,16 +55,13 @@ int32_t rsa2048_pkcs_sig_tests(void)
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
-	hctx = hash_new(HASH_SHA224);
-
 	hex_to_block(
 		message, 128,
 		"74230447bcd492f2f8a8c594a04379271690bf0c8a13ddfc1b7b96413e77ab2664cba1acd7a3c57ee5276e27414f8283a6f93b73bd392bd541f07eb461a080bb66"
 		"7e5ff095c9319f575b3893977e658c6c001ceef88a37b7902d4db31c3e34f3c164c47bbeefde3b946bad416a752c2cafcee9e401ae08884e5b8aa839f9d0b5");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha224_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA224, hash, SHA224_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 256);
 	status += CHECK_BLOCK(
@@ -75,21 +71,17 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"71529008fa5eff030f46956704a3f5d9167348f37021fc277c6c0a8f93b8a23cfbf918990f982a56d0ed2aa08161560755adc0ce2c3e2ab2929f79bfc0b24ff3e0"
 		"ff352e6445d8a617f1785d66c32295bb365d61cfb107e9993bbd93421f2d344a86e4127827fa0d0b2535f9b1d547de12ba2868acdecf2cb5f92a6a159a");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
-
-	hctx = hash_new(HASH_SHA256);
 
 	hex_to_block(
 		message, 128,
 		"c43011f3ee88c9c9adcac8bf37221afa31769d347dec705e53aca98993e74606591867ccd289ba1b4f19365f983e0c578346da76c5e2228a07e4fc9b3d48071633"
 		"71a52b68b66873201dc7d6b56616ac2e4cb522120787df7f15a5e8763a54c179c635d65816bc19485de3eb35a52040591094fe0e6485a7e0c60e38e7c61551");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha256_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA256, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 256);
 	status += CHECK_BLOCK(
@@ -99,21 +91,17 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"21aa2f282cbf52389f239afe1490890be21f9d808b3d70b97efd59c0b60e466088bb42714f212bc90db7e942ebcee60e7b107fff44fb3564ff07d6d02850215fd3"
 		"57d897c4d32bef8661689f2d84ff897637fb6d5568a7270e783426b74b7037493e5155fd7cb3ddddfd36bd8a9c877d71d2a966057c08263d2939c84987");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
-
-	hctx = hash_new(HASH_SHA384);
 
 	hex_to_block(
 		message, 128,
 		"f60a3a543768fabe37f003009a8c26f7dc91f1422d4429ed7f9d744cdd4b552afef75d241acda04ffc39672159ee248e602dab7192449e2ed4552995c258f00a47"
 		"6346e36a29a0126bc249040faa57c9380bdd74b83f62c56790920574433432f8d65c5cd185e24fad13127265c6a5ef8db4f114493d5cfa61d91664981408e9");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha384_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA384, hash, SHA384_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 256);
 	status += CHECK_BLOCK(
@@ -123,21 +111,17 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"3857e658e370c586ab1eed825076321ac8e82be374bacb295e4d3408f0cc1fc4c300b84275a51c3573e9cabfdbe3dc51e4a6f5811d860d725aaf8fd0af19a2437b"
 		"0f1c80f5ac222f6b25f1fa09e93399a6976b1b3ca76afe6086e9b232aae6c7b818255bf963f31c04ae3fa2136c0a442997d4cf12f395fb804a4755b56b");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
-
-	hctx = hash_new(HASH_SHA512);
 
 	hex_to_block(
 		message, 128,
 		"ab18939230b096646a37a781629fbd9270f3891a5ceab4a8c3bc6851bc34115dbc066541b764a2ce88cc16a79324e5f8a90807652c639041733c34016fd30af08f"
 		"ed9024e26cf0b07c22811b1ae7911109e9625943447207dcd3fff39c45cb69ee731d22f8f008730ce2efc53f114945573ea2ddebb6e262c527d20f8bb1dc32");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha512_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA512, hash, SHA512_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 256);
 	status += CHECK_BLOCK(
@@ -147,7 +131,6 @@ int32_t rsa2048_pkcs_sig_tests(void)
 		"e1b5d5dcf6224c5ae2775423a66c81818eec014a3faf9ee75a3f6c3e51c556b0a288e8c262946684eb628b88e3f875e62ef6e801cae75f61cee404971c39d24a97"
 		"12eb342ddc663515dec103b18d97d78ed68212f27900e77c049b60c853002b08022df56f707efa71027589e1a3ca6e415ba5f4437e978b07af3b73ba0d");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
@@ -164,10 +147,9 @@ int32_t rsa3072_pkcs_sig_tests(void)
 	rsa_key *key = NULL;
 	bignum_t *n = NULL, *e = NULL, *d = NULL;
 
-	hash_ctx *hctx = NULL;
 	rsa_signature *rsign = NULL;
+	byte_t hash[64] = {0};
 	byte_t message[512] = {0};
-	byte_t sign[1024] = {0};
 
 	n = bignum_set_hex(
 		NULL,
@@ -206,16 +188,13 @@ int32_t rsa3072_pkcs_sig_tests(void)
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
-	hctx = hash_new(HASH_SHA224);
-
 	hex_to_block(
 		message, 128,
 		"254ce36e8ed62e0887d4be00eefa82515acef956540cff45c448e7f9a9d5c9f40de61da439f389e5255ef8c83257ec921bfd150829c522eaa720d7be965860cea2"
 		"bbe57454fc5e9588d6a96c22f2d989fd0bd21924501367450ad2a3627e4ee3ca15616748ba54219a84f8742495f23de6425710ac7479c4844d0031750f3c38");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha224_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA224, hash, SHA224_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 384);
 	status += CHECK_BLOCK(
@@ -227,21 +206,17 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"678cc9d098ba9928b525b50e48cb030c510c4ce727c6b93bd091b7d20b4b961165ae0e2848aa995bb73abe9a2634378d224128541ab056a31b784885aef8034ded"
 		"ac13167402f9f62b55741220df8aff5defb69c035d9a31e2a5b8817057241bcf854932f5edee7ee66e8917aa4a718b6c446bddf084f5cd769caeff");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
-
-	hctx = hash_new(HASH_SHA256);
 
 	hex_to_block(
 		message, 128,
 		"f996f3adc2aba505ad4ae52bc5a43371a33d0f28e1950b66d208240670f352ef96185e9a7044f4ce2f2ff9ae01a31ef640e0b682e940c5105117594613dd1df74d"
 		"8f2ba20c52223b045a782e850a12a2aa5c12fad484f1a256d0cd0872d304e885c201cd7e1e56d594930bb4392136fb4979cc9b88aab7a44bfc2953751c2f4c");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha256_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA256, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 384);
 	status += CHECK_BLOCK(
@@ -253,21 +228,17 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"6d57cf0a4949cfc68d633882882dcfdfc50cf449df10acf20305c2aa43bda10fd8a10b4ecaa23100aa47e92936dce1bfb8d6595235bbfe2c8585cb1647b2beacb1"
 		"e1d4b6cef758811a68330fa9c3a82573c08fa2cda5a03f3425554e45d98c1645c5bd27d12e6c20b2c462a746e882a3421a7b1b1e25b4c36c8b16a1");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
-
-	hctx = hash_new(HASH_SHA384);
 
 	hex_to_block(
 		message, 128,
 		"32fd45e73f6f6949f20cab78c0cc31d814baea6389546a365d35f54f23f1d995b74101187760c89bb0b40b5057b182e2fafb50b8f5cad879e993d3cb6ae59f61f8"
 		"91da34310d3010441a7153a9a5e7f210ebe6bc97e1a4e33fd34bb8a14b4db6dd34f8c2d43f4ab19786060b1e70070e3ed4d5f6d561767c483d879d2fec8b9c");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha384_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA384, hash, SHA384_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 384);
 	status += CHECK_BLOCK(
@@ -279,21 +250,17 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"062e65d4d419cf2d97077d0624f8e5c36f2c7b35ccf95435d5c36886ff9105a6c1ea225e15ea8cbc7b6bf6856151cd76fbb75b5b98f0e3db516a8e218189fcb1cd"
 		"5de3cafeaa33ef135c5d8b8aa5f881afaacaf4c08bd7281255bc2a33b76d4a36e0b170c45588239e5b38c679b08cf802af73b6d79b3935949461e7");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
-
-	hctx = hash_new(HASH_SHA512);
 
 	hex_to_block(
 		message, 128,
 		"db6c9d4badb1d9b74d68346448b4d5340631783b5a35ac2458563ed0672cf54197587fb734c4ac189b2dda954cdfb18b41c010a77e90464eea6f863c5da0956bfa"
 		"8cc636bf0a28be5addfe8d3e7e6f79f71d7fcbbae23ea141783f91d6cc4c8fad125811760ab57133818892471a79c6d04eafef37b2fbe506785318f9398377");
 
-	rsign = rsa_sign_pkcs(key, hctx, message, 128, NULL, 0);
-
-	memset(sign, 0, 1024);
+	sha512_hash(message, 128, hash);
+	rsign = rsa_sign_pkcs(key, HASH_SHA512, hash, SHA512_HASH_SIZE, NULL, 0);
 
 	status += CHECK_VALUE(rsign->size, 384);
 	status += CHECK_BLOCK(
@@ -305,7 +272,6 @@ int32_t rsa3072_pkcs_sig_tests(void)
 		"06a49f7ff1ed51e918f3ed801dae62ca276d7063d72a6ebc136ba06cfedf5aa23277e81008c63b2e0083d0fd6814f6d4b4b40a42e8c0206f3c356a5ec709b7c8a4"
 		"b74b7b48d53c9d8694d27359c2c7701938d2f0161721a57313bb1a2e11da215872498182493d8517043b4c03f93446aac93830276542026ce83055");
 
-	hash_delete(hctx);
 	free(rsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------

@@ -33,13 +33,6 @@ typedef struct _rsa_pss_ctx
 	size_t salt_size;
 } rsa_pss_ctx;
 
-typedef struct _rsa_pkcs_ctx
-{
-	rsa_key *key;
-	hash_ctx *hctx;
-	uint32_t digest_info_size;
-} rsa_pkcs_ctx;
-
 typedef struct _rsa_signature
 {
 	uint32_t bits;
@@ -70,7 +63,7 @@ rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx
 uint32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
 						rsa_signature *rsign);
 
-rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_ctx *hctx, void *message, size_t message_size, void *signature, size_t signature_size);
-uint32_t rsa_verify_pkcs(rsa_key *key, hash_ctx *hctx, rsa_signature *rsign, void *message, size_t size);
+rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_algorithm algorithm, void *hash, size_t hash_size, void *signature, size_t signature_size);
+uint32_t rsa_verify_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algorithm, void *hash, size_t hash_size);
 
 #endif
