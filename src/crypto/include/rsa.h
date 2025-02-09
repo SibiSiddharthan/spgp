@@ -23,16 +23,6 @@ typedef struct _rsa_key
 	bignum_ctx *bctx;
 } rsa_key;
 
-typedef struct _rsa_pss_ctx
-{
-	rsa_key *key;
-	hash_ctx *hctx_message;
-	hash_ctx *hctx_mask;
-	drbg_ctx *drbg;
-	byte_t *salt;
-	size_t salt_size;
-} rsa_pss_ctx;
-
 typedef struct _rsa_signature
 {
 	uint32_t bits;
@@ -58,10 +48,10 @@ uint32_t rsa_decrypt_oaep(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mas
 uint32_t rsa_encrypt_pkcs(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size, drbg_ctx *drbg);
 uint32_t rsa_decrypt_pkcs(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 
-rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt, size_t salt_size,
-							void *message, size_t message_size, void *signature, size_t signature_size);
-uint32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
-						rsa_signature *rsign);
+rsa_signature *rsa_sign_pss(rsa_key *key, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm, void *salt, size_t salt_size,
+							void *hash, size_t hash_size, void *signature, size_t signature_size);
+uint32_t rsa_verify_pss(rsa_key *key, rsa_signature *rsign, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm,
+						size_t salt_size, void *hash, size_t hash_size);
 
 rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_algorithm algorithm, void *hash, size_t hash_size, void *signature, size_t signature_size);
 uint32_t rsa_verify_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algorithm, void *hash, size_t hash_size);

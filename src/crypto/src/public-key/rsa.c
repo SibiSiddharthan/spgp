@@ -706,99 +706,18 @@ end:
 	return status;
 }
 
-static inline rsa_pss_ctx *rsa_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt,
-									   size_t salt_size)
-{
-	rsa_pss_ctx *rctx = NULL;
-
-	// Parameter checking
-	if (key == NULL)
-	{
-		return NULL;
-	}
-
-	if (hctx_message == NULL)
-	{
-		return NULL;
-	}
-
-	if ((key->bits / 8) < (hctx_message->hash_size + salt_size + 2))
-	{
-		return NULL;
-	}
-
-	rctx = (rsa_pss_ctx *)malloc(sizeof(rsa_pss_ctx));
-
-	if (rctx == NULL)
-	{
-		return NULL;
-	}
-
-	rctx->key = key;
-	rctx->hctx_message = hctx_message;
-	rctx->hctx_mask = hctx_mask;
-	rctx->drbg = drbg;
-	rctx->salt = salt;
-	rctx->salt_size = salt_size;
-
-	hash_reset(rctx->hctx_message);
-
-	if (rctx->hctx_mask != NULL)
-	{
-		hash_reset(rctx->hctx_mask);
-	}
-
-	return rctx;
-}
-
-static inline void rsa_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt,
-								 size_t salt_size)
-{
-	rctx->key = key;
-	rctx->hctx_message = hctx_message;
-	rctx->hctx_mask = hctx_mask;
-	rctx->drbg = drbg;
-	rctx->salt = salt;
-	rctx->salt_size = salt_size;
-
-	hash_reset(rctx->hctx_message);
-
-	if (rctx->hctx_mask != NULL)
-	{
-		hash_reset(rctx->hctx_mask);
-	}
-}
-
-rsa_pss_ctx *rsa_sign_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt, size_t salt_size)
-{
-	return rsa_pss_new(key, hctx_message, hctx_mask, drbg, salt, salt_size);
-}
-
-void rsa_sign_pss_delete(rsa_pss_ctx *rctx)
-{
-	memset(rctx, 0, sizeof(rsa_pss_ctx));
-	free(rctx);
-}
-
-void rsa_sign_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt,
-						size_t salt_size)
-{
-	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, drbg, salt, salt_size);
-}
-
-void rsa_sign_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
-{
-	hash_update(rctx->hctx_message, message, size);
-}
-
-rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx, void *signature, size_t size)
+rsa_signature *rsa_sign_pss(rsa_key *key, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm, void *salt, size_t salt_size,
+							void *hash, size_t hash_size, void *signature, size_t signature_size)
 {
 	rsa_signature *rsign = signature;
+	hash_ctx *hctx_digest = NULL;
+	hash_ctx *hctx_mask = NULL;
+
+	byte_t hash_digest_buffer[512] = {0};
+	byte_t hash_mask_buffer[512] = {0};
 
 	// Sizes
-	size_t key_size = rctx->key->bits / 8;
-	size_t hash_size = rctx->hctx_message->hash_size;
-	size_t salt_size = rctx->salt_size;
+	size_t key_size = key->bits / 8;
 
 	size_t ps_size = key_size - (salt_size + hash_size + 2);
 	size_t db_size = key_size - (hash_size + 1);
@@ -808,29 +727,34 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx, void *signature, size_t siz
 	size_t hash_offset = db_size;
 
 	size_t ctx_size = em_size;
-	size_t default_hash_ctx_size = 0;
 
-	size_t signature_size = sizeof(rsa_signature) + key_size;
+	size_t required_signature_size = sizeof(rsa_signature) + key_size;
 
-	byte_t *hash = NULL;
-	byte_t *salt = NULL;
 	byte_t *em = NULL;
 
-	// Check Hash
-	if (rctx->hctx_mask == NULL)
+	// Check paramters
+	if (key_size < (hash_size + salt_size + 2))
 	{
-		default_hash_ctx_size = hash_ctx_size(HASH_SHA1);
-		ctx_size += default_hash_ctx_size;
+		return NULL;
+	}
+
+	// Initialize the hashes
+	hctx_digest = hash_init(hash_digest_buffer, 512, digest_algorithm);
+	hctx_mask = hash_init(hash_mask_buffer, 512, mask_algorithm);
+
+	if (hctx_digest == NULL || hctx_mask == NULL)
+	{
+		return NULL;
 	}
 
 	// Allocate for the signature
 	if (rsign == NULL)
 	{
-		rsign = malloc(signature_size);
+		rsign = malloc(required_signature_size);
 	}
 	else
 	{
-		if (size < signature_size)
+		if (signature_size < required_signature_size)
 		{
 			return NULL;
 		}
@@ -841,72 +765,53 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx, void *signature, size_t siz
 		return NULL;
 	}
 
-	bignum_ctx_start(rctx->key->bctx, ctx_size);
+	bignum_ctx_start(key->bctx, ctx_size);
 
-	// If mask hash is not specified use SHA-1
-	if (rctx->hctx_mask == NULL)
-	{
-		rctx->hctx_mask = bignum_ctx_allocate_raw(rctx->key->bctx, default_hash_ctx_size);
-		rctx->hctx_mask = hash_init(rctx->hctx_mask, default_hash_ctx_size, HASH_SHA1);
-	}
-
-	em = bignum_ctx_allocate_raw(rctx->key->bctx, em_size);
+	em = bignum_ctx_allocate_raw(key->bctx, em_size);
 	memset(em, 0, em_size);
 
 	em[ps_size] = 0x01;
 	em[em_size - 1] = 0xBC;
 
-	hash = em + hash_offset;
-	salt = em + salt_offset;
-
-	// Finish hashing the message.
-	hash_final(rctx->hctx_message, hash, hash_size);
-	hash_reset(rctx->hctx_message);
-
 	// Generate H'
 	uint64_t zero = 0;
 
-	hash_update(rctx->hctx_message, &zero, 8);
-	hash_update(rctx->hctx_message, hash, hash_size);
+	hash_update(hctx_digest, &zero, 8);
+	hash_update(hctx_digest, hash, hash_size);
 
 	// Generate the salt
 	if (salt_size > 0)
 	{
-		if (rctx->salt != NULL)
+		if (salt != NULL)
 		{
-			memcpy(salt, rctx->salt, rctx->salt_size);
+			memcpy(em + salt_offset, salt, salt_size);
 		}
 		else
 		{
-			if (rctx->drbg == NULL)
-			{
-				rctx->drbg = get_default_drbg();
-			}
-
-			drbg_generate(rctx->drbg, 0, NULL, 0, salt, salt_size);
+			drbg_generate(get_default_drbg(), 0, NULL, 0, salt, salt_size);
 		}
 
-		hash_update(rctx->hctx_message, salt, salt_size);
+		hash_update(hctx_digest, salt, salt_size);
 	}
 
-	hash_final(rctx->hctx_message, hash, hash_size);
+	hash_final(hctx_digest, em + hash_offset, hash_size);
 
 	// DB Mask
-	MGF_XOR(rctx->hctx_mask, hash, hash_size, em, db_size);
+	MGF_XOR(hctx_mask, em + hash_offset, hash_size, em, db_size);
 
 	// Zero the top bits to ensure em < n
-	zero_top_bits(em, rctx->key->n);
+	zero_top_bits(em, key->n);
 
 	// Generate the signature.
 	memset(rsign, 0, sizeof(rsa_signature) + key_size);
 	rsign->size = key_size;
 	rsign->sign = (byte_t *)rsign + sizeof(rsa_signature);
 
-	rsign->bits = rsa_private_encrypt(rctx->key, em, em_size, rsign->sign, rsign->size);
+	rsign->bits = rsa_private_encrypt(key, em, em_size, rsign->sign, rsign->size);
 
-	bignum_ctx_end(rctx->key->bctx);
+	bignum_ctx_end(key->bctx);
 
-	if (rsign->bits < 0)
+	if (rsign->bits == 0)
 	{
 		free(rsign);
 		return NULL;
@@ -915,54 +820,19 @@ rsa_signature *rsa_sign_pss_final(rsa_pss_ctx *rctx, void *signature, size_t siz
 	return rsign;
 }
 
-rsa_signature *rsa_sign_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, drbg_ctx *drbg, void *salt, size_t salt_size,
-							void *message, size_t message_size, void *signature, size_t signature_size)
+uint32_t rsa_verify_pss(rsa_key *key, rsa_signature *rsign, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm,
+						size_t salt_size, void *hash, size_t hash_size)
 {
-	rsa_pss_ctx *rctx = rsa_sign_pss_new(key, hctx_message, hctx_mask, drbg, salt, salt_size);
-	rsa_signature *rsign = NULL;
+	uint32_t status = 0;
+	hash_ctx *hctx_digest = NULL;
+	hash_ctx *hctx_mask = NULL;
 
-	if (rctx == NULL)
-	{
-		return NULL;
-	}
-
-	rsa_sign_pss_update(rctx, message, message_size);
-	rsign = rsa_sign_pss_final(rctx, signature, signature_size);
-
-	rsa_sign_pss_delete(rctx);
-
-	return rsign;
-}
-
-rsa_pss_ctx *rsa_verify_pss_new(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size)
-{
-	return rsa_pss_new(key, hctx_message, hctx_mask, NULL, NULL, salt_size);
-}
-
-void rsa_verify_pss_delete(rsa_pss_ctx *rctx)
-{
-	memset(rctx, 0, sizeof(rsa_pss_ctx));
-	free(rctx);
-}
-
-void rsa_verify_pss_reset(rsa_pss_ctx *rctx, rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size)
-{
-	rsa_pss_reset(rctx, key, hctx_message, hctx_mask, NULL, NULL, salt_size);
-}
-
-void rsa_verify_pss_update(rsa_pss_ctx *rctx, void *message, size_t size)
-{
-	hash_update(rctx->hctx_message, message, size);
-}
-
-uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
-{
-	int32_t status = 0;
+	byte_t hash_digest_buffer[512] = {0};
+	byte_t hash_mask_buffer[512] = {0};
+	byte_t mhash[64] = {0};
 
 	// Sizes
-	size_t key_size = rctx->key->bits / 8;
-	size_t hash_size = rctx->hctx_message->hash_size;
-	size_t salt_size = rctx->salt_size;
+	size_t key_size = key->bits / 8;
 
 	size_t ps_size = key_size - (salt_size + hash_size + 2);
 	size_t db_size = key_size - (hash_size + 1);
@@ -971,15 +841,17 @@ uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 	size_t salt_offset = ps_size + 1;
 	size_t hash_offset = db_size;
 
-	size_t ctx_size = em_size + hash_size;
-	size_t default_hash_ctx_size = 0;
+	size_t ctx_size = em_size;
 
-	byte_t *mhash = NULL;
-	byte_t *hash = NULL;
 	byte_t *salt = NULL;
 	byte_t *em = NULL;
 
-	// Length checking
+	// Check paramters
+	if (key_size < (hash_size + salt_size + 2))
+	{
+		return 0;
+	}
+
 	if (rsign->size > key_size)
 	{
 		return 0;
@@ -990,30 +862,24 @@ uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 		return 0;
 	}
 
-	// Check Hash
-	if (rctx->hctx_mask == NULL)
+	// Initialize the hashes
+	hctx_digest = hash_init(hash_digest_buffer, 512, digest_algorithm);
+	hctx_mask = hash_init(hash_mask_buffer, 512, mask_algorithm);
+
+	if (hctx_digest == NULL || hctx_mask == NULL)
 	{
-		default_hash_ctx_size = hash_ctx_size(HASH_SHA1);
-		ctx_size += default_hash_ctx_size;
+		return 0;
 	}
 
-	bignum_ctx_start(rctx->key->bctx, ctx_size);
+	bignum_ctx_start(key->bctx, ctx_size);
 
-	// If mask hash is not specified use SHA-1
-	if (rctx->hctx_mask == NULL)
-	{
-		rctx->hctx_mask = bignum_ctx_allocate_raw(rctx->key->bctx, default_hash_ctx_size);
-		rctx->hctx_mask = hash_init(rctx->hctx_mask, default_hash_ctx_size, HASH_SHA1);
-	}
-
-	em = bignum_ctx_allocate_raw(rctx->key->bctx, em_size);
+	em = bignum_ctx_allocate_raw(key->bctx, em_size);
 	memset(em, 0, em_size);
 
-	hash = em + hash_offset;
 	salt = em + salt_offset;
 
 	// Decryption
-	rsa_public_decrypt(rctx->key, rsign->sign, rsign->size, em, em_size);
+	rsa_public_decrypt(key, rsign->sign, rsign->size, em, em_size);
 
 	// Verification
 	if (em[em_size - 1] != 0xBC)
@@ -1022,7 +888,7 @@ uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 	}
 
 	// DB Mask
-	MGF_XOR(rctx->hctx_mask, hash, hash_size, em, db_size);
+	MGF_XOR(hctx_mask, em + hash_offset, hash_size, em, db_size);
 
 	// Check for zeros
 	for (size_t pos = 0; pos < ps_size; ++pos)
@@ -1040,21 +906,15 @@ uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 	}
 
 	// Compare hashes.
-	mhash = bignum_ctx_allocate_raw(rctx->key->bctx, hash_size);
-	memset(em, 0, hash_size);
-
-	hash_final(rctx->hctx_message, mhash, hash_size);
-	hash_reset(rctx->hctx_message);
-
 	uint64_t zero = 0;
 
-	hash_update(rctx->hctx_message, &zero, 8);
-	hash_update(rctx->hctx_message, mhash, hash_size);
-	hash_update(rctx->hctx_message, salt, salt_size);
+	hash_update(hctx_digest, &zero, 8);
+	hash_update(hctx_digest, hash, hash_size);
+	hash_update(hctx_digest, salt, salt_size);
 
-	hash_final(rctx->hctx_message, mhash, hash_size);
+	hash_final(hctx_digest, mhash, hash_size);
 
-	if (memcmp(hash, mhash, hash_size) != 0)
+	if (memcmp(em + hash_offset, mhash, hash_size) != 0)
 	{
 		goto end;
 	}
@@ -1062,26 +922,7 @@ uint32_t rsa_verify_pss_final(rsa_pss_ctx *rctx, rsa_signature *rsign)
 	status = 1;
 
 end:
-	bignum_ctx_end(rctx->key->bctx);
-	return status;
-}
-
-uint32_t rsa_verify_pss(rsa_key *key, hash_ctx *hctx_message, hash_ctx *hctx_mask, size_t salt_size, void *message, size_t size,
-						rsa_signature *rsign)
-{
-	int32_t status = 0;
-	rsa_pss_ctx *rctx = rsa_verify_pss_new(key, hctx_message, hctx_mask, salt_size);
-
-	if (rctx == NULL)
-	{
-		return status;
-	}
-
-	rsa_verify_pss_update(rctx, message, size);
-	status = rsa_verify_pss_final(rctx, rsign);
-
-	rsa_verify_pss_delete(rctx);
-
+	bignum_ctx_end(key->bctx);
 	return status;
 }
 
@@ -1245,7 +1086,7 @@ rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_algorithm algorithm, void *hash,
 
 uint32_t rsa_verify_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algorithm, void *hash, size_t hash_size)
 {
-	int32_t status = 0;
+	uint32_t status = 0;
 
 	// Sizes
 	size_t key_size = key->bits / 8;
@@ -1265,7 +1106,7 @@ uint32_t rsa_verify_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algo
 	// Check hash size
 	if (key_size < (digest_info_size + 11))
 	{
-		return NULL;
+		return 0;
 	}
 
 	bignum_ctx_start(key->bctx, ctx_size);
