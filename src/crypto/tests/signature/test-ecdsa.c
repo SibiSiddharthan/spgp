@@ -18,7 +18,6 @@ int32_t ecdsa_prime_sign_tests(void)
 	int32_t status = 0;
 
 	ec_group *group = NULL;
-	hash_ctx *hctx = NULL;
 	bignum_t *d = NULL, *qx = NULL, *qy = NULL;
 
 	ec_key key;
@@ -27,11 +26,11 @@ int32_t ecdsa_prime_sign_tests(void)
 	ecdsa_signature *ecsign = NULL;
 	byte_t salt[512] = {0};
 	byte_t message[512] = {0};
+	byte_t hash[64] = {0};
 	char r[512] = {0};
 	char s[512] = {0};
 
 	group = ec_group_new(EC_NIST_P256);
-	hctx = hash_new(HASH_SHA256);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -56,7 +55,8 @@ int32_t ecdsa_prime_sign_tests(void)
 	memset(salt, 0, 512);
 	hex_to_block(salt, 32, "94a1bbb14b906a61a280f245f9e93c7f3b4a6247824f5d33b9670787642a68de");
 
-	ecsign = ecdsa_sign(&key, hctx, salt, 32, message, 128, NULL, 0);
+	sha256_hash(message, 128, hash);
+	ecsign = ecdsa_sign(&key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
@@ -96,7 +96,8 @@ int32_t ecdsa_prime_sign_tests(void)
 	memset(salt, 0, 512);
 	hex_to_block(salt, 32, "5d833e8d24cc7a402d7ee7ec852a3587cddeb48358cea71b0bedb8fabe84e0c4");
 
-	ecsign = ecdsa_sign(&key, hctx, salt, 32, message, 128, NULL, 0);
+	sha256_hash(message, 128, hash);
+	ecsign = ecdsa_sign(&key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
@@ -116,10 +117,8 @@ int32_t ecdsa_prime_sign_tests(void)
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
 	ec_group_delete(group);
-	hash_delete(hctx);
 
 	group = ec_group_new(EC_NIST_P384);
-	hctx = hash_new(HASH_SHA512);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -144,7 +143,8 @@ int32_t ecdsa_prime_sign_tests(void)
 	memset(salt, 0, 512);
 	hex_to_block(salt, 48, "90338a7f6ffce541366ca2987c3b3ca527992d1efcf1dd2723fbd241a24cff19990f2af5fd6419ed2104b4a59b5ae631");
 
-	ecsign = ecdsa_sign(&key, hctx, salt, 48, message, 128, NULL, 0);
+	sha512_hash(message, 128, hash);
+	ecsign = ecdsa_sign(&key, salt, 48, hash, SHA512_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
@@ -184,7 +184,8 @@ int32_t ecdsa_prime_sign_tests(void)
 	memset(salt, 0, 512);
 	hex_to_block(salt, 48, "c8c18e53a9aa5915288c33132bd09323638f7995cd89162073984ed84e72e07a37e18c4c023933eace92c35d10e6b1b6");
 
-	ecsign = ecdsa_sign(&key, hctx, salt, 48, message, 128, NULL, 0);
+	sha512_hash(message, 128, hash);
+	ecsign = ecdsa_sign(&key, salt, 48, hash, SHA512_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
@@ -204,7 +205,6 @@ int32_t ecdsa_prime_sign_tests(void)
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
 	ec_group_delete(group);
-	hash_delete(hctx);
 
 	return status;
 }

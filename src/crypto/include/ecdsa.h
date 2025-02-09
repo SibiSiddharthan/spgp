@@ -13,32 +13,13 @@
 #include <ec.h>
 #include <hash.h>
 
-typedef struct _ecdsa_ctx
-{
-	ec_key *key;
-	hash_ctx *hctx;
-	byte_t *salt;
-	size_t salt_size;
-} ecdsa_ctx;
-
 typedef struct _ecdsa_signature
 {
 	bignum_t *r, *s;
 } ecdsa_signature;
 
-ecdsa_ctx *ecdsa_sign_new(ec_key *key, hash_ctx *hctx, void *salt, size_t salt_size);
-void ecdsa_sign_delete(ecdsa_ctx *dctx);
-void ecdsa_sign_reset(ecdsa_ctx *dctx, ec_key *key, hash_ctx *hctx);
-void ecdsa_sign_update(ecdsa_ctx *dctx, void *message, size_t size);
-ecdsa_signature *ecdsa_sign_final(ecdsa_ctx *dctx, void *signature, size_t size);
-ecdsa_signature *ecdsa_sign(ec_key *key, hash_ctx *hctx, void *salt, size_t salt_size, void *message, size_t message_size, void *signature,
+ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *hash, size_t hash_size, void *signature,
 							size_t signature_size);
-
-ecdsa_ctx *ecdsa_verify_new(ec_key *key, hash_ctx *hctx);
-void ecdsa_verify_delete(ecdsa_ctx *dctx);
-void ecdsa_verify_reset(ecdsa_ctx *dctx, ec_key *key, hash_ctx *hctx);
-void ecdsa_verify_update(ecdsa_ctx *dctx, void *message, size_t size);
-uint32_t ecdsa_verify_final(ecdsa_ctx *dctx, ecdsa_signature *ecsign);
-uint32_t ecdsa_verify(ec_key *key, hash_ctx *hctx, void *message, size_t size, ecdsa_signature *ecsign);
+uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t hash_size);
 
 #endif
