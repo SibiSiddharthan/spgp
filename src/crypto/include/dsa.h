@@ -42,19 +42,7 @@ dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g);
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
 void dsa_key_delete(dsa_key *key);
 
-dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size);
-void dsa_sign_delete(dsa_ctx *dctx);
-void dsa_sign_reset(dsa_ctx *dctx, dsa_key *key, hash_ctx *hctx);
-void dsa_sign_update(dsa_ctx *dctx, void *message, size_t size);
-dsa_signature *dsa_sign_final(dsa_ctx *dctx, void *signature, size_t size);
-dsa_signature *dsa_sign(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size, void *message, size_t message_size, void *signature,
-						size_t signature_size);
-
-dsa_ctx *dsa_verify_new(dsa_key *key, hash_ctx *hctx);
-void dsa_verify_delete(dsa_ctx *dctx);
-void dsa_verify_reset(dsa_ctx *dctx, dsa_key *key, hash_ctx *hctx);
-void dsa_verify_update(dsa_ctx *dctx, void *message, size_t size);
-uint32_t dsa_verify_final(dsa_ctx *dctx, dsa_signature *dsign);
-uint32_t dsa_verify(dsa_key *key, hash_ctx *hctx, void *message, size_t size, dsa_signature *dsign);
+dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, size_t hash_size, void *signature, size_t signature_size);
+uint32_t dsa_verify(dsa_key *key, dsa_signature *dsign, void *hash, size_t hash_size);
 
 #endif

@@ -20,14 +20,12 @@ int32_t dsa_sign_tests(void)
 	dsa_key *key = NULL;
 	bignum_t *p = NULL, *q = NULL, *g = NULL, *x = NULL, *y = NULL;
 
-	hash_ctx *hctx = NULL;
 	dsa_signature *dsign = NULL;
 	byte_t salt[512] = {0};
 	byte_t message[512] = {0};
+	byte_t hash[64] = {0};
 	char r[512] = {0};
 	char s[512] = {0};
-
-	hctx = hash_new(HASH_SHA256);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -69,7 +67,8 @@ int32_t dsa_sign_tests(void)
 
 	hex_to_block(salt, 20, "85976c5610a74959531040a5512b347eac587e48");
 
-	dsign = dsa_sign(key, hctx, salt, 20, message, 128, NULL, 0);
+	sha256_hash(message, 128, hash);
+	dsign = dsa_sign(key, salt, 20, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
@@ -129,7 +128,8 @@ int32_t dsa_sign_tests(void)
 
 	hex_to_block(salt, 28, "6f326546aa174b3d319ef7331ec8dfd363dd78ae583a920165ff7e54");
 
-	dsign = dsa_sign(key, hctx, salt, 28, message, 128, NULL, 0);
+	sha256_hash(message, 128, hash);
+	dsign = dsa_sign(key, salt, 28, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
@@ -189,7 +189,8 @@ int32_t dsa_sign_tests(void)
 
 	hex_to_block(salt, 32, "117a529e3fdfc79843a5a4c07539036b865214e014b4928c2a31f47bf62a4fdb");
 
-	dsign = dsa_sign(key, hctx, salt, 32, message, 128, NULL, 0);
+	sha256_hash(message, 128, hash);
+	dsign = dsa_sign(key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
@@ -255,7 +256,8 @@ int32_t dsa_sign_tests(void)
 
 	hex_to_block(salt, 32, "3d7c068a3978b2d8fe9034bcad65ad7c300c4440e4085de280e577eea72c1207");
 
-	dsign = dsa_sign(key, hctx, salt, 32, message, 128, NULL, 0);
+	sha256_hash(message, 128, hash);
+	dsign = dsa_sign(key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
 	memset(r, 0, 512);
 	memset(s, 0, 512);
