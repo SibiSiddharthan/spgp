@@ -14,7 +14,6 @@
 
 typedef struct _dsa_key
 {
-	uint32_t size;
 	uint16_t p_bits, q_bits;
 	bignum_t *p, *q, *g;
 	bignum_t *x, *y;
@@ -42,34 +41,6 @@ uint32_t dsa_parameters_validate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignu
 dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g);
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
 void dsa_key_delete(dsa_key *key);
-
-dsa_key *dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g);
-dsa_key *dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y);
-
-inline const bignum_t *dsa_key_get_p(dsa_key *key)
-{
-	return key->p;
-}
-
-inline const bignum_t *dsa_key_get_q(dsa_key *key)
-{
-	return key->q;
-}
-
-inline const bignum_t *dsa_key_get_g(dsa_key *key)
-{
-	return key->g;
-}
-
-inline const bignum_t *dsa_key_get_x(dsa_key *key)
-{
-	return key->x;
-}
-
-inline const bignum_t *dsa_key_get_y(dsa_key *key)
-{
-	return key->y;
-}
 
 dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size);
 void dsa_sign_delete(dsa_ctx *dctx);

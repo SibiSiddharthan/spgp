@@ -462,9 +462,7 @@ dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g)
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits)
 {
 	dsa_key *key = NULL;
-	uint32_t required_size = 0;
 	uint32_t bctx_size = 0;
-	uint32_t bignums_size = 0;
 
 	p_bits = ROUND_UP(p_bits, 1024);
 	q_bits = ROUND_UP(q_bits, 8);
@@ -476,77 +474,43 @@ dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits)
 
 	bctx_size += 16 * (p_bits * 2) / 8; // For bctx
 
-	bignums_size = bignum_size(p_bits) + bignum_size(q_bits)   // p, q
-				   + bignum_size(p_bits)                       // g
-				   + bignum_size(q_bits) + bignum_size(p_bits) // x,y
-				   + bignum_size(p_bits)                       // mu
-		;
-
-	required_size = sizeof(dsa_key) + bctx_size + bignums_size;
-
-	key = malloc(required_size);
+	key = malloc(sizeof(dsa_key));
 
 	if (key == NULL)
 	{
 		return NULL;
 	}
 
-	memset(key, 0, required_size);
+	memset(key, 0, sizeof(dsa_key));
 
-	key->size = required_size;
 	key->p_bits = p_bits;
 	key->q_bits = q_bits;
 
-	key->bctx = bignum_ctx_init(PTR_OFFSET(key, sizeof(dsa_key) + bignums_size), bctx_size);
+	key->bctx = bignum_ctx_new(bctx_size);
+
+	if (key->bctx == NULL)
+	{
+		free(key);
+		return NULL;
+	}
 
 	return key;
 }
 
 void dsa_key_delete(dsa_key *key)
 {
-	memset(key, 0, key->size);
+	bignum_delete(key->p);
+	bignum_delete(key->q);
+	bignum_delete(key->g);
+
+	bignum_delete(key->x);
+	bignum_delete(key->y);
+
+	bignum_delete(key->mu);
+
+	bignum_ctx_delete(key->bctx);
+
 	free(key);
-}
-
-dsa_key *dsa_key_set_pqg(dsa_key *key, bignum_t *p, bignum_t *q, bignum_t *g)
-{
-	uint32_t p_offset = sizeof(dsa_key);
-	uint32_t q_offset = p_offset + bignum_size(p->bits);
-	uint32_t g_offset = q_offset + bignum_size(q->bits);
-
-	key->p = bignum_init(PTR_OFFSET(key, p_offset), bignum_size(key->p_bits), p->bits);
-	key->q = bignum_init(PTR_OFFSET(key, q_offset), bignum_size(key->q_bits), q->bits);
-	key->g = bignum_init(PTR_OFFSET(key, g_offset), bignum_size(key->p_bits), g->bits);
-
-	if (key->p == NULL || key->q == NULL || key->g == NULL)
-	{
-		return NULL;
-	}
-
-	bignum_copy(key->p, p);
-	bignum_copy(key->q, q);
-	bignum_copy(key->g, g);
-
-	return key;
-}
-
-dsa_key *dsa_key_set_xy(dsa_key *key, bignum_t *x, bignum_t *y)
-{
-	uint32_t x_offset = sizeof(dsa_key) + (2 * bignum_size(key->p_bits) + bignum_size(key->q_bits));
-	uint32_t y_offset = x_offset + bignum_size(x->bits);
-
-	key->x = bignum_init(PTR_OFFSET(key, x_offset), bignum_size(key->q_bits), x->bits);
-	key->y = bignum_init(PTR_OFFSET(key, y_offset), bignum_size(key->p_bits), y->bits);
-
-	if (key->x == NULL || key->y == NULL)
-	{
-		return NULL;
-	}
-
-	bignum_copy(key->x, x);
-	bignum_copy(key->y, y);
-
-	return key;
 }
 
 dsa_ctx *dsa_sign_new(dsa_key *key, hash_ctx *hctx, void *salt, size_t salt_size)

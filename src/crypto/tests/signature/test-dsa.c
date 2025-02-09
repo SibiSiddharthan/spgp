@@ -54,8 +54,13 @@ int32_t dsa_sign_tests(void)
 		256);
 
 	key = dsa_key_new(1024, 160);
-	dsa_key_set_pqg(key, p, q, g);
-	dsa_key_set_xy(key, x, y);
+
+	key->p = p;
+	key->q = q;
+	key->g = g;
+
+	key->x = x;
+	key->y = y;
 
 	hex_to_block(
 		message, 128,
@@ -76,14 +81,7 @@ int32_t dsa_sign_tests(void)
 	status += CHECK_HEX(s + 2, "3b9da7f9926eaaad0bebd4845c67fcdb64d12453", 40);
 
 	free(dsign);
-
 	dsa_key_delete(key);
-
-	bignum_delete(p);
-	bignum_delete(q);
-	bignum_delete(g);
-	bignum_delete(x);
-	bignum_delete(y);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -116,8 +114,13 @@ int32_t dsa_sign_tests(void)
 		512);
 
 	key = dsa_key_new(2048, 224);
-	dsa_key_set_pqg(key, p, q, g);
-	dsa_key_set_xy(key, x, y);
+
+	key->p = p;
+	key->q = q;
+	key->g = g;
+
+	key->x = x;
+	key->y = y;
 
 	hex_to_block(
 		message, 128,
@@ -138,14 +141,7 @@ int32_t dsa_sign_tests(void)
 	status += CHECK_HEX(s + 2, "c3e17e7b3c4d0ac8d49f4dd0f04c16a094f42da0afcc6c90f5f1bbc8", 56);
 
 	free(dsign);
-
 	dsa_key_delete(key);
-
-	bignum_delete(p);
-	bignum_delete(q);
-	bignum_delete(g);
-	bignum_delete(x);
-	bignum_delete(y);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -178,8 +174,13 @@ int32_t dsa_sign_tests(void)
 		512);
 
 	key = dsa_key_new(2048, 256);
-	dsa_key_set_pqg(key, p, q, g);
-	dsa_key_set_xy(key, x, y);
+
+	key->p = p;
+	key->q = q;
+	key->g = g;
+
+	key->x = x;
+	key->y = y;
 
 	hex_to_block(
 		message, 128,
@@ -200,14 +201,7 @@ int32_t dsa_sign_tests(void)
 	status += CHECK_HEX(s + 2, "2bbf68317660ec1e4b154915027b0bc00ee19cfc0bf75d01930504f2ce10a8b0", 64);
 
 	free(dsign);
-
 	dsa_key_delete(key);
-
-	bignum_delete(p);
-	bignum_delete(q);
-	bignum_delete(g);
-	bignum_delete(x);
-	bignum_delete(y);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -246,8 +240,13 @@ int32_t dsa_sign_tests(void)
 		768);
 
 	key = dsa_key_new(3072, 256);
-	dsa_key_set_pqg(key, p, q, g);
-	dsa_key_set_xy(key, x, y);
+
+	key->p = p;
+	key->q = q;
+	key->g = g;
+
+	key->x = x;
+	key->y = y;
 
 	hex_to_block(
 		message, 128,
@@ -268,14 +267,7 @@ int32_t dsa_sign_tests(void)
 	status += CHECK_HEX(s + 2, "49f3a74e953e77a7941af3aefeef4ed499be209976a0edb3fa5e7cb961b0c112", 64);
 
 	free(dsign);
-
 	dsa_key_delete(key);
-
-	bignum_delete(p);
-	bignum_delete(q);
-	bignum_delete(g);
-	bignum_delete(x);
-	bignum_delete(y);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
