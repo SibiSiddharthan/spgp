@@ -62,6 +62,33 @@ static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algo
 	}
 }
 
+static hash_algorithm pgp_algorithm_to_hash_algorithm(pgp_hash_algorithms algorithm)
+{
+	switch (algorithm)
+	{
+	case PGP_MD5:
+		return HASH_MD5;
+	case PGP_SHA1:
+		return HASH_SHA1;
+	case PGP_RIPEMD_160:
+		return HASH_RIPEMD160;
+	case PGP_SHA2_256:
+		return HASH_SHA256;
+	case PGP_SHA2_384:
+		return HASH_SHA384;
+	case PGP_SHA2_512:
+		return HASH_SHA512;
+	case PGP_SHA2_224:
+		return HASH_SHA224;
+	case PGP_SHA3_256:
+		return HASH_SHA3_256;
+	case PGP_SHA3_512:
+		return HASH_SHA3_512;
+	default:
+		return 0;
+	}
+}
+
 byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algorithm)
 {
 	switch (algorithm)
