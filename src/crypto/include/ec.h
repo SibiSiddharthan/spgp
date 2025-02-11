@@ -212,7 +212,8 @@ static inline size_t ec_point_size(uint32_t bits)
 }
 
 uint32_t ec_curve_oid_size(curve_id id);
-uint32_t ec_curve_oid(curve_id id, void *buffer, uint32_t size);
+uint32_t ec_curve_encode_oid(curve_id id, void *buffer, uint32_t size);
+curve_id ec_curve_decode_oid(void *oid, uint32_t size);
 
 ec_point *ec_point_init(void *ptr, size_t size, curve_id id);
 ec_point *ec_point_new(ec_group *eg);

@@ -93,7 +93,7 @@ uint32_t ec_curve_oid_size(curve_id id)
 	}
 }
 
-uint32_t ec_curve_oid(curve_id id, void *buffer, uint32_t size)
+uint32_t ec_curve_encode_oid(curve_id id, void *buffer, uint32_t size)
 {
 	uint32_t required_size = 0;
 
@@ -291,4 +291,168 @@ uint32_t ec_curve_oid(curve_id id, void *buffer, uint32_t size)
 	default:
 		return 0;
 	}
+}
+
+curve_id ec_curve_decode_oid(void *oid, uint32_t size)
+{
+	byte_t *in = oid;
+
+	// Check if we have enough size for the prefix
+	if (size < 2)
+	{
+		// Invalid OID.
+		return 0;
+	}
+
+	// Standard curves
+	if (in[0] == 0x2B)
+	{
+		// NIST and SEC
+		if (in[1] == 0x81)
+		{
+			if (size != 5)
+			{
+				return 0;
+			}
+
+			if (in[2] != 0x04 && in[3] != 0x00)
+			{
+				return 0;
+			}
+
+			switch (in[4])
+			{
+			case 0x01:
+				return EC_NIST_K163;
+			case 0x02:
+				return EC_SECT_163R1;
+			case 0x03:
+				return EC_SECT_239K1;
+			case 0x08:
+				return EC_SECP_160R1;
+			case 0x09:
+				return EC_SECP_160K1;
+			case 0x0A:
+				return EC_SECP_256K1;
+			case 0x0F:
+				return EC_NIST_B163;
+			case 0x10:
+				return EC_NIST_K283;
+			case 0x11:
+				return EC_NIST_B283;
+			case 0x18:
+				return EC_SECT_193R1;
+			case 0x19:
+				return EC_SECT_193R2;
+			case 0x1A:
+				return EC_NIST_K233;
+			case 0x1B:
+				return EC_NIST_B233;
+			case 0x1E:
+				return EC_SECP_160R2;
+			case 0x1F:
+				return EC_SECP_192K1;
+			case 0x20:
+				return EC_SECP_224K1;
+			case 0x21:
+				return EC_NIST_P224;
+			case 0x22:
+				return EC_NIST_P384;
+			case 0x23:
+				return EC_NIST_P521;
+			case 0x24:
+				return EC_NIST_K409;
+			case 0x25:
+				return EC_NIST_B409;
+			case 0x26:
+				return EC_NIST_K571;
+			case 0x27:
+				return EC_NIST_B571;
+			default:
+				return 0;
+			}
+		}
+		// Brainpool
+		else if (in[1] == 0x24)
+		{
+			if (size != 9)
+			{
+				return 0;
+			}
+
+			if (in[2] != 0x03 && in[3] != 0x03 && in[4] != 0x02 && in[5] != 0x08 && in[6] != 0x01 && in[7] != 0x01)
+			{
+				return 0;
+			}
+
+			switch (in[8])
+			{
+			case 0x01:
+				return EC_BRAINPOOL_160R1;
+			case 0x02:
+				return EC_BRAINPOOL_160T1;
+			case 0x03:
+				return EC_BRAINPOOL_192R1;
+			case 0x04:
+				return EC_BRAINPOOL_192T1;
+			case 0x05:
+				return EC_BRAINPOOL_224R1;
+			case 0x06:
+				return EC_BRAINPOOL_224T1;
+			case 0x07:
+				return EC_BRAINPOOL_256R1;
+			case 0x08:
+				return EC_BRAINPOOL_256T1;
+			case 0x09:
+				return EC_BRAINPOOL_320R1;
+			case 0x0A:
+				return EC_BRAINPOOL_320T1;
+			case 0x0B:
+				return EC_BRAINPOOL_384R1;
+			case 0x0C:
+				return EC_BRAINPOOL_384T1;
+			case 0x0D:
+				return EC_BRAINPOOL_512R1;
+			case 0x0E:
+				return EC_BRAINPOOL_512T1;
+			default:
+				return 0;
+			}
+		}
+		else
+		{
+			// Not a standard curve
+			return 0;
+		}
+	}
+	// Outliers NIST-P192, NIST-P256
+	else if (in[0] == 0x2A)
+	{
+		if (size != 8)
+		{
+			return 0;
+		}
+
+		if (in[1] != 0x86 && in[2] != 0x48 && in[3] != 0xCE && in[4] != 0x3D && in[5] != 0x03 && in[6] != 0x01)
+		{
+			return 0;
+		}
+
+		switch (in[7])
+		{
+		case 0x01:
+			return EC_NIST_P192;
+		case 0x07:
+			return EC_NIST_P256;
+		default:
+			return 0;
+		}
+	}
+	else
+	{
+		// Not a standard curve
+		return 0;
+	}
+
+	return 0;
 }
