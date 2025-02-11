@@ -97,7 +97,7 @@ typedef struct _pgp_x25519_kex
 	byte_t symmetric_key_algorithm_id;
 	byte_t octet_count;
 	byte_t ephemeral_key[32];
-	byte_t encrypted_session_key[32];
+	byte_t encrypted_session_key[40];
 } pgp_x25519_kex;
 
 typedef struct _pgp_x448_kex
@@ -105,7 +105,7 @@ typedef struct _pgp_x448_kex
 	byte_t symmetric_key_algorithm_id;
 	byte_t octet_count;
 	byte_t ephemeral_key[56];
-	byte_t encrypted_session_key[32];
+	byte_t encrypted_session_key[40];
 } pgp_x448_kex;
 
 // Public Key Encrypted Session Key Packet (Tag 1)
