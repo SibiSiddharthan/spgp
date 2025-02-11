@@ -12,6 +12,7 @@
 #include <drbg.h>
 
 #include <rsa.h>
+#include <dsa.h>
 #include <eddsa.h>
 
 #include <stdlib.h>
@@ -716,6 +717,76 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public
 	status = rsa_verify_pkcs(key, signature->e->bytes, algorithm, hash, hash_size);
 
 	rsa_key_delete(key);
+
+	return status;
+}
+
+pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_public_key *public_key, pgp_dsa_private_key *private_key, void *hash, uint32_t hash_size)
+{
+	dsa_key *key = NULL;
+	dsa_signature *sign = NULL;
+	pgp_dsa_signature *pgp_sign = NULL;
+
+	key = dsa_key_new(public_key->p->bits, public_key->q->bits);
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	pgp_sign = malloc(sizeof(pgp_dsa_signature));
+
+	key->p = mpi_to_bignum(public_key->p);
+	key->q = mpi_to_bignum(public_key->q);
+	key->g = mpi_to_bignum(public_key->g);
+
+	key->x = mpi_to_bignum(private_key->x);
+	key->y = mpi_to_bignum(public_key->y);
+
+	sign = dsa_sign(key, NULL, 0, hash, hash_size, NULL, 0);
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	pgp_sign->r = mpi_from_bn(NULL, sign->r);
+	pgp_sign->s = mpi_from_bn(NULL, sign->s);
+
+	dsa_key_delete(key);
+
+	return pgp_sign;
+}
+
+uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_public_key *public_key, void *hash, uint32_t hash_size)
+{
+	uint32_t status = 0;
+
+	dsa_key *key = NULL;
+	dsa_signature sign = {0};
+
+	key = dsa_key_new(public_key->p->bits, public_key->q->bits);
+
+	if (key == NULL)
+	{
+		return 0;
+	}
+
+	key->p = mpi_to_bignum(public_key->p);
+	key->q = mpi_to_bignum(public_key->q);
+	key->g = mpi_to_bignum(public_key->g);
+
+	key->y = mpi_to_bignum(public_key->y);
+
+	sign.r = mpi_to_bignum(signature->r);
+	sign.s = mpi_to_bignum(signature->s);
+
+	status = dsa_verify(key, &sign, hash, hash_size);
+
+	bignum_delete(sign.r);
+	bignum_delete(sign.s);
+
+	dsa_key_delete(key);
 
 	return status;
 }
