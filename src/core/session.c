@@ -396,8 +396,8 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 			pgp_rsa_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		packet->encrypted_session_key =
-			pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		// packet->encrypted_session_key =
+		//	pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
 		packet->encrypted_session_key =
@@ -450,8 +450,8 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_publ
 									 session_key, session_key_size);
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		result = pgp_elgamal_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
-										 session_key, session_key_size);
+		// result = pgp_elgamal_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
+		//								 session_key, session_key_size);
 		break;
 	case PGP_ECDH:
 		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
