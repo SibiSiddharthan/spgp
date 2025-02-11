@@ -561,94 +561,116 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
 }
 
-static rsa_key *pgp_rsa_key_convert(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key)
+pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+								 byte_t session_key_size)
 {
-	uint32_t bits = ROUND_UP(public_key->n->bits, 1024);
-
 	rsa_key *key = NULL;
-	bignum_t *n = NULL, *p = NULL, *q = NULL;
-	bignum_t *e = NULL, *d = NULL;
+	pgp_rsa_kex *kex = NULL;
+	byte_t *ps = session_key;
 
-	key = rsa_key_new(bits);
+	byte_t buffer[64] = {0};
+	byte_t out[512] = {0};
+	uint16_t pos = 0;
+	uint16_t checksum = 0;
 
-	if (key == NULL)
-	{
-		return NULL;
-	}
-
-	n = mpi_to_bignum(public_key->n);
-	e = mpi_to_bignum(public_key->e);
-
-	if (n == NULL || e == NULL)
-	{
-		bignum_delete(n);
-		bignum_delete(e);
-	}
-
-	key->n = n;
-	key->e = e;
-
-	if (private_key != NULL)
-	{
-		d = mpi_to_bignum(private_key->d);
-		p = mpi_to_bignum(private_key->p);
-		q = mpi_to_bignum(private_key->q);
-
-		key->d = d;
-		key->p = p;
-		key->q = q;
-	}
-
-	return key;
-}
-
-uint32_t pgp_rsa_encrypt_(pgp_rsa_public_key *public_key, void *in, uint32_t in_size, void *out, uint32_t out_size)
-{
-	uint32_t bytes = CEIL_DIV(public_key->n->bits, 8);
-	uint32_t required_size = sizeof(mpi_t) + bytes;
-
-	rsa_key *key = NULL;
-	mpi_t *mpi = out;
-
-	if (out_size < required_size)
-	{
-		return 0;
-	}
-
-	key = pgp_rsa_key_convert(public_key, NULL);
+	key = rsa_key_new(public_key->n->bits);
 
 	if (key == NULL)
 	{
 		return 0;
 	}
 
-	rsa_encrypt_pkcs(key, in, in_size, PTR_OFFSET(out, sizeof(mpi_t)), bytes, NULL);
+	key->n = mpi_to_bignum(public_key->n);
+	key->d = mpi_to_bignum(public_key->e);
 
-	mpi->bytes = PTR_OFFSET(mpi, sizeof(mpi_t));
-	mpi->bits = mpi_bitcount(mpi->bytes, bytes);
+	if (symmetric_key_algorithm_id != 0)
+	{
+		buffer[pos] = symmetric_key_algorithm_id;
+		pos += 1;
+	}
+
+	memcpy(buffer + pos, session_key, session_key_size);
+	pos += session_key_size;
+
+	for (uint16_t i = 0; i < session_key_size; ++i)
+	{
+		checksum += ps[i];
+	}
+
+	buffer[pos] = (checksum >> 8) & 0xFF;
+	buffer[pos + 1] = checksum & 0xFF;
+	pos += 2;
+
+	rsa_encrypt_pkcs(key, buffer, pos, out, 512, NULL);
+
+	// TODO: Make MPI
 
 	rsa_key_delete(key);
 
-	return required_size;
+	return kex;
 }
 
-uint32_t pgp_rsa_decrypt(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key, void *in, uint32_t in_size, void *out,
-						 uint32_t out_size)
+uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key,
+							 byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size)
 {
-	rsa_key *key = NULL;
+	uint32_t result = 0;
+	uint16_t checksum = 0;
+	uint16_t offset = 0;
 
-	key = pgp_rsa_key_convert(public_key, private_key);
+	rsa_key *key = NULL;
+	byte_t buffer[64] = {0};
+
+	key = rsa_key_new(public_key->n->bits);
 
 	if (key == NULL)
 	{
 		return 0;
 	}
 
-	rsa_decrypt_pkcs(key, in, in_size, out, out_size);
+	key->n = mpi_to_bignum(public_key->n);
+	key->d = mpi_to_bignum(private_key->d);
+
+	result = rsa_decrypt_pkcs(key, kex->c->bytes, CEIL_DIV(kex->c->bits, 8), buffer, 64);
+
+	if (symmetric_key_algorithm_id == NULL)
+	{
+		for (uint16_t i = 0; i < (result - 2); ++i)
+		{
+			checksum += buffer[i];
+		}
+	}
+	else
+	{
+		offset = 1;
+		*symmetric_key_algorithm_id = buffer[0];
+
+		for (uint16_t i = 1; i < (result - 2); ++i)
+		{
+			checksum += buffer[i];
+		}
+	}
+
+	if (checksum == (buffer[result - 2] << 8 + buffer[result - 1]))
+	{
+		result -= (2 + offset);
+
+		if (session_key_size >= result)
+		{
+			memcpy(session_key, buffer + offset, result);
+		}
+		else
+		{
+			result = 0;
+		}
+	}
+	else
+	{
+		result = 0;
+	}
 
 	rsa_key_delete(key);
 
-	return 0;
+	return result;
 }
 
 pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key, byte_t hash_algorithm_id, void *hash,
