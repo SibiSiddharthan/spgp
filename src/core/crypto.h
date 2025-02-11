@@ -58,8 +58,8 @@ uint32_t pgp_ed25519_generate_key(pgp_ed25519_public_key *public_key, pgp_ed2551
 uint32_t pgp_ed448_generate_key(pgp_ed448_public_key *public_key, pgp_ed448_private_key *private_key);
 
 pgp_ecdh_public_key *pgp_ecdh_generate_ephermal_key(byte_t curve_id);
-uint32_t pgp_x25519_generate_ephemeral_key(pgp_x25519_public_key *public_key);
-uint32_t pgp_x448_generate_ephemeral_key(pgp_x448_public_key *public_key);
+uint32_t pgp_x25519_generate_ephemeral_key(pgp_x25519_private_key *private_key, pgp_x25519_public_key *public_key);
+uint32_t pgp_x448_generate_ephemeral_key(pgp_x448_private_key *private_key, pgp_x448_public_key *public_key);
 
 pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 								 byte_t session_key_size);

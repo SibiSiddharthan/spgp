@@ -15,6 +15,8 @@
 #include <dsa.h>
 #include <ecdsa.h>
 #include <eddsa.h>
+#include <x25519.h>
+#include <x448.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -559,6 +561,30 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	}
 
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
+}
+
+uint32_t pgp_x25519_generate_ephemeral_key(pgp_x25519_private_key *private_key, pgp_x25519_public_key *public_key)
+{
+	x25519_key key = {0};
+
+	x25519_key_generate(&key);
+
+	memcpy(private_key->private_key, key.private_key, X25519_OCTET_SIZE);
+	memcpy(public_key->public_key, key.public_key, X25519_OCTET_SIZE);
+
+	return X25519_OCTET_SIZE;
+}
+
+uint32_t pgp_x448_generate_ephemeral_key(pgp_x448_private_key *private_key, pgp_x448_public_key *public_key)
+{
+	x448_key key = {0};
+
+	x448_key_generate(&key);
+
+	memcpy(private_key->private_key, key.private_key, X448_OCTET_SIZE);
+	memcpy(public_key->public_key, key.public_key, X448_OCTET_SIZE);
+
+	return X448_OCTET_SIZE;
 }
 
 pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
