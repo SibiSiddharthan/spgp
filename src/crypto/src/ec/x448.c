@@ -13,7 +13,7 @@
 #include <xor.h>
 #include <string.h>
 
-#include "curves/montgomery.h"
+static const bn_word_t curve448_p_words[7] = {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFEFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF};
 
 #define GET_BIT(K, I) ((K[(I) / 8] >> (I) % 8) & 0x1)
 
