@@ -14,6 +14,7 @@
 #include <rsa.h>
 #include <eddsa.h>
 
+#include <stdlib.h>
 #include <string.h>
 
 void *pgp_drbg = NULL;
@@ -648,6 +649,77 @@ uint32_t pgp_rsa_decrypt(pgp_rsa_public_key *public_key, pgp_rsa_private_key *pr
 	return 0;
 }
 
+pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key, byte_t hash_algorithm_id, void *hash,
+								uint32_t hash_size)
+{
+	rsa_key *key = NULL;
+	rsa_signature *sign = NULL;
+	pgp_rsa_signature *pgp_sign = NULL;
+
+	hash_algorithm algorithm = pgp_algorithm_to_hash_algorithm(hash_algorithm_id);
+
+	if (algorithm == 0)
+	{
+		return 0;
+	}
+
+	key = rsa_key_new(public_key->n->bits);
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	pgp_sign = malloc(sizeof(pgp_rsa_signature) + mpi_size(public_key->n->bits));
+
+	if (pgp_sign == NULL)
+	{
+		rsa_key_delete(key);
+		return NULL;
+	}
+
+	key->n = mpi_to_bignum(public_key->n);
+	key->d = mpi_to_bignum(private_key->d);
+
+	sign = rsa_sign_pkcs(key, algorithm, hash, hash_size, NULL, 0);
+
+	// TODO Make the signature a MPI
+
+	rsa_key_delete(key);
+
+	return pgp_sign;
+}
+
+uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public_key, byte_t hash_algorithm_id, void *hash,
+						uint32_t hash_size)
+{
+	uint32_t status;
+
+	rsa_key *key = NULL;
+	hash_algorithm algorithm = pgp_algorithm_to_hash_algorithm(hash_algorithm_id);
+
+	if (algorithm == 0)
+	{
+		return 0;
+	}
+
+	key = rsa_key_new(public_key->n->bits);
+
+	if (key == NULL)
+	{
+		return 0;
+	}
+
+	key->n = mpi_to_bignum(public_key->n);
+	key->e = mpi_to_bignum(public_key->e);
+
+	status = rsa_verify_pkcs(key, signature->e->bytes, algorithm, hash, hash_size);
+
+	rsa_key_delete(key);
+
+	return status;
+}
+
 pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_public_key *public_key, pgp_ed25519_private_key *private_key, void *hash,
 										uint32_t hash_size)
 {
@@ -680,7 +752,7 @@ pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_public_key *public_key, pgp_
 
 uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_public_key *public_key, void *hash, uint32_t hash_size)
 {
-	uint32_t status = NULL;
+	uint32_t status = 0;
 
 	ed25519_key key = {0};
 	ed25519_signature sign = {0};
@@ -728,7 +800,7 @@ pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_
 
 uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_public_key *public_key, void *hash, uint32_t hash_size)
 {
-	uint32_t status = NULL;
+	uint32_t status = 0;
 
 	ed448_key key = {0};
 	ed448_signature sign = {0};
