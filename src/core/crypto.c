@@ -13,6 +13,7 @@
 
 #include <rsa.h>
 #include <dsa.h>
+#include <ecdsa.h>
 #include <eddsa.h>
 
 #include <stdlib.h>
@@ -787,6 +788,68 @@ uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_public_key *public
 	bignum_delete(sign.s);
 
 	dsa_key_delete(key);
+
+	return status;
+}
+
+pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_public_key *public_key, pgp_ecdsa_private_key *private_key, void *hash, uint32_t hash_size)
+{
+	ec_key *key = NULL;
+	ecdsa_signature *sign = NULL;
+	pgp_ecdsa_signature *pgp_sign = NULL;
+
+	bignum_t *d = mpi_to_bignum(private_key->x);
+	ec_point *q = NULL;
+
+	key = ec_key_new(NULL, d, q);
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	pgp_sign = malloc(sizeof(pgp_ecdsa_signature));
+
+	sign = ecdsa_sign(key, NULL, 0, hash, hash_size, NULL, 0);
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	pgp_sign->r = mpi_from_bn(NULL, sign->r);
+	pgp_sign->s = mpi_from_bn(NULL, sign->s);
+
+	ec_key_delete(key);
+
+	return pgp_sign;
+}
+
+uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_public_key *public_key, void *hash, uint32_t hash_size)
+{
+	uint32_t status = 0;
+
+	ec_key *key = NULL;
+	ecdsa_signature sign = {0};
+
+	ec_point *q = NULL;
+
+	key = ec_key_new(NULL, NULL, q);
+
+	if (key == NULL)
+	{
+		return 0;
+	}
+
+	sign.r = mpi_to_bignum(signature->r);
+	sign.s = mpi_to_bignum(signature->s);
+
+	status = ecdsa_verify(key, &sign, hash, hash_size);
+
+	bignum_delete(sign.r);
+	bignum_delete(sign.s);
+
+	ec_key_delete(key);
 
 	return status;
 }
