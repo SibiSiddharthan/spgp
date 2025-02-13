@@ -5,6 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <spgp.h>
 #include <algorithms.h>
 #include <packet.h>
@@ -15,6 +17,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -842,9 +845,9 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
 	}
 
-	// TODO format date
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "\nDate: %u\n", packet->date);
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Filename (%u bytes): ", packet->filename_size);
+	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&datetime));
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Date: %s\n", date_buffer);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Filename (%u bytes): ", packet->filename_size);
 
 	if (packet->filename_size > 0)
 	{
