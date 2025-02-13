@@ -333,6 +333,33 @@ static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str,
 	return pos;
 }
 
+static size_t pgp_compression_algorithm_print(pgp_compression_algorithms algorithm, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Compression Algorithm: ");
+
+	switch (algorithm)
+	{
+	case PGP_UNCOMPRESSED:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Uncompressed (Tag 0)\n");
+		break;
+	case PGP_DEFALTE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Deflate (Tag 1)\n");
+		break;
+	case PGP_ZLIB:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ZLIB (Tag 2)\n");
+		break;
+	case PGP_BZIP2:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "BZIP2 (Tag 3)\n");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", algorithm);
+	}
+
+	return pos;
+}
+
 static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size)
 {
 	size_t pos = 0;
@@ -708,27 +735,7 @@ size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size);
-
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Compression Algorithm: ");
-
-	switch (packet->compression_algorithm_id)
-	{
-	case PGP_UNCOMPRESSED:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Uncompressed (Tag 0)\n");
-		break;
-	case PGP_DEFALTE:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Deflate (Tag 1)\n");
-		break;
-	case PGP_ZLIB:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ZLIB (Tag 2)\n");
-		break;
-	case PGP_BZIP2:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "BZIP2 (Tag 3)\n");
-		break;
-	default:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->compression_algorithm_id);
-	}
-
+	pos += pgp_compression_algorithm_print(packet->compression_algorithm_id, PTR_OFFSET(str, pos), size - pos);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size - 1);
 
 	return pos;
