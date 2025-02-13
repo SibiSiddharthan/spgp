@@ -782,7 +782,7 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 	case PGP_USER_ATTRIBUTE_IMAGE:
 	{
 		pgp_user_attribute_image_subpacket *image_subpacket = NULL;
-		uint32_t image_size = image_subpacket->header.body_size - 16;
+		uint32_t image_size = header.body_size - 16;
 
 		image_subpacket = malloc(sizeof(pgp_user_attribute_image_subpacket) + image_size);
 
@@ -807,11 +807,12 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 		pos += 1;
 
 		// 12 octets of reserved zeros
-		memset(in + pos, 0, 12);
+		memset(image_subpacket->reserved, 0, 12);
 		pos += 12;
 
 		// N octets of image data
-		memcpy(in + pos, image_subpacket->image_data, image_size);
+		image_subpacket->image_data = PTR_OFFSET(image_subpacket, sizeof(pgp_user_attribute_image_subpacket));
+		memcpy(image_subpacket->image_data, in + pos, image_size);
 		pos += image_size;
 
 		return image_subpacket;
@@ -826,6 +827,7 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 		}
 
 		subpacket->header = header;
+		subpacket->data = PTR_OFFSET(subpacket, sizeof(pgp_unknown_subpacket));
 		memcpy(subpacket->data, in + pos, header.body_size);
 
 		return subpacket;
@@ -1024,6 +1026,8 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 	{
 		return NULL;
 	}
+
+	memset(packet, 0, sizeof(pgp_user_attribute_packet));
 
 	// Copy the header
 	packet->header = header;
@@ -1228,12 +1232,12 @@ pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
 	}
 
 	// Checks for a valid modification detection code packet.
-	if (packet->header.header_size != 2)
+	if (header.header_size != 2)
 	{
 		return NULL;
 	}
 
-	if (packet->header.body_size != 20)
+	if (header.body_size != 20)
 	{
 		return NULL;
 	}

@@ -370,8 +370,8 @@ pgp_subpacket_header pgp_subpacket_header_read(void *data, size_t size)
 			return error;
 		}
 
+		header.header_size = 6;
 		header.body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
-		header.header_size = 5;
 	}
 	// 2 octet legnth
 	else if (in[0] >= 192 && in[0] <= 233)
@@ -381,8 +381,8 @@ pgp_subpacket_header pgp_subpacket_header_read(void *data, size_t size)
 			return error;
 		}
 
+		header.header_size = 3;
 		header.body_size = ((in[0] - 192) << 8) + in[1] + 192;
-		header.header_size = 2;
 	}
 	// 1 octed length
 	else if (in[0] < 192)
@@ -392,12 +392,13 @@ pgp_subpacket_header pgp_subpacket_header_read(void *data, size_t size)
 			return error;
 		}
 
+		header.header_size = 2;
 		header.body_size = in[0];
-		header.header_size = 1;
 	}
 
 	// 1 octet subpacket type
 	header.tag = in[header.header_size - 1];
+	header.body_size -= 1; // Exclude the subpacket tag
 
 	return header;
 }
@@ -513,8 +514,9 @@ void *pgp_packet_read(void *data, size_t size)
 size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 {
 	pgp_packet_header *header = packet;
+	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
 
-	switch (header->tag)
+	switch (ptype)
 	{
 	case PGP_PKESK:
 		return pgp_pkesk_packet_write(packet, ptr, size);
@@ -561,8 +563,9 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 {
 	pgp_packet_header *header = packet;
+	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
 
-	switch (header->tag)
+	switch (ptype)
 	{
 	case PGP_PKESK:
 		return pgp_pkesk_packet_print(packet, str, size);
