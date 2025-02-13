@@ -66,6 +66,25 @@ static size_t print_bytes(void *str, size_t str_size, void *data, size_t data_si
 	return pos;
 }
 
+static size_t print_format(uint32_t indent, void *str, size_t size, const char *format, ...)
+{
+	size_t pos = 0;
+
+	va_list args;
+	va_start(args, format);
+
+	for (uint32_t i = 0; i < indent; ++i)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "    "); // 4 spaces
+	}
+
+	pos += vsnprintf(PTR_OFFSET(str, pos), size - pos, format, args);
+
+	va_end(args);
+
+	return pos;
+}
+
 static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size)
 {
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header.tag);
