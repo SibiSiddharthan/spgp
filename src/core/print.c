@@ -51,7 +51,7 @@ static size_t print_bytes(void *str, size_t str_size, void *data, size_t data_si
 
 		if ((i + 1) % columns != 0)
 		{
-			out[pos++] = ' ';
+			// out[pos++] = ' ';
 		}
 		else
 		{
@@ -796,7 +796,7 @@ size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size
 
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
 	pos += pgp_compression_algorithm_print(packet->compression_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size - 1);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size - 1);
 
 	return pos;
 }
@@ -816,7 +816,7 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Marker: %c%c%c\n", packet->marker[0], packet->marker[1], packet->marker[2]);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Marker: %c%c%c\n", packet->marker[0], packet->marker[1], packet->marker[2]);
 
 	return pos;
 }
@@ -826,23 +826,26 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
+	time_t datetime = packet->date;
+	char date_buffer[64] = {0};
+
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Format: ");
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Format: ");
 
 	switch (packet->format)
 	{
 	case PGP_LITERAL_DATA_BINARY:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Binary (Tag 0)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Binary (Tag 0)\n");
 		break;
 	case PGP_LITERAL_DATA_TEXT:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Text (Tag 1)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Text (Tag 1)\n");
 		break;
 	case PGP_LITERAL_DATA_UTF8:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "UTF-8 (Tag 2)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "UTF-8 (Tag 2)\n");
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
 	}
 
 	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&datetime));
@@ -857,7 +860,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 
 	out[pos++] = '\n';
 
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->data_size);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->data_size);
 
 	return pos;
 }
@@ -879,8 +882,7 @@ size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t si
 
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
-	memcpy(PTR_OFFSET(str, pos), "User ID: ", 9);
-	pos += 9;
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User ID: ");
 
 	memcpy(PTR_OFFSET(str, pos), packet->user_data, packet->header.body_size);
 	pos += packet->header.body_size;
@@ -907,27 +909,27 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 			pgp_user_attribute_image_subpacket *image_subpacket = (pgp_user_attribute_image_subpacket *)subpacket_header;
 			uint32_t image_size = image_subpacket->header.body_size - 16;
 
-			memcpy(PTR_OFFSET(str, pos), "User Attribute Image Subpacket (Tag 1)\n", 39);
-			pos += 39;
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User Attribute Image Subpacket (Tag 1)\n");
+			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "Image Header Version: %hhu\n", image_subpacket->image_header_version);
 
 			switch (image_subpacket->image_encoding)
 			{
 			case PGP_USER_ATTRIBUTE_IMAGE_JPEG:
 			{
-				memcpy(PTR_OFFSET(str, pos), "Image Encoding: JPEG (Tag 1)\n", 30);
-				pos += 30;
+				pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "Image Encoding: JPEG (Tag 1)\n");
 			}
 			break;
 			default:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Image Encoding (Tag %hhu)\n", image_subpacket->image_encoding);
+				pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "Unknown Image Encoding (Tag %hhu)\n",
+									image_subpacket->image_encoding);
 			}
 
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Image Size: %u bytes\n", image_size);
+			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "Image Size: %u bytes\n", image_size);
 		}
 		break;
 		default:
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Subpacket (Tag %hhu) (%u bytes)\n", subpacket_header->tag,
-							subpacket_header->body_size);
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Unknown Subpacket (Tag %hhu) (%u bytes)\n", subpacket_header->tag,
+								subpacket_header->body_size);
 		}
 	}
 
@@ -1009,7 +1011,7 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-1 Hash: ");
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "SHA-1 MDC: ");
 	pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20, 0, 20);
 
 	return pos;
@@ -1020,7 +1022,7 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
 }
