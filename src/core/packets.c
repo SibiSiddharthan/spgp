@@ -633,12 +633,12 @@ pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *user_name
 		return NULL;
 	}
 
-	if(user_comment_size > 0)
+	if (user_comment_size > 0)
 	{
 		required_size += 3; // '(' and ')' and ' '
 	}
 
-	if(user_email_size > 0)
+	if (user_email_size > 0)
 	{
 		required_size += 3; // '<' and '>' and ' '
 	}
@@ -1278,6 +1278,27 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
 	pos += 3;
 
 	return pos;
+}
+
+pgp_trust_packet *pgp_trust_packet_new(byte_t header_format, byte_t trust_level)
+{
+	pgp_trust_packet *packet = malloc(sizeof(pgp_trust_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_trust_packet));
+	packet->header = pgp_encode_packet_header(header_format, PGP_TRUST, 1);
+	packet->level = trust_level;
+
+	return packet;
+}
+
+void pgp_trust_packet_delete(pgp_trust_packet *packet)
+{
+	free(packet);
 }
 
 pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size)
