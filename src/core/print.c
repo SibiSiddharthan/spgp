@@ -66,6 +66,18 @@ static size_t print_bytes(void *str, size_t str_size, void *data, size_t data_si
 	return pos;
 }
 
+static size_t print_indent(uint32_t indent, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	for (uint32_t i = 0; i < indent; ++i)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "    "); // 4 spaces
+	}
+
+	return pos;
+}
+
 static size_t print_format(uint32_t indent, void *str, size_t size, const char *format, ...)
 {
 	size_t pos = 0;
@@ -73,11 +85,7 @@ static size_t print_format(uint32_t indent, void *str, size_t size, const char *
 	va_list args;
 	va_start(args, format);
 
-	for (uint32_t i = 0; i < indent; ++i)
-	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "    "); // 4 spaces
-	}
-
+	pos += print_indent(indent, PTR_OFFSET(str, pos), size - pos);
 	pos += vsnprintf(PTR_OFFSET(str, pos), size - pos, format, args);
 
 	va_end(args);
@@ -85,13 +93,15 @@ static size_t print_format(uint32_t indent, void *str, size_t size, const char *
 	return pos;
 }
 
-static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size)
+static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size, uint32_t indent)
 {
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header.tag);
 	pgp_packet_type type = pgp_packet_get_type(header.tag);
 
 	char *footer = NULL;
 	size_t pos = 0;
+
+	pos += print_indent(indent, str, size);
 
 	switch (type)
 	{
@@ -171,10 +181,11 @@ static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_
 	return pos;
 }
 
-static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm, void *str, size_t size)
+static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
 
+	pos += print_indent(indent, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Public-Key Algorithm: ");
 
 	switch (algorithm)
@@ -205,10 +216,11 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 	return pos;
 }
 
-static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm, void *str, size_t size)
+static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
 
+	pos += print_indent(indent, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Signature Algorithm: ");
 
 	switch (algorithm)
@@ -242,10 +254,11 @@ static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm,
 	return pos;
 }
 
-static size_t pgp_symmetric_key_algorithm_print(pgp_symmetric_key_algorithms algorithm, void *str, size_t size)
+static size_t pgp_symmetric_key_algorithm_print(pgp_symmetric_key_algorithms algorithm, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
 
+	pos += print_indent(indent, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Cipher Algorithm: ");
 
 	switch (algorithm)
@@ -294,10 +307,11 @@ static size_t pgp_symmetric_key_algorithm_print(pgp_symmetric_key_algorithms alg
 	return pos;
 }
 
-static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, void *str, size_t size)
+static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
 
+	pos += print_indent(indent, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AEAD Algorithm: ");
 
 	switch (algorithm)
@@ -319,10 +333,11 @@ static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, void *str,
 	return pos;
 }
 
-static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str, size_t size)
+static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
 
+	pos += print_indent(indent, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Hash Algorithm: ");
 
 	switch (algorithm)
@@ -362,10 +377,11 @@ static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str,
 	return pos;
 }
 
-static size_t pgp_compression_algorithm_print(pgp_compression_algorithms algorithm, void *str, size_t size)
+static size_t pgp_compression_algorithm_print(pgp_compression_algorithms algorithm, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
 
+	pos += print_indent(indent, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Compression Algorithm: ");
 
 	switch (algorithm)
@@ -389,25 +405,28 @@ static size_t pgp_compression_algorithm_print(pgp_compression_algorithms algorit
 	return pos;
 }
 
-static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size)
+static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
+
+	pos += print_indent(indent, str, size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "S2K Specifier: ");
 
 	switch (s2k->id)
 	{
 	case PGP_S2K_SIMPLE:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Simple S2K (Tag 0)\n");
-		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
 		break;
 	case PGP_S2K_SALTED:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salted S2K (Tag 1)\n");
-		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salt: ");
 		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, s2k->salted.salt, 8, 0, 8);
 		break;
 	case PGP_S2K_ITERATED:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Iterated and Salted S2K (Tag 3)\n");
-		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salt: ");
 		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, s2k->iterated.salt, 8, 0, 8);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Count: %hhu\n", s2k->iterated.count);
@@ -557,7 +576,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	if (packet->version == PGP_PKESK_V6)
 	{
@@ -589,12 +608,12 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 			break;
 		}
 
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 	}
 	else if (packet->version == PGP_PKESK_V3)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key ID: ");
 		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->key_id, 8, 0, 8);
@@ -611,14 +630,14 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	if (packet->version == PGP_SKESK_V6)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 6\n");
-		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
-		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos);
-		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 1);
 
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "IV: ");
 		pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->iv, packet->iv_size, 0, packet->iv_size);
@@ -632,8 +651,8 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 	else if (packet->version == PGP_SKESK_V4)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 4 (Deprecated)\n");
-		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
-		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 1);
 
 		if (packet->session_key_size > 0)
 		{
@@ -654,7 +673,7 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, ptr, size);
+	pos += pgp_packet_header_print(packet->header, ptr, size, 0);
 
 	return pos;
 }
@@ -663,14 +682,14 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, ptr, size);
+	pos += pgp_packet_header_print(packet->header, ptr, size, 0);
 
 	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
 	{
 		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Version: 6\n");
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos);
-		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
-		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 
 		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Salt: ");
 		pos += print_bytes(PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size, 0, packet->salt_size);
@@ -685,8 +704,8 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 	{
 		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Version: 3 (Deprecated)\n");
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos);
-		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
-		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 
 		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Key ID: ");
 		pos += print_bytes(PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8, 0, 8);
@@ -700,8 +719,8 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 
 	pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu\n", packet->version);
 	pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos);
-	pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
-	pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos);
+	pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+	pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 	pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Key ID: ");
 	pos += print_bytes(PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8, 0, 8);
 
@@ -712,13 +731,13 @@ size_t pgp_public_key_packet_print(pgp_public_key_packet *packet, void *str, siz
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, PTR_OFFSET(str, pos), size - pos);
 	}
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
@@ -726,7 +745,7 @@ size_t pgp_public_key_packet_print(pgp_public_key_packet *packet, void *str, siz
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Expiry : %hu days\n", packet->key_expiry_days);
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, PTR_OFFSET(str, pos), size - pos);
 	}
 	else
@@ -741,13 +760,13 @@ size_t pgp_secret_key_packet_print(pgp_secret_key_packet *packet, void *str, siz
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->public_key_data, PTR_OFFSET(str, pos), size - pos);
 		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->private_key_data, PTR_OFFSET(str, pos), size - pos);
 	}
@@ -756,7 +775,7 @@ size_t pgp_secret_key_packet_print(pgp_secret_key_packet *packet, void *str, siz
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Expiry : %hu days\n", packet->key_expiry_days);
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->public_key_data, PTR_OFFSET(str, pos), size - pos);
 		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->private_key_data, PTR_OFFSET(str, pos), size - pos);
 	}
@@ -772,8 +791,8 @@ size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
-	pos += pgp_compression_algorithm_print(packet->compression_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_compression_algorithm_print(packet->compression_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size - 1);
 
 	return pos;
@@ -783,7 +802,7 @@ size_t pgp_sed_packet_print(pgp_sed_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
@@ -793,7 +812,7 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Marker: %c%c%c\n", packet->marker[0], packet->marker[1], packet->marker[2]);
 
 	return pos;
@@ -804,7 +823,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Format: ");
 
@@ -844,7 +863,7 @@ size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->level);
 
 	return pos;
@@ -855,7 +874,7 @@ size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	memcpy(PTR_OFFSET(str, pos), "User ID: ", 9);
 	pos += 9;
@@ -872,7 +891,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
 	{
@@ -917,7 +936,7 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 	byte_t *out = str;
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	memcpy(PTR_OFFSET(str, pos), "Version: ", 9);
 	pos += 9;
@@ -927,8 +946,8 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 		memcpy(PTR_OFFSET(str, pos), "2\n", 2);
 		pos += 2;
 
-		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos);
-		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Chunk Size: %hhu\n", packet->chunk_size);
 
 		memcpy(PTR_OFFSET(str, pos), "Salt: ", 6);
@@ -986,7 +1005,7 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "SHA-1 Hash: ");
 	pos += print_bytes(PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20, 0, 20);
 
@@ -997,7 +1016,7 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += pgp_packet_header_print(packet->header, str, size, 0);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
