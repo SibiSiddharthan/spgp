@@ -183,7 +183,7 @@ size_t pgp_compressed_packet_get_raw_data(pgp_compresed_packet *packet, void *pt
 
 pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
-size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size);
+size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size_t size);
 
 // Marker Packet (Tag 10)
 pgp_marker_packet *pgp_marker_packet_new(byte_t header_format);

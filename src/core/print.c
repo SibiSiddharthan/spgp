@@ -703,7 +703,7 @@ size_t pgp_secret_key_packet_print(pgp_secret_key_packet *packet, void *str, siz
 	return pos;
 }
 
-size_t pgp_compresed_packet_print(pgp_compresed_packet *packet, void *str, size_t size)
+size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
