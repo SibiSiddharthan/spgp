@@ -587,7 +587,7 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 	case PGP_LIT:
 		return pgp_literal_packet_print(packet, str, size);
 	case PGP_TRUST:
-		// return pgp_trust_packet_print(packet, str, size);
+		return pgp_trust_packet_print(packet, str, size);
 	case PGP_UID:
 		return pgp_user_id_packet_print(packet, str, size);
 	case PGP_PUBSUBKEY:

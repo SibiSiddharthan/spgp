@@ -795,6 +795,16 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	return pos;
 }
 
+size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, str, size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->level);
+
+	return pos;
+}
+
 size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size)
 {
 	byte_t *out = str;
