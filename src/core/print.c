@@ -156,6 +156,8 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 {
 	size_t pos = 0;
 
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Public-Key Algorithm: ");
+
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
@@ -187,6 +189,8 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm, void *str, size_t size)
 {
 	size_t pos = 0;
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Signature Algorithm: ");
 
 	switch (algorithm)
 	{
@@ -222,6 +226,8 @@ static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm,
 static size_t pgp_symmetric_key_algorithm_print(pgp_symmetric_key_algorithms algorithm, void *str, size_t size)
 {
 	size_t pos = 0;
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Cipher Algorithm: ");
 
 	switch (algorithm)
 	{
@@ -273,6 +279,8 @@ static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, void *str,
 {
 	size_t pos = 0;
 
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AEAD Algorithm: ");
+
 	switch (algorithm)
 	{
 	case PGP_AEAD_EAX:
@@ -295,6 +303,8 @@ static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, void *str,
 static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str, size_t size)
 {
 	size_t pos = 0;
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Hash Algorithm: ");
 
 	switch (algorithm)
 	{
@@ -617,6 +627,15 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
 	}
+
+	return pos;
+}
+
+size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(packet->header, ptr, size);
 
 	return pos;
 }
