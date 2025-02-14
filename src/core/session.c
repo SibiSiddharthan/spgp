@@ -27,13 +27,52 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 	case PGP_RSA_ENCRYPT_ONLY:
 	{
 		// MPI of (m^e) mod n
-		pgp_rsa_kex *sk = packet->encrypted_session_key;
+		pgp_rsa_kex *sk = NULL;
+		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+
+		if (size < (2 + CEIL_DIV(mpi_bits, 8)))
+		{
+			return 0;
+		}
+
+		sk = malloc(sizeof(pgp_rsa_kex) + mpi_size(mpi_bits));
+
+		if (sk == NULL)
+		{
+			return 0;
+		}
+
+		sk->c = PTR_OFFSET(sk, sizeof(pgp_rsa_kex));
+
 		return mpi_read(sk->c, in, size);
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		// MPI of (m^e) mod n
-		pgp_elgamal_kex *sk = packet->encrypted_session_key;
+		// MPI of (g^k) mod p
+		// MPI of m * (y^k) mod p
+		pgp_elgamal_kex *sk = NULL;
+		uint16_t offset = 0;
+		uint16_t mpi_r_bits = 0;
+		uint16_t mpi_s_bits = 0;
+
+		mpi_r_bits = ((uint16_t)in[0] << 8) + in[1];
+		offset = (2 + CEIL_DIV(mpi_r_bits, 8));
+		mpi_s_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+
+		if (size < (4 + CEIL_DIV(mpi_r_bits, 8) + CEIL_DIV(mpi_s_bits, 8)))
+		{
+			return 0;
+		}
+
+		sk = malloc(sizeof(pgp_elgamal_kex) + mpi_size(mpi_r_bits) + mpi_size(mpi_s_bits));
+
+		if (sk == NULL)
+		{
+			return 0;
+		}
+
+		sk->r = PTR_OFFSET(sk, sizeof(pgp_elgamal_kex));
+		sk->s = PTR_OFFSET(sk, sizeof(pgp_elgamal_kex) + mpi_size(mpi_r_bits));
 
 		pos += mpi_read(sk->r, in + pos, size - pos);
 		pos += mpi_read(sk->s, in + pos, size - pos);
@@ -42,7 +81,22 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 	}
 	case PGP_ECDH:
 	{
-		pgp_ecdh_kex *sk = packet->encrypted_session_key;
+		pgp_ecdh_kex *sk = NULL;
+		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+
+		if (size < (2 + CEIL_DIV(mpi_bits, 8)))
+		{
+			return 0;
+		}
+
+		sk = malloc(sizeof(pgp_rsa_kex) + mpi_size(mpi_bits));
+
+		if (sk == NULL)
+		{
+			return 0;
+		}
+
+		sk->ephemeral_point = PTR_OFFSET(sk, sizeof(pgp_ecdh_kex));
 
 		// MPI of EC point
 		pos += mpi_read(sk->ephemeral_point, in + pos, size - pos);
@@ -59,7 +113,14 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 	}
 	case PGP_X25519:
 	{
-		pgp_x25519_kex *sk = packet->encrypted_session_key;
+		pgp_x25519_kex *sk = malloc(sizeof(pgp_x25519_kex));
+
+		if (sk == NULL)
+		{
+			return 0;
+		}
+
+		memset(sk, 0, sizeof(pgp_x25519_kex));
 
 		// 32 octets of ephemeral key
 		memcpy(sk->ephemeral_key, in + pos, 32);
@@ -86,7 +147,14 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 	}
 	case PGP_X448:
 	{
-		pgp_x448_kex *sk = packet->encrypted_session_key;
+		pgp_x448_kex *sk = malloc(sizeof(pgp_x448_kex));
+
+		if (sk == NULL)
+		{
+			return 0;
+		}
+
+		memset(sk, 0, sizeof(pgp_x448_kex));
 
 		// 56 octets of ephemeral key
 		memcpy(sk->ephemeral_key, in + pos, 56);
@@ -566,14 +634,6 @@ pgp_pkesk_packet *pgp_pkesk_packet_read(void *data, size_t size)
 	// 1 octet public-key algorithm
 	LOAD_8(&packet->public_key_algorithm_id, in + pos);
 	pos += 1;
-
-	packet->encrypted_session_key = malloc(packet->header.body_size - pos);
-
-	if (packet->encrypted_session_key == NULL)
-	{
-		free(packet);
-		return NULL;
-	}
 
 	pgp_session_key_read(packet, in + pos, packet->header.body_size - pos);
 
