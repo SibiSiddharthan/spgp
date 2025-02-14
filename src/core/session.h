@@ -76,15 +76,6 @@ typedef struct _pgp_elgamal_kex
 	mpi_t *s; // m * (y^k) mod p
 } pgp_elgamal_kex;
 
-typedef struct _pgp_ecdh_kex_plaintext
-{
-	byte_t ephemeral_key_size;
-	byte_t encrypted_session_key_size;
-
-	void *ephemeral_key;
-	void *encrypted_session_key;
-} pgp_ecdh_kex_plaintext;
-
 typedef struct _pgp_ecdh_kex
 {
 	mpi_t *ephemeral_point;

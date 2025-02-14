@@ -110,6 +110,7 @@ typedef struct _pgp_elgamal_private_key
 
 typedef struct _pgp_ecdsa_public_key
 {
+	byte_t curve;
 	byte_t oid_size;
 	byte_t oid[16];
 
@@ -123,6 +124,7 @@ typedef struct _pgp_ecdsa_private_key
 
 typedef struct _pgp_ecdh_public_key
 {
+	byte_t curve;
 	byte_t oid_size;
 	byte_t oid[16];
 

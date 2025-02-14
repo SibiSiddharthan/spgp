@@ -6,7 +6,12 @@
 */
 
 #include <spgp.h>
+
 #include <crypto.h>
+#include <algorithms.h>
+
+#include <bignum.h>
+#include <ec.h>
 
 #include <cipher.h>
 #include <drbg.h>
@@ -91,6 +96,31 @@ static hash_algorithm pgp_algorithm_to_hash_algorithm(pgp_hash_algorithms algori
 		return HASH_SHA3_256;
 	case PGP_SHA3_512:
 		return HASH_SHA3_512;
+	default:
+		return 0;
+	}
+}
+
+static curve_id pgp_ec_curve_to_curve_id(pgp_elliptic_curve_id id)
+{
+	switch (id)
+	{
+	case PGP_EC_NIST_P256:
+		return EC_NIST_P256;
+	case PGP_EC_NIST_P384:
+		return EC_NIST_P384;
+	case PGP_EC_NIST_P521:
+		return EC_NIST_P521;
+	case PGP_EC_BRAINPOOL_256R1:
+		return EC_BRAINPOOL_256R1;
+	case PGP_EC_BRAINPOOL_384R1:
+		return EC_BRAINPOOL_384R1;
+	case PGP_EC_BRAINPOOL_512R1:
+		return EC_BRAINPOOL_512R1;
+	case PGP_EC_ED25519_LEGACY:
+		return EC_ED25519;
+	case PGP_EC_CURVE25519_LEGACY:
+		return EC_CURVE25519;
 	default:
 		return 0;
 	}
