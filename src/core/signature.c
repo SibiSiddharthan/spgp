@@ -1007,7 +1007,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 		}
 
 		// Hash the subpackets
-		for (uint16_t i = 0; i > packet->hashed_subpackets; ++i)
+		for (uint16_t i = 0; i > packet->hashed_subpacket_count; ++i)
 		{
 			byte_t buffer[8];
 			pgp_subpacket_header *header = packet->hashed_subpackets[i];
@@ -1701,7 +1701,7 @@ pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, si
 	header = pgp_packet_header_read(data, size);
 	pos = header.header_size;
 
-	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
+	if (pgp_packet_get_type(header.tag) != PGP_OPS)
 	{
 		return NULL;
 	}

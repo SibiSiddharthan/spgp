@@ -125,7 +125,7 @@ pgp_sed_packet *pgp_sed_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	packet->data = malloc(sizeof(header.body_size));
+	packet->data = malloc(header.body_size);
 
 	if (packet->data == NULL)
 	{
