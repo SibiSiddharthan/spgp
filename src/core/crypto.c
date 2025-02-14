@@ -780,6 +780,141 @@ static uint32_t pgp_ecdh_kdf(hash_algorithm algorithm, void *key, uint32_t key_s
 }
 
 
+pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
+								   byte_t session_key_size)
+{
+	pgp_ecdh_kex *kex = NULL;
+	ec_group *group = NULL;
+	ec_key *key = NULL;
+	ec_point *shared_point = NULL;
+	ec_point *public_point = NULL;
+
+	pgp_hash_algorithms hash_algorithm_id = 0;
+	pgp_symmetric_key_algorithms cipher_algorithm_id = 0;
+	curve_id id = pgp_ec_curve_to_curve_id(public_key->curve);
+
+	byte_t *ps = session_key;
+	byte_t pos = 0;
+	uint16_t session_key_checksum = 0;
+
+	byte_t encoded_session_key[64] = {0};
+	byte_t wrapped_session_key[64] = {0};
+	byte_t encoded_session_key_size = ROUND_UP(session_key_size, 8);
+	byte_t wrapped_session_key_size = encoded_session_key_size + 8;
+
+	byte_t xcoord[128] = 0;
+	byte_t xcoord_size = 0;
+
+	byte_t key_wrap_key[32] = {0};
+	byte_t kdf_input[128] = {0};
+	byte_t key_wrap_key_size = 0;
+	byte_t kdf_input_size = 0;
+
+	if (id == 0)
+	{
+		return NULL;
+	}
+
+	pgp_ecdh_kdf_paramters(public_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
+
+	group = ec_group_new(id);
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	// Generate ephemeral key
+	key = ec_key_generate(group, NULL);
+
+	if (key == NULL)
+	{
+		ec_group_delete(group);
+		return NULL;
+	}
+
+	// Compute shared point
+	public_point = ec_point_decode(group, NULL, public_key->point->bytes, CEIL_DIV(public_key->point->bits, 8));
+	shared_point = ec_point_multiply(group, NULL, public_point, key->d);
+
+	xcoord_size = bignum_get_bytes_be(shared_point->x, xcoord, 128);
+
+	// Encode the session key
+	if (symmetric_key_algorithm_id != 0)
+	{
+		encoded_session_key[pos++] = symmetric_key_algorithm_id;
+	}
+
+	memcpy(encoded_session_key + pos, session_key, session_key_size);
+	pos += session_key_size;
+
+	for (byte_t i = 0; i < session_key_size; ++i)
+	{
+		session_key_checksum += ps[i];
+	}
+
+	encoded_session_key[pos++] = (session_key_checksum >> 16) & 0xFF;
+	encoded_session_key[pos++] = session_key_checksum & 0xFF;
+
+	memset(encoded_session_key + pos, encoded_session_key_size - pos, encoded_session_key_size - pos);
+
+	// Derive key
+	switch (cipher_algorithm_id)
+	{
+	case PGP_AES_128:
+		key_wrap_key_size = AES128_KEY_SIZE;
+		break;
+	case PGP_AES_192:
+		key_wrap_key_size = AES192_KEY_SIZE;
+		break;
+	case PGP_AES_256:
+		key_wrap_key_size = AES256_KEY_SIZE;
+		break;
+	default:
+		break;
+	}
+
+	pos = 0;
+
+	// Curve OID
+	kdf_input[pos] = public_key->oid_size;
+	pos += 1;
+
+	memcpy(kdf_input + pos, public_key->oid, public_key->oid_size);
+	pos += public_key->oid_size;
+
+	// ECDH Algorithm
+	kdf_input[pos] = PGP_ECDH;
+	pos += 1;
+
+	// KDF Parameters
+	kdf_input[pos++] = public_key->kdf.size;
+	kdf_input[pos++] = public_key->kdf.extensions;
+	kdf_input[pos++] = public_key->kdf.hash_algorithm_id;
+	kdf_input[pos++] = public_key->kdf.symmetric_key_algorithm_id;
+
+	// "Anonymous Sender"
+	memcpy(kdf_input + pos, "Anonymous Sender    ", 20);
+	pos += 20;
+
+	// TODO: Fingerptint
+
+	kdf_input_size = pos;
+
+	pgp_ecdh_kdf(hash_algorithm_id, xcoord, xcoord_size, kdf_input, kdf_input_size, key_wrap_key, key_wrap_key_size);
+
+	// Key wrap
+	pgp_ecdh_kw_encrypt(cipher_algorithm_id, key_wrap_key, key_wrap_key_size, encoded_session_key, encoded_session_key_size,
+						wrapped_session_key, wrapped_session_key_size);
+
+	return kex;
+}
+
+uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key, pgp_ecdh_private_key *private_key,
+							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size)
+{
+	return 0;
+}
 
 pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 									   byte_t session_key_size)
