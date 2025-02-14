@@ -779,6 +779,42 @@ static uint32_t pgp_ecdh_kdf(hash_algorithm algorithm, void *key, uint32_t key_s
 	return derived_key_size;
 }
 
+static uint32_t pgp_ecdh_kw_encrypt(pgp_symmetric_key_algorithms algorithm, void *key, uint32_t key_size, void *in, uint32_t in_size,
+									void *out, uint32_t out_size)
+{
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512] = {0};
+
+	cctx = cipher_init(buffer, 512, 0, pgp_algorithm_to_cipher_algorithm(algorithm), key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	cipher_key_wrap_encrypt(cctx, in, in_size, out, out_size);
+
+	return in_size + 8;
+}
+
+static uint32_t pgp_ecdh_kw_decrypt(pgp_symmetric_key_algorithms algorithm, void *key, uint32_t key_size, void *in, uint32_t in_size,
+									void *out, uint32_t out_size)
+{
+	cipher_ctx *cctx = NULL;
+	byte_t buffer[512] = {0};
+
+	cctx = cipher_init(buffer, 512, 0, pgp_algorithm_to_cipher_algorithm(algorithm), key, key_size);
+
+	if (cctx == NULL)
+	{
+		return 0;
+	}
+
+	cipher_key_wrap_decrypt(cctx, in, in_size, out, out_size);
+
+	return in_size + 8;
+	return in_size - 8;
+}
 
 pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 								   byte_t session_key_size)
