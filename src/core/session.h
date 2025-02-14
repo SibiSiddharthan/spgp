@@ -80,7 +80,7 @@ typedef struct _pgp_ecdh_kex
 {
 	mpi_t *ephemeral_point;
 	byte_t encoded_session_key_size;
-	byte_t encoded_session_key[40];
+	byte_t encoded_session_key[48];
 } pgp_ecdh_kex;
 
 typedef struct _pgp_x25519_kex
