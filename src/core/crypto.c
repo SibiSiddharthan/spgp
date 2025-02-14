@@ -731,6 +731,56 @@ uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_public_key *public_key, p
 	return result;
 }
 
+static void pgp_ecdh_kdf_paramters(curve_id id, hash_algorithm *hid, cipher_algorithm *cid)
+{
+	switch (id)
+	{
+	case EC_NIST_P256:
+	case EC_BRAINPOOL_256R1:
+	case EC_CURVE25519:
+		*hid = HASH_SHA256;
+		*cid = CIPHER_AES128;
+		break;
+	case EC_NIST_P384:
+	case EC_BRAINPOOL_384R1:
+		*hid = HASH_SHA384;
+		*cid = CIPHER_AES192;
+		break;
+	case EC_NIST_P521:
+	case EC_BRAINPOOL_512R1:
+		*hid = HASH_SHA512;
+		*cid = CIPHER_AES256;
+		break;
+	default:
+		break;
+	}
+}
+
+static uint32_t pgp_ecdh_kdf(hash_algorithm algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *derived_key,
+							 uint32_t derived_key_size)
+{
+	hash_ctx *hctx = NULL;
+
+	byte_t buffer[512] = {0};
+	byte_t iv[4] = {0x00, 0x00, 0x00, 0x01};
+
+	hctx = hash_init(buffer, 512, algorithm);
+
+	if (hctx == NULL)
+	{
+		return 0;
+	}
+
+	hash_update(hctx, iv, 4);
+	hash_update(hctx, key, key_size);
+	hash_update(hctx, input, input_size);
+	hash_final(hctx, derived_key, derived_key_size);
+
+	return derived_key_size;
+}
+
+
+
 pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
 									   byte_t session_key_size)
 {
