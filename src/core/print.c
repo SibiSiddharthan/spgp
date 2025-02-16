@@ -91,16 +91,16 @@ static size_t print_key(uint32_t indent, void *str, size_t str_size, void *data,
 		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key ID: ");
 		break;
 	case PGP_KEY_V3_FINGERPRINT_SIZE:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Version 3 (Deprecated)): ");
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
 		break;
 	case PGP_KEY_V4_FINGERPRINT_SIZE:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Version 4): ");
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
 		break;
 	case PGP_KEY_V6_FINGERPRINT_SIZE:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Version 6): ");
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
 		break;
 	default:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Unknown Version): ");
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
 		break;
 	}
 
@@ -532,7 +532,8 @@ static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint
 	return pos;
 }
 
-static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *kex, void *str, size_t size, uint32_t indent)
+static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *sign, uint16_t sign_size, void *str, size_t str_size,
+								  uint32_t indent)
 {
 	size_t pos = 0;
 
@@ -540,17 +541,42 @@ static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *kex
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_SIGN_ONLY:
-		break;
+	{
+		pgp_rsa_signature *sg = sign;
+		pos += print_mpi(indent, "RSA m^d mod n", sg->e, str, str_size);
+	}
+	break;
 	case PGP_DSA:
-		break;
+	{
+		pgp_dsa_signature *sg = sign;
+		pos += print_mpi(indent, "DSA r", sg->r, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "DSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos);
+	}
+	break;
 	case PGP_ECDSA:
-		break;
+	{
+		pgp_ecdsa_signature *sg = sign;
+		pos += print_mpi(indent, "ECDSA r", sg->r, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "ECDSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos);
+	}
+	break;
 	case PGP_ED25519:
-		break;
+	{
+		pgp_ed25519_signature *sg = sign;
+		pos += print_bytes(indent, "Ed25519 Signature: ", str, str_size, sg->sig, 64);
+	}
+	break;
 	case PGP_ED448:
-		break;
+	{
+		pgp_ed448_signature *sg = sign;
+		pos += print_bytes(indent, "Ed448 Signature: ", str, str_size, sg->sig, 114);
+	}
+	break;
 	default:
-		break;
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Unknown Session Key Material (%hu bytes)\n", sign_size);
+	}
+	break;
 	}
 	return pos;
 }
@@ -697,18 +723,15 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 		case PGP_KEY_V2:
 		case PGP_KEY_V3:
 			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Deprecated)\n", packet->key_version);
-			pos +=
-				print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
+			pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
 			break;
 		case PGP_KEY_V4:
 			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
-			pos +=
-				print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+			pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
 			break;
 		case PGP_KEY_V6:
 			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
-			pos +=
-				print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+			pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
 			break;
 		default:
 			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Unknown)\n", packet->key_version);
