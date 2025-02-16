@@ -61,8 +61,8 @@ static size_t print_hex(const char *table, void *str, void *data, size_t data_si
 		a = ((byte_t *)data)[i] / 16;
 		b = ((byte_t *)data)[i] % 16;
 
-		out[pos++] = hex_lower_table[a];
-		out[pos++] = hex_lower_table[b];
+		out[pos++] = table[a];
+		out[pos++] = table[b];
 	}
 
 	out[pos++] = '\n';
@@ -72,7 +72,6 @@ static size_t print_hex(const char *table, void *str, void *data, size_t data_si
 
 static size_t print_bytes(uint32_t indent, char *prefix, void *str, size_t str_size, void *data, size_t data_size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	// Print prefix
@@ -84,7 +83,6 @@ static size_t print_bytes(uint32_t indent, char *prefix, void *str, size_t str_s
 
 static size_t print_key(uint32_t indent, void *str, size_t str_size, void *data, size_t data_size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	switch (data_size)
@@ -113,7 +111,6 @@ static size_t print_key(uint32_t indent, void *str, size_t str_size, void *data,
 
 static size_t print_mpi(uint32_t indent, char *prefix, mpi_t *mpi, void *str, size_t str_size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s (%hu bits): ", prefix, mpi->bits);
@@ -466,7 +463,7 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t inden
 	return pos;
 }
 
-static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, void *str, size_t size, uint32_t indent)
+static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint16_t kex_size, void *str, size_t str_size, uint32_t indent)
 {
 	size_t pos = 0;
 
@@ -476,21 +473,60 @@ static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, void
 	case PGP_RSA_ENCRYPT_ONLY:
 	{
 		pgp_rsa_kex *sk = kex;
-		pos += print_mpi(indent, "RSA m^e mod n", sk->c, str, size);
+		pos += print_mpi(indent, "RSA m^e mod n", sk->c, str, str_size);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		break;
-		break;
+	{
+		pgp_elgamal_kex *sk = kex;
+		pos += print_mpi(indent, "Elgamal g^k mod p", sk->r, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "Elgamal m*(y^k) mod p", sk->r, PTR_OFFSET(str, pos), str_size - pos);
+	}
+	break;
 	case PGP_ECDH:
-		break;
-		break;
+	{
+		pgp_ecdh_kex *sk = kex;
+		pos += print_bytes(indent, "ECDH Encrypted Session Key: ", PTR_OFFSET(str, pos), str_size - pos, sk->encoded_session_key,
+						   sk->encoded_session_key_size);
+	}
+	break;
 	case PGP_X25519:
-		break;
+	{
+		pgp_x25519_kex *sk = kex;
+		byte_t octet_count = sk->octet_count;
+
+		if (sk->symmetric_key_algorithm_id != 0)
+		{
+			pos += pgp_symmetric_key_algorithm_print(sk->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), str_size - pos, indent);
+			octet_count -= 1;
+		}
+
+		pos += print_bytes(indent, "X25519 Ephemeral Key: ", PTR_OFFSET(str, pos), str_size - pos, sk->ephemeral_key, 32);
+		pos += print_bytes(indent, "X25519 Encrypted Session Key: ", PTR_OFFSET(str, pos), str_size - pos, sk->encrypted_session_key,
+						   octet_count);
+	}
+	break;
 	case PGP_X448:
-		break;
+	{
+		pgp_x448_kex *sk = kex;
+		byte_t octet_count = sk->octet_count;
+
+		if (sk->symmetric_key_algorithm_id != 0)
+		{
+			pos += pgp_symmetric_key_algorithm_print(sk->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), str_size - pos, indent);
+			octet_count -= 1;
+		}
+
+		pos += print_bytes(indent, "X448 Ephemeral Key: ", PTR_OFFSET(str, pos), str_size - pos, sk->ephemeral_key, 56);
+		pos += print_bytes(indent, "X448 Encrypted Session Key: ", PTR_OFFSET(str, pos), str_size - pos, sk->encrypted_session_key,
+						   octet_count);
+	}
+	break;
 	default:
-		break;
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Unknown Session Key Material (%hu bytes)\n", kex_size);
+	}
+	break;
 	}
 
 	return pos;
@@ -680,14 +716,16 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 		}
 
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_size,
+							 PTR_OFFSET(str, pos), size - pos, 1);
 	}
 	else if (packet->version == PGP_PKESK_V3)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
 		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(str, pos), size - pos, packet->key_id, 8);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_size,
+							 PTR_OFFSET(str, pos), size - pos, 1);
 	}
 	else
 	{
