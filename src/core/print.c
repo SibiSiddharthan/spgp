@@ -19,7 +19,8 @@
 #include <string.h>
 #include <time.h>
 
-static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 static size_t print_indent(uint32_t indent, void *str, size_t size)
 {
@@ -48,15 +49,10 @@ static size_t print_format(uint32_t indent, void *str, size_t size, const char *
 	return pos;
 }
 
-static size_t print_bytes(uint32_t indent, char *prefix, void *str, size_t str_size, void *data, size_t data_size, uint16_t columns)
+static size_t print_hex(const char *table, void *str, void *data, size_t data_size)
 {
 	byte_t *out = str;
-
-	uint16_t row = 0;
 	size_t pos = 0;
-
-	// Print prefix
-	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s", prefix);
 
 	for (uint32_t i = 0; i < data_size; ++i)
 	{
@@ -65,25 +61,63 @@ static size_t print_bytes(uint32_t indent, char *prefix, void *str, size_t str_s
 		a = ((byte_t *)data)[i] / 16;
 		b = ((byte_t *)data)[i] % 16;
 
-		out[pos++] = hex_table[a];
-		out[pos++] = hex_table[b];
-
-		if ((i + 1) % columns != 0)
-		{
-			// out[pos++] = ' ';
-		}
-		else
-		{
-			out[pos++] = '\n';
-			row += 1;
-		}
+		out[pos++] = hex_lower_table[a];
+		out[pos++] = hex_lower_table[b];
 	}
 
-	// Only add a newline if the last character is not one.
-	if (out[pos - 1] != '\n')
+	out[pos++] = '\n';
+
+	return pos;
+}
+
+static size_t print_bytes(uint32_t indent, char *prefix, void *str, size_t str_size, void *data, size_t data_size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	// Print prefix
+	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s", prefix);
+	pos += print_hex(hex_lower_table, PTR_OFFSET(str, pos), data, data_size);
+
+	return pos;
+}
+
+static size_t print_key(uint32_t indent, void *str, size_t str_size, void *data, size_t data_size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	switch (data_size)
 	{
-		out[pos++] = '\n';
+	case PGP_KEY_ID_SIZE:
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key ID: ");
+		break;
+	case PGP_KEY_V3_FINGERPRINT_SIZE:
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Version 3 (Deprecated)): ");
+		break;
+	case PGP_KEY_V4_FINGERPRINT_SIZE:
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Version 4): ");
+		break;
+	case PGP_KEY_V6_FINGERPRINT_SIZE:
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Version 6): ");
+		break;
+	default:
+		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint (Unknown Version): ");
+		break;
 	}
+
+	pos += print_hex(hex_upper_table, PTR_OFFSET(str, pos), data, data_size);
+
+	return pos;
+}
+
+static size_t print_mpi(uint32_t indent, char *prefix, mpi_t *mpi, void *str, size_t str_size)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s (%hu bits): ", prefix, mpi->bits);
+	pos += print_hex(hex_lower_table, PTR_OFFSET(str, pos), mpi->bytes, CEIL_DIV(mpi->bits, 8));
 
 	return pos;
 }
@@ -409,17 +443,17 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t inden
 	case PGP_S2K_SALTED:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Salted S2K (Tag 1)\n");
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
-		pos += print_bytes(indent + 1, "Salt: ", PTR_OFFSET(str, pos), size - pos, s2k->salted.salt, 8, 8);
+		pos += print_bytes(indent + 1, "Salt: ", PTR_OFFSET(str, pos), size - pos, s2k->salted.salt, 8);
 		break;
 	case PGP_S2K_ITERATED:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Iterated and Salted S2K (Tag 3)\n");
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
-		pos += print_bytes(indent + 1, "Salt: ", PTR_OFFSET(str, pos), size - pos, s2k->iterated.salt, 8, 8);
+		pos += print_bytes(indent + 1, "Salt: ", PTR_OFFSET(str, pos), size - pos, s2k->iterated.salt, 8);
 		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Count: %hhu\n", s2k->iterated.count);
 		break;
 	case PGP_S2K_ARGON2:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Argon2 S2K (Tag 4)\n");
-		pos += print_bytes(indent + 1, "Salt: ", PTR_OFFSET(str, pos), size - pos, s2k->argon2.salt, 16, 16);
+		pos += print_bytes(indent + 1, "Salt: ", PTR_OFFSET(str, pos), size - pos, s2k->argon2.salt, 16);
 		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Iterations: %hhu\n", s2k->argon2.t);
 		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Parallelism: %hhu\n", s2k->argon2.p);
 		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Memory: %hhu\n", s2k->argon2.m);
@@ -429,6 +463,59 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t inden
 		break;
 	}
 
+	return pos;
+}
+
+static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, void *str, size_t size, uint32_t indent)
+{
+	size_t pos = 0;
+
+	switch (algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	{
+		pgp_rsa_kex *sk = kex;
+		pos += print_mpi(indent, "RSA m^e mod n", sk->c, str, size);
+	}
+	break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		break;
+		break;
+	case PGP_ECDH:
+		break;
+		break;
+	case PGP_X25519:
+		break;
+	case PGP_X448:
+		break;
+	default:
+		break;
+	}
+
+	return pos;
+}
+
+static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *kex, void *str, size_t size, uint32_t indent)
+{
+	size_t pos = 0;
+
+	switch (algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_SIGN_ONLY:
+		break;
+	case PGP_DSA:
+		break;
+	case PGP_ECDSA:
+		break;
+	case PGP_ED25519:
+		break;
+	case PGP_ED448:
+		break;
+	default:
+		break;
+	}
 	return pos;
 }
 
@@ -567,42 +654,44 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 
 	if (packet->version == PGP_PKESK_V6)
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 6\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 6\n");
 
 		switch (packet->key_version)
 		{
 		case PGP_KEY_V2:
 		case PGP_KEY_V3:
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Deprecated)\n", packet->key_version);
-			pos += print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint,
-							   PGP_KEY_V3_FINGERPRINT_SIZE, PGP_KEY_V3_FINGERPRINT_SIZE);
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Deprecated)\n", packet->key_version);
+			pos +=
+				print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
 			break;
 		case PGP_KEY_V4:
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
-			pos += print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint,
-							   PGP_KEY_V4_FINGERPRINT_SIZE, PGP_KEY_V4_FINGERPRINT_SIZE);
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
+			pos +=
+				print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
 			break;
 		case PGP_KEY_V6:
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
-			pos += print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint,
-							   PGP_KEY_V6_FINGERPRINT_SIZE, PGP_KEY_V6_FINGERPRINT_SIZE);
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
+			pos +=
+				print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
 			break;
 		default:
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Unknown)\n", packet->key_version);
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu (Unknown)\n", packet->key_version);
 			break;
 		}
 
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, PTR_OFFSET(str, pos), size - pos, 1);
 	}
 	else if (packet->version == PGP_PKESK_V3)
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(str, pos), size - pos, packet->key_id, 8);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(str, pos), size - pos, packet->key_id, 8, 8);
+		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, PTR_OFFSET(str, pos), size - pos, 1);
 	}
 	else
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
 	}
 
 	return pos;
@@ -621,10 +710,9 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 1);
 
-		pos += print_bytes(1, "IV: ", PTR_OFFSET(str, pos), size - pos, packet->iv, packet->iv_size, packet->iv_size);
-		pos += print_bytes(1, "Tag: ", PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size, packet->tag_size);
-		pos += print_bytes(1, "Encrypted Session Key: ", PTR_OFFSET(str, pos), size - pos, packet->session_key, packet->session_key_size,
-						   packet->session_key_size);
+		pos += print_bytes(1, "IV: ", PTR_OFFSET(str, pos), size - pos, packet->iv, packet->iv_size);
+		pos += print_bytes(1, "Tag: ", PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size);
+		pos += print_bytes(1, "Encrypted Session Key: ", PTR_OFFSET(str, pos), size - pos, packet->session_key, packet->session_key_size);
 	}
 	else if (packet->version == PGP_SKESK_V4)
 	{
@@ -634,8 +722,8 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 
 		if (packet->session_key_size > 0)
 		{
-			pos += print_bytes(1, "Encrypted Session Key: ", PTR_OFFSET(str, pos), size - pos, packet->session_key,
-							   packet->session_key_size, packet->session_key_size);
+			pos +=
+				print_bytes(1, "Encrypted Session Key: ", PTR_OFFSET(str, pos), size - pos, packet->session_key, packet->session_key_size);
 		}
 	}
 	else
@@ -668,9 +756,8 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 
-		pos += print_bytes(1, "Salt: ", PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size, packet->salt_size);
-		pos += print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(ptr, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE,
-						   PGP_KEY_V6_FINGERPRINT_SIZE);
+		pos += print_bytes(1, "Salt: ", PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size);
+		pos += print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(ptr, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
 
 		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Nested: %s\n", packet->nested ? "Yes" : "No");
 	}
@@ -680,7 +767,7 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8, 8);
+		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8);
 
 		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Nested: %s\n", packet->nested ? "Yes" : "No");
 	}
@@ -912,8 +999,8 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Chunk Size: %hhu\n", packet->chunk_size);
 
-		pos += print_bytes(1, "Salt: ", PTR_OFFSET(str, pos), size - pos, packet->salt, 32, 32);
-		pos += print_bytes(1, "Tag: ", PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size, packet->tag_size);
+		pos += print_bytes(1, "Salt: ", PTR_OFFSET(str, pos), size - pos, packet->salt, 32);
+		pos += print_bytes(1, "Tag: ", PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size);
 
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->data_size);
 	}
@@ -935,7 +1022,7 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
-	pos += print_bytes(1, "SHA-1 MDC: ", PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20, 20);
+	pos += print_bytes(1, "SHA-1 MDC: ", PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20);
 
 	return pos;
 }
