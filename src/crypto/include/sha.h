@@ -59,14 +59,6 @@ typedef struct _sha512_ctx
 	byte_t internal[SHA512_BLOCK_SIZE];
 } sha384_ctx, sha512_ctx, sha512_224_ctx, sha512_256_ctx;
 
-typedef enum _sha3_type
-{
-	SHA3_224,
-	SHA3_256,
-	SHA3_384,
-	SHA3_512
-} sha3_type;
-
 typedef struct _sha3_ctx
 {
 	uint32_t hash_size;
@@ -137,13 +129,6 @@ void sha512_256_final(sha512_256_ctx *ctx, byte_t buffer[SHA512_256_HASH_SIZE]);
 void sha512_256_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_SIZE]);
 
 // SHA-3
-
-sha3_ctx *sha3_init(void *ptr, size_t size, sha3_type type);
-sha3_ctx *sha3_new(sha3_type type);
-void sha3_delete(sha3_ctx *ctx);
-void sha3_reset(sha3_ctx *ctx);
-void sha3_update(sha3_ctx *ctx, void *data, size_t size);
-int32_t sha3_final(sha3_ctx *ctx, void *buffer, size_t size);
 
 sha3_224_ctx *sha3_224_init(void *ptr, size_t size);
 sha3_224_ctx *sha3_224_new(void);

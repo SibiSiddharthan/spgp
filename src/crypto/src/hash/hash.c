@@ -188,37 +188,37 @@ hash_ctx *hash_init(void *ptr, size_t size, hash_algorithm algorithm)
 	case HASH_SHA3_224:
 	{
 		hash_size = SHA3_224_HASH_SIZE;
-		_ctx = sha3_init(_ctx, ctx_size, SHA3_224);
-		_reset = (void (*)(void *))sha3_reset;
-		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, void *, size_t))sha3_final;
+		_ctx = sha3_224_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_224_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_224_update;
+		_final = (void (*)(void *, void *))sha3_224_final;
 	}
 	break;
 	case HASH_SHA3_256:
 	{
 		hash_size = SHA3_256_HASH_SIZE;
-		_ctx = sha3_init(_ctx, ctx_size, SHA3_256);
-		_reset = (void (*)(void *))sha3_reset;
-		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, void *, size_t))sha3_final;
+		_ctx = sha3_256_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_256_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_256_update;
+		_final = (void (*)(void *, void *))sha3_256_final;
 	}
 	break;
 	case HASH_SHA3_384:
 	{
 		hash_size = SHA3_384_HASH_SIZE;
-		_ctx = sha3_init(_ctx, ctx_size, SHA3_384);
-		_reset = (void (*)(void *))sha3_reset;
-		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, void *, size_t))sha3_final;
+		_ctx = sha3_384_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_384_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_384_update;
+		_final = (void (*)(void *, void *))sha3_384_final;
 	}
 	break;
 	case HASH_SHA3_512:
 	{
 		hash_size = SHA3_512_HASH_SIZE;
-		_ctx = sha3_init(_ctx, ctx_size, SHA3_512);
-		_reset = (void (*)(void *))sha3_reset;
-		_update = (void (*)(void *, void *, size_t))sha3_update;
-		_final_size = (void (*)(void *, void *, size_t))sha3_final;
+		_ctx = sha3_512_init(_ctx, ctx_size);
+		_reset = (void (*)(void *))sha3_512_reset;
+		_update = (void (*)(void *, void *, size_t))sha3_512_update;
+		_final = (void (*)(void *, void *))sha3_512_final;
 	}
 	break;
 	}

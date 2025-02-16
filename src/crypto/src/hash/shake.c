@@ -17,6 +17,7 @@
 // From sha3.c
 void keccak1600(uint64_t A[25]);
 void sha3_hash_block(sha3_ctx *ctx);
+void sha3_update(sha3_ctx *ctx, void *data, size_t size);
 
 static void XOF(sha3_ctx *ctx, byte_t *buffer, size_t output_size)
 {

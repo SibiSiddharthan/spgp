@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 // See NIST SP 800-185: SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash
 
 // From shake.c
@@ -22,6 +21,7 @@ void cshake_common_final(sha3_ctx *ctx, void *buffer, size_t size);
 
 // From sha3.c
 void sha3_hash_block(sha3_ctx *ctx);
+void sha3_update(sha3_ctx *ctx, void *data, size_t size);
 
 static sha3_ctx *kmac_init_common(sha3_ctx *ctx, void *key, size_t key_size, void *custom, size_t custom_size)
 {

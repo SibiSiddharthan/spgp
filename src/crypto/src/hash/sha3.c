@@ -241,85 +241,6 @@ void sha3_hash_block(sha3_ctx *ctx)
 	keccak1600((uint64_t *)ctx->block);
 }
 
-static inline sha3_ctx *sha3_init_checked(void *ptr, sha3_type type)
-{
-	sha3_ctx *ctx = (sha3_ctx *)ptr;
-
-	memset(ctx, 0, sizeof(sha3_ctx));
-
-	switch (type)
-	{
-	case SHA3_224:
-		ctx->hash_size = SHA3_224_HASH_SIZE;
-		ctx->block_size = SHA3_224_BLOCK_SIZE;
-		break;
-	case SHA3_256:
-		ctx->hash_size = SHA3_256_HASH_SIZE;
-		ctx->block_size = SHA3_256_BLOCK_SIZE;
-		break;
-	case SHA3_384:
-		ctx->hash_size = SHA3_384_HASH_SIZE;
-		ctx->block_size = SHA3_384_BLOCK_SIZE;
-		break;
-	case SHA3_512:
-		ctx->hash_size = SHA3_512_HASH_SIZE;
-		ctx->block_size = SHA3_512_BLOCK_SIZE;
-		break;
-	}
-
-	return ctx;
-}
-
-sha3_ctx *sha3_init(void *ptr, size_t size, sha3_type type)
-{
-	if (size < sizeof(sha3_ctx))
-	{
-		return NULL;
-	}
-
-	if (type != SHA3_224 && type != SHA3_256 && type != SHA3_384 && type != SHA3_512)
-	{
-		return NULL;
-	}
-
-	return sha3_init_checked(ptr, type);
-}
-
-sha3_ctx *sha3_new(sha3_type type)
-{
-	sha3_ctx *ctx = NULL;
-
-	if (type != SHA3_224 && type != SHA3_256 && type != SHA3_384 && type != SHA3_512)
-	{
-		return NULL;
-	}
-
-	ctx = (sha3_ctx *)malloc(sizeof(sha3_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return sha3_init_checked(ctx, type);
-}
-
-void sha3_delete(sha3_ctx *ctx)
-{
-	free(ctx);
-}
-
-void sha3_reset(sha3_ctx *ctx)
-{
-	uint32_t hash_size = ctx->hash_size;
-	uint32_t block_size = ctx->block_size;
-
-	memset(ctx, 0, sizeof(sha3_ctx));
-
-	ctx->hash_size = hash_size;
-	ctx->block_size = block_size;
-}
-
 void sha3_update(sha3_ctx *ctx, void *data, size_t size)
 {
 	uint64_t pos = 0;
@@ -369,13 +290,13 @@ void sha3_update(sha3_ctx *ctx, void *data, size_t size)
 	}
 }
 
-int32_t sha3_final(sha3_ctx *ctx, void *buffer, size_t size)
+static uint32_t sha3_final(sha3_ctx *ctx, void *buffer, size_t size)
 {
 	uint64_t unhashed = ctx->message_size % ctx->block_size;
 
 	if (size < ctx->hash_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	// First zero the internal buffer after unhashed input
