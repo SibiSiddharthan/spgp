@@ -6,6 +6,7 @@
 */
 
 #include <kas.h>
+#include <bitscan.h>
 #include <bignum-internal.h>
 
 uint32_t ff_mqv(dh_key *self_static_key, bignum_t *self_ephemeral_private_key, bignum_t *self_ephemeral_public_key,
@@ -53,6 +54,59 @@ uint32_t ff_mqv(dh_key *self_static_key, bignum_t *self_ephemeral_private_key, b
 
 end:
 	bignum_ctx_end(self_static_key->bctx);
+
+	return result;
+}
+
+uint32_t ec_mqv(ec_key *self_static_key, bignum_t *self_ephemeral_private_key, ec_point *self_ephemeral_public_key,
+				ec_point *static_pulbic_key, ec_point *ephermal_public_key, void *shared_secret, uint32_t size)
+{
+	uint32_t result = 0;
+
+	uint32_t f = CEIL_DIV(self_static_key->eg->n->bits, 2);
+	uint32_t g = BSF_32(self_static_key->eg->cofactor);
+	bignum_t *s = NULL, *u = NULL, *v = NULL, *x = NULL, *y = NULL;
+	ec_point r = {0};
+
+	uint32_t ctx_size = 5 * bignum_size(self_static_key->eg->bits + 1);
+
+	bignum_ctx_start(self_static_key->eg->bctx, ctx_size);
+
+	u = bignum_ctx_allocate_bignum(self_static_key->eg->bctx, self_static_key->eg->bits + 1);
+	v = bignum_ctx_allocate_bignum(self_static_key->eg->bctx, self_static_key->eg->bits + 1);
+	s = bignum_ctx_allocate_bignum(self_static_key->eg->bctx, self_static_key->eg->bits + 1);
+	x = bignum_ctx_allocate_bignum(self_static_key->eg->bctx, self_static_key->eg->bits + 1);
+	y = bignum_ctx_allocate_bignum(self_static_key->eg->bctx, self_static_key->eg->bits + 1);
+
+	u = bignum_copy(u, self_ephemeral_public_key->x);
+	u = bignum_umod2p(u, f);
+	u = bignum_set_bit(u, f);
+
+	v = bignum_copy(v, ephermal_public_key->x);
+	v = bignum_umod2p(v, f);
+	v = bignum_set_bit(u, f);
+
+	s = bignum_modmul(self_static_key->eg->bctx, s, u, self_static_key->d, self_static_key->eg->n);
+	s = bignum_modadd(self_static_key->eg->bctx, s, s, self_ephemeral_private_key, self_static_key->eg->n);
+	s = bignum_lshift(s, s, g);
+	s = bignum_mod(self_static_key->eg->bctx, s, s, self_static_key->eg->n);
+
+	r.x = x;
+	r.y = y;
+
+	ec_point_multiply(self_static_key->eg, &r, static_pulbic_key, v);
+	ec_point_add(self_static_key->eg, &r, &r, ephermal_public_key);
+	ec_point_multiply(self_static_key->eg, &r, &r, s);
+
+	if (ec_point_is_identity(self_static_key->eg, &r))
+	{
+		goto end;
+	}
+
+	result = bignum_get_bytes_be_padded(r.x, shared_secret, size);
+
+end:
+	bignum_ctx_end(self_static_key->eg->bctx);
 
 	return result;
 }
