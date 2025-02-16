@@ -14,7 +14,7 @@ uint32_t ff_dh(dh_key *self_key, bignum_t *public_key, void *shared_secret, uint
 	bignum_t *r = NULL;
 	bignum_t *pm1 = NULL;
 
-	if (size < (self_key->p_bits / 8))
+	if (size < CEIL_DIV(self_key->p_bits, 8))
 	{
 		return 0;
 	}
@@ -40,6 +40,45 @@ uint32_t ff_dh(dh_key *self_key, bignum_t *public_key, void *shared_secret, uint
 end:
 	bignum_delete(r);
 	bignum_delete(pm1);
+
+	return result;
+}
+
+uint32_t ec_dh(ec_key *self_key, ec_point *public_key, void *shared_secret, uint32_t size)
+{
+	uint32_t result = 0;
+
+	ec_point *r = NULL;
+	bignum_t *d = NULL;
+
+	if (size < CEIL_DIV(self_key->eg->bits, 8))
+	{
+		return 0;
+	}
+
+	r = ec_point_new(self_key->eg);
+	d = bignum_new(self_key->eg->bits);
+
+	if (r == NULL || d == NULL)
+	{
+		goto end;
+	}
+
+	// TODO: Optimize this
+	bignum_set_word(d, self_key->eg->cofactor);
+	d = bignum_modmul(self_key->eg->bctx, d, d, self_key->d, self_key->eg->n);
+	r = ec_point_multiply(self_key->eg, r, public_key, d);
+
+	if (ec_point_is_identity(self_key->eg, r))
+	{
+		goto end;
+	}
+
+	result = bignum_get_bytes_be_padded(r->x, shared_secret, size);
+
+end:
+	ec_point_delete(r);
+	bignum_delete(d);
 
 	return result;
 }
