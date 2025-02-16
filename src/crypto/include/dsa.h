@@ -26,14 +26,6 @@ typedef struct _dsa_signature
 	bignum_t *r, *s;
 } dsa_signature;
 
-typedef struct _dsa_ctx
-{
-	dsa_key *key;
-	hash_ctx *hctx;
-	byte_t *salt;
-	size_t salt_size;
-} dsa_ctx;
-
 uint32_t dsa_parameters_generate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignum_t *g, uint32_t p_bits, uint32_t q_bits, void *seed,
 								 size_t seed_size);
 uint32_t dsa_parameters_validate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignum_t *g, uint32_t counter, void *seed, size_t seed_size);
