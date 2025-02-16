@@ -62,6 +62,8 @@ hash/sha1.c hash/sha256.c hash/sha512.c hash/sha3.c
 hash/shake.c
 hash/blake2.c
 hash/hash.c
+#kas
+kas/dh.c
 #kdf
 kdf/argon2.c
 kdf/pbkdf2.c
