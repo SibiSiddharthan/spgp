@@ -24,7 +24,7 @@ bignum_t *bignum_init_checked(void *ptr, size_t bn_size, uint32_t bits, uint16_t
 	bn->sign = 1;
 	bn->flags = flags;
 	bn->size = CEIL_DIV(bits, 8);
-	bn->words = (uint64_t *)((byte_t *)bn + sizeof(bignum_t));
+	bn->words = PTR_OFFSET(bn, sizeof(bignum_t));
 
 	return bn;
 }
