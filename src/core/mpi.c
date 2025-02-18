@@ -11,12 +11,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-mpi_t *mpi_init_checked(void *ptr, size_t mpi_size, uint32_t bits)
+static mpi_t *mpi_init_checked(void *ptr, size_t mpi_size, uint32_t bits)
 {
 	mpi_t *mpi = ptr;
 
 	memset(mpi, 0, mpi_size);
-	mpi->bits = bits;
+	mpi->bits = ROUND_UP(bits, 8);
+	mpi->bytes = PTR_OFFSET(mpi, sizeof(mpi_t));
 
 	return mpi;
 }
@@ -24,14 +25,17 @@ mpi_t *mpi_init_checked(void *ptr, size_t mpi_size, uint32_t bits)
 mpi_t *mpi_init(void *ptr, size_t size, uint16_t bits)
 {
 	mpi_t *mpi = ptr;
-	size_t required_size = sizeof(mpi_t);
-
-	required_size += CEIL_DIV(mpi->bits, 8);
+	size_t required_size = mpi_size(bits);
 
 	if (size < required_size)
 	{
 		return NULL;
 	}
+
+	memset(mpi, 0, required_size);
+
+	mpi->bits = ROUND_UP(bits, 8);
+	mpi->bytes = PTR_OFFSET(mpi, sizeof(mpi_t));
 
 	return mpi_init_checked(mpi, required_size, bits);
 }
@@ -87,13 +91,20 @@ uint32_t mpi_read(mpi_t *mpi, void *ptr, size_t size)
 {
 	uint32_t pos = 0;
 	uint16_t bits_be = 0;
+	uint16_t bits_le = 0;
 	uint16_t bytes = 0;
 
 	// Get the number of bits
 	LOAD_16(&bits_be, ptr);
-	mpi->bits = BSWAP_16(bits_be);
+	bits_le = BSWAP_16(bits_be);
 	pos += 2;
 
+	if (bits_le > mpi->bits)
+	{
+		return 0;
+	}
+
+	mpi->bits = BSWAP_16(bits_be);
 	bytes = CEIL_DIV(mpi->bits, 8);
 
 	if (size < (2u + bytes))
