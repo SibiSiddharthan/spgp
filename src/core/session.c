@@ -29,21 +29,20 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 		// MPI of (m^e) mod n
 		pgp_rsa_kex *sk = NULL;
 		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
-		uint32_t mpi_c_size = mpi_size(mpi_bits);
 
-		if (size < (2 + CEIL_DIV(mpi_bits, 8)))
+		if (size < mpi_octets(mpi_bits))
 		{
 			return 0;
 		}
 
-		sk = malloc(sizeof(pgp_rsa_kex) + mpi_c_size);
+		sk = malloc(sizeof(pgp_rsa_kex) + mpi_size(mpi_bits));
 
 		if (sk == NULL)
 		{
 			return 0;
 		}
 
-		sk->c = mpi_init(PTR_OFFSET(sk, sizeof(pgp_rsa_kex)), mpi_c_size, mpi_bits);
+		sk->c = mpi_init(PTR_OFFSET(sk, sizeof(pgp_rsa_kex)), mpi_size(mpi_bits), mpi_bits);
 		pos += mpi_read(sk->c, in, size);
 
 		packet->encrypted_session_key = sk;
@@ -62,13 +61,13 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 		uint32_t mpi_s_size = 0;
 
 		mpi_r_bits = ((uint16_t)in[0] << 8) + in[1];
-		offset = (2 + CEIL_DIV(mpi_r_bits, 8));
+		offset = mpi_octets(mpi_r_bits);
 		mpi_s_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 
 		mpi_r_size = mpi_size(mpi_r_bits);
 		mpi_s_size = mpi_size(mpi_s_bits);
 
-		if (size < (4 + CEIL_DIV(mpi_r_bits, 8) + CEIL_DIV(mpi_s_bits, 8)))
+		if (size < (mpi_octets(mpi_r_bits) + mpi_octets(mpi_s_bits)))
 		{
 			return 0;
 		}
@@ -96,7 +95,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 		uint16_t mpi_point_bits = ((uint16_t)in[0] << 8) + in[1];
 		uint32_t mpi_point_size = mpi_size(mpi_point_bits);
 
-		if (size < (2 + CEIL_DIV(mpi_point_bits, 8)))
+		if (size < mpi_octets(mpi_point_bits))
 		{
 			return 0;
 		}
