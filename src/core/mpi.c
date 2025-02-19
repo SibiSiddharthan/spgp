@@ -11,17 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static mpi_t *mpi_init_checked(void *ptr, size_t mpi_size, uint32_t bits)
-{
-	mpi_t *mpi = ptr;
-
-	memset(mpi, 0, mpi_size);
-	mpi->bits = ROUND_UP(bits, 8);
-	mpi->bytes = PTR_OFFSET(mpi, sizeof(mpi_t));
-
-	return mpi;
-}
-
 mpi_t *mpi_init(void *ptr, size_t size, uint16_t bits)
 {
 	mpi_t *mpi = ptr;
@@ -37,24 +26,27 @@ mpi_t *mpi_init(void *ptr, size_t size, uint16_t bits)
 	mpi->bits = ROUND_UP(bits, 8);
 	mpi->bytes = PTR_OFFSET(mpi, sizeof(mpi_t));
 
-	return mpi_init_checked(mpi, required_size, bits);
+	return mpi;
 }
 
 mpi_t *mpi_new(uint16_t bits)
 {
 	mpi_t *mpi = NULL;
-	size_t size = sizeof(mpi_t);
+	size_t required_size = mpi_size(bits);
 
-	size += CEIL_DIV(mpi->bits, 8);
-
-	mpi = (mpi_t *)malloc(size);
+	mpi = malloc(required_size);
 
 	if (mpi == NULL)
 	{
 		return NULL;
 	}
 
-	return mpi_init_checked(mpi, size, bits);
+	memset(mpi, 0, required_size);
+
+	mpi->bits = ROUND_UP(bits, 8);
+	mpi->bytes = PTR_OFFSET(mpi, sizeof(mpi_t));
+
+	return mpi;
 }
 
 void mpi_delete(mpi_t *mpi)
