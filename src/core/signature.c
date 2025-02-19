@@ -87,11 +87,11 @@ uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_SIGN_ONLY:
 		// MPI of (M^d)%n
-		return 2 + CEIL_DIV(bits, 8);
+		return mpi_octets(bits);
 	case PGP_DSA:
 	case PGP_ECDSA:
 		// MPI of (r,s)
-		return (2 + CEIL_DIV(bits, 8)) * 2;
+		return mpi_octets(bits) * 2;
 	case PGP_ED25519:
 		return 64;
 	case PGP_ED448:
@@ -112,65 +112,108 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 	case PGP_RSA_SIGN_ONLY:
 	{
 		// MPI of (M^d)%n
-		pgp_rsa_signature *sig = packet->signature;
-		pos = mpi_read(sig->e, in, size);
+		pgp_rsa_signature *sig = NULL;
+		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
 
-		if (pos == 0)
+		if (size < mpi_octets(mpi_bits))
+		{
+			return 0;
+		}
+
+		sig = malloc(sizeof(pgp_rsa_signature) + mpi_size(mpi_bits));
+
+		if (sig == NULL)
 		{
 			return NULL;
 		}
 
+		sig->e = mpi_init(PTR_OFFSET(sig, sizeof(pgp_rsa_signature)), mpi_size(mpi_bits), mpi_bits);
+		pos += mpi_read(sig->e, in, size);
+
 		packet->signature_size = pos;
+
 		return sig;
 	}
 	case PGP_DSA:
 	case PGP_ECDSA:
 	{
 		// MPI of (r,s)
-		pgp_dsa_signature *sig = packet->signature;
+		pgp_dsa_signature *sig = NULL;
+		uint16_t offset = 0;
+		uint16_t mpi_r_bits = 0;
+		uint16_t mpi_s_bits = 0;
+		uint32_t mpi_r_size = 0;
+		uint32_t mpi_s_size = 0;
 
-		pos += mpi_read(sig->r, in + pos, size - pos);
+		mpi_r_bits = ((uint16_t)in[0] << 8) + in[1];
+		offset = mpi_octets(mpi_r_bits);
+		mpi_s_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 
-		if (pos == 0)
+		mpi_r_size = mpi_size(mpi_r_bits);
+		mpi_s_size = mpi_size(mpi_s_bits);
+
+		if (size < (mpi_octets(mpi_r_bits) + mpi_octets(mpi_s_bits)))
 		{
-			return NULL;
+			return 0;
 		}
 
-		pos += mpi_read(sig->s, in + pos, size - pos);
+		sig = malloc(sizeof(pgp_dsa_signature) + mpi_r_size + mpi_s_size);
 
-		if (pos == 0)
+		if (sig == NULL)
 		{
-			return NULL;
+			return 0;
 		}
+
+		sig->r = mpi_init(PTR_OFFSET(sig, sizeof(pgp_elgamal_kex)), mpi_r_size, mpi_r_bits);
+		sig->s = mpi_init(PTR_OFFSET(sig, sizeof(pgp_elgamal_kex) + mpi_r_size), mpi_s_size, mpi_s_bits);
 
 		packet->signature_size = pos;
+
 		return sig;
 	}
 	case PGP_ED25519:
 	{
 		// 64 octets of signature data
+		pgp_ed25519_signature *sig = NULL;
+
 		if (size < 64)
 		{
-			return NULL;
+			return 0;
 		}
 
-		memcpy(packet->signature, in, 64);
+		sig = malloc(sizeof(pgp_ed25519_signature));
+
+		if (sig == NULL)
+		{
+			return 0;
+		}
+
+		memcpy(sig, in, 64);
 		packet->signature_size = 64;
 
-		return packet->signature;
+		return sig;
 	}
 	case PGP_ED448:
 	{
 		// 114 octets of signature data
+		pgp_ed448_signature *sig = NULL;
+
 		if (size < 114)
 		{
-			return NULL;
+			return 0;
 		}
 
-		memcpy(packet->signature, in, 114);
+		sig = malloc(sizeof(pgp_ed448_signature));
+
+		if (sig == NULL)
+		{
+			return 0;
+		}
+
+		memcpy(sig, in, 114);
 		packet->signature_size = 114;
 
-		return packet->signature;
+		return sig;
 	}
 	default:
 		return NULL;
