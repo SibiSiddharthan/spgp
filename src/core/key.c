@@ -360,7 +360,7 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	return BSWAP_16(checksum);
 }
 
-static uint32_t pgp_public_key_material_read(pgp_public_key_algorithms public_key_algorithm_id, void *out, void *ptr, uint32_t size)
+static void *pgp_public_key_material_read(pgp_public_key_algorithms public_key_algorithm_id, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
 	uint32_t pos = 0;
@@ -371,37 +371,172 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_algorithms public_ke
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_public_key *key = out;
+		// MPI of n,e
+		pgp_rsa_public_key *key = NULL;
+		uint16_t offset = 0;
+		uint16_t mpi_n_bits = 0;
+		uint16_t mpi_e_bits = 0;
+
+		mpi_n_bits = ((uint16_t)in[0] << 8) + in[1];
+		offset += mpi_octets(mpi_n_bits);
+		mpi_e_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+
+		if (size < (mpi_octets(mpi_n_bits) + mpi_octets(mpi_e_bits)))
+		{
+			return 0;
+		}
+
+		key = malloc(sizeof(pgp_rsa_public_key));
+
+		if (key == NULL)
+		{
+			return NULL;
+		}
+
+		memset(key, 0, sizeof(pgp_rsa_public_key));
+
+		key->n = mpi_new(mpi_n_bits);
+		key->e = mpi_new(mpi_e_bits);
+
+		if (key->n == NULL || key->e == NULL)
+		{
+			mpi_delete(key->n);
+			mpi_delete(key->e);
+
+			free(key);
+
+			return NULL;
+		}
 
 		pos += mpi_read(key->n, in + pos, size - pos);
 		pos += mpi_read(key->e, in + pos, size - pos);
 
-		return pos;
+		return key;
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_public_key *key = out;
+		// MPI of p,g,y
+		pgp_elgamal_public_key *key = NULL;
+		uint16_t offset = 0;
+		uint16_t mpi_p_bits = 0;
+		uint16_t mpi_g_bits = 0;
+		uint16_t mpi_y_bits = 0;
+
+		mpi_p_bits = ((uint16_t)in[0] << 8) + in[1];
+		offset += mpi_octets(mpi_p_bits);
+		mpi_g_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		offset += mpi_octets(mpi_g_bits);
+		mpi_y_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+
+		if (size < (mpi_octets(mpi_p_bits) + mpi_octets(mpi_g_bits) + mpi_octets(mpi_y_bits)))
+		{
+			return NULL;
+		}
+
+		key = malloc(sizeof(pgp_dsa_public_key));
+
+		if (key == NULL)
+		{
+			return NULL;
+		}
+
+		memset(key, 0, sizeof(pgp_rsa_public_key));
+
+		key->p = mpi_new(mpi_p_bits);
+		key->g = mpi_new(mpi_g_bits);
+		key->y = mpi_new(mpi_y_bits);
+
+		if (key->p == NULL || key->g == NULL || key->y == NULL)
+		{
+			mpi_delete(key->p);
+			mpi_delete(key->g);
+			mpi_delete(key->y);
+
+			free(key);
+
+			return NULL;
+		}
 
 		pos += mpi_read(key->p, in + pos, size - pos);
 		pos += mpi_read(key->g, in + pos, size - pos);
 		pos += mpi_read(key->y, in + pos, size - pos);
 
-		return pos;
+		return key;
 	}
 	case PGP_DSA:
 	{
-		pgp_dsa_public_key *key = out;
+		// MPI of p,q,g,y
+		pgp_dsa_public_key *key = NULL;
+		uint16_t offset = 0;
+		uint16_t mpi_p_bits = 0;
+		uint16_t mpi_q_bits = 0;
+		uint16_t mpi_g_bits = 0;
+		uint16_t mpi_y_bits = 0;
+
+		mpi_p_bits = ((uint16_t)in[0] << 8) + in[1];
+		offset += mpi_octets(mpi_p_bits);
+		mpi_q_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		offset += mpi_octets(mpi_q_bits);
+		mpi_g_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		offset += mpi_octets(mpi_g_bits);
+		mpi_y_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+
+		if (size < (mpi_octets(mpi_p_bits) + mpi_octets(mpi_q_bits) + mpi_octets(mpi_g_bits) + mpi_octets(mpi_y_bits)))
+		{
+			return NULL;
+		}
+
+		key = malloc(sizeof(pgp_dsa_public_key));
+
+		if (key == NULL)
+		{
+			return NULL;
+		}
+
+		memset(key, 0, sizeof(pgp_rsa_public_key));
+
+		key->p = mpi_new(mpi_p_bits);
+		key->q = mpi_new(mpi_q_bits);
+		key->g = mpi_new(mpi_g_bits);
+		key->y = mpi_new(mpi_y_bits);
+
+		if (key->p == NULL || key->q == NULL || key->g == NULL || key->y == NULL)
+		{
+			mpi_delete(key->p);
+			mpi_delete(key->q);
+			mpi_delete(key->g);
+			mpi_delete(key->y);
+
+			free(key);
+
+			return NULL;
+		}
 
 		pos += mpi_read(key->p, in + pos, size - pos);
 		pos += mpi_read(key->q, in + pos, size - pos);
 		pos += mpi_read(key->g, in + pos, size - pos);
 		pos += mpi_read(key->y, in + pos, size - pos);
 
-		return pos;
+		return key;
 	}
 	case PGP_ECDH:
 	{
-		pgp_ecdh_public_key *key = out;
+		pgp_ecdh_public_key *key = NULL;
+		uint16_t offset = in[0] + 1;
+		uint16_t mpi_point_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		uint32_t mpi_point_size = mpi_size(mpi_point_bits);
+
+		if (size < (offset + mpi_octets(mpi_point_bits)))
+		{
+			return 0;
+		}
+
+		key = malloc(sizeof(pgp_ecdh_public_key) + mpi_point_size);
+
+		if (key == NULL)
+		{
+			return 0;
+		}
 
 		// 1-octet oid size
 		LOAD_8(&key->oid_size, in + pos);
@@ -412,6 +547,7 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_algorithms public_ke
 		pos += key->oid_size;
 
 		// EC point
+		key->point = mpi_init(PTR_OFFSET(key, sizeof(pgp_ecdh_public_key)), mpi_point_size, mpi_point_bits);
 		pos += mpi_read(key->point, in + pos, size - pos);
 
 		// KDF
@@ -427,11 +563,28 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_algorithms public_ke
 		LOAD_8(&key->kdf.symmetric_key_algorithm_id, in + pos);
 		pos += 1;
 
-		return pos;
+		return key;
 	}
 	case PGP_ECDSA:
 	{
-		pgp_ecdsa_public_key *key = out;
+		pgp_ecdsa_public_key *key = NULL;
+		uint16_t offset = in[0] + 1;
+		uint16_t mpi_point_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		uint32_t mpi_point_size = mpi_size(mpi_point_bits);
+
+		if (size < (offset + mpi_octets(mpi_point_bits)))
+		{
+			return 0;
+		}
+
+		key = malloc(sizeof(pgp_ecdsa_public_key) + mpi_point_size);
+
+		if (key == NULL)
+		{
+			return 0;
+		}
+
+		memset(key, 0, sizeof(pgp_ecdsa_public_key) + mpi_point_size);
 
 		// 1-octet oid size
 		LOAD_8(&key->oid_size, in + pos);
@@ -442,50 +595,97 @@ static uint32_t pgp_public_key_material_read(pgp_public_key_algorithms public_ke
 		pos += key->oid_size;
 
 		// EC point
+		key->point = mpi_init(PTR_OFFSET(key, sizeof(pgp_ecdsa_public_key)), mpi_point_size, mpi_point_bits);
 		pos += mpi_read(key->point, in + pos, size - pos);
 
-		return pos;
+		return key;
 	}
 	case PGP_X25519:
 	{
-		pgp_x25519_public_key *key = out;
-
 		// 32 octets
+		pgp_x25519_public_key *key = NULL;
+
+		if (size < 32)
+		{
+			return NULL;
+		}
+
+		key = malloc(sizeof(pgp_x25519_public_key));
+
+		if (key == NULL)
+		{
+			return NULL;
+		}
+
 		memcpy(key->public_key, in, 32);
 
-		return 32;
+		return key;
 	}
 	case PGP_X448:
 	{
-		pgp_x448_public_key *key = out;
-
 		// 56 octets
+		pgp_x448_public_key *key = NULL;
+
+		if (size < 56)
+		{
+			return NULL;
+		}
+
+		key = malloc(sizeof(pgp_x448_public_key));
+
+		if (key == NULL)
+		{
+			return NULL;
+		}
+
 		memcpy(key->public_key, in, 56);
 
-		return 56;
+		return key;
 	}
 	case PGP_ED25519:
 	{
-		pgp_ed25519_public_key *key = out;
-
 		// 32 octets
+		pgp_ed25519_public_key *key = NULL;
+
+		if (size < 32)
+		{
+			return NULL;
+		}
+
+		key = malloc(sizeof(pgp_ed25519_public_key));
+
+		if (key == NULL)
+		{
+			return NULL;
+		}
+
 		memcpy(key->public_key, in, 32);
 
-		return 32;
+		return key;
 	}
 	case PGP_ED448:
 	{
-		pgp_ed448_public_key *key = out;
-
 		// 57 octets
+		pgp_ed448_public_key *key = NULL;
+
+		if (size < 57)
+		{
+			return NULL;
+		}
+
+		key = malloc(sizeof(pgp_ed448_public_key));
+
+		if (key == NULL)
+		{
+			return NULL;
+		}
+
 		memcpy(key->public_key, in, 57);
 
-		return 57;
+		return key;
 	}
 	default:
-		// Copy unknown stuff directly
-		memcpy(out, ptr, size);
-		return size;
+		return NULL;
 	}
 }
 
@@ -915,11 +1115,13 @@ pgp_public_key_packet *pgp_public_key_packet_read(void *data, size_t size)
 		pos += 4;
 	}
 
-	packet->key_data = PTR_OFFSET(packet, sizeof(pgp_public_key_packet));
-	pos += pgp_public_key_material_read(packet->public_key_algorithm_id, packet->key_data, in + pos, packet->key_data_octets);
+	packet->key_data = pgp_public_key_material_read(packet->public_key_algorithm_id, in + pos, packet->key_data_octets);
 
-	packet->key_data_size = get_public_key_material_size(packet->public_key_algorithm_id, packet->key_data);
-	packet->key_data_octets = get_public_key_material_octets(packet->public_key_algorithm_id, packet->key_data);
+	if (packet->key_data != NULL)
+	{
+		packet->key_data_size = get_public_key_material_size(packet->public_key_algorithm_id, packet->key_data);
+		packet->key_data_octets = get_public_key_material_octets(packet->public_key_algorithm_id, packet->key_data);
+	}
 
 	return packet;
 }
@@ -1500,7 +1702,8 @@ pgp_secret_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 	}
 
 	packet->public_key_data = PTR_OFFSET(packet, sizeof(pgp_secret_key_packet));
-	pos += pgp_public_key_material_read(packet->public_key_algorithm_id, packet->public_key_data, in + pos, packet->header.body_size - pos);
+	// pos += pgp_public_key_material_read(packet->public_key_algorithm_id, packet->public_key_data, in + pos, packet->header.body_size -
+	// pos);
 
 	packet->public_key_data_size = get_public_key_material_size(packet->public_key_algorithm_id, packet->public_key_data);
 	packet->public_key_data_octets = get_public_key_material_octets(packet->public_key_algorithm_id, packet->public_key_data);
