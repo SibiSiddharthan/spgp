@@ -221,6 +221,58 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 	case PGP_RSA_ENCRYPT_ONLY:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Encrypt Only) (Tag 2)\n");
 		break;
+	case PGP_RSA_SIGN_ONLY:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Sign Only) (Tag 2)\n");
+		break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Elgamal (Encrypt Only) (Tag 16)\n");
+		break;
+	case PGP_DSA:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "DSA (Tag 17)\n");
+		break;
+	case PGP_ECDH:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDH (Tag 18)\n");
+		break;
+	case PGP_ECDSA:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDSA (Tag 19)\n");
+		break;
+	case PGP_EDDSA_LEGACY:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Legacy) (Tag 22)\n");
+		break;
+	case PGP_X25519:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "X25519 (Tag 22)\n");
+		break;
+	case PGP_X448:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "X448 (Tag 23)\n");
+		break;
+	case PGP_ED25519:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Ed25519 (Tag 27)\n");
+		break;
+	case PGP_ED448:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Ed448 (Tag 28)\n");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Public Key Algorithm (Tag %hhu)\n", algorithm);
+		break;
+	}
+
+	return pos;
+}
+
+static size_t pgp_kex_algorithm_print(pgp_public_key_algorithms algorithm, void *str, size_t size, uint32_t indent)
+{
+	size_t pos = 0;
+
+	pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Exchange Algorithm: ");
+
+	switch (algorithm)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt (Tag 1)\n");
+		break;
+	case PGP_RSA_ENCRYPT_ONLY:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Encrypt Only) (Tag 2)\n");
+		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Elgamal (Encrypt Only) (Tag 16)\n");
 		break;
@@ -234,7 +286,7 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "X448 (Tag 23)\n");
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Public Key Algorithm (Tag %hhu)\n", algorithm);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Key Exchange Algorithm (Tag %hhu)\n", algorithm);
 		break;
 	}
 
@@ -594,7 +646,7 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	{
 		pgp_rsa_public_key *key = public_key;
 		pos += print_mpi(indent, "RSA n", key->n, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "RSA e", key->n, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "RSA e", key->e, PTR_OFFSET(str, pos), str_size - pos);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
@@ -814,7 +866,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 			break;
 		}
 
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_kex_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_size,
 							 PTR_OFFSET(str, pos), size - pos, 1);
 	}
@@ -822,7 +874,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
 		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(str, pos), size - pos, packet->key_id, 8);
-		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_kex_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_size,
 							 PTR_OFFSET(str, pos), size - pos, 1);
 	}
@@ -924,24 +976,24 @@ size_t pgp_public_key_packet_print(pgp_public_key_packet *packet, void *str, siz
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, packet->key_data_size, PTR_OFFSET(str, pos),
 									size - pos, 1);
 	}
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Expiry : %hu days\n", packet->key_expiry_days);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Expiry : %hu days\n", packet->key_expiry_days);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, packet->key_data_size, PTR_OFFSET(str, pos),
 									size - pos, 1);
 	}
 	else
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
 	}
 
 	return pos;
