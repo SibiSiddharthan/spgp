@@ -30,31 +30,31 @@ static uint32_t get_public_key_material_octets(pgp_public_key_algorithms public_
 	{
 		pgp_rsa_public_key *key = key_data;
 
-		return mpi_octets(key->n) + mpi_octets(key->e);
+		return mpi_octets(key->n->bits) + mpi_octets(key->e->bits);
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_public_key *key = key_data;
 
-		return mpi_octets(key->p) + mpi_octets(key->g) + mpi_octets(key->y);
+		return mpi_octets(key->p->bits) + mpi_octets(key->g->bits) + mpi_octets(key->y->bits);
 	}
 	case PGP_DSA:
 	{
 		pgp_dsa_public_key *key = key_data;
 
-		return mpi_octets(key->p) + mpi_octets(key->q) + mpi_octets(key->g) + mpi_octets(key->y);
+		return mpi_octets(key->p->bits) + mpi_octets(key->q->bits) + mpi_octets(key->g->bits) + mpi_octets(key->y->bits);
 	}
 	case PGP_ECDH:
 	{
 		pgp_ecdh_public_key *key = key_data;
 
-		return 5 + key->oid_size + mpi_octets(key->point);
+		return 5 + key->oid_size + mpi_octets(key->point->bits);
 	}
 	case PGP_ECDSA:
 	{
 		pgp_ecdsa_public_key *key = key_data;
 
-		return 1 + key->oid_size + mpi_octets(key->point);
+		return 1 + key->oid_size + mpi_octets(key->point->bits);
 	}
 	case PGP_X25519:
 	{
@@ -145,31 +145,31 @@ static uint32_t get_private_key_material_octets(pgp_public_key_algorithms public
 	{
 		pgp_rsa_private_key *key = key_data;
 
-		return mpi_octets(key->d) + mpi_octets(key->p) + mpi_octets(key->q) + mpi_octets(key->u);
+		return mpi_octets(key->d->bits) + mpi_octets(key->p->bits) + mpi_octets(key->q->bits) + mpi_octets(key->u->bits);
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_private_key *key = key_data;
 
-		return mpi_octets(key->x);
+		return mpi_octets(key->x->bits);
 	}
 	case PGP_DSA:
 	{
 		pgp_dsa_private_key *key = key_data;
 
-		return mpi_octets(key->x);
+		return mpi_octets(key->x->bits);
 	}
 	case PGP_ECDH:
 	{
 		pgp_ecdh_private_key *key = key_data;
 
-		return mpi_octets(key->x);
+		return mpi_octets(key->x->bits);
 	}
 	case PGP_ECDSA:
 	{
 		pgp_ecdsa_private_key *key = key_data;
 
-		return mpi_octets(key->x);
+		return mpi_octets(key->x->bits);
 	}
 	case PGP_X25519:
 	{

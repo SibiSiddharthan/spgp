@@ -22,9 +22,9 @@ static inline uint32_t mpi_size(uint16_t bits)
 	return sizeof(mpi_t) + CEIL_DIV(bits, 8);
 }
 
-static inline uint32_t mpi_octets(mpi_t *mpi)
+static inline uint32_t mpi_octets(uint16_t bits)
 {
-	return 2 + CEIL_DIV(mpi->bits, 8);
+	return 2 + CEIL_DIV(bits, 8);
 }
 
 mpi_t *mpi_init(void *ptr, size_t size, uint16_t bits);
