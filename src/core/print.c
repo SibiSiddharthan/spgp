@@ -576,6 +576,21 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t inden
 	return pos;
 }
 
+static size_t pgp_kdf_print(void *kdf, void *str, size_t size, uint32_t indent)
+{
+	byte_t *in = kdf;
+	size_t pos = 0;
+
+	byte_t hash_algorithm_id = in[2];
+	byte_t symmetric_key_algorithm_id = in[3];
+
+	pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "ECDH KDF Parameters\n");
+	pos += pgp_hash_algorithm_print(hash_algorithm_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
+	pos += pgp_symmetric_key_algorithm_print(symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
+
+	return pos;
+}
+
 static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint16_t kex_size, void *str, size_t str_size, uint32_t indent)
 {
 	size_t pos = 0;
