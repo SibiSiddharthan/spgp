@@ -127,6 +127,8 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 			return NULL;
 		}
 
+		memset(sig, 0, sizeof(pgp_rsa_signature) + mpi_size(mpi_bits));
+
 		sig->e = mpi_init(PTR_OFFSET(sig, sizeof(pgp_rsa_signature)), mpi_size(mpi_bits), mpi_bits);
 		pos += mpi_read(sig->e, in, size);
 
@@ -164,8 +166,13 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 			return 0;
 		}
 
-		sig->r = mpi_init(PTR_OFFSET(sig, sizeof(pgp_elgamal_kex)), mpi_r_size, mpi_r_bits);
-		sig->s = mpi_init(PTR_OFFSET(sig, sizeof(pgp_elgamal_kex) + mpi_r_size), mpi_s_size, mpi_s_bits);
+		memset(sig, 0, sizeof(pgp_dsa_signature) + mpi_r_size + mpi_s_size);
+
+		sig->r = mpi_init(PTR_OFFSET(sig, sizeof(pgp_dsa_signature)), mpi_r_size, mpi_r_bits);
+		sig->s = mpi_init(PTR_OFFSET(sig, sizeof(pgp_dsa_signature) + mpi_r_size), mpi_s_size, mpi_s_bits);
+
+		pos += mpi_read(sig->r, in + pos, size - pos);
+		pos += mpi_read(sig->s, in + pos, size - pos);
 
 		packet->signature_size = pos;
 
@@ -1441,7 +1448,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 	header = pgp_packet_header_read(data, size);
 	pos = header.header_size;
 
-	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
+	if (pgp_packet_get_type(header.tag) != PGP_SIG)
 	{
 		return NULL;
 	}
@@ -1457,6 +1464,8 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 	{
 		return NULL;
 	}
+
+	memset(packet, 0, sizeof(pgp_signature_packet));
 
 	// Copy the header
 	packet->header = header;
