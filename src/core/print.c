@@ -119,6 +119,17 @@ static size_t print_mpi(uint32_t indent, char *prefix, mpi_t *mpi, void *str, si
 	return pos;
 }
 
+static size_t print_timestamp(uint32_t indent, char *prefix, time_t timestamp, void *str, size_t str_size)
+{
+	size_t pos = 0;
+	char date_buffer[64] = {0};
+
+	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&timestamp));
+	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s: %s\n", prefix, date_buffer);
+
+	return pos;
+}
+
 static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size, uint32_t indent)
 {
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header.tag);
@@ -1014,11 +1025,6 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 {
 	size_t pos = 0;
 
-	time_t datetime = packet->timestamp;
-	char date_buffer[64] = {0};
-
-	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&datetime));
-
 	pos += pgp_packet_header_print(packet->header, ptr, size, 0);
 
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
@@ -1041,7 +1047,7 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 	{
 		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: 3 (Deprecated)\n");
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Signature Creation Time: %s\n", date_buffer);
+		pos += print_timestamp(1, "Signature Creation Time", packet->timestamp, PTR_OFFSET(ptr, pos), size - pos);
 		pos += print_key(1, PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8);
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
@@ -1097,17 +1103,12 @@ size_t pgp_public_key_packet_print(pgp_public_key_packet *packet, void *str, siz
 {
 	size_t pos = 0;
 
-	time_t datetime = packet->key_creation_time;
-	char date_buffer[64] = {0};
-
-	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&datetime));
-
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Creation Time: %s\n", date_buffer);
+		pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, packet->key_data_size, PTR_OFFSET(str, pos),
 									size - pos, 1);
@@ -1115,7 +1116,7 @@ size_t pgp_public_key_packet_print(pgp_public_key_packet *packet, void *str, siz
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Creation Time: %s\n", date_buffer);
+		pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Expiry: %hu days\n", packet->key_expiry_days);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key_data, packet->key_data_size, PTR_OFFSET(str, pos),
@@ -1200,9 +1201,6 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	time_t datetime = packet->date;
-	char date_buffer[64] = {0};
-
 	pos += pgp_packet_header_print(packet->header, str, size, 0);
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Format: ");
@@ -1222,8 +1220,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
 	}
 
-	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&datetime));
-	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Date: %s\n", date_buffer);
+	pos += print_timestamp(1, "Date", packet->date, PTR_OFFSET(str, pos), size - pos);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Filename (%u bytes): ", packet->filename_size);
 
 	if (packet->filename_size > 0)
