@@ -730,7 +730,7 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 		pgp_elgamal_public_key *key = public_key;
 		pos += print_mpi(indent, "Elgamal prime p", key->p, PTR_OFFSET(str, pos), str_size - pos);
 		pos += print_mpi(indent, "Elgamal group generator g", key->g, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "Elgamal y", key->y, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "Elgamal public key y", key->y, PTR_OFFSET(str, pos), str_size - pos);
 	}
 	break;
 	case PGP_DSA:
@@ -744,10 +744,19 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	break;
 	case PGP_ECDH:
 	{
+		pgp_ecdh_public_key *key = public_key;
+		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, PTR_OFFSET(str, pos), str_size - pos, indent);
+		pos += print_mpi(indent, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos);
+		pos += pgp_kdf_print(&key->kdf, PTR_OFFSET(str, pos), str_size - pos, indent);
 	}
 	break;
 	case PGP_ECDSA:
-		break;
+	{
+		pgp_ecdsa_public_key *key = public_key;
+		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, PTR_OFFSET(str, pos), str_size - pos, indent);
+		pos += print_mpi(indent, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos);
+	}
+	break;
 	case PGP_X25519:
 	{
 		pgp_x25519_public_key *key = public_key;
