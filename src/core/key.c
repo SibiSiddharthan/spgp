@@ -546,6 +546,9 @@ static void *pgp_public_key_material_read(pgp_public_key_algorithms public_key_a
 		memcpy(key->oid, in + pos, key->oid_size);
 		pos += key->oid_size;
 
+		// Decode the OID
+		key->curve = pgp_elliptic_curve(key->oid, key->oid_size);
+
 		// EC point
 		key->point = mpi_init(PTR_OFFSET(key, sizeof(pgp_ecdh_public_key)), mpi_point_size, mpi_point_bits);
 		pos += mpi_read(key->point, in + pos, size - pos);
@@ -593,6 +596,9 @@ static void *pgp_public_key_material_read(pgp_public_key_algorithms public_key_a
 		// N octets of oid
 		memcpy(key->oid, in + pos, key->oid_size);
 		pos += key->oid_size;
+
+		// Decode the OID
+		key->curve = pgp_elliptic_curve(key->oid, key->oid_size);
 
 		// EC point
 		key->point = mpi_init(PTR_OFFSET(key, sizeof(pgp_ecdsa_public_key)), mpi_point_size, mpi_point_bits);
