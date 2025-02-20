@@ -477,6 +477,67 @@ static size_t pgp_compression_algorithm_print(pgp_compression_algorithms algorit
 	return pos;
 }
 
+static size_t pgp_curve_print(pgp_elliptic_curve_id curve, byte_t *oid, byte_t oid_size, void *str, size_t str_size, uint32_t indent)
+{
+	byte_t *out = str;
+	size_t pos = 0;
+
+	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Elliptic Curve: ");
+
+	switch (curve)
+	{
+	case PGP_EC_NIST_P256:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "NIST-P256 (2A 86 48 CE 3D 03 01 07)\n");
+		break;
+	case PGP_EC_NIST_P384:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "NIST-P384 (2B 81 04 00 22)\n");
+		break;
+	case PGP_EC_NIST_P521:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "NIST-P521 (2B 81 04 00 23)\n");
+		break;
+	case PGP_EC_BRAINPOOL_256R1:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "BRAINPOOL-P256R1 (2B 24 03 03 02 08 01 01 07)\n");
+		break;
+	case PGP_EC_BRAINPOOL_384R1:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "BRAINPOOL-P384R1 (2B 24 03 03 02 08 01 01 0B)\n");
+		break;
+	case PGP_EC_BRAINPOOL_512R1:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "BRAINPOOL-P512R1 (2B 24 03 03 02 08 01 01 0D)\n");
+		break;
+	case PGP_EC_ED25519_LEGACY:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Ed25519Legacy (2B 06 01 04 01 DA 47 0F 01)\n");
+		break;
+	case PGP_EC_CURVE25519_LEGACY:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Curve25519Legacy (2B 06 01 04 01 97 55 01 05 01)\n");
+		break;
+	default:
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Unknown (");
+
+		for (byte_t i = 0; i < oid_size; ++i)
+		{
+			byte_t a, b;
+
+			a = oid[i] / 16;
+			b = oid[i] % 16;
+
+			out[pos++] = hex_upper_table[a];
+			out[pos++] = hex_upper_table[b];
+
+			if (i != oid_size - 1)
+			{
+				out[pos++] = ' ';
+			}
+		}
+
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, ")\n");
+	}
+	break;
+	}
+
+	return pos;
+}
+
 static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
@@ -667,7 +728,9 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	}
 	break;
 	case PGP_ECDH:
-		break;
+	{
+	}
+	break;
 	case PGP_ECDSA:
 		break;
 	case PGP_X25519:
