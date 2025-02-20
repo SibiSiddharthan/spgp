@@ -1014,7 +1014,45 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 {
 	size_t pos = 0;
 
+	time_t datetime = packet->timestamp;
+	char date_buffer[64] = {0};
+
+	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&datetime));
+
 	pos += pgp_packet_header_print(packet->header, ptr, size, 0);
+
+	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
+	{
+		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu\n", packet->version);
+		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += print_bytes(1, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			pos += print_bytes(1, "Salt: ", PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size);
+		}
+
+		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
+								   size - pos, 1);
+	}
+	else if (packet->version == PGP_SIGNATURE_V3)
+	{
+		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Signature Creation Time: %s\n", date_buffer);
+		pos += print_key(1, PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += print_bytes(1, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
+		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
+								   size - pos, 1);
+	}
+	else
+	{
+		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
+	}
 
 	return pos;
 }
