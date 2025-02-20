@@ -29,6 +29,7 @@ byte_t pgp_symmetric_cipher_block_size(pgp_symmetric_key_algorithms algorithm);
 byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm);
 byte_t pgp_hash_size(pgp_hash_algorithms algorithm);
 byte_t pgp_hash_salt_size(pgp_hash_algorithms algorithm);
+byte_t pgp_elliptic_curve(byte_t *oid, byte_t size);
 
 size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
 					   void *in, size_t in_size, void *out, size_t out_size);

@@ -126,6 +126,27 @@ static curve_id pgp_ec_curve_to_curve_id(pgp_elliptic_curve_id id)
 	}
 }
 
+static pgp_elliptic_curve_id pgp_curve_id_to_ec_curve(curve_id id)
+{
+	switch (id)
+	{
+	case EC_NIST_P256:
+		return PGP_EC_NIST_P256;
+	case EC_NIST_P384:
+		return PGP_EC_NIST_P384;
+	case EC_NIST_P521:
+		return PGP_EC_NIST_P521;
+	case EC_BRAINPOOL_256R1:
+		return PGP_EC_BRAINPOOL_256R1;
+	case EC_BRAINPOOL_384R1:
+		return PGP_EC_BRAINPOOL_384R1;
+	case EC_BRAINPOOL_512R1:
+		return PGP_EC_BRAINPOOL_512R1;
+	default:
+		return 0;
+	}
+}
+
 byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algorithm)
 {
 	switch (algorithm)
@@ -306,6 +327,29 @@ byte_t pgp_hash_salt_size(pgp_hash_algorithms algorithm)
 	default:
 		return 0;
 	}
+}
+
+byte_t pgp_elliptic_curve(byte_t *oid, byte_t size)
+{
+	curve_id id = ec_curve_decode_oid(oid, size);
+
+	if (id == 0)
+	{
+		// Check legacy curves
+		if (size == 9 && memcmp(oid, "\x2B\x06\x01\x04\x01\xDA\x47\x0F\x01", 9) == 0)
+		{
+			return PGP_EC_ED25519_LEGACY;
+		}
+
+		if (size == 10 && memcmp(oid, "\x2B\x06\x01\x04\x01\x97\x55\x01\x05\x01", 10) == 0)
+		{
+			return PGP_EC_CURVE25519_LEGACY;
+		}
+
+		return 0;
+	}
+
+	return pgp_curve_id_to_ec_curve(id);
 }
 
 size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,

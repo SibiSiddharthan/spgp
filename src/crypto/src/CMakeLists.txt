@@ -33,6 +33,7 @@ ${bignum_asm}
 ec/ec.c
 ec/point.c
 ec/key.c
+ec/oid.c
 ec/prime.c
 ec/edwards.c
 ec/x25519.c
