@@ -454,6 +454,7 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 		}
 
 		memset(string_subpacket, 0, sizeof(struct _pgp_string_subpacket) + header.body_size);
+		string_subpacket->data = PTR_OFFSET(string_subpacket, sizeof(struct _pgp_string_subpacket));
 
 		// Copy the header
 		string_subpacket->header = header;
@@ -594,6 +595,7 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 		}
 
 		memset(revocation_reason_subpacket, 0, sizeof(pgp_reason_for_revocation_subpacket) + header.body_size);
+		revocation_reason_subpacket->reason = PTR_OFFSET(revocation_reason_subpacket, sizeof(pgp_reason_for_revocation_subpacket));
 
 		// Copy the header
 		revocation_reason_subpacket->header = header;
@@ -1619,10 +1621,10 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 
 			packet->hashed_subpackets[hashed_subpacket_count++] = header;
 			hashed_subpacket_data_read += header->header_size + header->body_size;
+			pos += header->header_size + header->body_size;
 		}
 
 		packet->hashed_subpacket_count = hashed_subpacket_count;
-		pos += packet->hashed_size;
 
 		if (packet->version == PGP_SIGNATURE_V6)
 		{
@@ -1676,10 +1678,10 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 
 			packet->unhashed_subpackets[unhashed_subpacket_count++] = header;
 			unhashed_subpacket_data_read += header->header_size + header->body_size;
+			pos += header->header_size + header->body_size;
 		}
 
 		packet->unhashed_subpacket_count = unhashed_subpacket_count;
-		pos += packet->unhashed_size;
 
 		// 2 octet field holding left 16 bits of the signed hash value
 		LOAD_16(&packet->quick_hash, in + pos);

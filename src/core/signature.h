@@ -108,8 +108,8 @@ typedef enum _pgp_revocation_code
 #define PGP_FEATURE_SEIPD_V2 0x08 // Version 2 Symmetrically Encrypted and Integrity Protected Data packet
 
 // Revocation class
-#define PGP_REVOCATION_CLASS_NORMAL    0x80
 #define PGP_REVOCATION_CLASS_SENSITIVE 0x40
+#define PGP_REVOCATION_CLASS_NORMAL    0x80
 
 typedef struct _pgp_signature_packet
 {
@@ -261,7 +261,7 @@ typedef struct _pgp_notation_data_subpacket
 typedef struct _reason_for_revocation_subpacket
 {
 	pgp_subpacket_header header;
-	pgp_revocation_code code;
+	byte_t code;
 	byte_t *reason;
 } pgp_reason_for_revocation_subpacket;
 

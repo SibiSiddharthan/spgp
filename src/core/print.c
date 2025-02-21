@@ -374,7 +374,7 @@ static size_t pgp_symmetric_key_algorithm_print(pgp_symmetric_key_algorithms alg
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-256 (Tag 9)\n");
 		break;
 	case PGP_TWOFISH:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Twofish (Tag 10)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Twofish-256 (Tag 10)\n");
 		break;
 	case PGP_CAMELLIA_128:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-128 (Tag 11)\n");
@@ -934,6 +934,480 @@ static size_t pgp_signature_type_print(pgp_signature_type type, void *str, size_
 	return pos;
 }
 
+static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, void *str, size_t size, uint32_t indent)
+{
+	pgp_signature_subpacket_type type = header.tag & PGP_SUBPACKET_TAG_MASK;
+	size_t pos = 0;
+
+	switch (type)
+	{
+	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Signature Creation Time (Tag 2)");
+		break;
+	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Signature Expiration Time (Tag 3)");
+		break;
+	case PGP_EXPORTABLE_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Exportable Certification (Tag 4)");
+		break;
+	case PGP_TRUST_SIGNATURE_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Trust Signature (Tag 5)");
+		break;
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Regular Expression (Tag 6)");
+		break;
+	case PGP_REVOCABLE_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Revocable (Tag 7)");
+		break;
+	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Expiration Time (Tag 9)");
+		break;
+	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred Symmetric Ciphers (Tag 11)");
+		break;
+	case PGP_REVOCATION_KEY_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Revocation Key (Tag 12) (Deprecated)");
+		break;
+	case PGP_ISSUER_KEY_ID_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Issuer Key ID (Tag 16)");
+		break;
+	case PGP_NOTATION_DATA_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Notation Data (Tag 20)");
+		break;
+	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred Hash Algorithms (Tag 21)");
+		break;
+	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred Compression Algorithms (Tag 22)");
+		break;
+	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Server Preferences (Tag 23)");
+		break;
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred Key Server (Tag 24)");
+		break;
+	case PGP_PRIMARY_USER_ID_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Primary User ID (Tag 25)");
+		break;
+	case PGP_POLICY_URI_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Policy URI (Tag 26)");
+		break;
+	case PGP_KEY_FLAGS_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Flags (Tag 27)");
+		break;
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Signer's User ID (Tag 28)");
+		break;
+	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Reason for Revocation (Tag 29)");
+		break;
+	case PGP_FEATURES_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Features (Tag 30)");
+		break;
+	case PGP_SIGNATURE_TARGET_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Signature Target (Tag 31)");
+		break;
+	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Embedded Signature (Tag 32)");
+		break;
+	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Issuer Fingerprint (Tag 33)");
+		break;
+	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Intended Recipient Fingerprint (Tag 35)");
+		break;
+	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred AEAD Ciphersuites (Tag 39)");
+		break;
+	}
+
+	// Add packet size
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%u bytes)\n", header.body_size);
+
+	return pos;
+}
+
+static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t size, uint32_t indent)
+{
+	pgp_subpacket_header *header = subpacket;
+	pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+	size_t pos = 0;
+
+	// Print the header
+	pos += pgp_signature_subpacket_header_print(*header, PTR_OFFSET(str, pos), size - pos, indent);
+
+	switch (type)
+	{
+	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
+	{
+		pgp_signature_creation_time_subpacket *timestamp_subpacket = subpacket;
+		pos += print_timestamp(indent + 1, "Creation Time", timestamp_subpacket->time, PTR_OFFSET(str, pos), size - pos);
+	}
+	break;
+	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
+	{
+		pgp_signature_expiry_time_subpacket *timestamp_subpacket = subpacket;
+		pos += print_timestamp(indent + 1, "Expiry Time", timestamp_subpacket->time, PTR_OFFSET(str, pos), size - pos);
+	}
+	break;
+	case PGP_EXPORTABLE_SUBPACKET:
+	{
+		pgp_exportable_subpacket *exportable_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Exportable: %s\n", exportable_subpacket->state ? "Yes" : "No");
+	}
+	break;
+	case PGP_TRUST_SIGNATURE_SUBPACKET:
+	{
+		pgp_trust_signature_subpacket *trust_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", trust_subpacket->trust_level);
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Amount: %hhu\n", trust_subpacket->trust_amount);
+	}
+	break;
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+	{
+		pgp_regular_expression_subpacket *re_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Regular Expression: %.*s\n", re_subpacket->header.body_size,
+							re_subpacket->regex);
+	}
+	break;
+	case PGP_REVOCABLE_SUBPACKET:
+	{
+		pgp_revocable_subpacket *revocable_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revocable: %s\n", revocable_subpacket->state ? "Yes" : "No");
+	}
+	break;
+	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
+	{
+		pgp_key_expiration_time_subpacket *timestamp_subpacket = subpacket;
+		pos += print_timestamp(indent + 1, "Expiry Time", timestamp_subpacket->time, PTR_OFFSET(str, pos), size - pos);
+	}
+	break;
+	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+	{
+		pgp_preferred_symmetric_ciphers_subpacket *preferred_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < preferred_subpacket->header.body_size; ++i)
+		{
+			pos += pgp_symmetric_key_algorithm_print(preferred_subpacket->preferred_algorithms[i], PTR_OFFSET(str, pos), size - pos,
+													 indent + 1);
+		}
+	}
+	break;
+	case PGP_REVOCATION_KEY_SUBPACKET:
+	{
+		pgp_revocation_key_subpacket *revocation_subpacket = subpacket;
+
+		if (revocation_subpacket->revocation_class & PGP_REVOCATION_CLASS_NORMAL)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revocation Class: Normal (0x80)\n");
+		}
+		if (revocation_subpacket->revocation_class & PGP_REVOCATION_CLASS_SENSITIVE)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revocation Class: Sensitive (0x40)\n");
+		}
+
+		pos += pgp_public_key_algorithm_print(revocation_subpacket->algorithm_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
+		pos +=
+			print_key(indent + 1, PTR_OFFSET(str, pos), size - pos, revocation_subpacket->key_fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
+	}
+	break;
+	case PGP_ISSUER_KEY_ID_SUBPACKET:
+	{
+		pgp_issuer_key_id_subpacket *key_id_subpacket = subpacket;
+		pos += print_key(indent + 1, PTR_OFFSET(str, pos), size - pos, key_id_subpacket->key_id, 8);
+	}
+	break;
+	case PGP_NOTATION_DATA_SUBPACKET:
+	{
+		pgp_notation_data_subpacket *notation_subpacket = subpacket;
+
+		if (notation_subpacket->flags == 0)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: None\n");
+		}
+
+		if (notation_subpacket->flags & PGP_NOTATION_DATA_UTF8)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: UTF-8 text (0x80000000)\n");
+		}
+
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Name (%hu bytes): %.*s\n", notation_subpacket->name_size,
+							notation_subpacket->name_size, notation_subpacket->data);
+
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Value (%hu bytes): %.*s\n", notation_subpacket->value_size,
+							notation_subpacket->value_size, PTR_OFFSET(notation_subpacket->data, notation_subpacket->name_size));
+	}
+	break;
+	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+	{
+		pgp_preferred_hash_algorithms_subpacket *preferred_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < preferred_subpacket->header.body_size; ++i)
+		{
+			pos += pgp_hash_algorithm_print(preferred_subpacket->preferred_algorithms[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+	break;
+	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+	{
+		pgp_preferred_compression_algorithms_subpacket *preferred_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < preferred_subpacket->header.body_size; ++i)
+		{
+			pos +=
+				pgp_compression_algorithm_print(preferred_subpacket->preferred_algorithms[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+	break;
+	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+	{
+		pgp_key_server_preferences_subpacket *ksp_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < ksp_subpacket->header.body_size; ++i)
+		{
+			switch (ksp_subpacket->flags[i])
+			{
+			case PGP_KEY_SERVER_NO_MODIFY:
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: No Modify (0x80)\n");
+				break;
+			default:
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Unknown (0x%hhx)\n", ksp_subpacket->flags[i]);
+				break;
+			}
+		}
+	}
+	break;
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+	{
+		pgp_preferred_key_server_subpacket *pks_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Preferred Key Server: %.*s\n", pks_subpacket->header.body_size,
+							pks_subpacket->server);
+	}
+	break;
+	case PGP_PRIMARY_USER_ID_SUBPACKET:
+	{
+		pgp_primary_user_id_subpacket *primary_uid_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Primary User Id: %s\n",
+							primary_uid_subpacket->state ? "Yes" : "No");
+	}
+	break;
+	case PGP_POLICY_URI_SUBPACKET:
+	{
+		pgp_policy_uri_subpacket *policy_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Policy URI: %.*s\n", policy_subpacket->header.body_size,
+							policy_subpacket->policy);
+	}
+	break;
+	case PGP_KEY_FLAGS_SUBPACKET:
+	{
+		pgp_key_flags_subpacket *key_flags_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < key_flags_subpacket->header.body_size; ++i)
+		{
+			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_CERTIFY)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Certification Key (0x01)\n");
+			}
+			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_SIGN)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Signing Key (0x02)\n");
+			}
+			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT_COM)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Communication Encryption Key (0x04)\n");
+			}
+			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT_STORAGE)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Storage Encryption Key (0x08)\n");
+			}
+			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_PRIVATE_SPLIT)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Key Secret Split (0x10)\n");
+			}
+			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_AUTHENTICATION)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Authentication Key (0x20)\n");
+			}
+			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_PRIVATE_SHARED)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Key Secret Shared (0x80)\n");
+			}
+		}
+	}
+	break;
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+	{
+		pgp_signer_user_id_subpacket *signer_uid_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Signer User ID: %.*s\n", signer_uid_subpacket->header.body_size,
+							signer_uid_subpacket->uid);
+	}
+	break;
+	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
+	{
+		pgp_reason_for_revocation_subpacket *revocation_subpacket = subpacket;
+
+		switch (revocation_subpacket->code)
+		{
+		case PGP_REVOCATION_NO_REASON:
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revoction Code: None (Tag 0)\n");
+			break;
+		case PGP_REVOCATION_KEY_SUPERSEDED:
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revoction Code: Key Superseded (Tag 1)\n");
+			break;
+		case PGP_REVOCATION_KEY_COMPROMISED:
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revoction Code: Key Compromised (Tag 2)\n");
+			break;
+		case PGP_REVOCATION_KEY_RETIRED:
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revoction Code: Key Retired (Tag 3)\n");
+			break;
+		case PGP_REVOCATION_USER_ID_INVALID:
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revoction Code: User ID Invalid (Tag 32)\n");
+			break;
+		default:
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revoction Code: Unknown (Tag %hhu)\n",
+								revocation_subpacket->code);
+			break;
+		}
+
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Revoction Reason: %.*s\n",
+							revocation_subpacket->header.body_size - 1, revocation_subpacket->reason);
+	}
+	break;
+	case PGP_FEATURES_SUBPACKET:
+	{
+		pgp_features_subpacket *features_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < features_subpacket->header.body_size; ++i)
+		{
+			switch (features_subpacket->flags[i])
+			{
+			case PGP_FEATURE_SEIPD_V1:
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: SEIPD-V1 Supported (0x01)\n");
+				break;
+			case PGP_FEATURE_SEIPD_V2:
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: SEIPD-V2 Supported (0x08)\n");
+				break;
+			default:
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Unknown (0x%hhx)\n", features_subpacket->flags[i]);
+				break;
+			}
+		}
+	}
+	break;
+	case PGP_SIGNATURE_TARGET_SUBPACKET:
+	{
+		pgp_signature_target_subpacket *target_subpacket = subpacket;
+
+		pos += pgp_signature_algorithm_print(target_subpacket->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
+		pos += pgp_hash_algorithm_print(target_subpacket->hash_algorithm_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
+		pos += print_bytes(indent + 1, "Hash: ", PTR_OFFSET(str, pos), size - pos, target_subpacket->hash,
+						   target_subpacket->header.body_size - 2);
+	}
+	break;
+	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
+	{
+		pgp_embedded_signature_subpacket *embedded_signature_subpacket = subpacket;
+		pos += pgp_signature_packet_print(embedded_signature_subpacket->signature, PTR_OFFSET(str, pos), size - pos);
+	}
+	break;
+	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+	{
+		pgp_issuer_fingerprint_subpacket *fingerprint_subpacket = subpacket;
+
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", fingerprint_subpacket->version);
+		pos += print_key(indent + 1, PTR_OFFSET(str, pos), size - pos, fingerprint_subpacket->fingerprint,
+						 fingerprint_subpacket->header.body_size - 1);
+	}
+	break;
+	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+	{
+		pgp_recipient_fingerprint_subpacket *fingerprint_subpacket = subpacket;
+
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", fingerprint_subpacket->version);
+		pos += print_key(indent + 1, PTR_OFFSET(str, pos), size - pos, fingerprint_subpacket->fingerprint,
+						 fingerprint_subpacket->header.body_size - 1);
+	}
+	break;
+	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+	{
+		pgp_preferred_aead_ciphersuites_subpacket *preferred_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < (preferred_subpacket->header.body_size / 2); i += 2)
+		{
+			pgp_symmetric_key_algorithms symmetric_algorithm = preferred_subpacket->preferred_algorithms[i];
+			pgp_aead_algorithms aead_algorithm = preferred_subpacket->preferred_algorithms[i + 1];
+
+			pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "AEAD Ciphersuite: ");
+
+			switch (symmetric_algorithm)
+			{
+			case PGP_PLAINTEXT:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Plaintext ");
+				break;
+			case PGP_IDEA:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "IDEA ");
+				break;
+			case PGP_TDES:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "TDES ");
+				break;
+			case PGP_CAST5_128:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "CAST5 ");
+				break;
+			case PGP_BLOWFISH:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Blowfish ");
+				break;
+			case PGP_AES_128:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-128 ");
+				break;
+			case PGP_AES_192:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-192 ");
+				break;
+			case PGP_AES_256:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-256 ");
+				break;
+			case PGP_TWOFISH:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Twofish-256 ");
+				break;
+			case PGP_CAMELLIA_128:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-128 ");
+				break;
+			case PGP_CAMELLIA_192:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-192 ");
+				break;
+			case PGP_CAMELLIA_256:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-256 ");
+				break;
+			default:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown ");
+				break;
+			}
+
+			switch (aead_algorithm)
+			{
+			case PGP_AEAD_EAX:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EAX ");
+				break;
+			case PGP_AEAD_OCB:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "OCB ");
+				break;
+			case PGP_AEAD_GCM:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "GCM ");
+				break;
+			default:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown ");
+				break;
+			}
+
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "(%02hhx %02hhx)\n", symmetric_algorithm, aead_algorithm);
+		}
+	}
+	break;
+	}
+
+	return pos;
+}
+
 size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
@@ -971,7 +1445,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 	else if (packet->version == PGP_PKESK_V3)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
-		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(str, pos), size - pos, packet->key_id, 8);
+		pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_id, 8);
 		pos += pgp_kex_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_size,
 							 PTR_OFFSET(str, pos), size - pos, 1);
@@ -1033,6 +1507,27 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+
+		if (packet->hashed_subpacket_count > 0)
+		{
+			pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Hashed Subpackets:\n");
+		}
+
+		for (uint16_t i = 0; i < packet->hashed_subpacket_count; ++i)
+		{
+			pos += pgp_signature_subpacket_print(packet->hashed_subpackets[i], PTR_OFFSET(ptr, pos), size - pos, 2);
+		}
+
+		if (packet->unhashed_subpacket_count > 0)
+		{
+			pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Unhashed Subpackets:\n");
+		}
+
+		for (uint16_t i = 0; i < packet->unhashed_subpacket_count; ++i)
+		{
+			pos += pgp_signature_subpacket_print(packet->unhashed_subpackets[i], PTR_OFFSET(ptr, pos), size - pos, 2);
+		}
+
 		pos += print_bytes(1, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
 
 		if (packet->version == PGP_SIGNATURE_V6)
@@ -1077,7 +1572,7 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 
 		pos += print_bytes(1, "Salt: ", PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size);
-		pos += print_bytes(1, "Key Fingerprint: ", PTR_OFFSET(ptr, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+		pos += print_key(1, PTR_OFFSET(ptr, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
 
 		pos += snprintf(PTR_OFFSET(ptr, pos), size - pos, "Nested: %s\n", packet->nested ? "Yes" : "No");
 	}
@@ -1087,7 +1582,7 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += print_bytes(1, "Key ID: ", PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8);
+		pos += print_key(1, PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8);
 
 		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Nested: %s\n", packet->nested ? "Yes" : "No");
 	}
