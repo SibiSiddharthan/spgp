@@ -517,13 +517,12 @@ dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, 
 {
 	dsa_signature *dsign = signature;
 
-	size_t ctx_size = (3 * bignum_size(key->q->bits)) + bignum_size(key->p->bits);
-	size_t required_signature_size = sizeof(dsa_signature) + (2 * bignum_size(key->q->bits));
+	size_t ctx_size = (5 * bignum_size(key->q->bits)) + bignum_size(key->p->bits);
+	size_t required_signature_size = sizeof(dsa_signature) + (2 * CEIL_DIV(key->q->bits, 8));
 
-	bignum_t *k = NULL;
-	bignum_t *ik = NULL;
-	bignum_t *z = NULL;
-	bignum_t *t = NULL;
+	bignum_t *k = NULL, *ik = NULL;
+	bignum_t *z = NULL, *t = NULL;
+	bignum_t *r = NULL, *s = NULL;
 
 	// Allocate the signature
 	if (dsign == NULL)
@@ -543,16 +542,18 @@ dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, 
 		return NULL;
 	}
 
-	dsign->r = PTR_OFFSET(dsign, sizeof(dsa_signature));
-	dsign->s = PTR_OFFSET(dsign, sizeof(dsa_signature) + bignum_size(key->q->bits));
+	dsign->r.size = CEIL_DIV(key->q->bits, 8);
+	dsign->s.size = CEIL_DIV(key->q->bits, 8);
 
-	dsign->r = bignum_init(dsign->r, bignum_size(key->q->bits), key->q->bits);
-	dsign->s = bignum_init(dsign->s, bignum_size(key->q->bits), key->q->bits);
+	dsign->r.sign = PTR_OFFSET(dsign, sizeof(dsa_signature));
+	dsign->s.sign = PTR_OFFSET(dsign, sizeof(dsa_signature) + dsign->r.size);
 
 	bignum_ctx_start(key->bctx, ctx_size);
 
 	k = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
 	ik = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
+	r = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
+	s = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
 	z = bignum_ctx_allocate_bignum(key->bctx, MIN(key->q->bits, hash_size * 8));
 
 	t = bignum_ctx_allocate_bignum(key->bctx, key->p->bits);
@@ -573,12 +574,18 @@ dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, 
 
 	// r = (g^k mod p) mod q.
 	t = bignum_modexp(key->bctx, t, key->g, k, key->p);
-	dsign->r = bignum_mod(key->bctx, dsign->r, t, key->q);
+	r = bignum_mod(key->bctx, r, t, key->q);
 
 	// s = (ik(z + xr)) mod q.
-	dsign->s = bignum_modmul(key->bctx, dsign->s, key->x, dsign->r, key->q);
-	dsign->s = bignum_modadd(key->bctx, dsign->s, dsign->s, z, key->q);
-	dsign->s = bignum_modmul(key->bctx, dsign->s, dsign->s, ik, key->q);
+	s = bignum_modmul(key->bctx, s, key->x, r, key->q);
+	s = bignum_modadd(key->bctx, s, s, z, key->q);
+	s = bignum_modmul(key->bctx, s, s, ik, key->q);
+
+	dsign->r.size = bignum_get_bytes_be(r, dsign->r.sign, dsign->r.size);
+	dsign->r.bits = r->bits;
+
+	dsign->s.size = bignum_get_bytes_be(s, dsign->s.sign, dsign->s.size);
+	dsign->s.bits = s->bits;
 
 	bignum_ctx_end(key->bctx);
 
@@ -587,26 +594,25 @@ dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, 
 
 uint32_t dsa_verify(dsa_key *key, dsa_signature *dsign, void *hash, size_t hash_size)
 {
-	size_t ctx_size = (4 * bignum_size(key->q->bits)) + (3 * bignum_size(key->p->bits));
+	uint32_t status = 0;
+	size_t ctx_size = (6 * bignum_size(key->q->bits)) + (3 * bignum_size(key->p->bits));
 
 	bignum_t *w = NULL;
 	bignum_t *v = NULL;
 	bignum_t *z = NULL;
+	bignum_t *r = NULL, *s = NULL;
 
 	bignum_t *u1 = NULL;
 	bignum_t *u2 = NULL;
 	bignum_t *u3 = NULL;
 	bignum_t *u4 = NULL;
 
-	if (bignum_cmp(dsign->r, key->q) >= 0 || bignum_cmp(dsign->s, key->q) >= 0)
-	{
-		return 0;
-	}
-
 	bignum_ctx_start(key->bctx, ctx_size);
 
 	w = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
 	v = bignum_ctx_allocate_bignum(key->bctx, key->p->bits);
+	r = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
+	s = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
 	z = bignum_ctx_allocate_bignum(key->bctx, MIN(key->q->bits, hash_size * 8));
 
 	u1 = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);
@@ -614,13 +620,22 @@ uint32_t dsa_verify(dsa_key *key, dsa_signature *dsign, void *hash, size_t hash_
 	u3 = bignum_ctx_allocate_bignum(key->bctx, key->p->bits);
 	u4 = bignum_ctx_allocate_bignum(key->bctx, key->p->bits);
 
+	r = bignum_set_bytes_be(r, dsign->r.sign, dsign->r.size);
+	s = bignum_set_bytes_be(s, dsign->s.sign, dsign->s.size);
+
+	// Initial checks
+	if (bignum_cmp(r, key->q) >= 0 || bignum_cmp(s, key->q) >= 0)
+	{
+		goto end;
+	}
+
 	// Hashing
 	z = bignum_set_bytes_be(z, hash, MIN(key->q->bits / 8, hash_size));
 
-	w = bignum_modinv(key->bctx, w, dsign->s, key->q);
+	w = bignum_modinv(key->bctx, w, s, key->q);
 
 	u1 = bignum_modmul(key->bctx, u1, z, w, key->q);
-	u2 = bignum_modmul(key->bctx, u2, dsign->r, w, key->q);
+	u2 = bignum_modmul(key->bctx, u2, r, w, key->q);
 
 	u3 = bignum_modexp(key->bctx, u3, key->g, u1, key->p);
 	u4 = bignum_modexp(key->bctx, u4, key->y, u2, key->p);
@@ -628,12 +643,12 @@ uint32_t dsa_verify(dsa_key *key, dsa_signature *dsign, void *hash, size_t hash_
 	v = bignum_modmul(key->bctx, v, u3, u4, key->p);
 	v = bignum_mod(key->bctx, v, v, key->q);
 
-	bignum_ctx_end(key->bctx);
-
-	if (bignum_cmp(v, dsign->r) == 0)
+	if (bignum_cmp(v, r) == 0)
 	{
-		return 1;
+		status = 1;
 	}
 
-	return 0;
+end:
+	bignum_ctx_end(key->bctx);
+	return status;
 }

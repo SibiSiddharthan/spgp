@@ -24,8 +24,6 @@ int32_t dsa_sign_tests(void)
 	byte_t salt[512] = {0};
 	byte_t message[512] = {0};
 	byte_t hash[64] = {0};
-	char r[512] = {0};
-	char s[512] = {0};
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -70,14 +68,11 @@ int32_t dsa_sign_tests(void)
 	sha256_hash(message, 128, hash);
 	dsign = dsa_sign(key, salt, 20, hash, SHA256_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status += CHECK_BLOCK(dsign->r.sign, 20, "76683a085d6742eadf95a61af75f881276cfd26a");
+	status += CHECK_BLOCK(dsign->s.sign, 20, "3b9da7f9926eaaad0bebd4845c67fcdb64d12453");
 
-	bignum_get_hex(dsign->r, r, 512);
-	bignum_get_hex(dsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "76683a085d6742eadf95a61af75f881276cfd26a", 40);
-	status += CHECK_HEX(s + 2, "3b9da7f9926eaaad0bebd4845c67fcdb64d12453", 40);
+	status += CHECK_VALUE(dsign->r.size, 20);
+	status += CHECK_VALUE(dsign->s.size, 20);
 
 	free(dsign);
 	dsa_key_delete(key);
@@ -131,14 +126,11 @@ int32_t dsa_sign_tests(void)
 	sha256_hash(message, 128, hash);
 	dsign = dsa_sign(key, salt, 28, hash, SHA256_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status += CHECK_BLOCK(dsign->r.sign, 28, "9c5fa46879ddaf5c14f07dfb5320715f67a6fec179e3ad53342fb6d1");
+	status += CHECK_BLOCK(dsign->s.sign, 28, "c3e17e7b3c4d0ac8d49f4dd0f04c16a094f42da0afcc6c90f5f1bbc8");
 
-	bignum_get_hex(dsign->r, r, 512);
-	bignum_get_hex(dsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "9c5fa46879ddaf5c14f07dfb5320715f67a6fec179e3ad53342fb6d1", 56);
-	status += CHECK_HEX(s + 2, "c3e17e7b3c4d0ac8d49f4dd0f04c16a094f42da0afcc6c90f5f1bbc8", 56);
+	status += CHECK_VALUE(dsign->r.size, 28);
+	status += CHECK_VALUE(dsign->s.size, 28);
 
 	free(dsign);
 	dsa_key_delete(key);
@@ -192,14 +184,11 @@ int32_t dsa_sign_tests(void)
 	sha256_hash(message, 128, hash);
 	dsign = dsa_sign(key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status += CHECK_BLOCK(dsign->r.sign, 32, "633055e055f237c38999d81c397848c38cce80a55b649d9e7905c298e2a51447");
+	status += CHECK_BLOCK(dsign->s.sign, 32, "2bbf68317660ec1e4b154915027b0bc00ee19cfc0bf75d01930504f2ce10a8b0");
 
-	bignum_get_hex(dsign->r, r, 512);
-	bignum_get_hex(dsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "633055e055f237c38999d81c397848c38cce80a55b649d9e7905c298e2a51447", 64);
-	status += CHECK_HEX(s + 2, "2bbf68317660ec1e4b154915027b0bc00ee19cfc0bf75d01930504f2ce10a8b0", 64);
+	status += CHECK_VALUE(dsign->r.size, 32);
+	status += CHECK_VALUE(dsign->s.size, 32);
 
 	free(dsign);
 	dsa_key_delete(key);
@@ -259,14 +248,11 @@ int32_t dsa_sign_tests(void)
 	sha256_hash(message, 128, hash);
 	dsign = dsa_sign(key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status += CHECK_BLOCK(dsign->r.sign, 32, "53bae6c6f336e2eb311c1e92d95fc449a929444ef81ec4279660b200d59433de");
+	status += CHECK_BLOCK(dsign->s.sign, 32, "49f3a74e953e77a7941af3aefeef4ed499be209976a0edb3fa5e7cb961b0c112");
 
-	bignum_get_hex(dsign->r, r, 512);
-	bignum_get_hex(dsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "53bae6c6f336e2eb311c1e92d95fc449a929444ef81ec4279660b200d59433de", 64);
-	status += CHECK_HEX(s + 2, "49f3a74e953e77a7941af3aefeef4ed499be209976a0edb3fa5e7cb961b0c112", 64);
+	status += CHECK_VALUE(dsign->r.size, 32);
+	status += CHECK_VALUE(dsign->s.size, 32);
 
 	free(dsign);
 	dsa_key_delete(key);
