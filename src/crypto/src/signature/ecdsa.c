@@ -19,18 +19,17 @@ ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *has
 	ecdsa_signature *ecsign = signature;
 	bignum_ctx *bctx = key->eg->bctx;
 
-	size_t ctx_size = 5 * bignum_size(key->eg->bits);
+	size_t ctx_size = 6 * bignum_size(key->eg->bits);
 	size_t required_signature_size = sizeof(ecdsa_signature) + (2 * bignum_size(key->eg->bits));
 
-	bignum_t *k = NULL;
-	bignum_t *ik = NULL;
+	bignum_t *k = NULL, *ik = NULL;
 	bignum_t *e = NULL;
-	bignum_t *x = NULL;
-	bignum_t *y = NULL;
+	bignum_t *x = NULL, *y = NULL;
+	bignum_t *r = NULL, *s = NULL;
 
 	byte_t hash_copy[64] = {0};
 
-	ec_point r;
+	ec_point p = {0};
 	void *result = NULL;
 
 	// Allocate the signature
@@ -51,11 +50,11 @@ ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *has
 		return NULL;
 	}
 
-	ecsign->r = PTR_OFFSET(ecsign, sizeof(ecdsa_signature));
-	ecsign->s = PTR_OFFSET(ecsign, sizeof(ecdsa_signature) + bignum_size(key->eg->bits));
+	ecsign->r.size = CEIL_DIV(key->eg->bits, 8);
+	ecsign->s.size = CEIL_DIV(key->eg->bits, 8);
 
-	ecsign->r = bignum_init(ecsign->r, bignum_size(key->eg->bits), key->eg->bits);
-	ecsign->s = bignum_init(ecsign->s, bignum_size(key->eg->bits), key->eg->bits);
+	ecsign->r.sign = PTR_OFFSET(ecsign, sizeof(ecdsa_signature));
+	ecsign->s.sign = PTR_OFFSET(ecsign, sizeof(ecdsa_signature) + ecsign->r.size);
 
 	bignum_ctx_start(bctx, ctx_size);
 
@@ -64,6 +63,8 @@ ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *has
 
 	x = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
 	y = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+
+	s = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
 
 	e = bignum_ctx_allocate_bignum(bctx, MIN(key->eg->bits, hash_size * 8));
 
@@ -90,10 +91,10 @@ retry:
 	ik = bignum_modinv(bctx, ik, k, key->eg->n);
 
 	// r = [k]G.
-	r.x = x;
-	r.y = y;
+	p.x = x;
+	p.y = y;
 
-	result = ec_point_multiply(key->eg, &r, key->eg->g, k);
+	result = ec_point_multiply(key->eg, &p, key->eg->g, k);
 
 	if (result == NULL)
 	{
@@ -106,12 +107,18 @@ retry:
 		goto retry;
 	}
 
-	bignum_copy(ecsign->r, r.x);
+	r = p.x;
 
 	// s = (ik(e + rd)) mod n.
-	ecsign->s = bignum_modmul(bctx, ecsign->s, ecsign->r, key->d, key->eg->n);
-	ecsign->s = bignum_modadd(bctx, ecsign->s, ecsign->s, e, key->eg->n);
-	ecsign->s = bignum_modmul(bctx, ecsign->s, ecsign->s, ik, key->eg->n);
+	s = bignum_modmul(bctx, s, r, key->d, key->eg->n);
+	s = bignum_modadd(bctx, s, s, e, key->eg->n);
+	s = bignum_modmul(bctx, s, s, ik, key->eg->n);
+
+	ecsign->r.size = bignum_get_bytes_be(r, ecsign->r.sign, ecsign->r.size);
+	ecsign->r.bits = r->bits;
+
+	ecsign->s.size = bignum_get_bytes_be(s, ecsign->s.sign, ecsign->s.size);
+	ecsign->s.bits = s->bits;
 
 	bignum_ctx_end(bctx);
 
@@ -139,15 +146,12 @@ uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t h
 	bignum_t *x3 = NULL;
 	bignum_t *y3 = NULL;
 
+	bignum_t *r = NULL, *s = NULL;
+
 	ec_point r1, r2, r3;
 	void *result = NULL;
 
 	byte_t hash_copy[64] = {0};
-
-	if (bignum_cmp(ecsign->r, key->eg->n) >= 0 || bignum_cmp(ecsign->s, key->eg->n) >= 0)
-	{
-		return 0;
-	}
 
 	bignum_ctx_start(bctx, ctx_size);
 
@@ -164,7 +168,19 @@ uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t h
 	x3 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
 	y3 = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
 
+	r = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+	s = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
+
 	e = bignum_ctx_allocate_bignum(bctx, MIN(key->eg->bits, hash_size * 8));
+
+	r = bignum_set_bytes_be(r, ecsign->r.sign, ecsign->r.size);
+	s = bignum_set_bytes_be(s, ecsign->s.sign, ecsign->s.size);
+
+	// Initial checks
+	if (bignum_cmp(r, key->eg->n) >= 0 || bignum_cmp(s, key->eg->n) >= 0)
+	{
+		return 0;
+	}
 
 	// Zero the lower hash bits for the partial byte
 	memcpy(hash_copy, hash, hash_size);
@@ -176,10 +192,10 @@ uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t h
 
 	e = bignum_set_bytes_be(e, hash_copy, MIN(key->eg->bits / 8, hash_size));
 
-	is = bignum_modinv(bctx, is, ecsign->s, key->eg->n);
+	is = bignum_modinv(bctx, is, s, key->eg->n);
 
 	u = bignum_modmul(bctx, u, e, is, key->eg->n);
-	v = bignum_modmul(bctx, v, ecsign->r, is, key->eg->n);
+	v = bignum_modmul(bctx, v, r, is, key->eg->n);
 
 	// r = [u]G + [v]Q.
 	r1.x = x1;
@@ -212,7 +228,7 @@ uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t h
 		goto end;
 	}
 
-	if (bignum_cmp(r3.x, ecsign->r) == 0)
+	if (bignum_cmp(r3.x, r) == 0)
 	{
 		status = 1;
 	}

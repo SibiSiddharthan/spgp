@@ -23,7 +23,12 @@ typedef struct _dsa_key
 
 typedef struct _dsa_signature
 {
-	bignum_t *r, *s;
+	struct
+	{
+		uint32_t bits;
+		uint32_t size;
+		byte_t *sign;
+	} r, s;
 } dsa_signature;
 
 uint32_t dsa_parameters_generate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignum_t *g, uint32_t p_bits, uint32_t q_bits, void *seed,

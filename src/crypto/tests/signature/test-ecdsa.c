@@ -27,8 +27,6 @@ int32_t ecdsa_prime_sign_tests(void)
 	byte_t salt[512] = {0};
 	byte_t message[512] = {0};
 	byte_t hash[64] = {0};
-	char r[512] = {0};
-	char s[512] = {0};
 
 	group = ec_group_new(EC_NIST_P256);
 
@@ -58,14 +56,11 @@ int32_t ecdsa_prime_sign_tests(void)
 	sha256_hash(message, 128, hash);
 	ecsign = ecdsa_sign(&key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status += CHECK_BLOCK(ecsign->r.sign, 32, "f3ac8061b514795b8843e3d6629527ed2afd6b1f6a555a7acabb5e6f79c8c2ac");
+	status += CHECK_BLOCK(ecsign->s.sign, 32, "8bf77819ca05a6b2786c76262bf7371cef97b218e96f175a3ccdda2acc058903");
 
-	bignum_get_hex(ecsign->r, r, 512);
-	bignum_get_hex(ecsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "f3ac8061b514795b8843e3d6629527ed2afd6b1f6a555a7acabb5e6f79c8c2ac", 64);
-	status += CHECK_HEX(s + 2, "8bf77819ca05a6b2786c76262bf7371cef97b218e96f175a3ccdda2acc058903", 64);
+	status += CHECK_VALUE(ecsign->r.size, 32);
+	status += CHECK_VALUE(ecsign->s.size, 32);
 
 	bignum_delete(d);
 	bignum_delete(qx);
@@ -99,14 +94,11 @@ int32_t ecdsa_prime_sign_tests(void)
 	sha256_hash(message, 128, hash);
 	ecsign = ecdsa_sign(&key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status += CHECK_BLOCK(ecsign->r.sign, 32, "18caaf7b663507a8bcd992b836dec9dc5703c080af5e51dfa3a9a7c387182604");
+	status += CHECK_BLOCK(ecsign->s.sign, 32, "77c68928ac3b88d985fb43fb615fb7ff45c18ba5c81af796c613dfa98352d29c");
 
-	bignum_get_hex(ecsign->r, r, 512);
-	bignum_get_hex(ecsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "18caaf7b663507a8bcd992b836dec9dc5703c080af5e51dfa3a9a7c387182604", 64);
-	status += CHECK_HEX(s + 2, "77c68928ac3b88d985fb43fb615fb7ff45c18ba5c81af796c613dfa98352d29c", 64);
+	status += CHECK_VALUE(ecsign->r.size, 32);
+	status += CHECK_VALUE(ecsign->s.size, 32);
 
 	bignum_delete(d);
 	bignum_delete(qx);
@@ -146,14 +138,13 @@ int32_t ecdsa_prime_sign_tests(void)
 	sha512_hash(message, 128, hash);
 	ecsign = ecdsa_sign(&key, salt, 48, hash, SHA512_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status +=
+		CHECK_BLOCK(ecsign->r.sign, 48, "c269d9c4619aafdf5f4b3100211dddb14693abe25551e04f9499c91152a296d7449c08b36f87d1e16e8e15fee4a7f5c8");
+	status +=
+		CHECK_BLOCK(ecsign->s.sign, 48, "77ffed5c61665152d52161dc13ac3fbae5786928a3d736f42d34a9e4d6d4a70a02d5af90fa37a23a318902ae2656c071");
 
-	bignum_get_hex(ecsign->r, r, 512);
-	bignum_get_hex(ecsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "c269d9c4619aafdf5f4b3100211dddb14693abe25551e04f9499c91152a296d7449c08b36f87d1e16e8e15fee4a7f5c8", 96);
-	status += CHECK_HEX(s + 2, "77ffed5c61665152d52161dc13ac3fbae5786928a3d736f42d34a9e4d6d4a70a02d5af90fa37a23a318902ae2656c071", 96);
+	status += CHECK_VALUE(ecsign->r.size, 48);
+	status += CHECK_VALUE(ecsign->s.size, 48);
 
 	bignum_delete(d);
 	bignum_delete(qx);
@@ -187,14 +178,13 @@ int32_t ecdsa_prime_sign_tests(void)
 	sha512_hash(message, 128, hash);
 	ecsign = ecdsa_sign(&key, salt, 48, hash, SHA512_HASH_SIZE, NULL, 0);
 
-	memset(r, 0, 512);
-	memset(s, 0, 512);
+	status +=
+		CHECK_BLOCK(ecsign->r.sign, 48, "6512a8a2be731e301dcf4803764297862bbfa0ac8daed64d8e98b34618ecb20520fc5d3cf890b7783edf86e7ea407541");
+	status +=
+		CHECK_BLOCK(ecsign->s.sign, 48, "4ff10301f7b4168fae066361376007c1d7aa89a75c87719d0b54711ffef5ef3726f3eef84f7ebc025c110bde511b17f6");
 
-	bignum_get_hex(ecsign->r, r, 512);
-	bignum_get_hex(ecsign->s, s, 512);
-
-	status += CHECK_HEX(r + 2, "6512a8a2be731e301dcf4803764297862bbfa0ac8daed64d8e98b34618ecb20520fc5d3cf890b7783edf86e7ea407541", 96);
-	status += CHECK_HEX(s + 2, "4ff10301f7b4168fae066361376007c1d7aa89a75c87719d0b54711ffef5ef3726f3eef84f7ebc025c110bde511b17f6", 96);
+	status += CHECK_VALUE(ecsign->r.size, 48);
+	status += CHECK_VALUE(ecsign->s.size, 48);
 
 	bignum_delete(d);
 	bignum_delete(qx);

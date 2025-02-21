@@ -15,7 +15,12 @@
 
 typedef struct _ecdsa_signature
 {
-	bignum_t *r, *s;
+	struct
+	{
+		uint32_t bits;
+		uint32_t size;
+		byte_t *sign;
+	} r, s;
 } ecdsa_signature;
 
 ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *hash, size_t hash_size, void *signature,
