@@ -439,6 +439,31 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 
 		return key_fingerprint_subpacket;
 	}
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+	case PGP_POLICY_URI_SUBPACKET:
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+	{
+		struct _pgp_string_subpacket *string_subpacket = NULL;
+
+		string_subpacket = malloc(sizeof(struct _pgp_string_subpacket) + header.body_size);
+
+		if (string_subpacket == NULL)
+		{
+			return NULL;
+		}
+
+		memset(string_subpacket, 0, sizeof(struct _pgp_string_subpacket) + header.body_size);
+
+		// Copy the header
+		string_subpacket->header = header;
+
+		// Null terminated UTF-8 string
+		memcpy(string_subpacket->data, in + pos, string_subpacket->header.body_size);
+		pos += string_subpacket->header.body_size;
+
+		return string_subpacket;
+	}
 	case PGP_TRUST_SIGNATURE_SUBPACKET:
 	{
 		pgp_trust_signature_subpacket *trust_subpacket = NULL;
@@ -464,28 +489,6 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 		pos += 1;
 
 		return trust_subpacket;
-	}
-	case PGP_REGULAR_EXPRESSION_SUBPACKET:
-	{
-		pgp_regular_expression_subpacket *re_subpacket = NULL;
-
-		re_subpacket = malloc(sizeof(pgp_regular_expression_subpacket) + header.body_size);
-
-		if (re_subpacket == NULL)
-		{
-			return NULL;
-		}
-
-		memset(re_subpacket, 0, sizeof(pgp_regular_expression_subpacket) + header.body_size);
-
-		// Copy the header
-		re_subpacket->header = header;
-
-		// Null terminated UTF-8 string
-		memcpy(re_subpacket->regex, in + pos, re_subpacket->header.body_size);
-		pos += re_subpacket->header.body_size;
-
-		return re_subpacket;
 	}
 	case PGP_REVOCATION_KEY_SUBPACKET:
 	{
@@ -578,72 +581,6 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 		pos += name_size + value_size;
 
 		return notation_subpacket;
-	}
-	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
-	{
-		pgp_preferred_key_server_subpacket *pks_subpacket = NULL;
-
-		pks_subpacket = malloc(sizeof(pgp_preferred_key_server_subpacket) + header.body_size);
-
-		if (pks_subpacket == NULL)
-		{
-			return NULL;
-		}
-
-		memset(pks_subpacket, 0, sizeof(pgp_preferred_key_server_subpacket) + header.body_size);
-
-		// Copy the header
-		pks_subpacket->header = header;
-
-		// String
-		memcpy(pks_subpacket->server, in + pos, pks_subpacket->header.body_size);
-		pos += pks_subpacket->header.body_size;
-
-		return pks_subpacket;
-	}
-	case PGP_POLICY_URI_SUBPACKET:
-	{
-		pgp_policy_uri_subpacket *policy_subpacket = NULL;
-
-		policy_subpacket = malloc(sizeof(pgp_policy_uri_subpacket) + header.body_size);
-
-		if (policy_subpacket == NULL)
-		{
-			return NULL;
-		}
-
-		memset(policy_subpacket, 0, sizeof(pgp_policy_uri_subpacket) + header.body_size);
-
-		// Copy the header
-		policy_subpacket->header = header;
-
-		// String
-		memcpy(policy_subpacket->policy, in + pos, policy_subpacket->header.body_size);
-		pos += policy_subpacket->header.body_size;
-
-		return policy_subpacket;
-	}
-	case PGP_SIGNER_USER_ID_SUBPACKET:
-	{
-		pgp_signer_user_id_subpacket *uid_subpacket = NULL;
-
-		uid_subpacket = malloc(sizeof(pgp_signer_user_id_subpacket) + header.body_size);
-
-		if (uid_subpacket == NULL)
-		{
-			return NULL;
-		}
-
-		memset(uid_subpacket, 0, sizeof(pgp_signer_user_id_subpacket) + header.body_size);
-
-		// Copy the header
-		uid_subpacket->header = header;
-
-		// String
-		memcpy(uid_subpacket->id, in + pos, uid_subpacket->header.body_size);
-		pos += uid_subpacket->header.body_size;
-
-		return uid_subpacket;
 	}
 	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
 	{
@@ -826,6 +763,18 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		}
 	}
 	break;
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+	case PGP_POLICY_URI_SUBPACKET:
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+	{
+		struct _pgp_string_subpacket *string_subpacket = subpacket;
+
+		// String
+		memcpy(out + pos, string_subpacket->data, string_subpacket->header.body_size);
+		pos += string_subpacket->header.body_size;
+	}
+	break;
 	case PGP_TRUST_SIGNATURE_SUBPACKET:
 	{
 		pgp_trust_signature_subpacket *trust_subpacket = subpacket;
@@ -837,15 +786,6 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		// 1 octet amount
 		LOAD_8(out + pos, &trust_subpacket->trust_amount);
 		pos += 1;
-	}
-	break;
-	case PGP_REGULAR_EXPRESSION_SUBPACKET:
-	{
-		pgp_regular_expression_subpacket *re_subpacket = subpacket;
-
-		// Null terminated UTF-8 string
-		memcpy(out + pos, re_subpacket->regex, re_subpacket->header.body_size);
-		pos += re_subpacket->header.body_size;
 	}
 	break;
 	case PGP_REVOCATION_KEY_SUBPACKET:
@@ -897,33 +837,6 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		// (N + M) octets of data
 		memcpy(out + pos, notation_subpacket->data, notation_subpacket->name_size + notation_subpacket->value_size);
 		pos += notation_subpacket->name_size + notation_subpacket->value_size;
-	}
-	break;
-	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
-	{
-		pgp_preferred_key_server_subpacket *pks_subpacket = subpacket;
-
-		// String
-		memcpy(out + pos, pks_subpacket->server, pks_subpacket->header.body_size);
-		pos += pks_subpacket->header.body_size;
-	}
-	break;
-	case PGP_POLICY_URI_SUBPACKET:
-	{
-		pgp_policy_uri_subpacket *policy_subpacket = subpacket;
-
-		// String
-		memcpy(out + pos, policy_subpacket->policy, policy_subpacket->header.body_size);
-		pos += policy_subpacket->header.body_size;
-	}
-	break;
-	case PGP_SIGNER_USER_ID_SUBPACKET:
-	{
-		pgp_signer_user_id_subpacket *uid_subpacket = subpacket;
-
-		// String
-		memcpy(out + pos, uid_subpacket->id, uid_subpacket->header.body_size);
-		pos += uid_subpacket->header.body_size;
 	}
 	break;
 	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
@@ -1321,6 +1234,18 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 				}
 			}
 			break;
+			case PGP_REGULAR_EXPRESSION_SUBPACKET:
+			case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+			case PGP_POLICY_URI_SUBPACKET:
+			case PGP_SIGNER_USER_ID_SUBPACKET:
+			{
+				struct _pgp_string_subpacket *subpacket = packet->hashed_subpackets[i];
+
+				// Null terminated UTF-8 string
+				hash_update(hctx, subpacket->data, header->body_size);
+				hashed_size += header->body_size;
+			}
+			break;
 			case PGP_TRUST_SIGNATURE_SUBPACKET:
 			{
 				pgp_trust_signature_subpacket *subpacket = packet->hashed_subpackets[i];
@@ -1332,15 +1257,6 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 				// 1 octet amount
 				hash_update(hctx, &subpacket->trust_amount, 1);
 				hashed_size += 1;
-			}
-			break;
-			case PGP_REGULAR_EXPRESSION_SUBPACKET:
-			{
-				pgp_regular_expression_subpacket *subpacket = packet->hashed_subpackets[i];
-
-				// Null terminated UTF-8 string
-				hash_update(hctx, subpacket->regex, header->body_size);
-				hashed_size += header->body_size;
 			}
 			break;
 			case PGP_REVOCATION_KEY_SUBPACKET:
@@ -1392,33 +1308,6 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 				// (N + M) octets of data
 				hash_update(hctx, subpacket->data, subpacket->name_size + subpacket->value_size);
 				hashed_size += subpacket->name_size + subpacket->value_size;
-			}
-			break;
-			case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
-			{
-				pgp_preferred_key_server_subpacket *subpacket = packet->hashed_subpackets[i];
-
-				// String
-				hash_update(hctx, subpacket->server, header->body_size);
-				hashed_size += header->body_size;
-			}
-			break;
-			case PGP_POLICY_URI_SUBPACKET:
-			{
-				pgp_policy_uri_subpacket *subpacket = packet->hashed_subpackets[i];
-
-				// String
-				hash_update(hctx, subpacket->policy, header->body_size);
-				hashed_size += header->body_size;
-			}
-			break;
-			case PGP_SIGNER_USER_ID_SUBPACKET:
-			{
-				pgp_signer_user_id_subpacket *subpacket = packet->hashed_subpackets[i];
-
-				// String
-				hash_update(hctx, subpacket->id, header->body_size);
-				hashed_size += header->body_size;
 			}
 			break;
 			case PGP_REASON_FOR_REVOCATION_SUBPACKET:

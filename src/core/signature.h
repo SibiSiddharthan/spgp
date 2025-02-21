@@ -149,7 +149,8 @@ typedef struct _pgp_one_pass_signature_packet
 	byte_t public_key_algorithm_id;
 	byte_t hash_algorithm_id;
 
-	union {
+	union
+	{
 		byte_t key_id[8];
 		byte_t key_fingerprint[32];
 	};
@@ -181,12 +182,6 @@ typedef struct _pgp_ed448_signature
 
 // Signature subpackets
 
-typedef struct _signature_subpacket
-{
-	struct _signature_subpacket *next;
-	void *data;
-} signature_subpacket;
-
 typedef struct _pgp_timestamp_subpacket
 {
 	pgp_subpacket_header header;
@@ -212,6 +207,20 @@ typedef struct _pgp_flags_subpacket
 	byte_t flags[1];
 } pgp_key_server_preferences_subpacket, pgp_key_flags_subpacket, pgp_features_subpacket;
 
+typedef struct _pgp_string_subpacket
+{
+	pgp_subpacket_header header;
+
+	union
+	{
+		void *data;
+		void *regex;  // pgp_regular_expression_subpacket
+		void *server; // pgp_preferred_key_server_subpacket
+		void *policy; // pgp_policy_uri_subpacket
+		void *uid;    // pgp_signer_user_id_subpacket
+	};
+} pgp_regular_expression_subpacket, pgp_preferred_key_server_subpacket, pgp_policy_uri_subpacket, pgp_signer_user_id_subpacket;
+
 typedef struct _pgp_key_fingerprint_subpacket
 {
 	pgp_subpacket_header header;
@@ -225,12 +234,6 @@ typedef struct _pgp_trust_signature_subpacket
 	byte_t trust_level;
 	byte_t trust_amount;
 } pgp_trust_signature_subpacket;
-
-typedef struct _pgp_regular_expression_subpacket
-{
-	pgp_subpacket_header header;
-	byte_t *regex;
-} pgp_regular_expression_subpacket;
 
 typedef struct _pgp_revocation_key_subpacket
 {
@@ -254,24 +257,6 @@ typedef struct _pgp_notation_data_subpacket
 	uint16_t value_size;
 	void *data;
 } pgp_notation_data_subpacket;
-
-typedef struct _pgp_preferred_key_server_subpacket
-{
-	pgp_subpacket_header header;
-	byte_t *server;
-} pgp_preferred_key_server_subpacket;
-
-typedef struct _pgp_policy_uri_subpacket
-{
-	pgp_subpacket_header header;
-	byte_t *policy;
-} pgp_policy_uri_subpacket;
-
-typedef struct _pgp_signer_user_id_subpacket
-{
-	pgp_subpacket_header header;
-	byte_t *id;
-} pgp_signer_user_id_subpacket;
 
 typedef struct _reason_for_revocation_subpacket
 {
@@ -297,7 +282,8 @@ typedef struct _pgp_embedded_signature_subpacket
 pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *private_key, void *data, size_t size);
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *private_key, void *data,
+								   size_t size);
 uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *data, size_t size);
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
