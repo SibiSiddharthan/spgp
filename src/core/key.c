@@ -358,7 +358,7 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	return BSWAP_16(checksum);
 }
 
-static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uint32_t size)
+static uint32_t pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
 	uint32_t pos = 0;
@@ -388,7 +388,7 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 		if (key == NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		memset(key, 0, sizeof(pgp_rsa_key));
@@ -403,15 +403,16 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 			free(key);
 
-			return NULL;
+			return 0;
 		}
 
 		pos += mpi_read(key->n, in + pos, size - pos);
 		pos += mpi_read(key->e, in + pos, size - pos);
 
 		packet->public_key_data_octets = pos;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
@@ -430,14 +431,14 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 		if (size < (mpi_octets(mpi_p_bits) + mpi_octets(mpi_g_bits) + mpi_octets(mpi_y_bits)))
 		{
-			return NULL;
+			return 0;
 		}
 
 		key = malloc(sizeof(pgp_elgamal_key));
 
 		if (key == NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		memset(key, 0, sizeof(pgp_elgamal_key));
@@ -454,7 +455,7 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 			free(key);
 
-			return NULL;
+			return 0;
 		}
 
 		pos += mpi_read(key->p, in + pos, size - pos);
@@ -462,8 +463,9 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 		pos += mpi_read(key->y, in + pos, size - pos);
 
 		packet->public_key_data_octets = pos;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_DSA:
 	{
@@ -485,14 +487,14 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 		if (size < (mpi_octets(mpi_p_bits) + mpi_octets(mpi_q_bits) + mpi_octets(mpi_g_bits) + mpi_octets(mpi_y_bits)))
 		{
-			return NULL;
+			return 0;
 		}
 
 		key = malloc(sizeof(pgp_dsa_key));
 
 		if (key == NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		memset(key, 0, sizeof(pgp_dsa_key));
@@ -511,7 +513,7 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 			free(key);
 
-			return NULL;
+			return 0;
 		}
 
 		pos += mpi_read(key->p, in + pos, size - pos);
@@ -520,8 +522,9 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 		pos += mpi_read(key->y, in + pos, size - pos);
 
 		packet->public_key_data_octets = pos;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_ECDH:
 	{
@@ -578,8 +581,9 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 		pos += 1;
 
 		packet->public_key_data_octets = pos;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_ECDSA:
 	{
@@ -623,8 +627,9 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 		pos += mpi_read(key->point, in + pos, size - pos);
 
 		packet->public_key_data_octets = pos;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_X25519:
 	{
@@ -633,22 +638,23 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 		if (size < 32)
 		{
-			return NULL;
+			return 0;
 		}
 
 		key = malloc(sizeof(pgp_x25519_key));
 
 		if (key == NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		memset(key, 0, sizeof(pgp_x25519_key));
 		memcpy(key->public_key, in, 32);
 
 		packet->public_key_data_octets = 32;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_X448:
 	{
@@ -657,22 +663,23 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 		if (size < 56)
 		{
-			return NULL;
+			return 0;
 		}
 
 		key = malloc(sizeof(pgp_x448_key));
 
 		if (key == NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		memset(key, 0, sizeof(pgp_x448_key));
 		memcpy(key->public_key, in, 56);
 
 		packet->public_key_data_octets = 56;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_ED25519:
 	{
@@ -681,22 +688,23 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 		if (size < 32)
 		{
-			return NULL;
+			return 0;
 		}
 
 		key = malloc(sizeof(pgp_ed25519_key));
 
 		if (key == NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		memset(key, 0, sizeof(pgp_ed25519_key));
 		memcpy(key->public_key, in, 32);
 
 		packet->public_key_data_octets = 32;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	case PGP_ED448:
 	{
@@ -705,25 +713,27 @@ static void *pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uin
 
 		if (size < 57)
 		{
-			return NULL;
+			return 0;
 		}
 
 		key = malloc(sizeof(pgp_ed448_key));
 
 		if (key == NULL)
 		{
-			return NULL;
+			return 0;
 		}
 
 		memset(key, 0, sizeof(pgp_ed448_key));
 		memcpy(key->public_key, in, 57);
 
 		packet->public_key_data_octets = 57;
+		packet->key = key;
 
-		return key;
+		return pos;
 	}
 	default:
-		return NULL;
+		packet->public_key_data_octets = 0;
+		return 0;
 	}
 }
 
@@ -1254,7 +1264,7 @@ pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size)
 		packet->public_key_data_octets = packet->header.body_size - (pos - packet->header.header_size);
 	}
 
-	packet->key = pgp_public_key_material_read(packet, in + pos, packet->public_key_data_octets);
+	pos += pgp_public_key_material_read(packet, in + pos, packet->public_key_data_octets);
 
 	return packet;
 }
@@ -1865,8 +1875,7 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 		pos += 4;
 	}
 
-	packet->key = pgp_public_key_material_read(packet, in + pos, packet->header.body_size - pos);
-	pos += packet->public_key_data_octets;
+	pos += pgp_public_key_material_read(packet, in + pos, packet->header.body_size - pos);
 
 	// 1 octet of S2K usage
 	LOAD_8(&packet->s2k_usage, in + pos);
