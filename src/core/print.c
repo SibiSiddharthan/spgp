@@ -570,7 +570,8 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t inden
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Iterated and Salted S2K (Tag 3)\n");
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
 		pos += print_bytes(indent + 1, "Salt: ", PTR_OFFSET(str, pos), size - pos, s2k->iterated.salt, 8);
-		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Count: %hhu\n", s2k->iterated.count);
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Count: %u (Code %hhu)\n", IT_COUNT(s2k->iterated.count),
+							s2k->iterated.count);
 		break;
 	case PGP_S2K_ARGON2:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Argon2 S2K (Tag 4)\n");
@@ -805,6 +806,8 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 {
 	size_t pos = 0;
 
+	pos += pgp_public_key_print(public_key_algorithm, private_key, private_key_size, PTR_OFFSET(str, pos), str_size - pos, indent);
+
 	switch (public_key_algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
@@ -812,58 +815,137 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 	case PGP_RSA_SIGN_ONLY:
 	{
 		pgp_rsa_key *key = private_key;
-		pos += print_mpi(indent, "RSA d", key->d, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "RSA p", key->p, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "RSA q", key->q, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "RSA u", key->u, PTR_OFFSET(str, pos), str_size - pos);
+
+		if (key->d == NULL || key->p == NULL || key->q == NULL || key->u == NULL)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "RSA d (Encrypted)\n");
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "RSA p (Encrypted)\n");
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "RSA q (Encrypted)\n");
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "RSA u (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_mpi(indent, "RSA d", key->d, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "RSA p", key->p, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "RSA q", key->q, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "RSA u", key->u, PTR_OFFSET(str, pos), str_size - pos);
+		}
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_key *key = private_key;
-		pos += print_mpi(indent, "Elgamal x", key->x, str, str_size);
+
+		if (key->x == NULL)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Elgamal x (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_mpi(indent, "Elgamal x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+		}
 	}
 	break;
 	case PGP_DSA:
 	{
 		pgp_dsa_key *key = private_key;
-		pos += print_mpi(indent, "DSA x", key->x, str, str_size);
+
+		if (key->x == NULL)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "DSA x (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_mpi(indent, "DSA x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+		}
 	}
 	break;
 	case PGP_ECDH:
 	{
 		pgp_ecdh_key *key = private_key;
-		pos += print_mpi(indent, "ECDH x", key->x, str, str_size);
+
+		if (key->x == NULL)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "ECDH x (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_mpi(indent, "ECDH x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+		}
 	}
 	break;
 	case PGP_ECDSA:
 	{
 		pgp_ecdsa_key *key = private_key;
-		pos += print_mpi(indent, "ECDSA x", key->x, str, str_size);
+
+		if (key->x == NULL)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "ECDSA x (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_mpi(indent, "ECDSA x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+		}
 	}
 	break;
 	case PGP_X25519:
 	{
 		pgp_x25519_key *key = private_key;
-		pos += print_bytes(indent, "X25519 Secret Key: ", str, str_size, key->private_key, 32);
+		byte_t zero[32] = {0};
+
+		if (memcmp(zero, key->private_key, 32) == 0)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "X25519 Secret Key (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_bytes(indent, "X25519 Secret Key: ", PTR_OFFSET(str, pos), str_size - pos, key->private_key, 32);
+		}
 	}
 	break;
 	case PGP_X448:
 	{
 		pgp_x448_key *key = private_key;
-		pos += print_bytes(indent, "X448 Secret Key: ", str, str_size, key->private_key, 56);
+		byte_t zero[56] = {0};
+
+		if (memcmp(zero, key->private_key, 56) == 0)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "X448 Secret Key (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_bytes(indent, "X448 Secret Key: ", PTR_OFFSET(str, pos), str_size - pos, key->private_key, 56);
+		}
 	}
 	break;
 	case PGP_ED25519:
 	{
 		pgp_ed25519_key *key = private_key;
-		pos += print_bytes(indent, "Ed25519 Secret Key: ", str, str_size, key->private_key, 32);
+		byte_t zero[32] = {0};
+
+		if (memcmp(zero, key->private_key, 32) == 0)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Ed25519 Secret Key (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_bytes(indent, "Ed25519 Secret Key: ", PTR_OFFSET(str, pos), str_size - pos, key->private_key, 32);
+		}
 	}
 	break;
 	case PGP_ED448:
 	{
 		pgp_ed448_key *key = private_key;
-		pos += print_bytes(indent, "Ed448 Secret Key: ", str, str_size, key->private_key, 57);
+		byte_t zero[57] = {0};
+
+		if (memcmp(zero, key->private_key, 57) == 0)
+		{
+			pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Ed448 Secret Key (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_bytes(indent, "Ed448 Secret Key: ", PTR_OFFSET(str, pos), str_size - pos, key->private_key, 57);
+		}
 	}
 	break;
 	default:
@@ -1633,24 +1715,100 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
+		pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets, PTR_OFFSET(str, pos),
-									size - pos, 1);
+
+		if (packet->s2k_usage != 0)
+		{
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "S2K Usage: ");
+			switch (packet->s2k_usage)
+			{
+			case 253:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AEAD (Tag 253)\n");
+				break;
+			case 254:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "CFB (Tag 254)\n");
+				break;
+			case 255:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Malleable CFB (Tag 255) (Deprecated)\n");
+				break;
+			default:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Legacy CFB (Tag 255) (Deprecated)\n");
+				break;
+			}
+
+			pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
+
+			if (packet->s2k_usage == 253)
+			{
+				pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
+			}
+
+			if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+			{
+				pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 2);
+			}
+
+			pos += print_bytes(2, "IV: ", PTR_OFFSET(str, pos), size - pos, packet->iv, packet->iv_size);
+		}
+
 		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets, PTR_OFFSET(str, pos),
 									 size - pos, 1);
+
+		if (packet->s2k_usage == 0)
+		{
+			pos += print_bytes(1, "Checksum: ", PTR_OFFSET(str, pos), size - pos, packet->key_checksum, 2);
+		}
 	}
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Creation Time : %u\n", packet->key_creation_time);
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Expiry : %hu days\n", packet->key_expiry_days);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu (Deprecated)\n", packet->version);
+		pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key Expiry: %hu days\n", packet->key_expiry_days);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets, PTR_OFFSET(str, pos),
-									size - pos, 1);
+
+		if (packet->s2k_usage != 0)
+		{
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "S2K Usage: ");
+			switch (packet->s2k_usage)
+			{
+			case 253:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AEAD (Tag 253)\n");
+				break;
+			case 254:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "CFB (Tag 254)\n");
+				break;
+			case 255:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Malleable CFB (Tag 255) (Deprecated)\n");
+				break;
+			default:
+				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Legacy CFB (Tag 255) (Deprecated)\n");
+				break;
+			}
+
+			pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
+
+			if (packet->s2k_usage == 253)
+			{
+				pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
+			}
+
+			if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+			{
+				pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 2);
+			}
+
+			pos += print_bytes(2, "IV: ", PTR_OFFSET(str, pos), size - pos, packet->iv, packet->iv_size);
+		}
+
 		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets, PTR_OFFSET(str, pos),
 									 size - pos, 1);
+
+		if (packet->s2k_usage == 0)
+		{
+			pos += print_bytes(1, "Checksum: ", PTR_OFFSET(str, pos), size - pos, packet->key_checksum, 2);
+		}
 	}
 	else
 	{
