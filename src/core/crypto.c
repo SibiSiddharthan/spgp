@@ -639,32 +639,19 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
 }
 
-uint32_t pgp_x25519_generate_ephemeral_key(pgp_x25519_private_key *private_key, pgp_x25519_public_key *public_key)
+uint32_t pgp_x25519_generate_ephemeral_key(pgp_x25519_key *key)
 {
-	x25519_key key = {0};
-
-	x25519_key_generate(&key);
-
-	memcpy(private_key->private_key, key.private_key, X25519_OCTET_SIZE);
-	memcpy(public_key->public_key, key.public_key, X25519_OCTET_SIZE);
-
+	x25519_key_generate((x25519_key *)key);
 	return X25519_OCTET_SIZE;
 }
 
-uint32_t pgp_x448_generate_ephemeral_key(pgp_x448_private_key *private_key, pgp_x448_public_key *public_key)
+uint32_t pgp_x448_generate_ephemeral_key(pgp_x448_key *key)
 {
-	x448_key key = {0};
-
-	x448_key_generate(&key);
-
-	memcpy(private_key->private_key, key.private_key, X448_OCTET_SIZE);
-	memcpy(public_key->public_key, key.public_key, X448_OCTET_SIZE);
-
+	x448_key_generate((x448_key *)key);
 	return X448_OCTET_SIZE;
 }
 
-pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
-								 byte_t session_key_size)
+pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
 {
 	rsa_key *key = NULL;
 	pgp_rsa_kex *kex = NULL;
@@ -675,15 +662,15 @@ pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_public_key *public_key, byte_t symmetri
 	uint16_t pos = 0;
 	uint16_t checksum = 0;
 
-	key = rsa_key_new(public_key->n->bits);
+	key = rsa_key_new(pgp_key->n->bits);
 
 	if (key == NULL)
 	{
 		return 0;
 	}
 
-	key->n = mpi_to_bignum(public_key->n);
-	key->d = mpi_to_bignum(public_key->e);
+	key->n = mpi_to_bignum(pgp_key->n);
+	key->d = mpi_to_bignum(pgp_key->e);
 
 	if (symmetric_key_algorithm_id != 0)
 	{
@@ -712,8 +699,8 @@ pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_public_key *public_key, byte_t symmetri
 	return kex;
 }
 
-uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key,
-							 byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size)
+uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *symmetric_key_algorithm_id, void *session_key,
+							 uint32_t session_key_size)
 {
 	uint32_t result = 0;
 	uint16_t checksum = 0;
@@ -722,15 +709,15 @@ uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_public_key *public_key, p
 	rsa_key *key = NULL;
 	byte_t buffer[64] = {0};
 
-	key = rsa_key_new(public_key->n->bits);
+	key = rsa_key_new(pgp_key->n->bits);
 
 	if (key == NULL)
 	{
 		return 0;
 	}
 
-	key->n = mpi_to_bignum(public_key->n);
-	key->d = mpi_to_bignum(private_key->d);
+	key->n = mpi_to_bignum(pgp_key->n);
+	key->d = mpi_to_bignum(pgp_key->d);
 
 	result = rsa_decrypt_pkcs(key, kex->c->bytes, CEIL_DIV(kex->c->bits, 8), buffer, 64);
 
@@ -860,18 +847,17 @@ static uint32_t pgp_ecdh_kw_decrypt(pgp_symmetric_key_algorithms algorithm, void
 	return in_size - 8;
 }
 
-pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
-								   byte_t session_key_size)
+pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
 {
 	pgp_ecdh_kex *kex = NULL;
 	ec_group *group = NULL;
-	ec_key *key = NULL;
+	ec_key *ephemeral_key = NULL;
 	ec_point *shared_point = NULL;
 	ec_point *public_point = NULL;
 
 	pgp_hash_algorithms hash_algorithm_id = 0;
 	pgp_symmetric_key_algorithms cipher_algorithm_id = 0;
-	curve_id id = pgp_ec_curve_to_curve_id(public_key->curve);
+	curve_id id = pgp_ec_curve_to_curve_id(pgp_key->curve);
 
 	byte_t *ps = session_key;
 	byte_t pos = 0;
@@ -895,7 +881,7 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symme
 		return NULL;
 	}
 
-	pgp_ecdh_kdf_paramters(public_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
+	pgp_ecdh_kdf_paramters(pgp_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
 
 	group = ec_group_new(id);
 
@@ -905,17 +891,17 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symme
 	}
 
 	// Generate ephemeral key
-	key = ec_key_generate(group, NULL);
+	ephemeral_key = ec_key_generate(group, NULL);
 
-	if (key == NULL)
+	if (ephemeral_key == NULL)
 	{
 		ec_group_delete(group);
 		return NULL;
 	}
 
 	// Compute shared point
-	public_point = ec_point_decode(group, NULL, public_key->point->bytes, CEIL_DIV(public_key->point->bits, 8));
-	shared_point = ec_point_multiply(group, NULL, public_point, key->d);
+	public_point = ec_point_decode(group, NULL, pgp_key->point->bytes, CEIL_DIV(pgp_key->point->bits, 8));
+	shared_point = ec_point_multiply(group, NULL, public_point, ephemeral_key->d);
 
 	xcoord_size = bignum_get_bytes_be(shared_point->x, xcoord, 128);
 
@@ -957,21 +943,21 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symme
 	pos = 0;
 
 	// Curve OID
-	kdf_input[pos] = public_key->oid_size;
+	kdf_input[pos] = pgp_key->oid_size;
 	pos += 1;
 
-	memcpy(kdf_input + pos, public_key->oid, public_key->oid_size);
-	pos += public_key->oid_size;
+	memcpy(kdf_input + pos, pgp_key->oid, pgp_key->oid_size);
+	pos += pgp_key->oid_size;
 
 	// ECDH Algorithm
 	kdf_input[pos] = PGP_ECDH;
 	pos += 1;
 
 	// KDF Parameters
-	kdf_input[pos++] = public_key->kdf.size;
-	kdf_input[pos++] = public_key->kdf.extensions;
-	kdf_input[pos++] = public_key->kdf.hash_algorithm_id;
-	kdf_input[pos++] = public_key->kdf.symmetric_key_algorithm_id;
+	kdf_input[pos++] = pgp_key->kdf.size;
+	kdf_input[pos++] = pgp_key->kdf.extensions;
+	kdf_input[pos++] = pgp_key->kdf.hash_algorithm_id;
+	kdf_input[pos++] = pgp_key->kdf.symmetric_key_algorithm_id;
 
 	// "Anonymous Sender"
 	memcpy(kdf_input + pos, "Anonymous Sender    ", 20);
@@ -993,7 +979,7 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symme
 	{
 		ec_point_delete(shared_point);
 		ec_point_delete(public_point);
-		ec_key_delete(key);
+		ec_key_delete(ephemeral_key);
 	}
 
 	memset(kex, 0, sizeof(pgp_ecdh_kex));
@@ -1004,13 +990,13 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_public_key *public_key, byte_t symme
 
 	ec_point_delete(shared_point);
 	ec_point_delete(public_point);
-	ec_key_delete(key);
+	ec_key_delete(ephemeral_key);
 
 	return kex;
 }
 
-uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key, pgp_ecdh_private_key *private_key,
-							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size)
+uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *symmetric_key_algorithm_id, void *session_key,
+							  uint32_t session_key_size)
 {
 	ec_group *group = NULL;
 	ec_point *shared_point = NULL;
@@ -1019,7 +1005,7 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key
 
 	pgp_hash_algorithms hash_algorithm_id = 0;
 	pgp_symmetric_key_algorithms cipher_algorithm_id = 0;
-	curve_id id = pgp_ec_curve_to_curve_id(public_key->curve);
+	curve_id id = pgp_ec_curve_to_curve_id(pgp_key->curve);
 
 	byte_t pos = 0;
 	uint16_t session_key_checksum = 0;
@@ -1040,7 +1026,7 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key
 		return 0;
 	}
 
-	pgp_ecdh_kdf_paramters(public_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
+	pgp_ecdh_kdf_paramters(pgp_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
 
 	group = ec_group_new(id);
 
@@ -1050,7 +1036,7 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key
 	}
 
 	// Compute shared point
-	d = mpi_to_bignum(private_key->x);
+	d = mpi_to_bignum(pgp_key->x);
 	public_point = ec_point_decode(group, NULL, kex->ephemeral_point->bytes, CEIL_DIV(kex->ephemeral_point->bits, 8));
 	shared_point = ec_point_multiply(group, NULL, public_point, d);
 
@@ -1075,21 +1061,21 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key
 	pos = 0;
 
 	// Curve OID
-	kdf_input[pos] = public_key->oid_size;
+	kdf_input[pos] = pgp_key->oid_size;
 	pos += 1;
 
-	memcpy(kdf_input + pos, public_key->oid, public_key->oid_size);
-	pos += public_key->oid_size;
+	memcpy(kdf_input + pos, pgp_key->oid, pgp_key->oid_size);
+	pos += pgp_key->oid_size;
 
 	// ECDH Algorithm
 	kdf_input[pos] = PGP_ECDH;
 	pos += 1;
 
 	// KDF Parameters
-	kdf_input[pos++] = public_key->kdf.size;
-	kdf_input[pos++] = public_key->kdf.extensions;
-	kdf_input[pos++] = public_key->kdf.hash_algorithm_id;
-	kdf_input[pos++] = public_key->kdf.symmetric_key_algorithm_id;
+	kdf_input[pos++] = pgp_key->kdf.size;
+	kdf_input[pos++] = pgp_key->kdf.extensions;
+	kdf_input[pos++] = pgp_key->kdf.hash_algorithm_id;
+	kdf_input[pos++] = pgp_key->kdf.symmetric_key_algorithm_id;
 
 	// "Anonymous Sender"
 	memcpy(kdf_input + pos, "Anonymous Sender    ", 20);
@@ -1120,14 +1106,11 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_public_key *public_key
 	return 0;
 }
 
-pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
-									   byte_t session_key_size)
+pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_key *key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
 {
 	pgp_x25519_kex *kex = NULL;
 
-	pgp_x25519_private_key ephemeral_private_key = {0};
-	pgp_x25519_public_key ephemeral_public_key = {0};
-
+	pgp_x25519_key ephemeral_key = {0};
 	byte_t shared_secret[X25519_OCTET_SIZE] = {0};
 	byte_t hkdf_input[3 * X25519_OCTET_SIZE] = {0};
 	uint16_t pos = 0;
@@ -1143,13 +1126,13 @@ pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_public_key *public_key, byte_t
 
 	memset(kex, 0, sizeof(pgp_x25519_kex));
 
-	pgp_x25519_generate_ephemeral_key(&ephemeral_private_key, &ephemeral_public_key);
-	x25519(shared_secret, public_key->public_key, ephemeral_private_key.private_key);
+	pgp_x25519_generate_ephemeral_key(&ephemeral_key);
+	x25519(shared_secret, key->public_key, ephemeral_key.private_key);
 
-	memcpy(hkdf_input + pos, ephemeral_public_key.public_key, X25519_OCTET_SIZE);
+	memcpy(hkdf_input + pos, ephemeral_key.public_key, X25519_OCTET_SIZE);
 	pos += X25519_OCTET_SIZE;
 
-	memcpy(hkdf_input + pos, public_key->public_key, X25519_OCTET_SIZE);
+	memcpy(hkdf_input + pos, key->public_key, X25519_OCTET_SIZE);
 	pos += X25519_OCTET_SIZE;
 
 	memcpy(hkdf_input + pos, shared_secret, X25519_OCTET_SIZE);
@@ -1157,7 +1140,7 @@ pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_public_key *public_key, byte_t
 
 	hkdf(HASH_SHA256, hkdf_input, pos, NULL, 0, "OpenPGP X25519", 14, key_wrap_key, AES128_KEY_SIZE);
 
-	memcpy(kex->ephemeral_key, ephemeral_public_key.public_key, X25519_OCTET_SIZE);
+	memcpy(kex->ephemeral_key, ephemeral_key.public_key, X25519_OCTET_SIZE);
 
 	if (symmetric_key_algorithm_id != 0)
 	{
@@ -1171,8 +1154,8 @@ pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_public_key *public_key, byte_t
 	return kex;
 }
 
-uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_x25519_public_key *public_key, pgp_x25519_private_key *private_key,
-								byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size)
+uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_x25519_key *key, byte_t *symmetric_key_algorithm_id, void *session_key,
+								uint32_t session_key_size)
 {
 	uint32_t result = 0;
 
@@ -1182,12 +1165,12 @@ uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_x25519_public_key *publ
 
 	byte_t key_wrap_key[AES128_KEY_SIZE] = {0};
 
-	x25519(shared_secret, kex->ephemeral_key, private_key->private_key);
+	x25519(shared_secret, kex->ephemeral_key, key->private_key);
 
 	memcpy(hkdf_input + pos, kex->ephemeral_key, X25519_OCTET_SIZE);
 	pos += X25519_OCTET_SIZE;
 
-	memcpy(hkdf_input + pos, public_key->public_key, X25519_OCTET_SIZE);
+	memcpy(hkdf_input + pos, key->public_key, X25519_OCTET_SIZE);
 	pos += X25519_OCTET_SIZE;
 
 	memcpy(hkdf_input + pos, shared_secret, X25519_OCTET_SIZE);
@@ -1207,14 +1190,11 @@ uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_x25519_public_key *publ
 	return result;
 }
 
-pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_public_key *public_key, byte_t symmetric_key_algorithm_id, void *session_key,
-								   byte_t session_key_size)
+pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_key *key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
 {
 	pgp_x448_kex *kex = NULL;
 
-	pgp_x448_private_key ephemeral_private_key = {0};
-	pgp_x448_public_key ephemeral_public_key = {0};
-
+	pgp_x448_key ephemeral_key = {0};
 	byte_t shared_secret[X448_OCTET_SIZE] = {0};
 	byte_t hkdf_input[3 * X448_OCTET_SIZE] = {0};
 	uint16_t pos = 0;
@@ -1230,13 +1210,13 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_public_key *public_key, byte_t symme
 
 	memset(kex, 0, sizeof(pgp_x448_kex));
 
-	pgp_x448_generate_ephemeral_key(&ephemeral_private_key, &ephemeral_public_key);
-	x448(shared_secret, public_key->public_key, ephemeral_private_key.private_key);
+	pgp_x448_generate_ephemeral_key(&ephemeral_key);
+	x448(shared_secret, key->public_key, ephemeral_key.private_key);
 
-	memcpy(hkdf_input + pos, ephemeral_public_key.public_key, X448_OCTET_SIZE);
+	memcpy(hkdf_input + pos, ephemeral_key.public_key, X448_OCTET_SIZE);
 	pos += X448_OCTET_SIZE;
 
-	memcpy(hkdf_input + pos, public_key->public_key, X448_OCTET_SIZE);
+	memcpy(hkdf_input + pos, key->public_key, X448_OCTET_SIZE);
 	pos += X448_OCTET_SIZE;
 
 	memcpy(hkdf_input + pos, shared_secret, X448_OCTET_SIZE);
@@ -1244,7 +1224,7 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_public_key *public_key, byte_t symme
 
 	hkdf(HASH_SHA256, hkdf_input, pos, NULL, 0, "OpenPGP X448", 12, key_wrap_key, AES256_KEY_SIZE);
 
-	memcpy(kex->ephemeral_key, ephemeral_public_key.public_key, X448_OCTET_SIZE);
+	memcpy(kex->ephemeral_key, ephemeral_key.public_key, X448_OCTET_SIZE);
 
 	if (symmetric_key_algorithm_id != 0)
 	{
@@ -1258,8 +1238,8 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_public_key *public_key, byte_t symme
 	return kex;
 }
 
-uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_public_key *public_key, pgp_x448_private_key *private_key,
-							  byte_t *symmetric_key_algorithm_id, void *session_key, uint32_t session_key_size)
+uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_key *key, byte_t *symmetric_key_algorithm_id, void *session_key,
+							  uint32_t session_key_size)
 {
 	uint32_t result = 0;
 
@@ -1269,12 +1249,12 @@ uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_public_key *public_key
 
 	byte_t key_wrap_key[AES256_KEY_SIZE] = {0};
 
-	x448(shared_secret, kex->ephemeral_key, private_key->private_key);
+	x448(shared_secret, kex->ephemeral_key, key->private_key);
 
 	memcpy(hkdf_input + pos, kex->ephemeral_key, X448_OCTET_SIZE);
 	pos += X448_OCTET_SIZE;
 
-	memcpy(hkdf_input + pos, public_key->public_key, X448_OCTET_SIZE);
+	memcpy(hkdf_input + pos, key->public_key, X448_OCTET_SIZE);
 	pos += X448_OCTET_SIZE;
 
 	memcpy(hkdf_input + pos, shared_secret, X448_OCTET_SIZE);
@@ -1294,8 +1274,7 @@ uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_public_key *public_key
 	return result;
 }
 
-pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_key *private_key, byte_t hash_algorithm_id, void *hash,
-								uint32_t hash_size)
+pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
 {
 	rsa_key *key = NULL;
 	rsa_signature *sign = NULL;
@@ -1308,14 +1287,14 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_
 		return 0;
 	}
 
-	key = rsa_key_new(public_key->n->bits);
+	key = rsa_key_new(pgp_key->n->bits);
 
 	if (key == NULL)
 	{
 		return NULL;
 	}
 
-	pgp_sign = malloc(sizeof(pgp_rsa_signature) + mpi_size(public_key->n->bits));
+	pgp_sign = malloc(sizeof(pgp_rsa_signature) + mpi_size(pgp_key->n->bits));
 
 	if (pgp_sign == NULL)
 	{
@@ -1323,8 +1302,8 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_
 		return NULL;
 	}
 
-	key->n = mpi_to_bignum(public_key->n);
-	key->d = mpi_to_bignum(private_key->d);
+	key->n = mpi_to_bignum(pgp_key->n);
+	key->d = mpi_to_bignum(pgp_key->d);
 
 	sign = rsa_sign_pkcs(key, algorithm, hash, hash_size, NULL, 0);
 
@@ -1335,8 +1314,7 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_public_key *public_key, pgp_rsa_private_
 	return pgp_sign;
 }
 
-uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public_key, byte_t hash_algorithm_id, void *hash,
-						uint32_t hash_size)
+uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
 {
 	uint32_t status;
 
@@ -1348,15 +1326,15 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public
 		return 0;
 	}
 
-	key = rsa_key_new(public_key->n->bits);
+	key = rsa_key_new(pgp_key->n->bits);
 
 	if (key == NULL)
 	{
 		return 0;
 	}
 
-	key->n = mpi_to_bignum(public_key->n);
-	key->e = mpi_to_bignum(public_key->e);
+	key->n = mpi_to_bignum(pgp_key->n);
+	key->e = mpi_to_bignum(pgp_key->e);
 
 	status = rsa_verify_pkcs(key, signature->e->bytes, algorithm, hash, hash_size);
 
@@ -1365,13 +1343,13 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_public_key *public
 	return status;
 }
 
-pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_public_key *public_key, pgp_dsa_private_key *private_key, void *hash, uint32_t hash_size)
+pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	dsa_key *key = NULL;
 	dsa_signature *sign = NULL;
 	pgp_dsa_signature *pgp_sign = NULL;
 
-	key = dsa_key_new(public_key->p->bits, public_key->q->bits);
+	key = dsa_key_new(pgp_key->p->bits, pgp_key->q->bits);
 
 	if (key == NULL)
 	{
@@ -1380,12 +1358,12 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_public_key *public_key, pgp_dsa_private_
 
 	pgp_sign = malloc(sizeof(pgp_dsa_signature));
 
-	key->p = mpi_to_bignum(public_key->p);
-	key->q = mpi_to_bignum(public_key->q);
-	key->g = mpi_to_bignum(public_key->g);
+	key->p = mpi_to_bignum(pgp_key->p);
+	key->q = mpi_to_bignum(pgp_key->q);
+	key->g = mpi_to_bignum(pgp_key->g);
 
-	key->x = mpi_to_bignum(private_key->x);
-	key->y = mpi_to_bignum(public_key->y);
+	key->x = mpi_to_bignum(pgp_key->x);
+	key->y = mpi_to_bignum(pgp_key->y);
 
 	sign = dsa_sign(key, NULL, 0, hash, hash_size, NULL, 0);
 
@@ -1394,54 +1372,54 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_public_key *public_key, pgp_dsa_private_
 		return NULL;
 	}
 
-	pgp_sign->r = mpi_from_bn(NULL, sign->r);
-	pgp_sign->s = mpi_from_bn(NULL, sign->s);
+	// pgp_sign->r = mpi_from_bn(NULL, sign->r);
+	// pgp_sign->s = mpi_from_bn(NULL, sign->s);
 
 	dsa_key_delete(key);
 
 	return pgp_sign;
 }
 
-uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_public_key *public_key, void *hash, uint32_t hash_size)
+uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
 	dsa_key *key = NULL;
 	dsa_signature sign = {0};
 
-	key = dsa_key_new(public_key->p->bits, public_key->q->bits);
+	key = dsa_key_new(pgp_key->p->bits, pgp_key->q->bits);
 
 	if (key == NULL)
 	{
 		return 0;
 	}
 
-	key->p = mpi_to_bignum(public_key->p);
-	key->q = mpi_to_bignum(public_key->q);
-	key->g = mpi_to_bignum(public_key->g);
+	key->p = mpi_to_bignum(pgp_key->p);
+	key->q = mpi_to_bignum(pgp_key->q);
+	key->g = mpi_to_bignum(pgp_key->g);
 
-	key->y = mpi_to_bignum(public_key->y);
+	key->y = mpi_to_bignum(pgp_key->y);
 
-	sign.r = mpi_to_bignum(signature->r);
-	sign.s = mpi_to_bignum(signature->s);
+	// sign.r = mpi_to_bignum(signature->r);
+	// sign.s = mpi_to_bignum(signature->s);
 
 	status = dsa_verify(key, &sign, hash, hash_size);
 
-	bignum_delete(sign.r);
-	bignum_delete(sign.s);
+	// bignum_delete(sign.r);
+	// bignum_delete(sign.s);
 
 	dsa_key_delete(key);
 
 	return status;
 }
 
-pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_public_key *public_key, pgp_ecdsa_private_key *private_key, void *hash, uint32_t hash_size)
+pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	ec_key *key = NULL;
 	ecdsa_signature *sign = NULL;
 	pgp_ecdsa_signature *pgp_sign = NULL;
 
-	bignum_t *d = mpi_to_bignum(private_key->x);
+	bignum_t *d = mpi_to_bignum(pgp_key->x);
 	ec_point *q = NULL;
 
 	key = ec_key_new(NULL, d, q);
@@ -1460,15 +1438,15 @@ pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_public_key *public_key, pgp_ecdsa_pr
 		return NULL;
 	}
 
-	pgp_sign->r = mpi_from_bn(NULL, sign->r);
-	pgp_sign->s = mpi_from_bn(NULL, sign->s);
+	// pgp_sign->r = mpi_from_bn(NULL, sign->r);
+	// pgp_sign->s = mpi_from_bn(NULL, sign->s);
 
 	ec_key_delete(key);
 
 	return pgp_sign;
 }
 
-uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_public_key *public_key, void *hash, uint32_t hash_size)
+uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
@@ -1484,25 +1462,22 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_public_key *
 		return 0;
 	}
 
-	sign.r = mpi_to_bignum(signature->r);
-	sign.s = mpi_to_bignum(signature->s);
+	// sign.r = mpi_to_bignum(signature->r);
+	// sign.s = mpi_to_bignum(signature->s);
 
 	status = ecdsa_verify(key, &sign, hash, hash_size);
 
-	bignum_delete(sign.r);
-	bignum_delete(sign.s);
+	// bignum_delete(sign.r);
+	// bignum_delete(sign.s);
 
 	ec_key_delete(key);
 
 	return status;
 }
 
-pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_public_key *public_key, pgp_ed25519_private_key *private_key, void *hash,
-										uint32_t hash_size)
+pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_key *key, void *hash, uint32_t hash_size)
 {
 	void *status = NULL;
-
-	ed25519_key key = {0};
 	pgp_ed25519_signature *sign = NULL;
 
 	sign = malloc(sizeof(pgp_ed25519_signature));
@@ -1512,11 +1487,7 @@ pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_public_key *public_key, pgp_
 		return NULL;
 	}
 
-	// Set the key
-	memcpy(key.private_key, private_key->private_key, ED25519_KEY_OCTETS);
-	memcpy(key.public_key, public_key->public_key, ED25519_KEY_OCTETS);
-
-	status = ed25519_sign(&key, hash, hash_size, sign, sizeof(ed25519_signature));
+	status = ed25519_sign((ed25519_key *)key, hash, hash_size, sign, sizeof(ed25519_signature));
 
 	if (status == NULL)
 	{
@@ -1527,30 +1498,19 @@ pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_public_key *public_key, pgp_
 	return sign;
 }
 
-uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_public_key *public_key, void *hash, uint32_t hash_size)
+uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
-	ed25519_key key = {0};
-	ed25519_signature sign = {0};
-
-	// Set the key
-	memcpy(key.public_key, public_key->public_key, ED25519_KEY_OCTETS);
-
-	// Set the signature
-	memcpy(sign.sign, signature->sig, ED25519_SIGN_OCTETS);
-
 	// TODO key validation
-	status = ed25519_verify(&key, &sign, hash, hash_size);
+	status = ed25519_verify((ed25519_key *)key, (ed25519_signature *)signature, hash, hash_size);
 
 	return status;
 }
 
-pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_private_key *private_key, void *hash, uint32_t hash_size)
+pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_key *key, void *hash, uint32_t hash_size)
 {
 	void *status = NULL;
-
-	ed448_key key = {0};
 	pgp_ed448_signature *sign = NULL;
 
 	sign = malloc(sizeof(pgp_ed448_signature));
@@ -1560,11 +1520,7 @@ pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_
 		return NULL;
 	}
 
-	// Set the key
-	memcpy(key.private_key, private_key->private_key, ED448_KEY_OCTETS);
-	memcpy(key.public_key, public_key->public_key, ED448_KEY_OCTETS);
-
-	status = ed448_sign(&key, NULL, 0, hash, hash_size, sign, sizeof(ed448_signature));
+	status = ed448_sign((ed448_key *)key, NULL, 0, hash, hash_size, sign, sizeof(ed448_signature));
 
 	if (status == NULL)
 	{
@@ -1575,21 +1531,12 @@ pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_public_key *public_key, pgp_ed448_
 	return sign;
 }
 
-uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_public_key *public_key, void *hash, uint32_t hash_size)
+uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
-	ed448_key key = {0};
-	ed448_signature sign = {0};
-
-	// Set the key
-	memcpy(key.public_key, public_key->public_key, ED448_KEY_OCTETS);
-
-	// Set the signature
-	memcpy(sign.sign, signature->sig, ED448_SIGN_OCTETS);
-
 	// TODO key validation
-	status = ed448_verify(&key, &sign, NULL, 0, hash, hash_size);
+	status = ed448_verify((ed448_key *)key, (ed448_signature *)signature, NULL, 0, hash, hash_size);
 
 	return status;
 }

@@ -36,7 +36,8 @@ typedef struct _pgp_pkesk_packet
 	byte_t key_octet_count;
 	byte_t key_version;
 
-	union {
+	union
+	{
 		byte_t key_id[8];
 		byte_t key_fingerprint[32];
 	};
@@ -103,10 +104,9 @@ typedef struct _pgp_x448_kex
 pgp_pkesk_packet *pgp_pkesk_packet_new(byte_t version, byte_t public_key_algorithm_id, byte_t session_key_algorithm_id);
 void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet);
 
-pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key, void *session_key,
+pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key,
 													   size_t session_key_size, byte_t anonymous);
-uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key,
-													   void *private_key, void *session_key, size_t session_key_size);
+uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key, size_t session_key_size);
 
 size_t pgp_pkesk_packet_get_session_key(pgp_pkesk_packet *packet, void *key, size_t size);
 

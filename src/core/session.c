@@ -427,14 +427,14 @@ void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet)
 	free(packet);
 }
 
-pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key, void *session_key,
+pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key,
 													   size_t session_key_size, byte_t anonymous)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	byte_t symmetric_key_algorithm_id = packet->version == PGP_PKESK_V6 ? 0 : packet->symmetric_key_algorithm_id;
 
 	// Check the algorithms
-	if (packet->public_key_algorithm_id != public_key->public_key_algorithm_id)
+	if (packet->public_key_algorithm_id != key->public_key_algorithm_id)
 	{
 		return NULL;
 	}
@@ -444,7 +444,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 		return NULL;
 	}
 
-	packet->key_version = public_key->version;
+	packet->key_version = key->version;
 
 	if (anonymous == 0)
 	{
@@ -452,22 +452,22 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 		{
 			packet->key_octet_count = 1;
 
-			switch (public_key->version)
+			switch (key->version)
 			{
 			case PGP_KEY_V6:
 				packet->key_octet_count += PGP_KEY_V6_FINGERPRINT_SIZE;
-				pgp_key_fingerprint(public_key, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+				pgp_key_fingerprint(key, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
 				break;
 			case PGP_KEY_V4:
 				packet->key_octet_count += PGP_KEY_V4_FINGERPRINT_SIZE;
-				pgp_key_fingerprint(public_key, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+				pgp_key_fingerprint(key, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
 			default:
 				return NULL;
 			}
 		}
 		else
 		{
-			pgp_key_id(public_key, packet->key_id);
+			pgp_key_id(key, packet->key_id);
 		}
 	}
 
@@ -476,24 +476,20 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	{
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		packet->encrypted_session_key =
-			pgp_rsa_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		packet->encrypted_session_key = pgp_rsa_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 		// packet->encrypted_session_key =
 		//	pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
-		packet->encrypted_session_key =
-			pgp_ecdh_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		packet->encrypted_session_key = pgp_ecdh_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_X25519:
-		packet->encrypted_session_key =
-			pgp_x25519_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		packet->encrypted_session_key = pgp_x25519_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_X448:
-		packet->encrypted_session_key =
-			pgp_x448_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+		packet->encrypted_session_key = pgp_x448_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	default:
 		return NULL;
@@ -507,8 +503,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	return packet;
 }
 
-uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_public_key_packet *public_key, void *private_key,
-											  void *session_key, size_t session_key_size)
+uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key, size_t session_key_size)
 {
 	uint32_t result = 0;
 
@@ -517,7 +512,7 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_publ
 	byte_t key_fingerprint[32] = {0};
 
 	// Check fingerprint
-	key_fingerprint_size = pgp_key_fingerprint(public_key, key_fingerprint, 32);
+	key_fingerprint_size = pgp_key_fingerprint(key, key_fingerprint, 32);
 
 	// Incorrect key for decryption.
 	if (memcmp(packet->key_fingerprint, key_fingerprint, key_fingerprint_size) != 0)
@@ -530,24 +525,17 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_publ
 	{
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		result = pgp_rsa_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
-									 session_key, session_key_size);
-		break;
-	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		// result = pgp_elgamal_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
-		//								 session_key, session_key_size);
+		result = pgp_rsa_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
-		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
-									  session_key, session_key_size);
+		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_X25519:
-		result = pgp_x25519_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
-										session_key, session_key_size);
+		result =
+			pgp_x25519_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_X448:
-		result = pgp_x448_kex_decrypt(packet->encrypted_session_key, public_key->key_data, private_key, &symmetric_key_algorithm_id,
-									  session_key, session_key_size);
+		result = pgp_x448_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	default:
 		return 0;

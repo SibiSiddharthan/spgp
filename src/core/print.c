@@ -811,7 +811,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_private_key *key = private_key;
+		pgp_rsa_key *key = private_key;
 		pos += print_mpi(indent, "RSA d", key->d, PTR_OFFSET(str, pos), str_size - pos);
 		pos += print_mpi(indent, "RSA p", key->p, PTR_OFFSET(str, pos), str_size - pos);
 		pos += print_mpi(indent, "RSA q", key->q, PTR_OFFSET(str, pos), str_size - pos);
@@ -820,49 +820,49 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_private_key *key = private_key;
+		pgp_elgamal_key *key = private_key;
 		pos += print_mpi(indent, "Elgamal x", key->x, str, str_size);
 	}
 	break;
 	case PGP_DSA:
 	{
-		pgp_dsa_private_key *key = private_key;
+		pgp_dsa_key *key = private_key;
 		pos += print_mpi(indent, "DSA x", key->x, str, str_size);
 	}
 	break;
 	case PGP_ECDH:
 	{
-		pgp_ecdh_private_key *key = private_key;
+		pgp_ecdh_key *key = private_key;
 		pos += print_mpi(indent, "ECDH x", key->x, str, str_size);
 	}
 	break;
 	case PGP_ECDSA:
 	{
-		pgp_ecdsa_private_key *key = private_key;
+		pgp_ecdsa_key *key = private_key;
 		pos += print_mpi(indent, "ECDSA x", key->x, str, str_size);
 	}
 	break;
 	case PGP_X25519:
 	{
-		pgp_x25519_private_key *key = private_key;
+		pgp_x25519_key *key = private_key;
 		pos += print_bytes(indent, "X25519 Secret Key: ", str, str_size, key->private_key, 32);
 	}
 	break;
 	case PGP_X448:
 	{
-		pgp_x448_private_key *key = private_key;
+		pgp_x448_key *key = private_key;
 		pos += print_bytes(indent, "X448 Secret Key: ", str, str_size, key->private_key, 56);
 	}
 	break;
 	case PGP_ED25519:
 	{
-		pgp_ed25519_private_key *key = private_key;
+		pgp_ed25519_key *key = private_key;
 		pos += print_bytes(indent, "Ed25519 Secret Key: ", str, str_size, key->private_key, 32);
 	}
 	break;
 	case PGP_ED448:
 	{
-		pgp_ed448_private_key *key = private_key;
+		pgp_ed448_key *key = private_key;
 		pos += print_bytes(indent, "Ed448 Secret Key: ", str, str_size, key->private_key, 57);
 	}
 	break;

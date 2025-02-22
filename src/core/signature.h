@@ -282,9 +282,8 @@ typedef struct _pgp_embedded_signature_subpacket
 pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *private_key, void *data,
-								   size_t size);
-uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_public_key_packet *public_key, void *data, size_t size);
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size);
+uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size);
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
