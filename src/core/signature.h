@@ -160,26 +160,6 @@ typedef struct _pgp_one_pass_signature_packet
 
 } pgp_one_pass_signature_packet;
 
-typedef struct _pgp_rsa_signature
-{
-	mpi_t *e;
-} pgp_rsa_signature;
-
-typedef struct _pgp_dsa_signature
-{
-	mpi_t *r, *s;
-} pgp_dsa_signature, pgp_ecdsa_signature;
-
-typedef struct _pgp_ed25519_signature
-{
-	byte_t sig[64];
-} pgp_ed25519_signature;
-
-typedef struct _pgp_ed448_signature
-{
-	byte_t sig[114];
-} pgp_ed448_signature;
-
 // Signature subpackets
 
 typedef struct _pgp_timestamp_subpacket
@@ -279,6 +259,26 @@ typedef struct _pgp_embedded_signature_subpacket
 	pgp_signature_packet *signature;
 } pgp_embedded_signature_subpacket;
 
+typedef struct _pgp_rsa_signature
+{
+	mpi_t *e;
+} pgp_rsa_signature;
+
+typedef struct _pgp_dsa_signature
+{
+	mpi_t *r, *s;
+} pgp_dsa_signature, pgp_ecdsa_signature;
+
+typedef struct _pgp_ed25519_signature
+{
+	byte_t sig[64];
+} pgp_ed25519_signature;
+
+typedef struct _pgp_ed448_signature
+{
+	byte_t sig[114];
+} pgp_ed448_signature;
+
 pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
@@ -297,5 +297,11 @@ void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, size_t size);
 size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
 size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
+
+pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);
+void pgp_rsa_signature_delete(pgp_rsa_signature *sign);
+
+pgp_dsa_signature *pgp_dsa_signature_new(uint16_t bits);
+void pgp_dsa_signature_delete(pgp_dsa_signature *sign);
 
 #endif

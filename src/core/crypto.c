@@ -1531,17 +1531,13 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 	key->n = mpi_to_bignum(pgp_key->n);
 	key->d = mpi_to_bignum(pgp_key->d);
 
-	pgp_sign = malloc(sizeof(pgp_rsa_signature) + mpi_size(pgp_key->n->bits));
+	pgp_sign = pgp_rsa_signature_new(pgp_key->n->bits);
 
 	if (pgp_sign == NULL)
 	{
 		rsa_key_delete(key);
 		return NULL;
 	}
-
-	memset(pgp_sign, 0, sizeof(pgp_rsa_signature) + mpi_size(pgp_key->n->bits));
-
-	pgp_sign->e = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_rsa_signature)), mpi_size(pgp_key->n->bits), pgp_key->n->bits);
 
 	sign.size = CEIL_DIV(pgp_key->n->bits, 8);
 	sign.sign = pgp_sign->e->bytes;
@@ -1609,19 +1605,13 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 		return NULL;
 	}
 
-	pgp_sign = malloc(sizeof(pgp_dsa_signature) + (2 * mpi_size(pgp_key->q->bits)));
+	pgp_sign = pgp_dsa_signature_new(pgp_key->q->bits);
 
 	if (pgp_sign == NULL)
 	{
 		dsa_key_delete(key);
 		return NULL;
 	}
-
-	memset(pgp_sign, 0, sizeof(pgp_dsa_signature) + mpi_size(pgp_key->q->bits));
-
-	pgp_sign->r = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature)), mpi_size(pgp_key->q->bits), pgp_key->q->bits);
-	pgp_sign->s = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature) + mpi_size(pgp_key->q->bits)), mpi_size(pgp_key->q->bits),
-						   pgp_key->q->bits);
 
 	key->p = mpi_to_bignum(pgp_key->p);
 	key->q = mpi_to_bignum(pgp_key->q);
@@ -1721,18 +1711,14 @@ pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t h
 		return NULL;
 	}
 
-	pgp_sign = malloc(sizeof(pgp_ecdsa_signature) + (2 * mpi_size(group->bits)));
+	// ecdsa and dsa share the same structure
+	pgp_sign = pgp_dsa_signature_new(group->bits);
 
 	if (pgp_sign == NULL)
 	{
 		ec_key_delete(key);
 		return NULL;
 	}
-
-	memset(pgp_sign, 0, sizeof(pgp_dsa_signature) + mpi_size(group->bits));
-
-	pgp_sign->r = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature)), mpi_size(group->bits), group->bits);
-	pgp_sign->s = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature) + mpi_size(group->bits)), mpi_size(group->bits), group->bits);
 
 	sign.r.size = CEIL_DIV(pgp_sign->r->bits, 8);
 	sign.s.size = CEIL_DIV(pgp_sign->s->bits, 8);

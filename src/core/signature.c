@@ -2012,3 +2012,52 @@ size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet
 
 	return pos;
 }
+
+pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits)
+{
+	pgp_rsa_signature *sign = NULL;
+
+	sign = malloc(sizeof(pgp_rsa_signature) + mpi_size(bits));
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	memset(sign, 0, sizeof(pgp_rsa_signature) + mpi_size(bits));
+
+	// Initialize the MPI
+	sign->e = mpi_init(PTR_OFFSET(sign, sizeof(pgp_rsa_signature)), mpi_size(bits), bits);
+
+	return sign;
+}
+
+void pgp_rsa_signature_delete(pgp_rsa_signature *sign)
+{
+	free(sign);
+}
+
+pgp_dsa_signature *pgp_dsa_signature_new(uint16_t bits)
+{
+	pgp_dsa_signature *sign = NULL;
+
+	sign = malloc(sizeof(pgp_dsa_signature) + (2 * mpi_size(bits)));
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	memset(sign, 0, sizeof(pgp_dsa_signature) + mpi_size(bits));
+
+	// Initialize the MPIs
+	sign->r = mpi_init(PTR_OFFSET(sign, sizeof(pgp_dsa_signature)), mpi_size(bits), bits);
+	sign->s = mpi_init(PTR_OFFSET(sign, sizeof(pgp_dsa_signature) + mpi_size(bits)), mpi_size(bits), bits);
+
+	return sign;
+}
+
+void pgp_dsa_signature_delete(pgp_dsa_signature *sign)
+{
+	free(sign);
+}
