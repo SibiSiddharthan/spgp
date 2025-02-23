@@ -59,6 +59,16 @@ static mpi_t *mpi_from_bignum(bignum_t *bn)
 	return mpi;
 }
 
+static ec_point *mpi_to_ec_point(ec_group *group, mpi_t *mpi)
+{
+	return NULL;
+}
+
+static mpi_t *mpi_from_ec_point(ec_group *group, mpi_t *mpi)
+{
+	return NULL;
+}
+
 static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algorithms algorithm)
 {
 	switch (algorithm)
@@ -1645,33 +1655,71 @@ uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void
 
 pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
-	ec_key *key = NULL;
-	ecdsa_signature *sign = NULL;
-	pgp_ecdsa_signature *pgp_sign = NULL;
+	void *result = NULL;
 
-	bignum_t *d = mpi_to_bignum(pgp_key->x);
+	ec_group *group = NULL;
+	ec_key *key = NULL;
+	pgp_ecdsa_signature *pgp_sign = NULL;
+	ecdsa_signature sign = {0};
+
+	bignum_t *d = NULL;
 	ec_point *q = NULL;
 
-	key = ec_key_new(NULL, d, q);
+	curve_id id = pgp_ec_curve_to_curve_id(pgp_key->curve);
+
+	if (id == 0)
+	{
+		return NULL;
+	}
+
+	group = ec_group_new(id);
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	d = mpi_to_bignum(pgp_key->x);
+	q = mpi_to_ec_point(group, pgp_key->point);
+
+	key = ec_key_new(group, d, q);
 
 	if (key == NULL)
 	{
+		ec_group_delete(group);
 		return NULL;
 	}
 
-	pgp_sign = malloc(sizeof(pgp_ecdsa_signature));
+	pgp_sign = malloc(sizeof(pgp_ecdsa_signature) + (2 * mpi_size(group->bits)));
 
-	sign = ecdsa_sign(key, NULL, 0, hash, hash_size, NULL, 0);
+	if (pgp_sign == NULL)
+	{
+		ec_key_delete(key);
+		return NULL;
+	}
 
-	if (sign == NULL)
+	memset(pgp_sign, 0, sizeof(pgp_dsa_signature) + mpi_size(group->bits));
+
+	pgp_sign->r = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature)), mpi_size(group->bits), group->bits);
+	pgp_sign->s = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature) + mpi_size(group->bits)), mpi_size(group->bits), group->bits);
+
+	sign.r.size = CEIL_DIV(pgp_sign->r->bits, 8);
+	sign.s.size = CEIL_DIV(pgp_sign->s->bits, 8);
+
+	sign.r.sign = pgp_sign->r->bytes;
+	sign.s.sign = pgp_sign->s->bytes;
+
+	result = ecdsa_sign(key, NULL, 0, hash, hash_size, &sign, 0);
+
+	ec_key_delete(key);
+
+	if (result == NULL)
 	{
 		return NULL;
 	}
 
-	// pgp_sign->r = mpi_from_bn(NULL, sign->r);
-	// pgp_sign->s = mpi_from_bn(NULL, sign->s);
-
-	ec_key_delete(key);
+	pgp_sign->r->bits = sign.r.bits;
+	pgp_sign->s->bits = sign.s.bits;
 
 	return pgp_sign;
 }
@@ -1680,25 +1728,45 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key
 {
 	uint32_t status = 0;
 
+	ec_group *group = NULL;
 	ec_key *key = NULL;
 	ecdsa_signature sign = {0};
 
+	bignum_t *d = NULL;
 	ec_point *q = NULL;
 
-	key = ec_key_new(NULL, NULL, q);
+	curve_id id = pgp_ec_curve_to_curve_id(pgp_key->curve);
 
-	if (key == NULL)
+	if (id == 0)
 	{
 		return 0;
 	}
 
-	// sign.r = mpi_to_bignum(signature->r);
-	// sign.s = mpi_to_bignum(signature->s);
+	group = ec_group_new(id);
+
+	if (group == NULL)
+	{
+		return 0;
+	}
+
+	d = mpi_to_bignum(pgp_key->x);
+	q = mpi_to_ec_point(group, pgp_key->point);
+
+	key = ec_key_new(group, d, q);
+
+	if (key == NULL)
+	{
+		ec_group_delete(group);
+		return 0;
+	}
+
+	sign.r.size = CEIL_DIV(signature->r->bits, 8);
+	sign.s.size = CEIL_DIV(signature->s->bits, 8);
+
+	sign.r.sign = signature->r->bytes;
+	sign.s.sign = signature->s->bytes;
 
 	status = ecdsa_verify(key, &sign, hash, hash_size);
-
-	// bignum_delete(sign.r);
-	// bignum_delete(sign.s);
 
 	ec_key_delete(key);
 
