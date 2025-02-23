@@ -1467,9 +1467,11 @@ uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_key *key, byte_t *symm
 
 pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
 {
+	void *result = NULL;
+
 	rsa_key *key = NULL;
-	rsa_signature *sign = NULL;
 	pgp_rsa_signature *pgp_sign = NULL;
+	rsa_signature sign = {0};
 
 	hash_algorithm algorithm = pgp_algorithm_to_hash_algorithm(hash_algorithm_id);
 
@@ -1485,6 +1487,9 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 		return NULL;
 	}
 
+	key->n = mpi_to_bignum(pgp_key->n);
+	key->d = mpi_to_bignum(pgp_key->d);
+
 	pgp_sign = malloc(sizeof(pgp_rsa_signature) + mpi_size(pgp_key->n->bits));
 
 	if (pgp_sign == NULL)
@@ -1493,14 +1498,23 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 		return NULL;
 	}
 
-	key->n = mpi_to_bignum(pgp_key->n);
-	key->d = mpi_to_bignum(pgp_key->d);
+	memset(pgp_sign, 0, sizeof(pgp_rsa_signature) + mpi_size(pgp_key->n->bits));
 
-	sign = rsa_sign_pkcs(key, algorithm, hash, hash_size, NULL, 0);
+	pgp_sign->e = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_rsa_signature)), mpi_size(pgp_key->n->bits), pgp_key->n->bits);
 
-	// TODO Make the signature a MPI
+	sign.size = CEIL_DIV(pgp_key->n->bits, 8);
+	sign.sign = pgp_sign->e->bytes;
+
+	result = rsa_sign_pkcs(key, algorithm, hash, hash_size, &sign, 0);
 
 	rsa_key_delete(key);
+
+	if (result == NULL)
+	{
+		return NULL;
+	}
+
+	pgp_sign->e->bits = sign.bits;
 
 	return pgp_sign;
 }
@@ -1510,6 +1524,7 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte
 	uint32_t status;
 
 	rsa_key *key = NULL;
+	rsa_signature sign = {0};
 	hash_algorithm algorithm = pgp_algorithm_to_hash_algorithm(hash_algorithm_id);
 
 	if (algorithm == 0)
@@ -1527,7 +1542,11 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte
 	key->n = mpi_to_bignum(pgp_key->n);
 	key->e = mpi_to_bignum(pgp_key->e);
 
-	status = rsa_verify_pkcs(key, signature->e->bytes, algorithm, hash, hash_size);
+	sign.bits = signature->e->bits;
+	sign.size = CEIL_DIV(signature->e->bits, 8);
+	sign.sign = signature->e->bytes;
+
+	status = rsa_verify_pkcs(key, &sign, algorithm, hash, hash_size);
 
 	rsa_key_delete(key);
 
