@@ -51,6 +51,13 @@ mpi_t *mpi_new(uint16_t bits)
 
 void mpi_delete(mpi_t *mpi)
 {
+	if (mpi == NULL)
+	{
+		return;
+	}
+
+	memset(mpi->bytes, 0, CEIL_DIV(mpi->bits, 8));
+
 	free(mpi);
 }
 
