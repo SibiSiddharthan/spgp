@@ -1555,9 +1555,11 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte
 
 pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
+	void *result = NULL;
+
 	dsa_key *key = NULL;
-	dsa_signature *sign = NULL;
 	pgp_dsa_signature *pgp_sign = NULL;
+	dsa_signature sign = {0};
 
 	key = dsa_key_new(pgp_key->p->bits, pgp_key->q->bits);
 
@@ -1566,7 +1568,19 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 		return NULL;
 	}
 
-	pgp_sign = malloc(sizeof(pgp_dsa_signature));
+	pgp_sign = malloc(sizeof(pgp_dsa_signature) + (2 * mpi_size(pgp_key->q->bits)));
+
+	if (pgp_sign == NULL)
+	{
+		dsa_key_delete(key);
+		return NULL;
+	}
+
+	memset(pgp_sign, 0, sizeof(pgp_dsa_signature) + mpi_size(pgp_key->q->bits));
+
+	pgp_sign->r = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature)), mpi_size(pgp_key->q->bits), pgp_key->q->bits);
+	pgp_sign->s = mpi_init(PTR_OFFSET(pgp_sign, sizeof(pgp_dsa_signature) + mpi_size(pgp_key->q->bits)), mpi_size(pgp_key->q->bits),
+						   pgp_key->q->bits);
 
 	key->p = mpi_to_bignum(pgp_key->p);
 	key->q = mpi_to_bignum(pgp_key->q);
@@ -1575,17 +1589,23 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 	key->x = mpi_to_bignum(pgp_key->x);
 	key->y = mpi_to_bignum(pgp_key->y);
 
-	sign = dsa_sign(key, NULL, 0, hash, hash_size, NULL, 0);
+	sign.r.size = CEIL_DIV(pgp_sign->r->bits, 8);
+	sign.s.size = CEIL_DIV(pgp_sign->s->bits, 8);
 
-	if (sign == NULL)
+	sign.r.sign = pgp_sign->r->bytes;
+	sign.s.sign = pgp_sign->s->bytes;
+
+	result = dsa_sign(key, NULL, 0, hash, hash_size, &sign, 0);
+
+	dsa_key_delete(key);
+
+	if (result == NULL)
 	{
 		return NULL;
 	}
 
-	// pgp_sign->r = mpi_from_bn(NULL, sign->r);
-	// pgp_sign->s = mpi_from_bn(NULL, sign->s);
-
-	dsa_key_delete(key);
+	pgp_sign->r->bits = sign.r.bits;
+	pgp_sign->s->bits = sign.s.bits;
 
 	return pgp_sign;
 }
@@ -1610,13 +1630,13 @@ uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void
 
 	key->y = mpi_to_bignum(pgp_key->y);
 
-	// sign.r = mpi_to_bignum(signature->r);
-	// sign.s = mpi_to_bignum(signature->s);
+	sign.r.size = CEIL_DIV(signature->r->bits, 8);
+	sign.s.size = CEIL_DIV(signature->s->bits, 8);
+
+	sign.r.sign = signature->r->bytes;
+	sign.s.sign = signature->s->bytes;
 
 	status = dsa_verify(key, &sign, hash, hash_size);
-
-	// bignum_delete(sign.r);
-	// bignum_delete(sign.s);
 
 	dsa_key_delete(key);
 
