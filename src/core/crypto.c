@@ -654,6 +654,41 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
 }
 
+void *pgp_rsa_generate_key(uint32_t bits)
+{
+	rsa_key *key = NULL;
+	pgp_rsa_key *pgp_key = NULL;
+
+	pgp_key = malloc(sizeof(pgp_rsa_key));
+
+	if (pgp_key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(pgp_key, 0, sizeof(pgp_rsa_key));
+
+	// Use default e
+	key = rsa_key_generate(bits, NULL);
+
+	if (key == NULL)
+	{
+		free(pgp_key);
+		return NULL;
+	}
+
+	pgp_key->n = mpi_from_bignum(key->n);
+	pgp_key->e = mpi_from_bignum(key->e);
+	pgp_key->d = mpi_from_bignum(key->d);
+	pgp_key->p = mpi_from_bignum(key->p);
+	pgp_key->q = mpi_from_bignum(key->q);
+	pgp_key->u = mpi_from_bignum(key->iqmp);
+
+	rsa_key_delete(key);
+
+	return pgp_key;
+}
+
 void pgp_x25519_generate_key(pgp_x25519_key *key)
 {
 	x25519_key_generate((x25519_key *)key);
