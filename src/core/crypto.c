@@ -649,6 +649,20 @@ void pgp_x448_generate_key(pgp_x448_key *key)
 	x448_key_generate((x448_key *)key);
 }
 
+void pgp_ed25519_generate_key(pgp_ed25519_key *key)
+{
+	byte_t zero[ED25519_KEY_OCTETS] = {0};
+
+	ed25519_key_generate((ed25519_key *)key, zero);
+}
+
+void pgp_ed448_generate_key(pgp_ed448_key *key)
+{
+	byte_t zero[ED448_KEY_OCTETS] = {0};
+
+	ed448_key_generate((ed448_key *)key, zero);
+}
+
 pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
 {
 	rsa_key *key = NULL;
