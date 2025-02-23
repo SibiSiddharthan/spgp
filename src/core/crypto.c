@@ -828,12 +828,13 @@ void pgp_ed448_generate_key(pgp_ed448_key *key)
 
 pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
 {
+	uint32_t result = 0;
+
 	rsa_key *key = NULL;
 	pgp_rsa_kex *kex = NULL;
 	byte_t *ps = session_key;
 
 	byte_t buffer[64] = {0};
-	byte_t out[512] = {0};
 	uint16_t pos = 0;
 	uint16_t checksum = 0;
 
@@ -865,11 +866,26 @@ pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algo
 	buffer[pos + 1] = checksum & 0xFF;
 	pos += 2;
 
-	rsa_encrypt_pkcs(key, buffer, pos, out, 512, NULL);
+	kex = malloc(sizeof(pgp_rsa_kex) + mpi_size(pgp_key->n->bits));
 
-	// TODO: Make MPI
+	if (kex == NULL)
+	{
+		rsa_key_delete(key);
+		return NULL;
+	}
+
+	memset(kex, 0, sizeof(pgp_rsa_kex) + mpi_size(pgp_key->n->bits));
+	kex->c = mpi_init(PTR_OFFSET(kex, sizeof(pgp_rsa_kex)), mpi_size(pgp_key->n->bits), pgp_key->n->bits);
+
+	result = rsa_encrypt_pkcs(key, buffer, pos, kex->c->bytes, CEIL_DIV(pgp_key->n->bits, 8), NULL);
 
 	rsa_key_delete(key);
+
+	if (result == 0)
+	{
+		free(kex);
+		return NULL;
+	}
 
 	return kex;
 }
