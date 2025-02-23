@@ -166,4 +166,16 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size);
 uint32_t pgp_key_id(void *key, byte_t id[8]);
 
+pgp_rsa_key *pgp_rsa_key_new();
+void pgp_rsa_key_delete(pgp_rsa_key *key);
+
+pgp_dsa_key *pgp_dsa_key_new();
+void pgp_dsa_key_delete(pgp_dsa_key *key);
+
+pgp_ecdsa_key *pgp_ecdsa_key_new();
+void pgp_ecdsa_key_delete(pgp_ecdsa_key *key);
+
+pgp_ecdh_key *pgp_ecdh_key_new();
+void pgp_ecdh_key_delete(pgp_ecdh_key *key);
+
 #endif

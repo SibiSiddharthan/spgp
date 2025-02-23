@@ -10,6 +10,7 @@
 #include <packet.h>
 #include <key.h>
 #include <s2k.h>
+#include <mpi.h>
 #include <crypto.h>
 
 #include <hkdf.h>
@@ -2474,4 +2475,121 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 	LOAD_64(id, PTR_OFFSET(fingerprint, status - 8));
 
 	return 8;
+}
+
+pgp_rsa_key *pgp_rsa_key_new()
+{
+	pgp_rsa_key *key = malloc(sizeof(pgp_rsa_key));
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, sizeof(pgp_rsa_key));
+
+	return key;
+}
+
+void pgp_rsa_key_delete(pgp_rsa_key *key)
+{
+	if (key == NULL)
+	{
+		return;
+	}
+
+	mpi_delete(key->n);
+	mpi_delete(key->e);
+	mpi_delete(key->d);
+	mpi_delete(key->p);
+	mpi_delete(key->q);
+	mpi_delete(key->u);
+
+	free(key);
+}
+
+pgp_dsa_key *pgp_dsa_key_new()
+{
+	pgp_dsa_key *key = malloc(sizeof(pgp_dsa_key));
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, sizeof(pgp_dsa_key));
+
+	return key;
+}
+
+void pgp_dsa_key_delete(pgp_dsa_key *key)
+{
+	if (key == NULL)
+	{
+		return;
+	}
+
+	mpi_delete(key->p);
+	mpi_delete(key->q);
+	mpi_delete(key->g);
+	mpi_delete(key->x);
+	mpi_delete(key->y);
+
+	free(key);
+}
+
+pgp_ecdsa_key *pgp_ecdsa_key_new()
+{
+	pgp_ecdsa_key *key = malloc(sizeof(pgp_ecdsa_key));
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, sizeof(pgp_ecdsa_key));
+
+	return key;
+}
+
+void pgp_ecdsa_key_delete(pgp_ecdsa_key *key)
+{
+	if (key == NULL)
+	{
+		return;
+	}
+
+	mpi_delete(key->point);
+	mpi_delete(key->x);
+	memset(key, 0, sizeof(pgp_ecdsa_key));
+
+	free(key);
+}
+
+pgp_ecdh_key *pgp_ecdh_key_new()
+{
+	pgp_ecdh_key *key = malloc(sizeof(pgp_ecdh_key));
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, sizeof(pgp_ecdh_key));
+
+	return key;
+}
+
+void pgp_ecdh_key_delete(pgp_ecdh_key *key)
+{
+	if (key == NULL)
+	{
+		return;
+	}
+
+	mpi_delete(key->point);
+	mpi_delete(key->x);
+	memset(key, 0, sizeof(pgp_ecdh_key));
+
+	free(key);
 }
