@@ -639,16 +639,14 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
 }
 
-uint32_t pgp_x25519_generate_ephemeral_key(pgp_x25519_key *key)
+void pgp_x25519_generate_key(pgp_x25519_key *key)
 {
 	x25519_key_generate((x25519_key *)key);
-	return X25519_OCTET_SIZE;
 }
 
-uint32_t pgp_x448_generate_ephemeral_key(pgp_x448_key *key)
+void pgp_x448_generate_key(pgp_x448_key *key)
 {
 	x448_key_generate((x448_key *)key);
-	return X448_OCTET_SIZE;
 }
 
 pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
@@ -1126,7 +1124,7 @@ pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_key *key, byte_t symmetric_key
 
 	memset(kex, 0, sizeof(pgp_x25519_kex));
 
-	pgp_x25519_generate_ephemeral_key(&ephemeral_key);
+	pgp_x25519_generate_key(&ephemeral_key);
 	x25519(shared_secret, key->public_key, ephemeral_key.private_key);
 
 	memcpy(hkdf_input + pos, ephemeral_key.public_key, X25519_OCTET_SIZE);
@@ -1210,7 +1208,7 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_key *key, byte_t symmetric_key_algor
 
 	memset(kex, 0, sizeof(pgp_x448_kex));
 
-	pgp_x448_generate_ephemeral_key(&ephemeral_key);
+	pgp_x448_generate_key(&ephemeral_key);
 	x448(shared_secret, key->public_key, ephemeral_key.private_key);
 
 	memcpy(hkdf_input + pos, ephemeral_key.public_key, X448_OCTET_SIZE);
