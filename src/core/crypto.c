@@ -61,12 +61,59 @@ static mpi_t *mpi_from_bignum(bignum_t *bn)
 
 static ec_point *mpi_to_ec_point(ec_group *group, mpi_t *mpi)
 {
-	return NULL;
+	void *result = NULL;
+	ec_point *point = ec_point_new(group);
+
+	if (point == NULL)
+	{
+		return NULL;
+	}
+
+	if (group->id == EC_CURVE25519 || group->id == EC_ED25519)
+	{
+		// Prefixed native (Ignore the first byte 0x40)
+		result = ec_point_decode(group, point, PTR_OFFSET(mpi->bytes, 1), FLOOR_DIV(mpi->bits, 8));
+	}
+	else
+	{
+		// SEC point wire format
+		result = ec_point_decode(group, point, mpi->bytes, CEIL_DIV(mpi->bits, 8));
+	}
+
+	if (result == NULL)
+	{
+		ec_point_delete(point);
+		return NULL;
+	}
+
+	return point;
 }
 
-static mpi_t *mpi_from_ec_point(ec_group *group, mpi_t *mpi)
+static mpi_t *mpi_from_ec_point(ec_group *group, ec_point *point)
 {
-	return NULL;
+	mpi_t *mpi = mpi_new(ROUND_UP(group->bits * 2, 8) + 8);
+
+	if (mpi == NULL)
+	{
+		return NULL;
+	}
+
+	if (group->id == EC_CURVE25519 || group->id == EC_ED25519)
+	{
+		// Prefixed native
+		ec_point_encode(group, point, PTR_OFFSET(mpi->bytes, 1), FLOOR_DIV(mpi->bits, 8), 0);
+
+		mpi->bytes[1] = 0x40;
+		mpi->bits = ROUND_UP(group->bits * 2, 8) + 7; // 0x40
+	}
+	else
+	{
+		// SEC point wire format
+		ec_point_encode(group, point, mpi->bytes, CEIL_DIV(mpi->bits, 8), 0);
+		mpi->bits = ROUND_UP(group->bits * 2, 8) + 3; // 0x04
+	}
+
+	return mpi;
 }
 
 static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algorithms algorithm)
