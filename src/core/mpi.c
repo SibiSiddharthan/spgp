@@ -54,30 +54,6 @@ void mpi_delete(mpi_t *mpi)
 	free(mpi);
 }
 
-mpi_t *mpi_from_bn(mpi_t *mpi, bignum_t *bn)
-{
-	if (mpi == NULL)
-	{
-		mpi = mpi_new(bn->bits);
-
-		if (mpi == NULL)
-		{
-			return NULL;
-		}
-	}
-
-	if (mpi->bits < bn->bits)
-	{
-		return NULL;
-	}
-
-	// Get the bytes
-	mpi->bits = bn->bits;
-	bignum_get_bytes_be(bn, mpi->bytes, CEIL_DIV(mpi->bits, 8));
-
-	return mpi;
-}
-
 // See RFC 9580 - OpenPGP, Section 3.2 Multiprecision Integers.
 uint32_t mpi_read(mpi_t *mpi, void *ptr, size_t size)
 {

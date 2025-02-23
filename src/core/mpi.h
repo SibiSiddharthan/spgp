@@ -9,7 +9,6 @@
 #define SPGP_MPI_H
 
 #include <spgp.h>
-#include <bignum.h>
 
 typedef struct _mpi_t
 {
@@ -30,8 +29,6 @@ static inline uint32_t mpi_octets(uint16_t bits)
 mpi_t *mpi_init(void *ptr, size_t size, uint16_t bits);
 mpi_t *mpi_new(uint16_t bits);
 void mpi_delete(mpi_t *mpi);
-
-mpi_t *mpi_from_bn(mpi_t *mpi, bignum_t *bn);
 
 uint32_t mpi_read(mpi_t *mpi, void *ptr, size_t size);
 uint32_t mpi_write(mpi_t *mpi, void *ptr, size_t size);

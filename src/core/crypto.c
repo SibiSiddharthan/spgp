@@ -44,6 +44,21 @@ static bignum_t *mpi_to_bignum(mpi_t *mpi)
 	return bn;
 }
 
+static mpi_t *mpi_from_bignum(bignum_t *bn)
+{
+	mpi_t *mpi = mpi_new(bn->bits);
+
+	if (mpi == NULL)
+	{
+		return NULL;
+	}
+
+	mpi->bits = bn->bits;
+	bignum_get_bytes_be(bn, mpi->bytes, CEIL_DIV(mpi->bits, 8));
+
+	return mpi;
+}
+
 static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algorithms algorithm)
 {
 	switch (algorithm)
