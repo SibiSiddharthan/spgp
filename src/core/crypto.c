@@ -689,6 +689,60 @@ void *pgp_rsa_generate_key(uint32_t bits)
 	return pgp_key;
 }
 
+void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve)
+{
+	ec_group *group = NULL;
+	ec_key *key = NULL;
+	pgp_ecdsa_key *pgp_key = NULL;
+
+	curve_id id = pgp_ec_curve_to_curve_id(curve);
+	uint16_t bits = 0;
+
+	if (id == 0)
+	{
+		return NULL;
+	}
+
+	pgp_key = malloc(sizeof(pgp_ecdsa_key));
+
+	if (pgp_key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(pgp_key, 0, sizeof(pgp_ecdsa_key));
+
+	group = ec_group_new(id);
+
+	if (group == NULL)
+	{
+		free(pgp_key);
+		return NULL;
+	}
+
+	key = ec_key_generate(group, NULL);
+
+	if (key == NULL)
+	{
+		ec_group_delete(group);
+		free(pgp_key);
+		return NULL;
+	}
+
+	pgp_key->curve = curve;
+	pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
+	pgp_key->x = mpi_from_bignum(key->d);
+
+	bits = (2 * group->bits) + 3;
+	pgp_key->point = mpi_new((2 * group->bits) + 3);
+	ec_point_encode(group, key->q, pgp_key->point->bytes, CEIL_DIV(bits, 8), 0);
+	pgp_key->point->bits = bits;
+
+	ec_key_delete(key);
+
+	return pgp_key;
+}
+
 void pgp_x25519_generate_key(pgp_x25519_key *key)
 {
 	x25519_key_generate((x25519_key *)key);
