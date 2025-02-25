@@ -130,15 +130,13 @@ static size_t print_timestamp(uint32_t indent, char *prefix, time_t timestamp, v
 	return pos;
 }
 
-static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_t size, uint32_t indent)
+uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size)
 {
-	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header.tag);
-	pgp_packet_type type = pgp_packet_get_type(header.tag);
+	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header->tag);
+	pgp_packet_type type = pgp_packet_get_type(header->tag);
 
 	char *footer = NULL;
-	size_t pos = 0;
-
-	pos += print_indent(indent, str, size);
+	uint32_t pos = 0;
 
 	switch (type)
 	{
@@ -197,11 +195,11 @@ static size_t pgp_packet_header_print(pgp_packet_header header, void *str, size_
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Packet (Tag 21)");
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Packet (Tag %hhu)", header.tag);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Packet (Tag %hhu)", header->tag);
 	}
 
 	// Add packet size
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%u bytes)", header.body_size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%u bytes)", header->body_size);
 
 	// Mention if packet is having legacy header format
 	if (format == PGP_LEGACY_HEADER)
@@ -1518,7 +1516,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	if (packet->version == PGP_PKESK_V6)
 	{
@@ -1568,7 +1566,7 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	if (packet->version == PGP_SKESK_V6)
 	{
@@ -1605,7 +1603,7 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, ptr, size, 0);
+	pos += pgp_packet_header_print(&packet->header, ptr, size);
 
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
 	{
@@ -1668,7 +1666,7 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, ptr, size, 0);
+	pos += pgp_packet_header_print(&packet->header, ptr, size);
 
 	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
 	{
@@ -1704,7 +1702,7 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
 	{
@@ -1735,7 +1733,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
 	{
@@ -1846,7 +1844,7 @@ size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += pgp_compression_algorithm_print(packet->compression_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size - 1);
 
@@ -1857,7 +1855,7 @@ size_t pgp_sed_packet_print(pgp_sed_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;
@@ -1867,7 +1865,7 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Marker: %c%c%c\n", packet->marker[0], packet->marker[1], packet->marker[2]);
 
 	return pos;
@@ -1878,7 +1876,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Format: ");
 
@@ -1917,7 +1915,7 @@ size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->level);
 
 	return pos;
@@ -1928,7 +1926,7 @@ size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t si
 	byte_t *out = str;
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User ID: ");
 
@@ -1944,7 +1942,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
 	{
@@ -1988,7 +1986,7 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	if (packet->version == PGP_SEIPD_V2)
 	{
@@ -2020,7 +2018,7 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += print_bytes(1, "SHA-1 MDC: ", PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20);
 
 	return pos;
@@ -2030,7 +2028,7 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(packet->header, str, size, 0);
+	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Padding Data (%u bytes)\n", packet->header.body_size);
 
 	return pos;

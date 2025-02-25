@@ -144,7 +144,13 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 
 	for (uint16_t i = 0; i < stream->count; ++i)
 	{
-		pos += pgp_packet_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos, options);
+		if (options & PGP_PRINT_HEADER_ONLY)
+		{
+			pos += pgp_packet_header_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+			continue;
+		}
+
+		pos += pgp_packet_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos, options & PGP_PRINT_MPI_MINIMAL);
 	}
 
 	return pos;

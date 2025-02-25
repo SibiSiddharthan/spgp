@@ -10,6 +10,13 @@
 
 #include <spgp.h>
 
+#define PGP_WRITE_ARMOR           0x1
+#define PGP_WRITE_ARMOR_NO_CRC    0x2
+#define PGP_WRITE_ARMOR_FORCE_CRC 0x4
+
+#define PGP_PRINT_HEADER_ONLY 0x1
+#define PGP_PRINT_MPI_MINIMAL 0x2
+
 typedef struct _pgp_stream_t
 {
 	uint16_t count;
