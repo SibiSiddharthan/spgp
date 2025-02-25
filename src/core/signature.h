@@ -288,7 +288,7 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
-size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size);
+size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size,uint32_t options);
 
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
 																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,

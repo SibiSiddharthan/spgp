@@ -109,9 +109,14 @@ static size_t print_key(uint32_t indent, void *str, size_t str_size, void *data,
 	return pos;
 }
 
-static size_t print_mpi(uint32_t indent, char *prefix, mpi_t *mpi, void *str, size_t str_size)
+static size_t print_mpi(uint32_t indent, char *prefix, mpi_t *mpi, void *str, size_t str_size, uint32_t options)
 {
 	size_t pos = 0;
+
+	if (options & PGP_PRINT_MPI_MINIMAL)
+	{
+		return print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s (%hu bits): ...\n", prefix, mpi->bits);
+	}
 
 	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s (%hu bits): ", prefix, mpi->bits);
 	pos += print_hex(hex_lower_table, PTR_OFFSET(str, pos), mpi->bytes, CEIL_DIV(mpi->bits, 8));
@@ -625,7 +630,8 @@ static size_t pgp_kdf_print(void *kdf, void *str, size_t size, uint32_t indent)
 	return pos;
 }
 
-static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint16_t kex_size, void *str, size_t str_size, uint32_t indent)
+static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint16_t kex_size, void *str, size_t str_size, uint32_t indent,
+							uint32_t options)
 {
 	size_t pos = 0;
 
@@ -635,14 +641,14 @@ static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint
 	case PGP_RSA_ENCRYPT_ONLY:
 	{
 		pgp_rsa_kex *sk = kex;
-		pos += print_mpi(indent, "RSA m^e mod n", sk->c, str, str_size);
+		pos += print_mpi(indent, "RSA m^e mod n", sk->c, str, str_size, options);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_kex *sk = kex;
-		pos += print_mpi(indent, "Elgamal g^k mod p", sk->r, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "Elgamal m*(y^k) mod p", sk->r, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "Elgamal g^k mod p", sk->r, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "Elgamal m*(y^k) mod p", sk->r, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
 	case PGP_ECDH:
@@ -695,7 +701,7 @@ static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint
 }
 
 static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *sign, uint16_t sign_size, void *str, size_t str_size,
-								  uint32_t indent)
+								  uint32_t indent, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -705,21 +711,21 @@ static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *sig
 	case PGP_RSA_SIGN_ONLY:
 	{
 		pgp_rsa_signature *sg = sign;
-		pos += print_mpi(indent, "RSA m^d mod n", sg->e, str, str_size);
+		pos += print_mpi(indent, "RSA m^d mod n", sg->e, str, str_size, options);
 	}
 	break;
 	case PGP_DSA:
 	{
 		pgp_dsa_signature *sg = sign;
-		pos += print_mpi(indent, "DSA r", sg->r, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "DSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "DSA r", sg->r, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "DSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
 	case PGP_ECDSA:
 	{
 		pgp_ecdsa_signature *sg = sign;
-		pos += print_mpi(indent, "ECDSA r", sg->r, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "ECDSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "ECDSA r", sg->r, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "ECDSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
 	case PGP_ED25519:
@@ -744,7 +750,7 @@ static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *sig
 }
 
 static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorithm, void *public_key, uint16_t public_key_size, void *str,
-								   size_t str_size, uint32_t indent)
+								   size_t str_size, uint32_t indent, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -755,32 +761,32 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	case PGP_RSA_SIGN_ONLY:
 	{
 		pgp_rsa_key *key = public_key;
-		pos += print_mpi(indent, "RSA modulus n", key->n, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "RSA public exponent e", key->e, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "RSA modulus n", key->n, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "RSA public exponent e", key->e, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_key *key = public_key;
-		pos += print_mpi(indent, "Elgamal prime p", key->p, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "Elgamal group generator g", key->g, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "Elgamal public key y", key->y, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "Elgamal prime p", key->p, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "Elgamal group generator g", key->g, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "Elgamal public key y", key->y, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
 	case PGP_DSA:
 	{
 		pgp_dsa_key *key = public_key;
-		pos += print_mpi(indent, "DSA prime p", key->p, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "DSA group order q", key->q, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "DSA group generator g", key->g, PTR_OFFSET(str, pos), str_size - pos);
-		pos += print_mpi(indent, "DSA public key y", key->y, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "DSA prime p", key->p, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "DSA group order q", key->q, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "DSA group generator g", key->g, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent, "DSA public key y", key->y, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
 	case PGP_ECDH:
 	{
 		pgp_ecdh_key *key = public_key;
 		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, PTR_OFFSET(str, pos), str_size - pos, indent);
-		pos += print_mpi(indent, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos, options);
 		pos += pgp_kdf_print(&key->kdf, PTR_OFFSET(str, pos), str_size - pos, indent);
 	}
 	break;
@@ -788,7 +794,7 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	{
 		pgp_ecdsa_key *key = public_key;
 		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, PTR_OFFSET(str, pos), str_size - pos, indent);
-		pos += print_mpi(indent, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos);
+		pos += print_mpi(indent, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
 	case PGP_X25519:
@@ -824,11 +830,11 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 }
 
 static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorithm, void *private_key, uint16_t private_key_size, void *str,
-									size_t str_size, uint32_t indent)
+									size_t str_size, uint32_t indent, uint32_t options)
 {
 	size_t pos = 0;
 
-	pos += pgp_public_key_print(public_key_algorithm, private_key, private_key_size, PTR_OFFSET(str, pos), str_size - pos, indent);
+	pos += pgp_public_key_print(public_key_algorithm, private_key, private_key_size, PTR_OFFSET(str, pos), str_size - pos, indent, options);
 
 	switch (public_key_algorithm)
 	{
@@ -847,10 +853,10 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(indent, "RSA d", key->d, PTR_OFFSET(str, pos), str_size - pos);
-			pos += print_mpi(indent, "RSA p", key->p, PTR_OFFSET(str, pos), str_size - pos);
-			pos += print_mpi(indent, "RSA q", key->q, PTR_OFFSET(str, pos), str_size - pos);
-			pos += print_mpi(indent, "RSA u", key->u, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "RSA d", key->d, PTR_OFFSET(str, pos), str_size - pos, options);
+			pos += print_mpi(indent, "RSA p", key->p, PTR_OFFSET(str, pos), str_size - pos, options);
+			pos += print_mpi(indent, "RSA q", key->q, PTR_OFFSET(str, pos), str_size - pos, options);
+			pos += print_mpi(indent, "RSA u", key->u, PTR_OFFSET(str, pos), str_size - pos, options);
 		}
 	}
 	break;
@@ -864,7 +870,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(indent, "Elgamal x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "Elgamal x", key->x, PTR_OFFSET(str, pos), str_size - pos, options);
 		}
 	}
 	break;
@@ -878,7 +884,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(indent, "DSA x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "DSA x", key->x, PTR_OFFSET(str, pos), str_size - pos, options);
 		}
 	}
 	break;
@@ -892,7 +898,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(indent, "ECDH x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "ECDH x", key->x, PTR_OFFSET(str, pos), str_size - pos, options);
 		}
 	}
 	break;
@@ -906,7 +912,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(indent, "ECDSA x", key->x, PTR_OFFSET(str, pos), str_size - pos);
+			pos += print_mpi(indent, "ECDSA x", key->x, PTR_OFFSET(str, pos), str_size - pos, options);
 		}
 	}
 	break;
@@ -1131,7 +1137,7 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 	return pos;
 }
 
-static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t size, uint32_t indent)
+static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t size, uint32_t indent, uint32_t options)
 {
 	pgp_subpacket_header *header = subpacket;
 	pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
@@ -1412,7 +1418,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
 		pgp_embedded_signature_subpacket *embedded_signature_subpacket = subpacket;
-		pos += pgp_signature_packet_print(embedded_signature_subpacket->signature, PTR_OFFSET(str, pos), size - pos);
+		pos += pgp_signature_packet_print(embedded_signature_subpacket->signature, PTR_OFFSET(str, pos), size - pos, options);
 	}
 	break;
 	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
@@ -1512,7 +1518,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	return pos;
 }
 
-size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
+size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -1544,7 +1550,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 
 		pos += pgp_kex_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_size,
-							 PTR_OFFSET(str, pos), size - pos, 1);
+							 PTR_OFFSET(str, pos), size - pos, 1, options);
 	}
 	else if (packet->version == PGP_PKESK_V3)
 	{
@@ -1552,7 +1558,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size)
 		pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_id, 8);
 		pos += pgp_kex_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_size,
-							 PTR_OFFSET(str, pos), size - pos, 1);
+							 PTR_OFFSET(str, pos), size - pos, 1, options);
 	}
 	else
 	{
@@ -1599,7 +1605,7 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 	return pos;
 }
 
-size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size)
+size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -1619,7 +1625,7 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 
 		for (uint16_t i = 0; i < packet->hashed_subpacket_count; ++i)
 		{
-			pos += pgp_signature_subpacket_print(packet->hashed_subpackets[i], PTR_OFFSET(ptr, pos), size - pos, 2);
+			pos += pgp_signature_subpacket_print(packet->hashed_subpackets[i], PTR_OFFSET(ptr, pos), size - pos, 2, options);
 		}
 
 		if (packet->unhashed_subpacket_count > 0)
@@ -1629,7 +1635,7 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 
 		for (uint16_t i = 0; i < packet->unhashed_subpacket_count; ++i)
 		{
-			pos += pgp_signature_subpacket_print(packet->unhashed_subpackets[i], PTR_OFFSET(ptr, pos), size - pos, 2);
+			pos += pgp_signature_subpacket_print(packet->unhashed_subpackets[i], PTR_OFFSET(ptr, pos), size - pos, 2, options);
 		}
 
 		pos += print_bytes(1, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
@@ -1640,7 +1646,7 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 		}
 
 		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
-								   size - pos, 1);
+								   size - pos, 1, options);
 	}
 	else if (packet->version == PGP_SIGNATURE_V3)
 	{
@@ -1652,7 +1658,7 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += print_bytes(1, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
 		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
-								   size - pos, 1);
+								   size - pos, 1, options);
 	}
 	else
 	{
@@ -1698,7 +1704,7 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 	return pos;
 }
 
-size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size)
+size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -1710,7 +1716,7 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 		pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets, PTR_OFFSET(str, pos),
-									size - pos, 1);
+									size - pos, 1, options);
 	}
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
@@ -1719,7 +1725,7 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Expiry: %hu days\n", packet->key_expiry_days);
 		pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets, PTR_OFFSET(str, pos),
-									size - pos, 1);
+									size - pos, 1, options);
 	}
 	else
 	{
@@ -1729,7 +1735,7 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 	return pos;
 }
 
-size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size)
+size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -1776,7 +1782,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 		}
 
 		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets, PTR_OFFSET(str, pos),
-									 size - pos, 1);
+									 size - pos, 1, options);
 
 		if (packet->s2k_usage == 0)
 		{
@@ -1825,7 +1831,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 		}
 
 		pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets, PTR_OFFSET(str, pos),
-									 size - pos, 1);
+									 size - pos, 1, options);
 
 		if (packet->s2k_usage == 0)
 		{

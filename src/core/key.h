@@ -151,7 +151,7 @@ void pgp_public_key_packet_delete(pgp_key_packet *packet);
 
 pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size);
 size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
-size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size);
+size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 
 pgp_key_packet *pgp_secret_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
 										  uint16_t key_expiry_days, byte_t public_key_algorithm_id, byte_t symmetric_key_algorithm_id,
@@ -162,7 +162,7 @@ void pgp_secret_key_packet_delete(pgp_key_packet *packet);
 
 pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size);
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
-size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size);
+size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 
 uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size);
 uint32_t pgp_key_id(void *key, byte_t id[8]);

@@ -568,19 +568,19 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 	switch (ptype)
 	{
 	case PGP_PKESK:
-		return pgp_pkesk_packet_print(packet, str, size);
+		return pgp_pkesk_packet_print(packet, str, size, options);
 	case PGP_SIG:
-		return pgp_signature_packet_print(packet, str, size);
+		return pgp_signature_packet_print(packet, str, size, options);
 	case PGP_SKESK:
 		return pgp_skesk_packet_print(packet, str, size);
 	case PGP_OPS:
 		return pgp_one_pass_signature_packet_print(packet, str, size);
 	case PGP_SECKEY:
-		return pgp_secret_key_packet_print(packet, str, size);
+		return pgp_secret_key_packet_print(packet, str, size, options);
 	case PGP_PUBKEY:
-		return pgp_public_key_packet_print(packet, str, size);
+		return pgp_public_key_packet_print(packet, str, size, options);
 	case PGP_SECSUBKEY:
-		return pgp_secret_key_packet_print(packet, str, size);
+		return pgp_secret_key_packet_print(packet, str, size, options);
 	case PGP_COMP:
 		return pgp_compressed_packet_print(packet, str, size);
 	case PGP_SED:
@@ -594,7 +594,7 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 	case PGP_UID:
 		return pgp_user_id_packet_print(packet, str, size);
 	case PGP_PUBSUBKEY:
-		return pgp_public_key_packet_print(packet, str, size);
+		return pgp_public_key_packet_print(packet, str, size, options);
 	case PGP_UAT:
 		return pgp_user_attribute_packet_print(packet, str, size);
 	case PGP_SEIPD:
