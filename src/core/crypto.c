@@ -189,10 +189,14 @@ static curve_id pgp_ec_curve_to_curve_id(pgp_elliptic_curve_id id)
 		return EC_BRAINPOOL_384R1;
 	case PGP_EC_BRAINPOOL_512R1:
 		return EC_BRAINPOOL_512R1;
-	case PGP_EC_ED25519_LEGACY:
-		return EC_ED25519;
-	case PGP_EC_CURVE25519_LEGACY:
+	case PGP_EC_CURVE25519:
 		return EC_CURVE25519;
+	case PGP_EC_CURVE448:
+		return EC_CURVE448;
+	case PGP_EC_ED25519:
+		return EC_ED25519;
+	case PGP_EC_ED448:
+		return EC_ED448;
 	default:
 		return 0;
 	}
@@ -410,12 +414,12 @@ byte_t pgp_elliptic_curve(byte_t *oid, byte_t size)
 		// Check legacy curves
 		if (size == 9 && memcmp(oid, "\x2B\x06\x01\x04\x01\xDA\x47\x0F\x01", 9) == 0)
 		{
-			return PGP_EC_ED25519_LEGACY;
+			return PGP_EC_ED25519;
 		}
 
 		if (size == 10 && memcmp(oid, "\x2B\x06\x01\x04\x01\x97\x55\x01\x05\x01", 10) == 0)
 		{
-			return PGP_EC_CURVE25519_LEGACY;
+			return PGP_EC_CURVE25519;
 		}
 
 		return 0;
@@ -1000,7 +1004,7 @@ static void pgp_ecdh_kdf_paramters(curve_id id, pgp_hash_algorithms *hid, pgp_sy
 	{
 	case PGP_EC_NIST_P256:
 	case PGP_EC_BRAINPOOL_256R1:
-	case PGP_EC_CURVE25519_LEGACY:
+	case PGP_EC_CURVE25519:
 		*hid = PGP_SHA2_256;
 		*cid = PGP_AES_128;
 		break;
@@ -1011,6 +1015,7 @@ static void pgp_ecdh_kdf_paramters(curve_id id, pgp_hash_algorithms *hid, pgp_sy
 		break;
 	case PGP_EC_NIST_P521:
 	case PGP_EC_BRAINPOOL_512R1:
+	case PGP_EC_CURVE448:
 		*hid = PGP_SHA2_512;
 		*cid = PGP_AES_256;
 		break;

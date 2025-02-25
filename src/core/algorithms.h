@@ -71,6 +71,7 @@ typedef enum _pgp_aead_algorithms
 	PGP_AEAD_GCM = 3
 } pgp_aead_algorithms;
 
+// NOTE: This is not part of the standard.
 typedef enum _pgp_elliptic_curve_id
 {
 	PGP_EC_NIST_P256 = 1,
@@ -79,8 +80,10 @@ typedef enum _pgp_elliptic_curve_id
 	PGP_EC_BRAINPOOL_256R1 = 4,
 	PGP_EC_BRAINPOOL_384R1 = 5,
 	PGP_EC_BRAINPOOL_512R1 = 6,
-	PGP_EC_ED25519_LEGACY = 7,
-	PGP_EC_CURVE25519_LEGACY = 8,
+	PGP_EC_CURVE25519 = 7,
+	PGP_EC_CURVE448 = 8,
+	PGP_EC_ED25519 = 9,
+	PGP_EC_ED448 = 10
 } pgp_elliptic_curve_id;
 
 #endif

@@ -515,11 +515,35 @@ static size_t pgp_curve_print(pgp_elliptic_curve_id curve, byte_t *oid, byte_t o
 	case PGP_EC_BRAINPOOL_512R1:
 		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "BRAINPOOL-P512R1 (2B 24 03 03 02 08 01 01 0D)\n");
 		break;
-	case PGP_EC_ED25519_LEGACY:
-		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Ed25519Legacy (2B 06 01 04 01 DA 47 0F 01)\n");
+	case PGP_EC_CURVE25519:
+	{
+		if (oid_size == 10)
+		{
+			pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Curve25519 (2B 06 01 04 01 97 55 01 05 01) (Legacy OID)\n");
+		}
+		else
+		{
+			pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Curve25519 (2B 65 6E)\n");
+		}
+	}
+	break;
+	case PGP_EC_CURVE448:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Curve448 (2B 65 6F)\n");
 		break;
-	case PGP_EC_CURVE25519_LEGACY:
-		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Curve25519Legacy (2B 06 01 04 01 97 55 01 05 01)\n");
+	case PGP_EC_ED25519:
+	{
+		if (oid_size == 9)
+		{
+			pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Ed25519 (2B 06 01 04 01 DA 47 0F 01) (Legacy OID)\n");
+		}
+		else
+		{
+			pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Ed25519 (2B 65 70)\n");
+		}
+	}
+	break;
+	case PGP_EC_ED448:
+		pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "Ed448 (2B 65 71)\n");
 		break;
 	default:
 	{
