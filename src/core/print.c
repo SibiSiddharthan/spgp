@@ -247,7 +247,7 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 	case PGP_ECDSA:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDSA (Tag 19)\n");
 		break;
-	case PGP_EDDSA_LEGACY:
+	case PGP_EDDSA:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Legacy) (Tag 22)\n");
 		break;
 	case PGP_X25519:
@@ -324,7 +324,7 @@ static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm,
 	case PGP_ECDSA:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDSA (Tag 19)\n");
 		break;
-	case PGP_EDDSA_LEGACY:
+	case PGP_EDDSA:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Legacy) (Tag 22)\n");
 		break;
 	case PGP_ED25519:

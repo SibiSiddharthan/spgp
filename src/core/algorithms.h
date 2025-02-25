@@ -20,7 +20,7 @@ typedef enum _pgp_public_key_algorithms
 	PGP_DSA = 17,
 	PGP_ECDH = 18,
 	PGP_ECDSA = 19,
-	PGP_EDDSA_LEGACY = 22,
+	PGP_EDDSA = 22,
 	PGP_X25519 = 25,
 	PGP_X448 = 26,
 	PGP_ED25519 = 27,

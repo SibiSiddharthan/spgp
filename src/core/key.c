@@ -2246,7 +2246,7 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	}
 	break;
 	case PGP_ECDSA:
-	case PGP_EDDSA_LEGACY:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *pkey = key;
 		uint16_t bits_be = 0;

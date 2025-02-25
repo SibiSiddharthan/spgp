@@ -252,7 +252,7 @@ byte_t pgp_public_cipher_algorithm_validate(pgp_public_key_algorithms algorithm)
 	case PGP_DSA:
 	case PGP_ECDH:
 	case PGP_ECDSA:
-	case PGP_EDDSA_LEGACY:
+	case PGP_EDDSA:
 	case PGP_X25519:
 	case PGP_X448:
 	case PGP_ED25519:
@@ -287,7 +287,7 @@ byte_t pgp_signature_algorithm_validate(pgp_public_key_algorithms algorithm)
 	case PGP_RSA_SIGN_ONLY:
 	case PGP_DSA:
 	case PGP_ECDSA:
-	case PGP_EDDSA_LEGACY:
+	case PGP_EDDSA:
 	case PGP_ED25519:
 	case PGP_ED448:
 		return 1;
