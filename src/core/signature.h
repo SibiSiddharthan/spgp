@@ -19,6 +19,7 @@ typedef enum _pgp_signature_version
 {
 	PGP_SIGNATURE_V3 = 3,
 	PGP_SIGNATURE_V4 = 4,
+	PGP_SIGNATURE_V5 = 5,
 	PGP_SIGNATURE_V6 = 6
 } pgp_signature_version;
 

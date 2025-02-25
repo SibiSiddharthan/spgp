@@ -23,6 +23,7 @@ typedef enum _pgp_pkesk_version
 typedef enum _pgp_skesk_version
 {
 	PGP_SKESK_V4 = 4,
+	PGP_SKESK_V5 = 5,
 	PGP_SKESK_V6 = 6
 } pgp_skesk_version;
 
@@ -51,7 +52,7 @@ typedef struct _pgp_skesk_packet
 {
 	pgp_packet_header header;
 
-	byte_t version; // 4 or 6
+	byte_t version; // 4, 5, 6
 	byte_t symmetric_key_algorithm_id;
 	byte_t aead_algorithm_id;
 	pgp_s2k s2k;

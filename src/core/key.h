@@ -18,6 +18,7 @@ typedef enum _pgp_key_version
 	PGP_KEY_V2 = 2, // NOTE : Version 2 is identical to version 3.
 	PGP_KEY_V3 = 3,
 	PGP_KEY_V4 = 4,
+	PGP_KEY_V5 = 5,
 	PGP_KEY_V6 = 6
 } pgp_key_version;
 
@@ -32,7 +33,7 @@ typedef struct _pgp_key_packet
 {
 	pgp_packet_header header;
 
-	byte_t version; // 3, 4, 6
+	byte_t version; // 3, 4, 5, 6
 	uint32_t key_creation_time;
 	uint16_t key_expiry_days;
 	byte_t public_key_algorithm_id;
