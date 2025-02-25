@@ -26,5 +26,6 @@ size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options);
 
 pgp_stream_t *pgp_stream_push_packet(pgp_stream_t *stream, void *packet);
+void *pgp_stream_pop_packet(pgp_stream_t *stream);
 
 #endif

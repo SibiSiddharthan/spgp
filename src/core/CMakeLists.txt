@@ -18,6 +18,7 @@ add_library(spgp OBJECT
 			seipd.c seipd.h
 			session.c session.h
 			signature.c signature.h
+			stream.c stream.h
 			)
 
 target_include_directories(spgp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
