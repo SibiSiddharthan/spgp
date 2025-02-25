@@ -88,6 +88,13 @@ uint32_t ec_curve_oid_size(curve_id id)
 	case EC_BRAINPOOL_512T1:
 		return 9;
 
+	// Montgomery and Edwards
+	case EC_CURVE25519:
+	case EC_CURVE448:
+	case EC_ED25519:
+	case EC_ED448:
+		return 3;
+
 	default:
 		return 0;
 	}
@@ -288,6 +295,20 @@ uint32_t ec_curve_encode_oid(curve_id id, void *buffer, uint32_t size)
 		memcpy(buffer, "\x2B\x24\x03\x03\x02\x08\x01\x01\x0E", 9);
 		return 9;
 
+	// Montgomery and Edwards
+	case EC_CURVE25519:
+		memcpy(buffer, "\x2B\x65\x6E", 9);
+		return 3;
+	case EC_CURVE448:
+		memcpy(buffer, "\x2B\x65\x6F", 9);
+		return 3;
+	case EC_ED25519:
+		memcpy(buffer, "\x2B\x65\x70", 9);
+		return 3;
+	case EC_ED448:
+		memcpy(buffer, "\x2B\x65\x71", 9);
+		return 3;
+
 	default:
 		return 0;
 	}
@@ -415,6 +436,28 @@ curve_id ec_curve_decode_oid(void *oid, uint32_t size)
 				return EC_BRAINPOOL_512R1;
 			case 0x0E:
 				return EC_BRAINPOOL_512T1;
+			default:
+				return 0;
+			}
+		}
+		// Montgomery and Edwards
+		else if (in[1] == 0x65)
+		{
+			if (size != 3)
+			{
+				return 0;
+			}
+
+			switch (in[3])
+			{
+			case 0x6E:
+				return EC_CURVE25519;
+			case 0x6F:
+				return EC_CURVE448;
+			case 0x70:
+				return EC_ED25519;
+			case 0x71:
+				return EC_ED448;
 			default:
 				return 0;
 			}
