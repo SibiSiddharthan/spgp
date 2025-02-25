@@ -167,6 +167,18 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size);
 uint32_t pgp_key_id(void *key, byte_t id[8]);
 
+void *pgp_rsa_generate_key(uint32_t bits);
+void *pgp_dsa_generate_key(uint32_t p_bits, uint32_t q_bits);
+
+void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve);
+void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_id, byte_t symmetric_key_algorithm_id);
+
+void pgp_x25519_generate_key(pgp_x25519_key *key);
+void pgp_x448_generate_key(pgp_x448_key *key);
+
+void pgp_ed25519_generate_key(pgp_ed25519_key *key);
+void pgp_ed448_generate_key(pgp_ed448_key *key);
+
 pgp_rsa_key *pgp_rsa_key_new();
 void pgp_rsa_key_delete(pgp_rsa_key *key);
 

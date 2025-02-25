@@ -46,18 +46,6 @@ size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 
 uint32_t pgp_rand(void *buffer, uint32_t size);
 
-void *pgp_rsa_generate_key(uint32_t bits);
-void *pgp_dsa_generate_key(uint32_t p_bits, uint32_t q_bits);
-
-void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve);
-void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_id, byte_t symmetric_key_algorithm_id);
-
-void pgp_x25519_generate_key(pgp_x25519_key *key);
-void pgp_x448_generate_key(pgp_x448_key *key);
-
-void pgp_ed25519_generate_key(pgp_ed25519_key *key);
-void pgp_ed448_generate_key(pgp_ed448_key *key);
-
 pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size);
 uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *key, byte_t *symmetric_key_algorithm_id, void *session_key,
 							 uint32_t session_key_size);
