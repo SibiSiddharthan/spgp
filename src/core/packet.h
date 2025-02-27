@@ -9,6 +9,7 @@
 #define SPGP_PACKET_H
 
 #include <spgp.h>
+#include <stream.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5 Packet Types
 
@@ -126,9 +127,7 @@ typedef struct _pgp_user_attribute_image_subpacket
 typedef struct _pgp_user_attribute_packet
 {
 	pgp_packet_header header;
-
-	uint16_t subpacket_count;
-	void **subpackets;
+	pgp_stream_t *subpackets;
 } pgp_user_attribute_packet;
 
 typedef struct _pgp_padding_packet

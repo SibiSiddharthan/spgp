@@ -1958,9 +1958,9 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
-	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
+	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
 	{
-		pgp_subpacket_header *subpacket_header = packet->subpackets[i];
+		pgp_subpacket_header *subpacket_header = packet->subpackets->packets[i];
 
 		switch (subpacket_header->tag)
 		{

@@ -12,6 +12,7 @@
 #include <seipd.h>
 #include <session.h>
 #include <signature.h>
+#include <stream.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -908,12 +909,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_new(byte_t header_format)
 void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet)
 {
 	// Free subpackets first.
-	for (size_t i = 0; i < packet->subpacket_count; ++i)
-	{
-		free(packet->subpackets[i]);
-	}
-
-	free(packet->subpackets);
+	pgp_stream_delete(packet->subpackets);
 	free(packet);
 }
 
@@ -926,14 +922,14 @@ size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, vo
 		return 0;
 	}
 
-	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
+	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
 	{
-		subpacket_header = packet->subpackets[i];
+		subpacket_header = packet->subpackets->packets[i];
 
 		// Return the image data of the first image subpacket.
 		if ((subpacket_header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_USER_ATTRIBUTE_IMAGE)
 		{
-			pgp_user_attribute_image_subpacket *image_subpacket = packet->subpackets[i];
+			pgp_user_attribute_image_subpacket *image_subpacket = packet->subpackets->packets[i];
 			uint32_t image_size = image_subpacket->header.body_size - 16;
 
 			if (size < image_size)
@@ -962,7 +958,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 	}
 
 	// Allocate for atleast one subpacket.
-	packet->subpackets = malloc(sizeof(void *));
+	packet->subpackets = pgp_stream_new(1);
 
 	if (packet->subpackets == NULL)
 	{
@@ -986,8 +982,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 
 	image_subpacket->header = pgp_encode_subpacket_header(PGP_USER_ATTRIBUTE_IMAGE, 0, 16 + size);
 
-	packet->subpackets[0] = image_subpacket;
-	packet->subpacket_count += 1;
+	pgp_stream_push_packet(packet->subpackets, image_subpacket);
 
 	packet->header =
 		pgp_encode_packet_header(header_format, PGP_UAT, image_subpacket->header.body_size + image_subpacket->header.header_size);
@@ -1004,8 +999,6 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 
 	size_t pos = 0;
 	size_t subpacket_pos = 0;
-	uint16_t subpacket_count = 0;
-	uint16_t subpacket_size = 0;
 
 	header = pgp_packet_header_read(data, size);
 	pos = header.header_size;
@@ -1029,6 +1022,14 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 
 	memset(packet, 0, sizeof(pgp_user_attribute_packet));
 
+	packet->subpackets = pgp_stream_new(1);
+
+	if (packet->subpackets == NULL)
+	{
+		pgp_user_attribute_packet_delete(packet);
+		return NULL;
+	}
+
 	// Copy the header
 	packet->header = header;
 
@@ -1043,35 +1044,15 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 			return NULL;
 		}
 
-		if (subpacket_count == subpacket_size)
+		if (pgp_stream_push_packet(packet->subpackets, subpacket) == NULL)
 		{
-
-			if (packet->subpackets == NULL)
-			{
-				subpacket_size += 1;
-				packet->subpackets = malloc(sizeof(void *) * subpacket_size);
-			}
-			else
-			{
-				subpacket_size *= 2;
-				packet->subpackets = realloc(packet->subpackets, sizeof(void *) * subpacket_size);
-			}
-
-			if (packet->subpackets == NULL)
-			{
-				pgp_user_attribute_packet_delete(packet);
-				return NULL;
-			}
+			pgp_user_attribute_packet_delete(packet);
+			return NULL;
 		}
-
-		packet->subpackets[subpacket_count] = subpacket;
 
 		subpacket_pos += subpacket_header->header_size + subpacket_header->body_size;
 		pos += subpacket_header->header_size + subpacket_header->body_size;
-		subpacket_count += 1;
 	}
-
-	packet->subpacket_count = subpacket_count;
 
 	return packet;
 }
@@ -1093,9 +1074,9 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
 	// Subpackets
-	for (uint16_t i = 0; i < packet->subpacket_count; ++i)
+	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
 	{
-		pos += pgp_user_attribute_subpacket_write(packet->subpackets[i], out + pos, size - pos);
+		pos += pgp_user_attribute_subpacket_write(packet->subpackets->packets[i], out + pos, size - pos);
 	}
 
 	return pos;
