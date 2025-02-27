@@ -197,7 +197,8 @@ static void get_line(void *ptr, size_t size, size_t *line_content_size, size_t *
 	{
 		*line_content_size = size;
 		*line_total_size = size;
-		return;
+
+		goto strip_whitespace;
 	}
 
 	diff = (uintptr_t)result - (uintptr_t)ptr;
@@ -208,10 +209,25 @@ static void get_line(void *ptr, size_t size, size_t *line_content_size, size_t *
 	// Pointer to the end of line excluding the LF or CRLF
 	*line_content_size = diff;
 
-	// Check for CR
-	if (diff != 0 && ((byte_t *)ptr)[diff - 1] == '\r')
+strip_whitespace:
+	if (*line_content_size == 0)
 	{
-		*line_content_size -= 1;
+		return;
+	}
+
+	// Check for Whitespace characters
+	while (*line_content_size != 0)
+	{
+		switch (((byte_t *)ptr)[*line_content_size - 1])
+		{
+		case ' ':
+		case '\r':
+		case '\t':
+			*line_content_size -= 1;
+			break;
+		default:
+			return;
+		}
 	}
 
 	return;
