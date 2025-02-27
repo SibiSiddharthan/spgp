@@ -10,6 +10,7 @@
 
 #include <spgp.h>
 #include <packet.h>
+#include <stream.h>
 #include <key.h>
 #include <mpi.h>
 
@@ -127,14 +128,11 @@ typedef struct _pgp_signature_packet
 	byte_t salt_size;
 	byte_t salt[32];
 
-	uint32_t hashed_size;
-	uint32_t unhashed_size;
+	uint32_t hashed_octets;
+	uint32_t unhashed_octets;
 
-	uint16_t hashed_subpacket_count;
-	uint16_t unhashed_subpacket_count;
-
-	void **hashed_subpackets;
-	void **unhashed_subpackets;
+	pgp_stream_t *hashed_subpackets;
+	pgp_stream_t *unhashed_subpackets;
 
 	uint32_t signature_size;
 	void *signature;
@@ -268,7 +266,7 @@ typedef struct _pgp_rsa_signature
 typedef struct _pgp_dsa_signature
 {
 	mpi_t *r, *s;
-} pgp_dsa_signature, pgp_ecdsa_signature;
+} pgp_dsa_signature, pgp_ecdsa_signature, pgp_eddsa_signature;
 
 typedef struct _pgp_ed25519_signature
 {
@@ -288,7 +286,7 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
-size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size,uint32_t options);
+size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
 
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
 																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
