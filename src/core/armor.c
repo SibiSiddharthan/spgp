@@ -186,6 +186,353 @@ static size_t encode_cleartext(byte_t *output, byte_t *input, size_t size)
 	return j;
 }
 
+static void get_line(void *ptr, size_t size, size_t *line_content_size, size_t *line_total_size)
+{
+	void *result = NULL;
+	uintptr_t diff = 0;
+
+	result = memchr(ptr, '\n', size);
+
+	if (result == NULL)
+	{
+		*line_content_size = size;
+		*line_total_size = size;
+		return;
+	}
+
+	diff = (uintptr_t)result - (uintptr_t)ptr;
+
+	// Start at next line
+	*line_total_size = diff + 1;
+
+	// Pointer to the end of line excluding the LF or CRLF
+	*line_content_size = diff;
+
+	// Check for CR
+	if (diff != 0 && ((byte_t *)ptr)[diff - 1] == '\r')
+	{
+		*line_content_size -= 1;
+	}
+
+	return;
+}
+
+static byte_t check_empty_line(void *ptr, size_t size)
+{
+	byte_t *in = ptr;
+
+	for (size_t i = 0; i < size; ++i)
+	{
+		if (in[i] != ' ' && in[i] != '\t')
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+static byte_t check_valid_pgp_armor_begin(void *ptr, size_t size, byte_t *cleartext)
+{
+	// Check the sizes
+	if (size != strlen(begin_armor_message) && size != strlen(begin_armor_public_key) && size != strlen(begin_armor_private_key) &&
+		size != strlen(begin_armor_signature) && size != strlen(begin_armor_cleartext))
+	{
+		return 0;
+	}
+
+	// begin
+	if (memcmp(PTR_OFFSET(ptr, 0), "-----", 5) != 0)
+	{
+		return 0;
+	}
+
+	// end
+	if (memcmp(PTR_OFFSET(ptr, size - 5), "-----", 5) != 0)
+	{
+		return 0;
+	}
+
+	// headers
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP MESSAGE", 17) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PUBLIC KEY BLOCK", 26) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PRIVATE KEY BLOCK", 27) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNATURE", 19) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNED MESSAGE", 24) == 0)
+	{
+		if (cleartext)
+		{
+			*cleartext = 1;
+		}
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static byte_t check_valid_pgp_armor_end(void *ptr, size_t size)
+{
+	// Check the sizes
+	if (size != strlen(end_armor_message) && size != strlen(end_armor_public_key) && size != strlen(end_armor_private_key) &&
+		size != strlen(end_armor_signature))
+	{
+		return 0;
+	}
+
+	// begin
+	if (memcmp(PTR_OFFSET(ptr, 0), "-----", 5) != 0)
+	{
+		return 0;
+	}
+
+	// end
+	if (memcmp(PTR_OFFSET(ptr, size - 5), "-----", 5) != 0)
+	{
+		return 0;
+	}
+
+	// headers
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP MESSAGE", 15) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PUBLIC KEY BLOCK", 24) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PRIVATE KEY BLOCK", 25) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP SIGNATURE", 17) == 0)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+static pgp_armor_type get_begin_armor_type(void *ptr, size_t size)
+{
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP MESSAGE", 17) == 0)
+	{
+		return PGP_ARMOR_MESSAGE;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PUBLIC KEY BLOCK", 26) == 0)
+	{
+		return PGP_ARMOR_PUBLIC_KEY;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PRIVATE KEY BLOCK", 27) == 0)
+	{
+		return PGP_ARMOR_PRIVATE_KEY;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNATURE", 19) == 0)
+	{
+		return PGP_ARMOR_SIGNATURE;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNED MESSAGE", 24) == 0)
+	{
+		return PGP_ARMOR_CLEARTEXT;
+	}
+
+	// Unreachable
+	return 0;
+}
+
+static pgp_armor_type get_end_armor_type(void *ptr, size_t size)
+{
+	// headers
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP MESSAGE", 15) == 0)
+	{
+		return PGP_ARMOR_MESSAGE;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PUBLIC KEY BLOCK", 24) == 0)
+	{
+		return PGP_ARMOR_PUBLIC_KEY;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PRIVATE KEY BLOCK", 25) == 0)
+	{
+		return PGP_ARMOR_PRIVATE_KEY;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP SIGNATURE", 17) == 0)
+	{
+		return PGP_ARMOR_SIGNATURE;
+	}
+
+	// Unreachable
+	return 0;
+}
+
+static byte_t check_valid_pgp_armor_end(void *ptr, size_t size)
+{
+	// Check the sizes
+	if (size != strlen(end_armor_message) && size != strlen(end_armor_public_key) && size != strlen(end_armor_private_key) &&
+		size != strlen(end_armor_signature))
+	{
+		return 0;
+	}
+
+	// begin
+	if (memcmp(PTR_OFFSET(ptr, 0), "-----", 5) != 0)
+	{
+		return 0;
+	}
+
+	// end
+	if (memcmp(PTR_OFFSET(ptr, size - 5), "-----", 5) != 0)
+	{
+		return 0;
+	}
+
+	// headers
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP MESSAGE", 15) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PUBLIC KEY BLOCK", 24) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PRIVATE KEY BLOCK", 25) == 0)
+	{
+		return 1;
+	}
+
+	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP SIGNATURE", 17) == 0)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+static armor_status get_armor_block(void *ptr, size_t size, size_t *start, size_t *end)
+{
+	byte_t *in = ptr;
+	size_t pos = 0;
+
+	size_t line_content_size = 0;
+	size_t line_total_size = 0;
+	size_t line_start = 0;
+
+	size_t armor_start = 0;
+	size_t armor_end = 0;
+
+	byte_t begin_armor_found = 0;
+	byte_t end_armor_found = 0;
+
+	byte_t cleartext_armor = 0;
+	byte_t cleartext_begin_armor_found = 0;
+	byte_t cleartext_end_armor_found = 0;
+
+	while (pos < size)
+	{
+		get_line(PTR_OFFSET(ptr, pos), size - pos, &line_content_size, &line_total_size);
+
+		line_start = pos;
+		pos += line_total_size;
+
+		if (begin_armor_found)
+		{
+			if (cleartext_armor)
+			{
+				if (check_valid_pgp_armor_begin(PTR_OFFSET(ptr, pos), line_content_size, NULL))
+				{
+					cleartext_begin_armor_found = 1;
+					continue;
+				}
+
+				if (check_valid_pgp_armor_end(PTR_OFFSET(ptr, pos), line_content_size))
+				{
+					cleartext_end_armor_found = 1;
+					armor_end = line_start + line_total_size;
+
+					break;
+				}
+			}
+
+			if (check_valid_pgp_armor_end(PTR_OFFSET(ptr, pos), line_content_size))
+			{
+				end_armor_found = 1;
+				armor_end = line_start + line_total_size;
+
+				break;
+			}
+		}
+
+		// Ignore comments (Lines starting with #) before the header
+		if (in[line_start] == '#')
+		{
+			continue;
+		}
+
+		// Ignore empty lines or whitespace lines before the header
+		if (check_empty_line(PTR_OFFSET(ptr, line_start), line_content_size))
+		{
+			continue;
+		}
+
+		if (check_valid_pgp_armor_begin(PTR_OFFSET(ptr, pos), line_content_size, &cleartext_armor))
+		{
+			begin_armor_found = 1;
+			armor_start = line_start;
+
+			continue;
+		}
+
+		return ARMOR_MALFORMED_DATA;
+	}
+
+	if (cleartext_armor)
+	{
+		if (cleartext_begin_armor_found == 0 || cleartext_end_armor_found == 0)
+		{
+			return ARMOR_MALFORMED_DATA;
+		}
+	}
+
+	if (begin_armor_found == 0 || end_armor_found == 0)
+	{
+		return ARMOR_MALFORMED_DATA;
+	}
+
+	*start = armor_start;
+	*end = armor_end;
+
+	return ARMOR_SUCCESS;
+}
+
+
+
 armor_status pgp_armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result)
 {
 	// The common convention
@@ -303,7 +650,7 @@ armor_status pgp_armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t 
 
 	if ((ctx->flags & PGP_ARMOR_NO_CRC) == 0)
 	{
-		required_size += 1 + 4 + 1; // '=XXXXn'
+		required_size += 1 + 4 + 1; // '=XXXX\n'
 	}
 
 	if (size < required_size)
