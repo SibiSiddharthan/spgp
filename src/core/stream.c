@@ -77,6 +77,102 @@ size_t pgp_stream_armor_size(pgp_stream_t *stream)
 	return (CEIL_DIV(pgp_stream_octets(stream), 3) * 4) + 128; // header and footer
 }
 
+static size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, size_t size, uint32_t options)
+{
+	pgp_packet_header *header = NULL;
+	pgp_armor_ctx *armor = NULL;
+	void *temp = NULL;
+
+	size_t pos = 0;
+
+	size_t temp_size = pgp_stream_octets(stream);
+	size_t armor_size = (CEIL_DIV(temp_size, 3) * 4) + 128;
+
+	pgp_armor_type armor_type = 0;
+	pgp_packet_type packet_type = 0;
+
+	// Make sure we can output the entire armor stream
+	if (size < armor_size)
+	{
+		return 0;
+	}
+
+	temp = malloc(temp_size);
+
+	if (temp == NULL)
+	{
+		return 0;
+	}
+
+	memset(temp, 0, temp_size);
+
+	// Determine armor type
+	header = stream->packets[0];
+	packet_type = pgp_packet_get_type(header->tag);
+
+	if (packet_type == PGP_SIG)
+	{
+		armor_type = PGP_ARMOR_SIGNATURE;
+	}
+	else if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
+	{
+		armor_type = PGP_ARMOR_PUBLIC_KEY;
+	}
+	else if (packet_type == PGP_SECKEY || packet_type == PGP_SECSUBKEY)
+	{
+		armor_type = PGP_ARMOR_PRIVATE_KEY;
+	}
+	else
+	{
+		armor_type = PGP_ARMOR_MESSAGE;
+	}
+
+	armor = pgp_armor_new(armor_type, (options & PGP_WRITE_ARMOR_NO_CRC) ? PGP_ARMOR_NO_CRC : 0);
+
+	if (armor == NULL)
+	{
+		free(temp);
+		return 0;
+	}
+
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(temp, pos), size - pos);
+	}
+
+	armor->data.size = temp_size;
+	armor->data.capacity = temp_size;
+	armor->data.data = temp;
+
+	armor_write(armor, buffer, size);
+
+	pgp_armor_delete(armor);
+
+	return pos;
+}
+
+static size_t pgp_stream_write_binary(pgp_stream_t *stream, void *buffer, size_t size)
+{
+	pgp_packet_header *header = NULL;
+	size_t pos = 0;
+
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		// Write complete packets only
+		if ((header->body_size + header->header_size) < (size - pos))
+		{
+			break;
+		}
+
+		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+	}
+
+	return pos;
+}
+
 pgp_stream_t *pgp_stream_read(void *data, size_t size)
 {
 	pgp_stream_t *stream = NULL;
@@ -139,23 +235,12 @@ pgp_stream_t *pgp_stream_read(void *data, size_t size)
 
 size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options)
 {
-	pgp_packet_header *header = NULL;
-	size_t pos = 0;
-
-	for (uint16_t i = 0; i < stream->count; ++i)
+	if (options & PGP_WRITE_ARMOR)
 	{
-		header = stream->packets[i];
-
-		// Write complete packets only
-		if ((header->body_size + header->header_size) < (size - pos))
-		{
-			break;
-		}
-
-		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+		return pgp_stream_write_armor(stream, buffer, size, options);
 	}
 
-	return pos;
+	return pgp_stream_write_binary(stream, buffer, size);
 }
 
 size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options)
