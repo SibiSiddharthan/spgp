@@ -6,6 +6,7 @@
 */
 
 #include <spgp.h>
+#include <armor.h>
 #include <packet.h>
 #include <stream.h>
 
@@ -55,6 +56,25 @@ void pgp_stream_delete(pgp_stream_t *stream)
 
 	free(stream->packets);
 	free(stream);
+}
+
+size_t pgp_stream_octets(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	size_t size = 0;
+
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		size += header->body_size + header->header_size;
+	}
+
+	return size;
+}
+
+size_t pgp_stream_armor_size(pgp_stream_t *stream)
+{
+	return (CEIL_DIV(pgp_stream_octets(stream), 3) * 4) + 128; // header and footer
 }
 
 pgp_stream_t *pgp_stream_read(void *data, size_t size)
