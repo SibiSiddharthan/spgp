@@ -174,6 +174,7 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr);
 pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, uint32_t body_size);
 pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critical, uint32_t body_size);
 
+byte_t pgp_packet_validate_tag(byte_t tag);
 byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type packet_type, uint32_t size);
 pgp_packet_type pgp_packet_get_type(byte_t tag);
 

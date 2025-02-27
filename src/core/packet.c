@@ -60,6 +60,16 @@ static byte_t get_packet_header_size(pgp_packet_header_format format, size_t siz
 	}
 }
 
+byte_t pgp_packet_validate_tag(byte_t tag)
+{
+	if ((tag & 0xC0) == 0xC0 || (tag & 0x80) == 0x80)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type packet_type, uint32_t size)
 {
 	byte_t tag = 0;
