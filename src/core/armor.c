@@ -33,6 +33,7 @@ static const char *version = "Version: ";
 static const char *hash = "Hash: ";
 static const char *charset = "Charset: ";
 static const char *comment = "Comment: ";
+static const char *message_id = "MessageID: ";
 
 pgp_armor_ctx *pgp_armor_new(pgp_armor_type type, uint32_t flags)
 {

@@ -26,7 +26,8 @@ typedef enum _pgp_armor_header
 	PGP_ARMOR_VERSION = 1,
 	PGP_ARMOR_COMMENT,
 	PGP_ARMOR_HASH,
-	PGP_ARMOR_CHARSET
+	PGP_ARMOR_CHARSET,
+	PGP_ARMOR_MESSAGE_ID,
 } pgp_armor_header;
 
 typedef enum _armor_status
@@ -54,6 +55,7 @@ typedef struct _pgp_armor_ctx
 	buffer_t hash;
 	buffer_t charset;
 	buffer_t comment;
+	buffer_t message_id;
 
 	buffer_t cleartext;
 	buffer_t data;
