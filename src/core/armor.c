@@ -531,7 +531,158 @@ static armor_status get_armor_block(void *ptr, size_t size, size_t *start, size_
 	return ARMOR_SUCCESS;
 }
 
+armor_status pgp_armor_read(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result)
+{
+	armor_status status = ARMOR_SUCCESS;
+	byte_t *in = ptr;
 
+	size_t start = 0;
+	size_t end = 0;
+	size_t armor_size = 0;
+
+	size_t pos = 0;
+	size_t offset = 0;
+	size_t line_content_size = 0;
+	size_t line_total_size = 0;
+
+	size_t base64_start = 0;
+	size_t base64_size = 0;
+
+	byte_t crc_present = 0;
+	byte_t crc[4] = {0};
+	uint32_t crc_decoded = 0;
+
+	void *temp = NULL;
+
+	status = get_armor_block(ptr, size, &start, &end);
+
+	if (status != ARMOR_SUCCESS)
+	{
+		return status;
+	}
+
+	pos = start;
+	armor_size = end - start;
+
+	// Get Header
+	get_line(PTR_OFFSET(ptr, pos), armor_size, &line_content_size, &line_total_size);
+
+	ctx->type = get_begin_armor_type(PTR_OFFSET(ptr, pos), line_content_size);
+	pos += line_total_size;
+
+	// Parse the headers
+	while (pos < armor_size)
+	{
+		get_line(PTR_OFFSET(ptr, pos), armor_size, &line_content_size, &line_total_size);
+
+		// Break on empty line
+		if (check_empty_line(PTR_OFFSET(ptr, pos), line_content_size))
+		{
+			pos += line_total_size;
+			break;
+		}
+
+		pos += line_total_size;
+	}
+
+	// Decode the data
+	base64_start = pos;
+
+	// Get the size of data
+	while (pos < armor_size)
+	{
+		get_line(PTR_OFFSET(ptr, pos), armor_size, &line_content_size, &line_total_size);
+
+		if (line_content_size > 76)
+		{
+			status = ARMOR_BASE64_LINE_TOO_BIG;
+			return status;
+		}
+
+		// CRC starts
+		if (line_content_size == 5 && in[pos] == '=')
+		{
+			crc_present = 1;
+			memcpy(crc, in + pos + 1, 4);
+
+			pos += line_total_size;
+			break;
+		}
+
+		pos += line_total_size;
+		base64_size += line_content_size;
+	}
+
+	pos = base64_start;
+
+	ctx->data.data = malloc(BASE64_DECODE_SIZE(base64_size));
+	temp = malloc(base64_size);
+
+	if (ctx->data.data == NULL || temp == NULL)
+	{
+		free(temp);
+		free(ctx->data.data);
+
+		status = ARMOR_INSUFFICIENT_SYSTEM_MEMORY;
+		return status;
+	}
+
+	ctx->data.size = BASE64_DECODE_SIZE(base64_size);
+	ctx->data.capacity = BASE64_DECODE_SIZE(base64_size);
+
+	while (pos < armor_size)
+	{
+		get_line(PTR_OFFSET(ptr, pos), armor_size, &line_content_size, &line_total_size);
+
+		memcpy(PTR_OFFSET(temp, offset), PTR_OFFSET(ptr, pos), line_content_size);
+		offset += line_content_size;
+
+		// CRC starts
+		if (line_content_size == 5 && in[pos] == '=')
+		{
+			pos += line_total_size;
+			break;
+		}
+
+		pos += line_total_size;
+	}
+
+	base64_decode(&(buffer_range_t){.data = ctx->data.data, .start = 0, .end = BASE64_DECODE_SIZE(base64_size)},
+				  &(buffer_range_t){.data = temp, .start = 0, .end = base64_size});
+
+	free(temp);
+
+	if (crc_present)
+	{
+		ctx->crc = crc24_init();
+		ctx->crc = crc24_update(ctx->crc, ctx->data.data, ctx->data.size);
+		ctx->crc = crc24_final(ctx->crc);
+
+		base64_decode(&(buffer_range_t){.data = (byte_t *)&crc_decoded, .start = 0, .end = 3},
+					  &(buffer_range_t){.data = crc, .start = 0, .end = 4});
+
+		if (ctx->crc != BSWAP_32(crc_decoded))
+		{
+			status = ARMOR_BAD_CRC;
+			return status;
+		}
+	}
+
+	// Get footer
+	get_line(PTR_OFFSET(ptr, pos), armor_size, &line_content_size, &line_total_size);
+
+	if (!((ctx->type == get_end_armor_type(PTR_OFFSET(ptr, pos), line_content_size)) ||
+		  (ctx->type == PGP_ARMOR_CLEARTEXT && get_end_armor_type(PTR_OFFSET(ptr, pos), line_content_size) == PGP_ARMOR_SIGNATURE)))
+	{
+		status = ARMOR_HEADER_MISMATCH;
+	}
+
+	pos += line_total_size;
+
+	*result = end;
+
+	return status;
+}
 
 armor_status pgp_armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result)
 {
