@@ -14,19 +14,19 @@
 
 typedef enum _pgp_armor_type
 {
-	PGP_ARMOR_MESSAGE = 0,
-	PGP_ARMOR_PUBLIC_KEY = 1,
-	PGP_ARMOR_PRIVATE_KEY = 2,
-	PGP_ARMOR_SIGNATURE = 3,
-	PGP_ARMOR_CLEARTEXT = 4
+	PGP_ARMOR_MESSAGE = 1,
+	PGP_ARMOR_PUBLIC_KEY,
+	PGP_ARMOR_PRIVATE_KEY,
+	PGP_ARMOR_SIGNATURE,
+	PGP_ARMOR_CLEARTEXT
 } pgp_armor_type;
 
 typedef enum _pgp_armor_header
 {
-	PGP_ARMOR_VERSION = 0,
-	PGP_ARMOR_COMMENT = 1,
-	PGP_ARMOR_HASH = 2,
-	PGP_ARMOR_CHARSET = 3
+	PGP_ARMOR_VERSION = 1,
+	PGP_ARMOR_COMMENT,
+	PGP_ARMOR_HASH,
+	PGP_ARMOR_CHARSET
 } pgp_armor_header;
 
 typedef enum _armor_status
@@ -35,6 +35,8 @@ typedef enum _armor_status
 	ARMOR_INVALID_HEADER = -1,
 	ARMOR_INVALID_TYPE_FOR_CLEARTEXT = -2,
 	ARMOR_INCOMPATIBLE_TYPE_AND_HEADER = -3,
+	ARMOR_INSUFFICIENT_OUTPUT_BUFFER = -4,
+	ARMOR_INSUFFICIENT_SYSTEM_MEMORY = -5
 } armor_status;
 
 typedef struct _pgp_armor_ctx
@@ -57,13 +59,14 @@ typedef struct _pgp_armor_ctx
 
 } pgp_armor_ctx;
 
-pgp_armor_ctx *pgp_armor_init(void *ptr, size_t size, pgp_armor_type type, uint32_t flags);
 pgp_armor_ctx *pgp_armor_new(pgp_armor_type type, uint32_t flags);
 void pgp_armor_delete(pgp_armor_ctx *ctx);
 
 armor_status armor_set_header(pgp_armor_ctx *ctx, pgp_armor_header header, void *data, size_t size);
 armor_status armor_set_cleartext(pgp_armor_ctx *ctx, void *data, size_t size);
 armor_status armor_set_data(pgp_armor_ctx *ctx, void *data, size_t size);
-int32_t armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size);
+
+armor_status pgp_armor_read(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result);
+armor_status pgp_armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result);
 
 #endif

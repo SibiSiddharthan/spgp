@@ -34,45 +34,6 @@ static const char *hash = "Hash: ";
 static const char *charset = "Charset: ";
 static const char *comment = "Comment: ";
 
-static pgp_armor_ctx *pgp_armor_init_checked(void *ptr, pgp_armor_type type, uint32_t flags)
-{
-	pgp_armor_ctx *actx = ptr;
-
-	memset(actx, 0, sizeof(pgp_armor_ctx));
-
-	actx->type = type;
-	actx->flags = flags;
-
-	return actx;
-}
-
-pgp_armor_ctx *pgp_armor_init(void *ptr, size_t size, pgp_armor_type type, uint32_t flags)
-{
-	switch (type)
-	{
-	case PGP_ARMOR_MESSAGE:
-	case PGP_ARMOR_PUBLIC_KEY:
-	case PGP_ARMOR_PRIVATE_KEY:
-	case PGP_ARMOR_SIGNATURE:
-	case PGP_ARMOR_CLEARTEXT:
-		break;
-	default:
-		return NULL;
-	}
-
-	if (flags > PGP_ARMOR_NO_CRC)
-	{
-		return NULL;
-	}
-
-	if (size < sizeof(pgp_armor_ctx))
-	{
-		return NULL;
-	}
-
-	return pgp_armor_init_checked(ptr, type, flags);
-}
-
 pgp_armor_ctx *pgp_armor_new(pgp_armor_type type, uint32_t flags)
 {
 	pgp_armor_ctx *actx = NULL;
@@ -101,7 +62,12 @@ pgp_armor_ctx *pgp_armor_new(pgp_armor_type type, uint32_t flags)
 		return NULL;
 	}
 
-	return pgp_armor_init_checked(actx, type, flags);
+	memset(actx, 0, sizeof(pgp_armor_ctx));
+
+	actx->type = type;
+	actx->flags = flags;
+
+	return actx;
 }
 
 void pgp_armor_delete(pgp_armor_ctx *ctx)
@@ -220,7 +186,7 @@ static size_t encode_cleartext(byte_t *output, byte_t *input, size_t size)
 	return j;
 }
 
-int32_t armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size)
+armor_status pgp_armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result)
 {
 	// The common convention
 	const uint16_t columns = 64;
@@ -324,7 +290,7 @@ int32_t armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size)
 
 		if (cleartext_buffer == NULL)
 		{
-			return -1;
+			return ARMOR_INSUFFICIENT_SYSTEM_MEMORY;
 		}
 
 		cleartext_size = encode_cleartext(cleartext_buffer, ctx->cleartext.data, ctx->cleartext.size);
@@ -343,7 +309,9 @@ int32_t armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size)
 	if (size < required_size)
 	{
 		free(cleartext_buffer);
-		return (-1 * required_size);
+		*result = required_size;
+
+		return ARMOR_INSUFFICIENT_OUTPUT_BUFFER;
 	}
 
 	// Checking done, begin writing
@@ -501,5 +469,7 @@ data:
 		out[pos++] = '\n';
 	}
 
-	return required_size;
+	*result = required_size;
+
+	return ARMOR_SUCCESS;
 }

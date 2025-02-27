@@ -84,6 +84,7 @@ static size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, size_t 
 	void *temp = NULL;
 
 	size_t pos = 0;
+	size_t result = 0;
 
 	size_t temp_size = pgp_stream_octets(stream);
 	size_t armor_size = (CEIL_DIV(temp_size, 3) * 4) + 128;
@@ -145,11 +146,12 @@ static size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, size_t 
 	armor->data.capacity = temp_size;
 	armor->data.data = temp;
 
-	armor_write(armor, buffer, size);
+	pgp_armor_write(armor, buffer, size, &result);
 
 	pgp_armor_delete(armor);
+	free(temp); // TODO should be moved into pgp_armor_delete itself
 
-	return pos;
+	return result;
 }
 
 static size_t pgp_stream_write_binary(pgp_stream_t *stream, void *buffer, size_t size)
