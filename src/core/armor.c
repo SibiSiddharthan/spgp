@@ -351,27 +351,27 @@ static byte_t check_valid_pgp_armor_end(void *ptr, size_t size)
 
 static pgp_armor_type get_begin_armor_type(void *ptr, size_t size)
 {
-	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP MESSAGE", 17) == 0)
+	if (size == 27 && memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP MESSAGE", 17) == 0)
 	{
 		return PGP_ARMOR_MESSAGE;
 	}
 
-	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PUBLIC KEY BLOCK", 26) == 0)
+	if (size == 36 && memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PUBLIC KEY BLOCK", 26) == 0)
 	{
 		return PGP_ARMOR_PUBLIC_KEY;
 	}
 
-	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PRIVATE KEY BLOCK", 27) == 0)
+	if (size == 37 && memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP PRIVATE KEY BLOCK", 27) == 0)
 	{
 		return PGP_ARMOR_PRIVATE_KEY;
 	}
 
-	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNATURE", 19) == 0)
+	if (size == 29 && memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNATURE", 19) == 0)
 	{
 		return PGP_ARMOR_SIGNATURE;
 	}
 
-	if (memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNED MESSAGE", 24) == 0)
+	if (size == 34 && memcmp(PTR_OFFSET(ptr, 5), "BEGIN PGP SIGNED MESSAGE", 24) == 0)
 	{
 		return PGP_ARMOR_CLEARTEXT;
 	}
@@ -383,72 +383,27 @@ static pgp_armor_type get_begin_armor_type(void *ptr, size_t size)
 static pgp_armor_type get_end_armor_type(void *ptr, size_t size)
 {
 	// headers
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP MESSAGE", 15) == 0)
+	if (size == 25 && memcmp(PTR_OFFSET(ptr, 5), "END PGP MESSAGE", 15) == 0)
 	{
 		return PGP_ARMOR_MESSAGE;
 	}
 
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PUBLIC KEY BLOCK", 24) == 0)
+	if (size == 34 && memcmp(PTR_OFFSET(ptr, 5), "END PGP PUBLIC KEY BLOCK", 24) == 0)
 	{
 		return PGP_ARMOR_PUBLIC_KEY;
 	}
 
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PRIVATE KEY BLOCK", 25) == 0)
+	if (size == 35 && memcmp(PTR_OFFSET(ptr, 5), "END PGP PRIVATE KEY BLOCK", 25) == 0)
 	{
 		return PGP_ARMOR_PRIVATE_KEY;
 	}
 
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP SIGNATURE", 17) == 0)
+	if (size == 27 && memcmp(PTR_OFFSET(ptr, 5), "END PGP SIGNATURE", 17) == 0)
 	{
 		return PGP_ARMOR_SIGNATURE;
 	}
 
 	// Unreachable
-	return 0;
-}
-
-static byte_t check_valid_pgp_armor_end(void *ptr, size_t size)
-{
-	// Check the sizes
-	if (size != strlen(end_armor_message) && size != strlen(end_armor_public_key) && size != strlen(end_armor_private_key) &&
-		size != strlen(end_armor_signature))
-	{
-		return 0;
-	}
-
-	// begin
-	if (memcmp(PTR_OFFSET(ptr, 0), "-----", 5) != 0)
-	{
-		return 0;
-	}
-
-	// end
-	if (memcmp(PTR_OFFSET(ptr, size - 5), "-----", 5) != 0)
-	{
-		return 0;
-	}
-
-	// headers
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP MESSAGE", 15) == 0)
-	{
-		return 1;
-	}
-
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PUBLIC KEY BLOCK", 24) == 0)
-	{
-		return 1;
-	}
-
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP PRIVATE KEY BLOCK", 25) == 0)
-	{
-		return 1;
-	}
-
-	if (memcmp(PTR_OFFSET(ptr, 5), "END PGP SIGNATURE", 17) == 0)
-	{
-		return 1;
-	}
-
 	return 0;
 }
 
@@ -591,6 +546,32 @@ armor_status pgp_armor_read(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *
 	while (pos < armor_size)
 	{
 		get_line(PTR_OFFSET(ptr, pos), armor_size, &line_content_size, &line_total_size);
+
+		if (memcmp(PTR_OFFSET(ptr, pos), version, strlen(version)) == 0)
+		{
+			memcpy(ctx->version.data, PTR_OFFSET(ptr, pos + strlen(version)), line_content_size - strlen(version));
+		}
+		else if (memcmp(PTR_OFFSET(ptr, pos), hash, strlen(hash)) == 0)
+		{
+			memcpy(ctx->version.data, PTR_OFFSET(ptr, pos + strlen(hash)), line_content_size - strlen(hash));
+		}
+		else if (memcmp(PTR_OFFSET(ptr, pos), charset, strlen(charset)) == 0)
+		{
+			memcpy(ctx->version.data, PTR_OFFSET(ptr, pos + strlen(charset)), line_content_size - strlen(charset));
+		}
+		else if (memcmp(PTR_OFFSET(ptr, pos), comment, strlen(comment)) == 0)
+		{
+			memcpy(ctx->version.data, PTR_OFFSET(ptr, pos + strlen(comment)), line_content_size - strlen(comment));
+		}
+		else if (memcmp(PTR_OFFSET(ptr, pos), message_id, strlen(message_id)) == 0)
+		{
+			memcpy(ctx->version.data, PTR_OFFSET(ptr, pos + strlen(message_id)), line_content_size - strlen(message_id));
+		}
+		else
+		{
+			status = ARMOR_INVALID_HEADER;
+			return status;
+		}
 
 		// Break on empty line
 		if (check_empty_line(PTR_OFFSET(ptr, pos), line_content_size))
