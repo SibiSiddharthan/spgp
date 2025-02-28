@@ -1938,17 +1938,10 @@ size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size)
 
 size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
-
-	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User ID: ");
-
-	memcpy(PTR_OFFSET(str, pos), packet->user_data, packet->header.body_size);
-	pos += packet->header.body_size;
-
-	out[pos++] = '\n';
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User ID: %.*s\n", packet->header.body_size, packet->user_data);
 
 	return pos;
 }
@@ -1967,7 +1960,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 		{
 		case PGP_USER_ATTRIBUTE_IMAGE:
 		{
-			pgp_user_attribute_image_subpacket *image_subpacket = (pgp_user_attribute_image_subpacket *)subpacket_header;
+			pgp_user_attribute_image_subpacket *image_subpacket = packet->subpackets->packets[i];
 			uint32_t image_size = image_subpacket->header.body_size - 16;
 
 			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User Attribute Image Subpacket (Tag 1)\n");
@@ -1986,6 +1979,14 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 			}
 
 			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "Image Size: %u bytes\n", image_size);
+		}
+		case PGP_USER_ATTRIBUTE_UID:
+		{
+			pgp_user_attribute_uid_subpacket *uid_subpacket = packet->subpackets->packets[i];
+			uint32_t uid_size = uid_subpacket->header.body_size;
+
+			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User Attribute Image User ID Subpacket (Tag 2)\n");
+			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "User ID: %.*s\n", uid_size, uid_subpacket->user_data);
 		}
 		break;
 		default:
