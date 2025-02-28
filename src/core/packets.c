@@ -991,14 +991,6 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 		return NULL;
 	}
 
-	// Allocate for atleast one subpacket.
-	packet->subpackets = pgp_stream_new(1);
-
-	if (packet->subpackets == NULL)
-	{
-		return NULL;
-	}
-
 	// Set the image data
 	image_subpacket = malloc(required_size);
 
@@ -1020,6 +1012,65 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 
 	packet->header =
 		pgp_encode_packet_header(header_format, PGP_UAT, image_subpacket->header.body_size + image_subpacket->header.header_size);
+
+	return packet;
+}
+
+size_t pgp_user_attribute_packet_get_uid(pgp_user_attribute_packet *packet, void *data, size_t size)
+{
+	pgp_subpacket_header *subpacket_header = NULL;
+
+	if (packet->subpackets == NULL)
+	{
+		return 0;
+	}
+
+	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
+	{
+		subpacket_header = packet->subpackets->packets[i];
+
+		// Return the image data of the first image subpacket.
+		if ((subpacket_header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_USER_ATTRIBUTE_UID)
+		{
+			pgp_user_attribute_uid_subpacket *uid_subpacket = packet->subpackets->packets[i];
+			uint32_t uid_size = uid_subpacket->header.body_size;
+
+			if (size < uid_size)
+			{
+				return 0;
+			}
+
+			memcpy(data, uid_subpacket->user_data, uid_size);
+
+			return uid_size;
+		}
+	}
+
+	return 0;
+}
+
+pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_packet *packet, void *user_name, uint16_t user_name_size,
+															 void *user_comment, uint16_t user_comment_size, void *user_email,
+															 uint16_t user_email_size)
+{
+	pgp_user_attribute_uid_subpacket *uid_subpacket = NULL;
+	pgp_user_id_packet *uid_packet = NULL;
+	pgp_packet_header_format header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
+
+	uid_packet =
+		pgp_user_id_packet_new(header_format, user_name, user_name_size, user_comment, user_comment_size, user_email, user_email_size);
+
+	if (uid_packet == NULL)
+	{
+		return NULL;
+	}
+
+	// Layout is the same. Just change the tag.
+	uid_subpacket = (pgp_user_attribute_uid_subpacket *)uid_packet;
+	uid_subpacket->header.tag = PGP_USER_ATTRIBUTE_UID;
+
+	pgp_stream_push_packet(packet->subpackets, uid_subpacket);
+	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, uid_subpacket->header.body_size + uid_subpacket->header.header_size);
 
 	return packet;
 }
