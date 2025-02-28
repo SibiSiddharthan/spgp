@@ -174,6 +174,7 @@ pgp_packet_type pgp_packet_get_type(byte_t tag)
 	case PGP_UAT:
 	case PGP_SEIPD:
 	case PGP_MDC:
+	case PGP_AEAD:
 	case PGP_PADDING:
 		break;
 	default:
@@ -513,6 +514,8 @@ void *pgp_packet_read(void *data, size_t size)
 		return pgp_seipd_packet_read(data, size);
 	case PGP_MDC:
 		return pgp_mdc_packet_read(data, size);
+	case PGP_AEAD:
+		return pgp_aead_packet_read(data, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_read(data, size);
 		break;
@@ -562,6 +565,8 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 		return pgp_seipd_packet_write(packet, ptr, size);
 	case PGP_MDC:
 		return pgp_mdc_packet_write(packet, ptr, size);
+	case PGP_AEAD:
+		return pgp_aead_packet_write(packet, ptr, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_write(packet, ptr, size);
 		break;
@@ -611,6 +616,8 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 		return pgp_seipd_packet_print(packet, str, size);
 	case PGP_MDC:
 		return pgp_mdc_packet_print(packet, str, size);
+	case PGP_AEAD:
+		return pgp_aead_packet_print(packet, str, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_print(packet, str, size);
 		break;
