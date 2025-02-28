@@ -12,7 +12,8 @@
 #include <packet.h>
 #include <mpi.h>
 
-#define CHUNK_SIZE(size) ((uint64_t)1 << ((size) + 6))
+#define PGP_MAX_CHUNK_SIZE 16
+#define CHUNK_SIZE(size)   ((uint64_t)1 << ((size) + 6))
 
 typedef enum _pgp_seipd_version
 {
