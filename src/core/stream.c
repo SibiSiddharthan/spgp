@@ -340,6 +340,16 @@ pgp_stream_t *pgp_stream_push_packet(pgp_stream_t *stream, void *packet)
 {
 	void *temp = NULL;
 
+	if (stream == NULL)
+	{
+		stream = pgp_stream_new(4);
+
+		if (stream == NULL)
+		{
+			return NULL;
+		}
+	}
+
 	if (stream->count == stream->capacity)
 	{
 		stream->capacity *= 2;
