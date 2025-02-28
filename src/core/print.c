@@ -13,6 +13,7 @@
 #include <seipd.h>
 #include <session.h>
 #include <signature.h>
+#include <crypto.h>
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -2034,6 +2035,33 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size)
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += print_bytes(1, "SHA-1 MDC: ", PTR_OFFSET(str, pos), size - pos, packet->sha1_hash, 20);
+
+	return pos;
+}
+
+size_t pgp_aead_packet_print(pgp_aead_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(&packet->header, str, size);
+
+	if (packet->version == PGP_AEAD_V1)
+	{
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 1\n");
+
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Chunk Size: %hhu\n", packet->chunk_size);
+
+		pos += print_bytes(1, "IV: ", PTR_OFFSET(str, pos), size - pos, packet->iv, pgp_aead_iv_size(packet->aead_algorithm_id));
+		pos += print_bytes(1, "Tag: ", PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size);
+
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->data_size);
+	}
+	else
+	{
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "%hhu (Unknown)\n", packet->version);
+	}
 
 	return pos;
 }

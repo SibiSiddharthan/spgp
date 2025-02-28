@@ -33,6 +33,7 @@ typedef enum _pgp_packet_type
 	PGP_UAT = 17,       // User Attribute Packet
 	PGP_SEIPD = 18,     // Symmetrically Encrypted and Integrity Protected Data Packet
 	PGP_MDC = 19,       // Modification Detection Code Packet
+	PGP_AEAD = 20,      // AEAD Encrypted Data Packet
 	PGP_PADDING = 21    // Padding Packet
 
 } pgp_packet_type;

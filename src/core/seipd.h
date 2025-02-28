@@ -18,6 +18,11 @@ typedef enum _pgp_seipd_version
 	PGP_SEIPD_V2 = 2
 } pgp_seipd_version;
 
+typedef enum _pgp_aead_version
+{
+	PGP_AEAD_V1 = 1
+} pgp_aead_version;
+
 typedef struct _pgp_sed_packet
 {
 	pgp_packet_header header;
@@ -37,6 +42,7 @@ typedef struct _pgp_seipd_packet
 	union
 	{
 		byte_t salt[32];
+		byte_t iv[16];
 		byte_t mdc[20];
 	};
 
@@ -72,11 +78,11 @@ pgp_seipd_packet *pgp_seipd_packet_read(void *data, size_t size);
 size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size);
 size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size);
 
-pgp_aead_packet *pgp_aead_packet_new(byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size);
+pgp_aead_packet *pgp_aead_packet_new(byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size);
 void pgp_aead_packet_delete(pgp_aead_packet *packet);
 
-pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size, void *data,
-										 size_t data_size);
+pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte_t iv_size, void *session_key, size_t session_key_size,
+										 void *data, size_t data_size);
 size_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_t session_key_size, void *data, size_t data_size);
 
 pgp_aead_packet *pgp_aead_packet_read(void *data, size_t size);
