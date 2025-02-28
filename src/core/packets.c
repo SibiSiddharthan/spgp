@@ -1010,8 +1010,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 
 	pgp_stream_push_packet(packet->subpackets, image_subpacket);
 
-	packet->header =
-		pgp_encode_packet_header(header_format, PGP_UAT, image_subpacket->header.body_size + image_subpacket->header.header_size);
+	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, pgp_subpacket_stream_octets(packet->subpackets));
 
 	return packet;
 }
@@ -1070,7 +1069,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 	uid_subpacket->header.tag = PGP_USER_ATTRIBUTE_UID;
 
 	pgp_stream_push_packet(packet->subpackets, uid_subpacket);
-	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, uid_subpacket->header.body_size + uid_subpacket->header.header_size);
+	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, pgp_subpacket_stream_octets(packet->subpackets));
 
 	return packet;
 }
@@ -1107,7 +1106,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 
 	memset(packet, 0, sizeof(pgp_user_attribute_packet));
 
-	packet->subpackets = pgp_stream_new(1);
+	packet->subpackets = pgp_stream_new(4);
 
 	if (packet->subpackets == NULL)
 	{
