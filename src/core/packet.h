@@ -104,7 +104,8 @@ typedef struct _pgp_user_id_packet
 
 typedef enum _pgp_user_attribute_subpacket_type
 {
-	PGP_USER_ATTRIBUTE_IMAGE = 1
+	PGP_USER_ATTRIBUTE_IMAGE = 1,
+	PGP_USER_ATTRIBUTE_UID = 2
 } pgp_user_attribute_subpacket_type;
 
 typedef enum _pgp_user_attribute_image_encoding
@@ -124,6 +125,12 @@ typedef struct _pgp_user_attribute_image_subpacket
 	void *image_data;
 
 } pgp_user_attribute_image_subpacket;
+
+typedef struct _pgp_user_attribute_uid_subpacket
+{
+	pgp_subpacket_header header;
+	byte_t user_data[1];
+} pgp_user_attribute_uid_subpacket;
 
 typedef struct _pgp_user_attribute_packet
 {

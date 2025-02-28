@@ -792,6 +792,8 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 			return NULL;
 		}
 
+		memset(image_subpacket, 0, sizeof(pgp_user_attribute_image_subpacket) + image_size);
+
 		// Copy the header
 		image_subpacket->header = header;
 
@@ -817,6 +819,29 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 		pos += image_size;
 
 		return image_subpacket;
+	}
+	case PGP_USER_ATTRIBUTE_UID:
+	{
+		pgp_user_attribute_uid_subpacket *uid_subpacket = NULL;
+		uint32_t uid_size = header.body_size;
+
+		uid_subpacket = malloc(sizeof(pgp_subpacket_header) + uid_size);
+
+		if (uid_subpacket == NULL)
+		{
+			return NULL;
+		}
+
+		memset(uid_subpacket, 0, sizeof(pgp_subpacket_header) + uid_size);
+
+		// Copy the header
+		uid_subpacket->header = header;
+
+		// Copy the UID
+		memcpy(uid_subpacket->user_data, in + pos, uid_size);
+		pos += uid_size;
+
+		return uid_subpacket;
 	}
 	default:
 	{
@@ -881,6 +906,15 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 		// N octets of image data
 		memcpy(out + pos, image_subpacket->image_data, image_size);
 		pos += image_size;
+	}
+	case PGP_USER_ATTRIBUTE_UID:
+	{
+		pgp_user_attribute_uid_subpacket *uid_subpacket = subpacket;
+		uint32_t uid_size = uid_subpacket->header.body_size;
+
+		// N octets of UID
+		memcpy(out + pos, uid_subpacket->user_data, uid_size);
+		pos += uid_size;
 	}
 	break;
 	}
