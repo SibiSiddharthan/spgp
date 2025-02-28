@@ -2009,7 +2009,8 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 
 		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Chunk Size: %hhu\n", packet->chunk_size);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Chunk Size: %u Code (%hhu)\n", CHUNK_SIZE(packet->chunk_size),
+							packet->chunk_size);
 
 		pos += print_bytes(1, "Salt: ", PTR_OFFSET(str, pos), size - pos, packet->salt, 32);
 		pos += print_bytes(1, "Tag: ", PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size);
@@ -2051,7 +2052,8 @@ size_t pgp_aead_packet_print(pgp_aead_packet *packet, void *str, size_t size)
 
 		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Chunk Size: %hhu\n", packet->chunk_size);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Chunk Size: %u Code (%hhu)\n", CHUNK_SIZE(packet->chunk_size),
+							packet->chunk_size);
 
 		pos += print_bytes(1, "IV: ", PTR_OFFSET(str, pos), size - pos, packet->iv, pgp_aead_iv_size(packet->aead_algorithm_id));
 		pos += print_bytes(1, "Tag: ", PTR_OFFSET(str, pos), size - pos, packet->tag, packet->tag_size);
