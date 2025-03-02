@@ -28,6 +28,7 @@ static byte_t pgp_signature_type_validate(pgp_signature_type type)
 	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+	case PGP_ATTESTED_KEY_SIGNATURE:
 	case PGP_SUBKEY_BINDING_SIGNATURE:
 	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
 	case PGP_DIRECT_KEY_SIGNATURE:
@@ -58,7 +59,6 @@ static byte_t pgp_signature_subpacket_validate(pgp_signature_subpacket_type type
 	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
 	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
 	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
-	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	case PGP_TRUST_SIGNATURE_SUBPACKET:
 	case PGP_REGULAR_EXPRESSION_SUBPACKET:
 	case PGP_REVOCATION_KEY_SUBPACKET:
@@ -71,7 +71,13 @@ static byte_t pgp_signature_subpacket_validate(pgp_signature_subpacket_type type
 	case PGP_SIGNATURE_TARGET_SUBPACKET:
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
 	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+	case PGP_KEY_BLOCK_SUBPACKET:
+	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+	case PGP_LITERAL_DATA_MESH_SUBPACKET:
+	case PGP_TRUST_ALIAS_SUBPACKET:
 		return 1;
 	default:
 		return 0;
@@ -372,6 +378,7 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
 	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
 	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
 		struct _pgp_preferred_algorithm_subpacket *preferred_algorithm_subpacket = NULL;
@@ -730,6 +737,7 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
 	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
 	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
 		struct _pgp_preferred_algorithm_subpacket *preferred_algorithm_subpacket = subpacket;
@@ -1207,6 +1215,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 			case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
 			case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
 			case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+			case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
 			case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 			{
 				struct _pgp_preferred_algorithm_subpacket *subpacket = packet->hashed_subpackets->packets[i];

@@ -32,22 +32,23 @@ typedef enum _pgp_one_pass_signature_version
 
 typedef enum _pgp_signature_type
 {
-	PGP_BINARY_SIGNATURE = 0X00,
-	PGP_TEXT_SIGNATURE = 0X01,
-	PGP_STANDALONE_SIGNATURE = 0X02,
-	PGP_GENERIC_CERTIFICATION_SIGNATURE = 0X10,
-	PGP_PERSONA_CERTIFICATION_SIGNATURE = 0X11,
-	PGP_CASUAL_CERTIFICATION_SIGNATURE = 0X12,
-	PGP_POSITIVE_CERTIFICATION_SIGNATURE = 0X13,
-	PGP_SUBKEY_BINDING_SIGNATURE = 0X18,
-	PGP_PRIMARY_KEY_BINDING_SIGNATURE = 0X19,
-	PGP_DIRECT_KEY_SIGNATURE = 0X1F,
-	PGP_KEY_REVOCATION_SIGNATURE = 0X20,
-	PGP_SUBKEY_REVOCATION_SIGNATURE = 0X28,
-	PGP_CERTIFICATION_REVOCATION_SIGNATURE = 0X30,
-	PGP_TIMESTAMP_SIGNATURE = 0X40,
-	PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE = 0X50,
-	PGP_RESERVED_SIGNATURE = 0XFF
+	PGP_BINARY_SIGNATURE = 0x00,
+	PGP_TEXT_SIGNATURE = 0x01,
+	PGP_STANDALONE_SIGNATURE = 0x02,
+	PGP_GENERIC_CERTIFICATION_SIGNATURE = 0x10,
+	PGP_PERSONA_CERTIFICATION_SIGNATURE = 0x11,
+	PGP_CASUAL_CERTIFICATION_SIGNATURE = 0x12,
+	PGP_POSITIVE_CERTIFICATION_SIGNATURE = 0x13,
+	PGP_ATTESTED_KEY_SIGNATURE = 0x16,
+	PGP_SUBKEY_BINDING_SIGNATURE = 0x18,
+	PGP_PRIMARY_KEY_BINDING_SIGNATURE = 0x19,
+	PGP_DIRECT_KEY_SIGNATURE = 0x1F,
+	PGP_KEY_REVOCATION_SIGNATURE = 0x20,
+	PGP_SUBKEY_REVOCATION_SIGNATURE = 0x28,
+	PGP_CERTIFICATION_REVOCATION_SIGNATURE = 0x30,
+	PGP_TIMESTAMP_SIGNATURE = 0x40,
+	PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE = 0x50,
+	PGP_RESERVED_SIGNATURE = 0xFF
 } pgp_signature_type;
 
 typedef enum _pgp_signature_subpacket_type
@@ -59,7 +60,6 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_REGULAR_EXPRESSION_SUBPACKET = 6,
 	PGP_REVOCABLE_SUBPACKET = 7,
 	PGP_KEY_EXPIRATION_TIME_SUBPACKET = 9,
-	// 10 Placeholder for backward compatibility
 	PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET = 11,
 	PGP_REVOCATION_KEY_SUBPACKET = 12, // Deprecated
 	PGP_ISSUER_KEY_ID_SUBPACKET = 16,
@@ -77,10 +77,13 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_SIGNATURE_TARGET_SUBPACKET = 31,
 	PGP_EMBEDDED_SIGNATURE_SUBPACKET = 32,
 	PGP_ISSUER_FINGERPRINT_SUBPACKET = 33,
+	PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET = 34, // Deprecated
 	PGP_RECIPIENT_FINGERPRINT_SUBPACKET = 35,
-	// 37 Reserved (ATTESTED CERTIFICATIONS)
-	// 38 Reserved (KEY BLOCK)
+	PGP_ATTESTED_CERTIFICATIONS_SUBPACKET = 37,
+	PGP_KEY_BLOCK_SUBPACKET = 38,
 	PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET = 39,
+	PGP_LITERAL_DATA_MESH_SUBPACKET = 40,
+	PGP_TRUST_ALIAS_SUBPACKET = 41
 } pgp_signature_subpacket_type;
 
 typedef enum _pgp_revocation_code
@@ -178,7 +181,7 @@ typedef struct _pgp_preferred_algorithm_subpacket
 	pgp_subpacket_header header;
 	byte_t preferred_algorithms[1];
 } pgp_preferred_symmetric_ciphers_subpacket, pgp_preferred_hash_algorithms_subpacket, pgp_preferred_compression_algorithms_subpacket,
-	pgp_preferred_aead_ciphersuites_subpacket;
+	pgp_preferred_encryption_modes_subpacket, pgp_preferred_aead_ciphersuites_subpacket;
 
 typedef struct _pgp_flags_subpacket
 {
@@ -197,8 +200,10 @@ typedef struct _pgp_string_subpacket
 		void *server; // pgp_preferred_key_server_subpacket
 		void *policy; // pgp_policy_uri_subpacket
 		void *uid;    // pgp_signer_user_id_subpacket
+		void *alias;  // pgp_trust_alias_subpacket
 	};
-} pgp_regular_expression_subpacket, pgp_preferred_key_server_subpacket, pgp_policy_uri_subpacket, pgp_signer_user_id_subpacket;
+} pgp_regular_expression_subpacket, pgp_preferred_key_server_subpacket, pgp_policy_uri_subpacket, pgp_signer_user_id_subpacket,
+	pgp_trust_alias_subpacket;
 
 typedef struct _pgp_key_fingerprint_subpacket
 {
