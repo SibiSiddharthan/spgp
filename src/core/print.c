@@ -1052,6 +1052,9 @@ static size_t pgp_signature_type_print(pgp_signature_type type, void *str, size_
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Positive Certification Signature (Tag 0x13)\n");
 		break;
+	case PGP_ATTESTED_KEY_SIGNATURE:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Attested Key Signature (Tag 0x16)\n");
+		break;
 	case PGP_SUBKEY_BINDING_SIGNATURE:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Subkey Binding Signature (Tag 0x18)\n");
 		break;
@@ -1163,11 +1166,26 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Issuer Fingerprint (Tag 33)");
 		break;
+	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred Encryption Modes (Tag 33) (Deprecated)");
+		break;
 	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Intended Recipient Fingerprint (Tag 35)");
 		break;
+	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Attested Certifications (Tag 37)");
+		break;
+	case PGP_KEY_BLOCK_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Block (Tag 38)");
+		break;
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred AEAD Ciphersuites (Tag 39)");
+		break;
+	case PGP_LITERAL_DATA_MESH_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Literal Data Mesh (Tag 40)");
+		break;
+	case PGP_TRUST_ALIAS_SUBPACKET:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Trust Alias (Tag 41)");
 		break;
 	default:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Unkown Signature Subpacket (Tag %hhu)", type);
@@ -1473,6 +1491,16 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 						 fingerprint_subpacket->header.body_size - 1);
 	}
 	break;
+	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
+	{
+		pgp_preferred_encryption_modes_subpacket *preferred_subpacket = subpacket;
+
+		for (uint32_t i = 0; i < preferred_subpacket->header.body_size; ++i)
+		{
+			pos += pgp_aead_algorithm_print(preferred_subpacket->preferred_algorithms[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+	break;
 	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
 	{
 		pgp_recipient_fingerprint_subpacket *fingerprint_subpacket = subpacket;
@@ -1556,6 +1584,15 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 		}
 	}
 	break;
+	case PGP_TRUST_ALIAS_SUBPACKET:
+	{
+		pgp_trust_alias_subpacket *trust_alias_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Alias: %.*s\n", trust_alias_subpacket->header.body_size,
+							trust_alias_subpacket->uid);
+	}
+	break;
+	default:
+		break;
 	}
 
 	return pos;
