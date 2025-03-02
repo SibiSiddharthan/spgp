@@ -5,6 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-add_subdirectory(core)
-add_subdirectory(crypto)
-add_subdirectory(io)
+cmake_minimum_required(VERSION 3.15)
+project(crypto C)
+
+add_subdirectory(src)
+
+
+
