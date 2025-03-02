@@ -104,9 +104,31 @@ typedef struct _IO_STATUS_BLOCK
 
 typedef VOID(NTAPI *PIO_APC_ROUTINE)(_In_ PVOID ApcContext, _In_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG Reserved);
 
+//
+// Define special ByteOffset parameters for read and write operations
+//
+
+#define FILE_WRITE_TO_END_OF_FILE      0xffffffff
+#define FILE_USE_FILE_POINTER_POSITION 0xfffffffe
+
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
 NtClose(_In_ _Post_ptr_invalid_ HANDLE Handle);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtReadFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_ROUTINE ApcRoutine, _In_opt_ PVOID ApcContext,
+		   _Out_ PIO_STATUS_BLOCK IoStatusBlock, _Out_writes_bytes_(Length) PVOID Buffer, _In_ ULONG Length,
+		   _In_opt_ PLARGE_INTEGER ByteOffset, _In_opt_ PULONG Key);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtWriteFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_ROUTINE ApcRoutine, _In_opt_ PVOID ApcContext,
+			_Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_reads_bytes_(Length) PVOID Buffer, _In_ ULONG Length,
+			_In_opt_ PLARGE_INTEGER ByteOffset, _In_opt_ PULONG Key);
+
 
 #endif
