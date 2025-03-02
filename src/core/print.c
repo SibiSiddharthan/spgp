@@ -2081,3 +2081,13 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 
 	return pos;
 }
+
+size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(&packet->header, str, size);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->header.body_size);
+
+	return pos;
+}

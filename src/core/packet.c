@@ -537,9 +537,8 @@ void *pgp_packet_read(void *data, size_t size)
 		return pgp_aead_packet_read(data, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_read(data, size);
-		break;
 	default:
-		return NULL;
+		return pgp_unknown_packet_read(data, size);
 	}
 }
 
@@ -588,9 +587,8 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 		return pgp_aead_packet_write(packet, ptr, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_write(packet, ptr, size);
-		break;
 	default:
-		return 0;
+		return pgp_unknown_packet_write(packet, ptr, size);
 	}
 }
 
@@ -639,8 +637,7 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 		return pgp_aead_packet_print(packet, str, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_print(packet, str, size);
-		break;
 	default:
-		return 0;
+		return pgp_unknown_packet_print(packet, str, size);
 	}
 }

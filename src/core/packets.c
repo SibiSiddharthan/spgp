@@ -163,7 +163,7 @@ pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size)
 	pos += 1;
 
 	// Copy the compressed data.
-	memcpy(packet->data, in + pos, packet->header.body_size - 1);
+	memcpy(packet->data, in + pos, data_size);
 
 	return packet;
 }
@@ -1427,6 +1427,68 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)
 	// Trust level
 	LOAD_8(out + pos, &packet->level);
 	pos += 1;
+
+	return pos;
+}
+
+pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size)
+{
+	byte_t *in = data;
+
+	pgp_unknown_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+	uint32_t data_size = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+	data_size = header.body_size;
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_unknown_packet) + data_size);
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_unknown_packet) + data_size);
+
+	packet->data = PTR_OFFSET(packet, sizeof(pgp_unknown_packet));
+
+	// Copy the header
+	packet->header = header;
+
+	// Copy the data.
+	memcpy(packet->data, in + pos, data_size);
+
+	return packet;
+}
+
+size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	required_size = packet->header.header_size + packet->header.body_size;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Data
+	memcpy(out + pos, packet->data, packet->header.body_size);
+	pos += packet->header.body_size;
 
 	return pos;
 }

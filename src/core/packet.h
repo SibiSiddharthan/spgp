@@ -53,11 +53,11 @@ typedef struct _pgp_packet_header
 	uint32_t body_size;
 } pgp_packet_header, pgp_subpacket_header;
 
-typedef struct _pgp_unknown_subpacket
+typedef struct _pgp_unknown_packet
 {
-	pgp_subpacket_header header;
+	struct _pgp_packet_header header;
 	void *data;
-} pgp_unknown_subpacket;
+} pgp_unknown_packet, pgp_unknown_subpacket;
 
 typedef struct _pgp_compressed_packet
 {
@@ -277,5 +277,10 @@ void pgp_trust_packet_delete(pgp_trust_packet *packet);
 pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size);
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
+
+// Unknown Packet
+pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size);
+size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size);
+size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t size);
 
 #endif
