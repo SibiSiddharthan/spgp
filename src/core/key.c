@@ -52,6 +52,7 @@ static uint32_t get_public_key_material_octets(pgp_public_key_algorithms public_
 		return 5 + key->oid_size + mpi_octets(key->point->bits);
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = key_data;
 
@@ -109,6 +110,7 @@ static uint32_t get_public_key_material_size(pgp_public_key_algorithms public_ke
 		return sizeof(pgp_ecdh_key) + mpi_size(key->point->bits);
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = key_data;
 
@@ -166,6 +168,7 @@ static uint32_t get_private_key_material_octets(pgp_public_key_algorithms public
 		return mpi_octets(key->x->bits);
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = key_data;
 
@@ -223,6 +226,7 @@ static uint32_t get_private_key_material_size(pgp_public_key_algorithms public_k
 		return sizeof(pgp_ecdh_key) + mpi_size(key->x->bits);
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = key_data;
 
@@ -306,6 +310,7 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	}
 	break;
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = key_data;
 
@@ -564,6 +569,7 @@ static uint32_t pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, 
 		if (key->point == NULL)
 		{
 			free(key);
+			return 0;
 		}
 
 		pos += mpi_read(key->point, in + pos, size - pos);
@@ -587,6 +593,7 @@ static uint32_t pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, 
 		return pos;
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = NULL;
 		uint16_t offset = in[0] + 1;
@@ -623,6 +630,7 @@ static uint32_t pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, 
 		if (key->point == NULL)
 		{
 			free(key);
+			return 0;
 		}
 
 		pos += mpi_read(key->point, in + pos, size - pos);
@@ -808,6 +816,7 @@ static uint32_t pgp_public_key_material_write(pgp_key_packet *packet, void *ptr,
 		return pos;
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = packet->key;
 
@@ -979,6 +988,7 @@ static uint32_t pgp_private_key_material_read(pgp_key_packet *packet, void *ptr,
 		return pos;
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = packet->key;
 		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
@@ -1087,6 +1097,7 @@ static uint32_t pgp_private_key_material_write(pgp_key_packet *packet, void *ptr
 		return pos;
 	}
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = packet->key;
 
@@ -1142,7 +1153,7 @@ pgp_key_packet *pgp_public_key_packet_new(pgp_packet_type type, pgp_key_version 
 		return NULL;
 	}
 
-	if (version != PGP_KEY_V6 && version != PGP_KEY_V4 && version != PGP_KEY_V3 && version != PGP_KEY_V2)
+	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
 	{
 		return NULL;
 	}
@@ -1628,7 +1639,7 @@ pgp_key_packet *pgp_secret_key_packet_new(pgp_packet_type type, pgp_key_version 
 		return NULL;
 	}
 
-	if (version != PGP_KEY_V6 && version != PGP_KEY_V4 && version != PGP_KEY_V3 && version != PGP_KEY_V2)
+	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
 	{
 		return NULL;
 	}

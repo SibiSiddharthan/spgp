@@ -90,6 +90,7 @@ uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 		return mpi_octets(bits);
 	case PGP_DSA:
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 		// MPI of (r,s)
 		return mpi_octets(bits) * 2;
 	case PGP_ED25519:
@@ -244,6 +245,7 @@ static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, 
 	}
 	case PGP_DSA:
 	case PGP_ECDSA:
+	case PGP_EDDSA:
 	{
 		// MPI of (r,s)}
 		pgp_dsa_signature *sig = packet->signature;
@@ -1546,11 +1548,6 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
 	{
-		uint16_t hashed_subpacket_count = 0;
-		uint16_t unhashed_subpacket_count = 0;
-		uint16_t hashed_subpacket_capacity = 0;
-		uint16_t unhashed_subpacket_capacity = 0;
-
 		uint32_t hashed_subpacket_data_read = 0;
 		uint32_t unhashed_subpacket_data_read = 0;
 

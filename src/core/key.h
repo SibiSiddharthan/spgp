@@ -98,7 +98,7 @@ typedef struct _pgp_ecdsa_key
 
 	mpi_t *point; // Public
 	mpi_t *x;     // Point
-} pgp_ecdsa_key;
+} pgp_ecdsa_key, pgp_eddsa_key;
 
 typedef struct _pgp_ecdh_key
 {

@@ -255,7 +255,7 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDSA (Tag 19)\n");
 		break;
 	case PGP_EDDSA:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Legacy) (Tag 22)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Tag 22)\n");
 		break;
 	case PGP_X25519:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "X25519 (Tag 22)\n");
@@ -332,7 +332,7 @@ static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm,
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "ECDSA (Tag 19)\n");
 		break;
 	case PGP_EDDSA:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Legacy) (Tag 22)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EdDSA (Tag 22)\n");
 		break;
 	case PGP_ED25519:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Ed25519 (Tag 27)\n");
@@ -737,6 +737,13 @@ static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *sig
 		pos += print_mpi(indent + 1, "ECDSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
 	break;
+	case PGP_EDDSA:
+	{
+		pgp_eddsa_signature *sg = sign;
+		pos += print_mpi(indent + 1, "EdDSA r", sg->r, PTR_OFFSET(str, pos), str_size - pos, options);
+		pos += print_mpi(indent + 1, "EdDSA s", sg->s, PTR_OFFSET(str, pos), str_size - pos, options);
+	}
+	break;
 	case PGP_ED25519:
 	{
 		pgp_ed25519_signature *sg = sign;
@@ -804,6 +811,13 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	case PGP_ECDSA:
 	{
 		pgp_ecdsa_key *key = public_key;
+		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, PTR_OFFSET(str, pos), str_size - pos, indent + 1);
+		pos += print_mpi(indent + 1, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos, options);
+	}
+	break;
+	case PGP_EDDSA:
+	{
+		pgp_eddsa_key *key = public_key;
 		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, PTR_OFFSET(str, pos), str_size - pos, indent + 1);
 		pos += print_mpi(indent + 1, "MPI of public point", key->point, PTR_OFFSET(str, pos), str_size - pos, options);
 	}
@@ -924,6 +938,20 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		else
 		{
 			pos += print_mpi(indent + 1, "ECDSA secret scalar x", key->x, PTR_OFFSET(str, pos), str_size - pos, options);
+		}
+	}
+	break;
+	case PGP_EDDSA:
+	{
+		pgp_eddsa_key *key = private_key;
+
+		if (key->x == NULL)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), str_size - pos, "EdDSA secret scalar x (Encrypted)\n");
+		}
+		else
+		{
+			pos += print_mpi(indent + 1, "EdDSA secret scalar x", key->x, PTR_OFFSET(str, pos), str_size - pos, options);
 		}
 	}
 	break;
@@ -1140,6 +1168,9 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 		break;
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred AEAD Ciphersuites (Tag 39)");
+		break;
+	default:
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Unkown Signature Subpacket (Tag %hhu)", type);
 		break;
 	}
 
