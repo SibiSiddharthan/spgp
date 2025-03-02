@@ -11,6 +11,25 @@
 #include <crypt.h>
 #include <bignum.h>
 
+typedef enum _dh_safe_prime_id
+{
+	// MODP
+	MODP_1536 = 1,
+	MODP_2048,
+	MODP_3072,
+	MODP_4096,
+	MODP_6144,
+	MODP_8192,
+
+	// FFDHE
+	FFDHE_2048,
+	FFDHE_3072,
+	FFDHE_4096,
+	FFDHE_6144,
+	FFDHE_8192,
+
+} dh_safe_prime_id;
+
 typedef struct _dh_key
 {
 	uint16_t p_bits, q_bits;
