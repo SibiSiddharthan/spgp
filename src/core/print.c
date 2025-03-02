@@ -197,6 +197,9 @@ uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t si
 	case PGP_MDC:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Modification Detection Code Packet (Deprecated) (Tag 19)");
 		break;
+	case PGP_AEAD:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Authenticated Encryption Data Packet Packet (Tag 20)");
+		break;
 	case PGP_PADDING:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Packet (Tag 21)");
 		break;
