@@ -13,7 +13,6 @@
 #include <mpi.h>
 #include <crypto.h>
 
-#include <hkdf.h>
 #include <hash.h>
 #include <sha.h>
 #include <md5.h>
@@ -1850,7 +1849,7 @@ static uint32_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, voi
 		info[2] = packet->symmetric_key_algorithm_id;
 		info[3] = packet->aead_algorithm_id;
 
-		hkdf(HASH_SHA256, dkey, key_size, NULL, 0, info, 4, dkey, key_size);
+		pgp_hkdf(PGP_SHA2_256, dkey, key_size, NULL, 0, info, 4, dkey, key_size);
 		key = dkey;
 	}
 	else
@@ -1948,7 +1947,7 @@ static uint32_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, voi
 		info[2] = packet->symmetric_key_algorithm_id;
 		info[3] = packet->aead_algorithm_id;
 
-		hkdf(HASH_SHA256, dkey, key_size, NULL, 0, info, 4, dkey, key_size);
+		pgp_hkdf(PGP_SHA2_256, dkey, key_size, NULL, 0, info, 4, dkey, key_size);
 		key = dkey;
 	}
 	else

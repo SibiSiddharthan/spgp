@@ -1588,7 +1588,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	{
 		pgp_trust_alias_subpacket *trust_alias_subpacket = subpacket;
 		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Alias: %.*s\n", trust_alias_subpacket->header.body_size,
-							trust_alias_subpacket->uid);
+							trust_alias_subpacket->alias);
 	}
 	break;
 	default:

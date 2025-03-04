@@ -23,6 +23,7 @@
 #include <x25519.h>
 #include <x448.h>
 
+#include <argon2.h>
 #include <hkdf.h>
 
 #include <stdlib.h>
@@ -1859,4 +1860,17 @@ uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *key, vo
 	status = ed448_verify((ed448_key *)key, (ed448_signature *)signature, NULL, 0, hash, hash_size);
 
 	return status;
+}
+
+uint32_t pgp_argon2(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,
+					uint32_t iterations, void *secret, uint32_t secret_size, void *data, uint32_t data_size, void *key, uint32_t key_size)
+{
+	return argon2id(password, password_size, salt, salt_size, parallel, memory, iterations, secret, secret_size, data, data_size, key,
+					key_size);
+}
+
+uint32_t pgp_hkdf(pgp_hash_algorithms algorithm, void *key, uint32_t key_size, void *salt, size_t salt_size, void *info, size_t info_size,
+				  void *derived_key, uint32_t derived_key_size)
+{
+	return hkdf(pgp_algorithm_to_hash_algorithm(algorithm), key, key_size, salt, salt_size, info, info_size, derived_key, derived_key_size);
 }

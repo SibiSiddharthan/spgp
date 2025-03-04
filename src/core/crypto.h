@@ -82,4 +82,11 @@ uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *k
 pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_key *key, void *hash, uint32_t hash_size);
 uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *key, void *hash, uint32_t hash_size);
 
+// KDFs
+uint32_t pgp_argon2(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,
+					uint32_t iterations, void *secret, uint32_t secret_size, void *data, uint32_t data_size, void *key, uint32_t key_size);
+
+uint32_t pgp_hkdf(pgp_hash_algorithms algorithm, void *key, uint32_t key_size, void *salt, size_t salt_size, void *info, size_t info_size,
+				  void *derived_key, uint32_t derived_key_size);
+
 #endif

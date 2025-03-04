@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <hkdf.h>
 #include <sha.h>
 
 pgp_sed_packet *pgp_sed_packet_new()
@@ -334,7 +333,7 @@ static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, b
 	memcpy(packet->salt, salt, 32);
 
 	// Derive the message key
-	hkdf(HASH_SHA256, session_key, session_key_size, salt, 32, info, 5, derived_key, key_size + iv_size - 8);
+	pgp_hkdf(PGP_SHA2_256, session_key, session_key_size, salt, 32, info, 5, derived_key, key_size + iv_size - 8);
 
 	// Copy part of the it as IV
 	memcpy(iv, PTR_OFFSET(derived_key, key_size), iv_size - 8);
@@ -484,7 +483,7 @@ static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *sessio
 	info[4] = packet->chunk_size;
 
 	// Derive the message key
-	hkdf(HASH_SHA256, session_key, session_key_size, packet->salt, 32, info, 5, derived_key, key_size + iv_size - 8);
+	pgp_hkdf(PGP_SHA2_256, session_key, session_key_size, packet->salt, 32, info, 5, derived_key, key_size + iv_size - 8);
 
 	// Copy part of the it as IV
 	memcpy(iv, PTR_OFFSET(derived_key, key_size), iv_size - 8);

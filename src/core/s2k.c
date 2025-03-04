@@ -9,7 +9,7 @@
 #include <s2k.h>
 #include <algorithms.h>
 
-#include <argon2.h>
+#include <crypto.h>
 #include <hash.h>
 
 #include <string.h>
@@ -380,7 +380,7 @@ static uint32_t s2k_iterated_hash(pgp_hash_algorithms algorithm, void *password,
 static uint32_t s2k_argon2_hash(void *password, uint32_t password_size, byte_t salt[16], uint32_t parallel, uint32_t memory,
 								uint32_t iterations, void *key, uint32_t key_size)
 {
-	return argon2id(password, password_size, salt, 16, parallel, memory, iterations, NULL, 0, NULL, 0, key, key_size);
+	return pgp_argon2(password, password_size, salt, 16, parallel, memory, iterations, NULL, 0, NULL, 0, key, key_size);
 }
 
 uint32_t pgp_s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size)

@@ -1252,6 +1252,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 			case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
 			case PGP_POLICY_URI_SUBPACKET:
 			case PGP_SIGNER_USER_ID_SUBPACKET:
+			case PGP_TRUST_ALIAS_SUBPACKET:
 			{
 				struct _pgp_string_subpacket *subpacket = packet->hashed_subpackets->packets[i];
 

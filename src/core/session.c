@@ -11,8 +11,6 @@
 #include <packet.h>
 #include <session.h>
 
-#include <hkdf.h>
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -860,7 +858,7 @@ static pgp_skesk_packet *pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_pa
 
 	if (packet->version == PGP_SKESK_V6)
 	{
-		hkdf(HASH_SHA256, ik, 16, NULL, 0, info, 4, sk, packet->session_key_size);
+		pgp_hkdf(PGP_SHA2_256, ik, 16, NULL, 0, info, 4, sk, packet->session_key_size);
 		key = sk;
 	}
 	else // packet->version == PGP_SKESK_V5
@@ -906,7 +904,7 @@ static uint32_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *pac
 
 	if (packet->version == PGP_SKESK_V6)
 	{
-		hkdf(HASH_SHA256, ik, 16, NULL, 0, info, 4, sk, packet->session_key_size);
+		pgp_hkdf(PGP_SHA2_256, ik, 16, NULL, 0, info, 4, sk, packet->session_key_size);
 		key = sk;
 	}
 	else // packet->version == PGP_SKESK_V5
