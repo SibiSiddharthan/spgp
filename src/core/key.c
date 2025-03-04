@@ -1411,7 +1411,7 @@ static uint32_t pgp_secret_key_material_encrypt_legacy_cfb_v3(pgp_key_packet *pa
 static uint32_t pgp_secret_key_material_decrypt_legacy_cfb_v3(pgp_key_packet *packet, byte_t hash[MD5_HASH_SIZE])
 {
 	// Only RSA keys
-	uint32_t status = 0;
+	uint32_t result = 0;
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
 	uint32_t pos = 0;
@@ -1475,10 +1475,10 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb_v3(pgp_key_packet *pa
 	pos += 2;
 
 	// Read in the key from the buffer
-	status = pgp_private_key_material_read(packet, buffer, pos - 2);
+	result = pgp_private_key_material_read(packet, buffer, pos - 2);
 	free(buffer);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		return 0;
 	}
@@ -1554,7 +1554,7 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb(pgp_key_packet *packe
 	byte_t hash[MD5_HASH_SIZE] = {0};
 	byte_t *buffer = NULL;
 
-	size_t status = 0;
+	size_t result = 0;
 
 	// Hash the passphrase
 	md5_hash(passphrase, passphrase_size, hash);
@@ -1575,10 +1575,10 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb(pgp_key_packet *packe
 	memset(buffer, 0, ROUND_UP(packet->encrypted_octets, 16));
 
 	// Decrypt using CFB
-	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, packet->iv, packet->iv_size, packet->encrypted,
+	result = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, hash, MD5_HASH_SIZE, packet->iv, packet->iv_size, packet->encrypted,
 							 packet->encrypted_octets, buffer, packet->encrypted_octets);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		free(buffer);
 		return 0;
@@ -1588,10 +1588,10 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb(pgp_key_packet *packe
 	LOAD_16(&packet->key_checksum, PTR_OFFSET(buffer, packet->encrypted_octets - 2));
 
 	// Read the key from the buffer
-	status = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
 	free(buffer);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		return 0;
 	}
@@ -1656,7 +1656,7 @@ static uint32_t pgp_secret_key_material_encrypt_malleable_cfb(pgp_key_packet *pa
 static uint32_t pgp_secret_key_material_decrypt_malleable_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
-	size_t status = 0;
+	size_t result = 0;
 
 	byte_t key[32] = {0};
 	byte_t *buffer = NULL;
@@ -1675,10 +1675,10 @@ static uint32_t pgp_secret_key_material_decrypt_malleable_cfb(pgp_key_packet *pa
 	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
 
 	// Decrypt using CFB
-	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
-							  packet->encrypted_octets, buffer, packet->encrypted_octets);
+	result = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
+							 packet->encrypted_octets, buffer, packet->encrypted_octets);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		free(buffer);
 		return 0;
@@ -1688,10 +1688,10 @@ static uint32_t pgp_secret_key_material_decrypt_malleable_cfb(pgp_key_packet *pa
 	LOAD_16(&packet->key_checksum, PTR_OFFSET(buffer, packet->encrypted_octets - 2));
 
 	// Read the key from the buffer
-	status = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
 	free(buffer);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		return 0;
 	}
@@ -1756,7 +1756,7 @@ static uint32_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, void
 static uint32_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
-	size_t status = 0;
+	size_t result = 0;
 
 	byte_t key[32] = {0};
 	byte_t hash[SHA1_HASH_SIZE] = {0};
@@ -1776,10 +1776,10 @@ static uint32_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, void
 	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
 
 	// Decrypt using CFB
-	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
-							  packet->encrypted_octets, buffer, packet->encrypted_octets);
+	result = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
+							 packet->encrypted_octets, buffer, packet->encrypted_octets);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		free(buffer);
 		return 0;
@@ -1796,10 +1796,10 @@ static uint32_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, void
 	}
 
 	// Read the key from the buffer
-	status = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
 	free(buffer);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		return 0;
 	}
@@ -1824,27 +1824,6 @@ static uint32_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, voi
 	byte_t *key = NULL;
 	byte_t *buffer = NULL;
 
-	// Info for hkdf
-	if (packet->version == PGP_KEY_V6)
-	{
-		info[0] = packet->header.tag;
-		info[1] = packet->version;
-		info[2] = packet->symmetric_key_algorithm_id;
-		info[3] = packet->aead_algorithm_id;
-	}
-
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
-
-	if (packet->version == PGP_KEY_V6)
-	{
-		hkdf(HASH_SHA256, dkey, key_size, NULL, 0, info, 4, dkey, key_size);
-		key = dkey;
-	}
-	else
-	{
-		key = ikey;
-	}
-
 	count = get_private_key_material_octets(packet->public_key_algorithm_id, packet->key);
 	buffer = malloc(ROUND_UP(count + aad_size, 16));
 	packet->encrypted = malloc(ROUND_UP(count + PGP_AEAD_TAG_SIZE, 16));
@@ -1855,6 +1834,28 @@ static uint32_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, voi
 		free(packet->encrypted);
 
 		return 0;
+	}
+
+	memset(buffer, 0, ROUND_UP(count + aad_size, 16));
+	memset(packet->encrypted, 0, ROUND_UP(count + PGP_AEAD_TAG_SIZE, 16));
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
+
+	// Generate the key
+	if (packet->version == PGP_KEY_V6)
+	{
+		info[0] = packet->header.tag;
+		info[1] = packet->version;
+		info[2] = packet->symmetric_key_algorithm_id;
+		info[3] = packet->aead_algorithm_id;
+
+		hkdf(HASH_SHA256, dkey, key_size, NULL, 0, info, 4, dkey, key_size);
+		key = dkey;
+	}
+	else
+	{
+		key = ikey;
 	}
 
 	// Write the private octets to the buffer
@@ -1908,6 +1909,109 @@ static uint32_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, voi
 	}
 
 	return result + PGP_AEAD_TAG_SIZE;
+}
+
+static uint32_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+{
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+	uint32_t aad_size = packet->public_key_data_octets + 16; // Upper bound
+	uint32_t aad_count = 0;
+
+	size_t pos = 0;
+	size_t result = 0;
+
+	byte_t ikey[32] = {0};
+	byte_t dkey[32] = {0};
+	byte_t info[4] = {0};
+
+	byte_t *key = NULL;
+	byte_t *buffer = NULL;
+
+	buffer = malloc(ROUND_UP(aad_size, 16) + ROUND_UP(packet->encrypted_octets, 16));
+
+	if (buffer == NULL || packet->encrypted == NULL)
+	{
+		free(buffer);
+		return 0;
+	}
+
+	memset(buffer, 0, ROUND_UP(aad_size, 16) + ROUND_UP(packet->encrypted_octets, 16));
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
+
+	// Generate the key
+	if (packet->version == PGP_KEY_V6)
+	{
+		info[0] = packet->header.tag;
+		info[1] = packet->version;
+		info[2] = packet->symmetric_key_algorithm_id;
+		info[3] = packet->aead_algorithm_id;
+
+		hkdf(HASH_SHA256, dkey, key_size, NULL, 0, info, 4, dkey, key_size);
+		key = dkey;
+	}
+	else
+	{
+		key = ikey;
+	}
+
+	// Prepare the associated data
+	pos = 0;
+
+	LOAD_8(buffer + pos, &packet->header.tag);
+	pos += 1;
+
+	if (packet->version == PGP_KEY_V5)
+	{
+		LOAD_8(buffer + pos, &packet->symmetric_key_algorithm_id);
+		pos += 1;
+
+		LOAD_8(buffer + pos, &packet->aead_algorithm_id);
+		pos += 1;
+	}
+
+	LOAD_8(buffer + pos, &packet->version);
+	pos += 1;
+
+	uint32_t creation_time_be = BSWAP_32(packet->key_creation_time);
+	LOAD_32(buffer + pos, &creation_time_be);
+	pos += 4;
+
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
+	{
+		uint32_t public_key_octets_be = BSWAP_32(packet->public_key_data_octets);
+		LOAD_32(buffer + pos, &public_key_octets_be);
+		pos += 4;
+	}
+
+	pos += pgp_public_key_material_write(packet, PTR_OFFSET(buffer, pos), packet->public_key_data_octets);
+	aad_count = pos;
+
+	pos = ROUND_UP(pos, 16);
+
+	// Encrypt using AEAD (Store the tag at the end)
+	result = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
+							  buffer, aad_count, packet->encrypted, packet->encrypted_octets - PGP_AEAD_TAG_SIZE, PTR_OFFSET(buffer, pos),
+							  packet->encrypted_octets - PGP_AEAD_TAG_SIZE,
+							  PTR_OFFSET(buffer, pos + (packet->encrypted_octets - PGP_AEAD_TAG_SIZE)), PGP_AEAD_TAG_SIZE);
+
+	if (result == 0)
+	{
+		free(buffer);
+		return 0;
+	}
+
+	// Read the key from the buffer
+	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	free(buffer);
+
+	if (result == 0)
+	{
+		return 0;
+	}
+
+	return packet->encrypted_octets;
 }
 
 static uint32_t pgp_secret_key_material_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
@@ -2838,7 +2942,7 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 	pgp_packet_header *header = key;
 	byte_t tag = pgp_packet_get_type(header->tag);
 
-	uint32_t status = 0;
+	uint32_t result = 0;
 	byte_t fingerprint[32] = {0};
 
 	// For V3 RSA
@@ -2861,14 +2965,14 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 	}
 
 	// Last 64 bits of the fingerprint
-	status = pgp_key_fingerprint(key, fingerprint, 32);
+	result = pgp_key_fingerprint(key, fingerprint, 32);
 
-	if (status == 0)
+	if (result == 0)
 	{
 		return 0;
 	}
 
-	LOAD_64(id, PTR_OFFSET(fingerprint, status - 8));
+	LOAD_64(id, PTR_OFFSET(fingerprint, result - 8));
 
 	return 8;
 }
