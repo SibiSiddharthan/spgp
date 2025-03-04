@@ -1262,7 +1262,7 @@ pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size)
 	LOAD_8(&packet->public_key_algorithm_id, in + pos);
 	pos += 1;
 
-	if (packet->version == PGP_KEY_V6)
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 	{
 		// 4-octet scalar count for the public key material
 		uint32_t key_data_octets_be;
@@ -1877,7 +1877,7 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 	LOAD_8(&packet->public_key_algorithm_id, in + pos);
 	pos += 1;
 
-	if (packet->version == PGP_KEY_V6)
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 	{
 		// 4-octet scalar count for the public key material
 		uint32_t public_key_data_octets_be;
@@ -1900,7 +1900,7 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 		byte_t s2k_size = 0;
 		byte_t conditional_field_size = 0;
 
-		if (packet->version == PGP_KEY_V6)
+		if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 		{
 			// 1-octet scalar count of S2K fields
 			LOAD_8(&conditional_field_size, in + pos);
@@ -1918,7 +1918,7 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 			pos += 1;
 		}
 
-		if (packet->version == PGP_KEY_V6)
+		if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 		{
 			// 1-octet count of S2K specifier
 			LOAD_8(&s2k_size, in + pos);
@@ -1952,8 +1952,14 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 		memcpy(packet->iv, in + pos, packet->iv_size);
 		pos += packet->iv_size;
 
+		if (packet->version == PGP_KEY_V5)
+		{
+			LOAD_32(&packet->encrypted_octets, in + pos);
+			pos += 4;
+		}
+
 		// Encrypted private key
-		packet->private_key_data_octets = packet->header.body_size - (pos - packet->header.header_size);
+		packet->encrypted_octets = packet->header.body_size - (pos - packet->header.header_size);
 		packet->encrypted = malloc(packet->private_key_data_octets);
 
 		if (packet->encrypted == NULL)
@@ -1962,10 +1968,16 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 		}
 
 		memcpy(packet->encrypted, in + pos, packet->private_key_data_octets);
-		pos += packet->private_key_data_octets;
+		pos += packet->encrypted_octets;
 	}
 	else
 	{
+		if (packet->version == PGP_KEY_V5)
+		{
+			LOAD_32(&packet->private_key_data_octets, in + pos);
+			pos += 4;
+		}
+
 		// Plaintext private key
 		pos += pgp_private_key_material_read(packet, in + pos, packet->header.body_size - (pos - packet->header.header_size));
 
@@ -2480,6 +2492,16 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 
 			return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time,
 										  (uint16_t)packet->public_key_data_octets + 6, packet->key, fingerprint);
+		}
+		case PGP_KEY_V5:
+		{
+			if (size < PGP_KEY_V5_FINGERPRINT_SIZE)
+			{
+				return 0;
+			}
+
+			return pgp_key_fingerprint_v5(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
+										  packet->public_key_data_octets, packet->key, fingerprint);
 		}
 		case PGP_KEY_V6:
 		{
