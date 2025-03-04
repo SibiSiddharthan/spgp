@@ -270,17 +270,17 @@ static uint16_t mpi_checksum(mpi_t *mpi)
 	return checksum;
 }
 
-static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
+static uint16_t pgp_private_key_material_checksum(pgp_key_packet *packet)
 {
 	uint16_t checksum = 0;
 
-	switch (public_key_algorithm_id)
+	switch (packet->public_key_algorithm_id)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *key = key_data;
+		pgp_rsa_key *key = packet->key;
 
 		checksum += mpi_checksum(key->d);
 		checksum += mpi_checksum(key->p);
@@ -290,21 +290,21 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *key = key_data;
+		pgp_elgamal_key *key = packet->key;
 
 		checksum += mpi_checksum(key->x);
 	}
 	break;
 	case PGP_DSA:
 	{
-		pgp_dsa_key *key = key_data;
+		pgp_dsa_key *key = packet->key;
 
 		checksum += mpi_checksum(key->x);
 	}
 	break;
 	case PGP_ECDH:
 	{
-		pgp_ecdh_key *key = key_data;
+		pgp_ecdh_key *key = packet->key;
 
 		checksum += mpi_checksum(key->x);
 	}
@@ -312,14 +312,14 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	case PGP_ECDSA:
 	case PGP_EDDSA:
 	{
-		pgp_ecdsa_key *key = key_data;
+		pgp_ecdsa_key *key = packet->key;
 
 		checksum += mpi_checksum(key->x);
 	}
 	break;
 	case PGP_X25519:
 	{
-		pgp_x25519_key *key = key_data;
+		pgp_x25519_key *key = packet->key;
 
 		for (uint16_t i = 0; i < 32; ++i)
 		{
@@ -329,7 +329,7 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	break;
 	case PGP_X448:
 	{
-		pgp_x448_key *key = key_data;
+		pgp_x448_key *key = packet->key;
 
 		for (uint16_t i = 0; i < 56; ++i)
 		{
@@ -339,7 +339,7 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	break;
 	case PGP_ED25519:
 	{
-		pgp_ed25519_key *key = key_data;
+		pgp_ed25519_key *key = packet->key;
 
 		for (uint16_t i = 0; i < 32; ++i)
 		{
@@ -349,7 +349,7 @@ static uint16_t pgp_private_key_material_checksum(pgp_public_key_algorithms publ
 	break;
 	case PGP_ED448:
 	{
-		pgp_ed448_key *key = key_data;
+		pgp_ed448_key *key = packet->key;
 
 		for (uint16_t i = 0; i < 57; ++i)
 		{
@@ -1475,7 +1475,7 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb_v3(pgp_key_packet *pa
 	LOAD_16(&checksum, PTR_OFFSET(packet->encrypted, pos));
 	pos += 2;
 
-	// Load in the key from the buffer
+	// Read in the key from the buffer
 	status = pgp_private_key_material_read(packet, buffer, pos - 2);
 	free(buffer);
 
@@ -1485,7 +1485,7 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb_v3(pgp_key_packet *pa
 	}
 
 	// Verify the checksum
-	if (pgp_private_key_material_checksum(packet->public_key_algorithm_id, packet->key) != BSWAP_16(checksum))
+	if (pgp_private_key_material_checksum(packet) != BSWAP_16(checksum))
 	{
 		free(buffer);
 		return 0;
@@ -1931,7 +1931,7 @@ pgp_key_packet *pgp_secret_key_packet_new(pgp_packet_type type, pgp_key_version 
 	}
 
 	// Calculate checksum
-	uint16_t checksum_be = pgp_private_key_material_checksum(public_key_algorithm_id, private_key_data);
+	uint16_t checksum_be = pgp_private_key_material_checksum(packet);
 	packet->key_checksum[0] = checksum_be & 0xFF;
 	packet->key_checksum[1] = checksum_be >> 8;
 
