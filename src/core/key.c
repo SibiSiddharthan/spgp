@@ -1613,9 +1613,6 @@ static uint32_t pgp_secret_key_material_encrypt_malleable_cfb(pgp_key_packet *pa
 	byte_t key[32] = {0};
 	byte_t *buffer = NULL;
 
-	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
-
 	count = get_private_key_material_octets(packet->public_key_algorithm_id, packet->key);
 	buffer = malloc(ROUND_UP(count + 2, 16));
 	packet->encrypted = malloc(ROUND_UP(count + 2, 16));
@@ -1627,6 +1624,12 @@ static uint32_t pgp_secret_key_material_encrypt_malleable_cfb(pgp_key_packet *pa
 
 		return 0;
 	}
+
+	memset(buffer, 0, ROUND_UP(count + 2, 16));
+	memset(packet->encrypted, 0, ROUND_UP(count + 2, 16));
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
 
 	// Write the octets to the buffer
 	pgp_private_key_material_write(packet, buffer, count);
@@ -1650,6 +1653,57 @@ static uint32_t pgp_secret_key_material_encrypt_malleable_cfb(pgp_key_packet *pa
 	return result;
 }
 
+static uint32_t pgp_secret_key_material_decrypt_malleable_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+{
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+	size_t status = 0;
+
+	byte_t key[32] = {0};
+	byte_t *buffer = NULL;
+
+	buffer = malloc(ROUND_UP(packet->encrypted_octets, 16));
+
+	if (buffer == NULL)
+	{
+		free(buffer);
+		return 0;
+	}
+
+	memset(buffer, 0, ROUND_UP(packet->encrypted_octets, 16));
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	// Decrypt using CFB
+	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
+							  packet->encrypted_octets, buffer, packet->encrypted_octets);
+
+	if (status == 0)
+	{
+		free(buffer);
+		return 0;
+	}
+
+	// Load the checksum at the end
+	LOAD_16(&packet->key_checksum, PTR_OFFSET(buffer, packet->encrypted_octets - 2));
+
+	// Read the key from the buffer
+	status = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	free(buffer);
+
+	if (status == 0)
+	{
+		return 0;
+	}
+
+	if (pgp_private_key_material_checksum(packet) != packet->key_checksum)
+	{
+		return 0;
+	}
+
+	return packet->encrypted_octets;
+}
+
 static uint32_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
@@ -1658,9 +1712,6 @@ static uint32_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, void
 
 	byte_t key[32] = {0};
 	byte_t *buffer = NULL;
-
-	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
 
 	count = get_private_key_material_octets(packet->public_key_algorithm_id, packet->key);
 	buffer = malloc(ROUND_UP(count + SHA1_HASH_SIZE, 16));
@@ -1673,6 +1724,12 @@ static uint32_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, void
 
 		return 0;
 	}
+
+	memset(buffer, 0, ROUND_UP(count + SHA1_HASH_SIZE, 16));
+	memset(packet->encrypted, 0, ROUND_UP(count + SHA1_HASH_SIZE, 16));
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
 
 	// Write the octets to the buffer
 	pgp_private_key_material_write(packet, buffer, count);
@@ -1694,6 +1751,60 @@ static uint32_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, void
 	}
 
 	return result;
+}
+
+static uint32_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+{
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+	size_t status = 0;
+
+	byte_t key[32] = {0};
+	byte_t hash[SHA1_HASH_SIZE] = {0};
+	byte_t *buffer = NULL;
+
+	buffer = malloc(ROUND_UP(packet->encrypted_octets, 16));
+
+	if (buffer == NULL)
+	{
+		free(buffer);
+		return 0;
+	}
+
+	memset(buffer, 0, ROUND_UP(packet->encrypted_octets, 16));
+
+	// Hash the passphrase
+	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	// Decrypt using CFB
+	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
+							  packet->encrypted_octets, buffer, packet->encrypted_octets);
+
+	if (status == 0)
+	{
+		free(buffer);
+		return 0;
+	}
+
+	// Hash the material
+	sha1_hash(buffer, packet->encrypted_octets - SHA1_HASH_SIZE, hash);
+
+	// Check the hash
+	if (memcmp(hash, PTR_OFFSET(buffer, packet->encrypted_octets - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
+	{
+		free(buffer);
+		return 0;
+	}
+
+	// Read the key from the buffer
+	status = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	free(buffer);
+
+	if (status == 0)
+	{
+		return 0;
+	}
+
+	return packet->encrypted_octets;
 }
 
 static uint32_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
