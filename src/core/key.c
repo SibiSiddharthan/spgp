@@ -2306,7 +2306,7 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 	return hctx;
 }
 
-static uint32_t pgp_key_fingerprint_v3(void *key, byte_t figerprint_v3[PGP_KEY_V3_FINGERPRINT_SIZE])
+static uint32_t pgp_key_fingerprint_v3(void *key, byte_t fingerprint_v3[PGP_KEY_V3_FINGERPRINT_SIZE])
 {
 	// MD5 of mpi without length octets
 	hash_ctx *hctx = NULL;
@@ -2326,13 +2326,13 @@ static uint32_t pgp_key_fingerprint_v3(void *key, byte_t figerprint_v3[PGP_KEY_V
 	bytes = CEIL_DIV(pkey->e->bits, 8);
 	hash_update(hctx, pkey->e->bytes, bytes);
 
-	hash_final(hctx, figerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
+	hash_final(hctx, fingerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
 
 	return PGP_KEY_V3_FINGERPRINT_SIZE;
 }
 
 static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint16_t octet_count, void *key,
-									   byte_t figerprint_v4[PGP_KEY_V4_FINGERPRINT_SIZE])
+									   byte_t fingerprint_v4[PGP_KEY_V4_FINGERPRINT_SIZE])
 {
 	hash_ctx *hctx = NULL;
 	byte_t buffer[512] = {0};
@@ -2357,19 +2357,19 @@ static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint
 		return 0;
 	}
 
-	hash_final(hctx, figerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
+	hash_final(hctx, fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
 
 	return PGP_KEY_V4_FINGERPRINT_SIZE;
 }
 
-static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint32_t octet_count,
-									   uint32_t material_count, void *key, byte_t figerprint_v6[PGP_KEY_V6_FINGERPRINT_SIZE])
+static uint32_t pgp_key_fingerprint_v5(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint32_t octet_count,
+									   uint32_t material_count, void *key, byte_t fingerprint_v5[PGP_KEY_V6_FINGERPRINT_SIZE])
 {
 	hash_ctx *hctx = NULL;
 	byte_t buffer[512] = {0};
 
-	byte_t constant = 0x9B;
-	byte_t version = 4;
+	byte_t constant = 0x9A;
+	byte_t version = 5;
 	uint32_t octet_count_be = BSWAP_32(octet_count);
 	uint32_t material_count_be = BSWAP_32(material_count);
 	uint32_t creation_time_be = BSWAP_32(creation_time);
@@ -2390,7 +2390,40 @@ static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint
 		return 0;
 	}
 
-	hash_final(hctx, figerprint_v6, PGP_KEY_V6_FINGERPRINT_SIZE);
+	hash_final(hctx, fingerprint_v5, PGP_KEY_V5_FINGERPRINT_SIZE);
+
+	return PGP_KEY_V5_FINGERPRINT_SIZE;
+}
+
+static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint32_t octet_count,
+									   uint32_t material_count, void *key, byte_t fingerprint_v6[PGP_KEY_V6_FINGERPRINT_SIZE])
+{
+	hash_ctx *hctx = NULL;
+	byte_t buffer[512] = {0};
+
+	byte_t constant = 0x9B;
+	byte_t version = 6;
+	uint32_t octet_count_be = BSWAP_32(octet_count);
+	uint32_t material_count_be = BSWAP_32(material_count);
+	uint32_t creation_time_be = BSWAP_32(creation_time);
+
+	hash_init(buffer, 512, HASH_SHA256);
+
+	hash_update(hctx, &constant, 1);
+	hash_update(hctx, &octet_count_be, 4);
+	hash_update(hctx, &version, 1);
+	hash_update(hctx, &creation_time_be, 4);
+	hash_update(hctx, &algorithm, 1);
+	hash_update(hctx, &material_count_be, 4);
+
+	hctx = pgp_hash_key_material(hctx, algorithm, key);
+
+	if (hctx == NULL)
+	{
+		return 0;
+	}
+
+	hash_final(hctx, fingerprint_v6, PGP_KEY_V6_FINGERPRINT_SIZE);
 
 	return PGP_KEY_V6_FINGERPRINT_SIZE;
 }
