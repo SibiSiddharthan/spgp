@@ -46,7 +46,8 @@ typedef struct _pgp_key_packet
 
 	byte_t iv_size;
 	byte_t iv[16];
-	byte_t key_checksum[2];
+
+	uint16_t key_checksum;
 
 	uint32_t public_key_data_octets;
 	uint32_t private_key_data_octets;
