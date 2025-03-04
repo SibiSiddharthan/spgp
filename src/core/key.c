@@ -2039,6 +2039,31 @@ static uint32_t pgp_secret_key_material_encrypt(pgp_key_packet *packet, void *pa
 	return 0;
 }
 
+static uint32_t pgp_secret_key_material_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+{
+	if (packet->s2k_usage >= PGP_IDEA && packet->s2k_usage <= PGP_CAMELLIA_256)
+	{
+		return pgp_secret_key_material_decrypt_legacy_cfb(packet, passphrase, passphrase_size);
+	}
+
+	if (packet->s2k_usage == 253)
+	{
+		return pgp_secret_key_material_decrypt_aead(packet, passphrase, passphrase_size);
+	}
+
+	if (packet->s2k_usage == 254)
+	{
+		return pgp_secret_key_material_decrypt_cfb(packet, passphrase, passphrase_size);
+	}
+
+	if (packet->s2k_usage == 255)
+	{
+		return pgp_secret_key_material_decrypt_malleable_cfb(packet, passphrase, passphrase_size);
+	}
+
+	return 0;
+}
+
 pgp_key_packet *pgp_secret_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
 										  uint16_t key_expiry_days, byte_t public_key_algorithm_id, byte_t symmetric_key_algorithm_id,
 										  byte_t aead_algorithm_id, byte_t s2k_usage, pgp_s2k *s2k, void *iv, byte_t iv_size,
