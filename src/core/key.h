@@ -50,9 +50,7 @@ typedef struct _pgp_key_packet
 
 	uint32_t public_key_data_octets;
 	uint32_t private_key_data_octets;
-
-	uint32_t key_size;
-	uint32_t encrypted_size;
+	uint32_t encrypted_octets;
 
 	void *key;
 	void *encrypted;
