@@ -1349,9 +1349,10 @@ static uint32_t pgp_secret_key_material_encrypt_legacy_cfb_v3(pgp_key_packet *pa
 	// Only RSA keys
 	pgp_rsa_key *key = packet->key;
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
-	uint32_t size = CEIL_DIV(key->d->bits, 8) + CEIL_DIV(key->p->bits, 8) + CEIL_DIV(key->q->bits, 8) + CEIL_DIV(key->u->bits, 8) + 2;
+	uint32_t size = mpi_octets(key->d->bits) + mpi_octets(key->p->bits) + mpi_octets(key->q->bits) + mpi_octets(key->u->bits) + 2;
 
 	uint32_t pos = 0;
+	uint16_t bits_be = 0;
 
 	if (key_size > MD5_HASH_SIZE)
 	{
@@ -1365,24 +1366,134 @@ static uint32_t pgp_secret_key_material_encrypt_legacy_cfb_v3(pgp_key_packet *pa
 		return 0;
 	}
 
+	memset(packet->encrypted, 0, size);
+
 	// d
+	bits_be = BSWAP_16(key->d->bits);
+	LOAD_16(PTR_OFFSET(packet->encrypted, pos), &bits_be);
+	pos += 2;
+
 	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size, key->d->bytes,
 						   CEIL_DIV(key->d->bits, 8), PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(key->d->bits, 8));
 
 	// p
+	bits_be = BSWAP_16(key->p->bits);
+	LOAD_16(PTR_OFFSET(packet->encrypted, pos), &bits_be);
+	pos += 2;
+
 	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size, key->p->bytes,
 						   CEIL_DIV(key->p->bits, 8), PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(key->p->bits, 8));
 
 	// q
+	bits_be = BSWAP_16(key->q->bits);
+	LOAD_16(PTR_OFFSET(packet->encrypted, pos), &bits_be);
+	pos += 2;
+
 	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size, key->q->bytes,
 						   CEIL_DIV(key->q->bits, 8), PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(key->q->bits, 8));
 
 	// u
+	bits_be = BSWAP_16(key->u->bits);
+	LOAD_16(PTR_OFFSET(packet->encrypted, pos), &bits_be);
+	pos += 2;
+
 	pos += pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size, key->u->bytes,
 						   CEIL_DIV(key->u->bits, 8), PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(key->u->bits, 8));
 
 	// Store the checksum at the end
 	LOAD_16(PTR_OFFSET(packet->encrypted, pos), packet->key_checksum);
+
+	packet->encrypted_octets = pos;
+
+	return pos;
+}
+
+static uint32_t pgp_secret_key_material_decrypt_legacy_cfb_v3(pgp_key_packet *packet, byte_t hash[MD5_HASH_SIZE])
+{
+	// Only RSA keys
+	uint32_t status = 0;
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+
+	uint32_t pos = 0;
+	uint16_t bits_be = 0;
+	uint16_t bits_le = 0;
+	uint16_t checksum = 0;
+
+	byte_t *buffer = 0;
+
+	if (key_size > MD5_HASH_SIZE)
+	{
+		return 0;
+	}
+
+	buffer = malloc(packet->encrypted_octets);
+
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	memset(buffer, 0, packet->encrypted_octets);
+
+	// d
+	LOAD_16(&bits_be, PTR_OFFSET(packet->encrypted, pos));
+	LOAD_16(PTR_OFFSET(buffer, pos), &bits_be);
+	bits_le = BSWAP_16(bits_be);
+	pos += 2;
+
+	pos += pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size,
+						   PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(bits_le, 8), PTR_OFFSET(buffer, pos), CEIL_DIV(bits_le, 8));
+
+	// p
+	LOAD_16(&bits_be, PTR_OFFSET(packet->encrypted, pos));
+	LOAD_16(PTR_OFFSET(buffer, pos), &bits_be);
+	bits_le = BSWAP_16(bits_be);
+	pos += 2;
+
+	pos += pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size,
+						   PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(bits_le, 8), PTR_OFFSET(buffer, pos), CEIL_DIV(bits_le, 8));
+
+	// q
+	LOAD_16(&bits_be, PTR_OFFSET(packet->encrypted, pos));
+	LOAD_16(PTR_OFFSET(buffer, pos), &bits_be);
+	bits_le = BSWAP_16(bits_be);
+	pos += 2;
+
+	pos += pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size,
+						   PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(bits_le, 8), PTR_OFFSET(buffer, pos), CEIL_DIV(bits_le, 8));
+
+	// u
+	LOAD_16(&bits_be, PTR_OFFSET(packet->encrypted, pos));
+	LOAD_16(PTR_OFFSET(buffer, pos), &bits_be);
+	bits_le = BSWAP_16(bits_be);
+	pos += 2;
+
+	pos += pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, hash, key_size, packet->iv, packet->iv_size,
+						   PTR_OFFSET(packet->encrypted, pos), CEIL_DIV(bits_le, 8), PTR_OFFSET(buffer, pos), CEIL_DIV(bits_le, 8));
+
+	// Load the checksum from the end
+	LOAD_16(&checksum, PTR_OFFSET(packet->encrypted, pos));
+	pos += 2;
+
+	// Load in the key from the buffer
+	status = pgp_private_key_material_read(packet, buffer, pos - 2);
+	free(buffer);
+
+	if (status == 0)
+	{
+		return 0;
+	}
+
+	// Verify the checksum
+	if (pgp_private_key_material_checksum(packet->public_key_algorithm_id, packet->key) != BSWAP_16(checksum))
+	{
+		free(buffer);
+		return 0;
+	}
+
+	free(buffer);
+
+	LOAD_16(packet->key_checksum, &checksum);
 
 	return pos;
 }
