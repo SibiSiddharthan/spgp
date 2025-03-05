@@ -23,6 +23,8 @@
 static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
+static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
+
 static size_t print_indent(uint32_t indent, void *str, size_t size)
 {
 	size_t pos = 0;
@@ -1478,8 +1480,8 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	break;
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
-		pgp_embedded_signature_subpacket *embedded_signature_subpacket = subpacket;
-		pos += pgp_signature_packet_print(embedded_signature_subpacket->signature, PTR_OFFSET(str, pos), size - pos, options);
+		pgp_embedded_signature_subpacket *embedded_subpacket = subpacket;
+		pos += pgp_signature_packet_body_print(indent + 1, embedded_subpacket, PTR_OFFSET(str, pos), size - pos, options);
 	}
 	break;
 	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
@@ -1706,27 +1708,26 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 	return pos;
 }
 
-size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options)
+static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options)
 {
 	size_t pos = 0;
 
-	pos += pgp_packet_header_print(&packet->header, ptr, size);
-
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
 	{
-		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu\n", packet->version);
-		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
+		pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu\n", packet->version);
+		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, indent);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
 
 		if (packet->hashed_subpackets->count > 0)
 		{
-			pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Hashed Subpackets:\n");
+			pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Hashed Subpackets:\n");
 		}
 
 		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
-			pos += pgp_signature_subpacket_print(packet->hashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, 2, options);
+			pos +=
+				pgp_signature_subpacket_print(packet->hashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1, options);
 		}
 
 		if (packet->unhashed_subpackets->count > 0)
@@ -1736,35 +1737,49 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 
 		for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
 		{
-			pos += pgp_signature_subpacket_print(packet->unhashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, 2, options);
+			pos += pgp_signature_subpacket_print(packet->unhashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1,
+												 options);
 		}
 
-		pos += print_bytes(1, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
+		pos += print_bytes(indent, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
 
 		if (packet->version == PGP_SIGNATURE_V6)
 		{
-			pos += print_bytes(1, "Salt: ", PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size);
+			pos += print_bytes(indent, "Salt: ", PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size);
 		}
 
 		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
-								   size - pos, 1, options);
+								   size - pos, indent, options);
 	}
 	else if (packet->version == PGP_SIGNATURE_V3)
 	{
-		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: 3 (Deprecated)\n");
-		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += print_timestamp(1, "Signature Creation Time", packet->timestamp, PTR_OFFSET(ptr, pos), size - pos);
-		pos += print_key(1, PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8);
-		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
-		pos += print_bytes(1, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
+		pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, indent);
+		pos += print_timestamp(indent, "Signature Creation Time", packet->timestamp, PTR_OFFSET(ptr, pos), size - pos);
+		pos += print_key(indent, PTR_OFFSET(ptr, pos), size - pos, packet->key_id, 8);
+		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
+		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
+		pos += print_bytes(indent, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
 		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
-								   size - pos, 1, options);
+								   size - pos, indent, options);
 	}
 	else
 	{
 		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu (Unknown)\n", packet->version);
 	}
+
+	return pos;
+}
+
+size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options)
+{
+	size_t pos = 0;
+
+	// Header
+	pos += pgp_packet_header_print(&packet->header, ptr, size);
+
+	// Body
+	pos += pgp_signature_packet_body_print(1, packet, PTR_OFFSET(ptr, pos), size - pos, options);
 
 	return pos;
 }
