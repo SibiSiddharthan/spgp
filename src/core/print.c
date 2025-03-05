@@ -1181,7 +1181,7 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred AEAD Ciphersuites (Tag 39)");
 		break;
-	case PGP_LITERAL_DATA_MESH_SUBPACKET:
+	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Literal Data Mesh (Tag 40)");
 		break;
 	case PGP_TRUST_ALIAS_SUBPACKET:
@@ -1582,6 +1582,13 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 
 			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "(%02hhx %02hhx)\n", symmetric_algorithm, aead_algorithm);
 		}
+	}
+	break;
+	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
+	{
+		pgp_literal_data_meta_hash_subpacket *meta_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Octet: %hhu\n", meta_subpacket->octet);
+		pos += print_bytes(indent + 1, "SHA256 Hash: ", PTR_OFFSET(str, pos), size - pos, meta_subpacket->hash, 32);
 	}
 	break;
 	case PGP_TRUST_ALIAS_SUBPACKET:

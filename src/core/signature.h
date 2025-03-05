@@ -82,7 +82,7 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_ATTESTED_CERTIFICATIONS_SUBPACKET = 37,
 	PGP_KEY_BLOCK_SUBPACKET = 38,
 	PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET = 39,
-	PGP_LITERAL_DATA_MESH_SUBPACKET = 40,
+	PGP_LITERAL_DATA_META_HASH_SUBPACKET = 40,
 	PGP_TRUST_ALIAS_SUBPACKET = 41
 } pgp_signature_subpacket_type;
 
@@ -262,6 +262,13 @@ typedef struct _pgp_embedded_signature_subpacket
 	pgp_subpacket_header header;
 	pgp_signature_packet *signature;
 } pgp_embedded_signature_subpacket;
+
+typedef struct _pgp_literal_data_meta_hash_subpacket
+{
+	pgp_subpacket_header header;
+	byte_t octet; // 0
+	byte_t hash[32];
+} pgp_literal_data_meta_hash_subpacket;
 
 typedef struct _pgp_rsa_signature
 {

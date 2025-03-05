@@ -76,7 +76,7 @@ static byte_t pgp_signature_subpacket_validate(pgp_signature_subpacket_type type
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	case PGP_KEY_BLOCK_SUBPACKET:
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
-	case PGP_LITERAL_DATA_MESH_SUBPACKET:
+	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
 	case PGP_TRUST_ALIAS_SUBPACKET:
 		return 1;
 	default:
@@ -661,6 +661,33 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 		// The buffer should be big enough always.
 		return pgp_signature_packet_read(in + pos, size);
 	}
+	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
+	{
+		pgp_literal_data_meta_hash_subpacket *meta_subpacket = NULL;
+
+		meta_subpacket = malloc(sizeof(pgp_literal_data_meta_hash_subpacket));
+
+		if (meta_subpacket == NULL)
+		{
+			return NULL;
+		}
+
+		memset(meta_subpacket, 0, sizeof(pgp_literal_data_meta_hash_subpacket));
+
+		// Copy the header
+		meta_subpacket->header = header;
+
+		// 1 octet
+		LOAD_8(&meta_subpacket->octet, in + pos);
+		pos += 1;
+
+		// 32 octets of hash
+		memcpy(meta_subpacket->hash, in + pos, 32);
+		pos += 32;
+
+		return meta_subpacket;
+	}
+	break;
 	default:
 	{
 		pgp_unknown_subpacket *subpacket = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
@@ -888,6 +915,19 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 
 		// The buffer should be big enough always.
 		pos += pgp_signature_packet_v4_v6_write(es->signature, out + pos, (uint32_t)-1);
+	}
+	break;
+	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
+	{
+		pgp_literal_data_meta_hash_subpacket *meta_subpacket = subpacket;
+
+		// 1 octet
+		LOAD_8(out + pos, &meta_subpacket->octet);
+		pos += 1;
+
+		// 1 octet hash algorithm
+		memcpy(out + pos, meta_subpacket->hash, 32);
+		pos += 32;
 	}
 	break;
 	}
@@ -1362,6 +1402,18 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 				// TODO
 			}
 			break;
+			case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
+			{
+				pgp_literal_data_meta_hash_subpacket *subpacket = packet->hashed_subpackets->packets[i];
+
+				// 1 octet
+				hash_update(hctx, &subpacket->octet, 1);
+				hashed_size += 1;
+
+				// 32 octets of hash
+				hash_update(hctx, subpacket->hash, 32);
+				hashed_size += 32;
+			}
 			default:
 				break;
 			}
