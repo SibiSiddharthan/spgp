@@ -263,6 +263,13 @@ typedef struct _pgp_embedded_signature_subpacket
 	pgp_signature_packet *signature;
 } pgp_embedded_signature_subpacket;
 
+typedef struct _pgp_attested_certifications_subpacket
+{
+	pgp_subpacket_header header;
+	uint16_t count;
+	void *hash;
+} pgp_attested_certifications_subpacket;
+
 typedef struct _pgp_literal_data_meta_hash_subpacket
 {
 	pgp_subpacket_header header;

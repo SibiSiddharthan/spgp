@@ -661,6 +661,25 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 		// The buffer should be big enough always.
 		return pgp_signature_packet_read(in + pos, size);
 	}
+	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+	{
+		pgp_attested_certifications_subpacket *attestation_subpacket = NULL;
+
+		attestation_subpacket = malloc(sizeof(pgp_attested_certifications_subpacket) + header.body_size);
+
+		if (attestation_subpacket == NULL)
+		{
+			return NULL;
+		}
+
+		memset(attestation_subpacket, 0, sizeof(pgp_attested_certifications_subpacket) + header.body_size);
+
+		// N octets of hash
+		attestation_subpacket->hash = PTR_OFFSET(attestation_subpacket, sizeof(pgp_attested_certifications_subpacket));
+		memcpy(attestation_subpacket->hash, in + pos, header.body_size);
+
+		return attestation_subpacket;
+	}
 	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
 	{
 		pgp_literal_data_meta_hash_subpacket *meta_subpacket = NULL;
@@ -915,6 +934,15 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 
 		// The buffer should be big enough always.
 		pos += pgp_signature_packet_v4_v6_write(es->signature, out + pos, (uint32_t)-1);
+	}
+	break;
+	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+	{
+		pgp_attested_certifications_subpacket *attestation_subpacket = subpacket;
+
+		// N octets of hash
+		memcpy(out + pos, attestation_subpacket->hash, attestation_subpacket->header.body_size);
+		pos += attestation_subpacket->header.body_size;
 	}
 	break;
 	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
@@ -1402,6 +1430,14 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 				// TODO
 			}
 			break;
+			case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+			{
+				pgp_attested_certifications_subpacket *subpacket = packet->hashed_subpackets->packets[i];
+
+				// N octets of hash
+				hash_update(hctx, subpacket->hash, subpacket->header.body_size);
+			}
+			break;
 			case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
 			{
 				pgp_literal_data_meta_hash_subpacket *subpacket = packet->hashed_subpackets->packets[i];
@@ -1724,6 +1760,34 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 		if (packet->signature == NULL)
 		{
 			return NULL;
+		}
+
+		// Extra bookeeping stuff that is better to do just here.
+		// Count the number of attested certifications
+		{
+			for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+			{
+				pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
+
+				if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
+				{
+					pgp_attested_certifications_subpacket *subpacket = packet->hashed_subpackets->packets[i];
+
+					subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
+				}
+			}
+
+			for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+			{
+				pgp_subpacket_header *header = packet->unhashed_subpackets->packets[i];
+
+				if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
+				{
+					pgp_attested_certifications_subpacket *subpacket = packet->unhashed_subpackets->packets[i];
+
+					subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
+				}
+			}
 		}
 	}
 	else if (packet->version == PGP_SIGNATURE_V3)

@@ -1510,6 +1510,20 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 						 fingerprint_subpacket->header.body_size - 1);
 	}
 	break;
+	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+	{
+		pgp_attested_certifications_subpacket *attestation_subpacket = subpacket;
+		uint32_t hash_size = attestation_subpacket->header.body_size / attestation_subpacket->count;
+
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Attestations:\n");
+
+		for (uint16_t i = 0; i < attestation_subpacket->count; ++i)
+		{
+			pos += print_bytes(indent + 2, "", PTR_OFFSET(str, pos), size - pos, PTR_OFFSET(attestation_subpacket->hash, hash_size * i),
+							   hash_size);
+		}
+	}
+	break;
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
 		pgp_preferred_aead_ciphersuites_subpacket *preferred_subpacket = subpacket;
