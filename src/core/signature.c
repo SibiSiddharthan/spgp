@@ -84,7 +84,8 @@ static byte_t pgp_signature_subpacket_validate(pgp_signature_subpacket_type type
 	}
 }
 
-static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, void *ptr, size_t size);
+static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet *packet, void *data, size_t size);
+static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
 uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 {
@@ -277,14 +278,14 @@ static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, 
 	}
 }
 
-static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t size)
+static void *pgp_signature_subpacket_read(void *data, size_t size)
 {
-	byte_t *in = ptr;
+	byte_t *in = data;
 
 	pgp_packet_header header = {0};
 	size_t pos = 0;
 
-	header = pgp_subpacket_header_read(ptr, size);
+	header = pgp_subpacket_header_read(data, size);
 	pos = header.header_size;
 
 	if (header.tag == 0)
@@ -652,14 +653,22 @@ static void *pgp_signature_subpacket_read(void *subpacket, void *ptr, size_t siz
 	}
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
-		pgp_embedded_signature_subpacket *es = subpacket;
+		pgp_embedded_signature_subpacket *embedded_subpacket = NULL;
+		pgp_subpacket_header header = {0};
 
-		// TODO
+		embedded_subpacket = malloc(sizeof(pgp_embedded_signature_subpacket));
+
+		if (embedded_subpacket == NULL)
+		{
+			return NULL;
+		}
+
+		memset(embedded_subpacket, 0, sizeof(pgp_embedded_signature_subpacket));
+
 		// Copy the header
-		es->header = header;
+		embedded_subpacket->header = header;
 
-		// The buffer should be big enough always.
-		return pgp_signature_packet_read(in + pos, size);
+		return pgp_signature_packet_body_read(embedded_subpacket, data, size);
 	}
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
@@ -930,10 +939,9 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	break;
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
-		pgp_embedded_signature_subpacket *es = subpacket;
+		pgp_embedded_signature_subpacket *embedded_subpacket = subpacket;
 
-		// The buffer should be big enough always.
-		pos += pgp_signature_packet_v4_v5_v6_write(es->signature, out + pos, (uint32_t)-1);
+		pos += pgp_signature_packet_body_write(embedded_subpacket, out + pos, required_size);
 	}
 	break;
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
@@ -1029,36 +1037,10 @@ static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *
 	return pos;
 }
 
-static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, void *ptr, size_t size)
+static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
-	size_t pos = 0;
-
-	// A 1-octet version number.
-	// A 1-octet Signature Type ID.
-	// A 1-octet public key algorithm.
-	// A 1-octet hash algorithm.
-	// A 2-octet/4-octet count for the hashed subpacket data that follows this field.
-	// A hashed subpacket data set (zero or more subpackets).
-	// A 2-octet/4-octet count for the unhashed subpacket data that follows this field.
-	// An unhashed subpacket data set (zero or more subpackets).
-	// A 2-octet field holding the left 16 bits of the signed hash value.
-	// (For V6) A 1-octet salt size.
-	// (For V6) The salt.
-	// One or more MPIs comprising the signature.
-
-	required_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_size;
-	required_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
-	required_size += packet->header.header_size;
-
-	if (size < required_size)
-	{
-		return 0;
-	}
-
-	// Header
-	pos += pgp_packet_header_write(&packet->header, out + pos);
+	size_t pos = packet->header.header_size;
 
 	// 1 octet version
 	LOAD_8(out + pos, &packet->version);
@@ -1139,6 +1121,43 @@ static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, 
 
 	// Signature data
 	pos += pgp_signature_data_write(packet, out + pos, size - pos);
+
+	return pos;
+}
+
+static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	// A 1-octet version number.
+	// A 1-octet Signature Type ID.
+	// A 1-octet public key algorithm.
+	// A 1-octet hash algorithm.
+	// A 2-octet/4-octet count for the hashed subpacket data that follows this field.
+	// A hashed subpacket data set (zero or more subpackets).
+	// A 2-octet/4-octet count for the unhashed subpacket data that follows this field.
+	// An unhashed subpacket data set (zero or more subpackets).
+	// A 2-octet field holding the left 16 bits of the signed hash value.
+	// (For V6) A 1-octet salt size.
+	// (For V6) The salt.
+	// One or more MPIs comprising the signature.
+
+	required_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_size;
+	required_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
+	required_size += packet->header.header_size;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Body
+	pos += pgp_signature_packet_body_write(packet, ptr, size);
 
 	return pos;
 }
@@ -1601,48 +1620,10 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 	return 0;
 }
 
-pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
+static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
-
-	pgp_signature_packet *packet = NULL;
-	pgp_packet_header header = {0};
-
-	size_t pos = 0;
-
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-
-	if (pgp_packet_get_type(header.tag) != PGP_SIG)
-	{
-		return NULL;
-	}
-
-	if (size < (header.header_size + header.body_size))
-	{
-		return NULL;
-	}
-
-	packet = malloc(sizeof(pgp_signature_packet));
-
-	if (packet == NULL)
-	{
-		return NULL;
-	}
-
-	memset(packet, 0, sizeof(pgp_signature_packet));
-
-	packet->hashed_subpackets = pgp_stream_new(4);
-	packet->unhashed_subpackets = pgp_stream_new(4);
-
-	if (packet->hashed_subpackets == NULL || packet->unhashed_subpackets == NULL)
-	{
-		pgp_signature_packet_delete(packet);
-		return NULL;
-	}
-
-	// Copy the header
-	packet->header = header;
+	size_t pos = packet->header.header_size;
 
 	// 1 octet version
 	LOAD_8(&packet->version, in + pos);
@@ -1685,7 +1666,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 		// Hashed subpackets
 		while (hashed_subpacket_data_read < packet->hashed_octets)
 		{
-			void *subpacket = pgp_signature_subpacket_read(PTR_OFFSET(in, pos), in + pos, packet->header.body_size - pos);
+			void *subpacket = pgp_signature_subpacket_read(PTR_OFFSET(in, pos), packet->header.body_size - pos);
 			pgp_subpacket_header *header = subpacket;
 
 			if (subpacket == NULL)
@@ -1694,7 +1675,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 				return NULL;
 			}
 
-			if (pgp_stream_push_packet(packet->hashed_subpackets, subpacket) == NULL)
+			if ((packet->hashed_subpackets = pgp_stream_push_packet(packet->hashed_subpackets, subpacket)) == NULL)
 			{
 				pgp_signature_packet_delete(packet);
 				return NULL;
@@ -1724,7 +1705,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 		// Unhashed subpackets
 		while (unhashed_subpacket_data_read < packet->unhashed_octets)
 		{
-			void *subpacket = pgp_signature_subpacket_read(PTR_OFFSET(in, pos), in + pos, packet->header.body_size - pos);
+			void *subpacket = pgp_signature_subpacket_read(PTR_OFFSET(in, pos), packet->header.body_size - pos);
 			pgp_subpacket_header *header = subpacket;
 
 			if (subpacket == NULL)
@@ -1733,7 +1714,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 				return NULL;
 			}
 
-			if (pgp_stream_push_packet(packet->unhashed_subpackets, subpacket) == NULL)
+			if ((packet->unhashed_subpackets = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket)) == NULL)
 			{
 				pgp_signature_packet_delete(packet);
 				return NULL;
@@ -1763,6 +1744,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 
 		if (packet->signature == NULL)
 		{
+			pgp_signature_packet_delete(packet);
 			return NULL;
 		}
 
@@ -1802,6 +1784,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 
 		if (packet->hashed_octets != 5)
 		{
+			pgp_signature_packet_delete(packet);
 			return NULL;
 		}
 
@@ -1836,16 +1819,50 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 
 		if (packet->signature == NULL)
 		{
+			pgp_signature_packet_delete(packet);
 			return NULL;
 		}
 	}
 	else
 	{
 		// Unknown version.
+		pgp_signature_packet_delete(packet);
 		return NULL;
 	}
 
 	return packet;
+}
+
+pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
+{
+	pgp_signature_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_SIG)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_signature_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_signature_packet));
+
+	// Copy the header
+	packet->header = header;
+
+	return pgp_signature_packet_body_read(packet, data, size);
 }
 
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size)

@@ -1128,7 +1128,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 			return NULL;
 		}
 
-		if (pgp_stream_push_packet(packet->subpackets, subpacket) == NULL)
+		if ((packet->subpackets = pgp_stream_push_packet(packet->subpackets, subpacket)) == NULL)
 		{
 			pgp_user_attribute_packet_delete(packet);
 			return NULL;

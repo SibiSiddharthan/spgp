@@ -257,11 +257,7 @@ typedef struct _pgp_signature_target_subpacket
 	byte_t hash[1];
 } pgp_signature_target_subpacket;
 
-typedef struct _pgp_embedded_signature_subpacket
-{
-	pgp_subpacket_header header;
-	pgp_signature_packet *signature;
-} pgp_embedded_signature_subpacket;
+typedef pgp_signature_packet pgp_embedded_signature_subpacket;
 
 typedef struct _pgp_attested_certifications_subpacket
 {
