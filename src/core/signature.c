@@ -84,7 +84,7 @@ static byte_t pgp_signature_subpacket_validate(pgp_signature_subpacket_type type
 	}
 }
 
-static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, size_t size);
+static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
 uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
 {
@@ -933,7 +933,7 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		pgp_embedded_signature_subpacket *es = subpacket;
 
 		// The buffer should be big enough always.
-		pos += pgp_signature_packet_v4_v6_write(es->signature, out + pos, (uint32_t)-1);
+		pos += pgp_signature_packet_v4_v5_v6_write(es->signature, out + pos, (uint32_t)-1);
 	}
 	break;
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
@@ -1029,13 +1029,13 @@ static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *
 	return pos;
 }
 
-static size_t pgp_signature_packet_v4_v6_write(pgp_signature_packet *packet, void *ptr, size_t size)
+static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
 	size_t required_size = 0;
 	size_t pos = 0;
 
-	// A 1-octet version number. This is 4 for version 4 signatures and 6 for version 6 signatures.
+	// A 1-octet version number.
 	// A 1-octet Signature Type ID.
 	// A 1-octet public key algorithm.
 	// A 1-octet hash algorithm.
@@ -1197,7 +1197,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 	hashed_size += data_size;
 
 	// Hash the trailer
-	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
+	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
 	{
 		// 1 octet signature version
 		hash_update(hctx, &packet->version, 1);
@@ -1554,6 +1554,8 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 		packet->signature = pgp_dsa_sign(key->key, hash, hash_size);
 	case PGP_ECDSA:
 		packet->signature = pgp_ecdsa_sign(key->key, hash, hash_size);
+	case PGP_EDDSA:
+		packet->signature = pgp_eddsa_sign(key->key, hash, hash_size);
 	case PGP_ED25519:
 		packet->signature = pgp_ed25519_sign(key->key, hash, hash_size);
 	case PGP_ED448:
@@ -1586,6 +1588,8 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 		return pgp_dsa_verify(packet->signature, key->key, hash, hash_size);
 	case PGP_ECDSA:
 		return pgp_ecdsa_verify(packet->signature, key->key, hash, hash_size);
+	case PGP_EDDSA:
+		return pgp_eddsa_verify(packet->signature, key->key, hash, hash_size);
 	case PGP_ED25519:
 		return pgp_ed25519_verify(packet->signature, key->key, hash, hash_size);
 	case PGP_ED448:
@@ -1644,7 +1648,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 	LOAD_8(&packet->version, in + pos);
 	pos += 1;
 
-	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
+	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
 	{
 		uint32_t hashed_subpacket_data_read = 0;
 		uint32_t unhashed_subpacket_data_read = 0;
@@ -1852,7 +1856,7 @@ size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_
 		return pgp_signature_packet_v3_write(packet, ptr, size);
 	case PGP_SIGNATURE_V4:
 	case PGP_SIGNATURE_V6:
-		return pgp_signature_packet_v4_v6_write(packet, ptr, size);
+		return pgp_signature_packet_v4_v5_v6_write(packet, ptr, size);
 	default:
 		return 0;
 	}
