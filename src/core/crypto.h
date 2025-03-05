@@ -73,8 +73,11 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *key, byte_t h
 pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *key, void *hash, uint32_t hash_size);
 uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *key, void *hash, uint32_t hash_size);
 
-pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *key, void *hash, uint32_t hash_size);
+pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *key, void *hash, uint32_t hash_size);
 uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *key, void *hash, uint32_t hash_size);
+
+pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t hash_size);
+uint32_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *key, void *hash, uint32_t hash_size);
 
 pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_key *key, void *hash, uint32_t hash_size);
 uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *key, void *hash, uint32_t hash_size);

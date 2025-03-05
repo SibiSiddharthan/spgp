@@ -1680,7 +1680,7 @@ uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void
 	return status;
 }
 
-pgp_dsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
+pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	void *result = NULL;
 
@@ -1792,6 +1792,121 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key
 	status = ecdsa_verify(key, &sign, hash, hash_size);
 
 	ec_key_delete(key);
+
+	return status;
+}
+
+pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t hash_size)
+{
+	void *status = NULL;
+	pgp_eddsa_signature *sign = NULL;
+
+	if (key->curve == PGP_ED25519)
+	{
+		ed25519_key edkey = {0};
+		ed25519_signature edsign = {0};
+
+		sign = pgp_dsa_signature_new(256);
+
+		if (sign == NULL)
+		{
+			return NULL;
+		}
+
+		memcpy(edkey.private_key, key->x->bytes, 32);
+		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 32);
+
+		status = ed25519_sign(&edkey, hash, hash_size, &edsign, sizeof(ed25519_signature));
+
+		if (status == NULL)
+		{
+			free(sign);
+			return NULL;
+		}
+
+		sign->r->bits = 256;
+		sign->s->bits = 256;
+
+		memcpy(sign->r->bytes, edsign.sign, 32);
+		memcpy(sign->s->bytes, PTR_OFFSET(edsign.sign, 32), 32);
+	}
+
+	if (key->curve == PGP_ED448)
+	{
+		ed448_key edkey = {0};
+		ed448_signature edsign = {0};
+
+		sign = pgp_dsa_signature_new(448);
+
+		if (sign == NULL)
+		{
+			return NULL;
+		}
+
+		memcpy(edkey.private_key, key->x->bytes, 57);
+		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 57);
+
+		status = ed448_sign(&edkey, NULL, 0, hash, hash_size, sign, sizeof(ed448_signature));
+
+		if (status == NULL)
+		{
+			free(sign);
+			return NULL;
+		}
+
+		sign->r->bits = 456;
+		sign->s->bits = 456;
+
+		memcpy(sign->r->bytes, edsign.sign, 57);
+		memcpy(sign->s->bytes, PTR_OFFSET(edsign.sign, 57), 57);
+	}
+
+	return sign;
+}
+
+uint32_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *key, void *hash, uint32_t hash_size)
+{
+	uint32_t status = 0;
+
+	if (key->curve == PGP_ED25519)
+	{
+		ed25519_key edkey = {0};
+		ed25519_signature edsign = {0};
+
+		if (CEIL_DIV(signature->r->bits, 8) != 32 || CEIL_DIV(signature->s->bits, 8) != 32)
+		{
+			return 0;
+		}
+
+		// Copy signature
+		memcpy(edsign.sign, signature->r->bytes, 32);
+		memcpy(PTR_OFFSET(edsign.sign, 32), signature->s->bytes, 32);
+
+		// Copy public key
+		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 32);
+
+		status = ed25519_verify(&edkey, &edsign, hash, hash_size);
+	}
+
+	if (key->curve == PGP_ED448)
+	{
+		ed448_key edkey = {0};
+		ed448_signature edsign = {0};
+
+		if (CEIL_DIV(signature->r->bits, 8) != 57 || CEIL_DIV(signature->s->bits, 8) != 57)
+		{
+			return 0;
+		}
+
+		// Copy signature
+		memcpy(edsign.sign, signature->r->bytes, 57);
+		memcpy(PTR_OFFSET(edsign.sign, 57), signature->s->bytes, 57);
+
+		// Copy public key
+		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 57);
+
+		status = ed448_verify(&edkey, &edsign, NULL, 0, hash, hash_size);
+	}
 
 	return status;
 }
