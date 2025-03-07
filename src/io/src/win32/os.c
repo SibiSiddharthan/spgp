@@ -108,3 +108,29 @@ status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result)
 
 	return status;
 }
+
+status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode)
+{
+	NTSTATUS status = 0;
+	HANDLE handle = 0;
+	IO_STATUS_BLOCK io = {0};
+	OBJECT_ATTRIBUTES object = {0};
+	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
+	UNICODE_STRING u16_string = {0};
+
+	RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+
+	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE, root, NULL);
+
+	status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+						  FILE_CREATE, FILE_DIRECTORY_FILE, NULL, 0);
+
+	RtlFreeUnicodeString(&u16_string);
+
+	if (status > 0)
+	{
+		NtClose(handle);
+	}
+
+	return status;
+}
