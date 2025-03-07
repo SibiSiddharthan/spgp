@@ -191,6 +191,8 @@ void *pgp_packet_read(void *data, size_t size);
 size_t pgp_packet_write(void *packet, void *ptr, size_t size);
 size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options);
 
+void pgp_packet_delete(void *packet);
+
 // Compressed Packet (Tag 8)
 pgp_compresed_packet *pgp_compressed_packet_new(byte_t header_format, byte_t compression_algorithm_id);
 void pgp_compressed_packet_delete(pgp_compresed_packet *packet);

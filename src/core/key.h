@@ -157,12 +157,6 @@ pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size);
 size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
 size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 
-pgp_key_packet *pgp_secret_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
-										  uint16_t key_expiry_days, byte_t public_key_algorithm_id, byte_t symmetric_key_algorithm_id,
-										  byte_t aead_algorithm_id, byte_t s2k_usage, pgp_s2k *s2k_algorithm, void *iv, byte_t iv_size,
-										  void *passphrase, size_t passphrase_size, void *public_key_data, uint32_t public_key_data_size,
-										  void *private_key_data, uint32_t private_key_data_size);
-
 pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size);
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
 size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);

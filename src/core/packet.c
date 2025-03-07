@@ -641,3 +641,53 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 		return pgp_unknown_packet_print(packet, str, size);
 	}
 }
+
+void pgp_packet_delete(void *packet)
+{
+	pgp_packet_header *header = packet;
+	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
+
+	switch (ptype)
+	{
+	case PGP_PKESK:
+		return pgp_pkesk_packet_delete(packet);
+	case PGP_SIG:
+		return pgp_signature_packet_delete(packet);
+	case PGP_SKESK:
+		return pgp_skesk_packet_delete(packet);
+	case PGP_OPS:
+		return pgp_one_pass_signature_packet_delete(packet);
+	case PGP_SECKEY:
+		return pgp_key_packet_delete(packet);
+	case PGP_PUBKEY:
+		return pgp_key_packet_delete(packet);
+	case PGP_SECSUBKEY:
+		return pgp_key_packet_delete(packet);
+	case PGP_COMP:
+		return pgp_compressed_packet_delete(packet);
+	case PGP_SED:
+		return pgp_sed_packet_delete(packet);
+	case PGP_MARKER:
+		return pgp_marker_packet_delete(packet);
+	case PGP_LIT:
+		return pgp_literal_packet_delete(packet);
+	case PGP_TRUST:
+		return pgp_trust_packet_delete(packet);
+	case PGP_UID:
+		return pgp_user_id_packet_delete(packet);
+	case PGP_PUBSUBKEY:
+		return pgp_key_packet_delete(packet);
+	case PGP_UAT:
+		return pgp_user_attribute_packet_delete(packet);
+	case PGP_SEIPD:
+		return pgp_seipd_packet_delete(packet);
+	case PGP_MDC:
+		return pgp_mdc_packet_delete(packet);
+	case PGP_AEAD:
+		return pgp_aead_packet_delete(packet);
+	case PGP_PADDING:
+		return pgp_padding_packet_delete(packet);
+	default:
+		return free(packet);
+	}
+}

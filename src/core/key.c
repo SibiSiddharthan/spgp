@@ -2697,6 +2697,7 @@ pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase,
 
 	// Free the encrypted portion
 	free(packet->encrypted);
+	packet->encrypted = NULL;
 	packet->encrypted_octets = 0;
 
 	packet->s2k_usage = 0;

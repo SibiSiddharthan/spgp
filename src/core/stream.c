@@ -50,6 +50,7 @@ void pgp_stream_delete(pgp_stream_t *stream)
 
 	for (uint16_t i = 0; i < stream->count; ++i)
 	{
+		// TODO change this.
 		free(stream->packets[i]);
 		stream->packets[i] = NULL;
 	}
