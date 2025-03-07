@@ -6,7 +6,7 @@
 ]]
 
 if(WIN32)
-	set(io_src win32/io.c)
+	set(io_src win32/os.c)
 endif()
 
 add_library(io STATIC ${io_src})

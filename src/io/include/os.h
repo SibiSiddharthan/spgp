@@ -12,11 +12,11 @@
 #include <stdint.h>
 
 #if defined _WIN32
-#	include "win32/io.h"
+#	include "win32/os.h"
 #elif defined __linux__
-#	include "linux/io.h"
+#	include "linux/os.h"
 #elif defined __APPLE__
-#	include "darwin/io.h"
+#	include "darwin/os.h"
 #endif
 
 status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t flags, uint32_t mode);

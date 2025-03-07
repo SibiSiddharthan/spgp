@@ -6,7 +6,7 @@
 */
 
 #include <win32/nt.h>
-#include <win32/io.h>
+#include <win32/os.h>
 
 #include <stdint.h>
 #include <stddef.h>
