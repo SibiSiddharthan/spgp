@@ -26,5 +26,6 @@ status_t os_read(handle_t handle, void *buffer, size_t size, size_t *result);
 status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result);
 
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode);
+status_t os_remove(handle_t root, const char *path, uint16_t length);
 
 #endif

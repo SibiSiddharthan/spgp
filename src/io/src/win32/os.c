@@ -14,8 +14,10 @@
 status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t flags, uint32_t mode)
 {
 	NTSTATUS status = 0;
+
 	IO_STATUS_BLOCK io = {0};
 	OBJECT_ATTRIBUTES object = {0};
+
 	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
 	UNICODE_STRING u16_string = {0};
 
@@ -113,8 +115,10 @@ status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mod
 {
 	NTSTATUS status = 0;
 	HANDLE handle = 0;
+
 	IO_STATUS_BLOCK io = {0};
 	OBJECT_ATTRIBUTES object = {0};
+
 	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
 	UNICODE_STRING u16_string = {0};
 
@@ -131,6 +135,42 @@ status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mod
 	{
 		NtClose(handle);
 	}
+
+	return status;
+}
+
+status_t os_remove(handle_t root, const char *path, uint16_t length)
+{
+	NTSTATUS status = 0;
+	HANDLE handle = 0;
+
+	IO_STATUS_BLOCK io = {0};
+	OBJECT_ATTRIBUTES object = {0};
+	FILE_DISPOSITION_INFORMATION_EX dispostion = {0};
+
+	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
+	UNICODE_STRING u16_string = {0};
+
+	RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+
+	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE, root, NULL);
+
+	status = NtCreateFile(&handle, DELETE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
+						  FILE_OPEN_REPARSE_POINT, NULL, 0);
+
+	RtlFreeUnicodeString(&u16_string);
+
+	if (status < 0)
+	{
+		return status;
+	}
+
+	io.Status = 0;
+	io.Information = 0;
+
+	dispostion.Flags = FILE_DISPOSITION_DELETE | FILE_DISPOSITION_POSIX_SEMANTICS | FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
+	status = NtSetInformationFile(handle, &io, &dispostion, sizeof(FILE_DISPOSITION_INFORMATION_EX), FileDispositionInformationEx);
+	NtClose(handle);
 
 	return status;
 }

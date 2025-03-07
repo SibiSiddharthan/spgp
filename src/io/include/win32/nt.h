@@ -104,6 +104,102 @@ typedef struct _IO_STATUS_BLOCK
 
 typedef VOID(NTAPI *PIO_APC_ROUTINE)(_In_ PVOID ApcContext, _In_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG Reserved);
 
+typedef enum _FILE_INFORMATION_CLASS
+{
+	FileDirectoryInformation = 1,
+	FileFullDirectoryInformation,            // 2
+	FileBothDirectoryInformation,            // 3
+	FileBasicInformation,                    // 4
+	FileStandardInformation,                 // 5
+	FileInternalInformation,                 // 6
+	FileEaInformation,                       // 7
+	FileAccessInformation,                   // 8
+	FileNameInformation,                     // 9
+	FileRenameInformation,                   // 10
+	FileLinkInformation,                     // 11
+	FileNamesInformation,                    // 12
+	FileDispositionInformation,              // 13
+	FilePositionInformation,                 // 14
+	FileFullEaInformation,                   // 15
+	FileModeInformation,                     // 16
+	FileAlignmentInformation,                // 17
+	FileAllInformation,                      // 18
+	FileAllocationInformation,               // 19
+	FileEndOfFileInformation,                // 20
+	FileAlternateNameInformation,            // 21
+	FileStreamInformation,                   // 22
+	FilePipeInformation,                     // 23
+	FilePipeLocalInformation,                // 24
+	FilePipeRemoteInformation,               // 25
+	FileMailslotQueryInformation,            // 26
+	FileMailslotSetInformation,              // 27
+	FileCompressionInformation,              // 28
+	FileObjectIdInformation,                 // 29
+	FileCompletionInformation,               // 30
+	FileMoveClusterInformation,              // 31
+	FileQuotaInformation,                    // 32
+	FileReparsePointInformation,             // 33
+	FileNetworkOpenInformation,              // 34
+	FileAttributeTagInformation,             // 35
+	FileTrackingInformation,                 // 36
+	FileIdBothDirectoryInformation,          // 37
+	FileIdFullDirectoryInformation,          // 38
+	FileValidDataLengthInformation,          // 39
+	FileShortNameInformation,                // 40
+	FileIoCompletionNotificationInformation, // 41
+	FileIoStatusBlockRangeInformation,       // 42
+	FileIoPriorityHintInformation,           // 43
+	FileSfioReserveInformation,              // 44
+	FileSfioVolumeInformation,               // 45
+	FileHardLinkInformation,                 // 46
+	FileProcessIdsUsingFileInformation,      // 47
+	FileNormalizedNameInformation,           // 48
+	FileNetworkPhysicalNameInformation,      // 49
+	FileIdGlobalTxDirectoryInformation,      // 50
+	FileIsRemoteDeviceInformation,           // 51
+	FileUnusedInformation,                   // 52
+	FileNumaNodeInformation,                 // 53
+	FileStandardLinkInformation,             // 54
+	FileRemoteProtocolInformation,           // 55
+
+	//
+	//  These are special versions of these operations (defined earlier)
+	//  which can be used by kernel mode drivers only to bypass security
+	//  access checks for Rename and HardLink operations.  These operations
+	//  are only recognized by the IOManager, a file system should never
+	//  receive these.
+	//
+
+	FileRenameInformationBypassAccessCheck, // 56
+	FileLinkInformationBypassAccessCheck,   // 57
+
+	//
+	// End of special information classes reserved for IOManager.
+	//
+
+	FileVolumeNameInformation,                    // 58
+	FileIdInformation,                            // 59
+	FileIdExtdDirectoryInformation,               // 60
+	FileReplaceCompletionInformation,             // 61
+	FileHardLinkFullIdInformation,                // 62
+	FileIdExtdBothDirectoryInformation,           // 63
+	FileDispositionInformationEx,                 // 64
+	FileRenameInformationEx,                      // 65
+	FileRenameInformationExBypassAccessCheck,     // 66
+	FileDesiredStorageClassInformation,           // 67
+	FileStatInformation,                          // 68
+	FileMemoryPartitionInformation,               // 69
+	FileStatLxInformation,                        // 70
+	FileCaseSensitiveInformation,                 // 71
+	FileLinkInformationEx,                        // 72
+	FileLinkInformationExBypassAccessCheck,       // 73
+	FileStorageReserveIdInformation,              // 74
+	FileCaseSensitiveInformationForceAccessCheck, // 75
+
+	FileMaximumInformation = 76
+} FILE_INFORMATION_CLASS,
+	*PFILE_INFORMATION_CLASS;
+
 //
 // Define the create disposition values
 //
@@ -250,6 +346,18 @@ NtWriteFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_ROUT
 			_Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_reads_bytes_(Length) PVOID Buffer, _In_ ULONG Length,
 			_In_opt_ PLARGE_INTEGER ByteOffset, _In_opt_ PULONG Key);
 
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryInformationFile(_In_ HANDLE FileHandle, _Out_ PIO_STATUS_BLOCK IoStatusBlock, _Out_writes_bytes_(Length) PVOID FileInformation,
+					   _In_ ULONG Length, _In_ FILE_INFORMATION_CLASS FileInformationClass);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSetInformationFile(_In_ HANDLE FileHandle, _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_reads_bytes_(Length) PVOID FileInformation,
+					 _In_ ULONG Length, _In_ FILE_INFORMATION_CLASS FileInformationClass);
+
 NTSYSAPI
 VOID NTAPI RtlInitUTF8String(_Out_ PUTF8_STRING DestinationString, _In_opt_z_ PCSTR SourceString);
 
@@ -273,4 +381,28 @@ RtlUTF8StringToUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_ PUTF8
 
 NTSYSAPI
 VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_opt_) PUNICODE_STRING UnicodeString);
+
+//================ FileDispositionInformationEx ===============================
+
+typedef struct _FILE_DISPOSITION_INFORMATION
+{
+	BOOLEAN DeleteFile;
+} FILE_DISPOSITION_INFORMATION, *PFILE_DISPOSITION_INFORMATION;
+
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS1)
+#	define FILE_DISPOSITION_DO_NOT_DELETE             0x00000000
+#	define FILE_DISPOSITION_DELETE                    0x00000001
+#	define FILE_DISPOSITION_POSIX_SEMANTICS           0x00000002
+#	define FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK 0x00000004
+#	define FILE_DISPOSITION_ON_CLOSE                  0x00000008
+#	if (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS5)
+#		define FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE 0x00000010
+#	endif
+
+typedef struct _FILE_DISPOSITION_INFORMATION_EX
+{
+	ULONG Flags;
+} FILE_DISPOSITION_INFORMATION_EX, *PFILE_DISPOSITION_INFORMATION_EX;
+#endif
+
 #endif
