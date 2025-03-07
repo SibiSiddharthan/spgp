@@ -1226,12 +1226,14 @@ pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	packet = malloc(sizeof(pgp_key_packet) + header.body_size);
+	packet = malloc(sizeof(pgp_key_packet));
 
 	if (packet == NULL)
 	{
 		return NULL;
 	}
+
+	memset(packet, 0, sizeof(pgp_key_packet));
 
 	// Copy the header
 	packet->header = header;
@@ -2278,12 +2280,14 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	packet = malloc(sizeof(pgp_key_packet) + header.body_size);
+	packet = malloc(sizeof(pgp_key_packet));
 
 	if (packet == NULL)
 	{
 		return NULL;
 	}
+
+	memset(packet, 0, sizeof(pgp_key_packet));
 
 	// Copy the header
 	packet->header = header;
@@ -2396,14 +2400,14 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 
 		// Encrypted private key
 		packet->encrypted_octets = packet->header.body_size - (pos - packet->header.header_size);
-		packet->encrypted = malloc(packet->private_key_data_octets);
+		packet->encrypted = malloc(packet->encrypted_octets);
 
 		if (packet->encrypted == NULL)
 		{
 			return NULL;
 		}
 
-		memcpy(packet->encrypted, in + pos, packet->private_key_data_octets);
+		memcpy(packet->encrypted, in + pos, packet->encrypted_octets);
 		pos += packet->encrypted_octets;
 	}
 	else

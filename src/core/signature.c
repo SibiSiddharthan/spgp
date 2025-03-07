@@ -654,7 +654,6 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
 		pgp_embedded_signature_subpacket *embedded_subpacket = NULL;
-		pgp_subpacket_header header = {0};
 
 		embedded_subpacket = malloc(sizeof(pgp_embedded_signature_subpacket));
 

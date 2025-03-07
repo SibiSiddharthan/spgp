@@ -1732,7 +1732,7 @@ static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_pac
 
 		if (packet->unhashed_subpackets->count > 0)
 		{
-			pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Unhashed Subpackets:\n");
+			pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Unhashed Subpackets:\n");
 		}
 
 		for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
