@@ -8,6 +8,8 @@
 #include <win32/nt.h>
 #include <win32/os.h>
 
+#include <os.h>
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -171,6 +173,27 @@ status_t os_remove(handle_t root, const char *path, uint16_t length)
 	dispostion.Flags = FILE_DISPOSITION_DELETE | FILE_DISPOSITION_POSIX_SEMANTICS | FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
 	status = NtSetInformationFile(handle, &io, &dispostion, sizeof(FILE_DISPOSITION_INFORMATION_EX), FileDispositionInformationEx);
 	NtClose(handle);
+
+	return status;
+}
+
+status_t os_lock(handle_t handle, size_t offset, size_t length, byte_t nonblocking, byte_t exclusive)
+{
+	NTSTATUS status = 0;
+	IO_STATUS_BLOCK io = {0};
+
+	status = NtLockFile(handle, NULL, NULL, NULL, &io, (LARGE_INTEGER *)&offset, (LARGE_INTEGER *)&length, 0, (nonblocking & 0x1),
+						(exclusive & 0x1));
+
+	return status;
+}
+
+status_t os_unlock(handle_t handle, size_t offset, size_t length)
+{
+	NTSTATUS status = 0;
+	IO_STATUS_BLOCK io = {0};
+
+	status = NtUnlockFile(handle, &io, (LARGE_INTEGER *)&offset, (LARGE_INTEGER *)&length, 0);
 
 	return status;
 }

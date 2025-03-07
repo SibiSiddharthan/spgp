@@ -358,6 +358,19 @@ NTAPI
 NtSetInformationFile(_In_ HANDLE FileHandle, _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_reads_bytes_(Length) PVOID FileInformation,
 					 _In_ ULONG Length, _In_ FILE_INFORMATION_CLASS FileInformationClass);
 
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtLockFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_ROUTINE ApcRoutine, _In_opt_ PVOID ApcContext,
+		   _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_ PLARGE_INTEGER ByteOffset, _In_ PLARGE_INTEGER Length, _In_ ULONG Key,
+		   _In_ BOOLEAN FailImmediately, _In_ BOOLEAN ExclusiveLock);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtUnlockFile(_In_ HANDLE FileHandle, _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_ PLARGE_INTEGER ByteOffset, _In_ PLARGE_INTEGER Length,
+			 _In_ ULONG Key);
+
 NTSYSAPI
 VOID NTAPI RtlInitUTF8String(_Out_ PUTF8_STRING DestinationString, _In_opt_z_ PCSTR SourceString);
 

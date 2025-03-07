@@ -19,6 +19,8 @@
 #	include "darwin/os.h"
 #endif
 
+typedef uint8_t byte_t;
+
 status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t flags, uint32_t mode);
 status_t os_close(handle_t handle);
 
@@ -27,5 +29,8 @@ status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result);
 
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode);
 status_t os_remove(handle_t root, const char *path, uint16_t length);
+
+status_t os_lock(handle_t handle, size_t offset, size_t length, byte_t nonblocking, byte_t exclusive);
+status_t os_unlock(handle_t handle, size_t offset, size_t length);
 
 #endif
