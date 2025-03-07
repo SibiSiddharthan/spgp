@@ -2721,7 +2721,7 @@ pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase,
 	return packet;
 }
 
-static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)
+static void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)
 {
 	switch (algorithm)
 	{
@@ -2746,6 +2746,9 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 		hash_update(hctx, pkey->e->bytes, bytes);
 	}
 	break;
+	case PGP_KYBER:
+		// TODO
+		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_key *pkey = key;
@@ -2869,11 +2872,7 @@ static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms
 		hash_update(hctx, pkey->public_key, 57);
 	}
 	break;
-	default:
-		return NULL;
 	}
-
-	return hctx;
 }
 
 static uint32_t pgp_key_fingerprint_v3(void *key, byte_t fingerprint_v3[PGP_KEY_V3_FINGERPRINT_SIZE])
@@ -2882,7 +2881,7 @@ static uint32_t pgp_key_fingerprint_v3(void *key, byte_t fingerprint_v3[PGP_KEY_
 	hash_ctx *hctx = NULL;
 	byte_t buffer[512] = {0};
 
-	hash_init(buffer, 512, HASH_MD5);
+	hctx = hash_init(buffer, 512, HASH_MD5);
 
 	// V3 keys only support RSA
 	pgp_rsa_key *pkey = key;
@@ -2912,7 +2911,7 @@ static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint
 	uint16_t octet_count_be = BSWAP_16(octet_count);
 	uint32_t creation_time_be = BSWAP_32(creation_time);
 
-	hash_init(buffer, 512, HASH_SHA1);
+	hctx = hash_init(buffer, 512, HASH_SHA1);
 
 	hash_update(hctx, &constant, 1);
 	hash_update(hctx, &octet_count_be, 2);
@@ -2920,13 +2919,7 @@ static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint
 	hash_update(hctx, &creation_time_be, 4);
 	hash_update(hctx, &algorithm, 1);
 
-	hctx = pgp_hash_key_material(hctx, algorithm, key);
-
-	if (hctx == NULL)
-	{
-		return 0;
-	}
-
+	pgp_hash_key_material(hctx, algorithm, key);
 	hash_final(hctx, fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
 
 	return PGP_KEY_V4_FINGERPRINT_SIZE;
@@ -2944,7 +2937,7 @@ static uint32_t pgp_key_fingerprint_v5(pgp_public_key_algorithms algorithm, uint
 	uint32_t material_count_be = BSWAP_32(material_count);
 	uint32_t creation_time_be = BSWAP_32(creation_time);
 
-	hash_init(buffer, 512, HASH_SHA256);
+	hctx = hash_init(buffer, 512, HASH_SHA256);
 
 	hash_update(hctx, &constant, 1);
 	hash_update(hctx, &octet_count_be, 4);
@@ -2953,13 +2946,7 @@ static uint32_t pgp_key_fingerprint_v5(pgp_public_key_algorithms algorithm, uint
 	hash_update(hctx, &algorithm, 1);
 	hash_update(hctx, &material_count_be, 4);
 
-	hctx = pgp_hash_key_material(hctx, algorithm, key);
-
-	if (hctx == NULL)
-	{
-		return 0;
-	}
-
+	pgp_hash_key_material(hctx, algorithm, key);
 	hash_final(hctx, fingerprint_v5, PGP_KEY_V5_FINGERPRINT_SIZE);
 
 	return PGP_KEY_V5_FINGERPRINT_SIZE;
@@ -2977,7 +2964,7 @@ static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint
 	uint32_t material_count_be = BSWAP_32(material_count);
 	uint32_t creation_time_be = BSWAP_32(creation_time);
 
-	hash_init(buffer, 512, HASH_SHA256);
+	hctx = hash_init(buffer, 512, HASH_SHA256);
 
 	hash_update(hctx, &constant, 1);
 	hash_update(hctx, &octet_count_be, 4);
@@ -2986,13 +2973,7 @@ static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint
 	hash_update(hctx, &algorithm, 1);
 	hash_update(hctx, &material_count_be, 4);
 
-	hctx = pgp_hash_key_material(hctx, algorithm, key);
-
-	if (hctx == NULL)
-	{
-		return 0;
-	}
-
+	pgp_hash_key_material(hctx, algorithm, key);
 	hash_final(hctx, fingerprint_v6, PGP_KEY_V6_FINGERPRINT_SIZE);
 
 	return PGP_KEY_V6_FINGERPRINT_SIZE;
@@ -3000,61 +2981,62 @@ static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint
 
 uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 {
-	pgp_packet_header *header = key;
-	byte_t tag = pgp_packet_get_type(header->tag);
+	pgp_key_packet *packet = key;
+	byte_t tag = pgp_packet_get_type(packet->header.tag);
 
-	if (tag == PGP_PUBKEY || tag == PGP_PUBSUBKEY || tag == PGP_SECKEY || tag == PGP_SECSUBKEY)
+	if (tag != PGP_PUBKEY && tag != PGP_PUBSUBKEY && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
 	{
-		pgp_key_packet *packet = key;
+		return 0;
+	}
 
-		switch (packet->version)
-		{
-		case PGP_KEY_V2:
-		case PGP_KEY_V3:
-		{
-			if (size < PGP_KEY_V3_FINGERPRINT_SIZE)
-			{
-				return 0;
-			}
+	if (pgp_public_cipher_algorithm_validate(packet->public_key_algorithm_id) == 0)
+	{
+		return 0;
+	}
 
-			return pgp_key_fingerprint_v3(packet->key, fingerprint);
-		}
-		case PGP_KEY_V4:
+	switch (packet->version)
+	{
+	case PGP_KEY_V2:
+	case PGP_KEY_V3:
+	{
+		if (size < PGP_KEY_V3_FINGERPRINT_SIZE)
 		{
-			if (size < PGP_KEY_V4_FINGERPRINT_SIZE)
-			{
-				return 0;
-			}
-
-			return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time,
-										  (uint16_t)packet->public_key_data_octets + 6, packet->key, fingerprint);
-		}
-		case PGP_KEY_V5:
-		{
-			if (size < PGP_KEY_V5_FINGERPRINT_SIZE)
-			{
-				return 0;
-			}
-
-			return pgp_key_fingerprint_v5(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
-										  packet->public_key_data_octets, packet->key, fingerprint);
-		}
-		case PGP_KEY_V6:
-		{
-			if (size < PGP_KEY_V6_FINGERPRINT_SIZE)
-			{
-				return 0;
-			}
-
-			return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
-										  packet->public_key_data_octets, packet->key, fingerprint);
-		}
-		default:
 			return 0;
 		}
+
+		return pgp_key_fingerprint_v3(packet->key, fingerprint);
 	}
-	else
+	case PGP_KEY_V4:
 	{
+		if (size < PGP_KEY_V4_FINGERPRINT_SIZE)
+		{
+			return 0;
+		}
+
+		return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time,
+									  (uint16_t)packet->public_key_data_octets + 6, packet->key, fingerprint);
+	}
+	case PGP_KEY_V5:
+	{
+		if (size < PGP_KEY_V5_FINGERPRINT_SIZE)
+		{
+			return 0;
+		}
+
+		return pgp_key_fingerprint_v5(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
+									  packet->public_key_data_octets, packet->key, fingerprint);
+	}
+	case PGP_KEY_V6:
+	{
+		if (size < PGP_KEY_V6_FINGERPRINT_SIZE)
+		{
+			return 0;
+		}
+
+		return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
+									  packet->public_key_data_octets, packet->key, fingerprint);
+	}
+	default:
 		return 0;
 	}
 
