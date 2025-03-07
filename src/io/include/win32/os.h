@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef IO_WIN32_H
-#define IO_WIN32_H
+#ifndef OS_WIN32_H
+#define OS_WIN32_H
 
 typedef long status_t;
 typedef void *handle_t;

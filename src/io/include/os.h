@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef IO_H
-#define IO_H
+#ifndef OS_H
+#define OS_H
 
 #include <stddef.h>
 #include <stdint.h>

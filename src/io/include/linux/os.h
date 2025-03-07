@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef IO_LINUX_H
-#define IO_LINUX_H
+#ifndef OS_LINUX_H
+#define OS_LINUX_H
 
 typedef long status_t;
 typedef unsigned int handle_t;
