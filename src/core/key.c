@@ -894,14 +894,15 @@ static uint32_t pgp_private_key_material_read(pgp_key_packet *packet, void *ptr,
 		uint16_t mpi_u_bits = 0;
 
 		mpi_d_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
-		offset = mpi_octets(mpi_d_bits);
+		offset += mpi_octets(mpi_d_bits);
 		mpi_p_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
-		offset = mpi_octets(mpi_p_bits);
+		offset += mpi_octets(mpi_p_bits);
 		mpi_q_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
-		offset = mpi_octets(mpi_q_bits);
+		offset += mpi_octets(mpi_q_bits);
 		mpi_u_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		offset += mpi_octets(mpi_u_bits);
 
-		if (size < (mpi_octets(mpi_d_bits) + mpi_octets(mpi_p_bits) + mpi_octets(mpi_q_bits) + mpi_octets(mpi_u_bits)))
+		if (size < offset)
 		{
 			return 0;
 		}
@@ -910,6 +911,16 @@ static uint32_t pgp_private_key_material_read(pgp_key_packet *packet, void *ptr,
 		key->p = mpi_new(mpi_p_bits);
 		key->q = mpi_new(mpi_q_bits);
 		key->u = mpi_new(mpi_u_bits);
+
+		if (key->d == NULL || key->p == NULL || key->q == NULL || key->u == NULL)
+		{
+			mpi_delete(key->d);
+			mpi_delete(key->p);
+			mpi_delete(key->q);
+			mpi_delete(key->d);
+
+			return 0;
+		}
 
 		pos += mpi_read(key->d, in + pos, size - pos);
 		pos += mpi_read(key->p, in + pos, size - pos);
