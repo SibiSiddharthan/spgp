@@ -1140,70 +1140,6 @@ static uint32_t pgp_private_key_material_write(pgp_key_packet *packet, void *ptr
 	}
 }
 
-pgp_key_packet *pgp_public_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
-										  uint16_t key_expiry_days, byte_t public_key_algorithm_id, void *key_data, uint32_t key_data_size)
-{
-	pgp_key_packet *packet = NULL;
-	pgp_packet_header_format format = PGP_HEADER;
-	uint32_t body_size = 0;
-
-	if (type != PGP_PUBKEY && type != PGP_PUBSUBKEY)
-	{
-		return NULL;
-	}
-
-	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
-	{
-		return NULL;
-	}
-
-	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
-	{
-		return 0;
-	}
-
-	if (version == PGP_KEY_V6)
-	{
-		body_size = 10;
-	}
-	else if (version == PGP_KEY_V4)
-	{
-		body_size = 6;
-	}
-	else // (version == PGP_KEY_V3 || version == PGP_KEY_V2)
-	{
-		body_size = 8;
-		format = PGP_LEGACY_HEADER;
-	}
-
-	packet = malloc(sizeof(pgp_key_packet) + key_data_size);
-
-	if (packet == NULL)
-	{
-		return 0;
-	}
-
-	memset(packet, 0, sizeof(pgp_key_packet) + key_data_size);
-
-	packet->key_creation_time = key_creation_time;
-	packet->key_expiry_days = key_expiry_days;
-	packet->public_key_algorithm_id = public_key_algorithm_id;
-
-	memcpy(packet->key, key_data, key_data_size);
-	packet->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key_data);
-
-	body_size += packet->public_key_data_octets;
-
-	packet->header = pgp_encode_packet_header(format, type, body_size);
-
-	return packet;
-}
-
-void pgp_public_key_packet_delete(pgp_key_packet *packet)
-{
-	free(packet);
-}
-
 pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
@@ -1493,7 +1429,7 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb_v3(pgp_key_packet *pa
 
 	free(buffer);
 
-	return pos;
+	return result;
 }
 
 static uint32_t pgp_secret_key_material_encrypt_legacy_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
@@ -1602,7 +1538,7 @@ static uint32_t pgp_secret_key_material_decrypt_legacy_cfb(pgp_key_packet *packe
 		return 0;
 	}
 
-	return packet->encrypted_octets;
+	return result;
 }
 
 static uint32_t pgp_secret_key_material_encrypt_malleable_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
@@ -1702,7 +1638,7 @@ static uint32_t pgp_secret_key_material_decrypt_malleable_cfb(pgp_key_packet *pa
 		return 0;
 	}
 
-	return packet->encrypted_octets;
+	return result;
 }
 
 static uint32_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
@@ -1805,7 +1741,7 @@ static uint32_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, void
 		return 0;
 	}
 
-	return packet->encrypted_octets;
+	return result;
 }
 
 static uint32_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
@@ -2012,7 +1948,7 @@ static uint32_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, voi
 		return 0;
 	}
 
-	return packet->encrypted_octets;
+	return result;
 }
 
 static uint32_t pgp_secret_key_material_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
@@ -2063,199 +1999,6 @@ static uint32_t pgp_secret_key_material_decrypt(pgp_key_packet *packet, void *pa
 	}
 
 	return 0;
-}
-
-pgp_key_packet *pgp_secret_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
-										  uint16_t key_expiry_days, byte_t public_key_algorithm_id, byte_t symmetric_key_algorithm_id,
-										  byte_t aead_algorithm_id, byte_t s2k_usage, pgp_s2k *s2k, void *iv, byte_t iv_size,
-										  void *passphrase, size_t passphrase_size, void *public_key_data, uint32_t public_key_data_size,
-										  void *private_key_data, uint32_t private_key_data_size)
-{
-	pgp_key_packet *packet = NULL;
-	pgp_packet_header_format format = PGP_HEADER;
-	uint32_t body_size = 0;
-
-	if (type != PGP_SECKEY && type != PGP_SECSUBKEY)
-	{
-		return NULL;
-	}
-
-	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
-	{
-		return NULL;
-	}
-
-	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
-	{
-		return 0;
-	}
-
-	if (version == PGP_KEY_V6)
-	{
-		if (s2k_usage == 255)
-		{
-			return NULL;
-		}
-
-		body_size = 10;
-	}
-	else if (version == PGP_KEY_V4)
-	{
-		body_size = 6;
-	}
-	else // (version == PGP_KEY_V3 || version == PGP_KEY_V2)
-	{
-		body_size = 8;
-		format = PGP_LEGACY_HEADER;
-	}
-
-	if (s2k_usage >= PGP_IDEA && s2k_usage <= PGP_CAMELLIA_256) // Legacy CFB
-	{
-		if (iv == NULL)
-		{
-			return NULL;
-		}
-
-		if (passphrase == NULL)
-		{
-			return NULL;
-		}
-
-		if (pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id) != iv_size)
-		{
-			return NULL;
-		}
-	}
-	else if (s2k_usage >= 253 && s2k_usage <= 255)
-	{
-		if (passphrase == NULL)
-		{
-			return NULL;
-		}
-
-		if (s2k == NULL)
-		{
-			return NULL;
-		}
-
-		if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
-		{
-			return NULL;
-		}
-
-		if (s2k_usage == 253) // AEAD
-		{
-			if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
-			{
-				return NULL;
-			}
-
-			if (pgp_aead_iv_size(aead_algorithm_id) != iv_size)
-			{
-				return NULL;
-			}
-		}
-		else // CFB
-		{
-			if (pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id) != iv_size)
-			{
-				return NULL;
-			}
-		}
-	}
-	else
-	{
-		return NULL;
-	}
-
-	packet = malloc(sizeof(pgp_key_packet) + public_key_data_size + private_key_data_size + 32);
-
-	if (packet == NULL)
-	{
-		return 0;
-	}
-
-	memset(packet, 0, sizeof(pgp_key_packet) + public_key_data_size + private_key_data_size);
-
-	packet->key_creation_time = key_creation_time;
-	packet->key_expiry_days = key_expiry_days;
-	packet->public_key_algorithm_id = public_key_algorithm_id;
-	packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
-	packet->aead_algorithm_id = aead_algorithm_id;
-
-	packet->s2k_usage = s2k_usage;
-	if (s2k != NULL)
-	{
-		memcpy(&packet->s2k, s2k, sizeof(pgp_s2k));
-	}
-
-	packet->iv_size = iv_size;
-	if (iv != NULL)
-	{
-		memcpy(packet->iv, iv, iv_size);
-	}
-
-	// Copy the public key
-	// memcpy(packet->public_key_data, public_key_data, public_key_data_size);
-	// packet->public_key_data_size = public_key_data_size;
-	packet->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, public_key_data);
-
-	body_size += packet->public_key_data_octets;
-
-	// Secret key stuff
-	body_size += 1;
-
-	if (s2k_usage != 0)
-	{
-		body_size += 1; // Symmetric key
-		body_size += iv_size;
-
-		if (s2k_usage >= 253 && s2k_usage <= 255)
-		{
-			body_size += pgp_s2k_size(s2k);
-		}
-
-		if (s2k_usage == 253)
-		{
-			body_size += 1; // AEAD
-		}
-
-		if (version == PGP_KEY_V6)
-		{
-			body_size += 1; // Count octet
-		}
-	}
-
-	// Calculate checksum
-	packet->key_checksum = pgp_private_key_material_checksum(packet);
-
-	if (s2k_usage == 0)
-	{
-		packet->private_key_data_octets = get_private_key_material_octets(packet->public_key_algorithm_id, private_key_data);
-		// packet->private_key_data_size = private_key_data_size;
-
-		// memcpy(packet->private_key_data, private_key_data, private_key_data_size);
-
-		if (packet->version != PGP_KEY_V6)
-		{
-			body_size += 2;
-		}
-	}
-	else
-	{
-		pgp_secret_key_material_encrypt(packet, passphrase, passphrase_size);
-	}
-
-	body_size += packet->private_key_data_octets;
-
-	packet->header = pgp_encode_packet_header(format, type, body_size);
-
-	return packet;
-}
-
-void pgp_secret_key_packet_delete(pgp_key_packet *packet)
-{
-	free(packet);
 }
 
 pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
@@ -2623,6 +2366,109 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	}
 
 	return pos;
+}
+
+pgp_key_packet *pgp_key_packet_new(byte_t version, byte_t subkey, uint32_t key_creation_time, uint16_t key_expiry_days,
+								   byte_t public_key_algorithm_id, void *key)
+{
+	pgp_key_packet *packet = NULL;
+	pgp_packet_type packet_type = (subkey == 0) ? PGP_SECKEY : PGP_SECSUBKEY;
+	uint32_t body_size = 1 + 1 + 4; // Public
+
+	if (version == PGP_KEY_V6 || version == PGP_KEY_V5)
+	{
+		body_size += 4;
+	}
+
+	// Don't generate V3 keys
+	if (version < PGP_KEY_V4 || version > PGP_KEY_V6)
+	{
+		return NULL;
+	}
+
+	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_key_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_key_packet));
+
+	packet->version = version;
+	packet->key_creation_time = key_creation_time;
+	packet->key_expiry_days = key_expiry_days;
+
+	packet->key = key;
+	packet->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);
+	packet->private_key_data_octets = get_private_key_material_octets(public_key_algorithm_id, key);
+
+	packet->key_checksum = pgp_private_key_material_checksum(packet);
+
+	// Assume unencrypted key, header will be updated on call to encrypt/decrypt
+	body_size += 1; // s2k_usage
+
+	if (version == PGP_KEY_V6)
+	{
+		body_size += 1;
+	}
+
+	if (version == PGP_KEY_V5)
+	{
+		body_size += 3;
+	}
+
+	body_size += packet->public_key_data_octets + packet->private_key_data_octets;
+	packet->header = pgp_encode_packet_header(PGP_HEADER, packet_type, body_size);
+
+	return packet;
+}
+
+void pgp_key_packet_delete(pgp_key_packet *packet)
+{
+	if (packet == NULL)
+	{
+		return;
+	}
+
+	free(packet->encrypted);
+
+	// Free the key
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+		pgp_rsa_key_delete(packet->key);
+		break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		break;
+	case PGP_DSA:
+		pgp_dsa_key_delete(packet->key);
+		break;
+	case PGP_ECDH:
+		pgp_ecdh_key_delete(packet->key);
+		break;
+	case PGP_ECDSA:
+	case PGP_EDDSA:
+		pgp_ecdsa_key_delete(packet->key);
+		break;
+	case PGP_X25519:
+	case PGP_X448:
+	case PGP_ED25519:
+	case PGP_ED448:
+		free(packet->key);
+		break;
+	default:
+		break;
+	}
+
+	free(packet);
 }
 
 static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)

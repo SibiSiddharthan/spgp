@@ -145,9 +145,13 @@ typedef struct _pgp_ed448_key
 
 void *pgp_key_generate(byte_t public_key_algorithm_id);
 
-pgp_key_packet *pgp_public_key_packet_new(pgp_packet_type type, pgp_key_version version, uint32_t key_creation_time,
-										  uint16_t key_expiry_days, byte_t public_key_algorithm_id, void *key_data, uint32_t key_data_size);
-void pgp_public_key_packet_delete(pgp_key_packet *packet);
+pgp_key_packet *pgp_key_packet_new(byte_t version, byte_t subkey, uint32_t key_creation_time, uint16_t key_expiry_days,
+								   byte_t public_key_algorithm_id, void *key);
+void pgp_key_packet_delete(pgp_key_packet *packet);
+
+pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size, byte_t s2k_usage, pgp_s2k *s2k,
+									  void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id);
+pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size);
 
 pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size);
 size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
@@ -158,7 +162,6 @@ pgp_key_packet *pgp_secret_key_packet_new(pgp_packet_type type, pgp_key_version 
 										  byte_t aead_algorithm_id, byte_t s2k_usage, pgp_s2k *s2k_algorithm, void *iv, byte_t iv_size,
 										  void *passphrase, size_t passphrase_size, void *public_key_data, uint32_t public_key_data_size,
 										  void *private_key_data, uint32_t private_key_data_size);
-void pgp_secret_key_packet_delete(pgp_key_packet *packet);
 
 pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size);
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
