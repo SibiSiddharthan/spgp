@@ -1752,6 +1752,9 @@ static uint32_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, void
 		return 0;
 	}
 
+	// Calculate checksum
+	packet->key_checksum = pgp_private_key_material_checksum(packet);
+
 	return result;
 }
 
@@ -1968,6 +1971,9 @@ static uint32_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, voi
 	{
 		return 0;
 	}
+
+	// Calculate checksum
+	packet->key_checksum = pgp_private_key_material_checksum(packet);
 
 	return result;
 }
