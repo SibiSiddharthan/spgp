@@ -105,16 +105,136 @@ typedef struct _IO_STATUS_BLOCK
 typedef VOID(NTAPI *PIO_APC_ROUTINE)(_In_ PVOID ApcContext, _In_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG Reserved);
 
 //
+// Define the create disposition values
+//
+
+#define FILE_SUPERSEDE           0x00000000
+#define FILE_OPEN                0x00000001
+#define FILE_CREATE              0x00000002
+#define FILE_OPEN_IF             0x00000003
+#define FILE_OVERWRITE           0x00000004
+#define FILE_OVERWRITE_IF        0x00000005
+#define FILE_MAXIMUM_DISPOSITION 0x00000005
+
+//
+// Define the create/open option flags
+//
+
+#define FILE_DIRECTORY_FILE            0x00000001
+#define FILE_WRITE_THROUGH             0x00000002
+#define FILE_SEQUENTIAL_ONLY           0x00000004
+#define FILE_NO_INTERMEDIATE_BUFFERING 0x00000008
+
+#define FILE_SYNCHRONOUS_IO_ALERT    0x00000010
+#define FILE_SYNCHRONOUS_IO_NONALERT 0x00000020
+#define FILE_NON_DIRECTORY_FILE      0x00000040
+#define FILE_CREATE_TREE_CONNECTION  0x00000080
+
+#define FILE_COMPLETE_IF_OPLOCKED 0x00000100
+#define FILE_NO_EA_KNOWLEDGE      0x00000200
+#define FILE_OPEN_REMOTE_INSTANCE 0x00000400
+#define FILE_RANDOM_ACCESS        0x00000800
+
+#define FILE_DELETE_ON_CLOSE        0x00001000
+#define FILE_OPEN_BY_FILE_ID        0x00002000
+#define FILE_OPEN_FOR_BACKUP_INTENT 0x00004000
+#define FILE_NO_COMPRESSION         0x00008000
+
+#if (NTDDI_VERSION >= NTDDI_WIN7)
+#	define FILE_OPEN_REQUIRING_OPLOCK 0x00010000
+#	define FILE_DISALLOW_EXCLUSIVE    0x00020000
+#endif /* NTDDI_VERSION >= NTDDI_WIN7 */
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+#	define FILE_SESSION_AWARE 0x00040000
+#endif /* NTDDI_VERSION >= NTDDI_WIN8 */
+
+#define FILE_RESERVE_OPFILTER          0x00100000
+#define FILE_OPEN_REPARSE_POINT        0x00200000
+#define FILE_OPEN_NO_RECALL            0x00400000
+#define FILE_OPEN_FOR_FREE_SPACE_QUERY 0x00800000
+
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS5)
+
+//
+// Create options that go with FILE_CREATE_TREE_CONNECTION.
+//
+
+#	define TREE_CONNECT_NO_CLIENT_BUFFERING 0x00000008 // matches with FILE_NO_INTERMEDIATE_BUFFERING
+#	define TREE_CONNECT_WRITE_THROUGH       0x00000002 // matches with FILE_WRITE_THROUGH
+#	define TREE_CONNECT_USE_COMPRESSION     0x00008000 // matches with FILE_NO_COMPRESSION
+
+#endif // _WIN32_WINNT_WIN10_RS5
+
+//
+//  The FILE_VALID_OPTION_FLAGS mask cannot be expanded to include the
+//  highest 8 bits of the DWORD because those are used to represent the
+//  create disposition in the IO Request Packet when sending information
+//  to the file system
+//
+#define FILE_VALID_OPTION_FLAGS          0x00ffffff
+#define FILE_VALID_PIPE_OPTION_FLAGS     0x00000032
+#define FILE_VALID_MAILSLOT_OPTION_FLAGS 0x00000032
+#define FILE_VALID_SET_FLAGS             0x00000036
+
+//
+// Define the I/O status information return values for NtCreateFile/NtOpenFile
+//
+
+#define FILE_SUPERSEDED     0x00000000
+#define FILE_OPENED         0x00000001
+#define FILE_CREATED        0x00000002
+#define FILE_OVERWRITTEN    0x00000003
+#define FILE_EXISTS         0x00000004
+#define FILE_DOES_NOT_EXIST 0x00000005
+
+#if (NTDDI_VERSION >= NTDDI_WIN10_RS3)
+//
+// Define the QueryFlags values for NtQueryDirectoryFileEx.
+//
+
+#	define FILE_QUERY_RESTART_SCAN                0x00000001
+#	define FILE_QUERY_RETURN_SINGLE_ENTRY         0x00000002
+#	define FILE_QUERY_INDEX_SPECIFIED             0x00000004
+#	define FILE_QUERY_RETURN_ON_DISK_ENTRIES_ONLY 0x00000008
+#endif
+#if (NTDDI_VERSION >= NTDDI_WIN10_RS5)
+#	define FILE_QUERY_NO_CURSOR_UPDATE 0x00000010
+#endif
+
+//
 // Define special ByteOffset parameters for read and write operations
 //
 
 #define FILE_WRITE_TO_END_OF_FILE      0xffffffff
 #define FILE_USE_FILE_POINTER_POSITION 0xfffffffe
 
+//
+// Define alignment requirement values
+//
+
+#define FILE_BYTE_ALIGNMENT     0x00000000
+#define FILE_WORD_ALIGNMENT     0x00000001
+#define FILE_LONG_ALIGNMENT     0x00000003
+#define FILE_QUAD_ALIGNMENT     0x00000007
+#define FILE_OCTA_ALIGNMENT     0x0000000f
+#define FILE_32_BYTE_ALIGNMENT  0x0000001f
+#define FILE_64_BYTE_ALIGNMENT  0x0000003f
+#define FILE_128_BYTE_ALIGNMENT 0x0000007f
+#define FILE_256_BYTE_ALIGNMENT 0x000000ff
+#define FILE_512_BYTE_ALIGNMENT 0x000001ff
+
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
 NtClose(_In_ _Post_ptr_invalid_ HANDLE Handle);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtCreateFile(_Out_ PHANDLE FileHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes,
+			 _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_opt_ PLARGE_INTEGER AllocationSize, _In_ ULONG FileAttributes,
+			 _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions, _In_reads_bytes_opt_(EaLength) PVOID EaBuffer,
+			 _In_ ULONG EaLength);
 
 NTSYSCALLAPI
 NTSTATUS
@@ -130,5 +250,27 @@ NtWriteFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_ROUT
 			_Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_reads_bytes_(Length) PVOID Buffer, _In_ ULONG Length,
 			_In_opt_ PLARGE_INTEGER ByteOffset, _In_opt_ PULONG Key);
 
+NTSYSAPI
+VOID NTAPI RtlInitUTF8String(_Out_ PUTF8_STRING DestinationString, _In_opt_z_ PCSTR SourceString);
 
+NTSYSAPI
+VOID NTAPI RtlInitUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_opt_z_ PCWSTR SourceString);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlUnicodeStringToUTF8String(_Out_ PUTF8_STRING DestinationString, _In_ PCUNICODE_STRING SourceString,
+							 _In_ BOOLEAN AllocateDestinationString);
+
+NTSYSAPI
+VOID NTAPI RtlFreeUTF8String(_Inout_ _At_(utf8String->Buffer, _Frees_ptr_opt_) PUTF8_STRING utf8String);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlUTF8StringToUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_ PUTF8_STRING SourceString,
+							 _In_ BOOLEAN AllocateDestinationString);
+
+NTSYSAPI
+VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_opt_) PUNICODE_STRING UnicodeString);
 #endif
