@@ -1733,7 +1733,7 @@ static uint32_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, void
 	}
 
 	// Read the key from the buffer
-	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - SHA1_HASH_SIZE);
 	free(buffer);
 
 	if (result == 0)
@@ -1861,6 +1861,9 @@ static uint32_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, voi
 	byte_t dkey[32] = {0};
 	byte_t info[4] = {0};
 
+	byte_t expected_tag[PGP_AEAD_TAG_SIZE] = {0};
+	byte_t actual_tag[PGP_AEAD_TAG_SIZE] = {0};
+
 	byte_t *key = NULL;
 	byte_t *buffer = NULL;
 
@@ -1927,11 +1930,12 @@ static uint32_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, voi
 
 	pos = ROUND_UP(pos, 16);
 
-	// Encrypt using AEAD (Store the tag at the end)
+	// Decrypt using AEAD
+	memcpy(actual_tag, PTR_OFFSET(packet->encrypted, packet->encrypted_octets - PGP_AEAD_TAG_SIZE), PGP_AEAD_TAG_SIZE);
+
 	result = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
 							  buffer, aad_count, packet->encrypted, packet->encrypted_octets - PGP_AEAD_TAG_SIZE, PTR_OFFSET(buffer, pos),
-							  packet->encrypted_octets - PGP_AEAD_TAG_SIZE,
-							  PTR_OFFSET(buffer, pos + (packet->encrypted_octets - PGP_AEAD_TAG_SIZE)), PGP_AEAD_TAG_SIZE);
+							  packet->encrypted_octets - PGP_AEAD_TAG_SIZE, expected_tag, PGP_AEAD_TAG_SIZE);
 
 	if (result == 0)
 	{
@@ -1939,8 +1943,14 @@ static uint32_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, voi
 		return 0;
 	}
 
+	if (memcmp(actual_tag, expected_tag, PGP_AEAD_TAG_SIZE) != 0)
+	{
+		free(buffer);
+		return 0;
+	}
+
 	// Read the key from the buffer
-	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - 2);
+	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - PGP_AEAD_TAG_SIZE);
 	free(buffer);
 
 	if (result == 0)
