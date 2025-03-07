@@ -2471,6 +2471,228 @@ void pgp_key_packet_delete(pgp_key_packet *packet)
 	free(packet);
 }
 
+pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size, byte_t s2k_usage, pgp_s2k *s2k,
+									   void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id)
+{
+	uint32_t result = 0;
+	uint32_t body_size = 1 + 1 + 4; // Public
+	byte_t tag = pgp_packet_get_type(packet->header.tag);
+
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
+	{
+		body_size += 4;
+	}
+
+	if (tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
+	{
+		return NULL;
+	}
+
+	if (s2k_usage == 0)
+	{
+		// Nothing to encrypt
+		return packet;
+	}
+
+	if (s2k_usage != 0)
+	{
+		if (passphrase == NULL || passphrase_size == 0)
+		{
+			return NULL;
+		}
+
+		if (iv == NULL || iv_size == 0)
+		{
+			return NULL;
+		}
+
+		if (s2k == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (s2k_usage >= PGP_IDEA && s2k_usage <= PGP_CAMELLIA_256) // Legacy CFB
+	{
+		if (pgp_symmetric_cipher_block_size(s2k_usage) != iv_size)
+		{
+			return NULL;
+		}
+
+		packet->symmetric_key_algorithm_id = s2k_usage;
+	}
+	else if (s2k_usage >= 253 && s2k_usage <= 255)
+	{
+		if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
+		{
+			return NULL;
+		}
+
+		if (s2k_usage == 253) // AEAD
+		{
+			if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
+			{
+				return NULL;
+			}
+
+			if (pgp_aead_iv_size(aead_algorithm_id) != iv_size)
+			{
+				return NULL;
+			}
+
+			packet->aead_algorithm_id = aead_algorithm_id;
+		}
+		else // CFB
+		{
+			if (pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id) != iv_size)
+			{
+				return NULL;
+			}
+		}
+
+		packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
+
+		// Copy the IV
+		packet->iv_size = iv_size;
+		memcpy(packet->iv, iv, iv_size);
+	}
+	else
+	{
+		return NULL;
+	}
+
+	// Copy the s2k
+	packet->s2k_usage = s2k_usage;
+	packet->s2k = *s2k;
+
+	// Will update encrypted octets
+	result = pgp_secret_key_material_encrypt(packet, passphrase, passphrase_size);
+
+	if (result == 0)
+	{
+		return NULL;
+	}
+
+	body_size += 2; // s2k_usage, cipher algo
+	body_size += pgp_s2k_size(&packet->s2k);
+	body_size += iv_size;
+
+	if (s2k_usage == 253)
+	{
+		body_size += 1;
+	}
+
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
+	{
+		body_size += 2; // Count octets
+	}
+
+	body_size += packet->public_key_data_octets + packet->encrypted_octets;
+	packet->header = pgp_encode_packet_header(PGP_HEADER, tag, body_size);
+
+	return packet;
+}
+
+pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+{
+	uint32_t result = 0;
+	uint32_t body_size = 0;
+	byte_t tag = pgp_packet_get_type(packet->header.tag);
+
+	if (tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
+	{
+		return NULL;
+	}
+
+	if (packet->s2k_usage == 0)
+	{
+		// Nothing to decrypt
+		return packet;
+	}
+
+	if (packet->s2k_usage != 0)
+	{
+		if (passphrase == NULL || passphrase_size == 0)
+		{
+			return NULL;
+		}
+	}
+
+	// Validations
+	// TODO: Move this to a separate validation function
+	if (packet->s2k_usage >= PGP_IDEA && packet->s2k_usage <= PGP_CAMELLIA_256) // Legacy CFB
+	{
+		if (pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id) != packet->iv_size)
+		{
+			return NULL;
+		}
+	}
+	else if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+	{
+		if (pgp_symmetric_cipher_algorithm_validate(packet->symmetric_key_algorithm_id) == 0)
+		{
+			return NULL;
+		}
+
+		if (packet->s2k_usage == 253) // AEAD
+		{
+			if (pgp_aead_algorithm_validate(packet->aead_algorithm_id) == 0)
+			{
+				return NULL;
+			}
+
+			if (pgp_aead_iv_size(packet->aead_algorithm_id) != packet->iv_size)
+			{
+				return NULL;
+			}
+		}
+		else // CFB
+		{
+			if (pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id) != packet->iv_size)
+			{
+				return NULL;
+			}
+		}
+	}
+	else
+	{
+		return NULL;
+	}
+
+	// Checksum will be updated
+	// Private octet count will be updated
+	result = pgp_secret_key_material_decrypt(packet, passphrase, passphrase_size);
+
+	if (result == 0)
+	{
+		return NULL;
+	}
+
+	// Free the encrypted portion
+	free(packet->encrypted);
+	packet->encrypted_octets = 0;
+
+	packet->s2k_usage = 0;
+
+	// Update the header
+	body_size = 1 + 1 + 4 + 4;
+
+	if (packet->version == PGP_KEY_V6)
+	{
+		body_size += 2;
+	}
+
+	if (packet->version == PGP_KEY_V5)
+	{
+		body_size += 4;
+	}
+
+	body_size += packet->public_key_data_octets + packet->private_key_data_octets;
+	packet->header = pgp_encode_packet_header(PGP_HEADER, tag, body_size);
+
+	return packet;
+}
+
 static hash_ctx *pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)
 {
 	switch (algorithm)

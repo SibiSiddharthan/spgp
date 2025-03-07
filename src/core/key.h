@@ -150,7 +150,7 @@ pgp_key_packet *pgp_key_packet_new(byte_t version, byte_t subkey, uint32_t key_c
 void pgp_key_packet_delete(pgp_key_packet *packet);
 
 pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size, byte_t s2k_usage, pgp_s2k *s2k,
-									  void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id);
+									   void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id);
 pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size);
 
 pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size);
