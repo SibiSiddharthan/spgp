@@ -1085,7 +1085,8 @@ static uint32_t pgp_ecdh_kw_decrypt(pgp_symmetric_key_algorithms algorithm, void
 	return in_size - 8;
 }
 
-pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
+pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_algorithm_id, byte_t *fingerprint, byte_t fingerprint_size,
+								   void *session_key, byte_t session_key_size)
 {
 	pgp_ecdh_kex *kex = NULL;
 	ec_group *group = NULL;
@@ -1201,7 +1202,9 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 	memcpy(kdf_input + pos, "Anonymous Sender    ", 20);
 	pos += 20;
 
-	// TODO: Fingerptint
+	// Fingerptint
+	memcpy(kdf_input + pos, fingerprint, fingerprint_size);
+	pos += fingerprint_size;
 
 	kdf_input_size = pos;
 
@@ -1222,7 +1225,7 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 
 	memset(kex, 0, sizeof(pgp_ecdh_kex));
 
-	// TODO MPI
+	kex->ephemeral_point = mpi_from_ec_point(ephemeral_key->eg, ephemeral_key->q);
 	kex->encoded_session_key_size = wrapped_session_key_size;
 	memcpy(kex->encoded_session_key, wrapped_session_key, wrapped_session_key_size);
 
@@ -1233,8 +1236,8 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 	return kex;
 }
 
-uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *symmetric_key_algorithm_id, void *session_key,
-							  uint32_t session_key_size)
+uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *symmetric_key_algorithm_id, byte_t *fingerprint,
+							  byte_t fingerprint_size, void *session_key, uint32_t session_key_size)
 {
 	ec_group *group = NULL;
 	ec_point *shared_point = NULL;
@@ -1249,7 +1252,9 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *
 	uint16_t session_key_checksum = 0;
 
 	byte_t encoded_session_key[64] = {0};
-	byte_t encoded_session_key_size = ROUND_UP(session_key_size, 8);
+	byte_t encoded_session_key_size = kex->encoded_session_key_size;
+	byte_t decoded_session_key_size = 0;
+	byte_t key_start = 0;
 
 	byte_t xcoord[128] = {0};
 	byte_t xcoord_size = 0;
@@ -1260,6 +1265,11 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *
 	byte_t kdf_input_size = 0;
 
 	if (id == 0)
+	{
+		return 0;
+	}
+
+	if (session_key_size < kex->encoded_session_key_size - 16)
 	{
 		return 0;
 	}
@@ -1319,29 +1329,46 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *
 	memcpy(kdf_input + pos, "Anonymous Sender    ", 20);
 	pos += 20;
 
-	// TODO: Fingerptint
+	// Fingerptint
+	memcpy(kdf_input + pos, fingerprint, fingerprint_size);
+	pos += fingerprint_size;
 
 	kdf_input_size = pos;
 
 	pgp_ecdh_kdf(hash_algorithm_id, xcoord, xcoord_size, kdf_input, kdf_input_size, key_wrap_key, key_wrap_key_size);
 
 	// Key wrap
-	pgp_ecdh_kw_decrypt(cipher_algorithm_id, key_wrap_key, key_wrap_key_size, kex->encoded_session_key, kex->encoded_session_key_size,
-						encoded_session_key, encoded_session_key_size);
-
-	// TODO V3 algorithm assignment.
-	// TODO parse
-	for (byte_t i = 0; i < session_key_size; ++i)
-	{
-		session_key_checksum += encoded_session_key[i];
-	}
+	encoded_session_key_size = pgp_ecdh_kw_decrypt(cipher_algorithm_id, key_wrap_key, key_wrap_key_size, kex->encoded_session_key,
+												   kex->encoded_session_key_size, encoded_session_key, encoded_session_key_size);
 
 	ec_point_delete(shared_point);
 	ec_point_delete(public_point);
 	ec_group_delete(group);
 	bignum_delete(d);
 
-	return 0;
+	// V3 packet
+	if (encoded_session_key[encoded_session_key_size - 1] == 0x05)
+	{
+		*symmetric_key_algorithm_id = encoded_session_key[0];
+		key_start = 1;
+	}
+
+	decoded_session_key_size = encoded_session_key_size - 8;
+
+	for (byte_t i = 0; i < decoded_session_key_size; ++i)
+	{
+		session_key_checksum += encoded_session_key[key_start + i];
+	}
+
+	if (((session_key_checksum >> 8) & 0xFF) != encoded_session_key[key_start + decoded_session_key_size] ||
+		(session_key_checksum & 0xFF) != encoded_session_key[key_start + decoded_session_key_size + 1])
+	{
+		return 0;
+	}
+
+	memcpy(session_key, encoded_session_key + key_start, decoded_session_key_size);
+
+	return decoded_session_key_size;
 }
 
 pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_key *key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
@@ -1548,7 +1575,7 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 	sign.size = CEIL_DIV(pgp_key->n->bits, 8);
 	sign.sign = pgp_sign->e->bytes;
 
-	result = rsa_sign_pkcs(key, algorithm, hash, hash_size, &sign, 0);
+	result = rsa_sign_pkcs(key, algorithm, hash, hash_size, &sign, -1);
 
 	rsa_key_delete(key);
 
@@ -1557,7 +1584,7 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 		return NULL;
 	}
 
-	pgp_sign->e->bits = sign.bits;
+	pgp_sign->e->bits = sign.bits * 8;
 
 	return pgp_sign;
 }

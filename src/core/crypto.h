@@ -55,9 +55,10 @@ pgp_elgamal_kex *pgp_elgamal_kex_encrypt(pgp_elgamal_key *key, byte_t symmetric_
 uint32_t pgp_elgamal_kex_decrypt(pgp_elgamal_kex *kex, pgp_elgamal_key *key, byte_t *symmetric_key_algorithm_id, void *session_key,
 								 uint32_t session_key_size);
 
-pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size);
-uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *key, byte_t *symmetric_key_algorithm_id, void *session_key,
-							  uint32_t session_key_size);
+pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *key, byte_t symmetric_key_algorithm_id, byte_t *fingerprint, byte_t fingerprint_size,
+								   void *session_key, byte_t session_key_size);
+uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *key, byte_t *symmetric_key_algorithm_id, byte_t *fingerprint,
+							  byte_t fingerprint_size, void *session_key, uint32_t session_key_size);
 
 pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_key *key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size);
 uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_x25519_key *key, byte_t *symmetric_key_algorithm_id, void *session_key,
