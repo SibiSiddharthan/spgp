@@ -1698,6 +1698,44 @@ size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_
 	}
 }
 
+pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size)
+{
+	pgp_key_fingerprint_subpacket *subpacket = NULL;
+
+	// Check tag
+	if (tag != PGP_ISSUER_FINGERPRINT_SUBPACKET && tag != PGP_RECIPIENT_FINGERPRINT_SUBPACKET)
+	{
+		return NULL;
+	}
+
+	// Check key version
+	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
+	{
+		return NULL;
+	}
+
+	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_key_fingerprint_subpacket));
+
+	subpacket->version = version;
+	memcpy(subpacket->fingerprint, fingerprint, size);
+
+	subpacket->header = pgp_encode_subpacket_header(tag, 0, size + 1);
+
+	return subpacket;
+}
+
+void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
 																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
 																 void *key_fingerprint, byte_t key_fingerprint_size)
