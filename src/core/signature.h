@@ -307,7 +307,7 @@ typedef struct _pgp_ed448_signature
 pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size);
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp, void *data, size_t size);
 uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size);
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);

@@ -667,7 +667,7 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		// Copy the header
 		embedded_subpacket->header = header;
 
-		return pgp_signature_packet_body_read(embedded_subpacket, data, size);
+		return pgp_signature_packet_body_read(embedded_subpacket, PTR_OFFSET(data, header.header_size), size - header.header_size);
 	}
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
@@ -1039,7 +1039,7 @@ static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *
 static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t pos = packet->header.header_size;
+	size_t pos = 0;
 
 	// 1 octet version
 	LOAD_8(out + pos, &packet->version);
@@ -1075,9 +1075,12 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	}
 
 	// Hashed subpackets
-	for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+	if (packet->hashed_subpackets != NULL)
 	{
-		pos += pgp_signature_subpacket_write(packet->hashed_subpackets->packets[i], out + pos, size - pos);
+		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		{
+			pos += pgp_signature_subpacket_write(packet->hashed_subpackets->packets[i], out + pos, size - pos);
+		}
 	}
 
 	if (packet->version == PGP_SIGNATURE_V6)
@@ -1098,9 +1101,12 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	}
 
 	// Unhashed subpackets
-	for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+	if (packet->unhashed_subpackets != NULL)
 	{
-		pos += pgp_signature_subpacket_write(packet->unhashed_subpackets->packets[i], out + pos, size - pos);
+		for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+		{
+			pos += pgp_signature_subpacket_write(packet->unhashed_subpackets->packets[i], out + pos, size - pos);
+		}
 	}
 
 	// 2 octets of the left 16 bits of signed hash value
@@ -1156,7 +1162,7 @@ static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, 
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
 	// Body
-	pos += pgp_signature_packet_body_write(packet, ptr, size);
+	pos += pgp_signature_packet_body_write(packet, PTR_OFFSET(out, pos), size - pos);
 
 	return pos;
 }
@@ -1361,10 +1367,37 @@ void pgp_signature_packet_delete(pgp_signature_packet *packet)
 	free(packet);
 }
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size)
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp, void *data, size_t size)
 {
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
+
+	pgp_timestamp_subpacket *timestamp_subpacket = NULL;
+	pgp_key_fingerprint_subpacket *fingerprint_subpacket = NULL;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
+	// Calculate issuer key fingerprint
+	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	fingerprint_subpacket =
+		pgp_key_fingerprint_subpacket_new(PGP_ISSUER_FINGERPRINT_SUBPACKET, key->version, fingerprint, fingerprint_size);
+
+	timestamp_subpacket = pgp_timestamp_subpacket_new(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, timestamp);
+
+	if (timestamp_subpacket == NULL || fingerprint_subpacket == NULL)
+	{
+		pgp_timestamp_subpacket_delete(timestamp_subpacket);
+		pgp_key_fingerprint_subpacket_delete(fingerprint_subpacket);
+
+		return 0;
+	}
+
+	packet->hashed_subpackets = pgp_stream_push_packet(packet->hashed_subpackets, timestamp_subpacket);
+	packet->hashed_subpackets = pgp_stream_push_packet(packet->hashed_subpackets, fingerprint_subpacket);
+
+	packet->hashed_octets = timestamp_subpacket->header.header_size + timestamp_subpacket->header.body_size +
+							fingerprint_subpacket->header.header_size + fingerprint_subpacket->header.body_size;
 
 	hash_size = pgp_compute_hash(packet, data, size, hash);
 
@@ -1382,19 +1415,28 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_SIGN_ONLY:
 		packet->signature = pgp_rsa_sign(key->key, packet->hash_algorithm_id, hash, hash_size);
+		break;
 	case PGP_DSA:
 		packet->signature = pgp_dsa_sign(key->key, hash, hash_size);
+		break;
 	case PGP_ECDSA:
 		packet->signature = pgp_ecdsa_sign(key->key, hash, hash_size);
+		break;
 	case PGP_EDDSA:
 		packet->signature = pgp_eddsa_sign(key->key, hash, hash_size);
+		break;
 	case PGP_ED25519:
 		packet->signature = pgp_ed25519_sign(key->key, hash, hash_size);
+		break;
 	case PGP_ED448:
 		packet->signature = pgp_ed448_sign(key->key, hash, hash_size);
+		break;
 	default:
 		return 0;
 	}
+
+	packet->signature_size = get_signature_size(packet->public_key_algorithm_id, 4096); // TODO
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SIG, 4 + 4 + 2 + packet->hashed_octets + packet->signature_size);
 
 	return 0;
 }
@@ -1442,7 +1484,7 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet *packet, void *data, size_t size)
 {
 	byte_t *in = data;
-	size_t pos = packet->header.header_size;
+	size_t pos = 0;
 
 	// 1 octet version
 	LOAD_8(&packet->version, in + pos);
@@ -1681,7 +1723,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 	// Copy the header
 	packet->header = header;
 
-	return pgp_signature_packet_body_read(packet, data, size);
+	return pgp_signature_packet_body_read(packet, PTR_OFFSET(data, header.header_size), size - header.header_size);
 }
 
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size)
@@ -1703,7 +1745,8 @@ pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timest
 	pgp_timestamp_subpacket *subpacket = NULL;
 
 	// Check tag
-	if (tag != PGP_ISSUER_FINGERPRINT_SUBPACKET && tag != PGP_RECIPIENT_FINGERPRINT_SUBPACKET)
+	if (tag != PGP_SIGNATURE_CREATION_TIME_SUBPACKET && tag != PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET &&
+		tag != PGP_KEY_EXPIRATION_TIME_SUBPACKET)
 	{
 		return NULL;
 	}
