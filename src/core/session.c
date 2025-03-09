@@ -775,7 +775,7 @@ static pgp_skesk_packet *pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packe
 
 	byte_t iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
-	if (session_key == NULL)
+	if (packet->session_key_size == 0)
 	{
 		// No crypto operations to do here.
 		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 1 + 1 + pgp_s2k_size(&packet->s2k));
@@ -806,13 +806,13 @@ static uint32_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *packet
 
 	byte_t iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
-	if (session_key == NULL)
+	if (packet->session_key_size == 0)
 	{
 		return pgp_s2k_hash(&packet->s2k, password, password_size, session_key, session_key_size);
 	}
 	else
 	{
-		if ((packet->session_key_size + 1) != session_key_size)
+		if ((packet->session_key_size + 1) > session_key_size)
 		{
 			return 0;
 		}
@@ -1066,12 +1066,14 @@ pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	packet = malloc(sizeof(pgp_skesk_packet) + header.body_size);
+	packet = malloc(sizeof(pgp_skesk_packet));
 
 	if (packet == NULL)
 	{
 		return NULL;
 	}
+
+	memset(packet, 0, sizeof(pgp_skesk_packet));
 
 	// Copy the header
 	packet->header = header;
@@ -1103,7 +1105,7 @@ pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - pos);
+		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - (pos - packet->header.header_size));
 
 		if (result == NULL)
 		{
@@ -1136,7 +1138,7 @@ pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - pos);
+		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - (pos - packet->header.header_size));
 
 		if (result == NULL)
 		{
@@ -1146,7 +1148,7 @@ pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
 		pos += pgp_s2k_size(&packet->s2k);
 
 		// (Optional) Session key
-		packet->session_key_size = packet->header.body_size - pos;
+		packet->session_key_size = packet->header.body_size - (pos - packet->header.header_size);
 
 		if (packet->session_key_size > 0)
 		{
