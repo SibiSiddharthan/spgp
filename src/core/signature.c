@@ -1215,7 +1215,6 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 
 	// Hash the data first
 	hash_update(hctx, data, data_size);
-	hashed_size += data_size;
 
 	// Hash the trailer
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
@@ -1254,7 +1253,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 		}
 
 		// Hash the subpackets
-		for (uint16_t i = 0; i > packet->hashed_subpackets->count; ++i)
+		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
 			pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
 
@@ -1269,9 +1268,8 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 			return 0;
 		}
 
-		for (uint16_t i = 0; i > packet->hashed_subpackets->count; ++i)
+		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
-			pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
 			uint32_t subpacket_size = 0;
 
 			// Write the subpackets to the buffer then hash them.
@@ -1279,7 +1277,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 
 			subpacket_size = pgp_signature_subpacket_write(packet->hashed_subpackets->packets[i], subpacket_buffer, max_subpacket_size);
 
-			hash_update(hctx, subpacket_buffer, header->header_size);
+			hash_update(hctx, subpacket_buffer, subpacket_size);
 			hashed_size += subpacket_size;
 		}
 
@@ -1375,6 +1373,10 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 		return 0;
 	}
 
+	// Store the left 2 octets
+	packet->quick_hash[0] = hash[0];
+	packet->quick_hash[1] = hash[1];
+
 	switch (packet->public_key_algorithm_id)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
@@ -1405,6 +1407,12 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 	hash_size = pgp_compute_hash(packet, data, size, hash);
 
 	if (hash_size == 0)
+	{
+		return 0;
+	}
+
+	// Check the left 2 octets first
+	if (hash[0] != packet->quick_hash[0] || hash[1] != packet->quick_hash[1])
 	{
 		return 0;
 	}
