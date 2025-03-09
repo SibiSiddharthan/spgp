@@ -61,7 +61,7 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_REVOCABLE_SUBPACKET = 7,
 	PGP_KEY_EXPIRATION_TIME_SUBPACKET = 9,
 	PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET = 11,
-	PGP_REVOCATION_KEY_SUBPACKET = 12, // Deprecated
+	PGP_REVOCATION_KEY_SUBPACKET = 12,
 	PGP_ISSUER_KEY_ID_SUBPACKET = 16,
 	PGP_NOTATION_DATA_SUBPACKET = 20,
 	PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET = 21,
@@ -209,7 +209,7 @@ typedef struct _pgp_key_fingerprint_subpacket
 {
 	pgp_subpacket_header header;
 	pgp_key_version version;
-	byte_t fingerprint[32];
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE];
 } pgp_issuer_fingerprint_subpacket, pgp_recipient_fingerprint_subpacket;
 
 typedef struct _pgp_trust_signature_subpacket
@@ -224,7 +224,7 @@ typedef struct _pgp_revocation_key_subpacket
 	pgp_subpacket_header header;
 	byte_t revocation_class;
 	byte_t algorithm_id;
-	byte_t key_fingerprint_v4[20];
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE];
 } pgp_revocation_key_subpacket;
 
 typedef struct _pgp_issuer_key_id_subpacket

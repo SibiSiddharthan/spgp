@@ -526,9 +526,9 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		LOAD_8(&rk_subpacket->algorithm_id, in + pos);
 		pos += 1;
 
-		// 20 octets v4 key fingerprint
-		memcpy(rk_subpacket->key_fingerprint_v4, in + pos, PGP_KEY_V4_FINGERPRINT_SIZE);
-		pos += PGP_KEY_V4_FINGERPRINT_SIZE;
+		// N octets key fingerprint
+		memcpy(rk_subpacket->fingerprint, in + pos, rk_subpacket->header.body_size - 2);
+		pos += rk_subpacket->header.body_size - 2;
 
 		return rk_subpacket;
 	}
@@ -867,9 +867,9 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		LOAD_8(out + pos, &rk_subpacket->algorithm_id);
 		pos += 1;
 
-		// 20 octets v4 key fingerprint
-		memcpy(out + pos, rk_subpacket->key_fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
-		pos += PGP_KEY_V4_FINGERPRINT_SIZE;
+		// N octets key fingerprint
+		memcpy(out + pos, rk_subpacket->fingerprint, rk_subpacket->header.body_size - 2);
+		pos += rk_subpacket->header.body_size - 2;
 	}
 	break;
 	case PGP_ISSUER_KEY_ID_SUBPACKET:

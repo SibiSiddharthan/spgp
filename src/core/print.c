@@ -1121,7 +1121,7 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred Symmetric Ciphers (Tag 11)");
 		break;
 	case PGP_REVOCATION_KEY_SUBPACKET:
-		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Revocation Key (Tag 12) (Deprecated)");
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Revocation Key (Tag 12)");
 		break;
 	case PGP_ISSUER_KEY_ID_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Issuer Key ID (Tag 16)");
@@ -1281,8 +1281,8 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 		}
 
 		pos += pgp_public_key_algorithm_print(revocation_subpacket->algorithm_id, PTR_OFFSET(str, pos), size - pos, indent + 1);
-		pos +=
-			print_key(indent + 1, PTR_OFFSET(str, pos), size - pos, revocation_subpacket->key_fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
+		pos += print_key(indent + 1, PTR_OFFSET(str, pos), size - pos, revocation_subpacket->fingerprint,
+						 revocation_subpacket->header.body_size - 2);
 	}
 	break;
 	case PGP_ISSUER_KEY_ID_SUBPACKET:

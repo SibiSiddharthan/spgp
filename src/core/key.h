@@ -25,10 +25,11 @@ typedef enum _pgp_key_version
 #define PGP_KEY_ID_SIZE 8
 
 // Key Fingerprint Sizes
-#define PGP_KEY_V3_FINGERPRINT_SIZE 16
-#define PGP_KEY_V4_FINGERPRINT_SIZE 20
-#define PGP_KEY_V5_FINGERPRINT_SIZE 32
-#define PGP_KEY_V6_FINGERPRINT_SIZE 32
+#define PGP_KEY_V3_FINGERPRINT_SIZE  16
+#define PGP_KEY_V4_FINGERPRINT_SIZE  20
+#define PGP_KEY_V5_FINGERPRINT_SIZE  32
+#define PGP_KEY_V6_FINGERPRINT_SIZE  32
+#define PGP_KEY_MAX_FINGERPRINT_SIZE 32
 
 typedef struct _pgp_key_packet
 {
