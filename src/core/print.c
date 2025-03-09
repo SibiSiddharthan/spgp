@@ -1473,7 +1473,13 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 			switch (features_subpacket->flags[i])
 			{
 			case PGP_FEATURE_SEIPD_V1:
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: SEIPD-V1 Supported (0x01)\n");
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: SEIPD-V1 (MDC) Supported (0x01)\n");
+				break;
+			case PGP_FEATURE_AEAD:
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: AEAD Supported (0x02)\n");
+				break;
+			case PGP_FEATURE_KEY_V5:
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: V5 Keys Supported (0x04)\n");
 				break;
 			case PGP_FEATURE_SEIPD_V2:
 				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: SEIPD-V2 Supported (0x08)\n");

@@ -114,6 +114,12 @@ typedef enum _pgp_revocation_code
 #define PGP_KEY_FLAG_TIMESTAMP 0x08 // This key may be used for timestamping
 
 // Feature Flags
+// LibrePGP
+#define PGP_FEATURE_MDC    0x01 // Modification Detection (packets 18 and 19)
+#define PGP_FEATURE_AEAD   0x02 // AEAD Encrypted Data Packet (packet 20)
+#define PGP_FEATURE_KEY_V5 0x04 // Version 5 Key Format
+
+// OpenPGP
 #define PGP_FEATURE_SEIPD_V1 0x01 // Version 1 Symmetrically Encrypted and Integrity Protected Data packet
 #define PGP_FEATURE_SEIPD_V2 0x08 // Version 2 Symmetrically Encrypted and Integrity Protected Data packet
 
