@@ -1378,33 +1378,50 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 
 		for (uint32_t i = 0; i < key_flags_subpacket->header.body_size; ++i)
 		{
-			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_CERTIFY)
+			// First Octet
+			if (i == 0)
 			{
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Certification Key (0x01)\n");
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_CERTIFY)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Certification Key (0x01)\n");
+				}
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_SIGN)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Signing Key (0x02)\n");
+				}
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT_COM)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Communication Encryption Key (0x04)\n");
+				}
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT_STORAGE)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Storage Encryption Key (0x08)\n");
+				}
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_PRIVATE_SPLIT)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Key Secret Split (0x10)\n");
+				}
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_AUTHENTICATION)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Authentication Key (0x20)\n");
+				}
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_PRIVATE_SHARED)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Key Secret Shared (0x80)\n");
+				}
 			}
-			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_SIGN)
+
+			// Second Octet
+			if (i == 1)
 			{
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Signing Key (0x02)\n");
-			}
-			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT_COM)
-			{
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Communication Encryption Key (0x04)\n");
-			}
-			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT_STORAGE)
-			{
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Storage Encryption Key (0x08)\n");
-			}
-			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_PRIVATE_SPLIT)
-			{
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Key Secret Split (0x10)\n");
-			}
-			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_AUTHENTICATION)
-			{
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Authentication Key (0x20)\n");
-			}
-			if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_PRIVATE_SHARED)
-			{
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Key Secret Shared (0x80)\n");
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Encryption Key (0x04)\n");
+				}
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_TIMESTAMP)
+				{
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Timestamping Key (0x08)\n");
+				}
 			}
 		}
 	}

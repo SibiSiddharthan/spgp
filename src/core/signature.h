@@ -95,11 +95,12 @@ typedef enum _pgp_revocation_code
 	PGP_REVOCATION_USER_ID_INVALID = 32 // User ID information is no longer valid
 } pgp_revocation_code;
 
-// Subpacket flags
+// Subpacket Flags
 #define PGP_KEY_SERVER_NO_MODIFY 0x80       // The key can only be modified by the keyholder or an administrator of the key server
 #define PGP_NOTATION_DATA_UTF8   0x80000000 // Notation value is UTF-8 text
 
-// Key flags
+// Key Flags
+// First Octet
 #define PGP_KEY_FLAG_CERTIFY         0x01 // This key may be used to make User ID certifications or Direct Key signatures over other keys
 #define PGP_KEY_FLAG_SIGN            0x02 // This key may be used to sign data
 #define PGP_KEY_FLAG_ENCRYPT_COM     0x04 // This key may be used to encrypt communications
@@ -108,11 +109,15 @@ typedef enum _pgp_revocation_code
 #define PGP_KEY_FLAG_AUTHENTICATION  0x20 // This key may be used for authentication
 #define PGP_KEY_FLAG_PRIVATE_SHARED  0x80 // The private component of this key may be in the possession of more than one person
 
-// Feature flags
+// Second Octet
+#define PGP_KEY_FLAG_ENCRYPT   0x04 // This key may be used to encrypt communications or storage
+#define PGP_KEY_FLAG_TIMESTAMP 0x08 // This key may be used for timestamping
+
+// Feature Flags
 #define PGP_FEATURE_SEIPD_V1 0x01 // Version 1 Symmetrically Encrypted and Integrity Protected Data packet
 #define PGP_FEATURE_SEIPD_V2 0x08 // Version 2 Symmetrically Encrypted and Integrity Protected Data packet
 
-// Revocation class
+// Revocation Class
 #define PGP_REVOCATION_CLASS_SENSITIVE 0x40
 #define PGP_REVOCATION_CLASS_NORMAL    0x80
 
