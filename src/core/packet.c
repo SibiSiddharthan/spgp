@@ -437,20 +437,21 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
 {
 	byte_t *out = ptr;
 	uint32_t pos = 0;
+	uint32_t body_size = header->body_size + 1; // Include tag
 
 	// 1,2, or 5 octets of subpacket length
 	// 1 octed length
-	if (header->body_size < 192)
+	if (body_size < 192)
 	{
-		uint8_t size = (uint8_t)header->body_size;
+		uint8_t size = (uint8_t)body_size;
 
 		LOAD_8(out + pos, &size);
 		pos += 1;
 	}
 	// 2 octet legnth
-	else if (header->body_size < 8384)
+	else if (body_size < 8384)
 	{
-		uint16_t size = (uint16_t)header->body_size - 192;
+		uint16_t size = (uint16_t)body_size - 192;
 		uint8_t o1 = (size >> 8) + 192;
 		uint8_t o2 = (size & 0xFF);
 
@@ -465,7 +466,7 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
 	{
 		// 1st octet is 255
 		uint8_t byte = 255;
-		uint32_t size = BSWAP_32((uint32_t)header->body_size);
+		uint32_t size = BSWAP_32((uint32_t)body_size);
 
 		LOAD_8(out + pos, &byte);
 		pos += 1;
