@@ -1215,13 +1215,13 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
 	{
 		pgp_signature_creation_time_subpacket *timestamp_subpacket = subpacket;
-		pos += print_timestamp(indent + 1, "Creation Time", timestamp_subpacket->time, PTR_OFFSET(str, pos), size - pos);
+		pos += print_timestamp(indent + 1, "Creation Time", timestamp_subpacket->timestamp, PTR_OFFSET(str, pos), size - pos);
 	}
 	break;
 	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
 	{
 		pgp_signature_expiry_time_subpacket *timestamp_subpacket = subpacket;
-		pos += print_timestamp(indent + 1, "Expiry Time", timestamp_subpacket->time, PTR_OFFSET(str, pos), size - pos);
+		pos += print_timestamp(indent + 1, "Expiry Time", timestamp_subpacket->timestamp, PTR_OFFSET(str, pos), size - pos);
 	}
 	break;
 	case PGP_EXPORTABLE_SUBPACKET:
@@ -1253,7 +1253,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
 	{
 		pgp_key_expiration_time_subpacket *timestamp_subpacket = subpacket;
-		pos += print_timestamp(indent + 1, "Expiry Time", timestamp_subpacket->time, PTR_OFFSET(str, pos), size - pos);
+		pos += print_timestamp(indent + 1, "Expiry Time", timestamp_subpacket->timestamp, PTR_OFFSET(str, pos), size - pos);
 	}
 	break;
 	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:

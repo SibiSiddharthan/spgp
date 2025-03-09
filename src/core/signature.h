@@ -178,8 +178,8 @@ typedef struct _pgp_one_pass_signature_packet
 typedef struct _pgp_timestamp_subpacket
 {
 	pgp_subpacket_header header;
-	uint32_t time;
-} pgp_signature_creation_time_subpacket, pgp_signature_expiry_time_subpacket, pgp_key_expiration_time_subpacket;
+	uint32_t timestamp;
+} pgp_timestamp_subpacket, pgp_signature_creation_time_subpacket, pgp_signature_expiry_time_subpacket, pgp_key_expiration_time_subpacket;
 
 typedef struct _pgp_boolean_subpacket
 {
@@ -313,6 +313,9 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
 size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
+
+pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timestamp);
+void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
 
 pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size);
 void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);

@@ -321,7 +321,7 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 
 		// 4 octet timestamp
 		LOAD_32(&timestamp, in + pos);
-		timestamp_subpacket->time = BSWAP_32(timestamp);
+		timestamp_subpacket->timestamp = BSWAP_32(timestamp);
 		pos += 4;
 
 		return timestamp_subpacket;
@@ -758,7 +758,7 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
 	{
 		struct _pgp_timestamp_subpacket *timestamp_subpacket = subpacket;
-		uint32_t timestamp = BSWAP_32(timestamp_subpacket->time);
+		uint32_t timestamp = BSWAP_32(timestamp_subpacket->timestamp);
 
 		// 4 octet timestamp
 		LOAD_32(out + pos, &timestamp);
@@ -1696,6 +1696,36 @@ size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_
 	default:
 		return 0;
 	}
+}
+
+pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timestamp)
+{
+	pgp_timestamp_subpacket *subpacket = NULL;
+
+	// Check tag
+	if (tag != PGP_ISSUER_FINGERPRINT_SUBPACKET && tag != PGP_RECIPIENT_FINGERPRINT_SUBPACKET)
+	{
+		return NULL;
+	}
+
+	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
+
+	subpacket->header = pgp_encode_subpacket_header(tag, 0, 4);
+	subpacket->timestamp = timestamp;
+
+	return subpacket;
+}
+
+void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size)
