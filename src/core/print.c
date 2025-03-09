@@ -1771,7 +1771,7 @@ static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_pac
 			pos += print_bytes(indent, "Salt: ", PTR_OFFSET(ptr, pos), size - pos, packet->salt, packet->salt_size);
 		}
 
-		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
+		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_octets, PTR_OFFSET(ptr, pos),
 								   size - pos, indent, options);
 	}
 	else if (packet->version == PGP_SIGNATURE_V3)
@@ -1783,7 +1783,7 @@ static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_pac
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
 		pos += print_bytes(indent, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
-		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_size, PTR_OFFSET(ptr, pos),
+		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_octets, PTR_OFFSET(ptr, pos),
 								   size - pos, indent, options);
 	}
 	else

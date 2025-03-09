@@ -148,7 +148,7 @@ typedef struct _pgp_signature_packet
 	pgp_stream_t *hashed_subpackets;
 	pgp_stream_t *unhashed_subpackets;
 
-	uint32_t signature_size;
+	uint32_t signature_octets;
 	void *signature;
 } pgp_signature_packet;
 

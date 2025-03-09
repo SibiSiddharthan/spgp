@@ -87,19 +87,25 @@ static byte_t pgp_signature_subpacket_validate(pgp_signature_subpacket_type type
 static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet *packet, void *data, size_t size);
 static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
-uint32_t get_signature_size(pgp_public_key_algorithms algorithm, uint32_t bits)
+static uint32_t get_signature_octets(pgp_public_key_algorithms algorithm, void *signature)
 {
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_SIGN_ONLY:
+	{
 		// MPI of (M^d)%n
-		return mpi_octets(bits);
+		pgp_rsa_signature *sign = signature;
+		return mpi_octets(sign->e->bits);
+	}
 	case PGP_DSA:
 	case PGP_ECDSA:
 	case PGP_EDDSA:
+	{
 		// MPI of (r,s)
-		return mpi_octets(bits) * 2;
+		pgp_dsa_signature *sign = signature;
+		return mpi_octets(sign->r->bits) + mpi_octets(sign->s->bits);
+	}
 	case PGP_ED25519:
 		return 64;
 	case PGP_ED448:
@@ -140,7 +146,7 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 		sig->e = mpi_init(PTR_OFFSET(sig, sizeof(pgp_rsa_signature)), mpi_size(mpi_bits), mpi_bits);
 		pos += mpi_read(sig->e, in, size);
 
-		packet->signature_size = pos;
+		packet->signature_octets = pos;
 
 		return sig;
 	}
@@ -183,7 +189,7 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 		pos += mpi_read(sig->r, in + pos, size - pos);
 		pos += mpi_read(sig->s, in + pos, size - pos);
 
-		packet->signature_size = pos;
+		packet->signature_octets = pos;
 
 		return sig;
 	}
@@ -205,7 +211,7 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 		}
 
 		memcpy(sig, in, 64);
-		packet->signature_size = 64;
+		packet->signature_octets = 64;
 
 		return sig;
 	}
@@ -227,7 +233,7 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 		}
 
 		memcpy(sig, in, 114);
-		packet->signature_size = 114;
+		packet->signature_octets = 114;
 
 		return sig;
 	}
@@ -986,7 +992,7 @@ static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *
 	// A 2-octet field holding left 16 bits of the signed hash value.
 	// One or more MPIs comprising the signature
 
-	required_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + packet->signature_size;
+	required_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + packet->signature_octets;
 	required_size += packet->header.header_size;
 
 	if (size < required_size)
@@ -1149,7 +1155,7 @@ static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, 
 	// (For V6) The salt.
 	// One or more MPIs comprising the signature.
 
-	required_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_size;
+	required_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets;
 	required_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
 	required_size += packet->header.header_size;
 
@@ -1435,8 +1441,8 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 		return 0;
 	}
 
-	packet->signature_size = get_signature_size(packet->public_key_algorithm_id, 4096); // TODO
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SIG, 4 + 4 + 2 + packet->hashed_octets + packet->signature_size);
+	packet->signature_octets = get_signature_octets(packet->public_key_algorithm_id, packet->signature);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SIG, 4 + 4 + 2 + packet->hashed_octets + packet->signature_octets);
 
 	return 0;
 }
