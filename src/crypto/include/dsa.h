@@ -39,7 +39,10 @@ dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g);
 dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
 void dsa_key_delete(dsa_key *key);
 
-dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, size_t hash_size, void *signature, size_t signature_size);
+dsa_signature *dsa_signature_new(dsa_key *key);
+void dsa_signature_delete(dsa_signature *sign);
+
+dsa_signature *dsa_sign(dsa_key *key, dsa_signature *dsign, void *salt, size_t salt_size, void *hash, size_t hash_size);
 uint32_t dsa_verify(dsa_key *key, dsa_signature *dsign, void *hash, size_t hash_size);
 
 #endif

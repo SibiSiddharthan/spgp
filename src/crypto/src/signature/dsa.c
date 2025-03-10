@@ -513,31 +513,42 @@ void dsa_key_delete(dsa_key *key)
 	free(key);
 }
 
-dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, size_t hash_size, void *signature, size_t signature_size)
+dsa_signature *dsa_signature_new(dsa_key *key)
 {
-	dsa_signature *dsign = signature;
+	dsa_signature *sign = malloc(sizeof(dsa_signature) + (2 * (key->q_bits / 8)));
 
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	memset(sign, 0, sizeof(dsa_signature) + (2 * (key->q_bits / 8)));
+
+	sign->r.bits = 0;
+	sign->r.size = key->q_bits / 8;
+	sign->r.sign = PTR_OFFSET(sign, sizeof(dsa_signature));
+
+	sign->s.bits = 0;
+	sign->s.size = key->q_bits / 8;
+	sign->s.sign = PTR_OFFSET(sign, sizeof(dsa_signature) + (key->q_bits / 8));
+
+	return sign;
+}
+
+void dsa_signature_delete(dsa_signature *sign)
+{
+	free(sign);
+}
+
+dsa_signature *dsa_sign(dsa_key *key, dsa_signature *dsign, void *salt, size_t salt_size, void *hash, size_t hash_size)
+{
 	size_t ctx_size = (5 * bignum_size(key->q->bits)) + bignum_size(key->p->bits);
-	size_t required_signature_size = sizeof(dsa_signature) + (2 * CEIL_DIV(key->q->bits, 8));
 
 	bignum_t *k = NULL, *ik = NULL;
 	bignum_t *z = NULL, *t = NULL;
 	bignum_t *r = NULL, *s = NULL;
 
-	// Allocate the signature
-	if (dsign == NULL)
-	{
-		dsign = malloc(required_signature_size);
-	}
-	else
-	{
-		if (signature_size < required_signature_size)
-		{
-			return NULL;
-		}
-	}
-
-	if (dsign == NULL)
+	if (dsign->r.size < (key->q_bits / 8) || dsign->s.size < (key->q_bits / 8))
 	{
 		return NULL;
 	}
@@ -581,10 +592,11 @@ dsa_signature *dsa_sign(dsa_key *key, void *salt, size_t salt_size, void *hash, 
 	s = bignum_modadd(key->bctx, s, s, z, key->q);
 	s = bignum_modmul(key->bctx, s, s, ik, key->q);
 
-	dsign->r.size = bignum_get_bytes_be(r, dsign->r.sign, dsign->r.size);
+	// Load the signature
+	bignum_get_bytes_be(r, dsign->r.sign, dsign->r.size);
 	dsign->r.bits = r->bits;
 
-	dsign->s.size = bignum_get_bytes_be(s, dsign->s.sign, dsign->s.size);
+	bignum_get_bytes_be(s, dsign->s.sign, dsign->s.size);
 	dsign->s.bits = s->bits;
 
 	bignum_ctx_end(key->bctx);
