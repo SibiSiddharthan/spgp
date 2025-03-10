@@ -8,13 +8,19 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <spgp.h>
+#include <algorithms.h>
 #include <packet.h>
+#include <stream.h>
+#include <key.h>
+#include <session.h>
+#include <seipd.h>
+#include <signature.h>
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-const char *help = 
-"\
+static const char *help = "\
 Usage: sgpg [options] [files]\
 Sign, Verify, Encrypt or Decrypt\
 \
@@ -25,7 +31,7 @@ Commands:\
  -b, --detach-sign              make a detached signature\
  -e, --encrypt                  encrypt data\
  -c, --symmetric                encryption only with symmetric cipher\
- -d, --decrypt                  decrypt data (default)\
+ -d, --decrypt                  decrypt data\
      --verify                   verify a signature\
  -k, --list-keys                list keys\
      --list-signatures          list keys and signatures\
@@ -67,6 +73,11 @@ Packets:\
      --dump-packets             Dump PGP packets\
 \
 ";
+
+static void spgp_print_help()
+{
+	printf("%s", help);
+}
 
 int main(int argc, char **argv)
 {
