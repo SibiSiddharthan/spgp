@@ -74,6 +74,32 @@ Packets:\
 \
 ";
 
+typedef enum _spgp_option
+{
+	// Commands
+	SPGP_SIGN = 1,
+	SPGP_DETACH_SIGN,
+	SPGP_CLEAR_SIGN,
+	SPGP_VERIFY,
+	SPGP_SYMMETRIC_ENCRYPT,
+	SPGP_ENCRYPT,
+	SPGP_DECRYPT,
+	SPGP_LIST_KEYS,
+	SPGP_LIST_SECRET_KEYS,
+	SPGP_DELETE_KEYS,
+	SPGP_DELETE_SECRET_KEYS,
+	SPGP_ARMOR,
+	SPGP_DEARMOR,
+	SPGP_VERBOSE,
+	SPGP_QUIET,
+	SPGP_HELP,
+	SPGP_VERSION,
+	SPGP_OUTPUT,
+	SPGP_LIST_PACKETS,
+	SPGP_DUMP_PACKETS,
+} spgp_option;
+
+
 static void spgp_print_help()
 {
 	printf("%s", help);
