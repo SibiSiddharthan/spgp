@@ -9,6 +9,7 @@
 
 #include <spgp.h>
 #include <algorithms.h>
+#include <argparse.h>
 #include <packet.h>
 #include <stream.h>
 #include <key.h>
@@ -99,7 +100,7 @@ typedef enum _spgp_option
 	SPGP_DUMP_PACKETS,
 } spgp_option;
 
-static const arg_option_t spgp_options[] = {
+static arg_option_t spgp_options[] = {
 	{"sign", 's', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_SIGN},
 	{"detach-sign", 'b', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_DETACH_SIGN},
 	{"clear-sign", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_CLEAR_SIGN},
@@ -114,8 +115,8 @@ static const arg_option_t spgp_options[] = {
 	{"armor", 'a', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_ARMOR},
 	{"dearmor", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_DEARMOR},
 	{"help", 'h', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_HELP},
-	{"list-packets", 's', ARGPARSE_OPTION_ARGUMENT_OPTIONAL, SPGP_LIST_PACKETS},
-	{"dump-packets", 's', ARGPARSE_OPTION_ARGUMENT_OPTIONAL, SPGP_DUMP_PACKETS},
+	{"list-packets", 0, ARGPARSE_OPTION_ARGUMENT_OPTIONAL, SPGP_LIST_PACKETS},
+	{"dump-packets", 0, ARGPARSE_OPTION_ARGUMENT_OPTIONAL, SPGP_DUMP_PACKETS},
 };
 
 static void spgp_print_help()
@@ -123,23 +124,67 @@ static void spgp_print_help()
 	printf("%s", help);
 }
 
-int main(int argc, char **argv)
+static void spgp_list_packets(char *file)
 {
-	char buffer[65536];
+	char buffer[65536] = {0};
+	char str[65536] = {0};
+
 	size_t size = 0;
 
-	for (int i = 1; i < argc; ++i)
+	FILE *f = fopen(file, "rb");
+	size = fread(buffer, 1, 65536, f);
+
+	fclose(f);
+
+	pgp_stream_t *stream = pgp_stream_read(buffer, size);
+	pgp_stream_print(stream, str, 65536, PGP_PRINT_HEADER_ONLY);
+
+	printf("%s", str);
+}
+
+static void spgp_dump_packets(char *file)
+{
+	char buffer[65536] = {0};
+	char str[65536] = {0};
+
+	size_t size = 0;
+
+	FILE *f = fopen(file, "rb");
+	size = fread(buffer, 1, 65536, f);
+
+	fclose(f);
+
+	pgp_stream_t *stream = pgp_stream_read(buffer, size);
+	pgp_stream_print(stream, str, 65536, 0);
+
+	printf("%s", str);
+}
+
+int main(int argc, char **argv)
+{
+	argparse_t *actx = argparse_new(argc, (void **)argv, sizeof(spgp_options) / sizeof(arg_option_t), spgp_options, 0);
+	arg_result_t *result = NULL;
+
+	while ((result = argparse(actx)) != NULL)
 	{
-		FILE *file = fopen(argv[i], "rb");
-
-		if (file == NULL)
+		switch (result->value)
 		{
-			printf("%s not found.\n", argv[i]);
-			break;
+		case SPGP_HELP:
+		{
+			spgp_print_help();
 		}
-
-		size = fread(buffer, 1, 65536, file);
-		fclose(file);
+		break;
+		case SPGP_LIST_PACKETS:
+		{
+			spgp_list_packets(result->data);
+		}
+		break;
+		case SPGP_DUMP_PACKETS:
+		{
+			spgp_dump_packets(result->data);
+		}
+		break;
+		}
 	}
 
 	return 0;
