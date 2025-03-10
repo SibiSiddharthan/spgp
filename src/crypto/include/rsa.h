@@ -34,6 +34,9 @@ rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e);
 rsa_key *rsa_key_new(uint32_t bits);
 void rsa_key_delete(rsa_key *key);
 
+rsa_signature *rsa_signature_new(rsa_key *key);
+void rsa_signature_delete(rsa_signature *sign);
+
 uint32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size);
 uint32_t rsa_public_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 
@@ -48,12 +51,12 @@ uint32_t rsa_decrypt_oaep(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mas
 uint32_t rsa_encrypt_pkcs(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size, drbg_ctx *drbg);
 uint32_t rsa_decrypt_pkcs(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size);
 
-rsa_signature *rsa_sign_pss(rsa_key *key, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm, void *salt, size_t salt_size,
-							void *hash, size_t hash_size, void *signature, size_t signature_size);
+rsa_signature *rsa_sign_pss(rsa_key *key, rsa_signature *rsign, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm, void *salt,
+							size_t salt_size, void *hash, size_t hash_size);
 uint32_t rsa_verify_pss(rsa_key *key, rsa_signature *rsign, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm,
 						size_t salt_size, void *hash, size_t hash_size);
 
-rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_algorithm algorithm, void *hash, size_t hash_size, void *signature, size_t signature_size);
+rsa_signature *rsa_sign_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algorithm, void *hash, size_t hash_size);
 uint32_t rsa_verify_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algorithm, void *hash, size_t hash_size);
 
 #endif

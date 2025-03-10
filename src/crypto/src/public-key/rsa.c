@@ -88,6 +88,78 @@ static uint32_t rsa_private_op(rsa_key *key, void *in, size_t in_size, void *out
 	return output_size;
 }
 
+uint32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+{
+	return rsa_public_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+uint32_t rsa_public_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	return rsa_public_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+uint32_t rsa_private_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
+{
+	return rsa_private_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
+}
+
+uint32_t rsa_private_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
+{
+	return rsa_private_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
+}
+
+static uint32_t rsa_do_sign(rsa_key *key, void *em, size_t em_size, void *sign, size_t sign_size)
+{
+	bignum_t *t = NULL;
+	uint32_t result = 0;
+	size_t ctx_size = bignum_size(key->bits);
+
+	if (key->n == NULL || key->d == NULL)
+	{
+		return 0;
+	}
+
+	bignum_ctx_start(key->bctx, ctx_size);
+
+	t = bignum_ctx_allocate_bignum(key->bctx, key->bits);
+	t = bignum_set_bytes_be(t, em, em_size);
+	t = bignum_modexp(key->bctx, t, t, key->d, key->n);
+
+	result = t->bits;
+
+	bignum_get_bytes_be(t, sign, sign_size);
+
+	bignum_ctx_end(key->bctx);
+
+	return result;
+}
+
+static uint32_t rsa_do_verify(rsa_key *key, void *em, size_t em_size, void *sign, size_t sign_size)
+{
+	bignum_t *t = NULL;
+	uint32_t result = 0;
+	size_t ctx_size = bignum_size(key->bits);
+
+	if (key->n == NULL || key->e == NULL)
+	{
+		return 0;
+	}
+
+	bignum_ctx_start(key->bctx, ctx_size);
+
+	t = bignum_ctx_allocate_bignum(key->bctx, key->bits);
+	t = bignum_set_bytes_be(t, em, em_size);
+	t = bignum_modexp(key->bctx, t, t, key->e, key->n);
+
+	result = t->bits;
+
+	bignum_get_bytes_be_padded(t, sign, sign_size);
+
+	bignum_ctx_end(key->bctx);
+
+	return result;
+}
+
 rsa_key *rsa_key_generate(uint32_t bits, bignum_t *e)
 {
 	rsa_key *key = NULL;
@@ -239,26 +311,6 @@ void rsa_key_delete(rsa_key *key)
 	bignum_ctx_delete(key->bctx);
 
 	free(key);
-}
-
-uint32_t rsa_public_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
-{
-	return rsa_public_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
-}
-
-uint32_t rsa_public_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
-{
-	return rsa_public_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
-}
-
-uint32_t rsa_private_encrypt(rsa_key *key, void *plaintext, size_t plaintext_size, void *ciphertext, size_t ciphertext_size)
-{
-	return rsa_private_op(key, plaintext, plaintext_size, ciphertext, ciphertext_size);
-}
-
-uint32_t rsa_private_decrypt(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
-{
-	return rsa_private_op(key, ciphertext, ciphertext_size, plaintext, plaintext_size);
 }
 
 static inline void xor_bytes(byte_t *a, byte_t *b, size_t size)
@@ -706,10 +758,32 @@ end:
 	return status;
 }
 
-rsa_signature *rsa_sign_pss(rsa_key *key, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm, void *salt, size_t salt_size,
-							void *hash, size_t hash_size, void *signature, size_t signature_size)
+rsa_signature *rsa_signature_new(rsa_key *key)
 {
-	rsa_signature *rsign = signature;
+	rsa_signature *sign = malloc(sizeof(rsa_signature) + (key->bits / 8));
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	memset(sign, 0, sizeof(rsa_signature) + (key->bits / 8));
+
+	sign->bits = 0;
+	sign->size = key->bits / 8;
+	sign->sign = PTR_OFFSET(sign, sizeof(rsa_signature));
+
+	return sign;
+}
+
+void rsa_signature_delete(rsa_signature *sign)
+{
+	free(sign);
+}
+
+rsa_signature *rsa_sign_pss(rsa_key *key, rsa_signature *rsign, hash_algorithm digest_algorithm, hash_algorithm mask_algorithm, void *salt,
+							size_t salt_size, void *hash, size_t hash_size)
+{
 	hash_ctx *hctx_digest = NULL;
 	hash_ctx *hctx_mask = NULL;
 
@@ -728,12 +802,15 @@ rsa_signature *rsa_sign_pss(rsa_key *key, hash_algorithm digest_algorithm, hash_
 
 	size_t ctx_size = em_size;
 
-	size_t required_signature_size = sizeof(rsa_signature) + key_size;
-
 	byte_t *em = NULL;
 
 	// Check paramters
 	if (key_size < (hash_size + salt_size + 2))
+	{
+		return NULL;
+	}
+
+	if (rsign->size < key_size)
 	{
 		return NULL;
 	}
@@ -743,24 +820,6 @@ rsa_signature *rsa_sign_pss(rsa_key *key, hash_algorithm digest_algorithm, hash_
 	hctx_mask = hash_init(hash_mask_buffer, 512, mask_algorithm);
 
 	if (hctx_digest == NULL || hctx_mask == NULL)
-	{
-		return NULL;
-	}
-
-	// Allocate for the signature
-	if (rsign == NULL)
-	{
-		rsign = malloc(required_signature_size);
-	}
-	else
-	{
-		if (signature_size < required_signature_size)
-		{
-			return NULL;
-		}
-	}
-
-	if (rsign == NULL)
 	{
 		return NULL;
 	}
@@ -802,20 +861,9 @@ rsa_signature *rsa_sign_pss(rsa_key *key, hash_algorithm digest_algorithm, hash_
 	// Zero the top bits to ensure em < n
 	zero_top_bits(em, key->n);
 
-	// Generate the signature.
-	memset(rsign, 0, sizeof(rsa_signature) + key_size);
-	rsign->size = key_size;
-	rsign->sign = (byte_t *)rsign + sizeof(rsa_signature);
-
-	rsign->bits = rsa_private_encrypt(key, em, em_size, rsign->sign, rsign->size);
+	rsign->bits = rsa_do_sign(key, em, em_size, rsign->sign, rsign->size);
 
 	bignum_ctx_end(key->bctx);
-
-	if (rsign->bits == 0)
-	{
-		free(rsign);
-		return NULL;
-	}
 
 	return rsign;
 }
@@ -852,12 +900,7 @@ uint32_t rsa_verify_pss(rsa_key *key, rsa_signature *rsign, hash_algorithm diges
 		return 0;
 	}
 
-	if (rsign->size > key_size)
-	{
-		return 0;
-	}
-
-	if (rsign->size < hash_size + salt_size + 2)
+	if (rsign->bits > key->bits)
 	{
 		return 0;
 	}
@@ -879,7 +922,7 @@ uint32_t rsa_verify_pss(rsa_key *key, rsa_signature *rsign, hash_algorithm diges
 	salt = em + salt_offset;
 
 	// Decryption
-	rsa_public_decrypt(key, rsign->sign, rsign->size, em, em_size);
+	rsa_do_verify(key, rsign->sign, rsign->size, em, em_size);
 
 	// Verification
 	if (em[em_size - 1] != 0xBC)
@@ -1010,16 +1053,13 @@ static uint32_t get_digest_info_prefix(hash_algorithm algorithm, void *ptr)
 	}
 }
 
-rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_algorithm algorithm, void *hash, size_t hash_size, void *signature, size_t signature_size)
+rsa_signature *rsa_sign_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algorithm, void *hash, size_t hash_size)
 {
-	rsa_signature *rsign = signature;
-
 	// Sizes
 	size_t key_size = key->bits / 8;
 	size_t digest_info_size = get_digest_info_size(algorithm);
 	size_t em_size = key_size;
 	size_t ps_size = key_size - digest_info_size - 3;
-	size_t required_signature_size = sizeof(rsa_signature) + key_size;
 
 	size_t ps_offset = 2;
 	size_t digest_info_offset = em_size - digest_info_size;
@@ -1033,20 +1073,7 @@ rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_algorithm algorithm, void *hash,
 		return NULL;
 	}
 
-	// Allocate for the signature
-	if (rsign == NULL)
-	{
-		rsign = malloc(required_signature_size);
-	}
-	else
-	{
-		if (signature_size < required_signature_size)
-		{
-			return NULL;
-		}
-	}
-
-	if (rsign == NULL)
+	if (rsign->size < key_size)
 	{
 		return NULL;
 	}
@@ -1066,20 +1093,9 @@ rsa_signature *rsa_sign_pkcs(rsa_key *key, hash_algorithm algorithm, void *hash,
 	get_digest_info_prefix(algorithm, em + digest_info_offset);
 	memcpy(em + hash_offset, hash, hash_size);
 
-	// Generate the signature.
-	memset(rsign, 0, sizeof(rsa_signature) + key_size);
-	rsign->size = key_size;
-	rsign->sign = (byte_t *)rsign + sizeof(rsa_signature);
-
-	rsign->bits = rsa_private_encrypt(key, em, em_size, rsign->sign, rsign->size);
+	rsign->bits = rsa_do_sign(key, em, em_size, rsign->sign, rsign->size);
 
 	bignum_ctx_end(key->bctx);
-
-	if (rsign->bits == 0)
-	{
-		free(rsign);
-		return NULL;
-	}
 
 	return rsign;
 }
@@ -1109,6 +1125,11 @@ uint32_t rsa_verify_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algo
 		return 0;
 	}
 
+	if (rsign->bits > key->bits)
+	{
+		return 0;
+	}
+
 	bignum_ctx_start(key->bctx, ctx_size);
 
 	// Allocate for EM'
@@ -1128,7 +1149,7 @@ uint32_t rsa_verify_pkcs(rsa_key *key, rsa_signature *rsign, hash_algorithm algo
 	expected_em = bignum_ctx_allocate_raw(key->bctx, em_size);
 
 	// Decryption
-	rsa_public_decrypt(key, rsign->sign, rsign->size, expected_em, em_size);
+	rsa_do_verify(key, rsign->sign, rsign->size, expected_em, em_size);
 
 	if (memcmp(expected_em, actual_em, em_size) != 0)
 	{
