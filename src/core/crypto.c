@@ -1575,7 +1575,7 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 	sign.size = CEIL_DIV(pgp_key->n->bits, 8);
 	sign.sign = pgp_sign->e->bytes;
 
-	result = rsa_sign_pkcs(key, algorithm, hash, hash_size, &sign, -1);
+	result = rsa_sign_pkcs(key, &sign, algorithm, hash, hash_size);
 
 	rsa_key_delete(key);
 
@@ -1659,7 +1659,7 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 	sign.r.sign = pgp_sign->r->bytes;
 	sign.s.sign = pgp_sign->s->bytes;
 
-	result = dsa_sign(key, NULL, 0, hash, hash_size, &sign, 0);
+	result = dsa_sign(key, &sign, NULL, 0, hash, hash_size);
 
 	dsa_key_delete(key);
 
@@ -1759,7 +1759,7 @@ pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t
 	sign.r.sign = pgp_sign->r->bytes;
 	sign.s.sign = pgp_sign->s->bytes;
 
-	result = ecdsa_sign(key, NULL, 0, hash, hash_size, &sign, 0);
+	result = ecdsa_sign(key, &sign, NULL, 0, hash, hash_size);
 
 	ec_key_delete(key);
 
@@ -1843,7 +1843,7 @@ pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t has
 		memcpy(edkey.private_key, key->x->bytes, 32);
 		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 32);
 
-		status = ed25519_sign(&edkey, hash, hash_size, &edsign, sizeof(ed25519_signature));
+		status = ed25519_sign(&edkey, &edsign, hash, hash_size);
 
 		if (status == NULL)
 		{
@@ -1873,7 +1873,7 @@ pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t has
 		memcpy(edkey.private_key, key->x->bytes, 57);
 		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 57);
 
-		status = ed448_sign(&edkey, NULL, 0, hash, hash_size, sign, sizeof(ed448_signature));
+		status = ed448_sign(&edkey, &edsign, NULL, 0, hash, hash_size);
 
 		if (status == NULL)
 		{
@@ -1950,7 +1950,7 @@ pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_key *key, void *hash, uint32
 		return NULL;
 	}
 
-	status = ed25519_sign((ed25519_key *)key, hash, hash_size, sign, sizeof(ed25519_signature));
+	status = ed25519_sign((ed25519_key *)key, (ed25519_signature *)sign, hash, hash_size);
 
 	if (status == NULL)
 	{
@@ -1983,7 +1983,7 @@ pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_key *key, void *hash, uint32_t has
 		return NULL;
 	}
 
-	status = ed448_sign((ed448_key *)key, NULL, 0, hash, hash_size, sign, sizeof(ed448_signature));
+	status = ed448_sign((ed448_key *)key, (ed448_signature *)sign, NULL, 0, hash, hash_size);
 
 	if (status == NULL)
 	{
