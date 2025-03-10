@@ -6,6 +6,7 @@
 ]]
 
 add_library(spgp OBJECT 
+			argparse.c argparse.c
 			armor.c armor.h
 			base64.c base64.h
 			crc24.c crc24.h
