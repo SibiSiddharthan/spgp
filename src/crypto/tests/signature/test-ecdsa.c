@@ -54,7 +54,9 @@ int32_t ecdsa_prime_sign_tests(void)
 	hex_to_block(salt, 32, "94a1bbb14b906a61a280f245f9e93c7f3b4a6247824f5d33b9670787642a68de");
 
 	sha256_hash(message, 128, hash);
-	ecsign = ecdsa_sign(&key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
+
+	ecsign = ecdsa_signature_new(&key);
+	ecsign = ecdsa_sign(&key, ecsign, salt, 32, hash, SHA256_HASH_SIZE);
 
 	status += CHECK_BLOCK(ecsign->r.sign, 32, "f3ac8061b514795b8843e3d6629527ed2afd6b1f6a555a7acabb5e6f79c8c2ac");
 	status += CHECK_BLOCK(ecsign->s.sign, 32, "8bf77819ca05a6b2786c76262bf7371cef97b218e96f175a3ccdda2acc058903");
@@ -66,7 +68,7 @@ int32_t ecdsa_prime_sign_tests(void)
 	bignum_delete(qx);
 	bignum_delete(qy);
 
-	free(ecsign);
+	ecdsa_signature_delete(ecsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -92,7 +94,9 @@ int32_t ecdsa_prime_sign_tests(void)
 	hex_to_block(salt, 32, "5d833e8d24cc7a402d7ee7ec852a3587cddeb48358cea71b0bedb8fabe84e0c4");
 
 	sha256_hash(message, 128, hash);
-	ecsign = ecdsa_sign(&key, salt, 32, hash, SHA256_HASH_SIZE, NULL, 0);
+
+	ecsign = ecdsa_signature_new(&key);
+	ecsign = ecdsa_sign(&key, ecsign, salt, 32, hash, SHA256_HASH_SIZE);
 
 	status += CHECK_BLOCK(ecsign->r.sign, 32, "18caaf7b663507a8bcd992b836dec9dc5703c080af5e51dfa3a9a7c387182604");
 	status += CHECK_BLOCK(ecsign->s.sign, 32, "77c68928ac3b88d985fb43fb615fb7ff45c18ba5c81af796c613dfa98352d29c");
@@ -104,7 +108,7 @@ int32_t ecdsa_prime_sign_tests(void)
 	bignum_delete(qx);
 	bignum_delete(qy);
 
-	free(ecsign);
+	ecdsa_signature_delete(ecsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -136,7 +140,9 @@ int32_t ecdsa_prime_sign_tests(void)
 	hex_to_block(salt, 48, "90338a7f6ffce541366ca2987c3b3ca527992d1efcf1dd2723fbd241a24cff19990f2af5fd6419ed2104b4a59b5ae631");
 
 	sha512_hash(message, 128, hash);
-	ecsign = ecdsa_sign(&key, salt, 48, hash, SHA512_HASH_SIZE, NULL, 0);
+
+	ecsign = ecdsa_signature_new(&key);
+	ecsign = ecdsa_sign(&key, ecsign, salt, 48, hash, SHA512_HASH_SIZE);
 
 	status +=
 		CHECK_BLOCK(ecsign->r.sign, 48, "c269d9c4619aafdf5f4b3100211dddb14693abe25551e04f9499c91152a296d7449c08b36f87d1e16e8e15fee4a7f5c8");
@@ -150,7 +156,7 @@ int32_t ecdsa_prime_sign_tests(void)
 	bignum_delete(qx);
 	bignum_delete(qy);
 
-	free(ecsign);
+	ecdsa_signature_delete(ecsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -176,7 +182,9 @@ int32_t ecdsa_prime_sign_tests(void)
 	hex_to_block(salt, 48, "c8c18e53a9aa5915288c33132bd09323638f7995cd89162073984ed84e72e07a37e18c4c023933eace92c35d10e6b1b6");
 
 	sha512_hash(message, 128, hash);
-	ecsign = ecdsa_sign(&key, salt, 48, hash, SHA512_HASH_SIZE, NULL, 0);
+
+	ecsign = ecdsa_signature_new(&key);
+	ecsign = ecdsa_sign(&key, ecsign, salt, 48, hash, SHA512_HASH_SIZE);
 
 	status +=
 		CHECK_BLOCK(ecsign->r.sign, 48, "6512a8a2be731e301dcf4803764297862bbfa0ac8daed64d8e98b34618ecb20520fc5d3cf890b7783edf86e7ea407541");
@@ -190,7 +198,7 @@ int32_t ecdsa_prime_sign_tests(void)
 	bignum_delete(qx);
 	bignum_delete(qy);
 
-	free(ecsign);
+	ecdsa_signature_delete(ecsign);
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------
 

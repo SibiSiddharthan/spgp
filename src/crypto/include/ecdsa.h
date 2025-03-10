@@ -23,8 +23,10 @@ typedef struct _ecdsa_signature
 	} r, s;
 } ecdsa_signature;
 
-ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *hash, size_t hash_size, void *signature,
-							size_t signature_size);
+ecdsa_signature *ecdsa_signature_new(ec_key *key);
+void ecdsa_signature_delete(ecdsa_signature *sign);
+
+ecdsa_signature *ecdsa_sign(ec_key *key, ecdsa_signature *ecsign, void *salt, size_t salt_size, void *hash, size_t hash_size);
 uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t hash_size);
 
 #endif

@@ -14,13 +14,37 @@
 #include <stdlib.h>
 #include <string.h>
 
-ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *hash, size_t hash_size, void *signature, size_t signature_size)
+ecdsa_signature *ecdsa_signature_new(ec_key *key)
 {
-	ecdsa_signature *ecsign = signature;
-	bignum_ctx *bctx = key->eg->bctx;
+	ecdsa_signature *sign = malloc(sizeof(ecdsa_signature) + (2 * CEIL_DIV(key->eg->bits, 8)));
 
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	memset(sign, 0, sizeof(ecdsa_signature) + (2 * CEIL_DIV(key->eg->bits, 8)));
+
+	sign->r.bits = 0;
+	sign->r.size = CEIL_DIV(key->eg->bits, 8);
+	sign->r.sign = PTR_OFFSET(sign, sizeof(ecdsa_signature));
+
+	sign->s.bits = 0;
+	sign->s.size = CEIL_DIV(key->eg->bits, 8);
+	sign->s.sign = PTR_OFFSET(sign, sizeof(ecdsa_signature) + CEIL_DIV(key->eg->bits, 8));
+
+	return sign;
+}
+
+void ecdsa_signature_delete(ecdsa_signature *sign)
+{
+	free(sign);
+}
+
+ecdsa_signature *ecdsa_sign(ec_key *key, ecdsa_signature *ecsign, void *salt, size_t salt_size, void *hash, size_t hash_size)
+{
+	bignum_ctx *bctx = key->eg->bctx;
 	size_t ctx_size = 6 * bignum_size(key->eg->bits);
-	size_t required_signature_size = sizeof(ecdsa_signature) + (2 * bignum_size(key->eg->bits));
 
 	bignum_t *k = NULL, *ik = NULL;
 	bignum_t *e = NULL;
@@ -32,20 +56,7 @@ ecdsa_signature *ecdsa_sign(ec_key *key, void *salt, size_t salt_size, void *has
 	ec_point p = {0};
 	void *result = NULL;
 
-	// Allocate the signature
-	if (ecsign == NULL)
-	{
-		ecsign = malloc(required_signature_size);
-	}
-	else
-	{
-		if (signature_size < required_signature_size)
-		{
-			return NULL;
-		}
-	}
-
-	if (ecsign == NULL)
+	if (ecsign->r.size < CEIL_DIV(key->eg->bits, 8) || ecsign->s.size < CEIL_DIV(key->eg->bits, 8))
 	{
 		return NULL;
 	}
@@ -114,10 +125,11 @@ retry:
 	s = bignum_modadd(bctx, s, s, e, key->eg->n);
 	s = bignum_modmul(bctx, s, s, ik, key->eg->n);
 
-	ecsign->r.size = bignum_get_bytes_be(r, ecsign->r.sign, ecsign->r.size);
+	// Load the signature
+	bignum_get_bytes_be(r, ecsign->r.sign, ecsign->r.size);
 	ecsign->r.bits = r->bits;
 
-	ecsign->s.size = bignum_get_bytes_be(s, ecsign->s.sign, ecsign->s.size);
+	bignum_get_bytes_be(s, ecsign->s.sign, ecsign->s.size);
 	ecsign->s.bits = s->bits;
 
 	bignum_ctx_end(bctx);
