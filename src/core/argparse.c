@@ -309,7 +309,7 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 					}
 				}
 
-				while (argument[pos] != '\0')
+				while (1)
 				{
 					option = argparse_find_short_option(actx, argument[pos]);
 
@@ -368,6 +368,12 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 					}
 
 					pos += 1;
+
+					if (argument[pos] == '\0')
+					{
+						actx->arg_index += 1;
+						break;
+					}
 				}
 			}
 			else // if (argument[pos + 1] == '\0')
@@ -394,6 +400,20 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 				if (actx->flags & ARGPARSE_FLAG_BREAK_AT_NON_OPTION)
 				{
 					goto consume_remaining_args;
+				}
+				else
+				{
+					// Consume the non option
+					result = argparse_result_push(actx, ARGPARSE_RETURN_NON_OPTION, actx->args[actx->arg_index]);
+					actx->arg_index += 1;
+
+					if (result == NULL)
+					{
+						argparse_delete(actx);
+						return NULL;
+					}
+
+					continue;
 				}
 			}
 

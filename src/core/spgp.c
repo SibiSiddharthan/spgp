@@ -21,58 +21,58 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *help = "\
-Usage: sgpg [options] [files]\
-Sign, Verify, Encrypt or Decrypt\
-\
-Commands:\
-\
- -s, --sign                     make a signature\
-     --clear-sign               make a clear text signature\
- -b, --detach-sign              make a detached signature\
- -e, --encrypt                  encrypt data\
- -c, --symmetric                encryption only with symmetric cipher\
- -d, --decrypt                  decrypt data\
-     --verify                   verify a signature\
- -k, --list-keys                list keys\
-     --list-signatures          list keys and signatures\
-     --check-signatures         list and check key signatures\
-     --fingerprint              list keys and fingerprints\
- -K, --list-secret-keys         list secret keys\
-     --generate-key             generate a new key pair\
-     --full-generate-key        full featured key pair generation\
-     --generate-revocation      generate a revocation certificate\
-     --delete-keys              remove keys from the public keyring\
-     --delete-secret-keys       remove keys from the secret keyring\
-     --sign-key                 sign a key\
-     --edit-key                 sign or edit a key\
-     --export                   export keys\
-     --import                   import/merge keys\
-     --change-passphrase        change a passphrase\
-     --send-keys                export keys to a keyserver\
-     --receive-keys             import keys from a keyserver\
-     --search-keys              search for keys on a keyserver\
-     --refresh-keys             update all keys from a keyserver\
-\
-Options:\
- -v, --verbose                  verbose\
- -q, --quiet                    quiet\
- -h, --help                     help\
- -n, --dry-run                  dry run (no modifications)\
- -i, --interactive              prompt before overwriting\
- -a, --armor                    create ascii armored output\
- -o, --output FILE              write output to FILE\
-     --textmode                 use canonical text mode\
- -z N                           compression level to N (0 disables)\
-\
-Keys:\
- -r, --recipient USER-ID        encrypt for USER-ID\
- -u, --local-user USER-ID       use USER-ID to sign or decrypt\
-\
-Packets:\
-     --list-packets             List PGP packets\
-     --dump-packets             Dump PGP packets\
-\
+static const char *help = "\n\
+Usage: sgpg [options] [files]\n\
+Sign, Verify, Encrypt or Decrypt\n\
+\n\
+Commands:\n\
+\n\
+ -s, --sign                     make a signature\n\
+     --clear-sign               make a clear text signature\n\
+ -b, --detach-sign              make a detached signature\n\
+ -e, --encrypt                  encrypt data\n\
+ -c, --symmetric                encryption only with symmetric cipher\n\
+ -d, --decrypt                  decrypt data\n\
+     --verify                   verify a signature\n\
+ -k, --list-keys                list keys\n\
+     --list-signatures          list keys and signatures\n\
+     --check-signatures         list and check key signatures\n\
+     --fingerprint              list keys and fingerprints\n\
+ -K, --list-secret-keys         list secret keys\n\
+     --generate-key             generate a new key pair\n\
+     --full-generate-key        full featured key pair generation\n\
+     --generate-revocation      generate a revocation certificate\n\
+     --delete-keys              remove keys from the public keyring\n\
+     --delete-secret-keys       remove keys from the secret keyring\n\
+     --sign-key                 sign a key\n\
+     --edit-key                 sign or edit a key\n\
+     --export                   export keys\n\
+     --import                   import/merge keys\n\
+     --change-passphrase        change a passphrase\n\
+     --send-keys                export keys to a keyserver\n\
+     --receive-keys             import keys from a keyserver\n\
+     --search-keys              search for keys on a keyserver\n\
+     --refresh-keys             update all keys from a keyserver\n\
+\n\
+Options:\n\
+ -v, --verbose                  verbose\n\
+ -q, --quiet                    quiet\n\
+ -h, --help                     help\n\
+ -n, --dry-run                  dry run (no modifications)\n\
+ -i, --interactive              prompt before overwriting\n\
+ -a, --armor                    create ascii armored output\n\
+ -o, --output FILE              write output to FILE\n\
+     --textmode                 use canonical text mode\n\
+ -z N                           compression level to N (0 disables)\n\
+\n\
+Keys:\n\
+ -r, --recipient USER-ID        encrypt for USER-ID\n\
+ -u, --local-user USER-ID       use USER-ID to sign or decrypt\n\
+\n\
+Packets:\n\
+     --list-packets             List PGP packets\n\
+     --dump-packets             Dump PGP packets\n\
+\n\
 ";
 
 typedef enum _spgp_option
@@ -162,7 +162,8 @@ static void spgp_dump_packets(char *file)
 
 int main(int argc, char **argv)
 {
-	argparse_t *actx = argparse_new(argc, (void **)argv, sizeof(spgp_options) / sizeof(arg_option_t), spgp_options, 0);
+	argparse_t *actx =
+		argparse_new(argc, (void **)argv, sizeof(spgp_options) / sizeof(arg_option_t), spgp_options, ARGPARSE_FLAG_SKIP_FIRST_ARGUMENT);
 	arg_result_t *result = NULL;
 
 	while ((result = argparse(actx)) != NULL)
