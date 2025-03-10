@@ -102,7 +102,7 @@ int32_t eddsa_25519_sign_tests(void)
 	hex_to_block(key.private_key, 32, "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60");
 	hex_to_block(key.public_key, 32, "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a");
 
-	ed25519_sign(&key, NULL, 0, &edsign, sizeof(ed25519_signature));
+	ed25519_sign(&key, &edsign, NULL, 0);
 
 	status += CHECK_BLOCK(
 		edsign.sign, 64,
@@ -119,7 +119,7 @@ int32_t eddsa_25519_sign_tests(void)
 
 	hex_to_block(message, 1, "72");
 
-	ed25519_sign(&key, message, 1, &edsign, sizeof(ed25519_signature));
+	ed25519_sign(&key, &edsign, message, 1);
 
 	status += CHECK_BLOCK(
 		edsign.sign, 64,
@@ -136,7 +136,7 @@ int32_t eddsa_25519_sign_tests(void)
 
 	hex_to_block(message, 2, "af82");
 
-	ed25519_sign(&key, message, 2, &edsign, sizeof(ed25519_signature));
+	ed25519_sign(&key, &edsign, message, 2);
 
 	status += CHECK_BLOCK(
 		edsign.sign, 64,
@@ -170,7 +170,7 @@ int32_t eddsa_25519_sign_tests(void)
 		"f1610e4eafe595f6d9d90d11faa933a15ef1369546868a7f3a45a96768d40fd9d03412c091c6315cf4fde7cb68606937380db2eaaa707b4c4185c32eddcdd30670"
 		"5e4dc1ffc872eeee475a64dfac86aba41c0618983f8741c5ef68d3a101e8a3b8cac60c905c15fc910840b94c00a0b9d0");
 
-	ed25519_sign(&key, message, 1023, &edsign, sizeof(ed25519_signature));
+	ed25519_sign(&key, &edsign, message, 1023);
 
 	status += CHECK_BLOCK(
 		edsign.sign, 64,
@@ -189,7 +189,7 @@ int32_t eddsa_25519_sign_tests(void)
 		message, 64,
 		"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
 
-	ed25519_sign(&key, message, 64, &edsign, sizeof(ed25519_signature));
+	ed25519_sign(&key, &edsign, message, 64);
 
 	status += CHECK_BLOCK(
 		edsign.sign, 64,
@@ -206,7 +206,7 @@ int32_t eddsa_25519_sign_tests(void)
 
 	hex_to_block(message, 3, "616263");
 
-	ed25519ph_sign(&key, NULL, 0, message, 3, &edsign, sizeof(ed25519_signature));
+	ed25519ph_sign(&key, &edsign, NULL, 0, message, 3);
 
 	status += CHECK_BLOCK(
 		edsign.sign, 64,
@@ -238,7 +238,7 @@ int32_t eddsa_448_sign_tests(void)
 	hex_to_block(key.public_key, 57,
 				 "5fd7449b59b461fd2ce787ec616ad46a1da1342485a70e1f8a0ea75d80e96778edf124769b46c7061bd6783df1e50f6cd1fa1abeafe8256180");
 
-	ed448_sign(&key, NULL, 0, NULL, 0, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, NULL, 0);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -259,7 +259,7 @@ int32_t eddsa_448_sign_tests(void)
 
 	hex_to_block(message, 1, "03");
 
-	ed448_sign(&key, NULL, 0, message, 1, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, message, 1);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -281,7 +281,7 @@ int32_t eddsa_448_sign_tests(void)
 	hex_to_block(message, 1, "03");
 	hex_to_block(context, 3, "666f6f");
 
-	ed448_sign(&key, context, 3, message, 1, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, context, 3, message, 1);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -302,7 +302,7 @@ int32_t eddsa_448_sign_tests(void)
 
 	hex_to_block(message, 11, "0c3e544074ec63b0265e0c");
 
-	ed448_sign(&key, NULL, 0, message, 11, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, message, 11);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -323,7 +323,7 @@ int32_t eddsa_448_sign_tests(void)
 
 	hex_to_block(message, 12, "64a65f3cdedcdd66811e2915");
 
-	ed448_sign(&key, NULL, 0, message, 12, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, message, 12);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -344,7 +344,7 @@ int32_t eddsa_448_sign_tests(void)
 
 	hex_to_block(message, 13, "64a65f3cdedcdd66811e2915e7");
 
-	ed448_sign(&key, NULL, 0, message, 13, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, message, 13);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -367,7 +367,7 @@ int32_t eddsa_448_sign_tests(void)
 		message, 64,
 		"bd0f6a3747cd561bdddf4640a332461a4a30a12a434cd0bf40d766d9c6d458e5512204a30c17d1f50b5079631f64eb3112182da3005835461113718d1a5ef944");
 
-	ed448_sign(&key, NULL, 0, message, 64, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, message, 64);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -393,7 +393,7 @@ int32_t eddsa_448_sign_tests(void)
 		"c2a39f0e4d832be432dfa9a706a6e5c7e19f397964ca4258002f7c0541b590316dbc5622b6b2a6fe7a4abffd96105eca76ea7b98816af0748c10df048ce012d901"
 		"015a51f189f3888145c03650aa23ce894c3bd889e030d565071c59f409a9981b51878fd6fc110624dcbcde0bf7a69ccce38fabdf86f3bef6044819de11");
 
-	ed448_sign(&key, NULL, 0, message, 256, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, message, 256);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -431,7 +431,7 @@ int32_t eddsa_448_sign_tests(void)
 		"9515bb0e2b0f3bfcd1fd33034efc6245eddd7ee2086ddae2600d8ca73e214e8c2b0bdb2b047c6a464a562ed77b73d2d841c4b34973551257713b753632efba3481"
 		"69abc90a68f42611a40126d7cb21b58695568186f7e569d2ff0f9e745d0487dd2eb997cafc5abf9dd102e62ff66cba87");
 
-	ed448_sign(&key, NULL, 0, message, 1023, &edsign, sizeof(ed448_signature));
+	ed448_sign(&key, &edsign, NULL, 0, message, 1023);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -452,7 +452,7 @@ int32_t eddsa_448_sign_tests(void)
 
 	hex_to_block(message, 3, "616263");
 
-	ed448ph_sign(&key, NULL, 0, message, 3, &edsign, sizeof(ed448_signature));
+	ed448ph_sign(&key, &edsign, NULL, 0, message, 3);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,
@@ -474,7 +474,7 @@ int32_t eddsa_448_sign_tests(void)
 	hex_to_block(message, 3, "616263");
 	hex_to_block(context, 3, "666f6f");
 
-	ed448ph_sign(&key, context, 3, message, 3, &edsign, sizeof(ed448_signature));
+	ed448ph_sign(&key, &edsign, context, 3, message, 3);
 
 	status +=
 		CHECK_BLOCK(edsign.sign, 114,

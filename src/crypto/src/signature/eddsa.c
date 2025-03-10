@@ -321,38 +321,15 @@ static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *ke
 	return edsign;
 }
 
-ed25519_signature *ed25519_sign(ed25519_key *key, void *message, size_t message_size, void *signature, size_t signature_size)
+ed25519_signature *ed25519_sign(ed25519_key *key, ed25519_signature *edsign, void *message, size_t message_size)
 {
 	ec_group *group = NULL;
-	ed25519_signature *edsign = signature;
-
-	// Allocate the signature
-	if (edsign == NULL)
-	{
-		edsign = malloc(ED25519_SIGN_OCTETS);
-	}
-	else
-	{
-		if (signature_size < ED25519_SIGN_OCTETS)
-		{
-			return NULL;
-		}
-	}
-
-	if (edsign == NULL)
-	{
-		return NULL;
-	}
 
 	// Allocate the group
 	group = ec_group_new(EC_ED25519);
 
 	if (group == NULL)
 	{
-		if (signature == NULL)
-		{
-			free(edsign);
-		}
 
 		return NULL;
 	}
@@ -532,32 +509,12 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	return edsign;
 }
 
-ed448_signature *ed448_sign(ed448_key *key, void *context, size_t context_size, void *message, size_t message_size, void *signature,
-							size_t signature_size)
+ed448_signature *ed448_sign(ed448_key *key, ed448_signature *edsign, void *context, size_t context_size, void *message, size_t message_size)
 {
 	ec_group *group = NULL;
-	ed448_signature *edsign = signature;
 
 	// Check context size
 	if (context_size > 255)
-	{
-		return NULL;
-	}
-
-	// Allocate the signature
-	if (edsign == NULL)
-	{
-		edsign = malloc(ED448_SIGN_OCTETS);
-	}
-	else
-	{
-		if (signature_size < ED448_SIGN_OCTETS)
-		{
-			return NULL;
-		}
-	}
-
-	if (edsign == NULL)
 	{
 		return NULL;
 	}
@@ -567,11 +524,6 @@ ed448_signature *ed448_sign(ed448_key *key, void *context, size_t context_size, 
 
 	if (group == NULL)
 	{
-		if (signature == NULL)
-		{
-			free(edsign);
-		}
-
 		return NULL;
 	}
 
@@ -759,40 +711,16 @@ static ed25519_signature *ed25519ph_sign_internal(ec_group *group, ed25519_key *
 	return edsign;
 }
 
-ed25519_signature *ed25519ph_sign(ed25519_key *key, void *context, size_t context_size, void *message, size_t message_size, void *signature,
-								  size_t signature_size)
+ed25519_signature *ed25519ph_sign(ed25519_key *key, ed25519_signature *edsign, void *context, size_t context_size, void *message,
+								  size_t message_size)
 {
 	ec_group *group = NULL;
-	ed25519_signature *edsign = signature;
-
-	// Allocate the signature
-	if (edsign == NULL)
-	{
-		edsign = malloc(ED25519_SIGN_OCTETS);
-	}
-	else
-	{
-		if (signature_size < ED25519_SIGN_OCTETS)
-		{
-			return NULL;
-		}
-	}
-
-	if (edsign == NULL)
-	{
-		return NULL;
-	}
 
 	// Allocate the group
 	group = ec_group_new(EC_ED25519);
 
 	if (group == NULL)
 	{
-		if (signature == NULL)
-		{
-			free(edsign);
-		}
-
 		return NULL;
 	}
 
@@ -983,32 +911,13 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 	return edsign;
 }
 
-ed448_signature *ed448ph_sign(ed448_key *key, void *context, size_t context_size, void *message, size_t message_size, void *signature,
-							  size_t signature_size)
+ed448_signature *ed448ph_sign(ed448_key *key, ed448_signature *edsign, void *context, size_t context_size, void *message,
+							  size_t message_size)
 {
 	ec_group *group = NULL;
-	ed448_signature *edsign = signature;
 
 	// Check context size
 	if (context_size > 255)
-	{
-		return NULL;
-	}
-
-	// Allocate the signature
-	if (edsign == NULL)
-	{
-		edsign = malloc(ED448_SIGN_OCTETS);
-	}
-	else
-	{
-		if (signature_size < ED448_SIGN_OCTETS)
-		{
-			return NULL;
-		}
-	}
-
-	if (edsign == NULL)
 	{
 		return NULL;
 	}
@@ -1018,11 +927,6 @@ ed448_signature *ed448ph_sign(ed448_key *key, void *context, size_t context_size
 
 	if (group == NULL)
 	{
-		if (signature == NULL)
-		{
-			free(edsign);
-		}
-
 		return NULL;
 	}
 
