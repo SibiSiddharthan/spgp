@@ -247,7 +247,7 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 					continue;
 				}
 			}
-			else if (argument[pos] == '-' && argument[pos + 1] != '\0')
+			else if (argument[pos + 1] != '-' && argument[pos + 1] != '\0')
 			{
 				// Process the short (or long) options
 
@@ -368,6 +368,17 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 					}
 
 					pos += 1;
+				}
+			}
+			else // if (argument[pos + 1] == '\0')
+			{
+				result = argparse_result_push(actx, ARGPARSE_RETURN_STDIN_OPTION, actx->args[actx->arg_index]);
+				actx->arg_index += 1;
+
+				if (result == NULL)
+				{
+					argparse_delete(actx);
+					return NULL;
 				}
 			}
 		}
