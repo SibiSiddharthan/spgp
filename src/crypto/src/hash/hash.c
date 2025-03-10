@@ -292,7 +292,7 @@ void hash_update(hash_ctx *hctx, void *data, size_t size)
 	hctx->_update(hctx->_ctx, data, size);
 }
 
-int32_t hash_final(hash_ctx *hctx, void *hash, size_t size)
+uint32_t hash_final(hash_ctx *hctx, void *hash, size_t size)
 {
 	// Copy to internal buffer first.
 	// Check which function to use.
@@ -311,5 +311,5 @@ int32_t hash_final(hash_ctx *hctx, void *hash, size_t size)
 		memcpy(hash, hctx->hash, MIN(hctx->hash_size, size));
 	}
 
-	return 0;
+	return MIN(hctx->hash_size, size);
 }

@@ -34,6 +34,6 @@ void hash_delete(hash_ctx *hctx);
 
 void hash_reset(hash_ctx *ctx);
 void hash_update(hash_ctx *ctx, void *data, size_t size);
-int32_t hash_final(hash_ctx *ctx, void *hash, size_t size);
+uint32_t hash_final(hash_ctx *ctx, void *hash, size_t size);
 
 #endif
