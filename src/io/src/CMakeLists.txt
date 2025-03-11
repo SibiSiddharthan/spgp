@@ -5,8 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
+set(io_src common/io.c)
+
 if(WIN32)
-	set(io_src win32/os.c)
+	list(APPEND io_src win32/os.c)
 endif()
 
 add_library(io STATIC ${io_src})
