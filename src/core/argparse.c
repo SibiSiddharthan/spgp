@@ -30,7 +30,7 @@ static arg_option_t *argparse_find_short_option(argparse_t *actx, char arg)
 {
 	for (uint32_t i = 0; i < actx->option_count; ++i)
 	{
-		if (actx->options[i].short_option == arg)
+		if (arg != '\0' && arg == actx->options[i].short_option)
 		{
 			return &actx->options[i];
 		}
@@ -311,6 +311,12 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 
 				while (1)
 				{
+					if (argument[pos] == '\0')
+					{
+						actx->arg_index += 1;
+						break;
+					}
+
 					option = argparse_find_short_option(actx, argument[pos]);
 
 					// Unknown options
@@ -368,12 +374,6 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 					}
 
 					pos += 1;
-
-					if (argument[pos] == '\0')
-					{
-						actx->arg_index += 1;
-						break;
-					}
 				}
 			}
 			else // if (argument[pos + 1] == '\0')
