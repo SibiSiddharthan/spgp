@@ -33,4 +33,6 @@ status_t os_remove(handle_t root, const char *path, uint16_t length);
 status_t os_lock(handle_t handle, size_t offset, size_t length, byte_t nonblocking, byte_t exclusive);
 status_t os_unlock(handle_t handle, size_t offset, size_t length);
 
+status_t os_isatty(handle_t handle, uint32_t *result);
+
 #endif

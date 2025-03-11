@@ -197,3 +197,22 @@ status_t os_unlock(handle_t handle, size_t offset, size_t length)
 
 	return status;
 }
+
+status_t os_isatty(handle_t handle, uint32_t *result)
+{
+	NTSTATUS status = 0;
+	IO_STATUS_BLOCK io = {0};
+	FILE_FS_DEVICE_INFORMATION device_info = {0};
+
+	status = NtQueryVolumeInformationFile(handle, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+
+	if (status < 0)
+	{
+		*result = 0;
+		return status;
+	}
+
+	*result = device_info.DeviceType == FILE_DEVICE_CONSOLE ? 1 : 0;
+
+	return status;
+}
