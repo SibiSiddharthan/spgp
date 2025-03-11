@@ -8,8 +8,12 @@
 #ifndef OS_WIN32_H
 #define OS_WIN32_H
 
+#include <stdint.h>
+
 typedef long status_t;
 typedef void *handle_t;
+
+typedef uint64_t ino_t;
 
 // Native NT access
 #define __FILE_ACCESS_READ_DATA   0x0001ul
