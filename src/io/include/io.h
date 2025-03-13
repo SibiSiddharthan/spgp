@@ -14,8 +14,6 @@
 
 #include <os.h>
 
-typedef struct timespec timespec_t;
-
 typedef struct _dir_t
 {
 	status_t status;

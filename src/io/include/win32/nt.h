@@ -509,6 +509,30 @@ NtQueryDirectoryFileEx(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ P
 					   _Out_ PIO_STATUS_BLOCK IoStatusBlock, _Out_writes_bytes_(Length) PVOID FileInformation, _In_ ULONG Length,
 					   _In_ FILE_INFORMATION_CLASS FileInformationClass, _In_ ULONG QueryFlags, _In_opt_ PUNICODE_STRING FileName);
 
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtDeviceIoControlFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_ROUTINE ApcRoutine, _In_opt_ PVOID ApcContext,
+					  _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG IoControlCode,
+					  _In_reads_bytes_opt_(InputBufferLength) PVOID InputBuffer, _In_ ULONG InputBufferLength,
+					  _Out_writes_bytes_opt_(OutputBufferLength) PVOID OutputBuffer, _In_ ULONG OutputBufferLength);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtFsControlFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_ROUTINE ApcRoutine, _In_opt_ PVOID ApcContext,
+				_Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG FsControlCode, _In_reads_bytes_opt_(InputBufferLength) PVOID InputBuffer,
+				_In_ ULONG InputBufferLength, _Out_writes_bytes_opt_(OutputBufferLength) PVOID OutputBuffer, _In_ ULONG OutputBufferLength);
+
+NTSYSAPI
+NTSTATUS
+NTAPI NtQuerySecurityObject(HANDLE Handle, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR SecurityDescriptor, ULONG Length,
+							PULONG LengthNeeded);
+
+NTSYSAPI
+NTSTATUS
+NTAPI NtSetSecurityObject(HANDLE Handle, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR SecurityDescriptor);
+
 #define SYMBOLIC_LINK_QUERY      0x0001
 #define SYMBOLIC_LINK_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | SYMBOLIC_LINK_QUERY)
 
@@ -567,6 +591,23 @@ typedef struct _FILE_DISPOSITION_INFORMATION_EX
 	ULONG Flags;
 } FILE_DISPOSITION_INFORMATION_EX, *PFILE_DISPOSITION_INFORMATION_EX;
 #endif
+
+//================ FileStatInformation ========================================
+
+typedef struct _FILE_STAT_INFORMATION
+{
+	LARGE_INTEGER FileId;
+	LARGE_INTEGER CreationTime;
+	LARGE_INTEGER LastAccessTime;
+	LARGE_INTEGER LastWriteTime;
+	LARGE_INTEGER ChangeTime;
+	LARGE_INTEGER AllocationSize;
+	LARGE_INTEGER EndOfFile;
+	ULONG FileAttributes;
+	ULONG ReparseTag;
+	ULONG NumberOfLinks;
+	ACCESS_MASK EffectiveAccess;
+} FILE_STAT_INFORMATION, *PFILE_STAT_INFORMATION;
 
 typedef struct _FILE_FS_DEVICE_INFORMATION
 {
@@ -631,6 +672,66 @@ typedef struct _OBJECT_NAME_INFORMATION
 {
 	UNICODE_STRING Name;
 } OBJECT_NAME_INFORMATION, *POBJECT_NAME_INFORMATION;
+
+#define CTL_CODE(DeviceType, Function, Method, Access) (((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
+#define DEVICE_TYPE_FROM_CTL_CODE(ctrlCode)            (((ULONG)(ctrlCode & 0xffff0000)) >> 16)
+#define METHOD_FROM_CTL_CODE(ctrlCode)                 ((ULONG)(ctrlCode & 3))
+
+#define METHOD_BUFFERED             0
+#define METHOD_IN_DIRECT            1
+#define METHOD_OUT_DIRECT           2
+#define METHOD_NEITHER              3
+#define METHOD_DIRECT_TO_HARDWARE   METHOD_IN_DIRECT
+#define METHOD_DIRECT_FROM_HARDWARE METHOD_OUT_DIRECT
+
+#define FILE_ANY_ACCESS     0
+#define FILE_SPECIAL_ACCESS (FILE_ANY_ACCESS)
+#define FILE_READ_ACCESS    (0x0001) // file & pipe
+#define FILE_WRITE_ACCESS   (0x0002) // file & pipe
+
+#define FSCTL_SET_REPARSE_POINT    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 41, METHOD_BUFFERED, FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER,
+#define FSCTL_GET_REPARSE_POINT    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 42, METHOD_BUFFERED, FILE_ANY_ACCESS)     // REPARSE_DATA_BUFFER
+#define FSCTL_DELETE_REPARSE_POINT CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 43, METHOD_BUFFERED, FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER,
+
+#define SYMLINK_FLAG_RELATIVE 0x00000001 // If set then this is a relative symlink.
+#define SYMLINK_DIRECTORY \
+	0x80000000 // If set then this is a directory symlink. This is not persisted on disk and is programmatically set by file system.
+#define SYMLINK_FILE \
+	0x40000000 // If set then this is a file symlink. This is not persisted on disk and is programmatically set by file system.
+
+#define SYMLINK_RESERVED_MASK 0xF0000000 // We reserve the high nibble for internal use
+
+typedef struct _REPARSE_DATA_BUFFER
+{
+	ULONG ReparseTag;
+	USHORT ReparseDataLength;
+	USHORT Reserved;
+
+	_Field_size_bytes_(ReparseDataLength) union
+	{
+		struct
+		{
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			ULONG Flags;
+			WCHAR PathBuffer[1];
+		} SymbolicLinkReparseBuffer;
+		struct
+		{
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			WCHAR PathBuffer[1];
+		} MountPointReparseBuffer;
+		struct
+		{
+			UCHAR DataBuffer[1];
+		} GenericReparseBuffer;
+	} DUMMYUNIONNAME;
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 
 typedef VOID(NTAPI *PPS_POST_PROCESS_INIT_ROUTINE)(VOID);
 typedef LONG KPRIORITY;
@@ -825,5 +926,15 @@ RtlUTF8StringToUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_ PUTF8
 
 NTSYSAPI
 VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_opt_) PUNICODE_STRING UnicodeString);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlCopySid(_In_ ULONG DestinationSidLength, _Out_writes_bytes_(DestinationSidLength) PSID DestinationSid, _In_ PSID SourceSid);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlEqualSid(_In_ PSID Sid1, _In_ PSID Sid2);
 
 #endif

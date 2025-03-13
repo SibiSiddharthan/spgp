@@ -118,6 +118,272 @@ status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result)
 	return status;
 }
 
+status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flags, void *buffer, uint16_t size)
+{
+	NTSTATUS status = 0;
+	HANDLE handle = 0;
+	IO_STATUS_BLOCK io = {0};
+
+	FILE_FS_DEVICE_INFORMATION device_info = {0};
+
+	if (size < sizeof(stat_t))
+	{
+		return 0;
+	}
+
+	if (path != NULL)
+	{
+		status = os_open(&handle, root, path, length,
+						 __FILE_ACCESS_READ_ATTRIBUTES | __FILE_ACCESS_READ_CONTROL | __FILE_ACCESS_SYNCHRONIZE, 0, 0);
+
+		if (status != 0)
+		{
+			return status;
+		}
+	}
+	else
+	{
+		handle = root;
+	}
+
+	stat_t *st = buffer;
+	memset(st, 0, sizeof(stat_t));
+
+	// This is important
+	status = NtQueryVolumeInformationFile(handle, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+
+	if (status != STATUS_SUCCESS)
+	{
+		return status;
+	}
+
+	DEVICE_TYPE type = device_info.DeviceType;
+
+	if (type == FILE_DEVICE_DISK)
+	{
+		FILE_STAT_INFORMATION stat_info = {0};
+
+		status = NtQueryInformationFile(handle, &io, &stat_info, sizeof(FILE_STAT_INFORMATION), FileStatInformation);
+
+		if (status != STATUS_SUCCESS)
+		{
+			return -1;
+		}
+
+		DWORD attributes = stat_info.FileAttributes;
+		mode_t allowed_access = 0, denied_access = 0;
+		mode_t access = 0;
+
+		char security_buffer[512];
+		ULONG length = 0;
+
+		status = NtQuerySecurityObject(handle, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
+									   security_buffer, sizeof(security_buffer), &length);
+
+		if (status != STATUS_SUCCESS)
+		{
+			return -1;
+		}
+
+		PISECURITY_DESCRIPTOR_RELATIVE security_descriptor = (PISECURITY_DESCRIPTOR_RELATIVE)security_buffer;
+		PISID owner = (PISID)(security_buffer + security_descriptor->Owner);
+		PISID group = (PISID)(security_buffer + security_descriptor->Group);
+		PACL acl = (PACL)(security_buffer + security_descriptor->Dacl);
+		size_t acl_read = 0;
+		byte_t user_ace_present = 0;
+
+		// Set the uid, gid as the last subauthority of their respective SIDs.
+		st->st_uid = owner->SubAuthority[owner->SubAuthorityCount - 1];
+		st->st_gid = group->SubAuthority[group->SubAuthorityCount - 1];
+
+#if 0
+		// Treat "NT AUTHORITY\SYSTEM" and "BUILTIN\Administrators" as root.
+		if (RtlEqualSid(owner, adminstrators_sid) || RtlEqualSid(owner, ntsystem_sid))
+		{
+			st->st_uid = 0;
+		}
+		if (RtlEqualSid(group, adminstrators_sid) || RtlEqualSid(group, ntsystem_sid))
+		{
+			st->st_gid = 0;
+		}
+
+		// Iterate through the ACLs
+		// Order should be (NT AUTHORITY\SYSTEM), (BUILTIN\Administrators), Current User ,(BUILTIN\Users), Everyone
+		for (int i = 0; i < acl->AceCount; ++i)
+		{
+			PISID sid = NULL;
+			PACE_HEADER ace_header = (PACE_HEADER)((char *)acl + sizeof(ACL) + acl_read);
+
+			// Only support allowed and denied ACEs
+			// Both ACCESS_ALLOWED_ACE and ACCESS_DENIED_ACE have ACE_HEADER at the start.
+			// Type casting of pointers here will work.
+			if (ace_header->AceType == ACCESS_ALLOWED_ACE_TYPE)
+			{
+				PACCESS_ALLOWED_ACE allowed_ace = (PACCESS_ALLOWED_ACE)ace_header;
+				sid = (PISID) & (allowed_ace->SidStart);
+				if (RtlEqualSid(sid, current_user_sid))
+				{
+					user_ace_present = 1;
+					allowed_access |= get_permissions(allowed_ace->Mask);
+				}
+				else if (RtlEqualSid(sid, users_sid))
+				{
+					allowed_access |= get_permissions(allowed_ace->Mask) >> 3;
+				}
+				else if (RtlEqualSid(sid, everyone_sid))
+				{
+					allowed_access |= get_permissions(allowed_ace->Mask) >> 6;
+				}
+				else
+				{
+					// Unsupported SID or SYSTEM or Administrator, ignore
+				}
+			}
+			else if (ace_header->AceType == ACCESS_DENIED_ACE_TYPE)
+			{
+				PACCESS_DENIED_ACE denied_ace = (PACCESS_DENIED_ACE)ace_header;
+				sid = (PISID) & (denied_ace->SidStart);
+				if (RtlEqualSid(sid, current_user_sid))
+				{
+					user_ace_present = 1;
+					denied_access |= get_permissions(denied_ace->Mask);
+				}
+				else if (RtlEqualSid(sid, users_sid))
+				{
+					denied_access |= get_permissions(denied_ace->Mask) >> 3;
+				}
+				else if (RtlEqualSid(sid, everyone_sid))
+				{
+					denied_access |= get_permissions(denied_ace->Mask) >> 6;
+				}
+				else
+				{
+					// Unsupported SID or SYSTEM or Administrator, ignore
+				}
+			}
+			else
+			{
+				// Unsupported ACE type
+			}
+			acl_read += ace_header->AceSize;
+		}
+
+		if (!user_ace_present)
+		{
+			// For current user permissions use the 'EffectiveAccess' field of FILE_STAT_INFORMATION if the specific ACL is absent.
+			// The specific user ACL will be absent except on C:\Users\XXXXX
+			// NOTE: Despite it being name 'EffectiveAccess' it is actually just access.
+			allowed_access |= get_permissions(stat_info.EffectiveAccess);
+		}
+
+		access = allowed_access & ~denied_access;
+		st->st_mode = access;
+#endif
+
+		// From readdir.c
+		if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+		{
+			ULONG reparse_tag = stat_info.ReparseTag;
+			if (reparse_tag == IO_REPARSE_TAG_SYMLINK || reparse_tag == IO_REPARSE_TAG_MOUNT_POINT)
+			{
+				st->st_mode |= STAT_FILE_TYPE_LINK;
+			}
+			if (reparse_tag == IO_REPARSE_TAG_AF_UNIX)
+			{
+				st->st_mode |= STAT_FILE_TYPE_SOCK;
+			}
+		}
+		else if (attributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			st->st_mode |= STAT_FILE_TYPE_DIR;
+		}
+		else if ((attributes & ~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE |
+								 FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_SPARSE_FILE | FILE_ATTRIBUTE_COMPRESSED |
+								 FILE_ATTRIBUTE_NOT_CONTENT_INDEXED | FILE_ATTRIBUTE_ENCRYPTED)) == 0)
+		{
+			st->st_mode |= STAT_FILE_TYPE_REG;
+		}
+
+		st->st_attributes = attributes & STAT_ATTRIBUTE_MASK;
+		st->st_ino = stat_info.FileId.QuadPart;
+		st->st_nlink = stat_info.NumberOfLinks;
+		st->st_size = stat_info.EndOfFile.QuadPart;
+
+		// TODO: st_[amc]tim
+		// st->st_atim = LARGE_INTEGER_to_timespec(stat_info.LastAccessTime);
+		// st->st_mtim = LARGE_INTEGER_to_timespec(stat_info.LastWriteTime);
+		// st->st_ctim = LARGE_INTEGER_to_timespec(stat_info.ChangeTime);
+		// st->st_birthtim = LARGE_INTEGER_to_timespec(stat_info.CreationTime);
+
+		if (STAT_IS_FIFO(st->st_mode))
+		{
+			st->st_size = -1;
+			PREPARSE_DATA_BUFFER reparse_buffer =
+				(PREPARSE_DATA_BUFFER)RtlAllocateHeap(NtCurrentProcessHeap(), 0, MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+
+			if (reparse_buffer != NULL)
+			{
+				status = NtFsControlFile(handle, NULL, NULL, NULL, &io, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer,
+										 MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+				if (status == STATUS_SUCCESS)
+				{
+
+					if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+					{
+						if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
+						{
+							st->st_size = reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
+						}
+						else if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
+						{
+							st->st_size = reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+						}
+					}
+
+					if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+					{
+						if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
+						{
+							st->st_size = reparse_buffer->MountPointReparseBuffer.PrintNameLength / sizeof(WCHAR);
+						}
+						else if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
+						{
+							st->st_size = reparse_buffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+						}
+					}
+
+					RtlFreeHeap(NtCurrentProcessHeap(), 0, reparse_buffer);
+				}
+				else
+				{
+					// Don't return just set errno.
+				}
+			}
+			else
+			{
+				// Don't return just set errno.
+				errno = ENOMEM;
+			}
+		}
+	}
+	else if (type == FILE_DEVICE_NULL || type == FILE_DEVICE_CONSOLE)
+	{
+		st->st_mode = STAT_FILE_TYPE_CHAR | 0666;
+		st->st_nlink = 1;
+		st->st_rdev = 0;
+		st->st_dev = 0;
+	}
+	else if (type == FILE_DEVICE_NAMED_PIPE)
+	{
+		st->st_mode = STAT_FILE_TYPE_FIFO;
+		st->st_nlink = 1;
+		st->st_rdev = 0;
+		st->st_dev = 0;
+	}
+
+	return 0;
+}
+
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode)
 {
 	NTSTATUS status = 0;

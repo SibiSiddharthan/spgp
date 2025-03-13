@@ -9,11 +9,22 @@
 #define OS_WIN32_H
 
 #include <stdint.h>
+#include <time.h>
 
 typedef long status_t;
 typedef void *handle_t;
 
 typedef uint64_t ino_t;
+typedef uint64_t off_t;
+
+typedef uint32_t nlink_t;
+typedef uint32_t mode_t;
+typedef uint32_t dev_t;
+
+typedef uint32_t uid_t;
+typedef uint32_t gid_t;
+
+typedef struct timespec timespec_t;
 
 // Current directory handle
 handle_t _os_cwd_handle();
@@ -37,6 +48,26 @@ handle_t _os_cwd_handle();
 #define __FILE_ACCESS_WRITE_DAC    0x00040000ul
 #define __FILE_ACCESS_WRITE_OWNER  0x00080000ul
 #define __FILE_ACCESS_SYNCHRONIZE  0x00100000ul
+
+// Native NT FLAGS
+#define __FILE_DIRECTORY_FILE            0x00000001
+#define __FILE_WRITE_THROUGH             0x00000002
+#define __FILE_NO_INTERMEDIATE_BUFFERING 0x00000008
+#define __FILE_SYNCHRONOUS_IO_NONALERT   0x00000020
+#define __FILE_NON_DIRECTORY_FILE        0x00000040
+#define __FILE_DELETE_ON_CLOSE           0x00001000
+#define __FILE_OPEN_REPARSE_POINT        0x00200000
+
+// Native NT Attributes
+#define __FILE_ATTRIBUTE_READONLY   0x0001
+#define __FILE_ATTRIBUTE_HIDDEN     0x0002
+#define __FILE_ATTRIBUTE_SYSTEM     0x0004
+#define __FILE_ATTRIBUTE_ARCHIVE    0x0020
+#define __FILE_ATTRIBUTE_SPARSE     0x0200
+#define __FILE_ATTRIBUTE_REPARSE    0x0400
+#define __FILE_ATTRIBUTE_COMPRESSED 0x0800
+#define __FILE_ATTRIBUTE_OFFLINE    0x1000
+#define __FILE_ATTRIBUTE_ENCRYPTED  0x4000
 
 // Access constants
 
@@ -71,15 +102,15 @@ handle_t _os_cwd_handle();
 #define FILE_FLAG_EXCLUSIVE 0x00200000ul
 #define FILE_FLAG_TRUNCATE  0x00400000ul
 
-#define FILE_FLAG_READONLY 0x000000001ul
-#define FILE_FLAG_HIDDEN   0x000000002ul
-#define FILE_FLAG_SYSTEM   0x000000004ul
+#define FILE_FLAG_READONLY __FILE_ATTRIBUTE_READONLY
+#define FILE_FLAG_HIDDEN   __FILE_ATTRIBUTE_HIDDEN
+#define FILE_FLAG_SYSTEM   __FILE_ATTRIBUTE_SYSTEM
 
-#define FILE_FLAG_DIRECTORY     0x000000010ul
-#define FILE_FLAG_SYNC          0x000000020ul
-#define FILE_FLAG_DIRECT        0x000000080ul
-#define FILE_FLAG_NON_DIRECTORY 0x000000400ul
-#define FILE_FLAG_NOFOLLOW      0x002000000ul
+#define FILE_FLAG_DIRECTORY     (__FILE_DIRECTORY_FILE << 1)
+#define FILE_FLAG_SYNC          (__FILE_WRITE_THROUGH << 1)
+#define FILE_FLAG_DIRECT        (__FILE_NO_INTERMEDIATE_BUFFERING << 1)
+#define FILE_FLAG_NON_DIRECTORY (__FILE_NON_DIRECTORY_FILE << 1)
+#define FILE_FLAG_NOFOLLOW      (__FILE_OPEN_REPARSE_POINT << 1)
 
 #define FILE_FLAG_APPEND __FILE_ACCESS_APPEND_DATA
 
@@ -89,5 +120,81 @@ handle_t _os_cwd_handle();
 // Unsupported
 #define FILE_FLAG_LARGEFILE 0
 #define FILE_FLAG_NOCTTY    0
+
+// User permissions
+#define PERM_USER_READ    0400
+#define PERM_USER_WRITE   0200
+#define PERM_USER_EXECUTE 0100
+
+// Group permissions
+#define PERM_GROUP_READ    0040
+#define PERM_GROUP_WRITE   0020
+#define PERM_GROUP_EXECUTE 0010
+
+// Other permissions
+#define PERM_OTHER_READ    0004
+#define PERM_OTHER_WRITE   0002
+#define PERM_OTHER_EXECUTE 0001
+
+// Unsupported
+#define STAT_UID_ON_EXEC 0x0 // Set user ID on execution
+#define STAT_GID_ON_EXEC 0x0 // Set group ID on execution
+#define STAT_STICKY_BIT  0x0 // Sticky bit (Obsolete)
+
+// File types
+#define STAT_FILE_TYPE_MASK 0xF000 // File type mask
+#define STAT_FILE_TYPE_FIFO 0x1000 // Pipe or FIFO (FIFO is unsupported)
+#define STAT_FILE_TYPE_CHAR 0x2000 // Character special
+#define STAT_FILE_TYPE_DIR  0x4000 // Directory
+#define STAT_FILE_TYPE_BLCK 0x6000 // Block special
+#define STAT_FILE_TYPE_REG  0x8000 // Regular
+#define STAT_FILE_TYPE_LINK 0xA000 // Symbolic Link
+#define STAT_FILE_TYPE_SOCK 0xC000 // Socket
+
+#define STAT_IS_TYPE(mode, type) (((mode) & STAT_FILE_TYPE_MASK) == (type))
+
+#define STAT_IS_FIFO(mode) STAT_IS_TYPE((mode), STAT_FILE_TYPE_FIFO)
+#define STAT_IS_CHAR(mode) STAT_IS_TYPE((mode), STAT_FILE_TYPE_CHAR)
+#define STAT_IS_DIR(mode)  STAT_IS_TYPE((mode), STAT_FILE_TYPE_DIR)
+#define STAT_IS_BLCK(mode) STAT_IS_TYPE((mode), STAT_FILE_TYPE_BLCK)
+#define STAT_IS_REG(mode)  STAT_IS_TYPE((mode), STAT_FILE_TYPE_REG)
+#define STAT_IS_LINK(mode) STAT_IS_TYPE((mode), STAT_FILE_TYPE_LINK)
+#define STAT_IS_SOCK(mode) STAT_IS_TYPE((mode), STAT_FILE_TYPE_SOCK)
+
+// File attributes
+
+#define STAT_ATTRIBUTE_READONLY   __FILE_ATTRIBUTE_READONLY
+#define STAT_ATTRIBUTE_HIDDEN     __FILE_ATTRIBUTE_HIDDEN
+#define STAT_ATTRIBUTE_SYSTEM     __FILE_ATTRIBUTE_SYSTEM
+#define STAT_ATTRIBUTE_ARCHIVE    __FILE_ATTRIBUTE_ARCHIVE
+#define STAT_ATTRIBUTE_SPARSE     __FILE_ATTRIBUTE_SPARSE
+#define STAT_ATTRIBUTE_REPARSE    __FILE_ATTRIBUTE_REPARSE
+#define STAT_ATTRIBUTE_COMPRESSED __FILE_ATTRIBUTE_COMPRESSED
+#define STAT_ATTRIBUTE_OFFLINE    __FILE_ATTRIBUTE_OFFLINE
+#define STAT_ATTRIBUTE_ENCRYPTED  __FILE_ATTRIBUTE_ENCRYPTED
+#define STAT_ATTRIBUTE_MASK       0x5e27
+
+// Unsupported
+#define STAT_ATTRIBUTE_AUTOMOUNT 0x0000
+#define STAT_ATTRIBUTE_APPEND    0x0000
+#define STAT_ATTRIBUTE_NODUMP    0x0000
+#define STAT_ATTRIBUTE_NOUNLINK  0x0000
+
+typedef struct _stat_t
+{
+	dev_t st_dev;           // ID of device containing file
+	dev_t st_rdev;          // device ID (if file is character or block special)
+	ino_t st_ino;           // file serial number
+	mode_t st_mode;         // mode of file
+	uint32_t st_attributes; // file attributes
+	nlink_t st_nlink;       // number of links to the file
+	uid_t st_uid;           // user ID of file
+	gid_t st_gid;           // group ID of file
+	off_t st_size;          // file size in bytes (if file is a regular file)
+	timespec_t st_atim;     // time of last access
+	timespec_t st_mtim;     // time of last data modification
+	timespec_t st_ctim;     // time of last status change
+	timespec_t st_birthtim; // time of birth
+} stat_t;
 
 #endif
