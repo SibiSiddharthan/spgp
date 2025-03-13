@@ -14,6 +14,9 @@
 handle_t _os_cwd_handle();
 #define HANDLE_CWD (_os_cwd_handle())
 
+// Status mapping
+status_t _os_status(status_t nt_status);
+
 // Native NT access
 #define __FILE_ACCESS_READ_DATA   0x0001ul
 #define __FILE_ACCESS_WRITE_DATA  0x0002ul
