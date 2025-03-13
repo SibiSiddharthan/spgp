@@ -569,6 +569,13 @@ NTAPI
 NtDuplicateObject(_In_ HANDLE SourceProcessHandle, _In_ HANDLE SourceHandle, _In_opt_ HANDLE TargetProcessHandle,
 				  _Out_opt_ PHANDLE TargetHandle, _In_ ACCESS_MASK DesiredAccess, _In_ ULONG HandleAttributes, _In_ ULONG Options);
 
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryInformationToken(_In_ HANDLE TokenHandle, _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
+						_Out_writes_bytes_to_opt_(TokenInformationLength, *ReturnLength) PVOID TokenInformation,
+						_In_ ULONG TokenInformationLength, _Out_ PULONG ReturnLength);
+
 //================ FileDispositionInformationEx ===============================
 
 typedef struct _FILE_DISPOSITION_INFORMATION
@@ -926,6 +933,26 @@ RtlUTF8StringToUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_ PUTF8
 
 NTSYSAPI
 VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_opt_) PUNICODE_STRING UnicodeString);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlInitializeSidEx(_Out_writes_bytes_(SECURITY_SID_SIZE(SubAuthorityCount)) PSID Sid, _In_ PSID_IDENTIFIER_AUTHORITY IdentifierAuthority,
+				   _In_ UCHAR SubAuthorityCount, ...);
+
+NTSYSAPI
+NTSTATUS
+NTAPI RtlCreateAcl(PACL Acl, ULONG AclLength, ULONG AclRevision);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlAddAccessAllowedAceEx(_Inout_ PACL Acl, _In_ ULONG AceRevision, _In_ ULONG AceFlags, _In_ ACCESS_MASK AccessMask, _In_ PSID Sid);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlCopySid(_In_ ULONG DestinationSidLength, _Out_writes_bytes_(DestinationSidLength) PSID DestinationSid, _In_ PSID SourceSid);
 
 NTSYSAPI
 NTSTATUS

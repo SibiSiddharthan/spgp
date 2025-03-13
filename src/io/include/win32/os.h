@@ -17,6 +17,9 @@ handle_t _os_cwd_handle();
 // Status mapping
 status_t _os_status(status_t nt_status);
 
+// Security descriptor
+void *_os_security_descriptor(mode_t mode, uint32_t directory);
+
 // Native NT access
 #define __FILE_ACCESS_READ_DATA   0x0001ul
 #define __FILE_ACCESS_WRITE_DATA  0x0002ul
