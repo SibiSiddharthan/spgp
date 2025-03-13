@@ -13,6 +13,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+handle_t _os_cwd_handle()
+{
+	return NtCurrentPeb()->ProcessParameters->CurrentDirectory.Handle;
+}
+
 status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t flags, uint32_t mode)
 {
 	NTSTATUS status = 0;

@@ -30,6 +30,8 @@ typedef NTSTATUS *PNTSTATUS;
 typedef WCHAR *PWCHAR, *LPWCH, *PWCH;
 typedef CONST WCHAR *LPCWCH, *PCWCH;
 
+typedef ULONG LOGICAL, *PLOGICAL;
+
 /*
  UTF-8 strings. If they are NULL terminated, Length does not include trailing NULL.
 */
@@ -106,6 +108,18 @@ typedef struct _IO_STATUS_BLOCK
 } IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
 
 typedef VOID(NTAPI *PIO_APC_ROUTINE)(_In_ PVOID ApcContext, _In_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG Reserved);
+
+typedef enum _OBJECT_INFORMATION_CLASS
+{
+	ObjectBasicInformation,         // q: OBJECT_BASIC_INFORMATION
+	ObjectNameInformation,          // q: OBJECT_NAME_INFORMATION
+	ObjectTypeInformation,          // q: OBJECT_TYPE_INFORMATION
+	ObjectTypesInformation,         // q: OBJECT_TYPES_INFORMATION
+	ObjectHandleFlagInformation,    // qs: OBJECT_HANDLE_FLAG_INFORMATION
+	ObjectSessionInformation,       // s: void // change object session // (requires SeTcbPrivilege)
+	ObjectSessionObjectInformation, // s: void // change object session // (requires SeTcbPrivilege)
+	MaxObjectInfoClass
+} OBJECT_INFORMATION_CLASS;
 
 typedef enum _FILE_INFORMATION_CLASS
 {
@@ -495,29 +509,41 @@ NtQueryDirectoryFileEx(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ P
 					   _Out_ PIO_STATUS_BLOCK IoStatusBlock, _Out_writes_bytes_(Length) PVOID FileInformation, _In_ ULONG Length,
 					   _In_ FILE_INFORMATION_CLASS FileInformationClass, _In_ ULONG QueryFlags, _In_opt_ PUNICODE_STRING FileName);
 
-NTSYSAPI
-VOID NTAPI RtlInitUTF8String(_Out_ PUTF8_STRING DestinationString, _In_opt_z_ PCSTR SourceString);
+#define SYMBOLIC_LINK_QUERY      0x0001
+#define SYMBOLIC_LINK_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | SYMBOLIC_LINK_QUERY)
 
-NTSYSAPI
-VOID NTAPI RtlInitUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_opt_z_ PCWSTR SourceString);
-
-NTSYSAPI
+NTSYSCALLAPI
 NTSTATUS
 NTAPI
-RtlUnicodeStringToUTF8String(_Out_ PUTF8_STRING DestinationString, _In_ PCUNICODE_STRING SourceString,
-							 _In_ BOOLEAN AllocateDestinationString);
+NtOpenSymbolicLinkObject(_Out_ PHANDLE LinkHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes);
 
-NTSYSAPI
-VOID NTAPI RtlFreeUTF8String(_Inout_ _At_(utf8String->Buffer, _Frees_ptr_opt_) PUTF8_STRING utf8String);
-
-NTSYSAPI
+NTSYSCALLAPI
 NTSTATUS
 NTAPI
-RtlUTF8StringToUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_ PUTF8_STRING SourceString,
-							 _In_ BOOLEAN AllocateDestinationString);
+NtQuerySymbolicLinkObject(_In_ HANDLE LinkHandle, _Inout_ PUNICODE_STRING LinkTarget, _Out_opt_ PULONG ReturnedLength);
 
-NTSYSAPI
-VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_opt_) PUNICODE_STRING UnicodeString);
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryObject(_In_opt_ HANDLE Handle, _In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
+			  _Out_writes_bytes_opt_(ObjectInformationLength) PVOID ObjectInformation, _In_ ULONG ObjectInformationLength,
+			  _Out_opt_ PULONG ReturnLength);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSetInformationObject(_In_ HANDLE Handle, _In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
+					   _In_reads_bytes_(ObjectInformationLength) PVOID ObjectInformation, _In_ ULONG ObjectInformationLength);
+
+#define DUPLICATE_CLOSE_SOURCE    0x00000001
+#define DUPLICATE_SAME_ACCESS     0x00000002
+#define DUPLICATE_SAME_ATTRIBUTES 0x00000004
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtDuplicateObject(_In_ HANDLE SourceProcessHandle, _In_ HANDLE SourceHandle, _In_opt_ HANDLE TargetProcessHandle,
+				  _Out_opt_ PHANDLE TargetHandle, _In_ ACCESS_MASK DesiredAccess, _In_ ULONG HandleAttributes, _In_ ULONG Options);
 
 //================ FileDispositionInformationEx ===============================
 
@@ -585,5 +611,219 @@ typedef struct _FILE_ID_EXTD_BOTH_DIR_INFORMATION
 	WCHAR ShortName[12];
 	_Field_size_bytes_(FileNameLength) WCHAR FileName[1];
 } FILE_ID_EXTD_BOTH_DIR_INFORMATION, *PFILE_ID_EXTD_BOTH_DIR_INFORMATION;
+
+typedef struct _OBJECT_BASIC_INFORMATION
+{
+	ULONG Attributes;
+	ACCESS_MASK GrantedAccess;
+	ULONG HandleCount;
+	ULONG PointerCount;
+	ULONG PagedPoolCharge;
+	ULONG NonPagedPoolCharge;
+	ULONG Reserved[3];
+	ULONG NameInfoSize;
+	ULONG TypeInfoSize;
+	ULONG SecurityDescriptorSize;
+	LARGE_INTEGER CreationTime;
+} OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;
+
+typedef struct _OBJECT_NAME_INFORMATION
+{
+	UNICODE_STRING Name;
+} OBJECT_NAME_INFORMATION, *POBJECT_NAME_INFORMATION;
+
+typedef VOID(NTAPI *PPS_POST_PROCESS_INIT_ROUTINE)(VOID);
+typedef LONG KPRIORITY;
+
+typedef struct _CURDIR
+{
+	UNICODE_STRING DosPath;
+	HANDLE Handle;
+} CURDIR, *PCURDIR;
+
+#define RTL_USER_PROC_CURDIR_CLOSE   0x00000002
+#define RTL_USER_PROC_CURDIR_INHERIT 0x00000003
+
+typedef struct _RTL_DRIVE_LETTER_CURDIR
+{
+	USHORT Flags;
+	USHORT Length;
+	ULONG TimeStamp;
+	STRING DosPath;
+} RTL_DRIVE_LETTER_CURDIR, *PRTL_DRIVE_LETTER_CURDIR;
+
+#define RTL_MAX_DRIVE_LETTERS  32
+#define RTL_DRIVE_LETTER_VALID (USHORT)0x0001
+
+typedef struct _RTL_USER_PROCESS_PARAMETERS
+{
+	ULONG MaximumLength;
+	ULONG Length;
+
+	ULONG Flags;
+	ULONG DebugFlags;
+
+	HANDLE ConsoleHandle;
+	ULONG ConsoleFlags;
+	HANDLE StandardInput;
+	HANDLE StandardOutput;
+	HANDLE StandardError;
+
+	CURDIR CurrentDirectory;
+	UNICODE_STRING DllPath;
+	UNICODE_STRING ImagePathName;
+	UNICODE_STRING CommandLine;
+	PVOID Environment;
+
+	ULONG StartingX;
+	ULONG StartingY;
+	ULONG CountX;
+	ULONG CountY;
+	ULONG CountCharsX;
+	ULONG CountCharsY;
+	ULONG FillAttribute;
+
+	ULONG WindowFlags;
+	ULONG ShowWindowFlags;
+	UNICODE_STRING WindowTitle;
+	UNICODE_STRING DesktopInfo;
+	UNICODE_STRING ShellInfo;
+	UNICODE_STRING RuntimeData;
+	RTL_DRIVE_LETTER_CURDIR CurrentDirectories[RTL_MAX_DRIVE_LETTERS];
+
+	ULONG_PTR EnvironmentSize;
+	ULONG_PTR EnvironmentVersion;
+
+	// Plus a lot more to follow. We only need the above
+} RTL_USER_PROCESS_PARAMETERS, *PRTL_USER_PROCESS_PARAMETERS;
+
+typedef struct _PEB_LDR_DATA
+{
+	BYTE Reserved1[8];
+	PVOID Reserved2[3];
+	LIST_ENTRY InMemoryOrderModuleList;
+} PEB_LDR_DATA, *PPEB_LDR_DATA;
+
+typedef struct _LDR_DATA_TABLE_ENTRY
+{
+	PVOID Reserved1[2];
+	LIST_ENTRY InMemoryOrderLinks;
+	PVOID Reserved2[2];
+	PVOID DllBase;
+	PVOID Reserved3[2];
+	UNICODE_STRING FullDllName;
+	BYTE Reserved4[8];
+	PVOID Reserved5[3];
+#pragma warning(push)
+#pragma warning(disable : 4201) // we'll always use the Microsoft compiler
+	union
+	{
+		ULONG CheckSum;
+		PVOID Reserved6;
+	} DUMMYUNIONNAME;
+#pragma warning(pop)
+	ULONG TimeDateStamp;
+} LDR_DATA_TABLE_ENTRY, *PLDR_DATA_TABLE_ENTRY;
+
+typedef struct _CLIENT_ID
+{
+	HANDLE UniqueProcess;
+	HANDLE UniqueThread;
+} CLIENT_ID, *PCLIENT_ID;
+
+typedef struct _PEB
+{
+	BYTE InheritedAddressSpace;
+	BYTE ReadImageFileExecOptions;
+	BYTE BeingDebugged;
+	BYTE Reserved2[1];
+	HANDLE Mutant;
+	PVOID ImageBaseAddress;
+	PPEB_LDR_DATA Ldr;
+	PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
+	PVOID SubSystemData;
+	PVOID ProcessHeap;
+	PRTL_CRITICAL_SECTION FastPebLock;
+	PVOID AtlThunkSListPtr;
+	PVOID Reserved5;
+	ULONG Reserved6;
+	PVOID Reserved7;
+	ULONG Reserved8;
+	ULONG AtlThunkSListPtr32;
+	PVOID Reserved9[45];
+	BYTE Reserved10[96];
+	PPS_POST_PROCESS_INIT_ROUTINE PostProcessInitRoutine;
+	BYTE Reserved11[128];
+	PVOID Reserved12[1];
+	ULONG SessionId;
+} PEB, *PPEB;
+
+typedef struct _TEB
+{
+	NT_TIB NtTib;
+	PVOID EnvironmentPointer;
+	CLIENT_ID ClientId;
+	PVOID ActiveRpcHandle;
+	PVOID ThreadLocalStoragePointer;
+	PPEB ProcessEnvironmentBlock;
+	PVOID Reserved2[399];
+	BYTE Reserved3[1952];
+	PVOID TlsSlots[64];
+	BYTE Reserved4[8];
+	PVOID Reserved5[26];
+	PVOID ReservedForOle; // Windows 2000 only
+	PVOID Reserved6[4];
+	PVOID TlsExpansionSlots;
+} TEB, *PTEB;
+
+#define NtCurrentProcess()      ((HANDLE)(LONG_PTR) - 1)
+#define NtCurrentThread()       ((HANDLE)(LONG_PTR) - 2)
+#define NtCurrentSession()      ((HANDLE)(LONG_PTR) - 3)
+#define NtCurrentProcessToken() ((HANDLE)(LONG_PTR) - 4)
+#define NtCurrentThreadToken()  ((HANDLE)(LONG_PTR) - 5)
+
+#define NtCurrentPeb()         (NtCurrentTeb()->ProcessEnvironmentBlock)
+#define NtCurrentProcessHeap() (NtCurrentPeb()->ProcessHeap)
+#define NtCurrentProcessId()   ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueProcess))
+#define NtCurrentThreadId()    ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueThread))
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlAllocateHeap(_In_ PVOID HeapHandle, _In_opt_ ULONG Flags, _In_ SIZE_T Size);
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlReAllocateHeap(_In_ PVOID HeapHandle, _In_ ULONG Flags, _Frees_ptr_opt_ PVOID BaseAddress, _In_ SIZE_T Size);
+
+NTSYSAPI
+LOGICAL
+NTAPI
+RtlFreeHeap(_In_ PVOID HeapHandle, _In_opt_ ULONG Flags, _Frees_ptr_opt_ PVOID BaseAddress);
+
+NTSYSAPI
+VOID NTAPI RtlInitUTF8String(_Out_ PUTF8_STRING DestinationString, _In_opt_z_ PCSTR SourceString);
+
+NTSYSAPI
+VOID NTAPI RtlInitUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_opt_z_ PCWSTR SourceString);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlUnicodeStringToUTF8String(_Out_ PUTF8_STRING DestinationString, _In_ PCUNICODE_STRING SourceString,
+							 _In_ BOOLEAN AllocateDestinationString);
+
+NTSYSAPI
+VOID NTAPI RtlFreeUTF8String(_Inout_ _At_(utf8String->Buffer, _Frees_ptr_opt_) PUTF8_STRING utf8String);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlUTF8StringToUnicodeString(_Out_ PUNICODE_STRING DestinationString, _In_ PUTF8_STRING SourceString,
+							 _In_ BOOLEAN AllocateDestinationString);
+
+NTSYSAPI
+VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_opt_) PUNICODE_STRING UnicodeString);
 
 #endif

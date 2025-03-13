@@ -34,5 +34,6 @@ status_t os_lock(handle_t handle, size_t offset, size_t length, byte_t nonblocki
 status_t os_unlock(handle_t handle, size_t offset, size_t length);
 
 status_t os_isatty(handle_t handle, uint32_t *result);
+status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer, uint16_t size, uint16_t *result);
 
 #endif
