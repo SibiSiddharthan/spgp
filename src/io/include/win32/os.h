@@ -8,23 +8,7 @@
 #ifndef OS_WIN32_H
 #define OS_WIN32_H
 
-#include <stdint.h>
-#include <time.h>
-
-typedef long status_t;
-typedef void *handle_t;
-
-typedef uint64_t ino_t;
-typedef uint64_t off_t;
-
-typedef uint32_t nlink_t;
-typedef uint32_t mode_t;
-typedef uint32_t dev_t;
-
-typedef uint32_t uid_t;
-typedef uint32_t gid_t;
-
-typedef struct timespec timespec_t;
+#include <win32/types.h>
 
 // Current directory handle
 handle_t _os_cwd_handle();

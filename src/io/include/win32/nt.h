@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef IO_WIN32_NT_H
-#define IO_WIN32_NT_H
+#ifndef OS_WIN32_NT_H
+#define OS_WIN32_NT_H
 
 #define WIN32_LEAN_AND_MEAN
 #define UMDF_USING_NTSTATUS
