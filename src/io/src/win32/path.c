@@ -9,6 +9,7 @@
 #include <win32/os.h>
 
 #include <os.h>
+#include <status.h>
 #include <ptr.h>
 
 #include <ctype.h>
@@ -17,46 +18,71 @@
 #define IS_ABSOLUTE_PATH(path) \
 	(/* Normal Windows way -> C: */ ((isalpha(path[0])) && (path[1] == ':')) || /* Cygwin way /c */ (path[0] == '/'))
 
-static uint32_t path_components_size = 16;
-
 typedef struct
 {
 	uint32_t start;  // starting offset
 	uint32_t length; // length of component in bytes
 } path_component;
 
-static path_component *add_component(path_component *restrict components, uint32_t *restrict index, uint32_t start, uint32_t length)
+typedef struct _path_stack
 {
-	if (components == NULL)
-	{
-		components = (path_component *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, path_components_size * sizeof(path_component));
+	uint32_t length;
 
-		if (components == NULL)
+	uint32_t capacity;
+	uint32_t count;
+	path_component *components;
+} path_stack;
+
+static path_stack *push_path_component(path_stack *stack, uint32_t start, uint32_t length)
+{
+	if (stack->components == NULL)
+	{
+		stack->capacity = 4;
+		stack->count = 0;
+
+		stack->components =
+			(path_component *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, stack->capacity * sizeof(path_component));
+
+		if (stack->components == NULL)
 		{
-			errno = ENOMEM;
 			return NULL;
 		}
 	}
 
-	if (*index == path_components_size)
+	if (stack->count == stack->capacity)
 	{
-		void *temp = RtlReAllocateHeap(NtCurrentProcessHeap(), 0, components, path_components_size * 2 * sizeof(path_component));
+		stack->capacity *= 2;
+		void *temp =
+			RtlReAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, stack->components, stack->capacity * sizeof(path_component));
 
 		if (temp == NULL)
 		{
-			errno = ENOMEM;
 			return NULL;
 		}
 
-		components = (path_component *)temp;
-		path_components_size *= 2;
+		stack->components = temp;
 	}
 
-	components[*index].start = start;
-	components[*index].length = length;
-	(*index)++;
+	stack->components[stack->count].start = start;
+	stack->components[stack->count].length = length;
 
-	return components;
+	stack->count++;
+
+	stack->length += length + 1;
+
+	return stack;
+}
+
+static path_stack *pop_path_component(path_stack *stack)
+{
+	// root path -> C:/.. -> C:/, C:/../.. -> C:/
+	if (stack->count > 1)
+	{
+		stack->length -= (stack->components[stack->count - 1].length + 1);
+		stack->count--;
+	}
+
+	return stack;
 }
 
 static NTSTATUS dos_device_to_nt_device(CHAR volume, UNICODE_STRING **result)
@@ -172,7 +198,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 		if (status != STATUS_SUCCESS)
 		{
 			*result = 0;
-			return status;
+			return _os_status(status);
 		}
 
 		status = RtlUnicodeStringToUTF8String(&u8_root_path, u16_root_path, FALSE);
@@ -181,12 +207,12 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 		if (status != STATUS_SUCCESS)
 		{
 			*result = (u16_root_path->Length / 2); // Estimate
-			return status;
+			return _os_status(status);
 		}
 
 		*result = u8_root_path.Length;
 
-		return status;
+		return OS_STATUS_SUCCESS;
 	}
 
 	// Network Shares
@@ -238,7 +264,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 
 		if (status != STATUS_SUCCESS)
 		{
-			return status;
+			return _os_status(status);
 		}
 
 		u8_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_nt_device->Length + length + 1);
@@ -246,8 +272,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 		if (u8_buffer == NULL)
 		{
 			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_device);
-			// errno = ENOENT;
-			return 0;
+			return OS_STATUS_NO_MEMORY;
 		}
 
 		u8_nt_path.Buffer = u8_buffer;
@@ -259,7 +284,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 
 		if (status != STATUS_SUCCESS)
 		{
-			return status;
+			return _os_status(status);
 		}
 
 		memcpy(PTR_OFFSET(u8_nt_path.Buffer, u8_nt_path.Length), PTR_OFFSET(path, 2), length - 2);
@@ -281,7 +306,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 		if (u8_buffer == NULL)
 		{
 			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_path);
-			return STATUS_NO_MEMORY;
+			return OS_STATUS_NO_MEMORY;
 		}
 
 		u8_nt_path.Buffer = u8_buffer;
@@ -293,7 +318,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 
 		if (status != STATUS_SUCCESS)
 		{
-			return status;
+			return _os_status(status);
 		}
 
 		memcpy(PTR_OFFSET(u8_nt_path.Buffer, u8_nt_path.Length), path, length);
@@ -301,6 +326,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 	}
 
 path_coalesce:
+
 	// Convert forward slashes to backward slashes
 	for (uint16_t i = 0; i < u8_nt_path.Length; ++i)
 	{
@@ -317,54 +343,46 @@ path_coalesce:
 	   This is a zero copy stack, i.e the components are not copied at all.
 	   We use the starting index and the length(in bytes) to reference each component.
 	*/
-	path_component *components = NULL;
-	uint32_t index = 0;
+	path_stack stack = {0};
 	uint32_t start = 0;
 
-	for (uint32_t i = 8;; i++) // start after \Device\:
+	for (uint32_t i = 8;; ++i) // start after \Device\:
 	{
 		if (buffer[i] == '\\' || buffer[i] == '\0')
 		{
 			if (i - start > 2) // not '.' or '..'
 			{
-				void *temp = add_component(components, &index, start, (i - start)); // push stack
+				void *temp = push_path_component(&stack, start, (i - start)); // push stack
+
 				if (temp == NULL)
 				{
-					status = STATUS_NO_MEMORY;
+					status = OS_STATUS_NO_MEMORY;
 					goto finish;
 				}
-
-				components = temp;
 			}
 			else
 			{
-				if (i - start == 2 && memcmp(buffer + start, "..", 2) == 0)
+				if (i - start == 2 && (buffer[start] == '.' && buffer[start + 1] == '.'))
 				{
-					--index; // pop stack
-					if (index < 1)
-					{
-						// root path -> C:/.. -> C:/, C:/../.. -> C:/
-						index = 1;
-					}
+					pop_path_component(&stack);
 				}
-				else if (i - start == 1 && memcmp(buffer + start, ".\\", 2) == 0)
+				else if (i - start == 1 && buffer[start] == '.')
 				{
 					; // do nothing
 				}
 				else
 				{
-					void *temp = add_component(components, &index, start, (i - start)); // push stack
+					void *temp = push_path_component(&stack, start, (i - start)); // push stack
+
 					if (temp == NULL)
 					{
-						status = STATUS_NO_MEMORY;
+						status = OS_STATUS_NO_MEMORY;
 						goto finish;
 					}
-
-					components = temp;
 				}
 			}
 
-			if (buffer[i] == L'\0')
+			if (buffer[i] == '\0')
 			{
 				break;
 			}
@@ -373,38 +391,28 @@ path_coalesce:
 		}
 	}
 
-	uint32_t required_size = 0;
 	uint32_t pos = 0;
 
-	for (uint32_t i = 0; i < index; i++)
+	if (size < stack.length)
 	{
-		required_size += components[i].length;
-		required_size += (i != (index - 1)) ? 1 : 0;
-	}
-
-	required_size += (index == 1) ? 1 : 0;
-	required_size += 1; // Terminating NULL
-
-	if (size < required_size)
-	{
-		*result = (uint16_t)required_size;
-		status = STATUS_BUFFER_OVERFLOW;
+		*result = (uint16_t)stack.length;
+		status = OS_STATUS_TOO_BIG;
 
 		goto finish;
 	}
 
-	for (uint32_t i = 0; i < index; i++)
+	for (uint32_t i = 0; i < stack.count; i++)
 	{
-		memcpy(PTR_OFFSET(buffer, pos), PTR_OFFSET(u8_buffer, components[i].start), components[i].length);
-		pos += components[i].length;
+		memcpy(PTR_OFFSET(buffer, pos), PTR_OFFSET(u8_buffer, stack.components[i].start), stack.components[i].length);
+		pos += stack.components[i].length;
 
-		if (i + 1 < index)
+		if (i + 1 < stack.count)
 		{
 			buffer[pos++] = '\\';
 		}
 	}
 
-	if (index == 1)
+	if (stack.count == 1)
 	{
 		// The case where we resolve a volume. eg C:
 		// Always add trailing slash to the volume so that it can be treated as a directory by the NT calls.
@@ -415,10 +423,10 @@ path_coalesce:
 	buffer[pos] = '\0';
 
 	*result = (uint16_t)pos;
-	status = STATUS_SUCCESS;
+	status = OS_STATUS_SUCCESS;
 
 finish:
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, components);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, stack.components);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, u8_buffer);
 
 	return status;
