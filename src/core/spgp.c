@@ -21,7 +21,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *help = "\n\
+static const char *version = "\
+sgpg 0.1\n\
+Copyright (c) 2024 - 2025 Sibi Siddharthan\n\
+Distributed under the MIT license\n\
+\n\
+Supported algorithms:\n\
+Public Key: RSA, DSA, ECDH, ECDSA, EDDSA, ED25519, ED448, X25519, X448\n\
+Symmetric Ciphers: TDES, AES, CAMELLIA, TWOFISH\n\
+Hash: MD5, RIPEMD160, SHA1, SHA224, SHA256, SHA384, SHA512, SHA3-256, SHA3-512\n\
+Compression: Uncompressed\n\
+";
+
+static const char *help = "\
 Usage: sgpg [options] [files]\n\
 Sign, Verify, Encrypt or Decrypt\n\
 \n\
@@ -226,6 +238,8 @@ static arg_option_t spgp_options[] = {
 	{"homedir", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_HOMEDIR},
 	{"passphrase", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_PASSPHRASE},
 	{"faked-system-time", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_FAKED_TIME}
+
+	// Compatibility Options
 };
 
 static void spgp_print_help()
