@@ -25,7 +25,7 @@ static const char *help = "\n\
 Usage: sgpg [options] [files]\n\
 Sign, Verify, Encrypt or Decrypt\n\
 \n\
-Commands:\n\
+Basic Commands:\n\
 \n\
  -s, --sign                     make a signature\n\
      --clear-sign               make a clear text signature\n\
@@ -34,6 +34,11 @@ Commands:\n\
  -c, --symmetric                encryption only with symmetric cipher\n\
  -d, --decrypt                  decrypt data\n\
      --verify                   verify a signature\n\
+ -a, --armor                    create ascii armored output\n\
+     --dearmor                  create pgp packet output (default)\n\
+\n\
+Key Commands:\n\
+\n\
  -k, --list-keys                list keys\n\
      --list-signatures          list keys and signatures\n\
      --check-signatures         list and check key signatures\n\
@@ -47,31 +52,53 @@ Commands:\n\
      --sign-key                 sign a key\n\
      --edit-key                 sign or edit a key\n\
      --export                   export keys\n\
+     --export-secret-keys       export secret keys\n\
      --import                   import/merge keys\n\
+     --import-secret-keys       import/merge secret keys\n\
      --change-passphrase        change a passphrase\n\
      --send-keys                export keys to a keyserver\n\
      --receive-keys             import keys from a keyserver\n\
      --search-keys              search for keys on a keyserver\n\
      --refresh-keys             update all keys from a keyserver\n\
 \n\
-Options:\n\
+Packet Commands:\n\
+     --list-packets             list PGP packets\n\
+     --dump-packets             dump PGP packets\n\
+\n\
+Miscellaneous Commands:\n\
+     -h, --help                 help\n\
+     --version                  print SPGP version information\n\
+\n\
+Output Options:\n\
+\n\
  -v, --verbose                  verbose\n\
  -q, --quiet                    quiet\n\
- -h, --help                     help\n\
- -n, --dry-run                  dry run (no modifications)\n\
- -i, --interactive              prompt before overwriting\n\
- -a, --armor                    create ascii armored output\n\
  -o, --output FILE              write output to FILE\n\
      --textmode                 use canonical text mode\n\
- -z N                           compression level to N (0 disables)\n\
+ -z  --compress-level N         compression level to N (0 disables)\n\
 \n\
-Keys:\n\
+Key Selection:\n\
  -r, --recipient USER-ID        encrypt for USER-ID\n\
  -u, --local-user USER-ID       use USER-ID to sign or decrypt\n\
 \n\
-Packets:\n\
-     --list-packets             List PGP packets\n\
-     --dump-packets             Dump PGP packets\n\
+Algorithm Options:\n\
+     --digest-algo ALGO         hash using ALGO\n\
+     --cipher-algo ALGO         encrypt using ALGO\n\
+     --compress-algo ALGO       compress using ALGO\n\
+\n\
+Operation Modes:\n\
+     --rfc4880                  conform to rfc 4880 specification\n\
+     --openpgp                  conform to openpgp specification\n\
+     --librepgp                 conform to librepgp specification\n\
+\n\
+Miscellaneous Options:\n\
+ -n, --dry-run                  dry run (no modifications)\n\
+ -i, --interactive              prompt before overwriting\n\
+     --batch                    enable batch mode\n\
+     --expert                   enable expert mode\n\
+     --homedir                  set home directory for spgp\n\
+     --passphrase PS            use passphrase PS\n\
+     --faked-system-time TIME   use timestamp TIME\n\
 \n\
 ";
 
