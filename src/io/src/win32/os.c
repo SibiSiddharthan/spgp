@@ -162,6 +162,7 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 	if (type == FILE_DEVICE_DISK)
 	{
 		FILE_STAT_INFORMATION stat_info = {0};
+		DWORD attributes = 0;
 
 		status = NtQueryInformationFile(handle, &io, &stat_info, sizeof(FILE_STAT_INFORMATION), FileStatInformation);
 
@@ -170,117 +171,11 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 			return -1;
 		}
 
-		DWORD attributes = stat_info.FileAttributes;
-		mode_t allowed_access = 0, denied_access = 0;
-		mode_t access = 0;
+		attributes = stat_info.FileAttributes;
 
-		char security_buffer[512];
-		ULONG length = 0;
+		// Fill st_uid, st_gid, st_mode
+		_os_access(handle, st);
 
-		status = NtQuerySecurityObject(handle, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
-									   security_buffer, sizeof(security_buffer), &length);
-
-		if (status != STATUS_SUCCESS)
-		{
-			return -1;
-		}
-
-		PISECURITY_DESCRIPTOR_RELATIVE security_descriptor = (PISECURITY_DESCRIPTOR_RELATIVE)security_buffer;
-		PISID owner = (PISID)(security_buffer + security_descriptor->Owner);
-		PISID group = (PISID)(security_buffer + security_descriptor->Group);
-		PACL acl = (PACL)(security_buffer + security_descriptor->Dacl);
-		size_t acl_read = 0;
-		byte_t user_ace_present = 0;
-
-		// Set the uid, gid as the last subauthority of their respective SIDs.
-		st->st_uid = owner->SubAuthority[owner->SubAuthorityCount - 1];
-		st->st_gid = group->SubAuthority[group->SubAuthorityCount - 1];
-
-#if 0
-		// Treat "NT AUTHORITY\SYSTEM" and "BUILTIN\Administrators" as root.
-		if (RtlEqualSid(owner, adminstrators_sid) || RtlEqualSid(owner, ntsystem_sid))
-		{
-			st->st_uid = 0;
-		}
-		if (RtlEqualSid(group, adminstrators_sid) || RtlEqualSid(group, ntsystem_sid))
-		{
-			st->st_gid = 0;
-		}
-
-		// Iterate through the ACLs
-		// Order should be (NT AUTHORITY\SYSTEM), (BUILTIN\Administrators), Current User ,(BUILTIN\Users), Everyone
-		for (int i = 0; i < acl->AceCount; ++i)
-		{
-			PISID sid = NULL;
-			PACE_HEADER ace_header = (PACE_HEADER)((char *)acl + sizeof(ACL) + acl_read);
-
-			// Only support allowed and denied ACEs
-			// Both ACCESS_ALLOWED_ACE and ACCESS_DENIED_ACE have ACE_HEADER at the start.
-			// Type casting of pointers here will work.
-			if (ace_header->AceType == ACCESS_ALLOWED_ACE_TYPE)
-			{
-				PACCESS_ALLOWED_ACE allowed_ace = (PACCESS_ALLOWED_ACE)ace_header;
-				sid = (PISID) & (allowed_ace->SidStart);
-				if (RtlEqualSid(sid, current_user_sid))
-				{
-					user_ace_present = 1;
-					allowed_access |= get_permissions(allowed_ace->Mask);
-				}
-				else if (RtlEqualSid(sid, users_sid))
-				{
-					allowed_access |= get_permissions(allowed_ace->Mask) >> 3;
-				}
-				else if (RtlEqualSid(sid, everyone_sid))
-				{
-					allowed_access |= get_permissions(allowed_ace->Mask) >> 6;
-				}
-				else
-				{
-					// Unsupported SID or SYSTEM or Administrator, ignore
-				}
-			}
-			else if (ace_header->AceType == ACCESS_DENIED_ACE_TYPE)
-			{
-				PACCESS_DENIED_ACE denied_ace = (PACCESS_DENIED_ACE)ace_header;
-				sid = (PISID) & (denied_ace->SidStart);
-				if (RtlEqualSid(sid, current_user_sid))
-				{
-					user_ace_present = 1;
-					denied_access |= get_permissions(denied_ace->Mask);
-				}
-				else if (RtlEqualSid(sid, users_sid))
-				{
-					denied_access |= get_permissions(denied_ace->Mask) >> 3;
-				}
-				else if (RtlEqualSid(sid, everyone_sid))
-				{
-					denied_access |= get_permissions(denied_ace->Mask) >> 6;
-				}
-				else
-				{
-					// Unsupported SID or SYSTEM or Administrator, ignore
-				}
-			}
-			else
-			{
-				// Unsupported ACE type
-			}
-			acl_read += ace_header->AceSize;
-		}
-
-		if (!user_ace_present)
-		{
-			// For current user permissions use the 'EffectiveAccess' field of FILE_STAT_INFORMATION if the specific ACL is absent.
-			// The specific user ACL will be absent except on C:\Users\XXXXX
-			// NOTE: Despite it being name 'EffectiveAccess' it is actually just access.
-			allowed_access |= get_permissions(stat_info.EffectiveAccess);
-		}
-
-		access = allowed_access & ~denied_access;
-		st->st_mode = access;
-#endif
-
-		// From readdir.c
 		if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 		{
 			ULONG reparse_tag = stat_info.ReparseTag;

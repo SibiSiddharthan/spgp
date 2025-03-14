@@ -19,6 +19,7 @@ status_t _os_status(status_t nt_status);
 
 // Security descriptor
 void *_os_security_descriptor(mode_t mode, uint32_t directory);
+void _os_access(handle_t handle, void *st);
 
 // Native NT access
 #define __FILE_ACCESS_READ_DATA   0x0001ul
