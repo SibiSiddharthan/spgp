@@ -13,6 +13,7 @@
 #define OS_STATUS_PATH_NOT_FOUND      2
 #define OS_STATUS_IO_ERROR            5
 #define OS_STATUS_TOO_BIG             7
+#define OS_STATUS_PENDING             8
 #define OS_STATUS_INVALID_HANDLE      9
 #define OS_STATUS_NO_MEMORY           12
 #define OS_STATUS_NO_ACCESS           13
@@ -29,6 +30,7 @@
 #define OS_STATUS_NOT_LOCKED          39
 #define OS_STATUS_INVALID_SYSCALL     40
 #define OS_STATUS_DIRECTORY_NOT_EMPTY 41
+#define OS_STATUS_END_OF_DATA         42
 #define OS_STATUS_NOT_SUPPORTED       129
 #define OS_STATUS_TIMED_OUT           138
 #define OS_STATUS_UNKNOWN             200

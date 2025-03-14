@@ -9,6 +9,7 @@
 #include <win32/os.h>
 
 #include <os.h>
+#include <status.h>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -73,12 +74,12 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 	RtlFreeUnicodeString(&u16_string);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
 
-	return status;
+	return _os_status(status);
 }
 
 status_t os_close(handle_t handle)
 {
-	return NtClose(handle);
+	return _os_status(NtClose(handle));
 }
 
 status_t os_read(handle_t handle, void *buffer, size_t size, size_t *result)
@@ -93,12 +94,13 @@ status_t os_read(handle_t handle, void *buffer, size_t size, size_t *result)
 
 	status = NtReadFile(handle, NULL, NULL, NULL, &io, buffer, (ULONG)size, NULL, NULL);
 
-	if (status > 0)
+	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN &&
+		status != STATUS_PIPE_EMPTY)
 	{
 		*result = io.Information;
 	}
 
-	return status;
+	return _os_status(status);
 }
 
 status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result)
@@ -117,12 +119,12 @@ status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result)
 
 	status = NtWriteFile(handle, NULL, NULL, NULL, &io, buffer, (ULONG)size, &offset, NULL);
 
-	if (status > 0)
+	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
 	{
 		*result = io.Information;
 	}
 
-	return status;
+	return _os_status(status);
 }
 
 status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flags, void *buffer, uint16_t size)
@@ -161,7 +163,7 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 	if (status != STATUS_SUCCESS)
 	{
-		return status;
+		return _os_status(status);
 	}
 
 	DEVICE_TYPE type = device_info.DeviceType;
@@ -175,7 +177,7 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 		if (status != STATUS_SUCCESS)
 		{
-			return -1;
+			return _os_status(status);
 		}
 
 		attributes = stat_info.FileAttributes;
@@ -227,6 +229,7 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 			{
 				status = NtFsControlFile(handle, NULL, NULL, NULL, &io, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer,
 										 MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+
 				if (status == STATUS_SUCCESS)
 				{
 
@@ -258,13 +261,13 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 				}
 				else
 				{
-					// Don't return just set errno.
+					RtlFreeHeap(NtCurrentProcessHeap(), 0, reparse_buffer);
+					return _os_status(status);
 				}
 			}
 			else
 			{
-				// Don't return just set errno.
-				errno = ENOMEM;
+				return _os_status(status);
 			}
 		}
 	}
@@ -283,7 +286,7 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 		st->st_dev = 0;
 	}
 
-	return 0;
+	return OS_STATUS_SUCCESS;
 }
 
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode)
@@ -309,12 +312,12 @@ status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mod
 	RtlFreeUnicodeString(&u16_string);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
 
-	if (status > 0)
+	if (status != STATUS_SUCCESS)
 	{
 		NtClose(handle);
 	}
 
-	return status;
+	return _os_status(status);
 }
 
 status_t os_remove(handle_t root, const char *path, uint16_t length)
@@ -338,9 +341,9 @@ status_t os_remove(handle_t root, const char *path, uint16_t length)
 
 	RtlFreeUnicodeString(&u16_string);
 
-	if (status < 0)
+	if (status != STATUS_SUCCESS)
 	{
-		return status;
+		return _os_status(status);
 	}
 
 	io.Status = 0;
@@ -350,7 +353,7 @@ status_t os_remove(handle_t root, const char *path, uint16_t length)
 	status = NtSetInformationFile(handle, &io, &dispostion, sizeof(FILE_DISPOSITION_INFORMATION_EX), FileDispositionInformationEx);
 	NtClose(handle);
 
-	return status;
+	return _os_status(status);
 }
 
 status_t os_lock(handle_t handle, size_t offset, size_t length, byte_t nonblocking, byte_t exclusive)
@@ -361,7 +364,7 @@ status_t os_lock(handle_t handle, size_t offset, size_t length, byte_t nonblocki
 	status = NtLockFile(handle, NULL, NULL, NULL, &io, (LARGE_INTEGER *)&offset, (LARGE_INTEGER *)&length, 0, (nonblocking & 0x1),
 						(exclusive & 0x1));
 
-	return status;
+	return _os_status(status);
 }
 
 status_t os_unlock(handle_t handle, size_t offset, size_t length)
@@ -371,7 +374,7 @@ status_t os_unlock(handle_t handle, size_t offset, size_t length)
 
 	status = NtUnlockFile(handle, &io, (LARGE_INTEGER *)&offset, (LARGE_INTEGER *)&length, 0);
 
-	return status;
+	return _os_status(status);
 }
 
 status_t os_isatty(handle_t handle, uint32_t *result)
@@ -382,13 +385,13 @@ status_t os_isatty(handle_t handle, uint32_t *result)
 
 	status = NtQueryVolumeInformationFile(handle, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 
-	if (status < 0)
+	if (status != STATUS_SUCCESS)
 	{
 		*result = 0;
-		return status;
+		return _os_status(status);
 	}
 
 	*result = device_info.DeviceType == FILE_DEVICE_CONSOLE ? 1 : 0;
 
-	return status;
+	return OS_STATUS_SUCCESS;
 }

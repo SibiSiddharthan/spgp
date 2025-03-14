@@ -74,6 +74,14 @@ status_t _os_status(status_t nt_status)
 	case STATUS_FILE_IS_A_DIRECTORY:
 		return OS_STATUS_IS_DIRECTORY;
 
+	case STATUS_PENDING:
+		return OS_STATUS_PENDING;
+
+	case STATUS_END_OF_FILE:
+	case STATUS_NO_MORE_FILES:
+	case STATUS_PIPE_EMPTY:
+		return OS_STATUS_END_OF_DATA;
+
 	case STATUS_PIPE_BROKEN:
 	case STATUS_PIPE_BUSY:
 	case STATUS_PIPE_DISCONNECTED:
