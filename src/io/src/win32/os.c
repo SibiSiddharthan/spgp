@@ -7,6 +7,7 @@
 
 #include <win32/nt.h>
 #include <win32/os.h>
+#include <win32/timestamp.h>
 
 #include <os.h>
 #include <status.h>
@@ -213,11 +214,10 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 		st->st_nlink = stat_info.NumberOfLinks;
 		st->st_size = stat_info.EndOfFile.QuadPart;
 
-		// TODO: st_[amc]tim
-		// st->st_atim = LARGE_INTEGER_to_timespec(stat_info.LastAccessTime);
-		// st->st_mtim = LARGE_INTEGER_to_timespec(stat_info.LastWriteTime);
-		// st->st_ctim = LARGE_INTEGER_to_timespec(stat_info.ChangeTime);
-		// st->st_birthtim = LARGE_INTEGER_to_timespec(stat_info.CreationTime);
+		st->st_atim = _os_time_to_timespec(stat_info.LastAccessTime);
+		st->st_mtim = _os_time_to_timespec(stat_info.LastWriteTime);
+		st->st_ctim = _os_time_to_timespec(stat_info.ChangeTime);
+		st->st_birthtim = _os_time_to_timespec(stat_info.CreationTime);
 
 		if (STAT_IS_FIFO(st->st_mode))
 		{

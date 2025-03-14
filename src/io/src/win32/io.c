@@ -7,6 +7,7 @@
 
 #include <win32/nt.h>
 #include <win32/os.h>
+#include <win32/timestamp.h>
 
 #include <io.h>
 
@@ -111,7 +112,10 @@ static uint16_t dir_load_extended(void *data, dir_entry_extended_t *entry)
 		entry->entry_type = ENTRY_TYPE_UNKNOWN;
 	}
 
-	// TODO: Load times
+	entry->entry_access_time = _os_time_to_timespec(direntry->LastAccessTime);
+	entry->entry_modification_time = _os_time_to_timespec(direntry->LastWriteTime);
+	entry->entry_change_time = _os_time_to_timespec(direntry->ChangeTime);
+	entry->entry_created_time = _os_time_to_timespec(direntry->CreationTime);
 
 	entry->entry_end_of_file = direntry->EndOfFile.QuadPart;
 	entry->entry_allocation_size = direntry->AllocationSize.QuadPart;
