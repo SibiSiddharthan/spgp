@@ -456,11 +456,16 @@ void argparse_delete(argparse_t *actx)
 	free(actx);
 }
 
-arg_result_t *argparse(argparse_t *actx)
+arg_result_t *argparse(argparse_t *actx, uint32_t flags)
 {
 	if (actx->result_index == actx->result_count)
 	{
 		return NULL;
+	}
+
+	if (flags & ARGPARSE_PEEK)
+	{
+		return &actx->results[actx->result_index];
 	}
 
 	return &actx->results[actx->result_index++];

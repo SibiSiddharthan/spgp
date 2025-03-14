@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 		argparse_new(argc, (void **)argv, sizeof(spgp_options) / sizeof(arg_option_t), spgp_options, ARGPARSE_FLAG_SKIP_FIRST_ARGUMENT);
 	arg_result_t *result = NULL;
 
-	while ((result = argparse(actx)) != NULL)
+	while ((result = argparse(actx, 0)) != NULL)
 	{
 		switch (result->value)
 		{

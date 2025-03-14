@@ -21,6 +21,9 @@
 #define ARGPARSE_RETURN_UNKNOWN_SHORT_OPTION -3
 #define ARGPARSE_RETURN_UNKNOWN_LONG_OPTION  -4
 
+// Argparse Flags
+#define ARGPARSE_PEEK 0x1
+
 // Argument Types
 typedef enum _option_type
 {
@@ -64,6 +67,6 @@ typedef struct _argparse_t
 argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count, arg_option_t *options, uint32_t flags);
 void argparse_delete(argparse_t *actx);
 
-arg_result_t *argparse(argparse_t *actx);
+arg_result_t *argparse(argparse_t *actx, uint32_t flags);
 
 #endif
