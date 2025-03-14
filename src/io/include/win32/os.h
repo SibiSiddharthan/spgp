@@ -12,7 +12,11 @@
 
 // Current directory handle
 handle_t _os_cwd_handle();
-#define HANDLE_CWD (_os_cwd_handle())
+
+#define HANDLE_CWD              (_os_cwd_handle())
+#define HANDLE_EMPTY_PATH       0x0
+#define HANDLE_SYMLINK_FOLLOW   0x1
+#define HANDLE_SYMLINK_NOFOLLOW 0x2
 
 // Status mapping
 status_t _os_status(status_t nt_status);
@@ -153,7 +157,6 @@ void _os_access(handle_t handle, void *st);
 #define STAT_IS_SOCK(mode) STAT_IS_TYPE((mode), STAT_FILE_TYPE_SOCK)
 
 // File attributes
-
 #define STAT_ATTRIBUTE_READONLY   __FILE_ATTRIBUTE_READONLY
 #define STAT_ATTRIBUTE_HIDDEN     __FILE_ATTRIBUTE_HIDDEN
 #define STAT_ATTRIBUTE_SYSTEM     __FILE_ATTRIBUTE_SYSTEM
@@ -187,5 +190,7 @@ typedef struct _stat_t
 	timespec_t st_ctim;     // time of last status change
 	timespec_t st_birthtim; // time of birth
 } stat_t;
+
+#define STAT_NO_ACLS 0x10
 
 #endif

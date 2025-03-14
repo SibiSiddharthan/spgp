@@ -43,15 +43,15 @@ static mode_t determine_mode(ACCESS_MASK access)
 {
 	mode_t perms = 0;
 
-	if ((access & (FILE_READ_DATA | FILE_READ_EA)) == (FILE_READ_DATA | FILE_READ_EA))
+	if ((access & FILE_ACCESS_READ) == FILE_ACCESS_READ)
 	{
 		perms |= PERM_USER_READ;
 	}
-	if ((access & (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_EA)) == (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_EA))
+	if ((access & FILE_ACCESS_WRITE) == FILE_ACCESS_WRITE)
 	{
 		perms |= PERM_USER_WRITE;
 	}
-	if ((access & (FILE_EXECUTE)) == (FILE_EXECUTE))
+	if ((access & __FILE_ACCESS_EXECUTE) == __FILE_ACCESS_EXECUTE)
 	{
 		perms |= PERM_USER_EXECUTE;
 	}

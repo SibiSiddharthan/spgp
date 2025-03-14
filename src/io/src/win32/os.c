@@ -143,12 +143,21 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 	if (path != NULL)
 	{
-		status = os_open(&handle, root, path, length,
-						 __FILE_ACCESS_READ_ATTRIBUTES | __FILE_ACCESS_READ_CONTROL | __FILE_ACCESS_SYNCHRONIZE, 0, 0);
+		OBJECT_ATTRIBUTES object = {0};
+		UNICODE_STRING u16_string = {0};
+		UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
 
-		if (status != 0)
+		RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+
+		InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE, root, NULL);
+
+		status = NtCreateFile(handle, FILE_READ_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE, &object, &io, NULL, 0,
+							  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
+							  (flags & HANDLE_SYMLINK_NOFOLLOW) ? FILE_OPEN_REPARSE_POINT : 0, NULL, 0);
+
+		if (status != STATUS_SUCCESS)
 		{
-			return status;
+			return _os_status(status);
 		}
 	}
 	else
@@ -164,7 +173,7 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 	if (status != STATUS_SUCCESS)
 	{
-		return _os_status(status);
+		goto error;
 	}
 
 	DEVICE_TYPE type = device_info.DeviceType;
@@ -178,13 +187,33 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 		if (status != STATUS_SUCCESS)
 		{
-			return _os_status(status);
+			goto error;
 		}
 
 		attributes = stat_info.FileAttributes;
 
 		// Fill st_uid, st_gid, st_mode
-		_os_access(handle, st);
+		if ((flags & STAT_NO_ACLS) == 0)
+		{
+			_os_access(handle, st);
+		}
+		else
+		{
+			ACCESS_MASK access = stat_info.EffectiveAccess;
+
+			if ((access & FILE_ACCESS_READ) == FILE_ACCESS_READ)
+			{
+				st->st_mode |= PERM_USER_READ;
+			}
+			if ((access & FILE_ACCESS_WRITE) == FILE_ACCESS_WRITE)
+			{
+				st->st_mode |= PERM_USER_WRITE;
+			}
+			if ((access & __FILE_ACCESS_EXECUTE) == __FILE_ACCESS_EXECUTE)
+			{
+				st->st_mode |= PERM_USER_EXECUTE;
+			}
+		}
 
 		if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 		{
@@ -262,12 +291,12 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 				else
 				{
 					RtlFreeHeap(NtCurrentProcessHeap(), 0, reparse_buffer);
-					return _os_status(status);
+					goto error;
 				}
 			}
 			else
 			{
-				return _os_status(status);
+				goto error;
 			}
 		}
 	}
@@ -287,6 +316,14 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 	}
 
 	return OS_STATUS_SUCCESS;
+
+error:
+	if (path != NULL)
+	{
+		NtClose(handle);
+	}
+
+	return _os_status(status);
 }
 
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode)
