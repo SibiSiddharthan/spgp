@@ -91,6 +91,7 @@ Output Options:\n\
 Key Selection:\n\
  -r, --recipient USER-ID        encrypt for USER-ID\n\
  -u, --local-user USER-ID       use USER-ID to sign or decrypt\n\
+ -p, --key-packet FILE          use packet in FILE to sign, verify, encrypt and decrypt\n\
 \n\
 Algorithm Options:\n\
      --digest-algo ALGO         hash using ALGO\n\
@@ -156,6 +157,7 @@ typedef enum _spgp_option
 	// Key Selection
 	SPGP_RECIPIENT,
 	SPGP_USER_ID,
+	SPGP_KEY_PACKET,
 
 	// Algorithm Options
 	SPGP_DIGEST_ALGORITHM,
@@ -219,6 +221,7 @@ static arg_option_t spgp_options[] = {
 	// Key Selection
 	{"recipient", 'r', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_RECIPIENT},
 	{"local-user", 'u', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_USER_ID},
+	{"key-packet", 'p', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_KEY_PACKET},
 
 	// Algorithm Options
 	{"digest-algo", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_DIGEST_ALGORITHM},
@@ -312,6 +315,7 @@ int main(int argc, char **argv)
 		}
 		break;
 
+		// Basic Commands
 		case SPGP_LIST_PACKETS:
 		{
 			spgp_list_packets(result->data);
