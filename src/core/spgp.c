@@ -65,8 +65,8 @@ Key Commands:\n\
      --edit-key                 sign or edit a key\n\
      --export                   export keys\n\
      --export-secret-keys       export secret keys\n\
-     --import                   import/merge keys\n\
-     --import-secret-keys       import/merge secret keys\n\
+     --import                   import keys\n\
+     --import-secret-keys       import secret keys\n\
      --change-passphrase        change a passphrase\n\
      --send-keys                export keys to a keyserver\n\
      --receive-keys             import keys from a keyserver\n\
@@ -108,7 +108,7 @@ Miscellaneous Options:\n\
      --batch                    enable batch mode\n\
      --expert                   enable expert mode\n\
      --homedir                  set home directory for spgp\n\
-     --passphrase PS            use passphrase PS\n\
+     --passphrase PASS          use passphrase PASS\n\
      --faked-system-time TIME   use timestamp TIME\n\
 \n\
 ";
@@ -242,9 +242,14 @@ static arg_option_t spgp_options[] = {
 	// Compatibility Options
 };
 
-static void spgp_print_help()
+static void spgp_print_help(void)
 {
 	printf("%s", help);
+}
+
+static void spgp_print_version(void)
+{
+	printf("%s", version);
 }
 
 static void spgp_list_packets(char *file)
@@ -293,11 +298,20 @@ int main(int argc, char **argv)
 	{
 		switch (result->value)
 		{
+		// The important ones
+		case SPGP_VERSION:
+		{
+			spgp_print_version();
+			exit(EXIT_SUCCESS);
+		}
+		break;
 		case SPGP_HELP:
 		{
 			spgp_print_help();
+			exit(EXIT_SUCCESS);
 		}
 		break;
+
 		case SPGP_LIST_PACKETS:
 		{
 			spgp_list_packets(result->data);
