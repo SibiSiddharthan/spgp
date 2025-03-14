@@ -28,6 +28,8 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
 	UNICODE_STRING u16_string = {0};
 
+	PSECURITY_DESCRIPTOR security_descriptor = NULL;
+
 	ACCESS_MASK access_rights = access;
 	ULONG disposition = flags & (FILE_FLAG_CREATE | FILE_FLAG_EXCLUSIVE | FILE_FLAG_TRUNCATE);
 	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
@@ -59,12 +61,17 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 		break;
 	}
 
+	security_descriptor = _os_security_descriptor(mode, (flags & FILE_FLAG_DIRECTORY));
+
 	RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
 
-	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE | (flags & FILE_FLAG_NO_INHERIT ? 0 : OBJ_INHERIT), root, NULL);
+	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE | (flags & FILE_FLAG_NO_INHERIT ? 0 : OBJ_INHERIT), root,
+							   security_descriptor);
 
 	status = NtCreateFile(handle, access_rights, &object, &io, NULL, attributes, share, disposition, options, NULL, 0);
+
 	RtlFreeUnicodeString(&u16_string);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
 
 	return status;
 }
@@ -290,6 +297,8 @@ status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mod
 	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
 	UNICODE_STRING u16_string = {0};
 
+	PSECURITY_DESCRIPTOR security_descriptor = _os_security_descriptor(mode, 1);
+
 	RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
 
 	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE, root, NULL);
@@ -298,6 +307,7 @@ status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mod
 						  FILE_CREATE, FILE_DIRECTORY_FILE, NULL, 0);
 
 	RtlFreeUnicodeString(&u16_string);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
 
 	if (status > 0)
 	{
