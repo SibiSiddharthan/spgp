@@ -240,6 +240,13 @@ typedef struct _spgp_command
 
 		struct
 		{
+			char *sign;
+			char *file;
+			char *packet;
+		} verify;
+
+		struct
+		{
 			byte_t dump;
 			byte_t no_mpi;
 			char *file;
@@ -404,6 +411,86 @@ static uint32_t spgp_sign(spgp_command *command)
 	return 0;
 }
 
+static uint32_t spgp_verify(spgp_command *command)
+{
+	char buffer[65536] = {0};
+
+	FILE *file = NULL;
+	size_t size = 0;
+
+	pgp_stream_t *key_stream = NULL;
+	pgp_key_packet *key = NULL;
+	pgp_signature_packet *sign = NULL;
+
+	if (command->verify.packet != NULL)
+	{
+		file = fopen(command->verify.packet, "rb");
+
+		if (file == NULL)
+		{
+			fprintf(stderr, "File not found: %s\n", command->sign.packet);
+			return 1;
+		}
+
+		size = fread(buffer, 1, 65536, file);
+
+		fclose(file);
+
+		key_stream = pgp_stream_read(buffer, size);
+		key = key_stream->packets[0];
+	}
+	else
+	{
+		return 2;
+	}
+
+	if (command->verify.sign != NULL)
+	{
+		file = fopen(command->verify.sign, "rb");
+
+		if (file == NULL)
+		{
+			fprintf(stderr, "File not found: %s\n", command->verify.sign);
+			return 1;
+		}
+
+		size = fread(buffer, 1, 65536, file);
+
+		sign = pgp_signature_packet_read(buffer, size);
+
+		fclose(file);
+	}
+	else
+	{
+		return 2;
+	}
+
+	if (command->verify.file != NULL)
+	{
+		file = fopen(command->verify.file, "rb");
+
+		if (file == NULL)
+		{
+			fprintf(stderr, "File not found: %s\n", command->verify.file);
+			return 1;
+		}
+
+		size = fread(buffer, 1, 65536, file);
+
+		fclose(file);
+	}
+	else
+	{
+		return 2;
+	}
+
+	uint32_t status = pgp_signature_packet_verify(sign, key, buffer, size);
+
+	printf("%s\n", status == 1 ? "Good Signature" : "Bad Signature");
+
+	return 0;
+}
+
 static uint32_t spgp_list_packets(spgp_command *command)
 {
 	char buffer[65536] = {0};
@@ -509,6 +596,46 @@ int main(int argc, char **argv)
 			}
 		}
 		break;
+		case SPGP_OPTION_VERIFY:
+		{
+			if (command.operation != SPGP_OPERATION_NONE)
+			{
+				break;
+			}
+
+			command.operation = SPGP_OPERATION_VERIFY;
+
+			result = argparse(actx, ARGPARSE_PEEK);
+
+			if (result == NULL)
+			{
+				break;
+			}
+
+			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
+			{
+				// Consume the option
+				argparse(actx, 0);
+
+				command.verify.sign = result->data;
+			}
+
+			result = argparse(actx, ARGPARSE_PEEK);
+
+			if (result == NULL)
+			{
+				break;
+			}
+
+			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
+			{
+				// Consume the option
+				argparse(actx, 0);
+
+				command.verify.file = result->data;
+			}
+		}
+		break;
 
 		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:
@@ -547,6 +674,11 @@ int main(int argc, char **argv)
 			{
 				command.sign.packet = result->data;
 			}
+
+			if (command.operation == SPGP_OPERATION_VERIFY)
+			{
+				command.verify.packet = result->data;
+			}
 		}
 		break;
 
@@ -580,6 +712,9 @@ int main(int argc, char **argv)
 	{
 	case SPGP_OPERATION_SIGN:
 		exit_code = spgp_sign(&command);
+		break;
+	case SPGP_OPERATION_VERIFY:
+		exit_code = spgp_verify(&command);
 		break;
 	case SPGP_OPERATION_LIST_PACKETS:
 		exit_code = spgp_list_packets(&command);

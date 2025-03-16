@@ -1618,27 +1618,33 @@ static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet
 		// Extra bookeeping stuff that is better to do just here.
 		// Count the number of attested certifications
 		{
-			for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+			if (packet->hashed_subpackets != NULL)
 			{
-				pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
-
-				if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
+				for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
 				{
-					pgp_attested_certifications_subpacket *subpacket = packet->hashed_subpackets->packets[i];
+					pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
 
-					subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
+					if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
+					{
+						pgp_attested_certifications_subpacket *subpacket = packet->hashed_subpackets->packets[i];
+
+						subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
+					}
 				}
 			}
 
-			for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+			if (packet->unhashed_subpackets != NULL)
 			{
-				pgp_subpacket_header *header = packet->unhashed_subpackets->packets[i];
-
-				if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
+				for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
 				{
-					pgp_attested_certifications_subpacket *subpacket = packet->unhashed_subpackets->packets[i];
+					pgp_subpacket_header *header = packet->unhashed_subpackets->packets[i];
 
-					subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
+					if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
+					{
+						pgp_attested_certifications_subpacket *subpacket = packet->unhashed_subpackets->packets[i];
+
+						subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
+					}
 				}
 			}
 		}
