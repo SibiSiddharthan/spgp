@@ -481,7 +481,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 		//	pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
-		packet->encrypted_session_key = pgp_ecdh_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+		packet->encrypted_session_key = pgp_ecdh_kex_encrypt(key->key, symmetric_key_algorithm_id, NULL, 0, session_key, session_key_size);
 		break;
 	case PGP_X25519:
 		packet->encrypted_session_key = pgp_x25519_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
@@ -526,7 +526,8 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 		result = pgp_rsa_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
-		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, session_key, session_key_size);
+		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, NULL, 0, session_key,
+									  session_key_size);
 		break;
 	case PGP_X25519:
 		result =

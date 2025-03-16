@@ -689,6 +689,23 @@ int main(int argc, char **argv)
 		}
 		break;
 
+		// Operation Modes
+		case SPGP_OPTION_RFC4880:
+		{
+			command.mode = SPGP_MODE_RFC4880;
+		}
+		break;
+		case SPGP_OPTION_OPENPGP:
+		{
+			command.mode = SPGP_MODE_OPENPGP;
+		}
+		break;
+		case SPGP_OPTION_LIBREPGP:
+		{
+			command.mode = SPGP_MODE_LIBREPGP;
+		}
+		break;
+
 		// Miscellaneous Options
 		case SPGP_OPTION_PASSPHRASE:
 		{
