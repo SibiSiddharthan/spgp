@@ -277,7 +277,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 
 		u8_nt_path.Buffer = u8_buffer;
 		u8_nt_path.Length = 0;
-		u8_nt_path.Length = u16_nt_device->Length + length + 1;
+		u8_nt_path.MaximumLength = u16_nt_device->Length + length + 1;
 
 		status = RtlUnicodeStringToUTF8String(&u8_nt_path, u16_nt_device, FALSE);
 		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_device);
@@ -311,7 +311,7 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 
 		u8_nt_path.Buffer = u8_buffer;
 		u8_nt_path.Length = 0;
-		u8_nt_path.Length = u16_nt_path->Length + length + 1;
+		u8_nt_path.MaximumLength = u16_nt_path->Length + length + 1;
 
 		status = RtlUnicodeStringToUTF8String(&u8_nt_path, u16_nt_path, FALSE);
 		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_path);
@@ -348,7 +348,7 @@ path_coalesce:
 
 	for (uint32_t i = 8;; ++i) // start after \Device\:
 	{
-		if (buffer[i] == '\\' || buffer[i] == '\0')
+		if (u8_buffer[i] == '\\' || u8_buffer[i] == '\0')
 		{
 			if (i - start > 2) // not '.' or '..'
 			{
@@ -362,11 +362,11 @@ path_coalesce:
 			}
 			else
 			{
-				if (i - start == 2 && (buffer[start] == '.' && buffer[start + 1] == '.'))
+				if (i - start == 2 && (u8_buffer[start] == '.' && u8_buffer[start + 1] == '.'))
 				{
 					pop_path_component(&stack);
 				}
-				else if (i - start == 1 && buffer[start] == '.')
+				else if (i - start == 1 && u8_buffer[start] == '.')
 				{
 					; // do nothing
 				}
@@ -382,7 +382,7 @@ path_coalesce:
 				}
 			}
 
-			if (buffer[i] == '\0')
+			if (u8_buffer[i] == '\0')
 			{
 				break;
 			}

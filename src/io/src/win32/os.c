@@ -37,7 +37,7 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 	ULONG attributes = flags & (FILE_FLAG_READONLY | FILE_FLAG_HIDDEN | FILE_FLAG_SYSTEM);
 	ULONG options =
-		((flags & (FILE_FLAG_DIRECTORY | FILE_FLAG_SYNC | FILE_FLAG_DIRECT | FILE_FLAG_NON_DIRECTORY | FILE_FLAG_NOFOLLOW)) >> 1) |
+		((flags & (FILE_FLAG_DIRECTORY | FILE_FLAG_SYNC | FILE_FLAG_DIRECT | FILE_FLAG_NON_DIRECTORY | FILE_FLAG_NOFOLLOW)) >> 4) |
 		(flags & FILE_FLAG_NONBLOCK ? 0 : FILE_SYNCHRONOUS_IO_NONALERT);
 
 	// Determine disposition
@@ -63,16 +63,32 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 		break;
 	}
 
-	security_descriptor = _os_security_descriptor(mode, (flags & FILE_FLAG_DIRECTORY));
+	if (flags & FILE_FLAG_CREATE)
+	{
+		security_descriptor = _os_security_descriptor(mode, (flags & FILE_FLAG_DIRECTORY));
+	}
 
-	RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+	if (path != NULL)
+	{
+		RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+
+		// Full NT path, ignore root
+		if (path[0] == '\\')
+		{
+			root = NULL;
+		}
+	}
 
 	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE | (flags & FILE_FLAG_NO_INHERIT ? 0 : OBJ_INHERIT), root,
 							   security_descriptor);
 
 	status = NtCreateFile(handle, access_rights, &object, &io, NULL, attributes, share, disposition, options, NULL, 0);
 
-	RtlFreeUnicodeString(&u16_string);
+	if (path != NULL)
+	{
+		RtlFreeUnicodeString(&u16_string);
+	}
+
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
 
 	return _os_status(status);

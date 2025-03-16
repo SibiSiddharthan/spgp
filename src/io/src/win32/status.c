@@ -14,6 +14,9 @@ status_t _os_status(status_t nt_status)
 {
 	switch (nt_status)
 	{
+	case STATUS_SUCCESS:
+		return OS_STATUS_SUCCESS;
+
 	case STATUS_NO_MEMORY:
 	case STATUS_FATAL_MEMORY_EXHAUSTION:
 		return OS_STATUS_NO_ACCESS;
