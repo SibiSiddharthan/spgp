@@ -3045,40 +3045,63 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 
 uint32_t pgp_key_id(void *key, byte_t id[8])
 {
-	pgp_packet_header *header = key;
-	byte_t tag = pgp_packet_get_type(header->tag);
+	pgp_key_packet *packet = key;
+	byte_t tag = pgp_packet_get_type(packet->header.tag);
 
-	uint32_t result = 0;
-	byte_t fingerprint[32] = {0};
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 
-	// For V3 RSA
-	if (tag == PGP_PUBKEY || tag == PGP_PUBSUBKEY || tag == PGP_SECKEY || tag == PGP_SECSUBKEY)
-	{
-		pgp_key_packet *packet = key;
-
-		if (packet->version == PGP_KEY_V3)
-		{
-			// Low 64 bits of public modulus
-			pgp_rsa_key *rsa_key = packet->key;
-			uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
-
-			LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
-		}
-	}
-	else
+	if (tag != PGP_PUBKEY && tag != PGP_PUBSUBKEY && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
 	{
 		return 0;
 	}
 
-	// Last 64 bits of the fingerprint
-	result = pgp_key_fingerprint(key, fingerprint, 32);
-
-	if (result == 0)
+	if (pgp_public_cipher_algorithm_validate(packet->public_key_algorithm_id) == 0)
 	{
 		return 0;
 	}
 
-	LOAD_64(id, PTR_OFFSET(fingerprint, result - 8));
+	switch (packet->version)
+	{
+	case PGP_KEY_V2:
+	case PGP_KEY_V3:
+	{
+		// Low 64 bits of public modulus
+		pgp_rsa_key *rsa_key = packet->key;
+		uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
+
+		LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
+	}
+	break;
+	case PGP_KEY_V4:
+	{
+		// Low 64 bits of fingerprint
+		pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 6, packet->key,
+							   fingerprint);
+
+		LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE - 8));
+	}
+	break;
+	case PGP_KEY_V5:
+	{
+		// High 64 bits of fingerprint
+		pgp_key_fingerprint_v5(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
+							   packet->public_key_data_octets, packet->key, fingerprint);
+
+		LOAD_64(id, PTR_OFFSET(fingerprint, 8));
+	}
+	break;
+	case PGP_KEY_V6:
+	{
+		// Low 64 bits of fingerprint
+		pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
+							   packet->public_key_data_octets, packet->key, fingerprint);
+
+		LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE - 8));
+	}
+	break;
+	default:
+		return 0;
+	}
 
 	return 8;
 }
