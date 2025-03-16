@@ -108,6 +108,7 @@ Miscellaneous Options:\n\
  -i, --interactive              prompt before overwriting\n\
      --batch                    enable batch mode\n\
      --expert                   enable expert mode\n\
+     --no-mpis                  dont print mpis when dumping packets\n\
      --homedir                  set home directory for spgp\n\
      --passphrase PASS          use passphrase PASS\n\
      --faked-system-time TIME   use timestamp TIME\n\
@@ -174,6 +175,7 @@ typedef enum _spgp_option
 	SPGP_OPTION_INTERACTIVE,
 	SPGP_OPTION_BATCH,
 	SPGP_OPTION_EXPERT,
+	SPGP_OPTION_NO_MPIS,
 	SPGP_OPTION_HOMEDIR,
 	SPGP_OPTION_PASSPHRASE,
 	SPGP_OPTION_FAKED_TIME,
@@ -188,8 +190,11 @@ typedef enum _spgp_mode
 
 typedef enum _spgp_operation
 {
+	// Reserved Command
+	SPGP_OPERATION_NONE = 0,
+
 	// Basic Commands
-	SPGP_OPERATION_SIGN = 1,
+	SPGP_OPERATION_SIGN,
 	SPGP_OPERATION_VERIFY,
 
 	SPGP_OPERATION_ENCRYPT,
@@ -223,8 +228,8 @@ typedef struct _spgp_command
 		struct
 		{
 			byte_t dump;
-			byte_t mpi;
-			void *file;
+			byte_t no_mpi;
+			char *file;
 		} list_packets;
 	};
 
@@ -289,6 +294,7 @@ static arg_option_t spgp_options[] = {
 	{"interactive", 'i', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_INTERACTIVE},
 	{"batch", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_BATCH},
 	{"expert", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPERT},
+	{"no-mpis", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_NO_MPIS},
 	{"homedir", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_HOMEDIR},
 	{"passphrase", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_PASSPHRASE},
 	{"faked-system-time", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_FAKED_TIME}
@@ -306,47 +312,61 @@ static void spgp_print_version(void)
 	printf("%s", version);
 }
 
-static void spgp_list_packets(char *file)
+static uint32_t spgp_list_packets(spgp_command *command)
 {
 	char buffer[65536] = {0};
 	char str[65536] = {0};
+	uint16_t options = 0;
 
+	FILE *file = NULL;
 	size_t size = 0;
 
-	FILE *f = fopen(file, "rb");
-	size = fread(buffer, 1, 65536, f);
+	if (command->list_packets.file != NULL)
+	{
+		file = fopen(command->list_packets.file, "rb");
 
-	fclose(f);
+		if (file == NULL)
+		{
+			fprintf(stderr, "File not found: %s\n", command->list_packets.file);
+			return 1;
+		}
+
+		size = fread(buffer, 1, 65536, file);
+
+		fclose(file);
+	}
+	else
+	{
+		size = fread(buffer, 1, 65536, stdin);
+	}
+
+	if (command->list_packets.dump == 0)
+	{
+		options |= PGP_PRINT_HEADER_ONLY;
+	}
+
+	if (command->list_packets.no_mpi)
+	{
+		options |= PGP_PRINT_MPI_MINIMAL;
+	}
 
 	pgp_stream_t *stream = pgp_stream_read(buffer, size);
-	pgp_stream_print(stream, str, 65536, PGP_PRINT_HEADER_ONLY);
+	pgp_stream_print(stream, str, 65536, options);
 
 	printf("%s", str);
-}
 
-static void spgp_dump_packets(char *file)
-{
-	char buffer[65536] = {0};
-	char str[65536] = {0};
-
-	size_t size = 0;
-
-	FILE *f = fopen(file, "rb");
-	size = fread(buffer, 1, 65536, f);
-
-	fclose(f);
-
-	pgp_stream_t *stream = pgp_stream_read(buffer, size);
-	pgp_stream_print(stream, str, 65536, 0);
-
-	printf("%s", str);
+	return 0;
 }
 
 int main(int argc, char **argv)
 {
+	uint32_t exit_code = 0;
+
 	argparse_t *actx =
 		argparse_new(argc, (void **)argv, sizeof(spgp_options) / sizeof(arg_option_t), spgp_options, ARGPARSE_FLAG_SKIP_FIRST_ARGUMENT);
 	arg_result_t *result = NULL;
+
+	spgp_command command = {0};
 
 	while ((result = argparse(actx, 0)) != NULL)
 	{
@@ -368,17 +388,57 @@ int main(int argc, char **argv)
 
 		// Basic Commands
 		case SPGP_OPTION_LIST_PACKETS:
-		{
-			spgp_list_packets(result->data);
-		}
-		break;
 		case SPGP_OPTION_DUMP_PACKETS:
 		{
-			spgp_dump_packets(result->data);
+			if (!(command.operation == SPGP_OPERATION_NONE || command.operation == SPGP_OPERATION_LIST_PACKETS))
+			{
+				break;
+			}
+
+			command.operation = SPGP_OPERATION_LIST_PACKETS;
+			command.list_packets.dump = (result->value == SPGP_OPTION_DUMP_PACKETS) ? 1 : 0;
+
+			// Get the argument
+			result = argparse(actx, ARGPARSE_PEEK);
+
+			if (result == NULL)
+			{
+				break;
+			}
+
+			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
+			{
+				// Consume the option
+				argparse(actx, 0);
+
+				command.list_packets.file = result->data;
+			}
 		}
 		break;
+
+		// Miscellaneous Options
+		case SPGP_OPTION_NO_MPIS:
+		{
+			if (command.operation == SPGP_OPERATION_LIST_PACKETS)
+			{
+				command.list_packets.no_mpi = 1;
+			}
+		}
+		break;
+		default:
+			break;
 		}
 	}
 
-	return 0;
+	switch (command.operation)
+	{
+	case SPGP_OPERATION_LIST_PACKETS:
+		exit_code = spgp_list_packets(&command);
+		break;
+
+	default:
+		spgp_print_help();
+	}
+
+	return exit_code;
 }
