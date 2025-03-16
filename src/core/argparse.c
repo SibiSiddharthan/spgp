@@ -113,8 +113,16 @@ static argparse_t *argparse_process_long_option(argparse_t *actx, arg_option_t *
 		}
 		else
 		{
-			value = actx->args[actx->arg_index];
-			actx->arg_index += 1;
+			if (actx->arg_index < actx->arg_count)
+			{
+				value = actx->args[actx->arg_index];
+				actx->arg_index += 1;
+			}
+			else
+			{
+				// TODO: error
+				value = NULL;
+			}
 		}
 	}
 
@@ -128,12 +136,19 @@ static argparse_t *argparse_process_long_option(argparse_t *actx, arg_option_t *
 		}
 		else
 		{
-			oarg = actx->args[actx->arg_index];
-
-			if (oarg[0] != '-')
+			if (actx->arg_index < actx->arg_count)
 			{
-				value = actx->args[actx->arg_index];
-				actx->arg_index += 1;
+				oarg = actx->args[actx->arg_index];
+
+				if (oarg[0] != '-')
+				{
+					value = actx->args[actx->arg_index];
+					actx->arg_index += 1;
+				}
+				else
+				{
+					value = NULL;
+				}
 			}
 			else
 			{
@@ -356,9 +371,20 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 						}
 						else
 						{
-							// Consume next argument
-							value = actx->args[actx->arg_index + 1];
-							actx->arg_index += 2;
+							// Consume current argument
+							actx->arg_index += 1;
+
+							if (actx->arg_index < actx->arg_count)
+							{
+								// Consume next argument
+								value = actx->args[actx->arg_index];
+								actx->arg_index += 1;
+							}
+							else
+							{
+								// TODO: error
+								value = NULL;
+							}
 						}
 
 						result = argparse_result_push(actx, option->return_value, value);
