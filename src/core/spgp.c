@@ -17,6 +17,9 @@
 #include <seipd.h>
 #include <signature.h>
 
+#include <os.h>
+#include <status.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -330,6 +333,54 @@ static void spgp_print_help(void)
 static void spgp_print_version(void)
 {
 	printf("%s", version);
+}
+
+uint32_t spgp_initialize_home(const char *home)
+{
+	status_t status = 0;
+	handle_t handle = 0;
+
+	char full_home[256] = {0};
+	uint16_t size = 0;
+
+	if (home == NULL)
+	{
+		home = getenv("HOME");
+
+		if (home == NULL)
+		{
+			home = getenv("USERPROFILE");
+		}
+
+		if (home == NULL)
+		{
+			return 1;
+		}
+
+		status = os_path(HANDLE_CWD, home, strlen(home), full_home, 256, &size);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			return 1;
+		}
+
+		status = os_open(&handle, HANDLE_CWD, full_home, size, FILE_ACCESS_READ, FILE_FLAG_DIRECTORY, 0);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			return 1;
+		}
+
+		status = os_mkdir(handle, ".spgp", 5, 0700);
+		os_close(handle);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 static uint32_t spgp_sign(spgp_command *command)
@@ -707,6 +758,11 @@ int main(int argc, char **argv)
 		break;
 
 		// Miscellaneous Options
+		case SPGP_OPTION_HOMEDIR:
+		{
+			command.home = result->data;
+		}
+		break;
 		case SPGP_OPTION_PASSPHRASE:
 		{
 			command.passhprase = result->data;
@@ -724,6 +780,8 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+
+	spgp_initialize_home(command.home);
 
 	switch (command.operation)
 	{
