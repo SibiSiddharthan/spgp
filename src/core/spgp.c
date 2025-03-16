@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 static const char *version = "\
 sgpg 0.1\n\
@@ -221,10 +222,22 @@ typedef struct _spgp_command
 	spgp_mode mode;
 
 	void *home;
+	void *output;
+	void *passhprase;
+
+	byte_t armor;
 	time_t timestamp;
 
 	union
 	{
+		struct
+		{
+			byte_t detach;
+			byte_t cleartext;
+			char *file;
+			char *packet;
+		} sign;
+
 		struct
 		{
 			byte_t dump;
@@ -312,6 +325,85 @@ static void spgp_print_version(void)
 	printf("%s", version);
 }
 
+static uint32_t spgp_sign(spgp_command *command)
+{
+	char buffer[65536] = {0};
+
+	FILE *file = NULL;
+	size_t size = 0;
+
+	pgp_stream_t *key_stream = NULL;
+	pgp_key_packet *key = NULL;
+
+	if (command->sign.packet != NULL)
+	{
+		file = fopen(command->sign.packet, "rb");
+
+		if (file == NULL)
+		{
+			fprintf(stderr, "File not found: %s\n", command->sign.packet);
+			return 1;
+		}
+
+		size = fread(buffer, 1, 65536, file);
+
+		fclose(file);
+
+		key_stream = pgp_stream_read(buffer, size);
+		key = key_stream->packets[0];
+	}
+	else
+	{
+		return 2;
+	}
+
+	if (command->sign.file != NULL)
+	{
+		file = fopen(command->sign.file, "rb");
+
+		if (file == NULL)
+		{
+			fprintf(stderr, "File not found: %s\n", command->sign.file);
+			return 1;
+		}
+
+		size = fread(buffer, 1, 65536, file);
+
+		fclose(file);
+	}
+	else
+	{
+		return 2;
+	}
+
+	if (command->passhprase != NULL)
+	{
+		pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
+	}
+
+	pgp_signature_packet *sign =
+		pgp_signature_packet_new(PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE, key->public_key_algorithm_id, PGP_SHA2_256);
+
+	pgp_signature_packet_sign(sign, key, time(NULL), buffer, size);
+
+	if (command->output != NULL)
+	{
+		file = fopen(command->output, "wb");
+
+		size = pgp_packet_write(sign, buffer, 65536);
+
+		fwrite(buffer, 1, size, file);
+
+		fclose(file);
+	}
+	else
+	{
+		return 2;
+	}
+
+	return 0;
+}
+
 static uint32_t spgp_list_packets(spgp_command *command)
 {
 	char buffer[65536] = {0};
@@ -387,6 +479,38 @@ int main(int argc, char **argv)
 		break;
 
 		// Basic Commands
+		case SPGP_OPTION_SIGN:
+		case SPGP_OPTION_DETACH_SIGN:
+		case SPGP_OPTION_CLEAR_SIGN:
+		{
+			if (!(command.operation == SPGP_OPERATION_NONE || command.operation == SPGP_OPERATION_SIGN))
+			{
+				break;
+			}
+
+			command.operation = SPGP_OPERATION_SIGN;
+			command.sign.detach = (result->value == SPGP_OPTION_DETACH_SIGN) ? 1 : 0;
+			command.sign.cleartext = (result->value == SPGP_OPTION_CLEAR_SIGN) ? 1 : 0;
+
+			// Get the argument
+			result = argparse(actx, ARGPARSE_PEEK);
+
+			if (result == NULL)
+			{
+				break;
+			}
+
+			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
+			{
+				// Consume the option
+				argparse(actx, 0);
+
+				command.sign.file = result->data;
+			}
+		}
+		break;
+
+		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:
 		case SPGP_OPTION_DUMP_PACKETS:
 		{
@@ -416,7 +540,29 @@ int main(int argc, char **argv)
 		}
 		break;
 
+		// Key Selection
+		case SPGP_OPTION_KEY_PACKET:
+		{
+			if (command.operation == SPGP_OPERATION_SIGN)
+			{
+				command.sign.packet = result->data;
+			}
+		}
+		break;
+
+		// Output Options
+		case SPGP_OPTION_OUTPUT:
+		{
+			command.output = result->data;
+		}
+		break;
+
 		// Miscellaneous Options
+		case SPGP_OPTION_PASSPHRASE:
+		{
+			command.passhprase = result->data;
+		}
+		break;
 		case SPGP_OPTION_NO_MPIS:
 		{
 			if (command.operation == SPGP_OPERATION_LIST_PACKETS)
@@ -432,6 +578,9 @@ int main(int argc, char **argv)
 
 	switch (command.operation)
 	{
+	case SPGP_OPERATION_SIGN:
+		exit_code = spgp_sign(&command);
+		break;
 	case SPGP_OPERATION_LIST_PACKETS:
 		exit_code = spgp_list_packets(&command);
 		break;

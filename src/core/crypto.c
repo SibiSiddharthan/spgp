@@ -1584,7 +1584,7 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 		return NULL;
 	}
 
-	pgp_sign->e->bits = sign.bits * 8;
+	pgp_sign->e->bits = sign.bits;
 
 	return pgp_sign;
 }
