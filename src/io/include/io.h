@@ -86,7 +86,11 @@ typedef struct _file_t
 #define SEEK_CUR 1
 #define SEEK_END 2
 
-status_t file_open(file_t *file, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t allocation);
+#define FILE_READ   0x1
+#define FILE_WRITE  0x2
+#define FILE_APPEND 0x4
+
+status_t file_open(file_t *file, handle_t root, const char *path, uint16_t length, uint32_t flags, uint32_t allocation);
 status_t file_close(file_t *file);
 
 size_t file_read(file_t *file, void *buffer, size_t size);
