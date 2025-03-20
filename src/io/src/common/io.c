@@ -8,8 +8,9 @@
 #include <io.h>
 #include <status.h>
 
-#include <round.h>
 #include <minmax.h>
+#include <round.h>
+#include <ptr.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -167,4 +168,148 @@ status_t file_close(file_t *file)
 	file->buffer = NULL;
 
 	return status;
+}
+
+size_t file_read(file_t *file, void *buffer, size_t size)
+{
+	size_t result = 0;
+	size_t direct = 0;
+
+	// Copy the buffered data first
+	if (file->remaining != 0)
+	{
+		size_t copy_size = MIN(size, file->remaining);
+
+		memcpy(buffer, PTR_OFFSET(file->buffer, file->size - file->remaining), copy_size);
+
+		file->pos += copy_size;
+		file->remaining -= copy_size;
+		result += copy_size;
+	}
+
+	if (result == size)
+	{
+		return result;
+	}
+
+	// Direct read (exclude last block)
+	direct = ROUND_DOWN((size - result), file->size);
+
+	if (direct != 0)
+	{
+		status_t status = 0;
+		size_t read = 0;
+
+		status = os_read(file->handle, PTR_OFFSET(buffer, result), direct, &read);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			file->status = status;
+			return result;
+		}
+
+		file->pos += read;
+		file->offset += read;
+		result += read;
+	}
+
+	// Final read
+	if (result < size)
+	{
+		status_t status = 0;
+		size_t read = 0;
+		size_t copy_size = 0;
+
+		status = os_read(file->handle, file->buffer, file->size, &read);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			file->status = status;
+			return result;
+		}
+
+		file->offset += read;
+		file->remaining = read;
+		copy_size = MIN(size - result, read);
+
+		file->pos += copy_size;
+		file->remaining -= copy_size;
+		result += copy_size;
+	}
+
+	return result;
+}
+
+size_t file_write(file_t *file, void *buffer, size_t size)
+{
+	size_t result = 0;
+	size_t direct = 0;
+
+	// Fill the buffer first
+	if (file->remaining != file->size)
+	{
+		status_t status = 0;
+		size_t write = 0;
+		size_t copy_size = MIN(size, file->size - file->remaining);
+
+		memcpy(buffer, PTR_OFFSET(file->buffer, file->size - file->remaining), copy_size);
+
+		file->pos += copy_size;
+		file->remaining += copy_size;
+		result += copy_size;
+
+		// Do a write
+		if (file->remaining == file->size)
+		{
+			status = os_write(file->handle, file->buffer, file->size, &write);
+
+			if (status != OS_STATUS_SUCCESS)
+			{
+				file->status = status;
+				return result;
+			}
+
+			file->remaining = 0;
+		}
+	}
+
+	if (result == size)
+	{
+		return result;
+	}
+
+	// Direct writes (excluding last block)
+	direct = ROUND_DOWN((size - result), file->size);
+
+	if (direct != 0)
+	{
+		status_t status = 0;
+		size_t write = 0;
+
+		status = os_write(file->handle, PTR_OFFSET(buffer, result), direct, &write);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			file->status = status;
+			return result;
+		}
+
+		file->pos += write;
+		file->offset += write;
+		result += write;
+	}
+
+	// Copy remaining to buffer
+	if (result < size)
+	{
+		size_t copy_size = size - result;
+
+		memcpy(file->buffer, PTR_OFFSET(buffer, result), copy_size);
+
+		file->pos += copy_size;
+		file->remaining += copy_size;
+		result += copy_size;
+	}
+
+	return result;
 }

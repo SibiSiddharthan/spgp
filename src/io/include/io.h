@@ -76,10 +76,10 @@ typedef struct _file_t
 
 	void *buffer;
 	size_t size;
-	size_t start;
-	size_t end;
-	size_t pos;
+	size_t remaining;
+
 	size_t offset;
+	size_t pos;
 } file_t;
 
 #define SEEK_SET 0
