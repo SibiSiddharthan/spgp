@@ -143,7 +143,7 @@ static uint16_t dir_load_extended(void *data, dir_entry_extended_t *entry)
 	return pos;
 }
 
-void *dir_entry(dir_t *directory, dir_entry_class entry_class, void *buffer, uint32_t size)
+void *dir_entry(dir_t *directory, dir_entry_class entry_class, uint32_t flags, void *buffer, uint32_t size)
 {
 	NTSTATUS status = 0;
 	IO_STATUS_BLOCK io = {0};
@@ -190,6 +190,33 @@ void *dir_entry(dir_t *directory, dir_entry_class entry_class, void *buffer, uin
 
 		directory->pos = 0;
 		directory->received = io.Information;
+	}
+
+	if ((flags & ENTRY_FLAG_SKIP_DOT) && (directory->pos == 0))
+	{
+		// The first call to NtQueryDirectoryFileEx will populate these.
+		// If first entry is '.', '..' will follow immediately
+		FILE_ID_EXTD_DIR_INFORMATION *direntry = PTR_OFFSET(directory->buffer, directory->pos);
+
+		if (direntry->FileNameLength == 2 && direntry->FileName[0] == L'.')
+		{
+			directory->pos += offsetof(FILE_ID_EXTD_DIR_INFORMATION, FileName) + direntry->FileNameLength;
+
+			if (direntry->NextEntryOffset != 0)
+			{
+				directory->pos = ROUND_UP(directory->pos, 8);
+			}
+
+			if (direntry->FileNameLength == 4 && direntry->FileName[0] == L'.' && direntry->FileName[1] == L'.')
+			{
+				directory->pos += offsetof(FILE_ID_EXTD_DIR_INFORMATION, FileName) + direntry->FileNameLength;
+
+				if (direntry->NextEntryOffset != 0)
+				{
+					directory->pos = ROUND_UP(directory->pos, 8);
+				}
+			}
+		}
 	}
 
 	if (entry_class == DIR_ENTRY_STANDARD)

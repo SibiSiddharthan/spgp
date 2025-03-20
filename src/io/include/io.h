@@ -64,10 +64,12 @@ typedef enum _dir_entry_class
 #define ENTRY_TYPE_LINK      10 // symbolic link
 #define ENTRY_TYPE_SOCKET    12 // socket
 
+#define ENTRY_FLAG_SKIP_DOT 0x1 // Skip '.' and '..' entries
+
 status_t dir_open(dir_t *directory, handle_t root, const char *path, uint16_t length);
 status_t dir_close(dir_t *directory);
 
-void *dir_entry(dir_t *directory, dir_entry_class entry_class, void *buffer, uint32_t size);
+void *dir_entry(dir_t *directory, dir_entry_class entry_class, uint32_t flags, void *buffer, uint32_t size);
 
 typedef struct _file_t
 {
