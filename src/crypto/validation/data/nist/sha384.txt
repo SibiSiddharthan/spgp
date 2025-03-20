@@ -3,7 +3,7 @@
 #  SHA-384 tests are configured for BYTE oriented implementations
 #  Generated on Tue Mar 15 08:23:39 2011
 
-[L = 48]
+[SHA-384]
 
 Len = 0
 Msg = 00
@@ -526,7 +526,7 @@ MD = 12b6cb35eda92ee37356ddee77781a17b3d90e563824a984faffc6fdd1693bd762603963556
 #  SHA-384 tests are configured for BYTE oriented implementations
 #  Generated on Tue Mar 15 08:23:40 2011
 
-[L = 48]
+[SHA-384]
 
 Len = 1816
 Msg = 62c6a169b9be02b3d7b471a964fc0bcc72b480d26aecb2ed460b7f50016ddaf04c51218783f3aadfdff5a04ded030d7b3fb7376b61ba30b90e2da921a4470740d63fb99fa16cc8ed81abaf8ce4016e50df81da832070372c24a80890aa3a26fa675710b8fb718266249d496f313c55d0bada101f8f56eeccee4345a8f98f60a36662cfda794900d12f9414fcbdfdeb85388a814996b47e24d5c8086e7a8edcc53d299d0d033e6bb60c58b83d6e8b57f6c258d6081dd10eb942fdf8ec157ec3e75371235a8196eb9d22b1de3a2d30c2abbe0db7650cf6c7159bacbe29b3a93c92100508
