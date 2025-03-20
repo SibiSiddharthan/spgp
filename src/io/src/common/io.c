@@ -156,6 +156,10 @@ status_t file_close(file_t *file)
 {
 	status_t status = 0;
 
+	// Flush the buffer (Dont check errors)
+	status = file_flush(file);
+
+	// Close the handle
 	status = os_close(file->handle);
 
 	if (status != OS_STATUS_SUCCESS)
@@ -312,4 +316,25 @@ size_t file_write(file_t *file, void *buffer, size_t size)
 	}
 
 	return result;
+}
+
+status_t file_flush(file_t *file)
+{
+	status_t status = 0;
+	size_t write = 0;
+
+	if (file->remaining > 0)
+	{
+		status = os_write(file->handle, file->buffer, file->remaining, &write);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			file->status = status;
+			return status;
+		}
+
+		file->remaining = 0;
+	}
+
+	return status;
 }
