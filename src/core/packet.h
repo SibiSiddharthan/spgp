@@ -34,8 +34,9 @@ typedef enum _pgp_packet_type
 	PGP_SEIPD = 18,     // Symmetrically Encrypted and Integrity Protected Data Packet
 	PGP_MDC = 19,       // Modification Detection Code Packet
 	PGP_AEAD = 20,      // AEAD Encrypted Data Packet
-	PGP_PADDING = 21    // Padding Packet
-
+	PGP_PADDING = 21,   // Padding Packet
+	PGP_KEYDEF = 60,    // Key Definition Packet (Private)
+	PGP_KEYRING = 61,   // Keyring Packet (Private)
 } pgp_packet_type;
 
 #define PGP_SUBPACKET_TAG_MASK 0x7F
