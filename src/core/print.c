@@ -205,6 +205,12 @@ uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t si
 	case PGP_PADDING:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Padding Packet (Tag 21)");
 		break;
+	case PGP_KEYDEF:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Key definition Packet (Private)");
+		break;
+	case PGP_KEYRING:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Keyring Packet (Private)");
+		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Packet (Tag %hhu)", header->tag);
 	}
