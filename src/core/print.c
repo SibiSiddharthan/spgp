@@ -2067,7 +2067,7 @@ size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size)
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->level);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->level);
 
 	return pos;
 }
@@ -2285,6 +2285,47 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 
 	pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets, PTR_OFFSET(str, pos),
 								 size - pos, 1, options);
+
+	return pos;
+}
+
+size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(&packet->header, str, size);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->trust_level);
+
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Primary Key: ");
+	pos += print_hex(hex_upper_table, PTR_OFFSET(str, pos), packet->primary_fingerprint, packet->fingerprint_size);
+
+	if (packet->subkey_count > 0)
+	{
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Subkeys:\n");
+
+		for (byte_t i = 0; i < packet->subkey_count; ++i)
+		{
+			pos += print_indent(2, PTR_OFFSET(str, pos), size - pos);
+			pos += print_hex(hex_upper_table, PTR_OFFSET(str, pos), PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size),
+							 packet->fingerprint_size);
+		}
+	}
+
+	if (packet->uid_count > 0)
+	{
+		byte_t *uid = packet->uids;
+		uint32_t uid_size = 0;
+		uint32_t uid_offset = 0;
+
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User IDs:\n");
+
+		for (byte_t i = 0; i < packet->uid_count; ++i)
+		{
+			uid_size = ((uint32_t)uid[uid_offset] << 8) + (uint32_t)uid[uid_offset + 1];
+			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "%.*s", uid_size, PTR_OFFSET(packet->uids, 2 + uid_offset));
+			uid_offset += uid_size + 2;
+		}
+	}
 
 	return pos;
 }

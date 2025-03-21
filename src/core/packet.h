@@ -176,6 +176,7 @@ typedef struct _pgp_keyring_packet
 	void *subkey_fingerprints;
 
 	byte_t uid_count;
+	uint32_t uid_size;
 	void *uids;
 
 } pgp_keyring_packet;
@@ -299,6 +300,8 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
 
 // Keyring Packet
+void pgp_keyring_packet_delete(pgp_keyring_packet *packet);
+
 pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size);
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);
 size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size);
