@@ -163,6 +163,23 @@ typedef struct _pgp_trust_packet
 	byte_t level;
 } pgp_trust_packet;
 
+typedef struct _pgp_keyring_packet
+{
+	pgp_packet_header header;
+
+	byte_t trust_level;
+	byte_t fingerprint_size;
+
+	byte_t primary_fingerprint[32];
+
+	byte_t subkey_count;
+	void *subkey_fingerprints;
+
+	byte_t uid_count;
+	void *uids;
+
+} pgp_keyring_packet;
+
 #define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : PGP_LEGACY_HEADER)
 
 #define PGP_WRITE_ARMOR           0x1
@@ -280,6 +297,11 @@ void pgp_trust_packet_delete(pgp_trust_packet *packet);
 pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size);
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
+
+// Keyring Packet
+pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size);
+size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);
+size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size);
 
 // Unknown Packet
 pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size);
