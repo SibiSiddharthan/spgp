@@ -3311,22 +3311,14 @@ static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint
 	return PGP_KEY_V6_FINGERPRINT_SIZE;
 }
 
-uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
+uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size)
 {
-	pgp_key_packet *packet = key;
-	byte_t tag = pgp_packet_get_type(packet->header.tag);
-
-	if (tag != PGP_PUBKEY && tag != PGP_PUBSUBKEY && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
+	if (pgp_public_cipher_algorithm_validate(key->public_key_algorithm_id) == 0)
 	{
 		return 0;
 	}
 
-	if (pgp_public_cipher_algorithm_validate(packet->public_key_algorithm_id) == 0)
-	{
-		return 0;
-	}
-
-	switch (packet->version)
+	switch (key->version)
 	{
 	case PGP_KEY_V2:
 	case PGP_KEY_V3:
@@ -3336,7 +3328,7 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v3(packet->key, fingerprint);
+		return pgp_key_fingerprint_v3(key->key, fingerprint);
 	}
 	case PGP_KEY_V4:
 	{
@@ -3345,8 +3337,8 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time,
-									  (uint16_t)packet->public_key_data_octets + 6, packet->key, fingerprint);
+		return pgp_key_fingerprint_v4(key->public_key_algorithm_id, key->key_creation_time, (uint16_t)key->public_key_data_octets + 6,
+									  key->key, fingerprint);
 	}
 	case PGP_KEY_V5:
 	{
@@ -3355,8 +3347,8 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v5(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
-									  packet->public_key_data_octets, packet->key, fingerprint);
+		return pgp_key_fingerprint_v5(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
+									  key->public_key_data_octets, key->key, fingerprint);
 	}
 	case PGP_KEY_V6:
 	{
@@ -3365,8 +3357,8 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
-									  packet->public_key_data_octets, packet->key, fingerprint);
+		return pgp_key_fingerprint_v6(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
+									  key->public_key_data_octets, key->key, fingerprint);
 	}
 	default:
 		return 0;
@@ -3375,30 +3367,22 @@ uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size)
 	return 0;
 }
 
-uint32_t pgp_key_id(void *key, byte_t id[8])
+uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[8])
 {
-	pgp_key_packet *packet = key;
-	byte_t tag = pgp_packet_get_type(packet->header.tag);
-
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 
-	if (tag != PGP_PUBKEY && tag != PGP_PUBSUBKEY && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
+	if (pgp_public_cipher_algorithm_validate(key->public_key_algorithm_id) == 0)
 	{
 		return 0;
 	}
 
-	if (pgp_public_cipher_algorithm_validate(packet->public_key_algorithm_id) == 0)
-	{
-		return 0;
-	}
-
-	switch (packet->version)
+	switch (key->version)
 	{
 	case PGP_KEY_V2:
 	case PGP_KEY_V3:
 	{
 		// Low 64 bits of public modulus
-		pgp_rsa_key *rsa_key = packet->key;
+		pgp_rsa_key *rsa_key = key->key;
 		uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
 
 		LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
@@ -3407,7 +3391,7 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 	case PGP_KEY_V4:
 	{
 		// Low 64 bits of fingerprint
-		pgp_key_fingerprint_v4(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 6, packet->key,
+		pgp_key_fingerprint_v4(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 6, key->key,
 							   fingerprint);
 
 		LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE - 8));
@@ -3416,8 +3400,8 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 	case PGP_KEY_V5:
 	{
 		// High 64 bits of fingerprint
-		pgp_key_fingerprint_v5(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
-							   packet->public_key_data_octets, packet->key, fingerprint);
+		pgp_key_fingerprint_v5(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
+							   key->public_key_data_octets, key->key, fingerprint);
 
 		LOAD_64(id, PTR_OFFSET(fingerprint, 8));
 	}
@@ -3425,8 +3409,8 @@ uint32_t pgp_key_id(void *key, byte_t id[8])
 	case PGP_KEY_V6:
 	{
 		// Low 64 bits of fingerprint
-		pgp_key_fingerprint_v6(packet->public_key_algorithm_id, packet->key_creation_time, packet->public_key_data_octets + 9,
-							   packet->public_key_data_octets, packet->key, fingerprint);
+		pgp_key_fingerprint_v6(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
+							   key->public_key_data_octets, key->key, fingerprint);
 
 		LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE - 8));
 	}

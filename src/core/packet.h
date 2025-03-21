@@ -300,6 +300,7 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
 
 // Keyring Packet
+pgp_keyring_packet *pgp_keyring_packet_new(byte_t trust_level);
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet);
 
 pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size);

@@ -397,7 +397,7 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 									}
 									else
 									{
-										value == NULL;
+										value = NULL;
 									}
 								}
 								else
