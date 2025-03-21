@@ -362,12 +362,21 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 						}
 					}
 
-					if (option->argument_type == ARGPARSE_OPTION_ARGUMENT_REQUIRED)
+					if (option->argument_type == ARGPARSE_OPTION_ARGUMENT_REQUIRED ||
+						option->argument_type == ARGPARSE_OPTION_ARGUMENT_OPTIONAL)
 					{
 						if (argument[pos + 1] != '\0')
 						{
-							value = &argument[pos + 1];
-							actx->arg_index += 1;
+							if (argument[pos + 1] == '=')
+							{
+								value = &argument[pos + 2];
+								actx->arg_index += 1;
+							}
+							else
+							{
+								value = &argument[pos + 1];
+								actx->arg_index += 1;
+							}
 						}
 						else
 						{
@@ -376,13 +385,31 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 
 							if (actx->arg_index < actx->arg_count)
 							{
-								// Consume next argument
-								value = actx->args[actx->arg_index];
-								actx->arg_index += 1;
+								argument = actx->args[actx->arg_index];
+
+								if (option->argument_type == ARGPARSE_OPTION_ARGUMENT_OPTIONAL)
+								{
+									// Consume next argument if not an option
+									if (argument[0] != '-')
+									{
+										value = actx->args[actx->arg_index];
+										actx->arg_index += 1;
+									}
+									else
+									{
+										value == NULL;
+									}
+								}
+								else
+								{
+									// Always consume next argument
+									value = actx->args[actx->arg_index];
+									actx->arg_index += 1;
+								}
 							}
 							else
 							{
-								// TODO: error
+								// TODO: error (in case of required)
 								value = NULL;
 							}
 						}
@@ -395,8 +422,11 @@ argparse_t *argparse_new(uint32_t arg_count, void **args, uint32_t option_count,
 							return NULL;
 						}
 
-						// Always break on short options requiring an argument
-						break;
+						// Break on short options if an argument is found
+						if (value != NULL)
+						{
+							break;
+						}
 					}
 
 					pos += 1;
