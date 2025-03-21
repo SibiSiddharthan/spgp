@@ -22,6 +22,12 @@ typedef enum _pgp_key_version
 	PGP_KEY_V6 = 6
 } pgp_key_version;
 
+typedef enum _pgp_key_type
+{
+	PGP_KEY_TYPE_PUBLIC = 1,
+	PGP_KEY_TYPE_SECRET = 2
+} pgp_key_type;
+
 #define PGP_KEY_ID_SIZE 8
 
 // Key Fingerprint Sizes
@@ -36,8 +42,17 @@ typedef struct _pgp_key_packet
 	pgp_packet_header header;
 
 	byte_t version; // 3, 4, 5, 6
+	byte_t type;
+	byte_t flags;
+
 	uint32_t key_creation_time;
-	uint16_t key_expiry_days;
+
+	union
+	{
+		uint16_t key_expiry_days;
+		uint32_t key_expiry_time;
+	};
+
 	byte_t public_key_algorithm_id;
 	byte_t symmetric_key_algorithm_id;
 	byte_t aead_algorithm_id;
@@ -161,6 +176,10 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size);
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
 size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
+
+pgp_key_packet *pgp_key_packet_read(void *data, size_t size);
+size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
+size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 
 uint32_t pgp_key_fingerprint(void *key, void *fingerprint, uint32_t size);
 uint32_t pgp_key_id(void *key, byte_t id[8]);

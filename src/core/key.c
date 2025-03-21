@@ -1235,7 +1235,7 @@ size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	size_t required_size = 0;
 	size_t pos = 0;
 
-	// A 1-octet version number 3 or 4.
+	// A 1-octet version number.
 	// A 4-octet number denoting the time that the key was created.
 	// (For V3) A 2-octet number denoting expiry in days.
 	// A 1-octet public key algorithm.
@@ -2211,7 +2211,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	byte_t s2k_size = 0;
 	byte_t conditional_field_size = 0;
 
-	// A 1-octet version number 3 or 4.
+	// A 1-octet version number.
 	// A 4-octet number denoting the time that the key was created.
 	// (For V3) A 2-octet number denoting expiry in days.
 	// A 1-octet public key algorithm.
@@ -2260,7 +2260,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	case 253: // AEAD
 		// A 1-octet symmetric key algorithm.
 		// A 1-octet AEAD algorithm.
-		// (For V6) A 1-octet count of S2K specifier
+		// (For V5 and V6) A 1-octet count of S2K specifier
 		// A S2K specifier
 		// IV
 		conditional_field_size = 1 + 1 + packet->iv_size + s2k_size;
@@ -2269,10 +2269,9 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	case 254: // CFB
 	case 255: // Malleable CFB
 		// A 1-octet symmetric key algorithm.
-		// (For V6) A 1-octet count of S2K specifier
+		// (For V5 and V6) A 1-octet count of S2K specifier
 		// A S2K specifier
 		// IV
-		s2k_size = pgp_s2k_size(&packet->s2k);
 		conditional_field_size = 1 + packet->iv_size + s2k_size;
 		conditional_field_size += (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5) ? 1 : 0;
 	default:
@@ -2312,7 +2311,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	LOAD_8(out + pos, &packet->public_key_algorithm_id);
 	pos += 1;
 
-	if (packet->version == PGP_KEY_V6)
+	if (packet->version == PGP_KEY_V5 || packet->version == PGP_KEY_V6)
 	{
 		// 4-octet scalar count for the public key material
 		uint32_t public_key_data_octets_be = BSWAP_32(packet->public_key_data_octets);
@@ -2719,6 +2718,354 @@ pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase,
 	packet->header = pgp_encode_packet_header(PGP_HEADER, tag, body_size);
 
 	return packet;
+}
+
+pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
+{
+	byte_t *in = data;
+
+	pgp_key_packet *packet = NULL;
+	pgp_packet_header header = {0};
+
+	size_t pos = 0;
+
+	header = pgp_packet_header_read(data, size);
+	pos = header.header_size;
+
+	if (pgp_packet_get_type(header.tag) != PGP_KEYDEF)
+	{
+		return NULL;
+	}
+
+	if (size < (header.header_size + header.body_size))
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_key_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_key_packet));
+
+	// Copy the header
+	packet->header = header;
+
+	// 1 octet version
+	LOAD_8(&packet->version, in + pos);
+	pos += 1;
+
+	// 1 octet key type
+	LOAD_8(&packet->type, in + pos);
+	pos += 1;
+
+	// 1 octet key flags
+	LOAD_8(&packet->flags, in + pos);
+	pos += 1;
+
+	// 1-octet public key algorithm.
+	LOAD_8(&packet->public_key_algorithm_id, in + pos);
+	pos += 1;
+
+	// 4-octet number denoting the time that the key was created.
+	uint32_t key_creation_time_be = 0;
+
+	LOAD_32(&key_creation_time_be, in + pos);
+	packet->key_creation_time = BSWAP_32(key_creation_time_be);
+	pos += 4;
+
+	// 4-octet number denoting the time that the key will expire.
+	uint32_t key_expiry_time_be = 0;
+
+	LOAD_32(&key_creation_time_be, in + pos);
+	pos += 4;
+
+	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V2)
+	{
+		packet->key_expiry_days = BSWAP_32(key_expiry_time_be) / 86400;
+	}
+	else
+	{
+		packet->key_expiry_time = BSWAP_32(key_expiry_time_be);
+	}
+
+	// 4-octet scalar count for the public key material
+	uint32_t public_key_data_octets_be;
+
+	LOAD_32(&public_key_data_octets_be, in + pos);
+	packet->public_key_data_octets = BSWAP_32(public_key_data_octets_be);
+	pos += 4;
+
+	// Public key material
+	pos += pgp_public_key_material_read(packet, in + pos, packet->header.body_size - pos);
+
+	// 1 octet of S2K usage
+	LOAD_8(&packet->s2k_usage, in + pos);
+	pos += 1;
+
+	if (packet->s2k_usage != 0)
+	{
+		void *result;
+
+		byte_t s2k_size = 0;
+		byte_t conditional_field_size = 0;
+
+		// 1-octet scalar count of S2K fields
+		LOAD_8(&conditional_field_size, in + pos);
+		pos += 1;
+
+		// 1 octet symmetric key algorithm
+		LOAD_8(&packet->symmetric_key_algorithm_id, in + pos);
+		pos += 1;
+
+		if (packet->s2k_usage == 253)
+		{
+			// 1 octet AEAD algorithm
+			LOAD_8(&packet->aead_algorithm_id, in + pos);
+			pos += 1;
+		}
+
+		// 1-octet count of S2K specifier
+		LOAD_8(&s2k_size, in + pos);
+		pos += 1;
+
+		// S2K specifier
+		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		{
+			result = pgp_s2k_read(&packet->s2k, in + pos, s2k_size != 0 ? s2k_size : (packet->header.body_size - pos));
+
+			if (result == NULL)
+			{
+				return NULL;
+			}
+
+			pos += pgp_s2k_size(&packet->s2k);
+		}
+
+		// IV
+		if (packet->s2k_usage == 253)
+		{
+			packet->iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
+		}
+		else if (packet->s2k_usage == 254 || packet->s2k_usage == 255 ||
+				 (packet->s2k_usage >= PGP_IDEA && packet->s2k_usage <= PGP_CAMELLIA_256))
+		{
+			packet->iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
+		}
+
+		memcpy(packet->iv, in + pos, packet->iv_size);
+		pos += packet->iv_size;
+
+		// Secret key octet count
+		LOAD_32(&packet->encrypted_octets, in + pos);
+		pos += 4;
+
+		// Encrypted private key
+		packet->encrypted_octets = packet->header.body_size - (pos - packet->header.header_size);
+		packet->encrypted = malloc(packet->encrypted_octets);
+
+		if (packet->encrypted == NULL)
+		{
+			return NULL;
+		}
+
+		memcpy(packet->encrypted, in + pos, packet->encrypted_octets);
+		pos += packet->encrypted_octets;
+	}
+	else
+	{
+
+		// Secret key octet count
+		LOAD_32(&packet->private_key_data_octets, in + pos);
+		pos += 4;
+
+		// Plaintext private key
+		pos += pgp_private_key_material_read(packet, in + pos, packet->header.body_size - (pos - packet->header.header_size));
+
+		// 2-octet checksum
+		LOAD_16(&packet->key_checksum, in + pos);
+		pos += 2;
+	}
+
+	return packet;
+}
+
+size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t required_size = 0;
+	size_t pos = 0;
+
+	byte_t s2k_size = 0;
+	byte_t conditional_field_size = 0;
+
+	// A 1-octet key version number.
+	// A 1-octet key type.
+	// A 1-octet key flags.
+	// A 1-octet public key algorithm.
+	// A 4-octet number denoting the time that the key was created.
+	// A 4-octet number denoting the time that the key will expire.
+	// A 4-octet scalar count for the public key material
+	// One or more MPIs comprising the public key.
+	// A 1-octet of S2K usage
+	// A 1-octet scalar count of s2k fields if above field is non zero
+	// s2k fields
+	// A 4-octet scalar count of key data (inclusive of tag)
+	// (Plaintext or encrypted) Private key data.
+	// A 2-octet checksum of private key if not encrypted.
+
+	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_size(&packet->s2k) : 0;
+
+	required_size = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 4 + 4 + packet->public_key_data_octets;
+	required_size += (packet->encrypted_octets != 0 ? packet->encrypted_octets : packet->private_key_data_octets);
+	required_size += packet->header.header_size;
+
+	// Checksum
+	if (packet->s2k_usage == 0)
+	{
+		required_size += 2;
+	}
+
+	switch (packet->s2k_usage)
+	{
+	case 0: // Plaintext
+		conditional_field_size = 0;
+		break;
+	case 253: // AEAD
+		// A 1-octet symmetric key algorithm.
+		// A 1-octet AEAD algorithm.
+		// A 1-octet count of S2K specifier
+		// A S2K specifier
+		// IV
+		conditional_field_size = 1 + 1 + 1 + packet->iv_size + s2k_size;
+		break;
+	case 254: // CFB
+	case 255: // Malleable CFB
+		// A 1-octet symmetric key algorithm.
+		// A 1-octet count of S2K specifier
+		// A S2K specifier
+		// IV
+		conditional_field_size = 1 + 1 + packet->iv_size + s2k_size;
+	default:
+		return 0;
+	}
+
+	required_size += conditional_field_size;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet key version
+	LOAD_8(out + pos, &packet->version);
+	pos += 1;
+
+	// 1 octet key type
+	LOAD_8(out + pos, &packet->type);
+	pos += 1;
+
+	// 1 octet key flags
+	LOAD_8(out + pos, &packet->flags);
+	pos += 1;
+
+	// 1-octet public key algorithm.
+	LOAD_8(out + pos, &packet->public_key_algorithm_id);
+	pos += 1;
+
+	// 4-octet number denoting the time that the key was created.
+	uint32_t key_creation_time = BSWAP_32(packet->key_creation_time);
+
+	LOAD_32(out + pos, &key_creation_time);
+	pos += 4;
+
+	// 4-octet number denoting the time that the key will expire.
+	uint32_t key_expiry_time = 0;
+
+	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V2)
+	{
+		key_expiry_time = ((uint32_t)packet->key_expiry_days) * 86400;
+	}
+	else
+	{
+		key_expiry_time = packet->key_expiry_time;
+	}
+
+	key_expiry_time = BSWAP_32(key_expiry_time);
+
+	LOAD_32(out + pos, &key_expiry_time);
+	pos += 4;
+
+	// 4-octet scalar count for the public key material
+	uint32_t public_key_data_octets_be = BSWAP_32(packet->public_key_data_octets);
+
+	LOAD_32(out + pos, &public_key_data_octets_be);
+	pos += 4;
+
+	// Public key material
+	pos += pgp_public_key_material_write(packet, out + pos, size - pos);
+
+	// 1 octet of S2K usage
+	LOAD_8(out + pos, &packet->s2k_usage);
+	pos += 1;
+
+	if (conditional_field_size != 0)
+	{
+		// 1-octet scalar count of S2K fields
+		LOAD_8(out + pos, &conditional_field_size);
+		pos += 1;
+
+		// 1 octet symmetric key algorithm
+		LOAD_8(out + pos, &packet->symmetric_key_algorithm_id);
+		pos += 1;
+
+		if (packet->s2k_usage == 253)
+		{
+			// 1 octet AEAD algorithm
+			LOAD_8(out + pos, &packet->aead_algorithm_id);
+			pos += 1;
+		}
+
+		// 1-octet count of S2K specifier
+		LOAD_8(out + pos, &s2k_size);
+		pos += 1;
+
+		// S2K specifier
+		pos += pgp_s2k_write(&packet->s2k, out + pos);
+
+		// IV
+		memcpy(out + pos, packet->iv, packet->iv_size);
+		pos += 16;
+
+		// Secret key octet count
+		LOAD_32(out + pos, &packet->encrypted_octets);
+		pos += 4;
+
+		// Encrypted private key
+		memcpy(out + pos, packet->encrypted, packet->encrypted_octets);
+		pos += packet->encrypted_octets;
+	}
+	else
+	{
+		// Secret key octet count
+		LOAD_32(out + pos, &packet->private_key_data_octets);
+		pos += 4;
+
+		// Plaintext private key
+		pos += pgp_private_key_material_write(packet, out + pos, size - pos);
+
+		// 2-octet checksum
+		LOAD_16(out + pos, &packet->key_checksum);
+		pos += 2;
+	}
+
+	return pos;
 }
 
 static void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)
