@@ -2209,6 +2209,80 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 	return pos;
 }
 
+size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options)
+{
+	size_t pos = 0;
+	char buffer[128] = {0};
+
+	pos += pgp_packet_header_print(&packet->header, str, size);
+
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
+	pos +=
+		print_format(1, PTR_OFFSET(str, pos), size - pos, "Type: %s\n", packet->type == PGP_KEY_TYPE_PUBLIC ? "Public Key" : "Secret Key");
+
+	if (packet->flags & PGP_KEY_FLAG_CERTIFY)
+	{
+		strncat(buffer, "Certify ", 8);
+	}
+	if (packet->flags & PGP_KEY_FLAG_SIGN)
+	{
+		strncat(buffer, "Sign ", 5);
+	}
+	if (packet->flags & PGP_KEY_FLAG_ENCRYPT)
+	{
+		strncat(buffer, "Encrypt ", 8);
+	}
+	if (packet->flags & PGP_KEY_FLAG_AUTHENTICATION)
+	{
+		strncat(buffer, "Authenticate ", 13);
+	}
+
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Capabilities: %s\n", buffer);
+
+	pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
+	pos += print_timestamp(1, "Key Expiry Time", packet->key_expiry_time, PTR_OFFSET(str, pos), size - pos);
+	pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+
+	if (packet->s2k_usage != 0)
+	{
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "S2K Usage: ");
+		switch (packet->s2k_usage)
+		{
+		case 253:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AEAD (Tag 253)\n");
+			break;
+		case 254:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "CFB (Tag 254)\n");
+			break;
+		case 255:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Malleable CFB (Tag 255) (Deprecated)\n");
+			break;
+		default:
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Legacy CFB (Tag 255) (Deprecated)\n");
+			break;
+		}
+
+		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
+
+		if (packet->s2k_usage == 253)
+		{
+			pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
+		}
+
+		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		{
+			pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 2);
+		}
+
+		pos += print_bytes(2, "IV: ", PTR_OFFSET(str, pos), size - pos, packet->iv, packet->iv_size);
+	}
+
+	pos += pgp_private_key_print(packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets, PTR_OFFSET(str, pos),
+								 size - pos, 1, options);
+
+	return pos;
+}
+
 size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;

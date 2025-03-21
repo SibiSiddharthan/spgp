@@ -2766,10 +2766,6 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 	LOAD_8(&packet->flags, in + pos);
 	pos += 1;
 
-	// 1-octet public key algorithm.
-	LOAD_8(&packet->public_key_algorithm_id, in + pos);
-	pos += 1;
-
 	// 4-octet number denoting the time that the key was created.
 	uint32_t key_creation_time_be = 0;
 
@@ -2791,6 +2787,10 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 	{
 		packet->key_expiry_time = BSWAP_32(key_expiry_time_be);
 	}
+
+	// 1-octet public key algorithm.
+	LOAD_8(&packet->public_key_algorithm_id, in + pos);
+	pos += 1;
 
 	// 4-octet scalar count for the public key material
 	uint32_t public_key_data_octets_be;
@@ -2884,10 +2884,6 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 
 		// Plaintext private key
 		pos += pgp_private_key_material_read(packet, in + pos, packet->header.body_size - (pos - packet->header.header_size));
-
-		// 2-octet checksum
-		LOAD_16(&packet->key_checksum, in + pos);
-		pos += 2;
 	}
 
 	return packet;
@@ -2915,19 +2911,12 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	// s2k fields
 	// A 4-octet scalar count of key data (inclusive of tag)
 	// (Plaintext or encrypted) Private key data.
-	// A 2-octet checksum of private key if not encrypted.
 
 	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_size(&packet->s2k) : 0;
 
 	required_size = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 4 + 4 + packet->public_key_data_octets;
 	required_size += (packet->encrypted_octets != 0 ? packet->encrypted_octets : packet->private_key_data_octets);
 	required_size += packet->header.header_size;
-
-	// Checksum
-	if (packet->s2k_usage == 0)
-	{
-		required_size += 2;
-	}
 
 	switch (packet->s2k_usage)
 	{
@@ -2975,10 +2964,6 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	LOAD_8(out + pos, &packet->flags);
 	pos += 1;
 
-	// 1-octet public key algorithm.
-	LOAD_8(out + pos, &packet->public_key_algorithm_id);
-	pos += 1;
-
 	// 4-octet number denoting the time that the key was created.
 	uint32_t key_creation_time = BSWAP_32(packet->key_creation_time);
 
@@ -3001,6 +2986,10 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 
 	LOAD_32(out + pos, &key_expiry_time);
 	pos += 4;
+
+	// 1-octet public key algorithm.
+	LOAD_8(out + pos, &packet->public_key_algorithm_id);
+	pos += 1;
 
 	// 4-octet scalar count for the public key material
 	uint32_t public_key_data_octets_be = BSWAP_32(packet->public_key_data_octets);
@@ -3059,10 +3048,6 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 
 		// Plaintext private key
 		pos += pgp_private_key_material_write(packet, out + pos, size - pos);
-
-		// 2-octet checksum
-		LOAD_16(out + pos, &packet->key_checksum);
-		pos += 2;
 	}
 
 	return pos;
