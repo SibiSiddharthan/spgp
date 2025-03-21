@@ -17,6 +17,19 @@
 #include <round.h>
 #include <load.h>
 
+// Configuration
+#define SPGP_DEFAULT_HOME ".spgp"
+#define SPGP_CONFIG       "spgp.conf"
+#define SPGP_KEYRING      "keyring"
+
+// Directories
+#define SPGP_KEYS  "keys"
+#define SPGP_CERTS "certs"
+
+// Filename extensions
+#define SPGP_KEY_EXT  ".key"
+#define SPGP_CERT_EXT ".cert"
+
 typedef enum _spgp_key_id
 {
 	SPGP_UNKNOWN = 0,
