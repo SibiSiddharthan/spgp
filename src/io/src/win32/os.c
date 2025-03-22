@@ -27,9 +27,7 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 	IO_STATUS_BLOCK io = {0};
 	OBJECT_ATTRIBUTES object = {0};
 
-	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
-	UNICODE_STRING u16_string = {0};
-
+	UNICODE_STRING *u16_path = NULL;
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
 
 	ACCESS_MASK access_rights = access;
@@ -63,32 +61,33 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 		break;
 	}
 
-	if (flags & FILE_FLAG_CREATE)
-	{
-		security_descriptor = _os_security_descriptor(mode, (flags & FILE_FLAG_DIRECTORY));
-	}
-
 	if (path != NULL)
 	{
-		RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+		status = _os_ntpath((VOID **)&u16_path, root, path, length);
+
+		if (status != STATUS_SUCCESS)
+		{
+			return _os_status(status);
+		}
 
 		// Full NT path, ignore root
-		if (path[0] == '\\')
+		if (u16_path->Buffer[0] == L'\\')
 		{
 			root = NULL;
 		}
 	}
 
-	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE | (flags & FILE_FLAG_NO_INHERIT ? 0 : OBJ_INHERIT), root,
+	if (flags & FILE_FLAG_CREATE)
+	{
+		security_descriptor = _os_security_descriptor(mode, (flags & FILE_FLAG_DIRECTORY));
+	}
+
+	InitializeObjectAttributes(&object, u16_path, OBJ_CASE_INSENSITIVE | (flags & FILE_FLAG_NO_INHERIT ? 0 : OBJ_INHERIT), root,
 							   security_descriptor);
 
 	status = NtCreateFile(handle, access_rights, &object, &io, NULL, attributes, share, disposition, options, NULL, 0);
 
-	if (path != NULL)
-	{
-		RtlFreeUnicodeString(&u16_string);
-	}
-
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
 
 	return _os_status(status);
@@ -160,16 +159,28 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 	if (path != NULL)
 	{
 		OBJECT_ATTRIBUTES object = {0};
-		UNICODE_STRING u16_string = {0};
-		UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
+		UNICODE_STRING *u16_path = NULL;
 
-		RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+		status = _os_ntpath((VOID **)&u16_path, root, path, length);
 
-		InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE, root, NULL);
+		if (status != STATUS_SUCCESS)
+		{
+			return _os_status(status);
+		}
+
+		// Full NT path, ignore root
+		if (u16_path->Buffer[0] == L'\\')
+		{
+			root = NULL;
+		}
+
+		InitializeObjectAttributes(&object, u16_path, OBJ_CASE_INSENSITIVE, root, NULL);
 
 		status = NtCreateFile(handle, FILE_READ_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE, &object, &io, NULL, 0,
 							  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
 							  (flags & HANDLE_SYMLINK_NOFOLLOW) ? FILE_OPEN_REPARSE_POINT : 0, NULL, 0);
+
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
 
 		if (status != STATUS_SUCCESS)
 		{
@@ -350,25 +361,35 @@ status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mod
 	IO_STATUS_BLOCK io = {0};
 	OBJECT_ATTRIBUTES object = {0};
 
-	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
-	UNICODE_STRING u16_string = {0};
-
+	UNICODE_STRING *u16_path = NULL;
 	PSECURITY_DESCRIPTOR security_descriptor = _os_security_descriptor(mode, 1);
 
-	RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+	status = _os_ntpath((VOID **)&u16_path, root, path, length);
 
-	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE, root, NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		goto finish;
+	}
+
+	// Full NT path, ignore root
+	if (u16_path->Buffer[0] == L'\\')
+	{
+		root = NULL;
+	}
+
+	InitializeObjectAttributes(&object, u16_path, OBJ_CASE_INSENSITIVE, root, NULL);
 
 	status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 						  FILE_CREATE, FILE_DIRECTORY_FILE, NULL, 0);
 
-	RtlFreeUnicodeString(&u16_string);
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
-
-	if (status != STATUS_SUCCESS)
+	if (status == STATUS_SUCCESS)
 	{
 		NtClose(handle);
 	}
+
+finish:
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, security_descriptor);
 
 	return _os_status(status);
 }
@@ -382,17 +403,27 @@ status_t os_remove(handle_t root, const char *path, uint16_t length)
 	OBJECT_ATTRIBUTES object = {0};
 	FILE_DISPOSITION_INFORMATION_EX dispostion = {0};
 
-	UTF8_STRING u8_string = {.Buffer = (char *)path, .Length = length, .MaximumLength = length};
-	UNICODE_STRING u16_string = {0};
+	UNICODE_STRING *u16_path = NULL;
 
-	RtlUTF8StringToUnicodeString(&u16_string, &u8_string, TRUE);
+	status = _os_ntpath((VOID **)&u16_path, root, path, length);
 
-	InitializeObjectAttributes(&object, &u16_string, OBJ_CASE_INSENSITIVE, root, NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		return _os_status(status);
+	}
+
+	// Full NT path, ignore root
+	if (u16_path->Buffer[0] == L'\\')
+	{
+		root = NULL;
+	}
+
+	InitializeObjectAttributes(&object, u16_path, OBJ_CASE_INSENSITIVE, root, NULL);
 
 	status = NtCreateFile(&handle, DELETE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
 						  FILE_OPEN_REPARSE_POINT, NULL, 0);
 
-	RtlFreeUnicodeString(&u16_string);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
 
 	if (status != STATUS_SUCCESS)
 	{
