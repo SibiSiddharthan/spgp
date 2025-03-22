@@ -68,7 +68,7 @@ static path_stack *push_path_component(path_stack *stack, uint32_t start, uint32
 
 	stack->count++;
 
-	stack->length += length + 1;
+	stack->length += length + sizeof(WCHAR);
 
 	return stack;
 }
@@ -78,7 +78,7 @@ static path_stack *pop_path_component(path_stack *stack)
 	// root path -> C:/.. -> C:/, C:/../.. -> C:/
 	if (stack->count > 1)
 	{
-		stack->length -= (stack->components[stack->count - 1].length + 1);
+		stack->length -= (stack->components[stack->count - 1].length + sizeof(WCHAR));
 		stack->count--;
 	}
 
@@ -177,71 +177,81 @@ static NTSTATUS get_handle_ntpath(HANDLE handle, UNICODE_STRING **result)
 	return status;
 }
 
-status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer, uint16_t size, uint16_t *result)
+NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t length)
 {
 	NTSTATUS status;
 
-	UTF8_STRING u8_nt_path = {0};
-	CHAR *u8_buffer = NULL;
+	UNICODE_STRING *u16_ntpath = NULL;
+	WCHAR *u16_buffer = NULL;
+	SIZE_T u16_size = 0;
 
-	*result = 0;
+	*result = NULL;
 
 	// Root Path
 	if (IS_ROOT_PATH(path))
 	{
 		UNICODE_STRING *u16_root_path = NULL;
-		UTF8_STRING u8_root_path = {.Buffer = buffer, .Length = 0, .MaximumLength = size};
 
 		// UTF-16LE char truncation.
 		status = dos_device_to_nt_device((CHAR)NtCurrentPeb()->ProcessParameters->CurrentDirectory.DosPath.Buffer[0], &u16_root_path);
 
 		if (status != STATUS_SUCCESS)
 		{
-			*result = 0;
-			return _os_status(status);
+			return status;
 		}
 
-		status = RtlUnicodeStringToUTF8String(&u8_root_path, u16_root_path, FALSE);
-		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_root_path);
+		*result = u16_root_path;
 
-		if (status != STATUS_SUCCESS)
-		{
-			*result = (u16_root_path->Length / 2); // Estimate
-			return _os_status(status);
-		}
-
-		*result = u8_root_path.Length;
-
-		return OS_STATUS_SUCCESS;
+		return STATUS_SUCCESS;
 	}
 
 	// Network Shares
 	if ((path[0] == '\\' && path[1] == '\\') || (path[0] == '/' && path[1] == '/'))
 	{
-		u8_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, 12 + length); // (+) "\Device\Mup\"
+		UTF8_STRING u8_path = {0};
+		UNICODE_STRING u16_path = {0};
+		SIZE_T size = (12 + length) * sizeof(WCHAR); // (+) "\Device\Mup\"
+		SIZE_T offset = 0;
 
-		if (u8_buffer == NULL)
+		u16_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, size);
+
+		if (u16_buffer == NULL)
 		{
-			// errno = ENOMEM;
-			return 0;
+			return STATUS_NO_MEMORY;
 		}
 
-		u8_nt_path.Buffer = u8_buffer;
-		u8_nt_path.Length = 0;
-		u8_nt_path.MaximumLength = 12 + length;
+		memcpy(PTR_OFFSET(u16_buffer, offset), L"\\Device\\Mup\\", 12 * sizeof(WCHAR));
+		offset += 12 * sizeof(WCHAR);
+		u16_size += offset;
 
-		memcpy(PTR_OFFSET(u8_nt_path.Buffer, u8_nt_path.Length), "\\Device\\Mup\\", 12);
-		u8_nt_path.Length += 12;
+		// Skip //
+		u8_path.Buffer = PTR_OFFSET(path, 2);
+		u8_path.Length = length - 2;
+		u8_path.MaximumLength = length - 2;
 
-		memcpy(PTR_OFFSET(u8_nt_path.Buffer, u8_nt_path.Length), PTR_OFFSET(path, 2), length - 2);
-		u8_nt_path.Length += length - 2;
+		u16_path.Buffer = PTR_OFFSET(u16_buffer, offset);
+		u16_path.Length = 0;
+		u16_path.MaximumLength = size - offset;
+
+		status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, FALSE);
+
+		if (status != STATUS_SUCCESS)
+		{
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_buffer);
+			return status;
+		}
+
+		u16_size += u16_path.Length;
 
 		goto path_coalesce;
 	}
 
 	if (IS_ABSOLUTE_PATH(path))
 	{
-		UNICODE_STRING *u16_nt_device = NULL;
+		UNICODE_STRING *u16_device = NULL;
+		UNICODE_STRING u16_path = {0};
+		UTF8_STRING u8_path = {0};
+		SIZE_T offset = 0;
 		CHAR device = 0;
 
 		// Cygwin path
@@ -260,79 +270,98 @@ status_t os_path(handle_t root, const char *path, uint16_t length, char *buffer,
 			device = path[0];
 		}
 
-		status = dos_device_to_nt_device(device, &u16_nt_device);
-
-		if (status != STATUS_SUCCESS)
-		{
-			return _os_status(status);
-		}
-
-		u8_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_nt_device->Length + length + 1);
-
-		if (u8_buffer == NULL)
-		{
-			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_device);
-			return OS_STATUS_NO_MEMORY;
-		}
-
-		u8_nt_path.Buffer = u8_buffer;
-		u8_nt_path.Length = 0;
-		u8_nt_path.MaximumLength = u16_nt_device->Length + length + 1;
-
-		status = RtlUnicodeStringToUTF8String(&u8_nt_path, u16_nt_device, FALSE);
-		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_device);
-
-		if (status != STATUS_SUCCESS)
-		{
-			return _os_status(status);
-		}
-
-		memcpy(PTR_OFFSET(u8_nt_path.Buffer, u8_nt_path.Length), PTR_OFFSET(path, 2), length - 2);
-		u8_nt_path.Length += length - 2;
-	}
-	else
-	{
-		UNICODE_STRING *u16_nt_path = NULL;
-
-		status = get_handle_ntpath(root, &u16_nt_path);
+		status = dos_device_to_nt_device(device, &u16_device);
 
 		if (status != STATUS_SUCCESS)
 		{
 			return status;
 		}
 
-		u8_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_nt_path->Length + length + 1);
+		u16_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_device->Length + ((length + 1) * sizeof(WCHAR)));
 
-		if (u8_buffer == NULL)
+		if (u16_buffer == NULL)
 		{
-			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_path);
-			return OS_STATUS_NO_MEMORY;
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_device);
+			return STATUS_NO_MEMORY;
 		}
 
-		u8_nt_path.Buffer = u8_buffer;
-		u8_nt_path.Length = 0;
-		u8_nt_path.MaximumLength = u16_nt_path->Length + length + 1;
+		memcpy(PTR_OFFSET(u16_buffer, offset), u16_device->Buffer, u16_device->Length);
+		offset += u16_device->Length;
+		u16_size += offset;
 
-		status = RtlUnicodeStringToUTF8String(&u8_nt_path, u16_nt_path, FALSE);
-		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nt_path);
+		u8_path.Buffer = PTR_OFFSET(path, 2);
+		u8_path.Length = length - 2;
+		u8_path.MaximumLength = length - 2;
+
+		u16_path.Buffer = PTR_OFFSET(u16_buffer, offset);
+		u16_path.Length = 0;
+		u16_path.MaximumLength = (length + 1) * sizeof(WCHAR);
+
+		status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, FALSE);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_device);
 
 		if (status != STATUS_SUCCESS)
 		{
-			return _os_status(status);
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_buffer);
+			return status;
 		}
 
-		memcpy(PTR_OFFSET(u8_nt_path.Buffer, u8_nt_path.Length), path, length);
-		u8_nt_path.Length += length;
+		u16_size += u16_path.Length;
+	}
+	else
+	{
+		UNICODE_STRING *u16_root_path = NULL;
+		UNICODE_STRING u16_path = {0};
+		UTF8_STRING u8_path = {0};
+		SIZE_T offset = 0;
+
+		status = get_handle_ntpath(root, &u16_root_path);
+
+		if (status != STATUS_SUCCESS)
+		{
+			return status;
+		}
+
+		u16_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_root_path->Length + ((length + 1) * sizeof(WCHAR)));
+
+		if (u16_buffer == NULL)
+		{
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_root_path);
+			return STATUS_NO_MEMORY;
+		}
+
+		memcpy(PTR_OFFSET(u16_buffer, offset), u16_root_path->Buffer, u16_root_path->Length);
+		offset += u16_root_path->Length;
+		u16_size += offset;
+
+		u8_path.Buffer = (CHAR *)path;
+		u8_path.Length = length - 1;
+		u8_path.MaximumLength = length - 1;
+
+		u16_path.Buffer = PTR_OFFSET(u16_buffer, offset);
+		u16_path.Length = 0;
+		u16_path.MaximumLength = (length + 1) * sizeof(WCHAR);
+
+		status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, FALSE);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_root_path);
+
+		if (status != STATUS_SUCCESS)
+		{
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_buffer);
+			return status;
+		}
+
+		u16_size += u16_path.Length;
 	}
 
 path_coalesce:
 
 	// Convert forward slashes to backward slashes
-	for (uint16_t i = 0; i < u8_nt_path.Length; ++i)
+	for (uint16_t i = 0; i < u16_size; ++i)
 	{
-		if (u8_nt_path.Buffer[i] == L'/')
+		if (u16_buffer[i] == L'/')
 		{
-			u8_nt_path.Buffer[i] = L'\\';
+			u16_buffer[i] = L'\\';
 		}
 	}
 
@@ -348,41 +377,41 @@ path_coalesce:
 
 	for (uint32_t i = 8;; ++i) // start after \Device\:
 	{
-		if (u8_buffer[i] == '\\' || u8_buffer[i] == '\0')
+		if (u16_buffer[i] == L'\\' || u16_buffer[i] == L'\0')
 		{
 			if (i - start > 2) // not '.' or '..'
 			{
-				void *temp = push_path_component(&stack, start, (i - start)); // push stack
+				void *temp = push_path_component(&stack, start, (i - start) * sizeof(WCHAR)); // push stack
 
 				if (temp == NULL)
 				{
-					status = OS_STATUS_NO_MEMORY;
+					status = STATUS_NO_MEMORY;
 					goto finish;
 				}
 			}
 			else
 			{
-				if (i - start == 2 && (u8_buffer[start] == '.' && u8_buffer[start + 1] == '.'))
+				if (i - start == 2 && (u16_buffer[start] == L'.' && u16_buffer[start + 1] == L'.'))
 				{
 					pop_path_component(&stack);
 				}
-				else if (i - start == 1 && u8_buffer[start] == '.')
+				else if (i - start == 1 && u16_buffer[start] == L'.')
 				{
 					; // do nothing
 				}
 				else
 				{
-					void *temp = push_path_component(&stack, start, (i - start)); // push stack
+					void *temp = push_path_component(&stack, start, (i - start) * sizeof(WCHAR)); // push stack
 
 					if (temp == NULL)
 					{
-						status = OS_STATUS_NO_MEMORY;
+						status = STATUS_NO_MEMORY;
 						goto finish;
 					}
 				}
 			}
 
-			if (u8_buffer[i] == '\0')
+			if (u16_buffer[i] == L'\0')
 			{
 				break;
 			}
@@ -391,24 +420,26 @@ path_coalesce:
 		}
 	}
 
-	uint32_t pos = 0;
+	u16_ntpath = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(UNICODE_STRING) + stack.length);
 
-	if (size < stack.length)
+	if (u16_ntpath == NULL)
 	{
-		*result = (uint16_t)stack.length;
-		status = OS_STATUS_TOO_BIG;
-
+		status = STATUS_NO_MEMORY;
 		goto finish;
 	}
 
+	u16_ntpath->Buffer = PTR_OFFSET(u16_ntpath, sizeof(UNICODE_STRING));
+
 	for (uint32_t i = 0; i < stack.count; i++)
 	{
-		memcpy(PTR_OFFSET(buffer, pos), PTR_OFFSET(u8_buffer, stack.components[i].start), stack.components[i].length);
-		pos += stack.components[i].length;
+		memcpy(PTR_OFFSET(u16_ntpath->Buffer, u16_ntpath->Length), PTR_OFFSET(u16_buffer, stack.components[i].start),
+			   stack.components[i].length);
+		u16_ntpath->Length += stack.components[i].length;
 
 		if (i + 1 < stack.count)
 		{
-			buffer[pos++] = '\\';
+			u16_ntpath->Buffer[u16_ntpath->Length] = L'\\';
+			u16_ntpath->Length += 2;
 		}
 	}
 
@@ -416,18 +447,20 @@ path_coalesce:
 	{
 		// The case where we resolve a volume. eg C:
 		// Always add trailing slash to the volume so that it can be treated as a directory by the NT calls.
-		buffer[pos++] = '\\';
+		u16_ntpath->Buffer[u16_ntpath->Length] = L'\\';
+		u16_ntpath->Length += 2;
 	}
 
 	// Terminate with NULL
-	buffer[pos] = '\0';
+	u16_ntpath->Buffer[u16_ntpath->Length] = L'\0';
+	u16_ntpath->MaximumLength = u16_ntpath->Length + 2;
 
-	*result = (uint16_t)pos;
-	status = OS_STATUS_SUCCESS;
+	*result = u16_ntpath;
+	status = STATUS_SUCCESS;
 
 finish:
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, stack.components);
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, u8_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_buffer);
 
 	return status;
 }

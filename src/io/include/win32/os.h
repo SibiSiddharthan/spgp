@@ -13,6 +13,9 @@
 // Current directory handle
 handle_t _os_cwd_handle();
 
+// NT Paths
+status_t _os_ntpath(void **result, handle_t root, const char *path, uint16_t length);
+
 #define HANDLE_CWD              (_os_cwd_handle())
 #define HANDLE_EMPTY_PATH       0x0
 #define HANDLE_SYMLINK_FOLLOW   0x1
