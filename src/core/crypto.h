@@ -8,7 +8,7 @@
 #ifndef SPGP_CRYPTO_H
 #define SPGP_CRYPTO_H
 
-#include <spgp.h>
+#include <pgp.h>
 #include <algorithms.h>
 
 #include <key.h>

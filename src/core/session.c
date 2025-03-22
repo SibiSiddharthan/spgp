@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <spgp.h>
+#include <pgp.h>
 #include <algorithms.h>
 #include <crypto.h>
 #include <packet.h>

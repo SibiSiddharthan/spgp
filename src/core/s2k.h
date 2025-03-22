@@ -8,7 +8,7 @@
 #ifndef SPGP_S2K_H
 #define SPGP_S2K_H
 
-#include <spgp.h>
+#include <pgp.h>
 
 // Refer RFC 9580 - OpenPGP, Section 3.7 String-to-Key (S2K) Specifier
 

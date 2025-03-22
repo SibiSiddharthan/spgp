@@ -8,7 +8,7 @@
 #ifndef SPGP_KEY_H
 #define SPGP_KEY_H
 
-#include <spgp.h>
+#include <pgp.h>
 #include <packet.h>
 #include <s2k.h>
 #include <mpi.h>

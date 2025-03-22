@@ -8,7 +8,7 @@
 #ifndef SPGP_ARGPARSE_H
 #define SPGP_ARGPARSE_H
 
-#include <spgp.h>
+#include <pgp.h>
 
 // Option Flags
 #define ARGPARSE_FLAG_SKIP_FIRST_ARGUMENT 0x1

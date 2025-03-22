@@ -8,7 +8,7 @@
 #ifndef SPGP_STREAM_H
 #define SPGP_STREAM_H
 
-#include <spgp.h>
+#include <pgp.h>
 
 typedef struct _pgp_stream_t
 {

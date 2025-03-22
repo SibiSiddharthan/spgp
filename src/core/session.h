@@ -8,7 +8,7 @@
 #ifndef SPGP_SESSION_H
 #define SPGP_SESSION_H
 
-#include <spgp.h>
+#include <pgp.h>
 #include <packet.h>
 #include <key.h>
 #include <mpi.h>

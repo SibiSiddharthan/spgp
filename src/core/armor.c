@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <spgp.h>
+#include <pgp.h>
 #include <armor.h>
 #include <base64.h>
 #include <crc24.h>

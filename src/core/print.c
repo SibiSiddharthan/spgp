@@ -7,7 +7,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <spgp.h>
+#include <pgp.h>
 #include <algorithms.h>
 #include <packet.h>
 #include <seipd.h>

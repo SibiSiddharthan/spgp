@@ -8,7 +8,7 @@
 #ifndef SPGP_ARMOR_H
 #define SPGP_ARMOR_H
 
-#include <spgp.h>
+#include <pgp.h>
 
 #define PGP_ARMOR_NO_CRC 0x1
 

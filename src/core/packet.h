@@ -8,7 +8,7 @@
 #ifndef SPGP_PACKET_H
 #define SPGP_PACKET_H
 
-#include <spgp.h>
+#include <pgp.h>
 #include <stream.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5 Packet Types

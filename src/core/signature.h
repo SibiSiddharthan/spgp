@@ -8,7 +8,7 @@
 #ifndef SPGP_SIGNATURE_H
 #define SPGP_SIGNATURE_H
 
-#include <spgp.h>
+#include <pgp.h>
 #include <packet.h>
 #include <stream.h>
 #include <key.h>

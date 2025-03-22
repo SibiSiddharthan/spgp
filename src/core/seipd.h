@@ -8,7 +8,7 @@
 #ifndef SPGP_SEIPD_H
 #define SPGP_SEIPD_H
 
-#include <spgp.h>
+#include <pgp.h>
 #include <packet.h>
 #include <mpi.h>
 
