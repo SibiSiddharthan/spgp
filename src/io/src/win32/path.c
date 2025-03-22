@@ -85,6 +85,30 @@ static path_stack *pop_path_component(path_stack *stack)
 	return stack;
 }
 
+static BYTE simple_path(const char *path, uint16_t length)
+{
+	// Check simple paths (not ./ or  ../)
+	for (uint16_t i = 0; i < length; ++i)
+	{
+		if (path[i] == '.')
+		{
+			if ((i + 1) < length)
+			{
+				if (path[i + 1] == '/' || path[i + 1] == '\\')
+				{
+					return 0;
+				}
+			}
+			else // i == length - 1
+			{
+				return 0;
+			}
+		}
+	}
+
+	return 1;
+}
+
 static NTSTATUS dos_device_to_nt_device(CHAR volume, UNICODE_STRING **result)
 {
 	NTSTATUS status = 0;
@@ -314,6 +338,44 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 		UNICODE_STRING u16_path = {0};
 		UTF8_STRING u8_path = {0};
 		SIZE_T offset = 0;
+
+		if (simple_path(path, length))
+		{
+			// Convert the path to UTF-16 and replace forward slashes with backward slashes
+			u16_ntpath = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(UNICODE_STRING) + ((length + 1) * sizeof(WCHAR)));
+
+			if (u16_ntpath == NULL)
+			{
+				return STATUS_NO_MEMORY;
+			}
+
+			u16_ntpath->Buffer = PTR_OFFSET(u16_ntpath, sizeof(UNICODE_STRING));
+			u16_ntpath->MaximumLength = (length + 1) * sizeof(WCHAR);
+
+			u8_path.Buffer = (CHAR *)path;
+			u8_path.Length = length - 1;
+			u8_path.MaximumLength = length - 1;
+
+			status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, FALSE);
+
+			if (status != STATUS_SUCCESS)
+			{
+				return status;
+			}
+
+			for (uint16_t i = 0; i < length; ++i)
+			{
+				if (u16_ntpath->Buffer[i] == L'/')
+				{
+					u16_ntpath->Buffer[i] = L'\\';
+				}
+			}
+
+			*result = u16_ntpath;
+			status = STATUS_SUCCESS;
+
+			return status;
+		}
 
 		status = get_handle_ntpath(root, &u16_root_path);
 
