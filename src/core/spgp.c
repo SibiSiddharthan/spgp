@@ -656,6 +656,22 @@ static uint32_t spgp_list_packets(spgp_command *command)
 	return 0;
 }
 
+static uint32_t spgp_execute_operation(spgp_command *command)
+{
+	switch (command->operation)
+	{
+	case SPGP_OPERATION_SIGN:
+		return spgp_sign(command);
+	case SPGP_OPERATION_VERIFY:
+		return spgp_verify(command);
+	case SPGP_OPERATION_LIST_PACKETS:
+		return spgp_list_packets(command);
+	default:
+		// Unreachable
+		return 0;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	uint32_t exit_code = 0;
@@ -849,23 +865,24 @@ int main(int argc, char **argv)
 		}
 	}
 
-	spgp_initialize_home(&command);
-
-	switch (command.operation)
+	// No command given, print help
+	if (command.operation == SPGP_OPERATION_NONE)
 	{
-	case SPGP_OPERATION_SIGN:
-		exit_code = spgp_sign(&command);
-		break;
-	case SPGP_OPERATION_VERIFY:
-		exit_code = spgp_verify(&command);
-		break;
-	case SPGP_OPERATION_LIST_PACKETS:
-		exit_code = spgp_list_packets(&command);
-		break;
-
-	default:
 		spgp_print_help();
+		exit(EXIT_SUCCESS);
 	}
+
+	// The operations do not require setting up the home directory, execute them immediately.
+	if (command.operation == SPGP_OPERATION_ARMOR || command.operation == SPGP_OPERATION_DEARMOR ||
+		command.operation == SPGP_OPERATION_LIST_PACKETS)
+	{
+		return spgp_execute_operation(&command);
+	}
+
+	// Setup home and execute.
+	// If home initialization fails process will exit.
+	spgp_initialize_home(&command);
+	exit_code = spgp_execute_operation(&command);
 
 	return exit_code;
 }
