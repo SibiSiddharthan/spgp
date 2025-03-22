@@ -15,9 +15,38 @@
 #include <stdint.h>
 #include <stddef.h>
 
-handle_t _os_cwd_handle()
+static NTSTATUS _nt_open(HANDLE *handle, HANDLE root, CONST CHAR *path, USHORT length, ACCESS_MASK access, ULONG disposition, ULONG options)
 {
-	return NtCurrentPeb()->ProcessParameters->CurrentDirectory.Handle;
+	NTSTATUS status = 0;
+
+	IO_STATUS_BLOCK io = {0};
+	OBJECT_ATTRIBUTES object = {0};
+	UNICODE_STRING *u16_path = NULL;
+
+	if (path != NULL)
+	{
+		status = _os_ntpath((VOID **)&u16_path, root, path, length);
+
+		if (status != STATUS_SUCCESS)
+		{
+			return _os_status(status);
+		}
+
+		// Full NT path, ignore root
+		if (u16_path->Buffer[0] == L'\\')
+		{
+			root = NULL;
+		}
+	}
+
+	InitializeObjectAttributes(&object, u16_path, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, root, NULL);
+
+	status = NtCreateFile(handle, access, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, disposition,
+						  options, NULL, 0);
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
+
+	return status;
 }
 
 status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t flags, uint32_t mode)
@@ -158,29 +187,8 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 	if (path != NULL)
 	{
-		OBJECT_ATTRIBUTES object = {0};
-		UNICODE_STRING *u16_path = NULL;
-
-		status = _os_ntpath((VOID **)&u16_path, root, path, length);
-
-		if (status != STATUS_SUCCESS)
-		{
-			return _os_status(status);
-		}
-
-		// Full NT path, ignore root
-		if (u16_path->Buffer[0] == L'\\')
-		{
-			root = NULL;
-		}
-
-		InitializeObjectAttributes(&object, u16_path, OBJ_CASE_INSENSITIVE, root, NULL);
-
-		status = NtCreateFile(handle, FILE_READ_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE, &object, &io, NULL, 0,
-							  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
-							  (flags & HANDLE_SYMLINK_NOFOLLOW) ? FILE_OPEN_REPARSE_POINT : 0, NULL, 0);
-
-		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
+		status = _nt_open(&handle, root, path, length, FILE_READ_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE, FILE_OPEN,
+						  (flags & HANDLE_SYMLINK_NOFOLLOW) ? FILE_OPEN_REPARSE_POINT : 0);
 
 		if (status != STATUS_SUCCESS)
 		{
@@ -400,30 +408,9 @@ status_t os_remove(handle_t root, const char *path, uint16_t length)
 	HANDLE handle = 0;
 
 	IO_STATUS_BLOCK io = {0};
-	OBJECT_ATTRIBUTES object = {0};
 	FILE_DISPOSITION_INFORMATION_EX dispostion = {0};
 
-	UNICODE_STRING *u16_path = NULL;
-
-	status = _os_ntpath((VOID **)&u16_path, root, path, length);
-
-	if (status != STATUS_SUCCESS)
-	{
-		return _os_status(status);
-	}
-
-	// Full NT path, ignore root
-	if (u16_path->Buffer[0] == L'\\')
-	{
-		root = NULL;
-	}
-
-	InitializeObjectAttributes(&object, u16_path, OBJ_CASE_INSENSITIVE, root, NULL);
-
-	status = NtCreateFile(&handle, DELETE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
-						  FILE_OPEN_REPARSE_POINT, NULL, 0);
-
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
+	status = _nt_open(&handle, root, path, length, DELETE, FILE_OPEN, FILE_OPEN_REPARSE_POINT);
 
 	if (status != STATUS_SUCCESS)
 	{
@@ -478,4 +465,9 @@ status_t os_isatty(handle_t handle, uint32_t *result)
 	*result = device_info.DeviceType == FILE_DEVICE_CONSOLE ? 1 : 0;
 
 	return OS_STATUS_SUCCESS;
+}
+
+handle_t _os_cwd_handle()
+{
+	return NtCurrentPeb()->ProcessParameters->CurrentDirectory.Handle;
 }
