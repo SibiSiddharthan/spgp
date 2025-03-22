@@ -224,7 +224,12 @@ typedef struct _spgp_command
 	spgp_operation operation;
 	spgp_mode mode;
 
-	void *home;
+	handle_t home;
+	handle_t keys;
+	handle_t certs;
+	handle_t keyring;
+
+	void *homedir;
 	void *output;
 	void *passhprase;
 
@@ -335,16 +340,45 @@ static void spgp_print_version(void)
 	printf("%s", version);
 }
 
-uint32_t spgp_initialize_home(const char *home)
+static status_t spgp_initialize_directory(handle_t *handle, handle_t root, char *dir, uint16_t length)
+{
+	status_t status = 0;
+
+	status = os_open(handle, root, dir, length, FILE_ACCESS_READ, FILE_FLAG_DIRECTORY | FILE_FLAG_NO_INHERIT, 0);
+
+	// If home directory does not exist try to create it.
+	if (status == OS_STATUS_PATH_NOT_FOUND)
+	{
+		status = os_mkdir(root, dir, length, 0700);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			return status;
+		}
+
+		status = os_open(handle, root, dir, length, FILE_ACCESS_READ, FILE_FLAG_DIRECTORY | FILE_FLAG_NO_INHERIT, 0);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			return status;
+		}
+	}
+
+	return status;
+}
+
+void spgp_initialize_home(spgp_command *spgp)
 {
 	status_t status = 0;
 	handle_t handle = 0;
 
-	char full_home[256] = {0};
-	uint16_t size = 0;
-
-	if (home == NULL)
+	// Initialize home
+	if (spgp->home == NULL)
 	{
+		// Get base of home from the environment.
+		// Prefer $HOME to $USERPROFILE
+		char *home = NULL;
+
 		home = getenv("HOME");
 
 		if (home == NULL)
@@ -354,33 +388,67 @@ uint32_t spgp_initialize_home(const char *home)
 
 		if (home == NULL)
 		{
-			return 1;
+			printf("%s", "Unable to initialize home.\n");
+			exit(1);
 		}
 
-		status = os_path(HANDLE_CWD, home, strlen(home), full_home, 256, &size);
+		status = os_open(&handle, HANDLE_CWD, home, strlen(home), FILE_ACCESS_READ, FILE_FLAG_DIRECTORY | FILE_FLAG_NO_INHERIT, 0);
 
 		if (status != OS_STATUS_SUCCESS)
 		{
-			return 1;
+			printf("%s", "Unable to initialize home.\n");
+			exit(1);
 		}
 
-		status = os_open(&handle, HANDLE_CWD, full_home, size, FILE_ACCESS_READ, FILE_FLAG_DIRECTORY, 0);
+		status = spgp_initialize_directory(&spgp->home, handle, SPGP_DEFAULT_HOME, strlen(SPGP_DEFAULT_HOME));
 
 		if (status != OS_STATUS_SUCCESS)
 		{
-			return 1;
+			printf("%s", "Unable to initialize spgp home directory.\n");
+			exit(1);
 		}
 
-		status = os_mkdir(handle, ".spgp", 5, 0700);
 		os_close(handle);
+	}
+	else
+	{
+		status = os_open(&spgp->home, HANDLE_CWD, spgp->homedir, strlen(spgp->homedir), FILE_ACCESS_READ,
+						 FILE_FLAG_DIRECTORY | FILE_FLAG_NO_INHERIT, 0);
 
 		if (status != OS_STATUS_SUCCESS)
 		{
-			return 1;
+			printf("%s", "Unable to initialize home.\n");
+			exit(1);
 		}
 	}
 
-	return 0;
+	// Initialize keys
+	status = spgp_initialize_directory(&spgp->keys, spgp->home, SPGP_KEYS, strlen(SPGP_KEYS));
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("%s", "Unable to initialize spgp keys.\n");
+		exit(1);
+	}
+
+	// Initialize certs
+	status = spgp_initialize_directory(&spgp->certs, spgp->home, SPGP_CERTS, strlen(SPGP_CERTS));
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("%s", "Unable to initialize spgp certs.\n");
+		exit(1);
+	}
+
+	// Initialize keyring
+	status = os_open(&spgp->keyring, spgp->home, SPGP_KEYRING, strlen(SPGP_KEYRING), FILE_ACCESS_READ | FILE_ACCESS_WRITE,
+					 FILE_FLAG_CREATE | FILE_FLAG_NON_DIRECTORY | FILE_FLAG_NO_INHERIT, 0700);
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("%s", "Unable to initialize spgp keyring.\n");
+		exit(1);
+	}
 }
 
 static uint32_t spgp_sign(spgp_command *command)
@@ -781,7 +849,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	spgp_initialize_home(command.home);
+	spgp_initialize_home(&command);
 
 	switch (command.operation)
 	{

@@ -353,10 +353,10 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 			u16_ntpath->MaximumLength = (length + 1) * sizeof(WCHAR);
 
 			u8_path.Buffer = (CHAR *)path;
-			u8_path.Length = length - 1;
-			u8_path.MaximumLength = length - 1;
+			u8_path.Length = length;
+			u8_path.MaximumLength = length;
 
-			status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, FALSE);
+			status = RtlUTF8StringToUnicodeString(u16_ntpath, &u8_path, FALSE);
 
 			if (status != STATUS_SUCCESS)
 			{
@@ -397,8 +397,8 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 		u16_size += offset;
 
 		u8_path.Buffer = (CHAR *)path;
-		u8_path.Length = length - 1;
-		u8_path.MaximumLength = length - 1;
+		u8_path.Length = length;
+		u8_path.MaximumLength = length;
 
 		u16_path.Buffer = PTR_OFFSET(u16_buffer, offset);
 		u16_path.Length = 0;
@@ -419,7 +419,7 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 path_coalesce:
 
 	// Convert forward slashes to backward slashes
-	for (uint16_t i = 0; i < u16_size; ++i)
+	for (uint16_t i = 0; i < (u16_size / 2); ++i)
 	{
 		if (u16_buffer[i] == L'/')
 		{
@@ -494,13 +494,13 @@ path_coalesce:
 
 	for (uint32_t i = 0; i < stack.count; i++)
 	{
-		memcpy(PTR_OFFSET(u16_ntpath->Buffer, u16_ntpath->Length), PTR_OFFSET(u16_buffer, stack.components[i].start),
+		memcpy(PTR_OFFSET(u16_ntpath->Buffer, u16_ntpath->Length), PTR_OFFSET(u16_buffer, stack.components[i].start * sizeof(WCHAR)),
 			   stack.components[i].length);
 		u16_ntpath->Length += stack.components[i].length;
 
 		if (i + 1 < stack.count)
 		{
-			u16_ntpath->Buffer[u16_ntpath->Length] = L'\\';
+			u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\\';
 			u16_ntpath->Length += 2;
 		}
 	}
@@ -509,12 +509,12 @@ path_coalesce:
 	{
 		// The case where we resolve a volume. eg C:
 		// Always add trailing slash to the volume so that it can be treated as a directory by the NT calls.
-		u16_ntpath->Buffer[u16_ntpath->Length] = L'\\';
+		u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\\';
 		u16_ntpath->Length += 2;
 	}
 
 	// Terminate with NULL
-	u16_ntpath->Buffer[u16_ntpath->Length] = L'\0';
+	u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\0';
 	u16_ntpath->MaximumLength = u16_ntpath->Length + 2;
 
 	*result = u16_ntpath;

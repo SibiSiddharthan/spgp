@@ -110,7 +110,7 @@ void *_os_security_descriptor(mode_t mode, uint32_t directory)
 	RtlInitializeSidEx((PSID)adminstrators_sid_buffer, &nt_authority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS);
 	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, __OS_ALL_PERMISSIONS, (PSID)adminstrators_sid_buffer);
 
-	if (mode & 0070)
+	if (mode & 0700)
 	{
 		ULONG length = 0;
 

@@ -68,8 +68,6 @@ typedef enum _spgp_key_id
 
 } spgp_key_id;
 
-uint32_t spgp_initialize_home(const char *home);
-
 uint32_t spgp_generate_key(spgp_key_id id, const char *uid, uint16_t uid_size);
 uint32_t spgp_delete_key(const char *key_id, uint16_t key_id_size, uint32_t options);
 
