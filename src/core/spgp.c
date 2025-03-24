@@ -507,10 +507,9 @@ static uint32_t spgp_sign(spgp_command *command)
 		pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
 	}
 
-	pgp_signature_packet *sign =
-		pgp_signature_packet_new(PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE, key->public_key_algorithm_id, PGP_SHA2_256);
+	pgp_signature_packet *sign = pgp_signature_packet_new(PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE);
 
-	pgp_signature_packet_sign(sign, key, time(NULL), buffer, size);
+	pgp_signature_packet_sign(sign, key, PGP_SHA2_256, time(NULL), buffer, size);
 
 	if (command->output != NULL)
 	{

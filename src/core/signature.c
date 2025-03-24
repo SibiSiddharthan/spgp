@@ -1323,7 +1323,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 	return hctx->hash_size;
 }
 
-pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id)
+pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type)
 {
 	pgp_signature_packet *packet = NULL;
 
@@ -1333,16 +1333,6 @@ pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte
 	}
 
 	if (pgp_signature_type_validate(type) == 0)
-	{
-		return NULL;
-	}
-
-	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
-	{
-		return NULL;
-	}
-
-	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
 	{
 		return NULL;
 	}
@@ -1358,8 +1348,6 @@ pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte
 
 	packet->version = version;
 	packet->type = type;
-	packet->public_key_algorithm_id = public_key_algorithm_id;
-	packet->hash_algorithm_id = hash_algorithm_id;
 
 	return packet;
 }
@@ -1373,16 +1361,33 @@ void pgp_signature_packet_delete(pgp_signature_packet *packet)
 	free(packet);
 }
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp, void *data, size_t size)
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
+								   uint32_t timestamp, void *data, size_t size)
 {
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
 	pgp_timestamp_subpacket *timestamp_subpacket = NULL;
 	pgp_key_fingerprint_subpacket *fingerprint_subpacket = NULL;
+	pgp_issuer_key_id_subpacket *key_id_subpacket = NULL;
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
+
+	if (pgp_hash_algorithm_validate(hash_algorithm) == 0)
+	{
+		return 0;
+	}
+
+	// Incompatible signature and key versions
+	if (packet->version != key->version)
+	{
+		return 0;
+	}
+
+	// Set the algorithms
+	packet->public_key_algorithm_id = key->public_key_algorithm_id;
+	packet->hash_algorithm_id = hash_algorithm;
 
 	// Calculate issuer key fingerprint
 	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
@@ -1404,6 +1409,20 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 
 	packet->hashed_octets = timestamp_subpacket->header.header_size + timestamp_subpacket->header.body_size +
 							fingerprint_subpacket->header.header_size + fingerprint_subpacket->header.body_size;
+
+	// Only for V4 signatures append the key id as an unhashed subpacket
+	if (packet->version == PGP_SIGNATURE_V4)
+	{
+		key_id_subpacket = pgp_issuer_key_id_subpacket_new(PTR_OFFSET(fingerprint, fingerprint_size - PGP_KEY_ID_SIZE));
+
+		if (key_id_subpacket == NULL)
+		{
+			return 0;
+		}
+
+		packet->unhashed_subpackets = pgp_stream_push_packet(packet->unhashed_subpackets, key_id_subpacket);
+		packet->unhashed_octets = key_id_subpacket->header.header_size + key_id_subpacket->header.body_size;
+	}
 
 	hash_size = pgp_compute_hash(packet, data, size, hash);
 
@@ -1442,7 +1461,8 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 	}
 
 	packet->signature_octets = get_signature_octets(packet->public_key_algorithm_id, packet->signature);
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SIG, 4 + 4 + 2 + packet->hashed_octets + packet->signature_octets);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SIG,
+											  4 + 4 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets);
 
 	return 0;
 }
@@ -1817,6 +1837,28 @@ pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byt
 }
 
 void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE])
+{
+	pgp_issuer_key_id_subpacket *subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_issuer_key_id_subpacket));
+	memcpy(subpacket->key_id, key_id, PGP_KEY_ID_SIZE);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_KEY_ID_SUBPACKET, 0, PGP_KEY_ID_SIZE);
+
+	return subpacket;
+}
+
+void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
 {
 	free(subpacket);
 }

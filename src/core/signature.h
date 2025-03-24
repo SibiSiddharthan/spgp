@@ -304,10 +304,11 @@ typedef struct _pgp_ed448_signature
 	byte_t sig[114];
 } pgp_ed448_signature;
 
-pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type, byte_t public_key_algorithm_id, byte_t hash_algorithm_id);
+pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp, void *data, size_t size);
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
+								   uint32_t timestamp, void *data, size_t size);
 uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size);
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
@@ -319,6 +320,9 @@ void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
 
 pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size);
 void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);
+
+pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE]);
+void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
 
 pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
 																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
