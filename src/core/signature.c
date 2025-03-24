@@ -1228,6 +1228,12 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], 
 		return 0;
 	}
 
+	// Hash the salt first
+	if (packet->version == PGP_SIGNATURE_V6)
+	{
+		hash_update(hctx, packet->salt, packet->salt_size);
+	}
+
 	// Hash the data first
 	hash_update(hctx, data, data_size);
 
