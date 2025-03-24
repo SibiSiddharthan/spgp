@@ -3053,7 +3053,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
-static void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)
+void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)
 {
 	switch (algorithm)
 	{
