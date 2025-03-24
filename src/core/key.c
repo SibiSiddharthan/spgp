@@ -3053,15 +3053,15 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
-void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key)
+void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
 {
-	switch (algorithm)
+	switch (key->public_key_algorithm_id)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		pgp_rsa_key *pkey = key;
+		pgp_rsa_key *pkey = key->key;
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
 
@@ -3083,7 +3083,7 @@ void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, 
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_key *pkey = key;
+		pgp_elgamal_key *pkey = key->key;
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
 
@@ -3108,7 +3108,7 @@ void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, 
 	break;
 	case PGP_DSA:
 	{
-		pgp_dsa_key *pkey = key;
+		pgp_dsa_key *pkey = key->key;
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
 
@@ -3139,7 +3139,7 @@ void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, 
 	break;
 	case PGP_ECDH:
 	{
-		pgp_ecdh_key *pkey = key;
+		pgp_ecdh_key *pkey = key->key;
 
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
@@ -3164,7 +3164,7 @@ void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, 
 	case PGP_ECDSA:
 	case PGP_EDDSA:
 	{
-		pgp_ecdsa_key *pkey = key;
+		pgp_ecdsa_key *pkey = key->key;
 		uint16_t bits_be = 0;
 		uint32_t bytes = 0;
 
@@ -3181,42 +3181,36 @@ void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, 
 	break;
 	case PGP_X25519:
 	{
-		pgp_x25519_key *pkey = key;
+		pgp_x25519_key *pkey = key->key;
 		hash_update(hctx, pkey->public_key, 32);
 	}
 	break;
 	case PGP_X448:
 	{
-		pgp_x448_key *pkey = key;
+		pgp_x448_key *pkey = key->key;
 		hash_update(hctx, pkey->public_key, 56);
 	}
 	break;
 	case PGP_ED25519:
 	{
 
-		pgp_ed25519_key *pkey = key;
+		pgp_ed25519_key *pkey = key->key;
 		hash_update(hctx, pkey->public_key, 32);
 	}
 	break;
 	case PGP_ED448:
 	{
-		pgp_ed448_key *pkey = key;
+		pgp_ed448_key *pkey = key->key;
 		hash_update(hctx, pkey->public_key, 57);
 	}
 	break;
 	}
 }
 
-static uint32_t pgp_key_fingerprint_v3(void *key, byte_t fingerprint_v3[PGP_KEY_V3_FINGERPRINT_SIZE])
+static void pgp_key_v3_hash(hash_ctx *hctx, pgp_key_packet *key)
 {
-	// MD5 of mpi without length octets
-	hash_ctx *hctx = NULL;
-	byte_t buffer[512] = {0};
-
-	hctx = hash_init(buffer, 512, HASH_MD5);
-
 	// V3 keys only support RSA
-	pgp_rsa_key *pkey = key;
+	pgp_rsa_key *pkey = key->key;
 	uint32_t bytes = 0;
 
 	// n
@@ -3226,93 +3220,140 @@ static uint32_t pgp_key_fingerprint_v3(void *key, byte_t fingerprint_v3[PGP_KEY_
 	// e
 	bytes = CEIL_DIV(pkey->e->bits, 8);
 	hash_update(hctx, pkey->e->bytes, bytes);
-
-	hash_final(hctx, fingerprint_v3, PGP_KEY_V3_FINGERPRINT_SIZE);
-
-	return PGP_KEY_V3_FINGERPRINT_SIZE;
 }
 
-static uint32_t pgp_key_fingerprint_v4(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint16_t octet_count, void *key,
-									   byte_t fingerprint_v4[PGP_KEY_V4_FINGERPRINT_SIZE])
+static void pgp_key_v4_hash(hash_ctx *hctx, pgp_key_packet *key)
 {
-	hash_ctx *hctx = NULL;
-	byte_t buffer[512] = {0};
+	byte_t buffer[16] = {0};
+	byte_t pos = 0;
 
 	byte_t constant = 0x99;
-	byte_t version = 4;
-	uint16_t octet_count_be = BSWAP_16(octet_count);
-	uint32_t creation_time_be = BSWAP_32(creation_time);
+	uint16_t octet_count_be = BSWAP_16((uint16_t)(key->public_key_data_octets + 6));
+	uint32_t creation_time_be = BSWAP_32(key->key_creation_time);
 
-	hctx = hash_init(buffer, 512, HASH_SHA1);
+	// 1 octet 0x99
+	LOAD_8(buffer + pos, &constant);
+	pos += 1;
 
-	hash_update(hctx, &constant, 1);
-	hash_update(hctx, &octet_count_be, 2);
-	hash_update(hctx, &version, 1);
-	hash_update(hctx, &creation_time_be, 4);
-	hash_update(hctx, &algorithm, 1);
+	// 2 octet count
+	LOAD_16(buffer + pos, &octet_count_be);
+	pos += 2;
 
-	pgp_hash_key_material(hctx, algorithm, key);
-	hash_final(hctx, fingerprint_v4, PGP_KEY_V4_FINGERPRINT_SIZE);
+	// 1 octet version
+	LOAD_8(buffer + pos, &key->version);
+	pos += 1;
 
-	return PGP_KEY_V4_FINGERPRINT_SIZE;
+	// 4 octet creation time
+	LOAD_32(buffer + pos, &creation_time_be);
+	pos += 4;
+
+	// 1 octet algorithm
+	LOAD_8(buffer + pos, &key->public_key_algorithm_id);
+	pos += 1;
+
+	hash_update(hctx, buffer, pos);
+	pgp_hash_key_material(hctx, key);
 }
 
-static uint32_t pgp_key_fingerprint_v5(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint32_t octet_count,
-									   uint32_t material_count, void *key, byte_t fingerprint_v5[PGP_KEY_V6_FINGERPRINT_SIZE])
+static void pgp_key_v5_hash(hash_ctx *hctx, pgp_key_packet *key)
 {
-	hash_ctx *hctx = NULL;
-	byte_t buffer[512] = {0};
+	byte_t buffer[16] = {0};
+	byte_t pos = 0;
 
 	byte_t constant = 0x9A;
-	byte_t version = 5;
-	uint32_t octet_count_be = BSWAP_32(octet_count);
-	uint32_t material_count_be = BSWAP_32(material_count);
-	uint32_t creation_time_be = BSWAP_32(creation_time);
+	uint32_t octet_count_be = BSWAP_32(key->public_key_data_octets + 10);
+	uint32_t material_count_be = BSWAP_32(key->public_key_data_octets);
+	uint32_t creation_time_be = BSWAP_32(key->key_creation_time);
 
-	hctx = hash_init(buffer, 512, HASH_SHA256);
+	// 1 octet 0x9A
+	LOAD_8(buffer + pos, &constant);
+	pos += 1;
 
-	hash_update(hctx, &constant, 1);
-	hash_update(hctx, &octet_count_be, 4);
-	hash_update(hctx, &version, 1);
-	hash_update(hctx, &creation_time_be, 4);
-	hash_update(hctx, &algorithm, 1);
-	hash_update(hctx, &material_count_be, 4);
+	// 4 octet count
+	LOAD_32(buffer + pos, &octet_count_be);
+	pos += 4;
 
-	pgp_hash_key_material(hctx, algorithm, key);
-	hash_final(hctx, fingerprint_v5, PGP_KEY_V5_FINGERPRINT_SIZE);
+	// 1 octet version
+	LOAD_8(buffer + pos, &key->version);
+	pos += 1;
 
-	return PGP_KEY_V5_FINGERPRINT_SIZE;
+	// 4 octet creation time
+	LOAD_32(buffer + pos, &creation_time_be);
+	pos += 4;
+
+	// 1 octet algorithm
+	LOAD_8(buffer + pos, &key->public_key_algorithm_id);
+	pos += 1;
+
+	// 4 octet count public key
+	LOAD_32(buffer + pos, &material_count_be);
+	pos += 4;
+
+	hash_update(hctx, buffer, pos);
+	pgp_hash_key_material(hctx, key);
 }
 
-static uint32_t pgp_key_fingerprint_v6(pgp_public_key_algorithms algorithm, uint32_t creation_time, uint32_t octet_count,
-									   uint32_t material_count, void *key, byte_t fingerprint_v6[PGP_KEY_V6_FINGERPRINT_SIZE])
+static void pgp_key_v6_hash(hash_ctx *hctx, pgp_key_packet *key)
 {
-	hash_ctx *hctx = NULL;
-	byte_t buffer[512] = {0};
+	byte_t buffer[16] = {0};
+	byte_t pos = 0;
 
 	byte_t constant = 0x9B;
-	byte_t version = 6;
-	uint32_t octet_count_be = BSWAP_32(octet_count);
-	uint32_t material_count_be = BSWAP_32(material_count);
-	uint32_t creation_time_be = BSWAP_32(creation_time);
+	uint32_t octet_count_be = BSWAP_32(key->public_key_data_octets + 10);
+	uint32_t material_count_be = BSWAP_32(key->public_key_data_octets);
+	uint32_t creation_time_be = BSWAP_32(key->key_creation_time);
 
-	hctx = hash_init(buffer, 512, HASH_SHA256);
+	// 1 octet 0x9B
+	LOAD_8(buffer + pos, &constant);
+	pos += 1;
 
-	hash_update(hctx, &constant, 1);
-	hash_update(hctx, &octet_count_be, 4);
-	hash_update(hctx, &version, 1);
-	hash_update(hctx, &creation_time_be, 4);
-	hash_update(hctx, &algorithm, 1);
-	hash_update(hctx, &material_count_be, 4);
+	// 4 octet count
+	LOAD_32(buffer + pos, &octet_count_be);
+	pos += 4;
 
-	pgp_hash_key_material(hctx, algorithm, key);
-	hash_final(hctx, fingerprint_v6, PGP_KEY_V6_FINGERPRINT_SIZE);
+	// 1 octet version
+	LOAD_8(buffer + pos, &key->version);
+	pos += 1;
 
-	return PGP_KEY_V6_FINGERPRINT_SIZE;
+	// 4 octet creation time
+	LOAD_32(buffer + pos, &creation_time_be);
+	pos += 4;
+
+	// 1 octet algorithm
+	LOAD_8(buffer + pos, &key->public_key_algorithm_id);
+	pos += 1;
+
+	// 4 octet count public key
+	LOAD_32(buffer + pos, &material_count_be);
+	pos += 4;
+
+	hash_update(hctx, buffer, pos);
+	pgp_hash_key_material(hctx, key);
+}
+
+void pgp_key_hash(void *ctx, pgp_key_packet *key)
+{
+	switch (key->version)
+	{
+	case PGP_KEY_V2:
+	case PGP_KEY_V3:
+		return pgp_key_v3_hash(ctx, key);
+	case PGP_KEY_V4:
+		return pgp_key_v4_hash(ctx, key);
+	case PGP_KEY_V5:
+		return pgp_key_v5_hash(ctx, key);
+	case PGP_KEY_V6:
+		return pgp_key_v6_hash(ctx, key);
+	default:
+		return;
+	}
 }
 
 uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size)
 {
+	hash_ctx *hctx = NULL;
+	byte_t buffer[512] = {0};
+
 	if (pgp_public_cipher_algorithm_validate(key->public_key_algorithm_id) == 0)
 	{
 		return 0;
@@ -3328,7 +3369,17 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v3(key->key, fingerprint);
+		hctx = hash_init(buffer, 512, HASH_MD5);
+
+		if (hctx == NULL)
+		{
+			return 0;
+		}
+
+		pgp_key_v3_hash(hctx, key);
+		hash_final(hctx, fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
+
+		return PGP_KEY_V3_FINGERPRINT_SIZE;
 	}
 	case PGP_KEY_V4:
 	{
@@ -3337,8 +3388,17 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v4(key->public_key_algorithm_id, key->key_creation_time, (uint16_t)key->public_key_data_octets + 6,
-									  key->key, fingerprint);
+		hctx = hash_init(buffer, 512, HASH_SHA1);
+
+		if (hctx == NULL)
+		{
+			return 0;
+		}
+
+		pgp_key_v4_hash(hctx, key);
+		hash_final(hctx, fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+
+		return PGP_KEY_V4_FINGERPRINT_SIZE;
 	}
 	case PGP_KEY_V5:
 	{
@@ -3347,8 +3407,17 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v5(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
-									  key->public_key_data_octets, key->key, fingerprint);
+		hctx = hash_init(buffer, 512, HASH_SHA256);
+
+		if (hctx == NULL)
+		{
+			return 0;
+		}
+
+		pgp_key_v5_hash(hctx, key);
+		hash_final(hctx, fingerprint, PGP_KEY_V5_FINGERPRINT_SIZE);
+
+		return PGP_KEY_V5_FINGERPRINT_SIZE;
 	}
 	case PGP_KEY_V6:
 	{
@@ -3357,8 +3426,17 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 			return 0;
 		}
 
-		return pgp_key_fingerprint_v6(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
-									  key->public_key_data_octets, key->key, fingerprint);
+		hctx = hash_init(buffer, 512, HASH_SHA256);
+
+		if (hctx == NULL)
+		{
+			return 0;
+		}
+
+		pgp_key_v6_hash(hctx, key);
+		hash_final(hctx, fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+
+		return PGP_KEY_V6_FINGERPRINT_SIZE;
 	}
 	default:
 		return 0;
@@ -3367,7 +3445,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 	return 0;
 }
 
-uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[8])
+uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE])
 {
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 
@@ -3376,50 +3454,36 @@ uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[8])
 		return 0;
 	}
 
-	switch (key->version)
+	if (key->version > 3)
 	{
-	case PGP_KEY_V2:
-	case PGP_KEY_V3:
+		pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+
+		if (key->version == PGP_KEY_V4 || key->version == PGP_KEY_V6)
+		{
+			// Low 64 bits of fingerprint
+			LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE - 8));
+			return 8;
+		}
+
+		if (key->version == PGP_KEY_V5)
+		{
+			// High 64 bits of fingerprint
+			LOAD_64(id, PTR_OFFSET(fingerprint, 8));
+			return 8;
+		}
+	}
+	else
 	{
 		// Low 64 bits of public modulus
 		pgp_rsa_key *rsa_key = key->key;
 		uint16_t bytes = CEIL_DIV(rsa_key->n->bits, 8);
 
 		LOAD_64(id, &rsa_key->n->bytes[bytes - 8]);
-	}
-	break;
-	case PGP_KEY_V4:
-	{
-		// Low 64 bits of fingerprint
-		pgp_key_fingerprint_v4(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 6, key->key,
-							   fingerprint);
-
-		LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE - 8));
-	}
-	break;
-	case PGP_KEY_V5:
-	{
-		// High 64 bits of fingerprint
-		pgp_key_fingerprint_v5(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
-							   key->public_key_data_octets, key->key, fingerprint);
-
-		LOAD_64(id, PTR_OFFSET(fingerprint, 8));
-	}
-	break;
-	case PGP_KEY_V6:
-	{
-		// Low 64 bits of fingerprint
-		pgp_key_fingerprint_v6(key->public_key_algorithm_id, key->key_creation_time, key->public_key_data_octets + 9,
-							   key->public_key_data_octets, key->key, fingerprint);
-
-		LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE - 8));
-	}
-	break;
-	default:
-		return 0;
+		return 8;
 	}
 
-	return 8;
+	// Unreachable
+	return 0;
 }
 
 pgp_rsa_key *pgp_rsa_key_new()

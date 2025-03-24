@@ -181,8 +181,9 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size);
 size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
 size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 
+void pgp_key_hash(void *ctx, pgp_key_packet *key);
 uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size);
-uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[8]);
+uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE]);
 
 void *pgp_rsa_generate_key(uint32_t bits);
 void *pgp_dsa_generate_key(uint32_t p_bits, uint32_t q_bits);
