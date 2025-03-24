@@ -1176,6 +1176,39 @@ static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, 
 #define PGP_SIGNATURE_FLAG_DETACHED  0x1
 #define PGP_SIGNATURE_FLAG_CLEARTEXT 0x2
 
+static void pgp_compute_text_hash(hash_ctx *hctx, void *data, size_t size)
+{
+	byte_t *in = data;
+	size_t start = 0;
+
+	for (size_t i = 0; i < size; ++i)
+	{
+		// Edge case
+		if (i == 0)
+		{
+			if (in[i] == '\n')
+			{
+				hash_update(hctx, "\r\n", 2);
+				start = i + 1;
+				continue;
+			}
+		}
+
+		if (in[i] == '\n' && in[i - 1] != '\r')
+		{
+			hash_update(hctx, PTR_OFFSET(data, start), i - start + 1);
+			hash_update(hctx, "\r\n", 2);
+			start = i + 1;
+		}
+	}
+
+	// Last bits
+	if (start < size)
+	{
+		hash_update(hctx, PTR_OFFSET(data, start), size - start);
+	}
+}
+
 static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], uint32_t flags, void *data, size_t data_size)
 {
 	hash_ctx *hctx = NULL;
@@ -1235,7 +1268,24 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], 
 	}
 
 	// Hash the data first
-	hash_update(hctx, data, data_size);
+	switch (packet->type)
+	{
+	case PGP_BINARY_SIGNATURE:
+		hash_update(hctx, data, data_size);
+		break;
+	case PGP_TEXT_SIGNATURE:
+		pgp_compute_text_hash(hctx, data, data_size);
+		break;
+	case PGP_STANDALONE_SIGNATURE:
+		// Nothing to hash here.
+		break;
+
+	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
+	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
+	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
+	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+		break;
+	}
 
 	// Hash the trailer
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
