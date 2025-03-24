@@ -1368,6 +1368,8 @@ static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_k
 {
 	pgp_packet_header *header = user;
 
+	pgp_compute_key_hash(hctx, key);
+
 	if (pgp_packet_get_type(header->tag) == PGP_UAT)
 	{
 		pgp_compute_uat_hash(hctx, version, user);
@@ -1452,6 +1454,21 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], 
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
 		pgp_compute_certification_hash(hctx, packet->version, NULL, NULL);
+		break;
+
+	case PGP_SUBKEY_BINDING_SIGNATURE:
+	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
+	case PGP_SUBKEY_REVOCATION_SIGNATURE:
+		pgp_compute_key_hash(hctx, NULL); // Primary key
+		pgp_compute_key_hash(hctx, NULL); // Subkey
+		break;
+
+	case PGP_KEY_REVOCATION_SIGNATURE:
+		pgp_compute_key_hash(hctx, NULL); // Primary key
+		break;
+
+	case PGP_TIMESTAMP_SIGNATURE:
+		hash_update(hctx, data, data_size);
 		break;
 	}
 
