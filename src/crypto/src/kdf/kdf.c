@@ -15,234 +15,132 @@
 
 // See NIST SP 800-108 Recommendation for Key Derivation Using Pseudorandom Functions
 
-uint32_t kdf_counter(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
-					 uint32_t label_size, void *context, uint32_t context_size, void *derived_key, uint32_t derived_key_size)
+static uint32_t kdf_counter(kdf_ctx *ctx, void *derived_key, uint32_t derived_key_size)
 {
-	void *ctx = NULL;
 	byte_t *pk = derived_key;
-	byte_t buffer[2048];
 
-	uint32_t out_size = 0;
-	uint32_t count = 0;
+	uint32_t count = CEIL_DIV(derived_key_size, ctx->_out_size);
+	uint32_t length = BSWAP_32(derived_key_size * 8);
 	uint32_t pos = 0;
 
-	ctx = buffer;
-	void (*kdf_update)(void *, void *, size_t) = NULL;
-	void (*kdf_final)(void *, void *, size_t) = NULL;
-	void (*kdf_reset)(void *, void *, size_t) = NULL;
-
-	switch (prf)
-	{
-	case KDF_PRF_CMAC:
-		ctx = cmac_init(ctx, 2048, algorithm, key, key_size);
-		kdf_update = (void (*)(void *, void *, size_t))cmac_update;
-		kdf_final = (void (*)(void *, void *, size_t))cmac_final;
-		kdf_reset = (void (*)(void *, void *, size_t))cmac_reset;
-		out_size = 16;
-		break;
-	case KDF_PRF_HMAC:
-		ctx = hmac_init(ctx, 2048, algorithm, key, key_size);
-		kdf_update = (void (*)(void *, void *, size_t))hmac_update;
-		kdf_final = (void (*)(void *, void *, size_t))hmac_final;
-		kdf_reset = (void (*)(void *, void *, size_t))hmac_reset;
-		out_size = ((hmac_ctx *)ctx)->hash_size;
-		break;
-	}
-
-	if (ctx == NULL)
-	{
-		return 0;
-	}
-
-	count = CEIL_DIV(derived_key_size, out_size);
-
-	uint32_t l = BSWAP_32(derived_key_size * 8);
-	byte_t z = 0x00;
+	byte_t zero = 0x00;
 
 	// K(i) = PRF (K, [i] || Label || 0x00 || Context || [L])
 	// OR
 	// K(i) = PRF (K, [i] || Input)
+
 	for (uint32_t i = 1; i <= count; ++i)
 	{
 		uint32_t t = BSWAP_32(i);
 
-		kdf_update(ctx, &t, 4);
+		ctx->_kdf_update(ctx->_ctx, &t, 4);
 
-		if (input != NULL)
+		if (ctx->flags & KDF_FIXED_DATA)
 		{
-			kdf_update(ctx, input, input_size);
+			ctx->_kdf_update(ctx->_ctx, ctx->fixed, ctx->fixed_size);
 		}
 		else
 		{
-			if (label != NULL)
+			if (ctx->label != NULL)
 			{
-				kdf_update(ctx, label, label_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->label, ctx->label_size);
 			}
 
-			kdf_update(ctx, &z, 1);
+			ctx->_kdf_update(ctx->_ctx, &zero, 1);
 
-			if (context != NULL)
+			if (ctx->context != NULL)
 			{
-				kdf_update(ctx, context, context_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->context, ctx->context_size);
 			}
 
-			kdf_update(ctx, &l, 4);
+			ctx->_kdf_update(ctx->_ctx, &length, 4);
 		}
 
-		kdf_final(ctx, pk + pos, MIN(out_size, derived_key_size - pos));
-		pos += MIN(out_size, derived_key_size - pos);
+		ctx->_kdf_final(ctx->_ctx, pk + pos, MIN(ctx->_out_size, derived_key_size - pos));
+		pos += MIN(ctx->_out_size, derived_key_size - pos);
 
-		kdf_reset(ctx, NULL, 0);
+		ctx->_kdf_reset(ctx->_ctx, NULL, 0);
 	}
 
 	return derived_key_size;
 }
 
-uint32_t kdf_feedback(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
-					  uint32_t label_size, void *context, uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key,
-					  uint32_t derived_key_size)
+static uint32_t kdf_feedback(kdf_ctx *ctx, void *derived_key, uint32_t derived_key_size)
 {
-	void *ctx = NULL;
 	byte_t *pk = derived_key;
-	byte_t buffer[2048];
-	byte_t mac[MAX_HASH_SIZE];
 
-	uint32_t out_size = 0;
-	uint32_t count = 0;
+	uint32_t count = CEIL_DIV(derived_key_size, ctx->_out_size);
+	uint32_t length = BSWAP_32(derived_key_size * 8);
 	uint32_t pos = 0;
 
-	ctx = buffer;
-	void (*kdf_update)(void *, void *, size_t) = NULL;
-	void (*kdf_final)(void *, void *, size_t) = NULL;
-	void (*kdf_reset)(void *, void *, size_t) = NULL;
-
-	switch (prf)
-	{
-	case KDF_PRF_CMAC:
-		ctx = cmac_init(ctx, 2048, algorithm, key, key_size);
-		kdf_update = (void (*)(void *, void *, size_t))cmac_update;
-		kdf_final = (void (*)(void *, void *, size_t))cmac_final;
-		kdf_reset = (void (*)(void *, void *, size_t))cmac_reset;
-		out_size = 16;
-		break;
-	case KDF_PRF_HMAC:
-		ctx = hmac_init(ctx, 2048, algorithm, key, key_size);
-		kdf_update = (void (*)(void *, void *, size_t))hmac_update;
-		kdf_final = (void (*)(void *, void *, size_t))hmac_final;
-		kdf_reset = (void (*)(void *, void *, size_t))hmac_reset;
-		out_size = ((hmac_ctx *)ctx)->hash_size;
-		break;
-	}
-
-	if (ctx == NULL)
-	{
-		return 0;
-	}
-
-	count = CEIL_DIV(derived_key_size, out_size);
-
-	uint32_t l = BSWAP_32(derived_key_size * 8);
-	byte_t z = 0x00;
+	byte_t zero = 0x00;
+	byte_t mac[MAX_HASH_SIZE] = {0};
 
 	// K(0) = IV
 	// K(i) = PRF (K, K(i−1) || [i] || Label || 0x00 || Context || [L])
 	// OR
 	// K(i) = PRF (K, K(i−1) || [i] || Input)
+
 	for (uint32_t i = 1; i <= count; ++i)
 	{
 		uint32_t t = BSWAP_32(i);
 
 		if (i == 1)
 		{
-			if (iv != NULL)
+			if (ctx->iv != NULL)
 			{
-				kdf_update(ctx, iv, iv_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->iv, ctx->iv_size);
 			}
 		}
 		else
 		{
-			kdf_update(ctx, mac, out_size);
+			ctx->_kdf_update(ctx->_ctx, mac, ctx->_out_size);
 		}
 
-		kdf_update(ctx, &t, 4);
+		ctx->_kdf_update(ctx->_ctx, &t, 4);
 
-		if (input != NULL)
+		if (ctx->flags & KDF_FIXED_DATA)
 		{
-			kdf_update(ctx, input, input_size);
+			ctx->_kdf_update(ctx->_ctx, ctx->fixed, ctx->fixed_size);
 		}
 		else
 		{
-
-			if (label != NULL)
+			if (ctx->label != NULL)
 			{
-				kdf_update(ctx, label, label_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->label, ctx->label_size);
 			}
 
-			kdf_update(ctx, &z, 1);
+			ctx->_kdf_update(ctx->_ctx, &zero, 1);
 
-			if (context != NULL)
+			if (ctx->context != NULL)
 			{
-				kdf_update(ctx, context, context_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->context, ctx->context_size);
 			}
 
-			kdf_update(ctx, &l, 4);
+			ctx->_kdf_update(ctx->_ctx, &length, 4);
 		}
 
-		kdf_final(ctx, mac, out_size);
+		ctx->_kdf_final(ctx->_ctx, mac, ctx->_out_size);
 
-		memcpy(pk + pos, mac, MIN(out_size, derived_key_size - pos));
-		pos += MIN(out_size, derived_key_size - pos);
+		memcpy(pk + pos, mac, MIN(ctx->_out_size, derived_key_size - pos));
+		pos += MIN(ctx->_out_size, derived_key_size - pos);
 
-		kdf_reset(ctx, NULL, 0);
+		ctx->_kdf_reset(ctx->_ctx, NULL, 0);
 	}
 
 	return derived_key_size;
 }
 
-uint32_t kdf_double_pipeline(kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
-							 uint32_t label_size, void *context, uint32_t context_size, void *derived_key, uint32_t derived_key_size)
+static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t derived_key_size)
 {
-	void *ctx = NULL;
 	byte_t *pk = derived_key;
-	byte_t buffer[2048];
-	byte_t mac[MAX_HASH_SIZE];
 
-	uint32_t out_size = 0;
-	uint32_t count = 0;
+	uint32_t count = CEIL_DIV(derived_key_size, ctx->_out_size);
+	uint32_t length = BSWAP_32(derived_key_size * 8);
 	uint32_t pos = 0;
 
-	ctx = buffer;
-	void (*kdf_update)(void *, void *, size_t) = NULL;
-	void (*kdf_final)(void *, void *, size_t) = NULL;
-	void (*kdf_reset)(void *, void *, size_t) = NULL;
-
-	switch (prf)
-	{
-	case KDF_PRF_CMAC:
-		ctx = cmac_init(ctx, 2048, algorithm, key, key_size);
-		kdf_update = (void (*)(void *, void *, size_t))cmac_update;
-		kdf_final = (void (*)(void *, void *, size_t))cmac_final;
-		kdf_reset = (void (*)(void *, void *, size_t))cmac_reset;
-		out_size = 16;
-		break;
-	case KDF_PRF_HMAC:
-		ctx = hmac_init(ctx, 2048, algorithm, key, key_size);
-		kdf_update = (void (*)(void *, void *, size_t))hmac_update;
-		kdf_final = (void (*)(void *, void *, size_t))hmac_final;
-		kdf_reset = (void (*)(void *, void *, size_t))hmac_reset;
-		out_size = ((hmac_ctx *)ctx)->hash_size;
-		break;
-	}
-
-	if (ctx == NULL)
-	{
-		return 0;
-	}
-
-	count = CEIL_DIV(derived_key_size, out_size);
-
-	uint32_t l = BSWAP_32(derived_key_size * 8);
-	byte_t z = 0x00;
+	byte_t zero = 0x00;
+	byte_t mac[MAX_HASH_SIZE] = {0};
 
 	// A(0) = Label || 0x00 || Context || [L]
 	// OR
@@ -258,85 +156,134 @@ uint32_t kdf_double_pipeline(kdf_prf prf, uint32_t algorithm, void *key, uint32_
 		if (i == 1)
 		{
 			// Calculate A0
-			if (input != NULL)
+			if (ctx->flags & KDF_FIXED_DATA)
 			{
-				kdf_update(ctx, input, input_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->fixed, ctx->fixed_size);
 			}
 			else
 			{
-				if (label != NULL)
+				if (ctx->label != NULL)
 				{
-					kdf_update(ctx, label, label_size);
+					ctx->_kdf_update(ctx->_ctx, ctx->label, ctx->label_size);
 				}
 
-				kdf_update(ctx, &z, 1);
+				ctx->_kdf_update(ctx->_ctx, &zero, 1);
 
-				if (context != NULL)
+				if (ctx->context != NULL)
 				{
-					kdf_update(ctx, context, context_size);
+					ctx->_kdf_update(ctx->_ctx, ctx->context, ctx->context_size);
 				}
 
-				kdf_update(ctx, &l, 4);
+				ctx->_kdf_update(ctx->_ctx, &length, 4);
 			}
 
-			kdf_final(ctx, mac, out_size);
-			kdf_reset(ctx, NULL, 0);
+			ctx->_kdf_final(ctx->_ctx, mac, ctx->_out_size);
+			ctx->_kdf_reset(ctx->_ctx, NULL, 0);
 		}
 		else
 		{
-			kdf_update(ctx, mac, out_size);
-			kdf_final(ctx, mac, out_size);
-			kdf_reset(ctx, NULL, 0);
+			ctx->_kdf_update(ctx->_ctx, mac, ctx->_out_size);
+			ctx->_kdf_final(ctx->_ctx, mac, ctx->_out_size);
+			ctx->_kdf_reset(ctx->_ctx, NULL, 0);
 		}
 
-		kdf_update(ctx, mac, out_size);
-		kdf_update(ctx, &t, 4);
+		ctx->_kdf_update(ctx->_ctx, mac, ctx->_out_size);
+		ctx->_kdf_update(ctx->_ctx, &t, 4);
 
-		if (input != NULL)
+		if (ctx->flags & KDF_FIXED_DATA)
 		{
-			kdf_update(ctx, input, input_size);
+			ctx->_kdf_update(ctx->_ctx, ctx->fixed, ctx->fixed_size);
 		}
 		else
 		{
 
-			if (label != NULL)
+			if (ctx->label != NULL)
 			{
-				kdf_update(ctx, label, label_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->label, ctx->label_size);
 			}
 
-			kdf_update(ctx, &z, 1);
+			ctx->_kdf_update(ctx->_ctx, &zero, 1);
 
-			if (context != NULL)
+			if (ctx->context != NULL)
 			{
-				kdf_update(ctx, context, context_size);
+				ctx->_kdf_update(ctx->_ctx, ctx->context, ctx->context_size);
 			}
 
-			kdf_update(ctx, &l, 4);
+			ctx->_kdf_update(ctx->_ctx, &length, 4);
 		}
 
-		kdf_final(ctx, pk + pos, MIN(out_size, derived_key_size - pos));
-		pos += MIN(out_size, derived_key_size - pos);
+		ctx->_kdf_final(ctx->_ctx, pk + pos, MIN(ctx->_out_size, derived_key_size - pos));
+		pos += MIN(ctx->_out_size, derived_key_size - pos);
 
-		kdf_reset(ctx, NULL, 0);
+		ctx->_kdf_reset(ctx->_ctx, NULL, 0);
 	}
 
 	return derived_key_size;
 }
 
-uint32_t kdf(kdf_mode mode, kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
-			 uint32_t label_size, void *context, uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key,
-			 uint32_t derived_key_size)
+uint32_t kdf(kdf_ctx *ctx, void *key, uint32_t key_size, void *derived_key, uint32_t derived_key_size)
 {
-	switch (mode)
+	byte_t buffer[2048] = {0};
+
+	switch (ctx->prf)
+	{
+	case KDF_PRF_CMAC:
+	{
+		ctx->_ctx = cmac_init(buffer, 2048, ctx->algorithm, key, key_size);
+
+		if (ctx->_ctx == NULL)
+		{
+			return 0;
+		}
+
+		ctx->_kdf_update = (void (*)(void *, void *, size_t))cmac_update;
+		ctx->_kdf_final = (void (*)(void *, void *, size_t))cmac_final;
+		ctx->_kdf_reset = (void (*)(void *, void *, size_t))cmac_reset;
+		ctx->_out_size = ((cmac_ctx *)ctx)->block_size;
+	}
+	break;
+	case KDF_PRF_HMAC:
+	{
+		ctx->_ctx = hmac_init(buffer, 2048, ctx->algorithm, key, key_size);
+
+		if (ctx->_ctx == NULL)
+		{
+			return 0;
+		}
+
+		ctx->_kdf_update = (void (*)(void *, void *, size_t))hmac_update;
+		ctx->_kdf_final = (void (*)(void *, void *, size_t))hmac_final;
+		ctx->_kdf_reset = (void (*)(void *, void *, size_t))hmac_reset;
+		ctx->_out_size = ((hmac_ctx *)ctx)->hash_size;
+	}
+	break;
+	case KDF_PRF_KMAC:
+	{
+		if (ctx->algorithm == KMAC_128)
+		{
+			kmac128(key, key_size, ctx->label, ctx->label_size, ctx->context, ctx->context_size, derived_key, derived_key_size);
+			return derived_key_size;
+		}
+
+		if (ctx->algorithm == KMAC_256)
+		{
+			kmac256(key, key_size, ctx->label, ctx->label_size, ctx->context, ctx->context_size, derived_key, derived_key_size);
+			return derived_key_size;
+		}
+
+		// error
+		return 0;
+	}
+	break;
+	}
+
+	switch (ctx->mode)
 	{
 	case KDF_MODE_COUNTER:
-		return kdf_counter(prf, algorithm, key, key_size, input, input_size, label, label_size, context, context_size, derived_key,
-						   derived_key_size);
+		return kdf_counter(ctx, derived_key, derived_key_size);
 	case KDF_MODE_FEEDBACK:
-		return kdf_feedback(prf, algorithm, key, key_size, input, input_size, label, label_size, context, context_size, iv, iv_size,
-							derived_key, derived_key_size);
+		return kdf_feedback(ctx, derived_key, derived_key_size);
 	case KDF_MODE_DOUBLE_PIPLELINE:
-		return kdf_double_pipeline(prf, algorithm, key, key_size, input, input_size, label, label_size, context, context_size, derived_key,
-								   derived_key_size);
+		return kdf_double_pipeline(ctx, derived_key, derived_key_size);
 	}
 }

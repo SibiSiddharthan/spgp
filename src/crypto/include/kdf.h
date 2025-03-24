@@ -14,7 +14,8 @@
 typedef enum _kdf_prf
 {
 	KDF_PRF_CMAC,
-	KDF_PRF_HMAC
+	KDF_PRF_HMAC,
+	KDF_PRF_KMAC
 } kdf_prf;
 
 typedef enum _kdf_mode
@@ -24,22 +25,68 @@ typedef enum _kdf_mode
 	KDF_MODE_DOUBLE_PIPLELINE
 } kdf_mode;
 
-uint32_t kdf(kdf_mode mode, kdf_prf prf, uint32_t algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *label,
-			 uint32_t label_size, void *context, uint32_t context_size, void *iv, uint32_t iv_size, void *derived_key,
-			 uint32_t derived_key_size);
-
-inline uint32_t kdf_kmac128(void *key, uint32_t key_size, void *context, uint32_t context_size, void *label, uint32_t label_size,
-							void *derived_key, uint32_t derived_key_size)
+typedef enum _kdf_counter_bits
 {
-	kmac128(key, key_size, label, label_size, context, context_size, derived_key, derived_key_size);
-	return derived_key_size;
-}
+	KDF_COUNTER_8,
+	KDF_COUNTER_16,
+	KDF_COUNTER_24,
+	KDF_COUNTER_32
+} kdf_counter_bits;
 
-inline uint32_t kdf_kmac256(void *key, uint32_t key_size, void *label, uint32_t label_size, void *context, uint32_t context_size,
-							void *derived_key, uint32_t derived_key_size)
+typedef enum _kdf_counter_location
 {
-	kmac256(key, key_size, label, label_size, context, context_size, derived_key, derived_key_size);
-	return derived_key_size;
-}
+	KDF_COUNTER_BEFORE,
+	KDF_COUNTER_AFTER,
+	KDF_COUNTER_MIDDLE
+} kdf_counter_location;
+
+#define KDF_NO_COUNTER 0x1
+#define KDF_FIXED_DATA 0x2
+
+typedef byte_t kdf_flags;
+typedef byte_t kdf_algorithm;
+
+typedef struct _kdf_ctx
+{
+	kdf_prf prf;
+	kdf_mode mode;
+	kdf_algorithm algorithm;
+	kdf_counter_bits bits;
+	kdf_flags flags;
+
+	union
+	{
+		struct
+		{
+			kdf_counter_location location;
+
+			struct
+			{
+				void *fixed;
+				uint32_t fixed_size;
+			};
+		};
+
+		struct
+		{
+			void *label;
+			void *context;
+			void *iv;
+
+			uint32_t label_size;
+			uint32_t context_size;
+			uint32_t iv_size;
+		};
+	};
+
+	void *_ctx;
+	void (*_kdf_update)(void *, void *, size_t);
+	void (*_kdf_final)(void *, void *, size_t);
+	void (*_kdf_reset)(void *, void *, size_t);
+	uint32_t _out_size;
+
+} kdf_ctx;
+
+uint32_t kdf(kdf_ctx *ctx, void *key, uint32_t key_size, void *derived_key, uint32_t derived_key_size);
 
 #endif
