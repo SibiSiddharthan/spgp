@@ -13,21 +13,21 @@
 
 typedef enum _kdf_prf
 {
-	KDF_PRF_CMAC,
+	KDF_PRF_CMAC = 1,
 	KDF_PRF_HMAC,
 	KDF_PRF_KMAC
 } kdf_prf;
 
 typedef enum _kdf_mode
 {
-	KDF_MODE_COUNTER,
+	KDF_MODE_COUNTER = 1,
 	KDF_MODE_FEEDBACK,
 	KDF_MODE_DOUBLE_PIPLELINE
 } kdf_mode;
 
 typedef enum _kdf_counter_bits
 {
-	KDF_COUNTER_8,
+	KDF_COUNTER_8 = 1,
 	KDF_COUNTER_16,
 	KDF_COUNTER_24,
 	KDF_COUNTER_32
@@ -35,7 +35,7 @@ typedef enum _kdf_counter_bits
 
 typedef enum _kdf_counter_location
 {
-	KDF_COUNTER_BEFORE,
+	KDF_COUNTER_BEFORE = 1,
 	KDF_COUNTER_AFTER,
 	KDF_COUNTER_MIDDLE
 } kdf_counter_location;
@@ -51,7 +51,7 @@ typedef struct _kdf_ctx
 	kdf_prf prf;
 	kdf_mode mode;
 	kdf_algorithm algorithm;
-	kdf_counter_bits bits;
+	kdf_counter_bits counter;
 	kdf_flags flags;
 
 	union
@@ -62,8 +62,8 @@ typedef struct _kdf_ctx
 
 			struct
 			{
-				void *fixed;
-				uint32_t fixed_size;
+				void *input;
+				uint32_t input_size;
 			};
 		};
 
@@ -71,15 +71,16 @@ typedef struct _kdf_ctx
 		{
 			void *label;
 			void *context;
-			void *iv;
 
 			uint32_t label_size;
 			uint32_t context_size;
-			uint32_t iv_size;
 		};
 	};
 
-	void *_ctx;
+	void *iv;
+	uint32_t iv_size;
+
+	void *_kdf;
 	void (*_kdf_update)(void *, void *, size_t);
 	void (*_kdf_final)(void *, void *, size_t);
 	void (*_kdf_reset)(void *, void *, size_t);
