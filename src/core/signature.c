@@ -17,9 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// From key.c
-void pgp_hash_key_material(hash_ctx *hctx, pgp_public_key_algorithms algorithm, void *key);
-
 static byte_t pgp_signature_type_validate(pgp_signature_type type)
 {
 	switch (type)
@@ -1212,84 +1209,6 @@ static void pgp_compute_text_hash(hash_ctx *hctx, void *data, size_t size)
 	}
 }
 
-static void pgp_compute_key_hash(hash_ctx *hctx, pgp_key_packet *key)
-{
-	byte_t buffer[32] = {0};
-
-	byte_t pos = 0;
-	byte_t octet = 0;
-	uint32_t timestamp_be = BSWAP_32(key->key_creation_time);
-
-	switch (key->version)
-	{
-	case PGP_KEY_V4:
-	{
-		uint16_t key_octets_be = 0;
-
-		octet = 0x99;
-		key_octets_be = BSWAP_16((uint16_t)key->public_key_data_octets);
-
-		LOAD_8(buffer + pos, &octet);
-		pos += 1;
-
-		LOAD_16(buffer + pos, &key_octets_be);
-		pos += 2;
-	}
-	break;
-	case PGP_KEY_V5:
-	{
-		uint32_t key_octets_be = 0;
-
-		octet = 0x9A;
-		key_octets_be = BSWAP_32(key->public_key_data_octets);
-
-		LOAD_8(buffer + pos, &octet);
-		pos += 1;
-
-		LOAD_32(buffer + pos, &key_octets_be);
-		pos += 4;
-	}
-	break;
-	case PGP_KEY_V6:
-	{
-		uint32_t key_octets_be = 0;
-
-		octet = 0x9B;
-		key_octets_be = BSWAP_32(key->public_key_data_octets);
-
-		LOAD_8(buffer + pos, &octet);
-		pos += 1;
-
-		LOAD_32(buffer + pos, &key_octets_be);
-		pos += 4;
-	}
-	break;
-	}
-
-	LOAD_8(buffer + pos, &key->version);
-	pos += 1;
-
-	LOAD_8(buffer + pos, &key->version);
-	pos += 1;
-
-	LOAD_32(buffer + pos, &timestamp_be);
-	pos += 4;
-
-	LOAD_8(buffer + pos, &key->public_key_algorithm_id);
-	pos += 1;
-
-	if (key->version != PGP_KEY_V4)
-	{
-		uint32_t key_octet_be = BSWAP_32(key->public_key_data_octets);
-
-		LOAD_32(buffer + pos, &key_octet_be);
-		pos += 4;
-	}
-
-	hash_update(hctx, buffer, pos);
-	pgp_hash_key_material(hctx, key->public_key_algorithm_id, key->key);
-}
-
 static void pgp_compute_uid_hash(hash_ctx *hctx, byte_t version, pgp_user_id_packet *uid)
 {
 	byte_t octet = 0xB4;
@@ -1368,7 +1287,7 @@ static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_k
 {
 	pgp_packet_header *header = user;
 
-	pgp_compute_key_hash(hctx, key);
+	pgp_key_hash(hctx, key);
 
 	if (pgp_packet_get_type(header->tag) == PGP_UAT)
 	{
@@ -1459,12 +1378,12 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], 
 	case PGP_SUBKEY_BINDING_SIGNATURE:
 	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
-		pgp_compute_key_hash(hctx, NULL); // Primary key
-		pgp_compute_key_hash(hctx, NULL); // Subkey
+		pgp_key_hash(hctx, NULL); // Primary key
+		pgp_key_hash(hctx, NULL); // Subkey
 		break;
 
 	case PGP_KEY_REVOCATION_SIGNATURE:
-		pgp_compute_key_hash(hctx, NULL); // Primary key
+		pgp_key_hash(hctx, NULL); // Primary key
 		break;
 
 	case PGP_TIMESTAMP_SIGNATURE:
