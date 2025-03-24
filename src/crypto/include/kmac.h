@@ -17,6 +17,12 @@
 
 typedef sha3_ctx kmac128_ctx, kmac256_ctx;
 
+typedef enum _kmac_algorithm
+{
+	KMAC_128 = 1,
+	KMAC_256,
+} kmac_algorithm;
+
 kmac128_ctx *kmac128_init(void *ptr, size_t size, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
 kmac128_ctx *kmac128_new(uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
 void kmac128_delete(kmac128_ctx *ctx);
