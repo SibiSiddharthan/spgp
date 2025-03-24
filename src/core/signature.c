@@ -1173,14 +1173,17 @@ static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, 
 	return pos;
 }
 
-static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_t data_size, byte_t hash[64])
+#define PGP_SIGNATURE_FLAG_DETACHED  0x1
+#define PGP_SIGNATURE_FLAG_CLEARTEXT 0x2
+
+static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], uint32_t flags, void *data, size_t data_size)
 {
 	hash_ctx *hctx = NULL;
 
 	byte_t hash_buffer[1024] = {0};
 	byte_t hash_algorithm = 0;
 
-	uint32_t hashed_size = 0;
+	uint64_t hashed_size = 0;
 	uint32_t max_subpacket_size = 0;
 
 	void *subpacket_buffer = NULL;
@@ -1295,8 +1298,39 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 
 		free(subpacket_buffer);
 
+		if (packet->version == PGP_SIGNATURE_V5 && (packet->type == PGP_BINARY_SIGNATURE || packet->type == PGP_TEXT_SIGNATURE))
+		{
+			if (flags == 0)
+			{
+				// 1 octet content format
+
+				// 1 octet file name length
+
+				// N octets of file name
+
+				// 4 octets of data
+			}
+			else if (flags == PGP_SIGNATURE_FLAG_DETACHED)
+			{
+				// 6 octets of zero
+				byte_t zero[6] = {0};
+
+				hash_update(hctx, zero, 6);
+				hashed_size += 6;
+			}
+			else if (flags == PGP_SIGNATURE_FLAG_CLEARTEXT)
+			{
+				// 1 octet of 't'
+				// 5 octets of zero
+				byte_t in[6] = {0};
+
+				in[0] = 't';
+				hash_update(hctx, in, 6);
+				hashed_size += 6;
+			}
+		}
+
 		// Stop counting the hashed size from here on
-		uint32_t hashed_size_be = BSWAP_32(hashed_size);
 
 		// 1 octet signature version (again)
 		hash_update(hctx, &packet->version, 1);
@@ -1305,8 +1339,18 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, void *data, size_
 		byte_t byte = 0xFF;
 		hash_update(hctx, &byte, 1);
 
-		// 4 octet hashed size
-		hash_update(hctx, &hashed_size_be, 4);
+		if (packet->version == PGP_SIGNATURE_V5)
+		{
+			// 8 octet hashed size
+			uint64_t hashed_size_be = BSWAP_64((uint64_t)hashed_size);
+			hash_update(hctx, &hashed_size_be, 8);
+		}
+		else
+		{
+			// 4 octet hashed size
+			uint32_t hashed_size_be = BSWAP_32((uint32_t)hashed_size);
+			hash_update(hctx, &hashed_size_be, 4);
+		}
 	}
 	else // packet->version == PGP_SIGNATURE_V3
 	{
@@ -1424,7 +1468,7 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 		packet->unhashed_octets = key_id_subpacket->header.header_size + key_id_subpacket->header.body_size;
 	}
 
-	hash_size = pgp_compute_hash(packet, data, size, hash);
+	hash_size = pgp_compute_hash(packet, hash, 0, data, size);
 
 	if (hash_size == 0)
 	{
@@ -1472,7 +1516,7 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
-	hash_size = pgp_compute_hash(packet, data, size, hash);
+	hash_size = pgp_compute_hash(packet, hash, 0, data, size);
 
 	if (hash_size == 0)
 	{
