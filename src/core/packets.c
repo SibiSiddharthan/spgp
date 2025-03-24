@@ -387,7 +387,8 @@ pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_
 	size_t required_size = size;
 	size_t max_size = (1ull << 32) - (1 + 1 + 4 + packet->filename_size) - 1;
 
-	if (format != PGP_LITERAL_DATA_BINARY && format != PGP_LITERAL_DATA_UTF8 && format != PGP_LITERAL_DATA_TEXT)
+	if (format != PGP_LITERAL_DATA_BINARY && format != PGP_LITERAL_DATA_LOCAL && format != PGP_LITERAL_DATA_MIME &&
+		format != PGP_LITERAL_DATA_TEXT && format != PGP_LITERAL_DATA_UTF8)
 	{
 		return NULL;
 	}
@@ -397,7 +398,7 @@ pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_
 		return NULL;
 	}
 
-	if (format == PGP_LITERAL_DATA_TEXT || format == PGP_LITERAL_DATA_UTF8)
+	if (format == PGP_LITERAL_DATA_TEXT || format == PGP_LITERAL_DATA_UTF8 || format == PGP_LITERAL_DATA_MIME)
 	{
 		// Traverse the text data to determine the number of conversions required.
 		uint32_t convert_count = 0;
@@ -469,7 +470,7 @@ pgp_literal_packet *pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_
 			}
 		}
 	}
-	else // PGP_LITERAL_DATA_BINARY
+	else // PGP_LITERAL_DATA_BINARY || PGP_LITERAL_DATA_LOCAL
 	{
 		// Just copy the data.
 		packet->data = malloc(required_size);

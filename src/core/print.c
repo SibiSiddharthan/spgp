@@ -2034,13 +2034,19 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	switch (packet->format)
 	{
 	case PGP_LITERAL_DATA_BINARY:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Binary (Tag 0)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Binary (Tag 'b')\n");
+		break;
+	case PGP_LITERAL_DATA_MIME:
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Mime (Tag 'm')\n");
+		break;
+	case PGP_LITERAL_DATA_LOCAL:
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Local (Tag 'l') (Deprecated)\n");
 		break;
 	case PGP_LITERAL_DATA_TEXT:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Text (Tag 1)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Text (Tag 't')\n");
 		break;
 	case PGP_LITERAL_DATA_UTF8:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "UTF-8 (Tag 2)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "UTF-8 (Tag 'u')\n");
 		break;
 	default:
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);

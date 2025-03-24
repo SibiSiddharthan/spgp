@@ -77,8 +77,10 @@ typedef struct _pgp_marker_packet
 typedef enum _pgp_literal_data_format
 {
 	PGP_LITERAL_DATA_BINARY = 0x62, // 'b'
-	PGP_LITERAL_DATA_UTF8 = 0x75,   // 'u',
-	PGP_LITERAL_DATA_TEXT = 0x74    // 't'
+	PGP_LITERAL_DATA_LOCAL = 0x6C,  // 'l'
+	PGP_LITERAL_DATA_MIME = 0x6D,   // 'm'
+	PGP_LITERAL_DATA_TEXT = 0x74,   // 't'
+	PGP_LITERAL_DATA_UTF8 = 0x75    // 'u',
 
 } pgp_literal_data_format;
 
