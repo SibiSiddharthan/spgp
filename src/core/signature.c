@@ -1209,6 +1209,92 @@ static void pgp_compute_text_hash(hash_ctx *hctx, void *data, size_t size)
 	}
 }
 
+static void pgp_compute_uid_hash(hash_ctx *hctx, byte_t version, pgp_user_id_packet *uid)
+{
+	byte_t octet = 0xB4;
+	uint32_t size_be = BSWAP_32(uid->header.body_size);
+
+	if (version != PGP_SIGNATURE_V3)
+	{
+		// 1 octet 0xB4
+		hash_update(hctx, &octet, 1);
+
+		// 4 octet data length
+		hash_update(hctx, &size_be, 4);
+	}
+
+	// Data
+	hash_update(hctx, uid->user_data, uid->header.body_size);
+}
+
+static void pgp_compute_uat_hash(hash_ctx *hctx, byte_t version, pgp_user_attribute_packet *uat)
+{
+	byte_t octet = 0xD1;
+	uint32_t size_be = BSWAP_32(uat->header.body_size);
+
+	if (version != PGP_SIGNATURE_V3)
+	{
+		// 1 octet 0xD1
+		hash_update(hctx, &octet, 1);
+
+		// 4 octet data length
+		hash_update(hctx, &size_be, 4);
+	}
+
+	// Data
+	if (uat->subpackets != NULL)
+	{
+		pgp_subpacket_header *header = NULL;
+		byte_t buffer[8] = {0};
+		uint32_t size = 0;
+
+		for (uint16_t i = 0; i < uat->subpackets->count; ++i)
+		{
+			header = uat->subpackets->packets[i];
+
+			// Hash the header
+			size = pgp_subpacket_header_write(header, buffer);
+			hash_update(hctx, buffer, size);
+
+			switch (header->tag & PGP_SUBPACKET_TAG_MASK)
+			{
+			case PGP_USER_ATTRIBUTE_IMAGE:
+			{
+				pgp_user_attribute_image_subpacket *subpacket = uat->subpackets->packets[i];
+				byte_t image_header[16] = {0};
+
+				// 16 octets of image header
+				image_header[0] = subpacket->image_header_size & 0xFF;
+				image_header[1] = (subpacket->image_header_size >> 8) & 0xFF;
+				image_header[2] = subpacket->image_header_version;
+				image_header[3] = subpacket->image_encoding;
+
+				hash_update(hctx, image_header, 16);
+				hash_update(hctx, subpacket->image_data, header->body_size - 16);
+			}
+			case PGP_USER_ATTRIBUTE_UID:
+			{
+				pgp_user_attribute_uid_subpacket *subpacket = uat->subpackets->packets[i];
+				hash_update(hctx, subpacket->user_data, header->body_size);
+			}
+			break;
+			}
+		}
+	}
+}
+
+static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_key_packet *key, void *user)
+{
+	pgp_packet_header *header = user;
+
+	if (pgp_packet_get_type(header->tag) == PGP_UAT)
+	{
+		pgp_compute_uat_hash(hctx, version, user);
+	}
+
+	pgp_compute_uid_hash(hctx, version, user);
+}
+
 static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], uint32_t flags, void *data, size_t data_size)
 {
 	hash_ctx *hctx = NULL;
@@ -1284,6 +1370,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], 
 	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+		pgp_compute_certification_hash(hctx, packet->version, NULL, NULL);
 		break;
 	}
 
