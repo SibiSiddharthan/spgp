@@ -81,7 +81,7 @@ int32_t kdf_feedback_test_suite(void)
 	ctx.algorithm = HASH_SHA256;
 	ctx.counter = KDF_COUNTER_32;
 	ctx.flags = KDF_FIXED_DATA;
-	ctx.location = KDF_COUNTER_BEFORE;
+	ctx.location = KDF_COUNTER_MIDDLE;
 
 	hex_to_block(key, 32, "93f698e842eed75394d629d957e2e89c6e741f810b623c8b901e38376d068e7b");
 	hex_to_block(iv, 32, "9f575d9059d3e0c0803f08112f8a806de3c3471912cdf42b095388b14b33508e");

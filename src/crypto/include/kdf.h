@@ -64,6 +64,7 @@ typedef struct _kdf_ctx
 			{
 				void *input;
 				uint32_t input_size;
+				uint32_t prefix_size;
 			};
 		};
 
