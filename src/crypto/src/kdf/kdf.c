@@ -217,9 +217,9 @@ static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t de
 	// OR
 	// A(0) = Input
 	// A(i) = PRF (K, A(i−1))
-	// K(i) = PRF (K, A(i) || [i] || Label || 0x00 || Context || [L])
+	// K(i) = PRF (K, A(i) || {[i]} || Label || 0x00 || Context || [L])
 	// OR
-	// K(i) = PRF (K, A(i) || [i] || Input)
+	// K(i) = PRF (K, A(i) || {[i]} || Input)
 	for (uint32_t i = 1; i <= count; ++i)
 	{
 		if ((ctx->flags & KDF_NO_COUNTER) == 0)
@@ -325,6 +325,28 @@ static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t de
 uint32_t kdf(kdf_ctx *ctx, void *key, uint32_t key_size, void *derived_key, uint32_t derived_key_size)
 {
 	byte_t buffer[2048] = {0};
+
+	// Validations
+	if (ctx->flags & KDF_FIXED_DATA)
+	{
+		if (ctx->prefix_size > ctx->input_size)
+		{
+			return 0;
+		}
+	}
+
+	if ((ctx->flags & KDF_NO_COUNTER) == 0)
+	{
+		if (ctx->counter < KDF_COUNTER_8 || ctx->counter > KDF_COUNTER_32)
+		{
+			return 0;
+		}
+
+		if (ctx->location != KDF_COUNTER_BEFORE && ctx->location != KDF_COUNTER_AFTER && ctx->location != KDF_COUNTER_MIDDLE)
+		{
+			return 0;
+		}
+	}
 
 	switch (ctx->prf)
 	{
