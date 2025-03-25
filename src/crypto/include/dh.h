@@ -21,6 +21,11 @@ typedef enum _dh_safe_prime_id
 	MODP_6144,
 	MODP_8192,
 
+	// Small Subgroup
+	MODP_1024_160,
+	MODP_2048_224,
+	MODP_2048_256,
+
 	// FFDHE
 	FFDHE_2048,
 	FFDHE_3072,
