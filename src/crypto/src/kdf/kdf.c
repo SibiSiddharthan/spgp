@@ -16,6 +16,31 @@
 
 // See NIST SP 800-108 Recommendation for Key Derivation Using Pseudorandom Functions
 
+static inline void load_counter(kdf_counter_bits counter, uint32_t i, byte_t buffer[4])
+{
+	switch (counter)
+	{
+	case KDF_COUNTER_8:
+		buffer[0] = i & 0xFF;
+		break;
+	case KDF_COUNTER_16:
+		buffer[0] = (i >> 8) & 0xFF;
+		buffer[1] = i & 0xFF;
+		break;
+	case KDF_COUNTER_24:
+		buffer[0] = (i >> 16) & 0xFF;
+		buffer[1] = (i >> 8) & 0xFF;
+		buffer[2] = i & 0xFF;
+		break;
+	case KDF_COUNTER_32:
+		buffer[0] = (i >> 24) & 0xFF;
+		buffer[1] = (i >> 16) & 0xFF;
+		buffer[2] = (i >> 8) & 0xFF;
+		buffer[3] = i & 0xFF;
+		break;
+	}
+}
+
 static uint32_t kdf_counter(kdf_ctx *ctx, void *derived_key, uint32_t derived_key_size)
 {
 	uint32_t count = CEIL_DIV(derived_key_size, ctx->_out_size);
@@ -23,6 +48,8 @@ static uint32_t kdf_counter(kdf_ctx *ctx, void *derived_key, uint32_t derived_ke
 	uint32_t pos = 0;
 
 	byte_t zero = 0x00;
+	byte_t counter[4] = {0};
+	byte_t counter_size = ctx->counter;
 
 	// K(i) = PRF (K, [i] || Label || 0x00 || Context || [L])
 	// OR
@@ -30,9 +57,8 @@ static uint32_t kdf_counter(kdf_ctx *ctx, void *derived_key, uint32_t derived_ke
 
 	for (uint32_t i = 1; i <= count; ++i)
 	{
-		uint32_t t = BSWAP_32(i);
-
-		ctx->_kdf_update(ctx->_kdf, &t, 4);
+		load_counter(ctx->counter, i, counter);
+		ctx->_kdf_update(ctx->_kdf, &counter, counter_size);
 
 		if (ctx->flags & KDF_FIXED_DATA)
 		{
@@ -71,6 +97,9 @@ static uint32_t kdf_feedback(kdf_ctx *ctx, void *derived_key, uint32_t derived_k
 	uint32_t pos = 0;
 
 	byte_t zero = 0x00;
+	byte_t counter[4] = {0};
+	byte_t counter_size = ctx->counter;
+
 	byte_t mac[MAX_HASH_SIZE] = {0};
 
 	// K(0) = IV
@@ -80,7 +109,7 @@ static uint32_t kdf_feedback(kdf_ctx *ctx, void *derived_key, uint32_t derived_k
 
 	for (uint32_t i = 1; i <= count; ++i)
 	{
-		uint32_t t = BSWAP_32(i);
+		load_counter(ctx->counter, i, counter);
 
 		if (i == 1)
 		{
@@ -94,7 +123,7 @@ static uint32_t kdf_feedback(kdf_ctx *ctx, void *derived_key, uint32_t derived_k
 			ctx->_kdf_update(ctx->_kdf, mac, ctx->_out_size);
 		}
 
-		ctx->_kdf_update(ctx->_kdf, &t, 4);
+		ctx->_kdf_update(ctx->_kdf, &counter, counter_size);
 
 		if (ctx->flags & KDF_FIXED_DATA)
 		{
@@ -135,6 +164,9 @@ static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t de
 	uint32_t pos = 0;
 
 	byte_t zero = 0x00;
+	byte_t counter[4] = {0};
+	byte_t counter_size = ctx->counter;
+
 	byte_t mac[MAX_HASH_SIZE] = {0};
 
 	// A(0) = Label || 0x00 || Context || [L]
@@ -146,7 +178,7 @@ static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t de
 	// K(i) = PRF (K, A(i) || [i] || Input)
 	for (uint32_t i = 1; i <= count; ++i)
 	{
-		uint32_t t = BSWAP_32(i);
+		load_counter(ctx->counter, i, counter);
 
 		if (i == 1)
 		{
@@ -183,7 +215,7 @@ static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t de
 		}
 
 		ctx->_kdf_update(ctx->_kdf, mac, ctx->_out_size);
-		ctx->_kdf_update(ctx->_kdf, &t, 4);
+		ctx->_kdf_update(ctx->_kdf, &counter, counter_size);
 
 		if (ctx->flags & KDF_FIXED_DATA)
 		{
