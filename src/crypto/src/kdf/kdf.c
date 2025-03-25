@@ -261,13 +261,11 @@ static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t de
 			ctx->_kdf_reset(ctx->_kdf, NULL, 0);
 		}
 
-		ctx->_kdf_update(ctx->_kdf, mac, ctx->_out_size);
-		ctx->_kdf_update(ctx->_kdf, counter, counter_size);
-
 		if (ctx->flags & KDF_FIXED_DATA)
 		{
 			if (ctx->flags & KDF_NO_COUNTER)
 			{
+				ctx->_kdf_update(ctx->_kdf, mac, ctx->_out_size);
 				ctx->_kdf_update(ctx->_kdf, ctx->input, ctx->input_size);
 			}
 			else
@@ -276,22 +274,29 @@ static uint32_t kdf_double_pipeline(kdf_ctx *ctx, void *derived_key, uint32_t de
 				{
 				case KDF_COUNTER_BEFORE:
 					ctx->_kdf_update(ctx->_kdf, counter, counter_size);
+					ctx->_kdf_update(ctx->_kdf, mac, ctx->_out_size);
 					ctx->_kdf_update(ctx->_kdf, ctx->input, ctx->input_size);
 					break;
 				case KDF_COUNTER_AFTER:
+					ctx->_kdf_update(ctx->_kdf, mac, ctx->_out_size);
 					ctx->_kdf_update(ctx->_kdf, ctx->input, ctx->input_size);
 					ctx->_kdf_update(ctx->_kdf, counter, counter_size);
 					break;
 				case KDF_COUNTER_MIDDLE:
-					ctx->_kdf_update(ctx->_kdf, ctx->input, ctx->prefix_size);
+					ctx->_kdf_update(ctx->_kdf, mac, ctx->_out_size);
 					ctx->_kdf_update(ctx->_kdf, counter, counter_size);
-					ctx->_kdf_update(ctx->_kdf, PTR_OFFSET(ctx->input, ctx->prefix_size), ctx->input_size - ctx->prefix_size);
+					ctx->_kdf_update(ctx->_kdf, ctx->input, ctx->input_size);
 					break;
 				}
 			}
 		}
 		else
 		{
+
+			if ((ctx->flags & KDF_NO_COUNTER) == 0)
+			{
+				ctx->_kdf_update(ctx->_kdf, counter, counter_size);
+			}
 
 			if (ctx->label != NULL)
 			{

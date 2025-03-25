@@ -145,7 +145,7 @@ int32_t kdf_double_pipeline_test_suite(void)
 	ctx.algorithm = HASH_SHA256;
 	ctx.counter = KDF_COUNTER_32;
 	ctx.flags = KDF_FIXED_DATA;
-	ctx.location = KDF_COUNTER_BEFORE;
+	ctx.location = KDF_COUNTER_MIDDLE;
 
 	hex_to_block(key, 32, "02d36fa021c20ddbdee469f0579468bae5cb13b548b6c61cdf9d3ec419111de2");
 	hex_to_block(input, 51, "85abe38bf265fbdc6445ae5c71159f1548c73b7d526a623104904a0f8792070b3df9902b9669490425a385eadb0f9c76e46f0f");
