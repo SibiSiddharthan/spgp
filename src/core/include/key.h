@@ -12,6 +12,7 @@
 #include <packet.h>
 #include <s2k.h>
 #include <mpi.h>
+#include <algorithms.h>
 
 typedef enum _pgp_key_version
 {

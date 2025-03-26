@@ -8,8 +8,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <spgp.h>
-#include <algorithms.h>
 #include <argparse.h>
+#include <algorithms.h>
 #include <packet.h>
 #include <stream.h>
 #include <key.h>
