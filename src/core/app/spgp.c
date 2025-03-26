@@ -783,6 +783,26 @@ int main(int argc, char **argv)
 			}
 		}
 		break;
+		case SPGP_OPERATION_ARMOR:
+		{
+			if (command.operation == SPGP_OPERATION_NONE)
+			{
+				command.operation = SPGP_OPERATION_ARMOR;
+			}
+
+			command.armor = 1;
+		}
+		break;
+		case SPGP_OPERATION_DEARMOR:
+		{
+			if (command.operation == SPGP_OPERATION_NONE)
+			{
+				command.operation = SPGP_OPERATION_DEARMOR;
+			}
+
+			command.armor = 0;
+		}
+		break;
 
 		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:
