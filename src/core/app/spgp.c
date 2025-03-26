@@ -17,8 +17,9 @@
 #include <seipd.h>
 #include <signature.h>
 
-#include <os.h>
 #include <status.h>
+#include <os.h>
+#include <io.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -455,25 +456,27 @@ static uint32_t spgp_sign(spgp_command *command)
 {
 	char buffer[65536] = {0};
 
-	FILE *file = NULL;
+	status_t status = 0;
 	size_t size = 0;
+
+	file_t file = {0};
 
 	pgp_stream_t *key_stream = NULL;
 	pgp_key_packet *key = NULL;
 
 	if (command->sign.packet != NULL)
 	{
-		file = fopen(command->sign.packet, "rb");
+		status = file_open(&file, HANDLE_CWD, command->sign.packet, strlen(command->sign.packet), FILE_READ, 65536);
 
-		if (file == NULL)
+		if (status != OS_STATUS_SUCCESS)
 		{
 			fprintf(stderr, "File not found: %s\n", command->sign.packet);
 			return 1;
 		}
 
-		size = fread(buffer, 1, 65536, file);
+		size = file_read(&file, buffer, 65536);
 
-		fclose(file);
+		file_close(&file);
 
 		key_stream = pgp_stream_read(buffer, size);
 		key = key_stream->packets[0];
@@ -485,17 +488,17 @@ static uint32_t spgp_sign(spgp_command *command)
 
 	if (command->sign.file != NULL)
 	{
-		file = fopen(command->sign.file, "rb");
+		status = file_open(&file, HANDLE_CWD, command->sign.file, strlen(command->sign.file), FILE_READ, 65536);
 
-		if (file == NULL)
+		if (status != OS_STATUS_SUCCESS)
 		{
 			fprintf(stderr, "File not found: %s\n", command->sign.file);
 			return 1;
 		}
 
-		size = fread(buffer, 1, 65536, file);
+		size = file_read(&file, buffer, 65536);
 
-		fclose(file);
+		file_close(&file);
 	}
 	else
 	{
@@ -513,13 +516,18 @@ static uint32_t spgp_sign(spgp_command *command)
 
 	if (command->output != NULL)
 	{
-		file = fopen(command->output, "wb");
+		status = file_open(&file, HANDLE_CWD, command->output, strlen(command->output), FILE_WRITE, 65536);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			fprintf(stderr, "Unable to create file: %s\n", (byte_t *)command->output);
+			return 1;
+		}
 
 		size = pgp_packet_write(sign, buffer, 65536);
 
-		fwrite(buffer, 1, size, file);
-
-		fclose(file);
+		file_write(&file, buffer, size);
+		file_close(&file);
 	}
 	else
 	{
@@ -533,8 +541,10 @@ static uint32_t spgp_verify(spgp_command *command)
 {
 	char buffer[65536] = {0};
 
-	FILE *file = NULL;
+	status_t status = 0;
 	size_t size = 0;
+
+	file_t file = {0};
 
 	pgp_stream_t *key_stream = NULL;
 	pgp_key_packet *key = NULL;
@@ -542,17 +552,17 @@ static uint32_t spgp_verify(spgp_command *command)
 
 	if (command->verify.packet != NULL)
 	{
-		file = fopen(command->verify.packet, "rb");
+		status = file_open(&file, HANDLE_CWD, command->verify.packet, strlen(command->verify.packet), FILE_READ, 65536);
 
-		if (file == NULL)
+		if (status != OS_STATUS_SUCCESS)
 		{
-			fprintf(stderr, "File not found: %s\n", command->sign.packet);
+			fprintf(stderr, "File not found: %s\n", command->verify.packet);
 			return 1;
 		}
 
-		size = fread(buffer, 1, 65536, file);
+		size = file_read(&file, buffer, 65536);
 
-		fclose(file);
+		file_close(&file);
 
 		key_stream = pgp_stream_read(buffer, size);
 		key = key_stream->packets[0];
@@ -564,19 +574,19 @@ static uint32_t spgp_verify(spgp_command *command)
 
 	if (command->verify.sign != NULL)
 	{
-		file = fopen(command->verify.sign, "rb");
+		status = file_open(&file, HANDLE_CWD, command->verify.sign, strlen(command->verify.sign), FILE_READ, 65536);
 
-		if (file == NULL)
+		if (status != OS_STATUS_SUCCESS)
 		{
 			fprintf(stderr, "File not found: %s\n", command->verify.sign);
 			return 1;
 		}
 
-		size = fread(buffer, 1, 65536, file);
+		size = file_read(&file, buffer, 65536);
+
+		file_close(&file);
 
 		sign = pgp_signature_packet_read(buffer, size);
-
-		fclose(file);
 	}
 	else
 	{
@@ -585,26 +595,26 @@ static uint32_t spgp_verify(spgp_command *command)
 
 	if (command->verify.file != NULL)
 	{
-		file = fopen(command->verify.file, "rb");
+		status = file_open(&file, HANDLE_CWD, command->verify.file, strlen(command->verify.file), FILE_READ, 65536);
 
-		if (file == NULL)
+		if (status != OS_STATUS_SUCCESS)
 		{
 			fprintf(stderr, "File not found: %s\n", command->verify.file);
 			return 1;
 		}
 
-		size = fread(buffer, 1, 65536, file);
+		size = file_read(&file, buffer, 65536);
 
-		fclose(file);
+		file_close(&file);
 	}
 	else
 	{
 		return 2;
 	}
 
-	uint32_t status = pgp_signature_packet_verify(sign, key, buffer, size);
+	uint32_t result = pgp_signature_packet_verify(sign, key, buffer, size);
 
-	printf("%s\n", status == 1 ? "Good Signature" : "Bad Signature");
+	printf("%s\n", result == 1 ? "Good Signature" : "Bad Signature");
 
 	return 0;
 }
@@ -615,26 +625,29 @@ static uint32_t spgp_list_packets(spgp_command *command)
 	char str[65536] = {0};
 	uint16_t options = 0;
 
-	FILE *file = NULL;
+	status_t status = 0;
+	file_t file = {0};
 	size_t size = 0;
 
 	if (command->list_packets.file != NULL)
 	{
-		file = fopen(command->list_packets.file, "rb");
+		status = file_open(&file, HANDLE_CWD, command->list_packets.file, strlen(command->list_packets.file), FILE_READ, 65536);
 
-		if (file == NULL)
+		if (status != OS_STATUS_SUCCESS)
 		{
 			fprintf(stderr, "File not found: %s\n", command->list_packets.file);
 			return 1;
 		}
 
-		size = fread(buffer, 1, 65536, file);
+		size = file_read(&file, buffer, 65536);
 
-		fclose(file);
+		file_close(&file);
 	}
 	else
 	{
-		size = fread(buffer, 1, 65536, stdin);
+		file_open(&file, STDIN_HANDLE, NULL, 0, FILE_READ, 65536);
+		size = file_read(&file, buffer, 65536);
+		file_close(&file);
 	}
 
 	if (command->list_packets.dump == 0)
