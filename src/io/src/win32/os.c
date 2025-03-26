@@ -471,3 +471,18 @@ handle_t _os_cwd_handle()
 {
 	return NtCurrentPeb()->ProcessParameters->CurrentDirectory.Handle;
 }
+
+handle_t _os_stdin_handle()
+{
+	return NtCurrentPeb()->ProcessParameters->StandardInput;
+}
+
+handle_t _os_stdout_handle()
+{
+	return NtCurrentPeb()->ProcessParameters->StandardOutput;
+}
+
+handle_t _os_stderr_handle()
+{
+	return NtCurrentPeb()->ProcessParameters->StandardError;
+}

@@ -13,6 +13,11 @@
 // Current directory handle
 handle_t _os_cwd_handle();
 
+// Standard handles
+handle_t _os_stdin_handle();
+handle_t _os_stdout_handle();
+handle_t _os_stderr_handle();
+
 // NT Paths
 status_t _os_ntpath(void **result, handle_t root, const char *path, uint16_t length);
 

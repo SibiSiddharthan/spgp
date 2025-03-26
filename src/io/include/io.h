@@ -8,10 +8,11 @@
 #ifndef IO_H
 #define IO_H
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <os.h>
+
+#define STDIN_HANDLE  (_os_stdin_handle())
+#define STDOUT_HANDLE (_os_stdout_handle())
+#define STDERR_HANDLE (_os_stderr_handle())
 
 typedef struct _dir_t
 {
