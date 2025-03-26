@@ -132,15 +132,14 @@ status_t os_read(handle_t handle, void *buffer, size_t size, size_t *result)
 	NTSTATUS status;
 	IO_STATUS_BLOCK io = {0};
 
-	if (buffer == NULL)
-	{
-		return -1;
-	}
-
 	status = NtReadFile(handle, NULL, NULL, NULL, &io, buffer, (ULONG)size, NULL, NULL);
 
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN &&
 		status != STATUS_PIPE_EMPTY)
+	{
+		*result = 0;
+	}
+	else
 	{
 		*result = io.Information;
 	}
@@ -154,17 +153,16 @@ status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result)
 	IO_STATUS_BLOCK io = {0};
 	LARGE_INTEGER offset = {0};
 
-	if (buffer == NULL)
-	{
-		return -1;
-	}
-
 	offset.HighPart = -1;
 	offset.LowPart = FILE_USE_FILE_POINTER_POSITION;
 
 	status = NtWriteFile(handle, NULL, NULL, NULL, &io, buffer, (ULONG)size, &offset, NULL);
 
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
+	{
+		*result = 0;
+	}
+	else
 	{
 		*result = io.Information;
 	}
