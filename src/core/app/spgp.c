@@ -10,12 +10,6 @@
 #include <spgp.h>
 #include <argparse.h>
 #include <algorithms.h>
-#include <packet.h>
-#include <stream.h>
-#include <key.h>
-#include <session.h>
-#include <seipd.h>
-#include <signature.h>
 
 #include <status.h>
 #include <os.h>
@@ -186,83 +180,7 @@ typedef enum _spgp_option
 	SPGP_OPTION_FAKED_TIME,
 } spgp_option;
 
-typedef enum _spgp_mode
-{
-	SPGP_MODE_RFC4880 = 1,
-	SPGP_MODE_OPENPGP,
-	SPGP_MODE_LIBREPGP,
-} spgp_mode;
 
-typedef enum _spgp_operation
-{
-	// Reserved Command
-	SPGP_OPERATION_NONE = 0,
-
-	// Basic Commands
-	SPGP_OPERATION_SIGN,
-	SPGP_OPERATION_VERIFY,
-
-	SPGP_OPERATION_ENCRYPT,
-	SPGP_OPERATION_DECRYPT,
-
-	SPGP_OPERATION_ARMOR,
-	SPGP_OPERATION_DEARMOR,
-
-	// Key Commands
-	SPGP_OPERATION_LIST_KEYS,
-	SPGP_OPERATION_DELETE_KEYS,
-	SPGP_OPERATION_EXPORT_KEYS,
-	SPGP_OPERATION_IMPORT_KEYS,
-	SPGP_OPERATION_GENERATE_ROVOCATION,
-	SPGP_OPERATION_GENERATE_KEY,
-
-	// Packet Commands
-	SPGP_OPERATION_LIST_PACKETS
-} spgp_operation;
-
-typedef struct _spgp_command
-{
-	spgp_operation operation;
-	spgp_mode mode;
-
-	handle_t home;
-	handle_t keys;
-	handle_t certs;
-	handle_t keyring;
-
-	void *homedir;
-	void *output;
-	void *passhprase;
-
-	byte_t armor;
-	time_t timestamp;
-
-	union
-	{
-		struct
-		{
-			byte_t detach;
-			byte_t cleartext;
-			char *file;
-			char *packet;
-		} sign;
-
-		struct
-		{
-			char *sign;
-			char *file;
-			char *packet;
-		} verify;
-
-		struct
-		{
-			byte_t dump;
-			byte_t no_mpi;
-			char *file;
-		} list_packets;
-	};
-
-} spgp_command;
 
 static arg_option_t spgp_options[] = {
 	// Basic Commands
@@ -452,222 +370,6 @@ void spgp_initialize_home(spgp_command *spgp)
 	}
 }
 
-static uint32_t spgp_sign(spgp_command *command)
-{
-	char buffer[65536] = {0};
-
-	status_t status = 0;
-	size_t size = 0;
-
-	file_t file = {0};
-
-	pgp_stream_t *key_stream = NULL;
-	pgp_key_packet *key = NULL;
-
-	if (command->sign.packet != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->sign.packet, strlen(command->sign.packet), FILE_READ, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "File not found: %s\n", command->sign.packet);
-			return 1;
-		}
-
-		size = file_read(&file, buffer, 65536);
-
-		file_close(&file);
-
-		key_stream = pgp_stream_read(buffer, size);
-		key = key_stream->packets[0];
-	}
-	else
-	{
-		return 2;
-	}
-
-	if (command->sign.file != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->sign.file, strlen(command->sign.file), FILE_READ, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "File not found: %s\n", command->sign.file);
-			return 1;
-		}
-
-		size = file_read(&file, buffer, 65536);
-
-		file_close(&file);
-	}
-	else
-	{
-		return 2;
-	}
-
-	if (command->passhprase != NULL)
-	{
-		pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
-	}
-
-	pgp_signature_packet *sign = pgp_signature_packet_new(PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE);
-
-	pgp_signature_packet_sign(sign, key, PGP_SHA2_256, time(NULL), buffer, size);
-
-	if (command->output != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->output, strlen(command->output), FILE_WRITE, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "Unable to create file: %s\n", (byte_t *)command->output);
-			return 1;
-		}
-
-		size = pgp_packet_write(sign, buffer, 65536);
-
-		file_write(&file, buffer, size);
-		file_close(&file);
-	}
-	else
-	{
-		return 2;
-	}
-
-	return 0;
-}
-
-static uint32_t spgp_verify(spgp_command *command)
-{
-	char buffer[65536] = {0};
-
-	status_t status = 0;
-	size_t size = 0;
-
-	file_t file = {0};
-
-	pgp_stream_t *key_stream = NULL;
-	pgp_key_packet *key = NULL;
-	pgp_signature_packet *sign = NULL;
-
-	if (command->verify.packet != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->verify.packet, strlen(command->verify.packet), FILE_READ, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "File not found: %s\n", command->verify.packet);
-			return 1;
-		}
-
-		size = file_read(&file, buffer, 65536);
-
-		file_close(&file);
-
-		key_stream = pgp_stream_read(buffer, size);
-		key = key_stream->packets[0];
-	}
-	else
-	{
-		return 2;
-	}
-
-	if (command->verify.sign != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->verify.sign, strlen(command->verify.sign), FILE_READ, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "File not found: %s\n", command->verify.sign);
-			return 1;
-		}
-
-		size = file_read(&file, buffer, 65536);
-
-		file_close(&file);
-
-		sign = pgp_signature_packet_read(buffer, size);
-	}
-	else
-	{
-		return 2;
-	}
-
-	if (command->verify.file != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->verify.file, strlen(command->verify.file), FILE_READ, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "File not found: %s\n", command->verify.file);
-			return 1;
-		}
-
-		size = file_read(&file, buffer, 65536);
-
-		file_close(&file);
-	}
-	else
-	{
-		return 2;
-	}
-
-	uint32_t result = pgp_signature_packet_verify(sign, key, buffer, size);
-
-	printf("%s\n", result == 1 ? "Good Signature" : "Bad Signature");
-
-	return 0;
-}
-
-static uint32_t spgp_list_packets(spgp_command *command)
-{
-	char buffer[65536] = {0};
-	char str[65536] = {0};
-	uint16_t options = 0;
-
-	status_t status = 0;
-	file_t file = {0};
-	size_t size = 0;
-
-	if (command->list_packets.file != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->list_packets.file, strlen(command->list_packets.file), FILE_READ, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "File not found: %s\n", command->list_packets.file);
-			return 1;
-		}
-
-		size = file_read(&file, buffer, 65536);
-
-		file_close(&file);
-	}
-	else
-	{
-		file_open(&file, STDIN_HANDLE, NULL, 0, FILE_READ, 65536);
-		size = file_read(&file, buffer, 65536);
-		file_close(&file);
-	}
-
-	if (command->list_packets.dump == 0)
-	{
-		options |= PGP_PRINT_HEADER_ONLY;
-	}
-
-	if (command->list_packets.no_mpi)
-	{
-		options |= PGP_PRINT_MPI_MINIMAL;
-	}
-
-	pgp_stream_t *stream = pgp_stream_read(buffer, size);
-	pgp_stream_print(stream, str, 65536, options);
-
-	printf("%s", str);
-
-	return 0;
-}
-
 static uint32_t spgp_execute_operation(spgp_command *command)
 {
 	switch (command->operation)
@@ -684,15 +386,12 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 	}
 }
 
-int main(int argc, char **argv)
+static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **argv)
 {
-	uint32_t exit_code = 0;
-
-	argparse_t *actx =
-		argparse_new(argc, (void **)argv, sizeof(spgp_options) / sizeof(arg_option_t), spgp_options, ARGPARSE_FLAG_SKIP_FIRST_ARGUMENT);
+	argparse_t *actx = NULL;
 	arg_result_t *result = NULL;
 
-	spgp_command command = {0};
+	actx = argparse_new(argc, (void **)argv, sizeof(spgp_options) / sizeof(arg_option_t), spgp_options, ARGPARSE_FLAG_SKIP_FIRST_ARGUMENT);
 
 	while ((result = argparse(actx, 0)) != NULL)
 	{
@@ -717,14 +416,14 @@ int main(int argc, char **argv)
 		case SPGP_OPTION_DETACH_SIGN:
 		case SPGP_OPTION_CLEAR_SIGN:
 		{
-			if (!(command.operation == SPGP_OPERATION_NONE || command.operation == SPGP_OPERATION_SIGN))
+			if (!(command->operation == SPGP_OPERATION_NONE || command->operation == SPGP_OPERATION_SIGN))
 			{
 				break;
 			}
 
-			command.operation = SPGP_OPERATION_SIGN;
-			command.sign.detach = (result->value == SPGP_OPTION_DETACH_SIGN) ? 1 : 0;
-			command.sign.cleartext = (result->value == SPGP_OPTION_CLEAR_SIGN) ? 1 : 0;
+			command->operation = SPGP_OPERATION_SIGN;
+			command->sign.detach = (result->value == SPGP_OPTION_DETACH_SIGN) ? 1 : 0;
+			command->sign.cleartext = (result->value == SPGP_OPTION_CLEAR_SIGN) ? 1 : 0;
 
 			// Get the argument
 			result = argparse(actx, ARGPARSE_PEEK);
@@ -739,18 +438,18 @@ int main(int argc, char **argv)
 				// Consume the option
 				argparse(actx, 0);
 
-				command.sign.file = result->data;
+				command->sign.file = result->data;
 			}
 		}
 		break;
 		case SPGP_OPTION_VERIFY:
 		{
-			if (command.operation != SPGP_OPERATION_NONE)
+			if (command->operation != SPGP_OPERATION_NONE)
 			{
 				break;
 			}
 
-			command.operation = SPGP_OPERATION_VERIFY;
+			command->operation = SPGP_OPERATION_VERIFY;
 
 			result = argparse(actx, ARGPARSE_PEEK);
 
@@ -764,7 +463,7 @@ int main(int argc, char **argv)
 				// Consume the option
 				argparse(actx, 0);
 
-				command.verify.sign = result->data;
+				command->verify.sign = result->data;
 			}
 
 			result = argparse(actx, ARGPARSE_PEEK);
@@ -779,28 +478,28 @@ int main(int argc, char **argv)
 				// Consume the option
 				argparse(actx, 0);
 
-				command.verify.file = result->data;
+				command->verify.file = result->data;
 			}
 		}
 		break;
 		case SPGP_OPERATION_ARMOR:
 		{
-			if (command.operation == SPGP_OPERATION_NONE)
+			if (command->operation == SPGP_OPERATION_NONE)
 			{
-				command.operation = SPGP_OPERATION_ARMOR;
+				command->operation = SPGP_OPERATION_ARMOR;
 			}
 
-			command.armor = 1;
+			command->armor = 1;
 		}
 		break;
 		case SPGP_OPERATION_DEARMOR:
 		{
-			if (command.operation == SPGP_OPERATION_NONE)
+			if (command->operation == SPGP_OPERATION_NONE)
 			{
-				command.operation = SPGP_OPERATION_DEARMOR;
+				command->operation = SPGP_OPERATION_DEARMOR;
 			}
 
-			command.armor = 0;
+			command->armor = 0;
 		}
 		break;
 
@@ -808,13 +507,13 @@ int main(int argc, char **argv)
 		case SPGP_OPTION_LIST_PACKETS:
 		case SPGP_OPTION_DUMP_PACKETS:
 		{
-			if (!(command.operation == SPGP_OPERATION_NONE || command.operation == SPGP_OPERATION_LIST_PACKETS))
+			if (!(command->operation == SPGP_OPERATION_NONE || command->operation == SPGP_OPERATION_LIST_PACKETS))
 			{
 				break;
 			}
 
-			command.operation = SPGP_OPERATION_LIST_PACKETS;
-			command.list_packets.dump = (result->value == SPGP_OPTION_DUMP_PACKETS) ? 1 : 0;
+			command->operation = SPGP_OPERATION_LIST_PACKETS;
+			command->list_packets.dump = (result->value == SPGP_OPTION_DUMP_PACKETS) ? 1 : 0;
 
 			// Get the argument
 			result = argparse(actx, ARGPARSE_PEEK);
@@ -829,7 +528,7 @@ int main(int argc, char **argv)
 				// Consume the option
 				argparse(actx, 0);
 
-				command.list_packets.file = result->data;
+				command->list_packets.file = result->data;
 			}
 		}
 		break;
@@ -837,14 +536,14 @@ int main(int argc, char **argv)
 		// Key Selection
 		case SPGP_OPTION_KEY_PACKET:
 		{
-			if (command.operation == SPGP_OPERATION_SIGN)
+			if (command->operation == SPGP_OPERATION_SIGN)
 			{
-				command.sign.packet = result->data;
+				command->sign.packet = result->data;
 			}
 
-			if (command.operation == SPGP_OPERATION_VERIFY)
+			if (command->operation == SPGP_OPERATION_VERIFY)
 			{
-				command.verify.packet = result->data;
+				command->verify.packet = result->data;
 			}
 		}
 		break;
@@ -852,43 +551,43 @@ int main(int argc, char **argv)
 		// Output Options
 		case SPGP_OPTION_OUTPUT:
 		{
-			command.output = result->data;
+			command->output = result->data;
 		}
 		break;
 
 		// Operation Modes
 		case SPGP_OPTION_RFC4880:
 		{
-			command.mode = SPGP_MODE_RFC4880;
+			command->mode = SPGP_MODE_RFC4880;
 		}
 		break;
 		case SPGP_OPTION_OPENPGP:
 		{
-			command.mode = SPGP_MODE_OPENPGP;
+			command->mode = SPGP_MODE_OPENPGP;
 		}
 		break;
 		case SPGP_OPTION_LIBREPGP:
 		{
-			command.mode = SPGP_MODE_LIBREPGP;
+			command->mode = SPGP_MODE_LIBREPGP;
 		}
 		break;
 
 		// Miscellaneous Options
 		case SPGP_OPTION_HOMEDIR:
 		{
-			command.home = result->data;
+			command->home = result->data;
 		}
 		break;
 		case SPGP_OPTION_PASSPHRASE:
 		{
-			command.passhprase = result->data;
+			command->passhprase = result->data;
 		}
 		break;
 		case SPGP_OPTION_NO_MPIS:
 		{
-			if (command.operation == SPGP_OPERATION_LIST_PACKETS)
+			if (command->operation == SPGP_OPERATION_LIST_PACKETS)
 			{
-				command.list_packets.no_mpi = 1;
+				command->list_packets.no_mpi = 1;
 			}
 		}
 		break;
@@ -896,6 +595,16 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+
+	argparse_delete(actx);
+}
+
+int main(int argc, char **argv)
+{
+	uint32_t exit_code = 0;
+	spgp_command command = {0};
+
+	spgp_parse_arguments(&command, argc, argv);
 
 	// No command given, print help
 	if (command.operation == SPGP_OPERATION_NONE)
