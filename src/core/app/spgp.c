@@ -617,7 +617,7 @@ int main(int argc, char **argv)
 	if (command.operation == SPGP_OPERATION_ARMOR || command.operation == SPGP_OPERATION_DEARMOR ||
 		command.operation == SPGP_OPERATION_LIST_PACKETS)
 	{
-		return spgp_execute_operation(&command);
+		return (int)spgp_execute_operation(&command);
 	}
 
 	// Setup home and execute.
@@ -625,5 +625,5 @@ int main(int argc, char **argv)
 	spgp_initialize_home(&command);
 	exit_code = spgp_execute_operation(&command);
 
-	return exit_code;
+	return (int)exit_code;
 }

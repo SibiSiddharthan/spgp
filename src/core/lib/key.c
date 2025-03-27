@@ -3486,6 +3486,23 @@ uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE])
 	return 0;
 }
 
+byte_t pgp_key_fingerprint_size(byte_t version)
+{
+	switch (version)
+	{
+	case PGP_KEY_V2:
+	case PGP_KEY_V3:
+		return 16;
+	case PGP_KEY_V4:
+		return 20;
+	case PGP_KEY_V5:
+	case PGP_KEY_V6:
+		return 32;
+	default:
+		return 0;
+	}
+}
+
 pgp_rsa_key *pgp_rsa_key_new()
 {
 	pgp_rsa_key *key = malloc(sizeof(pgp_rsa_key));

@@ -1432,6 +1432,51 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
+pgp_keyring_packet *pgp_keyring_packet_new(byte_t key_version, byte_t trust_level, byte_t primary_key[32], byte_t *uid, uint32_t uid_size)
+{
+	pgp_keyring_packet *packet = NULL;
+
+	if (key_version < PGP_KEY_V2 || key_version > PGP_KEY_V6)
+	{
+		return NULL;
+	}
+
+	if (uid == NULL || uid_size == 0)
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_keyring_packet));
+
+	if (packet == NULL)
+	{
+		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_keyring_packet));
+
+	packet->key_version = key_version;
+	packet->trust_level = trust_level;
+
+	packet->fingerprint_size = pgp_key_fingerprint_size(key_version);
+	memcpy(packet->primary_fingerprint, primary_key, packet->fingerprint_size);
+
+	packet->uids = malloc(uid_size + 1);
+
+	if (packet == NULL)
+	{
+		pgp_keyring_packet_delete(packet);
+	}
+
+	memset(packet->uids, 0, uid_size + 1);
+
+	memcpy(packet->uids, uid, uid_size);
+	packet->uid_count = 1;
+	packet->uid_size = packet->uid_capacity = uid_size + 1;
+
+	return packet;
+}
+
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet)
 {
 	free(packet->subkey_fingerprints);
@@ -1474,23 +1519,28 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 	// Copy the header
 	packet->header = header;
 
+	//  A 1-octet key version
+	LOAD_8(&packet->key_version, in + pos);
+	pos += 1;
+
 	//  A 1-octet trust level
 	LOAD_8(&packet->trust_level, in + pos);
 	pos += 1;
 
-	// A 1-octet fingerprint size
-	LOAD_8(&packet->fingerprint_size, in + pos);
-	pos += 1;
+	packet->fingerprint_size = pgp_key_fingerprint_size(packet->key_version);
 
 	// N octets of primary key fingerprint
 	memcpy(packet->primary_fingerprint, in + pos, packet->fingerprint_size);
 	pos += packet->fingerprint_size;
 
-	// A 1-octet subkey count
-	LOAD_8(&packet->subkey_count, in + pos);
-	pos += 1;
+	// A 4-octet subkey fingerprint size
+	uint32_t subkey_size_be = 0;
 
-	packet->subkey_fingerprints = malloc(packet->subkey_count * packet->fingerprint_size);
+	LOAD_8(&subkey_size_be, in + pos);
+	packet->subkey_size = BSWAP_32(subkey_size_be);
+	pos += 4;
+
+	packet->subkey_fingerprints = malloc(packet->subkey_size);
 
 	if (packet->subkey_fingerprints == NULL)
 	{
@@ -1498,16 +1548,18 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	// N octets of subkey fingerprints.
-	for (byte_t i = 0; i < packet->subkey_count; ++i)
-	{
-		memcpy(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), in + pos, packet->fingerprint_size);
-		pos += packet->fingerprint_size;
-	}
+	packet->subkey_capacity = packet->subkey_size;
 
-	// A 1-octet uid count
-	LOAD_8(&packet->uid_count, in + pos);
-	pos += 1;
+	// N octets of subkey fingerprints.
+	memcpy(packet->subkey_fingerprints, in + pos, packet->fingerprint_size * packet->subkey_count);
+	pos += packet->subkey_size;
+
+	// Prevent divide by zero, if the key version is unknown.
+	// This should not happen as this is a private packet.
+	if (packet->fingerprint_size != 0)
+	{
+		packet->subkey_count = packet->subkey_size / packet->fingerprint_size;
+	}
 
 	// A 4-octet uid size
 	uint32_t uid_size_be = 0;
@@ -1524,8 +1576,28 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
+	packet->uid_capacity = packet->uid_size;
+
 	memcpy(packet->uids, in + pos, packet->uid_size);
 	pos += packet->uid_size;
+
+	// Count the UIDs
+	// Each UID is delimited by a NULL (including the last one).
+	void *start = packet->uids;
+	void *end = PTR_OFFSET(packet->uids, packet->uid_size);
+	void *ptr = start;
+
+	while (ptr != end)
+	{
+		ptr = memchr(ptr, 0, packet->uid_size - (uint32_t)((uintptr_t)end - (uintptr_t)ptr));
+
+		if (ptr == NULL)
+		{
+			break;
+		}
+
+		packet->uid_count += 1;
+	}
 
 	return packet;
 }
@@ -1536,18 +1608,16 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	size_t required_size = 0;
 	size_t pos = 0;
 
+	// A 1-octet key version.
 	// A 1-octet trust level.
-	// A 1-octet fingerprint size.
 	// N octets of primary key fingerprint.
-	// A 1-octet subkey count.
+	// A 4-octet subkey fingerprint size.
 	// N octets of subkey fingerprints.
-	// A 1-octet uid count.
 	// A 4-octet uid size.
 	// N octets of uid data.
 
-	required_size = 1 + 1 + 1 + 1 + packet->fingerprint_size;
-	required_size += packet->subkey_count * packet->fingerprint_size;
-	required_size += packet->uid_size;
+	required_size = 1 + 1 + 4 + 4 + packet->subkey_size + packet->uid_size;
+	required_size += packet->header.header_size;
 
 	if (size < required_size)
 	{
@@ -1557,21 +1627,25 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	// Header
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
-	//  A 1-octet trust level
-	LOAD_8(out + pos, &packet->trust_level);
+	//  A 1-octet key version
+	LOAD_8(out + pos, &packet->key_version);
 	pos += 1;
 
-	// A 1-octet fingerprint size
-	LOAD_8(out + pos, &packet->fingerprint_size);
+	//  A 1-octet trust level
+	LOAD_8(out + pos, &packet->trust_level);
 	pos += 1;
 
 	// N octets of primary key fingerprint
 	memcpy(out + pos, packet->primary_fingerprint, packet->fingerprint_size);
 	pos += packet->fingerprint_size;
 
-	// A 1-octet subkey count
-	LOAD_8(out + pos, &packet->subkey_count);
-	pos += 1;
+	// A 4-octet subkey fingerprint size
+	uint32_t subkey_size_be = BSWAP_32(packet->subkey_size);
+	LOAD_8(out + pos, &subkey_size_be);
+	pos += 4;
+
+	memcpy(out + pos, packet->subkey_fingerprints, packet->subkey_size);
+	pos += packet->subkey_size;
 
 	// N octets of subkey fingerprints.
 	for (byte_t i = 0; i < packet->subkey_count; ++i)
@@ -1579,10 +1653,6 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 		memcpy(out + pos, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
 		pos += packet->fingerprint_size;
 	}
-
-	// A 1-octet uid count
-	LOAD_8(out + pos, &packet->uid_count);
-	pos += 1;
 
 	// A 4-octet uid size
 	uint32_t uid_size_be = BSWAP_32(packet->uid_size);

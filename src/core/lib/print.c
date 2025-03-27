@@ -2300,6 +2300,7 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->trust_level);
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Primary Key: ");
