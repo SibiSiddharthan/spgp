@@ -28,6 +28,7 @@ status_t os_read(handle_t handle, void *buffer, size_t size, size_t *result);
 status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result);
 
 status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flags, void *buffer, uint16_t size);
+status_t os_truncate(handle_t root, const char *path, uint16_t length, size_t size);
 
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode);
 status_t os_remove(handle_t root, const char *path, uint16_t length);

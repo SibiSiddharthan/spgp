@@ -359,6 +359,43 @@ error:
 	return _os_status(status);
 }
 
+status_t os_truncate(handle_t root, const char *path, uint16_t length, size_t size)
+{
+	NTSTATUS status = 0;
+	HANDLE handle = 0;
+	IO_STATUS_BLOCK io = {0};
+	FILE_END_OF_FILE_INFORMATION eof = {0};
+
+	if (path != NULL)
+	{
+		status = _nt_open(&handle, root, path, length, FILE_WRITE_DATA, FILE_OPEN, 0);
+
+		if (status != STATUS_SUCCESS)
+		{
+			return _os_status(status);
+		}
+	}
+	else
+	{
+		handle = root;
+	}
+
+	eof.EndOfFile.QuadPart = length;
+	status = NtSetInformationFile(handle, &io, &eof, sizeof(FILE_END_OF_FILE_INFORMATION), FileEndOfFileInformation);
+
+	if (path != NULL)
+	{
+		NtClose(handle);
+	}
+
+	if (status != STATUS_SUCCESS)
+	{
+		_os_status(status);
+	}
+
+	return OS_STATUS_SUCCESS;
+}
+
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode)
 {
 	NTSTATUS status = 0;

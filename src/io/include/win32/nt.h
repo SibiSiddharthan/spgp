@@ -599,6 +599,13 @@ typedef struct _FILE_DISPOSITION_INFORMATION_EX
 } FILE_DISPOSITION_INFORMATION_EX, *PFILE_DISPOSITION_INFORMATION_EX;
 #endif
 
+//================ FileEndOfFileInformation ===================================
+
+typedef struct _FILE_END_OF_FILE_INFORMATION
+{
+	LARGE_INTEGER EndOfFile;
+} FILE_END_OF_FILE_INFORMATION, *PFILE_END_OF_FILE_INFORMATION;
+
 //================ FileStatInformation ========================================
 
 typedef struct _FILE_STAT_INFORMATION
