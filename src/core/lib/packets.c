@@ -1485,6 +1485,63 @@ void pgp_keyring_packet_delete(pgp_keyring_packet *packet)
 	free(packet);
 }
 
+pgp_keyring_packet *pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size)
+{
+	if ((packet->uid_capacity - packet->uid_size) < (uid_size + 1))
+	{
+		packet->uid_capacity = MAX(packet->subkey_capacity * 2, packet->uid_size + uid_size + 1);
+		packet->uids = realloc(packet->uids, packet->uid_capacity);
+
+		if (packet->uids == NULL)
+		{
+			return NULL;
+		}
+
+		memset(PTR_OFFSET(packet->uids, packet->uid_size), 0, packet->uid_capacity - packet->uid_size);
+	}
+
+	memcpy(PTR_OFFSET(packet->uids, packet->uid_size), uid, uid_size);
+	packet->uid_size += uid_size + 1;
+	packet->uid_count += 1;
+
+	return packet;
+}
+
+pgp_keyring_packet *pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size)
+{
+	void *start = packet->uids;
+	void *end = PTR_OFFSET(packet->uids, packet->uid_size);
+	void *ptr = start;
+
+	while (ptr != end)
+	{
+		ptr = memchr(ptr, 0, packet->uid_size - (uint32_t)((uintptr_t)end - (uintptr_t)ptr));
+
+		if (ptr == NULL)
+		{
+			ptr = PTR_OFFSET(end, -1);
+		}
+
+		if (memcmp(start, uid, uid_size) == 0)
+		{
+			ptr = PTR_OFFSET(ptr, 1);
+
+			memmove(start, ptr, (uintptr_t)end - (uintptr_t)ptr);
+
+			packet->uid_size -= uid_size + 1;
+			packet->uid_count -= 1;
+
+			memset(PTR_OFFSET(packet->uids, packet->uid_size), 0, packet->uid_capacity - packet->uid_size);
+
+			return packet;
+		}
+
+		start = ptr;
+	}
+
+	return packet;
+}
+
 pgp_keyring_packet *pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32])
 {
 	if ((packet->subkey_capacity - packet->subkey_size) < packet->fingerprint_size)
@@ -1655,6 +1712,7 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 			break;
 		}
 
+		ptr = PTR_OFFSET(ptr, 1);
 		packet->uid_count += 1;
 	}
 
