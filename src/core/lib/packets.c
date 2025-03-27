@@ -1485,6 +1485,65 @@ void pgp_keyring_packet_delete(pgp_keyring_packet *packet)
 	free(packet);
 }
 
+pgp_keyring_packet *pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32])
+{
+	if ((packet->subkey_capacity - packet->subkey_size) < packet->fingerprint_size)
+	{
+		if (packet->subkey_fingerprints == NULL)
+		{
+			packet->subkey_fingerprints = malloc(packet->fingerprint_size);
+
+			if (packet->subkey_fingerprints == NULL)
+			{
+				return NULL;
+			}
+
+			memcpy(packet->subkey_fingerprints, subkey, packet->fingerprint_size);
+			packet->subkey_size = packet->subkey_capacity = packet->fingerprint_size;
+			packet->subkey_count = 1;
+
+			return packet;
+		}
+
+		packet->subkey_capacity *= 2;
+		packet->subkey_fingerprints = realloc(packet->subkey_fingerprints, packet->subkey_capacity);
+
+		if (packet->subkey_fingerprints == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	memcpy(PTR_OFFSET(packet->subkey_fingerprints, packet->subkey_size), subkey, packet->fingerprint_size);
+	packet->subkey_size += packet->fingerprint_size;
+	packet->subkey_count += 1;
+
+	return packet;
+}
+
+pgp_keyring_packet *pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32])
+{
+	// Find the subkey
+	for (byte_t i = 0; i < packet->subkey_count; ++i)
+	{
+		if (memcmp(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), subkey, packet->fingerprint_size) == 0)
+		{
+			memmove(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size),
+					PTR_OFFSET(packet->subkey_fingerprints, (i + 1) * packet->fingerprint_size),
+					(packet->subkey_count - (i + 1)) * packet->fingerprint_size);
+			memset(PTR_OFFSET(packet->subkey_fingerprints, (packet->subkey_count - 1) * packet->fingerprint_size), 0,
+				   packet->fingerprint_size);
+
+			packet->subkey_size -= packet->fingerprint_size;
+			packet->subkey_count -= 1;
+
+			return packet;
+		}
+	}
+
+	return packet;
+}
+
 pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 {
 	byte_t *in = data;
