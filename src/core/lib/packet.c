@@ -179,6 +179,8 @@ pgp_packet_type pgp_packet_get_type(byte_t tag)
 	case PGP_MDC:
 	case PGP_AEAD:
 	case PGP_PADDING:
+	case PGP_KEYDEF:
+	case PGP_KEYRING:
 		break;
 	default:
 		// Error
@@ -541,6 +543,10 @@ void *pgp_packet_read(void *data, size_t size)
 		return pgp_aead_packet_read(data, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_read(data, size);
+	case PGP_KEYDEF:
+		return pgp_key_packet_read(data, size);
+	case PGP_KEYRING:
+		return pgp_keyring_packet_read(data, size);
 	default:
 		return pgp_unknown_packet_read(data, size);
 	}
@@ -591,6 +597,10 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 		return pgp_aead_packet_write(packet, ptr, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_write(packet, ptr, size);
+	case PGP_KEYDEF:
+		return pgp_key_packet_write(packet, ptr, size);
+	case PGP_KEYRING:
+		return pgp_keyring_packet_write(packet, ptr, size);
 	default:
 		return pgp_unknown_packet_write(packet, ptr, size);
 	}
@@ -641,6 +651,10 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 		return pgp_aead_packet_print(packet, str, size);
 	case PGP_PADDING:
 		return pgp_padding_packet_print(packet, str, size);
+	case PGP_KEYDEF:
+		return pgp_key_packet_print(packet, str, size, options);
+	case PGP_KEYRING:
+		return pgp_keyring_packet_print(packet, str, size);
 	default:
 		return pgp_unknown_packet_print(packet, str, size);
 	}
@@ -691,6 +705,10 @@ void pgp_packet_delete(void *packet)
 		return pgp_aead_packet_delete(packet);
 	case PGP_PADDING:
 		return pgp_padding_packet_delete(packet);
+	case PGP_KEYDEF:
+		return pgp_key_packet_delete(packet);
+	case PGP_KEYRING:
+		return pgp_keyring_packet_delete(packet);
 	default:
 		return free(packet);
 	}
