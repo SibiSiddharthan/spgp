@@ -142,6 +142,22 @@ typedef struct _spgp_command
 
 		struct
 		{
+			char *file;
+		} import;
+
+		struct
+		{
+			byte_t secret;
+			char *key;
+		} export;
+
+		struct
+		{
+			char *key;
+		} delete;
+
+		struct
+		{
 			byte_t dump;
 			byte_t no_mpi;
 			char *file;
@@ -163,5 +179,9 @@ uint32_t spgp_sign(spgp_command *command);
 uint32_t spgp_verify(spgp_command *command);
 
 uint32_t spgp_list_packets(spgp_command *command);
+
+uint32_t spgp_import_keys(spgp_command *command);
+uint32_t spgp_export_keys(spgp_command *command);
+uint32_t spgp_delete_keys(spgp_command *command);
 
 #endif

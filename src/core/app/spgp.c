@@ -65,7 +65,6 @@ Key Commands:\n\
      --export                   export keys\n\
      --export-secret-keys       export secret keys\n\
      --import                   import keys\n\
-     --import-secret-keys       import secret keys\n\
      --change-passphrase        change a passphrase\n\
      --send-keys                export keys to a keyserver\n\
      --receive-keys             import keys from a keyserver\n\
@@ -135,8 +134,7 @@ typedef enum _spgp_option
 	SPGP_OPTION_EXPORT_KEYS,
 	SPGP_OPTION_EXPORT_SECRET_KEYS,
 	SPGP_OPTION_IMPORT_KEYS,
-	SPGP_OPTION_IMPORT_SECRET_KEYS,
-	SPGP_OPTION_GENERATE_ROVOCATION,
+	SPGP_OPTION_GENERATE_REVOCATION,
 	SPGP_OPTION_GENERATE_KEY,
 	SPGP_OPTION_FULL_GENERATE_KEY,
 
@@ -202,8 +200,7 @@ static arg_option_t spgp_options[] = {
 	{"export-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPORT_KEYS},
 	{"export-secret-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPORT_SECRET_KEYS},
 	{"import-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_IMPORT_KEYS},
-	{"import-secret-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_IMPORT_SECRET_KEYS},
-	{"generate-revocation", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_GENERATE_ROVOCATION},
+	{"generate-revocation", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_GENERATE_REVOCATION},
 	{"generate-key", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_GENERATE_KEY},
 	{"full-generate-key", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_FULL_GENERATE_KEY},
 
