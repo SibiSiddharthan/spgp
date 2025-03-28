@@ -178,9 +178,8 @@ typedef enum _spgp_option
 	SPGP_OPTION_FAKED_TIME,
 } spgp_option;
 
-
-
 static arg_option_t spgp_options[] = {
+
 	// Basic Commands
 	{"sign", 's', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_SIGN},
 	{"detach-sign", 'b', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DETACH_SIGN},
@@ -375,6 +374,8 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 		return spgp_sign(command);
 	case SPGP_OPERATION_VERIFY:
 		return spgp_verify(command);
+	case SPGP_OPERATION_IMPORT_KEYS:
+		return spgp_import_keys(command);
 	case SPGP_OPERATION_LIST_PACKETS:
 		return spgp_list_packets(command);
 	default:
@@ -499,6 +500,33 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 			command->armor = 0;
 		}
 		break;
+
+		// Key Commands
+		case SPGP_OPTION_IMPORT_KEYS:
+		{
+			if (command->operation != SPGP_OPERATION_NONE)
+			{
+				break;
+			}
+
+			command->operation = SPGP_OPERATION_IMPORT_KEYS;
+
+			// Get the argument
+			result = argparse(actx, ARGPARSE_PEEK);
+
+			if (result == NULL)
+			{
+				break;
+			}
+
+			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
+			{
+				// Consume the option
+				argparse(actx, 0);
+
+				command->import.file = result->data;
+			}
+		}
 
 		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:
