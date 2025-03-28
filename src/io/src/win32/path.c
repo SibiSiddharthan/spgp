@@ -283,8 +283,7 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 		{
 			if (!(isalpha(path[1]) && (path[2] == '/' || path[2] == '\0')))
 			{
-				// errno = ENOENT;
-				return 0;
+				return OS_STATUS_PATH_NOT_FOUND;
 			}
 
 			device = path[1];
@@ -294,7 +293,7 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 			device = path[0];
 		}
 
-		status = dos_device_to_nt_device(device, &u16_device);
+		status = dos_device_to_nt_device(toupper(device), &u16_device);
 
 		if (status != STATUS_SUCCESS)
 		{

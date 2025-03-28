@@ -256,7 +256,7 @@ size_t file_write(file_t *file, void *buffer, size_t size)
 		size_t write = 0;
 		size_t copy_size = MIN(size, file->size - file->remaining);
 
-		memcpy(buffer, PTR_OFFSET(file->buffer, file->size - file->remaining), copy_size);
+		memcpy(PTR_OFFSET(file->buffer, file->remaining), buffer, copy_size);
 
 		file->pos += copy_size;
 		file->remaining += copy_size;
