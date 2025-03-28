@@ -2320,17 +2320,14 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 
 	if (packet->uid_count > 0)
 	{
-		byte_t *uid = packet->uids;
-		uint32_t uid_size = 0;
-		uint32_t uid_offset = 0;
-
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User IDs:\n");
 
 		for (byte_t i = 0; i < packet->uid_count; ++i)
 		{
-			uid_size = ((uint32_t)uid[uid_offset] << 8) + (uint32_t)uid[uid_offset + 1];
-			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "%.*s", uid_size, PTR_OFFSET(packet->uids, 2 + uid_offset));
-			uid_offset += uid_size + 2;
+			size_t offset = 0;
+
+			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "%s\n", PTR_OFFSET(packet->uids, offset));
+			offset = (uintptr_t)memchr(PTR_OFFSET(packet->uids, offset), 0, packet->uid_size - offset) - (uintptr_t)packet->uids + 1;
 		}
 	}
 

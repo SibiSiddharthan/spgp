@@ -1665,7 +1665,7 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 	// A 4-octet subkey fingerprint size
 	uint32_t subkey_size_be = 0;
 
-	LOAD_8(&subkey_size_be, in + pos);
+	LOAD_32(&subkey_size_be, in + pos);
 	packet->subkey_size = BSWAP_32(subkey_size_be);
 	pos += 4;
 
@@ -1680,7 +1680,7 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 	packet->subkey_capacity = packet->subkey_size;
 
 	// N octets of subkey fingerprints.
-	memcpy(packet->subkey_fingerprints, in + pos, packet->fingerprint_size * packet->subkey_count);
+	memcpy(packet->subkey_fingerprints, in + pos, packet->subkey_size);
 	pos += packet->subkey_size;
 
 	// Prevent divide by zero, if the key version is unknown.
@@ -1693,7 +1693,7 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 	// A 4-octet uid size
 	uint32_t uid_size_be = 0;
 
-	LOAD_8(&uid_size_be, in + pos);
+	LOAD_32(&uid_size_be, in + pos);
 	packet->uid_size = BSWAP_32(uid_size_be);
 	pos += 4;
 
@@ -1722,6 +1722,7 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 
 		if (ptr == NULL)
 		{
+			packet->uid_count += 1;
 			break;
 		}
 
@@ -1771,22 +1772,16 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 
 	// A 4-octet subkey fingerprint size
 	uint32_t subkey_size_be = BSWAP_32(packet->subkey_size);
-	LOAD_8(out + pos, &subkey_size_be);
+	LOAD_32(out + pos, &subkey_size_be);
 	pos += 4;
 
+	// N octets of subkey fingerprints.
 	memcpy(out + pos, packet->subkey_fingerprints, packet->subkey_size);
 	pos += packet->subkey_size;
 
-	// N octets of subkey fingerprints.
-	for (byte_t i = 0; i < packet->subkey_count; ++i)
-	{
-		memcpy(out + pos, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
-		pos += packet->fingerprint_size;
-	}
-
 	// A 4-octet uid size
 	uint32_t uid_size_be = BSWAP_32(packet->uid_size);
-	LOAD_8(out + pos, &uid_size_be);
+	LOAD_32(out + pos, &uid_size_be);
 	pos += 4;
 
 	memcpy(out + pos, packet->uids, packet->uid_size);
