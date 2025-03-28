@@ -1474,6 +1474,9 @@ pgp_keyring_packet *pgp_keyring_packet_new(byte_t key_version, byte_t trust_leve
 	packet->uid_count = 1;
 	packet->uid_size = packet->uid_capacity = uid_size + 1;
 
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING,
+											  1 + 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->uid_size);
+
 	return packet;
 }
 
@@ -1504,6 +1507,9 @@ pgp_keyring_packet *pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_
 	packet->uid_size += uid_size + 1;
 	packet->uid_count += 1;
 
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING,
+											  1 + 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->uid_size);
+
 	return packet;
 }
 
@@ -1533,6 +1539,9 @@ pgp_keyring_packet *pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, by
 
 			memset(PTR_OFFSET(packet->uids, packet->uid_size), 0, packet->uid_capacity - packet->uid_size);
 
+			packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING,
+													  1 + 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->uid_size);
+
 			return packet;
 		}
 
@@ -1555,25 +1564,26 @@ pgp_keyring_packet *pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, by
 				return NULL;
 			}
 
-			memcpy(packet->subkey_fingerprints, subkey, packet->fingerprint_size);
-			packet->subkey_size = packet->subkey_capacity = packet->fingerprint_size;
-			packet->subkey_count = 1;
-
-			return packet;
+			packet->subkey_capacity = packet->fingerprint_size;
 		}
-
-		packet->subkey_capacity *= 2;
-		packet->subkey_fingerprints = realloc(packet->subkey_fingerprints, packet->subkey_capacity);
-
-		if (packet->subkey_fingerprints == NULL)
+		else
 		{
-			return NULL;
+			packet->subkey_capacity *= 2;
+			packet->subkey_fingerprints = realloc(packet->subkey_fingerprints, packet->subkey_capacity);
+
+			if (packet->subkey_fingerprints == NULL)
+			{
+				return NULL;
+			}
 		}
 	}
 
 	memcpy(PTR_OFFSET(packet->subkey_fingerprints, packet->subkey_size), subkey, packet->fingerprint_size);
 	packet->subkey_size += packet->fingerprint_size;
 	packet->subkey_count += 1;
+
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING,
+											  1 + 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->uid_size);
 
 	return packet;
 }
@@ -1593,6 +1603,9 @@ pgp_keyring_packet *pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet,
 
 			packet->subkey_size -= packet->fingerprint_size;
 			packet->subkey_count -= 1;
+
+			packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING,
+													  1 + 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->uid_size);
 
 			return packet;
 		}
@@ -1733,7 +1746,7 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	// A 4-octet uid size.
 	// N octets of uid data.
 
-	required_size = 1 + 1 + 4 + 4 + packet->subkey_size + packet->uid_size;
+	required_size = 1 + 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->uid_size;
 	required_size += packet->header.header_size;
 
 	if (size < required_size)
