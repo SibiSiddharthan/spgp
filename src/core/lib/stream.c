@@ -350,7 +350,7 @@ pgp_stream_t *pgp_stream_read(void *data, size_t size)
 	byte_t *in = data;
 
 	// Check if data is armored
-	if (pgp_packet_validate_tag(in[0]) == 0)
+	if (PGP_PACKET_HEADER_FORMAT(in[0]) == PGP_UNKNOWN_HEADER)
 	{
 		return pgp_stream_read_armor(data, size);
 	}

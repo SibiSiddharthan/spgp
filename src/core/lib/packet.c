@@ -60,16 +60,6 @@ static byte_t get_packet_header_size(pgp_packet_header_format format, size_t siz
 	}
 }
 
-byte_t pgp_packet_validate_tag(byte_t tag)
-{
-	if ((tag & 0xC0) == 0xC0 || (tag & 0x80) == 0x80)
-	{
-		return 1;
-	}
-
-	return 0;
-}
-
 byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type packet_type, uint32_t size)
 {
 	byte_t tag = 0;
@@ -264,7 +254,7 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 			header.body_size = (uint32_t)1 << (pdata[1] & 0x1F);
 		}
 	}
-	else
+	else if (format == PGP_LEGACY_HEADER)
 	{
 		switch (header.tag & 0x3)
 		{
@@ -303,6 +293,10 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 		case 3:
 			return error;
 		}
+	}
+	else
+	{
+		return error;
 	}
 
 	return header;
@@ -497,7 +491,7 @@ void *pgp_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (get_packet_header_size(PGP_PACKET_HEADER_FORMAT(header.tag), header.body_size) + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		// Invalid packet
 		return NULL;
