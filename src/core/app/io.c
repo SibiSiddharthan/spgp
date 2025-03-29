@@ -158,3 +158,22 @@ void *spgp_read_file(const char *file, uint32_t options, size_t *size)
 
 	return buffer;
 }
+
+pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options)
+{
+	void *buffer = NULL;
+	size_t size = 0;
+
+	pgp_stream_t *stream = NULL;
+
+	buffer = spgp_read_file(file, options, &size);
+	stream = pgp_stream_read(buffer, size);
+
+	if (stream == NULL)
+	{
+		printf("Invalid pgp stream.\n");
+		exit(1);
+	}
+
+	return stream;
+}
