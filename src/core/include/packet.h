@@ -43,8 +43,9 @@ typedef enum _pgp_packet_type
 
 typedef enum _pgp_packet_header_format
 {
-	PGP_HEADER = 0,
-	PGP_LEGACY_HEADER = 1
+	PGP_UNKNOWN_HEADER = 0,
+	PGP_LEGACY_HEADER = 1,
+	PGP_HEADER = 2
 } pgp_packet_header_format;
 
 typedef struct _pgp_packet_header
@@ -187,7 +188,10 @@ typedef struct _pgp_keyring_packet
 
 } pgp_keyring_packet;
 
-#define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : PGP_LEGACY_HEADER)
+#define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : (((T) & 0x80) == 0x80) ? PGP_LEGACY_HEADER : PGP_UNKNOWN_HEADER)
+
+#define PGP_PACKET_OCTETS(H)    ((H).header_size + (H).body_size)
+#define PGP_SUBPACKET_OCTETS(H) ((H).header_size + (H).body_size)
 
 #define PGP_WRITE_ARMOR           0x1
 #define PGP_WRITE_ARMOR_NO_CRC    0x2

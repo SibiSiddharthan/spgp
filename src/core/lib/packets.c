@@ -175,7 +175,7 @@ size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size
 	size_t pos = 0;
 
 	// 1 octet of compression algorithm
-	// N bytes of padding data
+	// N bytes of compressed data
 
 	required_size = packet->header.header_size + packet->header.body_size;
 
