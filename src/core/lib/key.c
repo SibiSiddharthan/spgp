@@ -2938,6 +2938,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 		// A S2K specifier
 		// IV
 		conditional_field_size = 1 + 1 + packet->iv_size + s2k_size;
+		break;
 	default:
 		return 0;
 	}

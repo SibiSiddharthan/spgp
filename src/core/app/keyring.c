@@ -13,6 +13,33 @@
 #include <stdio.h>
 #include <string.h>
 
+static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+static uint32_t key_filename(void *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fz)
+{
+	byte_t *out = buffer;
+	byte_t pos = 0;
+
+	for (uint32_t i = 0; i < fz; ++i)
+	{
+		byte_t a, b;
+
+		a = ((byte_t *)fingerprint)[i] / 16;
+		b = ((byte_t *)fingerprint)[i] % 16;
+
+		out[pos++] = hex_upper_table[a];
+		out[pos++] = hex_upper_table[b];
+	}
+
+	out[pos++] = '.';
+	out[pos++] = 'k';
+	out[pos++] = 'e';
+	out[pos++] = 'y';
+	out[pos] = '\0';
+
+	return pos;
+}
+
 uint32_t spgp_import_keys(spgp_command *command)
 {
 	char buffer[65536] = {0};
@@ -22,6 +49,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 	file_t file = {0};
 	file_t keyring = {0};
+	file_t keyfile = {0};
 
 	pgp_stream_t *key_stream = NULL;
 	pgp_key_packet *key = NULL;
@@ -51,10 +79,23 @@ uint32_t spgp_import_keys(spgp_command *command)
 		return 2;
 	}
 
+	char wb[65536] = {0};
+	char fn[128] = {0};
+	size_t sz = 0;
+	size_t fiz = 0;
+	size_t fz = 0;
+
 	key = key_stream->packets[0];
 	uid = key_stream->packets[1];
 
-	pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	fz = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+
+	fiz = key_filename(fn, primary_fingerprint, fz);
+	sz = pgp_key_packet_write(key, wb, 65536);
+
+	file_open(&keyfile, command->keys, fn, fiz, FILE_WRITE, 65536);
+	file_write(&keyfile, wb, sz);
+	file_close(&keyfile);
 
 	keyring_packet = pgp_keyring_packet_new(key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
 
@@ -77,15 +118,20 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 			pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 			keyring_packet = pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
+
+			fiz = key_filename(fn, subkey_fingerprint, fz);
+			sz = pgp_key_packet_write(key, wb, 65536);
+
+			file_open(&keyfile, command->keys, fn, fiz, FILE_WRITE, 65536);
+			file_write(&keyfile, wb, sz);
+			file_close(&keyfile);
 		}
 	}
 
-	char wb[65536] = {0};
-
 	// Lock the keyring
-	
-	size_t sz = pgp_keyring_packet_write(keyring_packet, wb, 65536);
-	
+
+	sz = pgp_keyring_packet_write(keyring_packet, wb, 65536);
+
 	file_open(&keyring, command->keyring, NULL, 0, FILE_READ | FILE_WRITE, 65536);
 	file_write(&keyring, wb, sz);
 	file_close(&keyring);
