@@ -1608,11 +1608,8 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 		return 0;
 	}
 
-	packet->hashed_subpackets = pgp_stream_push_packet(packet->hashed_subpackets, timestamp_subpacket);
-	packet->hashed_subpackets = pgp_stream_push_packet(packet->hashed_subpackets, fingerprint_subpacket);
-
-	packet->hashed_octets = timestamp_subpacket->header.header_size + timestamp_subpacket->header.body_size +
-							fingerprint_subpacket->header.header_size + fingerprint_subpacket->header.body_size;
+	pgp_signature_packet_hashed_subpacket_add(packet, timestamp_subpacket);
+	pgp_signature_packet_hashed_subpacket_add(packet, fingerprint_subpacket);
 
 	// Only for V4 signatures append the key id as an unhashed subpacket
 	if (packet->version == PGP_SIGNATURE_V4)
@@ -1624,8 +1621,7 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 			return 0;
 		}
 
-		packet->unhashed_subpackets = pgp_stream_push_packet(packet->unhashed_subpackets, key_id_subpacket);
-		packet->unhashed_octets = key_id_subpacket->header.header_size + key_id_subpacket->header.body_size;
+		pgp_signature_packet_unhashed_subpacket_add(packet, key_id_subpacket);
 	}
 
 	hash_size = pgp_compute_hash(packet, hash, 0, data, size);

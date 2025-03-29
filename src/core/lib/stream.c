@@ -73,6 +73,55 @@ size_t pgp_stream_octets(pgp_stream_t *stream)
 	return size;
 }
 
+pgp_stream_t *pgp_stream_push_packet(pgp_stream_t *stream, void *packet)
+{
+	void *temp = NULL;
+
+	if (stream == NULL)
+	{
+		stream = pgp_stream_new(4);
+
+		if (stream == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (stream->count == stream->capacity)
+	{
+		stream->capacity *= 2;
+		temp = realloc(stream->packets, sizeof(void *) * stream->capacity);
+
+		if (temp == NULL)
+		{
+			return NULL;
+		}
+
+		stream->packets = temp;
+	}
+
+	stream->packets[stream->count] = packet;
+	stream->count += 1;
+
+	return stream;
+}
+
+void *pgp_stream_pop_packet(pgp_stream_t *stream)
+{
+	void *packet = NULL;
+
+	if (stream->count == 0)
+	{
+		return NULL;
+	}
+
+	packet = stream->packets[stream->count];
+	stream->packets[stream->count] = NULL;
+	stream->count -= 1;
+
+	return packet;
+}
+
 size_t pgp_stream_armor_size(pgp_stream_t *stream)
 {
 	return (CEIL_DIV(pgp_stream_octets(stream), 3) * 4) + 128; // header and footer
@@ -335,51 +384,4 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 	}
 
 	return pos;
-}
-
-pgp_stream_t *pgp_stream_push_packet(pgp_stream_t *stream, void *packet)
-{
-	void *temp = NULL;
-
-	if (stream == NULL)
-	{
-		stream = pgp_stream_new(4);
-
-		if (stream == NULL)
-		{
-			return NULL;
-		}
-	}
-
-	if (stream->count == stream->capacity)
-	{
-		stream->capacity *= 2;
-		temp = realloc(stream->packets, sizeof(void *) * stream->capacity);
-
-		if (temp == NULL)
-		{
-			return NULL;
-		}
-
-		stream->packets = temp;
-	}
-
-	stream->packets[stream->count++] = packet;
-
-	return stream;
-}
-
-void *pgp_stream_pop_packet(pgp_stream_t *stream)
-{
-	void *packet = NULL;
-
-	if (stream->count == 0)
-	{
-		return NULL;
-	}
-
-	packet = stream->packets[stream->count];
-	stream->packets[stream->count] = NULL;
-
-	return packet;
 }
