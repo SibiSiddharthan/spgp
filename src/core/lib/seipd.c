@@ -148,8 +148,7 @@ size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
 	size_t pos = 0;
 
 	// N bytes of symmetrically encryrpted data
-
-	required_size = packet->header.header_size + packet->header.body_size;
+	required_size = PGP_PACKET_OCTETS(packet->header);
 
 	if (size < required_size)
 	{
@@ -166,16 +165,43 @@ size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
+static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
+{
+	uint32_t body_size = 0;
+
+	if (packet->version == PGP_SEIPD_V2)
+	{
+		// Always create V1 packets with new format headers
+		// A 1-octet version number with value 2.
+		// A 1-octet symmetric key algorithm.
+		// A 1-octet AEAD algorithm.
+		// A 1-octet chunk size.
+		// A 32-octets of salt.
+		// Symmetrically encryrpted data
+		// Authentication tag
+
+		body_size = 1 + 1 + 1 + 1 + 32 + packet->data_size + packet->tag_size;
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, body_size);
+	}
+
+	if (packet->version == PGP_SEIPD_V1)
+	{
+		// Always create V1 packets with legacy format headers
+		// A 1-octet version number with value 1.
+		// N octets of symmetrically encryrpted data
+
+		body_size = 1 + packet->data_size;
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SEIPD, body_size);
+	}
+}
+
 static size_t pgp_seipd_packet_v1_write(pgp_seipd_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
 	size_t required_size = 0;
 	size_t pos = 0;
 
-	// A 1-octet version number with value 1.
-	// N octets of symmetrically encryrpted data
-
-	required_size = packet->header.header_size + 1 + packet->data_size;
+	required_size = PGP_PACKET_OCTETS(packet->header);
 
 	if (size < required_size)
 	{
@@ -202,15 +228,7 @@ static size_t pgp_seipd_packet_v2_write(pgp_seipd_packet *packet, void *ptr, siz
 	size_t required_size = 0;
 	size_t pos = 0;
 
-	// A 1-octet version number with value 2.
-	// A 1-octet symmetric key algorithm.
-	// A 1-octet AEAD algorithm.
-	// A 1-octet chunk size.
-	// A 32-octets of salt.
-	// Symmetrically encryrpted data
-	// Authentication tag
-
-	required_size = packet->header.header_size + 1 + 1 + 1 + 1 + 32 + packet->data_size + packet->tag_size;
+	required_size = PGP_PACKET_OCTETS(packet->header);
 
 	if (size < required_size)
 	{
@@ -299,10 +317,64 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 	pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
 					packet->data, packet->data_size);
 
-	// Always create V1 packets with legacy format headers
-	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SEIPD, packet->data_size + 1);
+	// Update header
+	pgp_seipd_packet_encode_header(packet);
 
 	return packet;
+}
+
+static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
+										  size_t data_size)
+{
+	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
+	size_t plaintext_size = packet->data_size - (block_size + 4 + SHA1_HASH_SIZE);
+
+	byte_t *pdata = NULL;
+	void *temp = NULL;
+
+	byte_t zero_iv[16] = {0};
+	byte_t mdc[SHA1_HASH_SIZE] = {0};
+
+	if (data_size < plaintext_size)
+	{
+		return 0;
+	}
+
+	// We really don't have to allocate memory here. This is a legacy packet, so no issues.
+	temp = malloc(packet->data_size);
+
+	if (temp == NULL)
+	{
+		return 0;
+	}
+
+	pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
+					temp, packet->data_size);
+
+	// Do checking
+	pdata = temp;
+
+	// Quick
+	if (pdata[block_size] != pdata[block_size - 2] || pdata[block_size + 1] != pdata[block_size - 1])
+	{
+		free(temp);
+		return 0;
+	}
+
+	// Hash
+	sha1_hash(temp, packet->data_size - SHA1_HASH_SIZE, mdc);
+
+	if (memcmp(mdc, PTR_OFFSET(packet->data, packet->data_size - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
+	{
+		free(temp);
+		return 0;
+	}
+
+	// Copy the decrypted text
+	memcpy(data, PTR_OFFSET(temp, block_size + 2), plaintext_size);
+	free(temp);
+
+	return plaintext_size;
 }
 
 static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
@@ -397,64 +469,10 @@ static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, b
 	pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
 					 PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
 
-	// Always create V2 packets with new format headers
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, 4 + 32 + packet->tag_size + packet->data_size);
+	// Update header
+	pgp_seipd_packet_encode_header(packet);
 
 	return packet;
-}
-
-static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
-										  size_t data_size)
-{
-	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
-	size_t plaintext_size = packet->data_size - (block_size + 4 + SHA1_HASH_SIZE);
-
-	byte_t *pdata = NULL;
-	void *temp = NULL;
-
-	byte_t zero_iv[16] = {0};
-	byte_t mdc[SHA1_HASH_SIZE] = {0};
-
-	if (data_size < plaintext_size)
-	{
-		return 0;
-	}
-
-	// We really don't have to allocate memory here. This is a legacy packet, so no issues.
-	temp = malloc(packet->data_size);
-
-	if (temp == NULL)
-	{
-		return 0;
-	}
-
-	pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
-					temp, packet->data_size);
-
-	// Do checking
-	pdata = temp;
-
-	// Quick
-	if (pdata[block_size] != pdata[block_size - 2] || pdata[block_size + 1] != pdata[block_size - 1])
-	{
-		free(temp);
-		return 0;
-	}
-
-	// Hash
-	sha1_hash(temp, packet->data_size - SHA1_HASH_SIZE, mdc);
-
-	if (memcmp(mdc, PTR_OFFSET(packet->data, packet->data_size - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
-	{
-		free(temp);
-		return 0;
-	}
-
-	// Copy the decrypted text
-	memcpy(data, PTR_OFFSET(temp, block_size + 2), plaintext_size);
-	free(temp);
-
-	return plaintext_size;
 }
 
 static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
@@ -583,6 +601,8 @@ pgp_seipd_packet *pgp_seipd_packet_new(byte_t version, byte_t symmetric_key_algo
 		packet->version = PGP_SEIPD_V1;
 		packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
 	}
+
+	pgp_seipd_packet_encode_header(packet);
 
 	return packet;
 }
@@ -733,6 +753,22 @@ size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size)
 	}
 }
 
+static void pgp_aead_packet_encode_header(pgp_aead_packet *packet)
+{
+	uint32_t body_size = 0;
+
+	// A 1-octet version number with value 1.
+	// A 1-octet symmetric key algorithm.
+	// A 1-octet AEAD algorithm.
+	// A 1-octet chunk size.
+	// A 12/15/16-octets of IV.
+	// Symmetrically encryrpted data
+	// Authentication tag
+
+	body_size = 1 + 1 + 1 + 1 + packet->iv_size + packet->data_size + packet->tag_size;
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_AEAD, body_size);
+}
+
 pgp_aead_packet *pgp_aead_packet_new(byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size)
 {
 	pgp_aead_packet *packet = NULL;
@@ -790,6 +826,8 @@ pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16],
 		return NULL;
 	}
 
+	packet->iv_size = iv_size;
+
 	// Encrypt the data paritioned by chunk size
 	packet->data_size = CEIL_DIV(data_size, chunk_size) * (chunk_size + PGP_AEAD_TAG_SIZE);
 	packet->data = malloc(packet->data_size);
@@ -835,8 +873,7 @@ pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16],
 	pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size, aad, 21,
 					 NULL, 0, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
 
-	// Always create V2 packets with new format headers
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_AEAD, 4 + iv_size + packet->tag_size + packet->data_size);
+	pgp_aead_packet_encode_header(packet);
 
 	return packet;
 }
@@ -911,7 +948,6 @@ pgp_aead_packet *pgp_aead_packet_read(void *data, size_t size)
 	pgp_packet_header header = {0};
 
 	size_t pos = 0;
-	byte_t iv_size = 0;
 
 	header = pgp_packet_header_read(data, size);
 	pos = header.header_size;
@@ -955,11 +991,11 @@ pgp_aead_packet *pgp_aead_packet_read(void *data, size_t size)
 		LOAD_8(&packet->chunk_size, in + pos);
 		pos += 1;
 
-		iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
+		packet->iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
 
 		// IV
-		memcpy(packet->iv, in + pos, iv_size);
-		pos += iv_size;
+		memcpy(packet->iv, in + pos, packet->iv_size);
+		pos += packet->iv_size;
 
 		// Data
 		packet->data_size = packet->header.body_size - pos - PGP_AEAD_TAG_SIZE;
@@ -995,17 +1031,7 @@ size_t pgp_aead_packet_write(pgp_aead_packet *packet, void *ptr, size_t size)
 	size_t required_size = 0;
 	size_t pos = 0;
 
-	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
-
-	// A 1-octet version number with value 1.
-	// A 1-octet symmetric key algorithm.
-	// A 1-octet AEAD algorithm.
-	// A 1-octet chunk size.
-	// A 12/15/16-octets of IV.
-	// Symmetrically encryrpted data
-	// Authentication tag
-
-	required_size = packet->header.header_size + 1 + 1 + 1 + 1 + iv_size + packet->data_size + packet->tag_size;
+	required_size = PGP_PACKET_OCTETS(packet->header);
 
 	if (size < required_size)
 	{
@@ -1032,8 +1058,8 @@ size_t pgp_aead_packet_write(pgp_aead_packet *packet, void *ptr, size_t size)
 	pos += 1;
 
 	// IV
-	memcpy(out + pos, packet->iv, iv_size);
-	pos += iv_size;
+	memcpy(out + pos, packet->iv, packet->iv_size);
+	pos += packet->iv_size;
 
 	// Data
 	memcpy(out + pos, packet->data, packet->data_size);

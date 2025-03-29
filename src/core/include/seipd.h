@@ -51,7 +51,8 @@ typedef struct _pgp_seipd_packet
 
 	byte_t tag[16];
 
-	uint16_t tag_size;
+	byte_t tag_size;
+	byte_t iv_size;
 	uint32_t data_size;
 
 	void *data;
