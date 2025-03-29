@@ -189,6 +189,8 @@ uint32_t spgp_delete_keys(spgp_command *command);
 #define SPGP_STD_OUTPUT 0x2
 
 void *spgp_read_file(const char *file, uint32_t options, size_t *size);
+size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size);
+
 pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options);
 
 #endif

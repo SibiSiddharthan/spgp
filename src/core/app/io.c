@@ -159,6 +159,52 @@ void *spgp_read_file(const char *file, uint32_t options, size_t *size)
 	return buffer;
 }
 
+size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size)
+{
+	status_t status = 0;
+	handle_t handle = 0;
+
+	size_t write = 0;
+
+	if (file != NULL)
+	{
+		status = os_open(&handle, HANDLE_CWD, file, strlen(file), FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700);
+
+		if (status != OS_STATUS_SUCCESS)
+		{
+			printf("Unable to open file %s.\n", file);
+			exit(2);
+		}
+	}
+	else
+	{
+		if (options & SPGP_STD_OUTPUT)
+		{
+			handle = STDOUT_HANDLE;
+		}
+	}
+
+	if (handle == 0)
+	{
+		exit(2);
+	}
+
+	status = os_write(handle, buffer, size, &write);
+
+	if (file != NULL)
+	{
+		os_close(handle);
+	}
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("Unable to write file %s.\n", file);
+		exit(2);
+	}
+
+	return write;
+}
+
 pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options)
 {
 	void *buffer = NULL;
