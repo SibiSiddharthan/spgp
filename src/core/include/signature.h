@@ -315,6 +315,9 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
 size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
 
+pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
+pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
+
 pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timestamp);
 void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
 

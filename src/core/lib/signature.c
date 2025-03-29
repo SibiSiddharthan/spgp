@@ -1976,6 +1976,42 @@ size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_
 	}
 }
 
+pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
+{
+	void *result = NULL;
+	pgp_subpacket_header *header = subpacket;
+
+	result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
+
+	if (result == NULL)
+	{
+		return NULL;
+	}
+
+	packet->hashed_subpackets = result;
+	packet->hashed_octets += header->header_size + header->body_size;
+
+	return packet;
+}
+
+pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
+{
+	void *result = NULL;
+	pgp_subpacket_header *header = subpacket;
+
+	result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
+
+	if (result == NULL)
+	{
+		return NULL;
+	}
+
+	packet->unhashed_subpackets = result;
+	packet->unhashed_octets += header->header_size + header->body_size;
+
+	return packet;
+}
+
 pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timestamp)
 {
 	pgp_timestamp_subpacket *subpacket = NULL;
