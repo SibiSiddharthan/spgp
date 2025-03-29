@@ -380,7 +380,7 @@ status_t os_truncate(handle_t root, const char *path, uint16_t length, size_t si
 		handle = root;
 	}
 
-	eof.EndOfFile.QuadPart = length;
+	eof.EndOfFile.QuadPart = size;
 	status = NtSetInformationFile(handle, &io, &eof, sizeof(FILE_END_OF_FILE_INFORMATION), FileEndOfFileInformation);
 
 	if (path != NULL)

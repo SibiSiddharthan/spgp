@@ -247,12 +247,14 @@ static arg_option_t spgp_options[] = {
 
 static void spgp_print_help(void)
 {
-	printf("%s", help);
+	size_t result = 0;
+	os_write(STDOUT_HANDLE, (void *)help, strlen(help), &result);
 }
 
 static void spgp_print_version(void)
 {
-	printf("%s", version);
+	size_t result = 0;
+	os_write(STDOUT_HANDLE, (void *)version, strlen(version), &result);
 }
 
 static status_t spgp_initialize_directory(handle_t *handle, handle_t root, char *dir, uint16_t length)
