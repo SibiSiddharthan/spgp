@@ -66,6 +66,8 @@ typedef struct _pgp_compressed_packet
 	pgp_packet_header header;
 
 	byte_t compression_algorithm_id;
+
+	uint32_t data_size;
 	void *data;
 } pgp_compresed_packet;
 
