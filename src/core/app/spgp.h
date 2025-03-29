@@ -10,6 +10,7 @@
 
 #include <types.h>
 #include <buffer.h>
+#include <stream.h>
 
 #include <byteswap.h>
 #include <minmax.h>
@@ -183,5 +184,11 @@ uint32_t spgp_list_packets(spgp_command *command);
 uint32_t spgp_import_keys(spgp_command *command);
 uint32_t spgp_export_keys(spgp_command *command);
 uint32_t spgp_delete_keys(spgp_command *command);
+
+#define SPGP_STD_INPUT  0x1
+#define SPGP_STD_OUTPUT 0x2
+
+void *spgp_read_file(const char *file, uint32_t options, size_t *size);
+pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options);
 
 #endif
