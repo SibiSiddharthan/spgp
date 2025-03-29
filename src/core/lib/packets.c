@@ -1363,7 +1363,15 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
 
 pgp_trust_packet *pgp_trust_packet_new(byte_t header_format, byte_t trust_level)
 {
-	pgp_trust_packet *packet = malloc(sizeof(pgp_trust_packet));
+	pgp_trust_packet *packet = NULL;
+
+	if (trust_level != PGP_TRUST_NEVER && trust_level != PGP_TRUST_MARGINAL && trust_level != PGP_TRUST_FULL &&
+		trust_level != PGP_TRUST_ULTIMATE)
+	{
+		return NULL;
+	}
+
+	packet = malloc(sizeof(pgp_trust_packet));
 
 	if (packet == NULL)
 	{

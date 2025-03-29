@@ -627,6 +627,23 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, void *str, size_t size, uint32_t inden
 	return pos;
 }
 
+static size_t pgp_trust_print(pgp_trust_level trust, void *str, size_t size, uint32_t indent)
+{
+	switch (trust)
+	{
+	case PGP_TRUST_NEVER:
+		return print_format(indent, str, size, "Trust Level: Never\n");
+	case PGP_TRUST_MARGINAL:
+		return print_format(indent, str, size, "Trust Level: Marginal\n");
+	case PGP_TRUST_FULL:
+		return print_format(indent, str, size, "Trust Level: Full\n");
+	case PGP_TRUST_ULTIMATE:
+		return print_format(indent, str, size, "Trust Level: Ultimate\n");
+	default:
+		return print_format(indent, str, size, "Trust Level: Unknown\n");
+	}
+}
+
 static size_t pgp_kdf_print(void *kdf, void *str, size_t size, uint32_t indent)
 {
 	byte_t *in = kdf;
@@ -2073,7 +2090,7 @@ size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size)
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
-	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->level);
+	pos += pgp_trust_print(packet->level, PTR_OFFSET(str, pos), size - pos, 1);
 
 	return pos;
 }
@@ -2301,7 +2318,7 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
-	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", packet->trust_level);
+	pos += pgp_trust_print(packet->trust_level, PTR_OFFSET(str, pos), size - pos, 1);
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Primary Key: ");
 	pos += print_hex(hex_upper_table, PTR_OFFSET(str, pos), packet->primary_fingerprint, packet->fingerprint_size);

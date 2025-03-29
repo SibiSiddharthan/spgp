@@ -159,7 +159,9 @@ typedef struct _pgp_mdc_packet
 typedef enum _pgp_trust_level
 {
 	PGP_TRUST_NEVER = 0,
-	PGP_TRUST_FULL = 1
+	PGP_TRUST_MARGINAL = 1,
+	PGP_TRUST_FULL = 2,
+	PGP_TRUST_ULTIMATE = 3,
 } pgp_trust_level;
 
 typedef struct _pgp_trust_packet
