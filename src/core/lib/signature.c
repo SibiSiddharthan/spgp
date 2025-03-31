@@ -299,7 +299,7 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_SUBPACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -1938,7 +1938,7 @@ pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -2200,7 +2200,7 @@ pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, si
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}

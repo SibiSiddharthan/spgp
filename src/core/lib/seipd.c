@@ -112,7 +112,7 @@ pgp_sed_packet *pgp_sed_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -659,7 +659,7 @@ pgp_seipd_packet *pgp_seipd_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -957,7 +957,7 @@ pgp_aead_packet *pgp_aead_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}

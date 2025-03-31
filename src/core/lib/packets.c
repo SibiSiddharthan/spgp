@@ -148,7 +148,7 @@ pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -249,7 +249,7 @@ pgp_marker_packet *pgp_marker_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -528,7 +528,7 @@ pgp_literal_packet *pgp_literal_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -726,7 +726,7 @@ pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -786,7 +786,7 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_SUBPACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -1105,7 +1105,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -1216,7 +1216,7 @@ pgp_padding_packet *pgp_padding_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -1303,7 +1303,7 @@ pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -1407,7 +1407,7 @@ pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -1668,7 +1668,7 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
@@ -1832,7 +1832,7 @@ pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size)
 	pos = header.header_size;
 	data_size = header.body_size;
 
-	if (size < (header.header_size + header.body_size))
+	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return NULL;
 	}
