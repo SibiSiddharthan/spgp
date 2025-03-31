@@ -2145,7 +2145,7 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 				return NULL;
 			}
 
-			pos += pgp_s2k_size(&packet->s2k);
+			pos += pgp_s2k_octets(&packet->s2k);
 		}
 
 		// IV
@@ -2224,7 +2224,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	// (Plaintext or encrypted) Private key data.
 	// (For V3, V4, V5) A 2-octet checksum of private key if not encrypted
 
-	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_size(&packet->s2k) : 0;
+	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
 
 	required_size = 1 + 4 + 1 + 1 + packet->public_key_data_octets;
 	required_size += (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3) ? 2 : 0;
@@ -2600,7 +2600,7 @@ pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase,
 	}
 
 	body_size += 2; // s2k_usage, cipher algo
-	body_size += pgp_s2k_size(&packet->s2k);
+	body_size += pgp_s2k_octets(&packet->s2k);
 	body_size += iv_size;
 
 	if (s2k_usage == 253)
@@ -2842,7 +2842,7 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 				return NULL;
 			}
 
-			pos += pgp_s2k_size(&packet->s2k);
+			pos += pgp_s2k_octets(&packet->s2k);
 		}
 
 		// IV
@@ -2912,7 +2912,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	// A 4-octet scalar count of key data (inclusive of tag)
 	// (Plaintext or encrypted) Private key data.
 
-	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_size(&packet->s2k) : 0;
+	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
 
 	required_size = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 4 + 4 + packet->public_key_data_octets;
 	required_size += (packet->encrypted_octets != 0 ? packet->encrypted_octets : packet->private_key_data_octets);

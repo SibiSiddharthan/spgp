@@ -694,7 +694,7 @@ static void pgp_skesk_packet_encode_header(pgp_skesk_packet *packet)
 		// Encrypted session key.
 		// Authetication key tag.
 
-		body_size = 1 + 1 + 1 + 1 + 1 + pgp_s2k_size(&packet->s2k) + packet->iv_size + packet->session_key_size + packet->tag_size;
+		body_size = 1 + 1 + 1 + 1 + 1 + pgp_s2k_octets(&packet->s2k) + packet->iv_size + packet->session_key_size + packet->tag_size;
 		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SKESK, body_size);
 	}
 	else
@@ -704,7 +704,7 @@ static void pgp_skesk_packet_encode_header(pgp_skesk_packet *packet)
 		// A S2K specifier
 		// (Optional) Encrypted Session key
 
-		body_size = 1 + 1 + 1 + pgp_s2k_size(&packet->s2k) + packet->session_key_size;
+		body_size = 1 + 1 + 1 + pgp_s2k_octets(&packet->s2k) + packet->session_key_size;
 		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, body_size);
 	}
 }
@@ -753,7 +753,7 @@ static size_t pgp_skesk_packet_v5_v6_write(pgp_skesk_packet *packet, void *ptr, 
 	size_t required_size = 0;
 	size_t pos = 0;
 
-	s2k_size = pgp_s2k_size(&packet->s2k);
+	s2k_size = pgp_s2k_octets(&packet->s2k);
 	required_size = PGP_PACKET_OCTETS(packet->header);
 
 	if (size < required_size)
@@ -1185,7 +1185,7 @@ pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
 			return NULL;
 		}
 
-		pos += pgp_s2k_size(&packet->s2k);
+		pos += pgp_s2k_octets(&packet->s2k);
 
 		// (Optional) Session key
 		packet->session_key_size = packet->header.body_size - (pos - packet->header.header_size);

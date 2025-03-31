@@ -59,7 +59,7 @@ typedef struct _pgp_s2k
 	};
 } pgp_s2k;
 
-static inline uint32_t pgp_s2k_size(pgp_s2k *s2k)
+static inline uint32_t pgp_s2k_octets(pgp_s2k *s2k)
 {
 	switch (s2k->id)
 	{
