@@ -745,12 +745,9 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 {
 	pgp_subpacket_header *header = subpacket;
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = header->header_size + header->body_size;
-
-	if (size < required_size)
+	if (size < PGP_SUBPACKET_OCTETS(*header))
 	{
 		return 0;
 	}
@@ -946,7 +943,7 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	{
 		pgp_embedded_signature_subpacket *embedded_subpacket = subpacket;
 
-		pos += pgp_signature_packet_body_write(embedded_subpacket, out + pos, required_size);
+		pos += pgp_signature_packet_body_write(embedded_subpacket, out + pos, PGP_SUBPACKET_OCTETS(*header));
 	}
 	break;
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
@@ -976,26 +973,52 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	return pos;
 }
 
+static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
+{
+	uint32_t body_size = 0;
+
+	if (packet->version >= PGP_SIGNATURE_V4)
+	{
+		// A 1-octet version number.
+		// A 1-octet Signature Type ID.
+		// A 1-octet public key algorithm.
+		// A 1-octet hash algorithm.
+		// A 2-octet/4-octet count for the hashed subpacket data that follows this field.
+		// A hashed subpacket data set (zero or more subpackets).
+		// A 2-octet/4-octet count for the unhashed subpacket data that follows this field.
+		// An unhashed subpacket data set (zero or more subpackets).
+		// A 2-octet field holding the left 16 bits of the signed hash value.
+		// (For V6) A 1-octet salt size.
+		// (For V6) The salt.
+		// One or more MPIs comprising the signature.
+
+		body_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets;
+		body_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, body_size);
+	}
+	else
+	{
+		// A 1-octet version number with value 3.
+		// A 1-octet length of the following hashed material; it will be 5.
+		// A 1-octet Signature Type ID.
+		// A 4-octet creation time.
+		// An 8-octet Key ID of the signer.
+		// A 1-octet public key algorithm.
+		// A 1-octet hash algorithm.
+		// A 2-octet field holding left 16 bits of the signed hash value.
+		// One or more MPIs comprising the signature
+
+		body_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + packet->signature_octets;
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, body_size);
+	}
+}
+
 static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// A 1-octet version number with value 3.
-	// A 1-octet length of the following hashed material; it will be 5.
-	// A 1-octet Signature Type ID.
-	// A 4-octet creation time.
-	// An 8-octet Key ID of the signer.
-	// A 1-octet public key algorithm.
-	// A 1-octet hash algorithm.
-	// A 2-octet field holding left 16 bits of the signed hash value.
-	// One or more MPIs comprising the signature
-
-	required_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + packet->signature_octets;
-	required_size += packet->header.header_size;
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1139,27 +1162,9 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// A 1-octet version number.
-	// A 1-octet Signature Type ID.
-	// A 1-octet public key algorithm.
-	// A 1-octet hash algorithm.
-	// A 2-octet/4-octet count for the hashed subpacket data that follows this field.
-	// A hashed subpacket data set (zero or more subpackets).
-	// A 2-octet/4-octet count for the unhashed subpacket data that follows this field.
-	// An unhashed subpacket data set (zero or more subpackets).
-	// A 2-octet field holding the left 16 bits of the signed hash value.
-	// (For V6) A 1-octet salt size.
-	// (For V6) The salt.
-	// One or more MPIs comprising the signature.
-
-	required_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets;
-	required_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
-	required_size += packet->header.header_size;
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1661,8 +1666,7 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 	}
 
 	packet->signature_octets = get_signature_octets(packet->public_key_algorithm_id, packet->signature);
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SIG,
-											  4 + 4 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets);
+	pgp_signature_packet_encode_header(packet);
 
 	return 0;
 }
@@ -2154,6 +2158,16 @@ pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version,
 
 	memset(packet, 0, sizeof(pgp_one_pass_signature_packet));
 
+	// A 1-octet version number.
+	// A 1-octet Signature Type ID.
+	// A 1-octet hash algorithm.
+	// A 1-octet public key algorithm.
+	// (For V3) A 8-octet Key ID of the signer.
+	// (For V6) A 1-octet salt size.
+	// (For V6) The salt.
+	// (For V6) A 32-octet key fingerprint.
+	// A 1-octet flag for nested signatures.
+
 	packet->version = version;
 	packet->type = type;
 	packet->nested = nested;
@@ -2267,23 +2281,9 @@ pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, si
 size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// A 1-octet version number.
-	// A 1-octet Signature Type ID.
-	// A 1-octet hash algorithm.
-	// A 1-octet public key algorithm.
-	// (For V3) A 8-octet Key ID of the signer.
-	// (For V6) A 1-octet salt size.
-	// (For V6) The salt.
-	// (For V6) A 32-octet key fingerprint.
-	// A 1-octet flag for nested signatures.
-
-	required_size = packet->header.header_size + 1 + 1 + 1 + 1 + 1;
-	required_size += packet->version == PGP_ONE_PASS_SIGNATURE_V6 ? (1 + packet->salt_size + 32) : 8;
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
