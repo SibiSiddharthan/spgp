@@ -141,6 +141,8 @@ typedef struct _pgp_user_attribute_uid_subpacket
 typedef struct _pgp_user_attribute_packet
 {
 	pgp_packet_header header;
+
+	uint32_t subpacket_octets;
 	pgp_stream_t *subpackets;
 } pgp_user_attribute_packet;
 

@@ -918,6 +918,14 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 	return pos;
 }
 
+static void pgp_user_attribute_encode_header(pgp_user_attribute_packet *packet)
+{
+	pgp_packet_header_format header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
+
+	// N octets of subpackets
+	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, packet->subpacket_octets);
+}
+
 pgp_user_attribute_packet *pgp_user_attribute_packet_new(byte_t header_format)
 {
 	pgp_user_attribute_packet *packet = NULL;
@@ -978,8 +986,9 @@ size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, vo
 
 pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packet, byte_t format, void *image, size_t size)
 {
+	void *result = NULL;
+
 	pgp_user_attribute_image_subpacket *image_subpacket = NULL;
-	pgp_packet_header_format header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
 	size_t required_size = sizeof(pgp_user_attribute_image_subpacket) + size;
 
 	if (format != PGP_USER_ATTRIBUTE_IMAGE_JPEG)
@@ -1004,9 +1013,18 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 
 	image_subpacket->header = pgp_encode_subpacket_header(PGP_USER_ATTRIBUTE_IMAGE, 0, 16 + size);
 
-	pgp_stream_push_packet(packet->subpackets, image_subpacket);
+	result = pgp_stream_push_packet(packet->subpackets, image_subpacket);
 
-	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, pgp_subpacket_stream_octets(packet->subpackets));
+	if (result == NULL)
+	{
+		pgp_user_attribute_packet_delete(packet);
+		return NULL;
+	}
+
+	packet->subpackets = result;
+	packet->subpacket_octets += PGP_SUBPACKET_OCTETS(image_subpacket->header);
+
+	pgp_user_attribute_encode_header(packet);
 
 	return packet;
 }
@@ -1048,12 +1066,13 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 															 void *user_comment, uint16_t user_comment_size, void *user_email,
 															 uint16_t user_email_size)
 {
+	void *result = NULL;
+
 	pgp_user_attribute_uid_subpacket *uid_subpacket = NULL;
 	pgp_user_id_packet *uid_packet = NULL;
-	pgp_packet_header_format header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
 
 	uid_packet =
-		pgp_user_id_packet_new(header_format, user_name, user_name_size, user_comment, user_comment_size, user_email, user_email_size);
+		pgp_user_id_packet_new(PGP_HEADER, user_name, user_name_size, user_comment, user_comment_size, user_email, user_email_size);
 
 	if (uid_packet == NULL)
 	{
@@ -1064,8 +1083,18 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 	uid_subpacket = (pgp_user_attribute_uid_subpacket *)uid_packet;
 	uid_subpacket->header.tag = PGP_USER_ATTRIBUTE_UID;
 
-	pgp_stream_push_packet(packet->subpackets, uid_subpacket);
-	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, pgp_subpacket_stream_octets(packet->subpackets));
+	result = pgp_stream_push_packet(packet->subpackets, uid_subpacket);
+
+	if (result == NULL)
+	{
+		pgp_user_attribute_packet_delete(packet);
+		return NULL;
+	}
+
+	packet->subpackets = result;
+	packet->subpacket_octets += PGP_SUBPACKET_OCTETS(uid_subpacket->header);
+
+	pgp_user_attribute_encode_header(packet);
 
 	return packet;
 }
