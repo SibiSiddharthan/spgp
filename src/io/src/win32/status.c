@@ -83,9 +83,9 @@ status_t _os_status(status_t nt_status)
 	case STATUS_END_OF_FILE:
 	case STATUS_NO_MORE_FILES:
 	case STATUS_PIPE_EMPTY:
+	case STATUS_PIPE_BROKEN:
 		return OS_STATUS_END_OF_DATA;
 
-	case STATUS_PIPE_BROKEN:
 	case STATUS_PIPE_BUSY:
 	case STATUS_PIPE_DISCONNECTED:
 	case STATUS_PIPE_NOT_AVAILABLE:

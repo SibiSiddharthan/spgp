@@ -24,11 +24,11 @@ static status_t spgp_read_disk_file(handle_t handle, size_t size, void **buffer,
 		return OS_STATUS_NO_MEMORY;
 	}
 
-	status = os_read(handle, buffer, size, &read);
+	status = os_read(handle, *buffer, size, &read);
 
 	if (status != OS_STATUS_SUCCESS)
 	{
-		free(buffer);
+		free(*buffer);
 	}
 
 	*result = read;
@@ -54,7 +54,7 @@ static status_t spgp_read_pipe_file(handle_t handle, void **buffer, size_t *resu
 	while (1)
 	{
 		// Read in 64KB chunks
-		status = os_read(handle, PTR_OFFSET(buffer, read), 65536, &read);
+		status = os_read(handle, PTR_OFFSET(*buffer, read), 65536, &read);
 
 		*result += read;
 
@@ -67,7 +67,7 @@ static status_t spgp_read_pipe_file(handle_t handle, void **buffer, size_t *resu
 
 			if (temp == NULL)
 			{
-				free(buffer);
+				free(*buffer);
 				return OS_STATUS_NO_MEMORY;
 			}
 
@@ -76,14 +76,14 @@ static status_t spgp_read_pipe_file(handle_t handle, void **buffer, size_t *resu
 
 		if (status != OS_STATUS_SUCCESS)
 		{
-			if (status != OS_STATUS_END_OF_DATA)
+			if (status == OS_STATUS_END_OF_DATA)
 			{
-				free(buffer);
-				return status;
+				status = OS_STATUS_SUCCESS;
+				break;
 			}
 
-			status = OS_STATUS_SUCCESS;
-			break;
+			free(*buffer);
+			return status;
 		}
 	}
 
