@@ -330,12 +330,9 @@ static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -363,12 +360,9 @@ static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, siz
 static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -712,12 +706,9 @@ static void pgp_skesk_packet_encode_header(pgp_skesk_packet *packet)
 static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -750,13 +741,11 @@ static size_t pgp_skesk_packet_v5_v6_write(pgp_skesk_packet *packet, void *ptr, 
 {
 	byte_t *out = ptr;
 	byte_t s2k_size = 0;
-	size_t required_size = 0;
 	size_t pos = 0;
 
 	s2k_size = pgp_s2k_octets(&packet->s2k);
-	required_size = PGP_PACKET_OCTETS(packet->header);
 
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}

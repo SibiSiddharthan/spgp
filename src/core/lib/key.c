@@ -1348,12 +1348,9 @@ pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size)
 size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -2311,7 +2308,6 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
 	byte_t s2k_size = 0;
@@ -2319,9 +2315,8 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 
 	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
 	conditional_field_size = pgp_key_packet_get_s2k_size(packet);
-	required_size = PGP_PACKET_OCTETS(packet->header);
 
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -2876,7 +2871,6 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
 	byte_t s2k_size = 0;
@@ -2885,9 +2879,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
 	conditional_field_size = pgp_key_packet_get_s2k_size(packet);
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}

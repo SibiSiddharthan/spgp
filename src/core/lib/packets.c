@@ -183,12 +183,9 @@ pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size)
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -218,6 +215,7 @@ pgp_marker_packet *pgp_marker_packet_new(byte_t header_format)
 
 	memset(packet, 0, sizeof(pgp_marker_packet));
 
+	// 3 octets of marker
 	packet->header = pgp_encode_packet_header(header_format, PGP_MARKER, 3);
 
 	// Set the marker
@@ -281,15 +279,9 @@ pgp_marker_packet *pgp_marker_packet_read(void *data, size_t size)
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// 2 octet header (new and legacy)
-	// 3 octets of marker data
-
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -594,12 +586,9 @@ pgp_literal_packet *pgp_literal_packet_read(void *data, size_t size)
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -667,6 +656,7 @@ pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *user_name
 
 	memset(packet, 0, required_size);
 
+	// N octets of user data
 	packet->header = pgp_encode_packet_header(header_format, PGP_UID, user_name_size + user_comment_size + user_email_size);
 
 	// Data is stored as "user_name (user_comment) <user_email>"
@@ -750,13 +740,9 @@ pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size)
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// N bytes of user data
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -881,12 +867,9 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 	pgp_subpacket_header *header = subpacket;
 
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = header->header_size + header->body_size;
-
-	if (size < required_size)
+	if (size < PGP_SUBPACKET_OCTETS(*header))
 	{
 		return 0;
 	}
@@ -1157,12 +1140,9 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t siz
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1193,6 +1173,7 @@ pgp_padding_packet *pgp_padding_packet_new(byte_t header_format, void *data, siz
 
 	memset(packet, 0, required_size);
 
+	// N octets of padding data
 	packet->header = pgp_encode_packet_header(header_format, PGP_PADDING, size);
 	memcpy(packet->data, data, size);
 
@@ -1240,13 +1221,9 @@ pgp_padding_packet *pgp_padding_packet_read(void *data, size_t size)
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// N bytes of padding data
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1270,6 +1247,7 @@ pgp_mdc_packet *pgp_mdc_packet_new(byte_t header_format)
 		return NULL;
 	}
 
+	// 20 octets of SHA-1 hash
 	memset(packet, 0, sizeof(pgp_mdc_packet));
 	packet->header = pgp_encode_packet_header(header_format, PGP_MDC, 20);
 
@@ -1338,15 +1316,9 @@ pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// 2 octet header (new and legacy)
-	// 20 octets of SHA-1 hash
-
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1431,12 +1403,9 @@ pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size)
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1773,12 +1742,9 @@ pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size)
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1860,12 +1826,9 @@ pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size)
 size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}

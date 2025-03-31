@@ -44,6 +44,7 @@ pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_
 		return NULL;
 	}
 
+	// N bytes of symmetrically encryrpted data
 	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, total_data_size);
 
 	// Generate the IV
@@ -144,13 +145,9 @@ pgp_sed_packet *pgp_sed_packet_read(void *data, size_t size)
 size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	// N bytes of symmetrically encryrpted data
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -198,12 +195,9 @@ static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
 static size_t pgp_seipd_packet_v1_write(pgp_seipd_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -225,12 +219,9 @@ static size_t pgp_seipd_packet_v1_write(pgp_seipd_packet *packet, void *ptr, siz
 static size_t pgp_seipd_packet_v2_write(pgp_seipd_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
@@ -1028,12 +1019,9 @@ pgp_aead_packet *pgp_aead_packet_read(void *data, size_t size)
 size_t pgp_aead_packet_write(pgp_aead_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	size_t required_size = 0;
 	size_t pos = 0;
 
-	required_size = PGP_PACKET_OCTETS(packet->header);
-
-	if (size < required_size)
+	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
 	}
