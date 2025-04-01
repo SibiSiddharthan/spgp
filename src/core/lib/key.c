@@ -1187,7 +1187,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet)
 	{
 		// A 1-octet key version number.
 		// A 1-octet key type.
-		// A 1-octet key flags.
+		// A 1-octet key capabilities.
 		// A 1-octet public key algorithm.
 		// A 4-octet number denoting the time that the key was created.
 		// A 4-octet number denoting the time that the key will expire.
@@ -2430,8 +2430,8 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	return pos;
 }
 
-pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, uint16_t key_expiry_days, byte_t public_key_algorithm_id,
-								   void *key)
+pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, uint32_t key_expiry_time, byte_t public_key_algorithm_id,
+								   byte_t capabilities, void *key)
 {
 	pgp_key_packet *packet = NULL;
 
@@ -2456,8 +2456,9 @@ pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, u
 	memset(packet, 0, sizeof(pgp_key_packet));
 
 	packet->version = version;
+	packet->capabilities = capabilities;
 	packet->key_creation_time = key_creation_time;
-	packet->key_expiry_days = key_expiry_days;
+	packet->key_expiry_time = key_expiry_time;
 
 	packet->key = key;
 	packet->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);
@@ -2741,8 +2742,8 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 	LOAD_8(&packet->type, in + pos);
 	pos += 1;
 
-	// 1 octet key flags
-	LOAD_8(&packet->flags, in + pos);
+	// 1 octet key capabilities
+	LOAD_8(&packet->capabilities, in + pos);
 	pos += 1;
 
 	// 4-octet number denoting the time that the key was created.
@@ -2895,8 +2896,8 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	LOAD_8(out + pos, &packet->type);
 	pos += 1;
 
-	// 1 octet key flags
-	LOAD_8(out + pos, &packet->flags);
+	// 1 octet key capabilities
+	LOAD_8(out + pos, &packet->capabilities);
 	pos += 1;
 
 	// 4-octet number denoting the time that the key was created.

@@ -2249,19 +2249,19 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 	pos +=
 		print_format(1, PTR_OFFSET(str, pos), size - pos, "Type: %s\n", packet->type == PGP_KEY_TYPE_PUBLIC ? "Public Key" : "Secret Key");
 
-	if (packet->flags & PGP_KEY_FLAG_CERTIFY)
+	if (packet->capabilities & PGP_KEY_FLAG_CERTIFY)
 	{
 		strncat(buffer, "Certify ", 8);
 	}
-	if (packet->flags & PGP_KEY_FLAG_SIGN)
+	if (packet->capabilities & PGP_KEY_FLAG_SIGN)
 	{
 		strncat(buffer, "Sign ", 5);
 	}
-	if (packet->flags & PGP_KEY_FLAG_ENCRYPT)
+	if (packet->capabilities & PGP_KEY_FLAG_ENCRYPT)
 	{
 		strncat(buffer, "Encrypt ", 8);
 	}
-	if (packet->flags & PGP_KEY_FLAG_AUTHENTICATION)
+	if (packet->capabilities & PGP_KEY_FLAG_AUTHENTICATION)
 	{
 		strncat(buffer, "Authenticate ", 13);
 	}
