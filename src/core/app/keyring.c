@@ -13,9 +13,10 @@
 #include <stdio.h>
 #include <string.h>
 
+static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
 static void get_key_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
 {
-	static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 	byte_t pos = 0;
 
 	for (uint32_t i = 0; i < size; ++i)
@@ -35,6 +36,48 @@ static void get_key_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGER
 	buffer[pos++] = 'e';
 	buffer[pos++] = 'y';
 	buffer[pos] = '\0';
+}
+
+static void get_cert_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+{
+	byte_t pos = 0;
+
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		byte_t a, b;
+
+		a = fingerprint[i] / 16;
+		b = fingerprint[i] % 16;
+
+		buffer[pos++] = hex_table[a];
+		buffer[pos++] = hex_table[b];
+	}
+
+	// Append .key
+	buffer[pos++] = '.';
+	buffer[pos++] = 'c';
+	buffer[pos++] = 'e';
+	buffer[pos++] = 'r';
+	buffer[pos++] = 't';
+	buffer[pos] = '\0';
+}
+
+pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+{
+	char filename[256] = {0};
+
+	get_cert_filename(filename, fingerprint, size);
+
+	return spgp_read_pgp_packet(filename, 0);
+}
+
+size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_stream_t *stream)
+{
+	char filename[256] = {0};
+
+	get_cert_filename(filename, fingerprint, size);
+
+	return spgp_write_pgp_packets(filename, 0, stream);
 }
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
@@ -60,6 +103,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 	pgp_stream_t *key_stream = NULL;
 	pgp_key_packet *key = NULL;
 	pgp_user_id_packet *uid = NULL;
+	pgp_signature_packet *sign = NULL;
 	pgp_keyring_packet *keyring_packet = NULL;
 
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
@@ -69,13 +113,14 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 	key = key_stream->packets[0];
 	uid = key_stream->packets[1];
+	sign = key_stream->packets[2];
 
 	primary_fingerprint_size = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 	spgp_write_key(primary_fingerprint, primary_fingerprint_size, key);
 
 	keyring_packet = pgp_keyring_packet_new(key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
 
-	for (uint16_t i = 2; i < key_stream->count; ++i)
+	for (uint16_t i = 3; i < key_stream->count; ++i)
 	{
 		pgp_packet_header *header = key_stream->packets[i];
 		pgp_packet_type type = pgp_packet_get_type(header->tag);
