@@ -8,6 +8,8 @@
 #include <spgp.h>
 #include <os.h>
 
+#include <packet.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -159,6 +161,47 @@ void *spgp_read_file(const char *file, uint32_t options, size_t *size)
 	return buffer;
 }
 
+pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options)
+{
+	void *buffer = NULL;
+	size_t size = 0;
+
+	pgp_stream_t *stream = NULL;
+
+	buffer = spgp_read_file(file, options, &size);
+	stream = pgp_stream_read(buffer, size);
+
+	free(buffer);
+
+	if (stream == NULL)
+	{
+		printf("Invalid pgp stream.\n");
+		exit(1);
+	}
+
+	return stream;
+}
+
+void *spgp_read_pgp_packet(const char *file, uint32_t options)
+{
+	void *buffer = NULL;
+	void *packet = NULL;
+	size_t size = 0;
+
+	buffer = spgp_read_file(file, options, &size);
+	packet = pgp_packet_read(buffer, size);
+
+	free(buffer);
+
+	if (packet == NULL)
+	{
+		printf("Bad packet.\n");
+		exit(1);
+	}
+
+	return packet;
+}
+
 size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size)
 {
 	status_t status = 0;
@@ -205,23 +248,58 @@ size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t 
 	return write;
 }
 
-pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options)
+size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *stream)
 {
 	void *buffer = NULL;
+	size_t max_size = 0;
 	size_t size = 0;
+	size_t result = 0;
 
-	pgp_stream_t *stream = NULL;
-
-	buffer = spgp_read_file(file, options, &size);
-	stream = pgp_stream_read(buffer, size);
-
-	free(buffer);
-
-	if (stream == NULL)
+	for (uint16_t i = 0; i < stream->count; ++i)
 	{
-		printf("Invalid pgp stream.\n");
+		pgp_packet_header *header = stream->packets[i];
+
+		max_size = MAX(max_size, PGP_PACKET_OCTETS(*header));
+	}
+
+	buffer = malloc(size);
+
+	if (buffer == NULL)
+	{
+		printf("No memory.\n");
 		exit(1);
 	}
 
-	return stream;
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		size = pgp_packet_write(stream->packets[i], buffer, max_size);
+		result += spgp_write_file(file, options, buffer, size);
+	}
+
+	free(buffer);
+
+	return result;
+}
+
+size_t spgp_write_pgp_packet(const char *file, uint32_t options, void *packet)
+{
+	void *buffer = NULL;
+
+	pgp_packet_header *header = packet;
+	size_t size = PGP_PACKET_OCTETS(*header);
+
+	buffer = malloc(size);
+
+	if (buffer == NULL)
+	{
+		printf("No memory.\n");
+		exit(1);
+	}
+
+	pgp_packet_write(packet, buffer, size);
+	spgp_write_file(file, options, buffer, size);
+
+	free(buffer);
+
+	return size;
 }

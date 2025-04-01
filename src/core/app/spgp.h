@@ -192,5 +192,9 @@ void *spgp_read_file(const char *file, uint32_t options, size_t *size);
 size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size);
 
 pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options);
+void *spgp_read_pgp_packet(const char *file, uint32_t options);
+
+size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *stream);
+size_t spgp_write_pgp_packet(const char *file, uint32_t options, void *packet);
 
 #endif
