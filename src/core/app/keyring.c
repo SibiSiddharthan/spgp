@@ -13,31 +13,46 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-
-static uint32_t key_filename(void *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fz)
+static void get_key_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
 {
-	byte_t *out = buffer;
+	static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 	byte_t pos = 0;
 
-	for (uint32_t i = 0; i < fz; ++i)
+	for (uint32_t i = 0; i < size; ++i)
 	{
 		byte_t a, b;
 
-		a = ((byte_t *)fingerprint)[i] / 16;
-		b = ((byte_t *)fingerprint)[i] % 16;
+		a = fingerprint[i] / 16;
+		b = fingerprint[i] % 16;
 
-		out[pos++] = hex_upper_table[a];
-		out[pos++] = hex_upper_table[b];
+		buffer[pos++] = hex_table[a];
+		buffer[pos++] = hex_table[b];
 	}
 
-	out[pos++] = '.';
-	out[pos++] = 'k';
-	out[pos++] = 'e';
-	out[pos++] = 'y';
-	out[pos] = '\0';
+	// Append .key
+	buffer[pos++] = '.';
+	buffer[pos++] = 'k';
+	buffer[pos++] = 'e';
+	buffer[pos++] = 'y';
+	buffer[pos] = '\0';
+}
 
-	return pos;
+pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+{
+	char filename[256] = {0};
+
+	get_key_filename(filename, fingerprint, size);
+
+	return spgp_read_pgp_packet(filename, 0);
+}
+
+size_t spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_key_packet *packet)
+{
+	char filename[256] = {0};
+
+	get_key_filename(filename, fingerprint, size);
+
+	return spgp_write_pgp_packet(filename, 0, packet);
 }
 
 uint32_t spgp_import_keys(spgp_command *command)
@@ -66,7 +81,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 	fz = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 
 	// key->header.tag = pgp_packet_tag(PGP_HEADER, PGP_KEYDEF, key->header.body_size);
-	fiz = key_filename(fn, primary_fingerprint, fz);
+	// fiz = get_key_filename(fn, primary_fingerprint, fz);
 	sz = pgp_key_packet_write(key, wb, 65536);
 
 	file_open(&keyfile, command->keys, fn, fiz, FILE_WRITE, 65536);
@@ -95,7 +110,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 			pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 			keyring_packet = pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
 
-			fiz = key_filename(fn, subkey_fingerprint, fz);
+			// fiz = key_filename(fn, subkey_fingerprint, fz);
 			sz = pgp_key_packet_write(key, wb, 65536);
 
 			file_open(&keyfile, command->keys, fn, fiz, FILE_WRITE, 65536);
