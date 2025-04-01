@@ -2267,9 +2267,18 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 	}
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Capabilities: %s\n", buffer);
-
 	pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
-	pos += print_timestamp(1, "Key Expiry Time", packet->key_expiry_time, PTR_OFFSET(str, pos), size - pos);
+
+	if (packet->key_expiry_seconds != 0)
+	{
+		pos +=
+			print_timestamp(1, "Key Expiry Time", packet->key_creation_time + packet->key_expiry_seconds, PTR_OFFSET(str, pos), size - pos);
+	}
+	else
+	{
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Expiry Time: None\n");
+	}
+
 	pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 
 	if (packet->s2k_usage != 0)

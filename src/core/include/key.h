@@ -51,7 +51,7 @@ typedef struct _pgp_key_packet
 	union
 	{
 		uint16_t key_expiry_days;
-		uint32_t key_expiry_time;
+		uint32_t key_expiry_seconds;
 	};
 
 	byte_t public_key_algorithm_id;
@@ -162,11 +162,11 @@ typedef struct _pgp_ed448_key
 
 void *pgp_key_generate(byte_t public_key_algorithm_id);
 
-pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, uint32_t key_expiry_time, byte_t public_key_algorithm_id,
+pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, uint32_t key_expiry_seconds, byte_t public_key_algorithm_id,
 								   byte_t capabilities, void *key);
 void pgp_key_packet_delete(pgp_key_packet *packet);
 
-pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, uint32_t key_expiry_time, byte_t capabilities);
+pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, uint32_t key_expiry_seconds, byte_t capabilities);
 
 pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size, byte_t s2k_usage, pgp_s2k *s2k,
 									   void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id);

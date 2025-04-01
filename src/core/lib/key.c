@@ -1177,9 +1177,8 @@ static uint32_t pgp_key_packet_get_s2k_size(pgp_key_packet *packet)
 	}
 }
 
-static void pgp_key_packet_encode_header(pgp_key_packet *packet)
+static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type type)
 {
-	pgp_packet_type type = pgp_packet_get_type(packet->header.tag);
 	pgp_packet_header_format format = packet->version >= PGP_KEY_V4 ? PGP_HEADER : PGP_LEGACY_HEADER;
 	uint32_t body_size = 0;
 
@@ -2430,7 +2429,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	return pos;
 }
 
-pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, uint32_t key_expiry_time, byte_t public_key_algorithm_id,
+pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, uint32_t key_expiry_seconds, byte_t public_key_algorithm_id,
 								   byte_t capabilities, void *key)
 {
 	pgp_key_packet *packet = NULL;
@@ -2458,7 +2457,7 @@ pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, u
 	packet->version = version;
 	packet->capabilities = capabilities;
 	packet->key_creation_time = key_creation_time;
-	packet->key_expiry_time = key_expiry_time;
+	packet->key_expiry_seconds = key_expiry_seconds;
 
 	packet->key = key;
 	packet->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);
@@ -2466,7 +2465,7 @@ pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, u
 
 	packet->key_checksum = pgp_private_key_material_checksum(packet);
 
-	pgp_key_packet_encode_header(packet);
+	pgp_key_packet_encode_header(packet, PGP_KEYDEF);
 
 	return packet;
 }
@@ -2511,6 +2510,28 @@ void pgp_key_packet_delete(pgp_key_packet *packet)
 	}
 
 	free(packet);
+}
+
+pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, uint32_t key_expiry_seconds, byte_t capabilities)
+{
+	pgp_packet_type packet_type = pgp_packet_get_type(packet->header.tag);
+
+	if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
+	{
+		packet->type = PGP_KEY_TYPE_PUBLIC;
+	}
+
+	if (packet_type == PGP_SECKEY || packet_type == PGP_SECSUBKEY)
+	{
+		packet->type = PGP_KEY_TYPE_SECRET;
+	}
+
+	packet->key_expiry_seconds = key_expiry_seconds;
+	packet->capabilities = capabilities;
+
+	pgp_key_packet_encode_header(packet, PGP_KEYDEF);
+
+	return packet;
 }
 
 pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size, byte_t s2k_usage, pgp_s2k *s2k,
@@ -2609,7 +2630,7 @@ pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase,
 		return NULL;
 	}
 
-	pgp_key_packet_encode_header(packet);
+	pgp_key_packet_encode_header(packet, PGP_KEYDEF);
 
 	return packet;
 }
@@ -2695,7 +2716,7 @@ pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase,
 
 	packet->s2k_usage = 0;
 
-	pgp_key_packet_encode_header(packet);
+	pgp_key_packet_encode_header(packet, PGP_KEYDEF);
 
 	return packet;
 }
@@ -2756,7 +2777,7 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 	// 4-octet number denoting the time that the key will expire.
 	uint32_t key_expiry_time_be = 0;
 
-	LOAD_32(&key_creation_time_be, in + pos);
+	LOAD_32(&key_expiry_time_be, in + pos);
 	pos += 4;
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V2)
@@ -2765,7 +2786,7 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 	}
 	else
 	{
-		packet->key_expiry_time = BSWAP_32(key_expiry_time_be);
+		packet->key_expiry_seconds = BSWAP_32(key_expiry_time_be);
 	}
 
 	// 1-octet public key algorithm.
@@ -2907,20 +2928,20 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	pos += 4;
 
 	// 4-octet number denoting the time that the key will expire.
-	uint32_t key_expiry_time = 0;
+	uint32_t key_expiry_seconds = 0;
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V2)
 	{
-		key_expiry_time = ((uint32_t)packet->key_expiry_days) * 86400;
+		key_expiry_seconds = ((uint32_t)packet->key_expiry_days) * 86400;
 	}
 	else
 	{
-		key_expiry_time = packet->key_expiry_time;
+		key_expiry_seconds = packet->key_expiry_seconds;
 	}
 
-	key_expiry_time = BSWAP_32(key_expiry_time);
+	key_expiry_seconds = BSWAP_32(key_expiry_seconds);
 
-	LOAD_32(out + pos, &key_expiry_time);
+	LOAD_32(out + pos, &key_expiry_seconds);
 	pos += 4;
 
 	// 1-octet public key algorithm.
