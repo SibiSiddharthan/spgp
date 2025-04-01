@@ -215,6 +215,8 @@ pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options)
 	buffer = spgp_read_file(file, options, &size);
 	stream = pgp_stream_read(buffer, size);
 
+	free(buffer);
+
 	if (stream == NULL)
 	{
 		printf("Invalid pgp stream.\n");

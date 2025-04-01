@@ -42,12 +42,6 @@ static uint32_t key_filename(void *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGER
 
 uint32_t spgp_import_keys(spgp_command *command)
 {
-	char buffer[65536] = {0};
-
-	status_t status = 0;
-	size_t size = 0;
-
-	file_t file = {0};
 	file_t keyring = {0};
 	file_t keyfile = {0};
 
@@ -58,26 +52,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 
-	if (command->import.file != NULL)
-	{
-		status = file_open(&file, HANDLE_CWD, command->import.file, strlen(command->import.file), FILE_READ, 65536);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			fprintf(stderr, "File not found: %s\n", command->import.file);
-			return 1;
-		}
-
-		size = file_read(&file, buffer, 65536);
-
-		file_close(&file);
-
-		key_stream = pgp_stream_read(buffer, size);
-	}
-	else
-	{
-		return 2;
-	}
+	key_stream = spgp_read_pgp_packets(command->import.file, SPGP_STD_INPUT);
 
 	char wb[65536] = {0};
 	char fn[128] = {0};
@@ -90,6 +65,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 	fz = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 
+	// key->header.tag = pgp_packet_tag(PGP_HEADER, PGP_KEYDEF, key->header.body_size);
 	fiz = key_filename(fn, primary_fingerprint, fz);
 	sz = pgp_key_packet_write(key, wb, 65536);
 

@@ -14,13 +14,12 @@
 
 uint32_t spgp_list_packets(spgp_command *command)
 {
-	void *buffer = NULL;
-	size_t size = 0;
+	pgp_stream_t *stream = NULL;
 
 	char str[65536] = {0};
 	uint16_t options = 0;
 
-	buffer = spgp_read_file(command->list_packets.file, SPGP_STD_INPUT, &size);
+	stream = spgp_read_pgp_packets(command->list_packets.file, SPGP_STD_INPUT);
 
 	if (command->list_packets.dump == 0)
 	{
@@ -32,12 +31,8 @@ uint32_t spgp_list_packets(spgp_command *command)
 		options |= PGP_PRINT_MPI_MINIMAL;
 	}
 
-	pgp_stream_t *stream = pgp_stream_read(buffer, size);
 	pgp_stream_print(stream, str, 65536, options);
-
 	printf("%s", str);
-
-	free(buffer);
 
 	return 0;
 }
