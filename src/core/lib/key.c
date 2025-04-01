@@ -11,6 +11,7 @@
 #include <key.h>
 #include <s2k.h>
 #include <mpi.h>
+#include <signature.h>
 #include <crypto.h>
 
 #include <hash.h>
@@ -2512,26 +2513,104 @@ void pgp_key_packet_delete(pgp_key_packet *packet)
 	free(packet);
 }
 
-pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, uint32_t key_expiry_seconds, byte_t capabilities)
+pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, pgp_packet_type type)
 {
 	pgp_packet_type packet_type = pgp_packet_get_type(packet->header.tag);
 
-	if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
+	if (type == PGP_KEYDEF)
 	{
-		packet->type = PGP_KEY_TYPE_PUBLIC;
+		if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
+		{
+			packet->type = PGP_KEY_TYPE_PUBLIC;
+		}
+
+		if (packet_type == PGP_SECKEY || packet_type == PGP_SECSUBKEY)
+		{
+			packet->type = PGP_KEY_TYPE_SECRET;
+		}
 	}
 
-	if (packet_type == PGP_SECKEY || packet_type == PGP_SECSUBKEY)
+	// We cannot convert a public key to a secret key
+	if (type == PGP_SECKEY || type == PGP_SECSUBKEY)
 	{
-		packet->type = PGP_KEY_TYPE_SECRET;
+		if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
+		{
+			return NULL;
+		}
 	}
 
-	packet->key_expiry_seconds = key_expiry_seconds;
-	packet->capabilities = capabilities;
-
-	pgp_key_packet_encode_header(packet, PGP_KEYDEF);
+	pgp_key_packet_encode_header(packet, type);
 
 	return packet;
+}
+
+static void pgp_key_packet_process_signature_subpacket(pgp_key_packet *key, void *subpacket)
+{
+	pgp_subpacket_header *header = subpacket;
+	pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+	// Set expiration time
+	if (type == PGP_KEY_EXPIRATION_TIME_SUBPACKET)
+	{
+		pgp_key_expiration_time_subpacket *time_subpacket = subpacket;
+
+		key->key_expiry_seconds = time_subpacket->timestamp;
+	}
+
+	// Set capabilities
+	if (type == PGP_KEY_FLAGS_SUBPACKET)
+	{
+		pgp_key_flags_subpacket *flags_subpacket = subpacket;
+		byte_t count = flags_subpacket->header.body_size;
+
+		for (byte_t j = 0; j < count; ++j)
+		{
+			if (flags_subpacket->flags[j] & PGP_KEY_FLAG_CERTIFY)
+			{
+				key->capabilities |= PGP_KEY_FLAG_CERTIFY;
+			}
+
+			if (flags_subpacket->flags[j] & PGP_KEY_FLAG_SIGN)
+			{
+				key->capabilities |= PGP_KEY_FLAG_SIGN;
+			}
+
+			if (flags_subpacket->flags[j] & PGP_KEY_FLAG_AUTHENTICATION)
+			{
+				key->capabilities |= PGP_KEY_FLAG_AUTHENTICATION;
+			}
+
+			if (flags_subpacket->flags[j] & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
+			{
+				key->capabilities |= PGP_KEY_FLAG_ENCRYPT;
+			}
+		}
+	}
+}
+
+pgp_key_packet *pgp_key_packet_make_definition(pgp_key_packet *key, pgp_signature_packet *sign)
+{
+	// Process hashed subpackets then process the unhashed subpackets.
+	if (sign->hashed_subpackets != NULL)
+	{
+		for (uint16_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		{
+			pgp_key_packet_process_signature_subpacket(key, sign->hashed_subpackets->packets[i]);
+		}
+	}
+
+	if (sign->unhashed_subpackets != NULL)
+	{
+		for (uint16_t i = 0; i < sign->unhashed_subpackets->count; ++i)
+		{
+			pgp_key_packet_process_signature_subpacket(key, sign->unhashed_subpackets->packets[i]);
+		}
+	}
+
+	// Transform it to key definition packet.
+	key = pgp_key_packet_transform(key, PGP_KEYDEF);
+
+	return key;
 }
 
 pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size, byte_t s2k_usage, pgp_s2k *s2k,

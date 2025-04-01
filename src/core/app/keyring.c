@@ -116,6 +116,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 	sign = key_stream->packets[2];
 
 	primary_fingerprint_size = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	key = pgp_key_packet_make_definition(key, sign);
 	spgp_write_key(primary_fingerprint, primary_fingerprint_size, key);
 
 	keyring_packet = pgp_keyring_packet_new(key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
@@ -135,11 +136,24 @@ uint32_t spgp_import_keys(spgp_command *command)
 		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
 		{
 			pgp_key_packet *subkey = key_stream->packets[i];
+			pgp_signature_packet *subsign = NULL;
+
 			byte_t subkey_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 			byte_t subkey_fingerprint_size = 0;
 
 			subkey_fingerprint_size = pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 			keyring_packet = pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
+
+			if ((i + 1) < key_stream->count)
+			{
+				subsign = key_stream->packets[i + 1];
+
+				if (pgp_packet_get_type(subsign->header.tag) == PGP_SIG)
+				{
+					subkey = pgp_key_packet_make_definition(subkey, subsign);
+					i += 1;
+				}
+			}
 
 			spgp_write_key(subkey_fingerprint, subkey_fingerprint_size, subkey);
 		}

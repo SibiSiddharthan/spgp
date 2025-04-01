@@ -14,6 +14,8 @@
 #include <mpi.h>
 #include <algorithms.h>
 
+typedef struct _pgp_signature_packet pgp_signature_packet;
+
 typedef enum _pgp_key_version
 {
 	PGP_KEY_V2 = 2, // NOTE : Version 2 is identical to version 3.
@@ -166,7 +168,8 @@ pgp_key_packet *pgp_key_packet_new(byte_t version, uint32_t key_creation_time, u
 								   byte_t capabilities, void *key);
 void pgp_key_packet_delete(pgp_key_packet *packet);
 
-pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, uint32_t key_expiry_seconds, byte_t capabilities);
+pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, pgp_packet_type type);
+pgp_key_packet *pgp_key_packet_make_definition(pgp_key_packet *key, pgp_signature_packet *sign);
 
 pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size, byte_t s2k_usage, pgp_s2k *s2k,
 									   void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id);
