@@ -117,14 +117,14 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 	byte_t *out = ptr;
 	uint32_t pos = 0;
 
+	// 1 octet id
+	LOAD_8(out + pos, &s2k->id);
+	pos += 1;
+
 	switch (s2k->id)
 	{
 	case PGP_S2K_SIMPLE:
 	{
-		// 1 octet id
-		LOAD_8(out + pos, &s2k->id);
-		pos += 1;
-
 		// 1 octet hash algorithm id
 		LOAD_8(out + pos, &s2k->simple.hash_id);
 		pos += 1;
@@ -133,10 +133,6 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 	}
 	case PGP_S2K_SALTED:
 	{
-		// 1 octet id
-		LOAD_8(out + pos, &s2k->id);
-		pos += 1;
-
 		// 1 octet hash algorithm id
 		LOAD_8(out + pos, &s2k->salted.hash_id);
 		pos += 1;
@@ -149,11 +145,6 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 	}
 	case PGP_S2K_ITERATED:
 	{
-
-		// 1 octet hash algorithm id
-		LOAD_8(out + pos, &s2k->iterated.hash_id);
-		pos += 1;
-
 		// 8 octet salt
 		LOAD_64(out + pos, &s2k->iterated.salt);
 		pos += 8;
@@ -166,9 +157,6 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 	}
 	case PGP_S2K_ARGON2:
 	{
-		// 1 octet id
-		LOAD_8(out + pos, &s2k->id);
-		pos += 1;
 
 		// 16 octet salt
 		memcpy(out + pos, &s2k->argon2.salt, 16);
