@@ -57,36 +57,21 @@ size_t spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t s
 
 uint32_t spgp_import_keys(spgp_command *command)
 {
-	file_t keyring = {0};
-	file_t keyfile = {0};
-
 	pgp_stream_t *key_stream = NULL;
 	pgp_key_packet *key = NULL;
 	pgp_user_id_packet *uid = NULL;
 	pgp_keyring_packet *keyring_packet = NULL;
 
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t primary_fingerprint_size = 0;
 
 	key_stream = spgp_read_pgp_packets(command->import.file, SPGP_STD_INPUT);
-
-	char wb[65536] = {0};
-	char fn[128] = {0};
-	size_t sz = 0;
-	size_t fiz = 0;
-	size_t fz = 0;
 
 	key = key_stream->packets[0];
 	uid = key_stream->packets[1];
 
-	fz = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-
-	// key->header.tag = pgp_packet_tag(PGP_HEADER, PGP_KEYDEF, key->header.body_size);
-	// fiz = get_key_filename(fn, primary_fingerprint, fz);
-	sz = pgp_key_packet_write(key, wb, 65536);
-
-	file_open(&keyfile, command->keys, fn, fiz, FILE_WRITE, 65536);
-	file_write(&keyfile, wb, sz);
-	file_close(&keyfile);
+	primary_fingerprint_size = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	spgp_write_key(primary_fingerprint, primary_fingerprint_size, key);
 
 	keyring_packet = pgp_keyring_packet_new(key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
 
@@ -106,26 +91,22 @@ uint32_t spgp_import_keys(spgp_command *command)
 		{
 			pgp_key_packet *subkey = key_stream->packets[i];
 			byte_t subkey_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+			byte_t subkey_fingerprint_size = 0;
 
-			pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+			subkey_fingerprint_size = pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 			keyring_packet = pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
 
-			// fiz = key_filename(fn, subkey_fingerprint, fz);
-			sz = pgp_key_packet_write(key, wb, 65536);
-
-			file_open(&keyfile, command->keys, fn, fiz, FILE_WRITE, 65536);
-			file_write(&keyfile, wb, sz);
-			file_close(&keyfile);
+			spgp_write_key(subkey_fingerprint, subkey_fingerprint_size, subkey);
 		}
 	}
 
 	// Lock the keyring
 
-	sz = pgp_keyring_packet_write(keyring_packet, wb, 65536);
-
-	file_open(&keyring, command->keyring, NULL, 0, FILE_READ | FILE_WRITE, 65536);
-	file_write(&keyring, wb, sz);
-	file_close(&keyring);
+	// sz = pgp_keyring_packet_write(keyring_packet, wb, 65536);
+	//
+	// file_open(&keyring, command->keyring, NULL, 0, FILE_READ | FILE_WRITE, 65536);
+	// file_write(&keyring, wb, sz);
+	// file_close(&keyring);
 
 	// status = os_lock(command->keyring, 0, (size_t)-1, 0, 1);
 	//
