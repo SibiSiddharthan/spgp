@@ -202,7 +202,9 @@ size_t spgp_write_handle(handle_t handle, void *buffer, size_t size);
 pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options);
 void *spgp_read_pgp_packet(const char *file, uint32_t options);
 
+pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle);
 void *spgp_read_pgp_packet_from_handle(handle_t handle);
+size_t spgp_write_pgp_packets_to_handle(handle_t handle, pgp_stream_t *stream);
 size_t spgp_write_pgp_packet_to_handle(handle_t handle, void *packet);
 
 size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *stream);
@@ -213,5 +215,11 @@ void spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t siz
 
 pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size);
 size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_stream_t *stream);
+
+#define SPGP_KEYRING_REPLACE 0x1
+
+pgp_stream_t *spgp_read_keyring();
+pgp_keyring_packet *spgp_search_keyring();
+uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options);
 
 #endif

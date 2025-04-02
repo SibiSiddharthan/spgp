@@ -226,6 +226,29 @@ void *spgp_read_pgp_packet(const char *file, uint32_t options)
 	return packet;
 }
 
+pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
+{
+	status_t status = 0;
+
+	pgp_stream_t *stream = NULL;
+	void *buffer = NULL;
+	size_t size = 0;
+
+	status = spgp_read_handle(handle, &buffer, &size);
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("Unable to read file.\n");
+		exit(2);
+	}
+
+	stream = pgp_stream_read(buffer, size);
+
+	free(buffer);
+
+	return stream;
+}
+
 void *spgp_read_pgp_packet_from_handle(handle_t handle)
 {
 	status_t status = 0;
@@ -262,7 +285,7 @@ size_t spgp_write_handle(handle_t handle, void *buffer, size_t size)
 
 	status = os_write(handle, buffer, size, &write);
 
-	return write;
+	return status;
 }
 
 size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size)
@@ -314,7 +337,6 @@ size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t 
 size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *stream)
 {
 	void *buffer = NULL;
-	size_t max_size = 0;
 	size_t size = 0;
 	size_t result = 0;
 
@@ -322,7 +344,7 @@ size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *
 	{
 		pgp_packet_header *header = stream->packets[i];
 
-		max_size = MAX(max_size, PGP_PACKET_OCTETS(*header));
+		size += PGP_PACKET_OCTETS(*header);
 	}
 
 	buffer = malloc(size);
@@ -335,9 +357,10 @@ size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *
 
 	for (uint16_t i = 0; i < stream->count; ++i)
 	{
-		size = pgp_packet_write(stream->packets[i], buffer, max_size);
-		result += spgp_write_file(file, options, buffer, size);
+		result += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, result), size - result);
 	}
+
+	result = spgp_write_file(file, options, buffer, size);
 
 	free(buffer);
 
@@ -365,6 +388,48 @@ size_t spgp_write_pgp_packet(const char *file, uint32_t options, void *packet)
 	free(buffer);
 
 	return size;
+}
+
+size_t spgp_write_pgp_packets_to_handle(handle_t handle, pgp_stream_t *stream)
+{
+	status_t status = 0;
+	size_t write = 0;
+
+	void *buffer = NULL;
+	size_t size = 0;
+	size_t result = 0;
+
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		pgp_packet_header *header = stream->packets[i];
+
+		size += PGP_PACKET_OCTETS(*header);
+	}
+
+	buffer = malloc(size);
+
+	if (buffer == NULL)
+	{
+		printf("No memory.\n");
+		exit(1);
+	}
+
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		result += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, result), size - result);
+	}
+
+	status = os_write(handle, buffer, size, &write);
+
+	free(buffer);
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("Unable to write to file.\n");
+		exit(2);
+	}
+
+	return result;
 }
 
 size_t spgp_write_pgp_packet_to_handle(handle_t handle, void *packet)
