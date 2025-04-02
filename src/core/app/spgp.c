@@ -380,6 +380,8 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 		return spgp_verify(command);
 	case SPGP_OPERATION_IMPORT_KEYS:
 		return spgp_import_keys(command);
+	case SPGP_OPERATION_LIST_KEYS:
+		return spgp_list_keys(command);
 	case SPGP_OPERATION_LIST_PACKETS:
 		return spgp_list_packets(command);
 	default:
@@ -506,6 +508,19 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		break;
 
 		// Key Commands
+		case SPGP_OPTION_LIST_KEYS:
+		case SPGP_OPTION_LIST_SECRET_KEYS:
+		{
+			if (command->operation != SPGP_OPERATION_NONE)
+			{
+				break;
+			}
+
+			command->operation = SPGP_OPERATION_LIST_KEYS;
+			command->list_keys.secret = (result->value == SPGP_OPTION_LIST_SECRET_KEYS) ? 1 : 0;
+		}
+		break;
+
 		case SPGP_OPTION_IMPORT_KEYS:
 		{
 			if (command->operation != SPGP_OPERATION_NONE)
@@ -531,6 +546,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 				command->import.file = result->data;
 			}
 		}
+		break;
 
 		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:

@@ -256,26 +256,43 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
 	pgp_keyring_packet_delete(keyring_packet);
-	
-	// Lock the keyring
 
-	// sz = pgp_keyring_packet_write(keyring_packet, wb, 65536);
-	//
-	// file_open(&keyring, command->keyring, NULL, 0, FILE_READ | FILE_WRITE, 65536);
-	// file_write(&keyring, wb, sz);
-	// file_close(&keyring);
+	return 0;
+}
 
-	// status = os_lock(command->keyring, 0, (size_t)-1, 0, 1);
-	//
-	// if (status != OS_STATUS_SUCCESS)
-	//{
-	//	fprintf(stderr, "Unable to lock keyring");
-	//	return 1;
-	//}
-	//
-	// os_unlock(command->keyring, 0, (size_t)-1);
+uint32_t spgp_list_keys(spgp_command *command)
+{
+	pgp_stream_t *stream = NULL;
+	pgp_keyring_packet *keyring = NULL;
+	pgp_key_packet *key = NULL;
 
-	// Assume key stream for now. TODO
+	char buffer[65536] = {0};
+	size_t pos = 0;
+
+	stream = spgp_read_keyring();
+
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		keyring = stream->packets[i];
+
+		// Add primary key
+		key = spgp_read_key(keyring->primary_fingerprint, keyring->fingerprint_size);
+		pos += snprintf(PTR_OFFSET(buffer, pos), 65536, "%d %d %hhx%hhx\n", key->public_key_algorithm_id, key->capabilities,
+						keyring->primary_fingerprint[0], keyring->primary_fingerprint[1]);
+
+		// Add uids
+		snprintf(PTR_OFFSET(buffer, pos), 65536, "%s\n", (char *)keyring->uids);
+
+		// Add subkeys
+		for (uint16_t j = 0; j < keyring->subkey_count; ++j)
+		{
+			key = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, keyring->fingerprint_size * j), keyring->fingerprint_size);
+			pos += snprintf(PTR_OFFSET(buffer, pos), 65536, "%d %d %hhx%hhx\n", key->public_key_algorithm_id, key->capabilities,
+							keyring->primary_fingerprint[0], keyring->primary_fingerprint[1]);
+		}
+	}
+
+	printf("%s", buffer);
 
 	return 0;
 }
