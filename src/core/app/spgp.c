@@ -20,6 +20,8 @@
 #include <string.h>
 #include <time.h>
 
+spgp_command command = {0};
+
 static const char *version = "\
 sgpg 0.1\n\
 Copyright (c) 2024 - 2025 Sibi Siddharthan\n\
@@ -629,7 +631,6 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 int main(int argc, char **argv)
 {
 	uint32_t exit_code = 0;
-	spgp_command command = {0};
 
 	spgp_parse_arguments(&command, argc, argv);
 

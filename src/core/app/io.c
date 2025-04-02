@@ -92,6 +92,30 @@ static status_t spgp_read_pipe_file(handle_t handle, void **buffer, size_t *resu
 	return status;
 }
 
+status_t spgp_read_handle(handle_t handle, void **buffer, size_t *size)
+{
+	status_t status = 0;
+	stat_t stat = {0};
+
+	status = os_stat(handle, NULL, 0, STAT_NO_ACLS, &stat, sizeof(stat_t));
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		return status;
+	}
+
+	if (STAT_IS_REG(stat.st_mode))
+	{
+		status = spgp_read_disk_file(handle, stat.st_size, buffer, size);
+	}
+	else
+	{
+		status = spgp_read_pipe_file(handle, buffer, size);
+	}
+
+	return status;
+}
+
 void *spgp_read_file(const char *file, uint32_t options, size_t *size)
 {
 	status_t status = 0;
@@ -202,6 +226,45 @@ void *spgp_read_pgp_packet(const char *file, uint32_t options)
 	return packet;
 }
 
+void *spgp_read_pgp_packet_from_handle(handle_t handle)
+{
+	status_t status = 0;
+
+	void *buffer = NULL;
+	void *packet = NULL;
+	size_t size = 0;
+
+	status = spgp_read_handle(handle, &buffer, &size);
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("Unable to read file.\n");
+		exit(2);
+	}
+
+	packet = pgp_packet_read(buffer, size);
+
+	free(buffer);
+
+	if (packet == NULL)
+	{
+		printf("Bad packet.\n");
+		exit(1);
+	}
+
+	return packet;
+}
+
+size_t spgp_write_handle(handle_t handle, void *buffer, size_t size)
+{
+	status_t status = 0;
+	size_t write = 0;
+
+	status = os_write(handle, buffer, size, &write);
+
+	return write;
+}
+
 size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size)
 {
 	status_t status = 0;
@@ -302,4 +365,37 @@ size_t spgp_write_pgp_packet(const char *file, uint32_t options, void *packet)
 	free(buffer);
 
 	return size;
+}
+
+size_t spgp_write_pgp_packet_to_handle(handle_t handle, void *packet)
+{
+	status_t status = 0;
+	size_t write = 0;
+
+	void *buffer = NULL;
+
+	pgp_packet_header *header = packet;
+	size_t size = PGP_PACKET_OCTETS(*header);
+
+	buffer = malloc(size);
+
+	if (buffer == NULL)
+	{
+		printf("No memory.\n");
+		exit(1);
+	}
+
+	pgp_packet_write(packet, buffer, size);
+
+	status = os_write(handle, buffer, size, &write);
+
+	free(buffer);
+
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("Unable to write to file.\n");
+		exit(2);
+	}
+
+	return write;
 }

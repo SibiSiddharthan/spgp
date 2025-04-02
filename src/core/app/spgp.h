@@ -170,6 +170,8 @@ typedef struct _spgp_command
 
 } spgp_command;
 
+extern spgp_command command;
+
 uint32_t spgp_generate_key(spgp_key_id id, const char *uid, uint16_t uid_size);
 uint32_t spgp_delete_key(const char *key_id, uint16_t key_id_size, uint32_t options);
 
@@ -194,14 +196,20 @@ uint32_t spgp_delete_keys(spgp_command *command);
 void *spgp_read_file(const char *file, uint32_t options, size_t *size);
 size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size);
 
+status_t spgp_read_handle(handle_t handle, void **buffer, size_t *size);
+size_t spgp_write_handle(handle_t handle, void *buffer, size_t size);
+
 pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options);
 void *spgp_read_pgp_packet(const char *file, uint32_t options);
+
+void *spgp_read_pgp_packet_from_handle(handle_t handle);
+size_t spgp_write_pgp_packet_to_handle(handle_t handle, void *packet);
 
 size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *stream);
 size_t spgp_write_pgp_packet(const char *file, uint32_t options, void *packet);
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size);
-size_t spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_key_packet *packet);
+void spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_key_packet *packet);
 
 pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size);
 size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_stream_t *stream);
