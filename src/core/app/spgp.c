@@ -579,6 +579,11 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		break;
 
 		// Key Selection
+		case SPGP_OPTION_USER_ID:
+		{
+			command->user = result->data;
+		}
+		break;
 		case SPGP_OPTION_KEY_PACKET:
 		{
 			if (command->operation == SPGP_OPERATION_SIGN)

@@ -120,7 +120,7 @@ void spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t siz
 	uint32_t length = 0;
 
 	length = get_key_filename(filename, fingerprint, size);
-	status = os_open(&handle, command.keys, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0);
+	status = os_open(&handle, command.keys, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700);
 
 	if (status != OS_STATUS_SUCCESS)
 	{

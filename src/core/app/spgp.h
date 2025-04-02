@@ -122,6 +122,7 @@ typedef struct _spgp_command
 
 	void *homedir;
 	void *output;
+	void *user;
 	void *passhprase;
 
 	byte_t armor;
