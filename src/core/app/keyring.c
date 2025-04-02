@@ -133,6 +133,66 @@ void spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t siz
 	os_close(handle);
 }
 
+pgp_stream_t *spgp_read_keyring()
+{
+	return spgp_read_pgp_packets_from_handle(command.keyring);
+}
+
+uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
+{
+	pgp_stream_t *stream = NULL;
+	pgp_keyring_packet *packet = NULL;
+	byte_t matching_keyring_found = 0;
+	uint16_t keyring_index = 0;
+
+	stream = spgp_read_pgp_packets_from_handle(command.keyring);
+
+	if (stream != NULL)
+	{
+		for (uint16_t i = 0; i < stream->count; ++i)
+		{
+			packet = stream->packets[i];
+
+			if (packet->key_version == key->key_version &&
+				memcmp(packet->primary_fingerprint, key->primary_fingerprint, key->fingerprint_size) == 0)
+			{
+				matching_keyring_found = 1;
+				keyring_index = i;
+			}
+		}
+	}
+
+	if (matching_keyring_found)
+	{
+		if (options & SPGP_KEYRING_REPLACE)
+		{
+			// Update the keyring
+			pgp_keyring_packet_delete(stream->packets[keyring_index]);
+			stream->packets[keyring_index] = key;
+		}
+		else
+		{
+			// free(stream);
+			return 1;
+		}
+	}
+	else
+	{
+		stream = pgp_stream_push_packet(stream, key);
+
+		if (stream == NULL)
+		{
+			printf("Unable to add keyring.\n");
+			exit(1);
+		}
+	}
+
+	os_truncate(command.keyring, NULL, 0, 0);
+	spgp_write_pgp_packets_to_handle(command.keyring, stream);
+
+	return 0;
+}
+
 uint32_t spgp_import_keys(spgp_command *command)
 {
 	pgp_stream_t *key_stream = NULL;
@@ -194,6 +254,9 @@ uint32_t spgp_import_keys(spgp_command *command)
 		}
 	}
 
+	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
+	pgp_keyring_packet_delete(keyring_packet);
+	
 	// Lock the keyring
 
 	// sz = pgp_keyring_packet_write(keyring_packet, wb, 65536);

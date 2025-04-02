@@ -19,7 +19,7 @@ pgp_stream_t *pgp_stream_new(uint16_t capacity)
 	void *packets = NULL;
 
 	// Round to multiple of 4
-	capacity = ROUND_UP(capacity, 4);
+	capacity = ROUND_UP(MAX(capacity, 1), 4);
 
 	stream = malloc(sizeof(pgp_stream_t));
 	packets = malloc(sizeof(void *) * capacity);
