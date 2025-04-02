@@ -145,6 +145,10 @@ uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr)
 	}
 	case PGP_S2K_ITERATED:
 	{
+		// 1 octet hash algorithm id
+		LOAD_8(out + pos, &s2k->iterated.hash_id);
+		pos += 1;
+
 		// 8 octet salt
 		LOAD_64(out + pos, &s2k->iterated.salt);
 		pos += 8;
