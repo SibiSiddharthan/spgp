@@ -1193,15 +1193,22 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 		// A 4-octet number denoting the time that the key will expire.
 		// A 4-octet scalar count for the public key material
 		// One or more MPIs comprising the public key.
+
+		// If secret key the below fields as well
 		// A 1-octet of S2K usage
 		// A 1-octet scalar count of s2k fields if above field is non zero
 		// s2k fields
 		// A 4-octet scalar count of key data (inclusive of tag)
 		// (Plaintext or encrypted) Private key data.
 
-		body_size = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 4 + 4 + packet->public_key_data_octets;
-		body_size += (packet->encrypted_octets != 0 ? packet->encrypted_octets : packet->private_key_data_octets);
-		body_size += pgp_key_packet_get_s2k_size(packet);
+		body_size = 1 + 1 + 1 + 1 + 4 + 4 + 4 + packet->public_key_data_octets;
+
+		if (packet->type == PGP_KEY_TYPE_SECRET)
+		{
+			body_size += 1 + 4;
+			body_size += (packet->encrypted != NULL ? packet->encrypted_octets : packet->private_key_data_octets);
+			body_size += (packet->s2k_usage != 0) ? (1 + pgp_key_packet_get_s2k_size(packet)) : 0;
+		}
 
 		packet->header = pgp_encode_packet_header(format, type, body_size);
 	}
@@ -1239,7 +1246,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 
 		body_size = 1 + 4 + 1 + 1 + packet->public_key_data_octets;
 		body_size += (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3) ? 2 : 0;
-		body_size += (packet->encrypted_octets != 0 ? packet->encrypted_octets : packet->private_key_data_octets);
+		body_size += (packet->encrypted != NULL ? packet->encrypted_octets : packet->private_key_data_octets);
 
 		// Checksum
 		if (packet->s2k_usage == 0)
@@ -1261,7 +1268,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 			}
 		}
 
-		body_size += pgp_key_packet_get_s2k_size(packet);
+		body_size += (packet->s2k_usage != 0) ? (1 + pgp_key_packet_get_s2k_size(packet)) : 0;
 
 		packet->header = pgp_encode_packet_header(format, type, body_size);
 	}
@@ -2719,7 +2726,12 @@ pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase,
 	uint32_t result = 0;
 	byte_t tag = pgp_packet_get_type(packet->header.tag);
 
-	if (tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
+	if (tag != PGP_KEYDEF && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
+	{
+		return NULL;
+	}
+
+	if (tag == PGP_KEYDEF && packet->type != PGP_KEY_TYPE_SECRET)
 	{
 		return NULL;
 	}
