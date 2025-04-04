@@ -265,11 +265,11 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 {
 	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
-	byte_t *pdata = NULL;
-
 	byte_t zero_iv[16] = {0};
-	byte_t prefix[32] = {0};
-	byte_t mdc[SHA1_HASH_SIZE] = {0};
+	byte_t prefix[18] = {0};
+	byte_t trailer[2] = {0xD3, 0x14};
+
+	uint64_t pos = 0;
 
 	packet->data_size = block_size + 2 + data_size + 2 + SHA1_HASH_SIZE;
 	packet->data = malloc(packet->data_size);
@@ -279,32 +279,30 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 		return NULL;
 	}
 
-	pdata = packet->data;
-
 	// Generate random prefix of block size
 	pgp_rand(prefix, block_size);
 
-	// Copy the prefix
-	memcpy(packet->data, prefix, block_size);
-
 	// Copy last 2 octets
-	pdata[block_size] = prefix[block_size - 2];
-	pdata[block_size + 1] = prefix[block_size - 1];
+	prefix[block_size] = prefix[block_size - 2];
+	prefix[block_size + 1] = prefix[block_size - 1];
 
-	// Copy the remaining plaintext
-	memcpy(PTR_OFFSET(packet->data, block_size + 2), data, data_size);
+	// Copy the prefix
+	memcpy(PTR_OFFSET(packet->data, pos), prefix, block_size + 2);
+	pos += block_size + 2;
 
-	// Append the trailer
-	pdata[block_size + 2 + data_size] = 0xD3;
-	pdata[block_size + 2 + data_size + 1] = 0x14;
+	// Copy the plaintext
+	memcpy(PTR_OFFSET(packet->data, pos), data, data_size);
+	pos += data_size;
 
-	// Hash first
-	sha1_hash(packet->data, packet->data_size, mdc);
+	// Copy the trailer
+	memcpy(PTR_OFFSET(packet->data, pos), trailer, 2);
+	pos += 2;
 
-	// Copy the hash to the end
-	memcpy(PTR_OFFSET(packet->data, packet->data_size - SHA1_HASH_SIZE), mdc, SHA1_HASH_SIZE);
+	// Hash prefix | plaintext | trailer
+	sha1_hash(packet->data, pos, PTR_OFFSET(packet->data, pos));
+	pos += SHA1_HASH_SIZE;
 
-	// Encrypt
+	// Encrypt the plaintext and mdc
 	pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
 					packet->data, packet->data_size);
 
@@ -320,7 +318,7 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 	size_t plaintext_size = packet->data_size - (block_size + 4 + SHA1_HASH_SIZE);
 
-	byte_t *pdata = NULL;
+	byte_t prefix[18] = {0};
 	void *temp = NULL;
 
 	byte_t zero_iv[16] = {0};
@@ -331,7 +329,6 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 		return 0;
 	}
 
-	// We really don't have to allocate memory here. This is a legacy packet, so no issues.
 	temp = malloc(packet->data_size);
 
 	if (temp == NULL)
@@ -339,23 +336,25 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 		return 0;
 	}
 
+	// Decrypt everything
 	pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
 					temp, packet->data_size);
 
-	// Do checking
-	pdata = temp;
+	// Copy the prefix
+	memcpy(prefix, temp, block_size + 2);
 
-	// Quick
-	if (pdata[block_size] != pdata[block_size - 2] || pdata[block_size + 1] != pdata[block_size - 1])
+	// Check whether the session key is correct
+	if (prefix[block_size] != prefix[block_size - 2] || prefix[block_size + 1] != prefix[block_size - 1])
 	{
 		free(temp);
 		return 0;
 	}
 
-	// Hash
+	// Calculate the hash
 	sha1_hash(temp, packet->data_size - SHA1_HASH_SIZE, mdc);
 
-	if (memcmp(mdc, PTR_OFFSET(packet->data, packet->data_size - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
+	// Compare the hash
+	if (memcmp(mdc, PTR_OFFSET(temp, packet->data_size - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
 	{
 		free(temp);
 		return 0;
