@@ -920,13 +920,11 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 
 static void pgp_user_attribute_encode_header(pgp_user_attribute_packet *packet)
 {
-	pgp_packet_header_format header_format = PGP_PACKET_HEADER_FORMAT(packet->header.tag);
-
 	// N octets of subpackets
-	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, packet->subpacket_octets);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_UAT, packet->subpacket_octets);
 }
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_new(byte_t header_format)
+pgp_user_attribute_packet *pgp_user_attribute_packet_new(void)
 {
 	pgp_user_attribute_packet *packet = NULL;
 
@@ -938,8 +936,6 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_new(byte_t header_format)
 	}
 
 	memset(packet, 0, sizeof(pgp_user_attribute_packet));
-
-	packet->header = pgp_encode_packet_header(header_format, PGP_UAT, 0);
 
 	return packet;
 }
@@ -1188,7 +1184,7 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 	return pos;
 }
 
-pgp_padding_packet *pgp_padding_packet_new(byte_t header_format, void *data, size_t size)
+pgp_padding_packet *pgp_padding_packet_new(void *data, size_t size)
 {
 	pgp_padding_packet *packet = NULL;
 	size_t required_size = sizeof(pgp_packet_header) + size;
@@ -1203,7 +1199,7 @@ pgp_padding_packet *pgp_padding_packet_new(byte_t header_format, void *data, siz
 	memset(packet, 0, required_size);
 
 	// N octets of padding data
-	packet->header = pgp_encode_packet_header(header_format, PGP_PADDING, size);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_PADDING, size);
 	memcpy(packet->data, data, size);
 
 	return packet;
@@ -1267,7 +1263,7 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-pgp_mdc_packet *pgp_mdc_packet_new(byte_t header_format)
+pgp_mdc_packet *pgp_mdc_packet_new(void)
 {
 	pgp_mdc_packet *packet = malloc(sizeof(pgp_mdc_packet));
 
@@ -1278,7 +1274,7 @@ pgp_mdc_packet *pgp_mdc_packet_new(byte_t header_format)
 
 	// 20 octets of SHA-1 hash
 	memset(packet, 0, sizeof(pgp_mdc_packet));
-	packet->header = pgp_encode_packet_header(header_format, PGP_MDC, 20);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_MDC, 20);
 
 	return packet;
 }
