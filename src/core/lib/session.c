@@ -698,7 +698,7 @@ static void pgp_skesk_packet_encode_header(pgp_skesk_packet *packet)
 		// A S2K specifier
 		// (Optional) Encrypted Session key
 
-		body_size = 1 + 1 + 1 + pgp_s2k_octets(&packet->s2k) + packet->session_key_size;
+		body_size = 1 + 1 + pgp_s2k_octets(&packet->s2k) + packet->session_key_size;
 		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, body_size);
 	}
 }
@@ -802,7 +802,7 @@ static pgp_skesk_packet *pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packe
 
 	byte_t iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
-	if (packet->session_key_size == 0)
+	if (session_key == NULL || session_key_size == 0)
 	{
 		// No crypto operations to do here.
 		pgp_skesk_packet_encode_header(packet);
@@ -818,10 +818,9 @@ static pgp_skesk_packet *pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packe
 		pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, key, session_key_size, zero_iv, iv_size, buffer, session_key_size + 1,
 						packet->session_key, session_key_size + 1);
 
+		packet->session_key_size = session_key_size + 1;
+
 		pgp_skesk_packet_encode_header(packet);
-		// TODO
-		// packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 1 + 1 + 1 + session_key_size +
-		// pgp_s2k_size(&packet->s2k));
 	}
 
 	return packet;
@@ -975,7 +974,7 @@ pgp_skesk_packet *pgp_skesk_packet_new(byte_t version, byte_t symmetric_key_algo
 		return NULL;
 	}
 
-	if (packet->version == PGP_SKESK_V6 || packet->version == PGP_SKESK_V5)
+	if (version == PGP_SKESK_V6 || version == PGP_SKESK_V5)
 	{
 		// Unsupported ciphers for AEAD.
 		if (symmetric_key_algorithm_id == PGP_PLAINTEXT || symmetric_key_algorithm_id == PGP_BLOWFISH ||
@@ -1002,7 +1001,7 @@ pgp_skesk_packet *pgp_skesk_packet_new(byte_t version, byte_t symmetric_key_algo
 	packet->version = version;
 	packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
 
-	if (packet->version == PGP_SKESK_V6 || packet->version == PGP_SKESK_V5)
+	if (version == PGP_SKESK_V6 || version == PGP_SKESK_V5)
 	{
 		packet->aead_algorithm_id = aead_algorithm_id;
 		packet->tag_size = PGP_AEAD_TAG_SIZE;
@@ -1030,16 +1029,18 @@ pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet,
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
-	if (key_size != session_key_size)
-	{
-		return NULL;
-	}
-
 	switch (packet->version)
 	{
 	case PGP_SKESK_V6:
 	case PGP_SKESK_V5:
+	{
+		if (key_size != session_key_size)
+		{
+			return NULL;
+		}
+
 		return pgp_skesk_packet_session_key_v5_v6_encrypt(packet, password, password_size, session_key, session_key_size, iv, iv_size);
+	}
 	case PGP_SKESK_V4:
 		return pgp_skesk_packet_session_key_v4_encrypt(packet, password, password_size, session_key, session_key_size);
 	default:
