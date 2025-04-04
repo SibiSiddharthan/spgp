@@ -147,6 +147,17 @@ typedef struct _spgp_command
 
 		struct
 		{
+			byte_t symmetric;
+			char *file;
+		} encrypt;
+
+		struct
+		{
+			char *file;
+		} decrypt;
+
+		struct
+		{
 			char *file;
 		} import;
 
@@ -188,6 +199,9 @@ uint32_t spgp_search_key(const char *key_id, uint16_t key_id_size, void *buffer,
 
 uint32_t spgp_sign(spgp_command *command);
 uint32_t spgp_verify(spgp_command *command);
+
+uint32_t spgp_encrypt(spgp_command *command);
+uint32_t spgp_decrypt(spgp_command *command);
 
 uint32_t spgp_list_keys(spgp_command *command);
 uint32_t spgp_list_packets(spgp_command *command);
