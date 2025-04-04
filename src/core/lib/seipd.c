@@ -188,7 +188,7 @@ static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
 		// N octets of symmetrically encryrpted data
 
 		body_size = 1 + packet->data_size;
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SEIPD, body_size);
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, body_size);
 	}
 }
 
@@ -669,6 +669,7 @@ pgp_seipd_packet *pgp_seipd_packet_read(void *data, size_t size)
 
 	// 1 octet version
 	LOAD_8(&packet->version, in + pos);
+	pos += 1;
 
 	if (packet->version == PGP_SEIPD_V2)
 	{
