@@ -1061,9 +1061,7 @@ static uint32_t pgp_ecdh_kw_encrypt(pgp_symmetric_key_algorithms algorithm, void
 		return 0;
 	}
 
-	cipher_key_wrap_encrypt(cctx, in, in_size, out, out_size);
-
-	return in_size + 8;
+	return cipher_key_wrap_encrypt(cctx, in, in_size, out, out_size);
 }
 
 static uint32_t pgp_ecdh_kw_decrypt(pgp_symmetric_key_algorithms algorithm, void *key, uint32_t key_size, void *in, uint32_t in_size,
@@ -1079,10 +1077,7 @@ static uint32_t pgp_ecdh_kw_decrypt(pgp_symmetric_key_algorithms algorithm, void
 		return 0;
 	}
 
-	cipher_key_wrap_decrypt(cctx, in, in_size, out, out_size);
-
-	return in_size + 8;
-	return in_size - 8;
+	return cipher_key_wrap_decrypt(cctx, in, in_size, out, out_size);
 }
 
 pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_algorithm_id, byte_t *fingerprint, byte_t fingerprint_size,
