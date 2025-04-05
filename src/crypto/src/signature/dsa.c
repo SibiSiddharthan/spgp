@@ -553,12 +553,6 @@ dsa_signature *dsa_sign(dsa_key *key, dsa_signature *dsign, void *salt, size_t s
 		return NULL;
 	}
 
-	dsign->r.size = CEIL_DIV(key->q->bits, 8);
-	dsign->s.size = CEIL_DIV(key->q->bits, 8);
-
-	dsign->r.sign = PTR_OFFSET(dsign, sizeof(dsa_signature));
-	dsign->s.sign = PTR_OFFSET(dsign, sizeof(dsa_signature) + dsign->r.size);
-
 	bignum_ctx_start(key->bctx, ctx_size);
 
 	k = bignum_ctx_allocate_bignum(key->bctx, key->q->bits);

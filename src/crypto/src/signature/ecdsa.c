@@ -61,12 +61,6 @@ ecdsa_signature *ecdsa_sign(ec_key *key, ecdsa_signature *ecsign, void *salt, si
 		return NULL;
 	}
 
-	ecsign->r.size = CEIL_DIV(key->eg->bits, 8);
-	ecsign->s.size = CEIL_DIV(key->eg->bits, 8);
-
-	ecsign->r.sign = PTR_OFFSET(ecsign, sizeof(ecdsa_signature));
-	ecsign->s.sign = PTR_OFFSET(ecsign, sizeof(ecdsa_signature) + ecsign->r.size);
-
 	bignum_ctx_start(bctx, ctx_size);
 
 	k = bignum_ctx_allocate_bignum(bctx, key->eg->bits);
