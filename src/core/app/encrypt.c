@@ -107,8 +107,8 @@ uint32_t spgp_encrypt(spgp_command *command)
 		pgp_pkesk_packet *session = NULL;
 		pgp_key_packet *key = NULL;
 
-		session = pgp_pkesk_packet_new(PGP_PKESK_V3, PGP_RSA_ENCRYPT_ONLY, PGP_AES_128);
 		key = spgp_search_key_from_user(command->user);
+		session = pgp_pkesk_packet_new(PGP_PKESK_V3, key->public_key_algorithm_id, PGP_AES_128);
 
 		session_key_size = pgp_rand(session_key, 16);
 		session = pgp_pkesk_packet_session_key_encrypt(session, key, session_key, session_key_size, 0);

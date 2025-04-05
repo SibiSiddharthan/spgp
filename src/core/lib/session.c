@@ -98,7 +98,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 			return 0;
 		}
 
-		sk = malloc(sizeof(pgp_rsa_kex) + mpi_point_size);
+		sk = malloc(sizeof(pgp_ecdh_kex) + mpi_point_size);
 
 		if (sk == NULL)
 		{
@@ -476,16 +476,29 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	{
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		packet->encrypted_session_key = pgp_rsa_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
-		packet->encrypted_session_key_size = 514;
-		break;
+	{
+		pgp_rsa_kex *kex = pgp_rsa_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+		packet->encrypted_session_key = kex;
+		packet->encrypted_session_key_size = mpi_octets(kex->c->bits);
+	}
+	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 		// packet->encrypted_session_key =
 		//	pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
-		packet->encrypted_session_key = pgp_ecdh_kex_encrypt(key->key, symmetric_key_algorithm_id, NULL, 0, session_key, session_key_size);
-		break;
+	{
+		pgp_ecdh_kex *kex = NULL;
+		byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+		byte_t fingerprint_size = 0;
+
+		fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+		kex = pgp_ecdh_kex_encrypt(key->key, symmetric_key_algorithm_id, fingerprint, fingerprint_size, session_key, session_key_size);
+
+		packet->encrypted_session_key = kex;
+		packet->encrypted_session_key_size = mpi_octets(kex->ephemeral_point->bits) + 1 + kex->encoded_session_key_size;
+	}
+	break;
 	case PGP_X25519:
 		packet->encrypted_session_key = pgp_x25519_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
@@ -547,8 +560,12 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 		result = pgp_rsa_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
-		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, NULL, 0, session_key,
-									  session_key_size);
+		byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+		byte_t fingerprint_size = 0;
+
+		fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, &symmetric_key_algorithm_id, fingerprint, fingerprint_size,
+									  session_key, session_key_size);
 		break;
 	case PGP_X25519:
 		result =

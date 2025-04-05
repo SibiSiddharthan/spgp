@@ -1099,7 +1099,7 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 
 	byte_t encoded_session_key[64] = {0};
 	byte_t wrapped_session_key[64] = {0};
-	byte_t encoded_session_key_size = ROUND_UP(session_key_size, 8);
+	byte_t encoded_session_key_size = ROUND_UP(session_key_size + 2, 8);
 	byte_t wrapped_session_key_size = encoded_session_key_size + 8;
 
 	byte_t xcoord[128] = {0};
@@ -1153,7 +1153,7 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 		session_key_checksum += ps[i];
 	}
 
-	encoded_session_key[pos++] = (session_key_checksum >> 16) & 0xFF;
+	encoded_session_key[pos++] = (session_key_checksum >> 8) & 0xFF;
 	encoded_session_key[pos++] = session_key_checksum & 0xFF;
 
 	memset(encoded_session_key + pos, encoded_session_key_size - pos, encoded_session_key_size - pos);
