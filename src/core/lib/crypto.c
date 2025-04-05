@@ -892,7 +892,7 @@ pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algo
 	}
 
 	key->n = mpi_to_bignum(pgp_key->n);
-	key->d = mpi_to_bignum(pgp_key->e);
+	key->e = mpi_to_bignum(pgp_key->e);
 
 	if (symmetric_key_algorithm_id != 0)
 	{
