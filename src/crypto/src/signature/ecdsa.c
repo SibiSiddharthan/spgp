@@ -217,7 +217,7 @@ uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t h
 	r2.x = x2;
 	r2.y = y2;
 
-	result = ec_point_multiply(key->eg, &r1, key->q, v);
+	result = ec_point_multiply(key->eg, &r2, key->q, v);
 
 	if (result == NULL)
 	{

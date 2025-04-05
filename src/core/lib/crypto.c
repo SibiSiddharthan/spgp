@@ -1782,7 +1782,6 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key
 	ec_key *key = NULL;
 	ecdsa_signature sign = {0};
 
-	bignum_t *d = NULL;
 	ec_point *q = NULL;
 
 	curve_id id = pgp_ec_curve_to_curve_id(pgp_key->curve);
@@ -1799,10 +1798,8 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key
 		return 0;
 	}
 
-	d = mpi_to_bignum(pgp_key->x);
 	q = mpi_to_ec_point(group, pgp_key->point);
-
-	key = ec_key_new(group, d, q);
+	key = ec_key_new(group, NULL, q);
 
 	if (key == NULL)
 	{
