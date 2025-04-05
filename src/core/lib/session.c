@@ -522,16 +522,31 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 	uint32_t result = 0;
 
 	byte_t symmetric_key_algorithm_id = 0;
-	byte_t key_fingerprint_size = 0;
-	byte_t key_fingerprint[32] = {0};
 
-	// Check fingerprint
-	key_fingerprint_size = pgp_key_fingerprint(key, key_fingerprint, 32);
-
-	// Incorrect key for decryption.
-	if (memcmp(packet->key_fingerprint, key_fingerprint, key_fingerprint_size) != 0)
+	// Check whether key is corret
+	if (packet->version == PGP_PKESK_V6)
 	{
-		return 0;
+		byte_t key_fingerprint_size = 0;
+		byte_t key_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+
+		key_fingerprint_size = pgp_key_fingerprint(key, key_fingerprint, 32);
+
+		if (memcmp(packet->key_fingerprint, key_fingerprint, key_fingerprint_size) != 0)
+		{
+			return 0;
+		}
+	}
+
+	if (packet->version == PGP_PKESK_V3)
+	{
+		byte_t key_id[PGP_KEY_ID_SIZE] = {0};
+
+		pgp_key_id(key, key_id);
+
+		if (memcmp(packet->key_id, key_id, PGP_KEY_ID_SIZE) != 0)
+		{
+			return 0;
+		}
 	}
 
 	// Decrypt
@@ -561,13 +576,10 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 		return 0;
 	}
 
-	// Check symmetric algorithm ids
+	// Assign the symmetric algorithm
 	if (packet->version == PGP_PKESK_V3)
 	{
-		if (packet->symmetric_key_algorithm_id != symmetric_key_algorithm_id)
-		{
-			return 0;
-		}
+		packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
 	}
 
 	return result;

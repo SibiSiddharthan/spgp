@@ -16,6 +16,42 @@
 #include <stdlib.h>
 #include <string.h>
 
+// clang-format off
+static const byte_t hex_to_nibble_table[256] = 
+{
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255, 255, 255, 255, 255,                       // 0 - 9
+	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // A - F
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // a - f
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+};
+// clang-format on
+
+static pgp_key_packet *spgp_search_key_from_user(char *user)
+{
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t pos = 0;
+
+	for (byte_t i = 0; user[i] != '\0';)
+	{
+		fingerprint[pos++] = (hex_to_nibble_table[(byte_t)user[i]] * 16) + hex_to_nibble_table[(byte_t)user[i + 1]];
+		i += 2;
+	}
+
+	return spgp_read_key(fingerprint, pos);
+}
+
 uint32_t spgp_encrypt(spgp_command *command)
 {
 	pgp_stream_t *stream = NULL;
@@ -78,7 +114,8 @@ uint32_t spgp_encrypt(spgp_command *command)
 uint32_t spgp_decrypt(spgp_command *command)
 {
 	pgp_stream_t *stream = NULL;
-	pgp_skesk_packet *session = NULL;
+	pgp_packet_header *header = NULL;
+
 	pgp_seipd_packet *seipd = NULL;
 	pgp_literal_packet *literal = NULL;
 
@@ -96,24 +133,45 @@ uint32_t spgp_decrypt(spgp_command *command)
 		exit(1);
 	}
 
-	session = stream->packets[0];
+	header = stream->packets[0];
 	seipd = stream->packets[1];
 
-	if (command->passhprase == NULL)
+	if (pgp_packet_get_type(header->tag) == PGP_PKESK)
 	{
-		printf("Passphrase required.\n");
-		exit(1);
+		pgp_pkesk_packet *session = stream->packets[0];
+		pgp_key_packet *key = spgp_search_key_from_user(command->user);
+
+		if (command->passhprase == NULL)
+		{
+			printf("Passphrase required.\n");
+			exit(1);
+		}
+
+		key = pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
+
+		session_key_size = pgp_pkesk_packet_session_key_decrypt(session, key, session_key, 64);
+		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 	}
 
-	session_key_size = pgp_skesk_packet_session_key_decrypt(session, command->passhprase, strlen(command->passhprase), session_key, 64);
+	if (pgp_packet_get_type(header->tag) == PGP_SKESK)
+	{
+		pgp_skesk_packet *session = stream->packets[0];
+
+		if (command->passhprase == NULL)
+		{
+			printf("Passphrase required.\n");
+			exit(1);
+		}
+
+		session_key_size = pgp_skesk_packet_session_key_decrypt(session, command->passhprase, strlen(command->passhprase), session_key, 64);
+		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
+	}
 
 	if (session_key_size == 0)
 	{
-		printf("Passphrase required.\n");
+		printf("Invalid encrypted message.\n");
 		exit(1);
 	}
-
-	seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 
 	data_size = seipd->data_size;
 	buffer = malloc(data_size);
