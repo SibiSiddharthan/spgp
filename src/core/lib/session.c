@@ -445,10 +445,10 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	byte_t symmetric_key_algorithm_id = packet->version == PGP_PKESK_V6 ? 0 : packet->symmetric_key_algorithm_id;
 
 	// Check the algorithms
-	if (packet->public_key_algorithm_id != key->public_key_algorithm_id)
-	{
-		return NULL;
-	}
+	// if (packet->public_key_algorithm_id != key->public_key_algorithm_id)
+	//{
+	//	return NULL;
+	//}
 
 	if (session_key_size != key_size)
 	{
@@ -459,26 +459,15 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 
 	if (anonymous == 0)
 	{
+		packet->key_octet_count = 1;
+
 		if (packet->version == PGP_PKESK_V6)
 		{
-			packet->key_octet_count = 1;
-
-			switch (key->version)
-			{
-			case PGP_KEY_V6:
-				packet->key_octet_count += PGP_KEY_V6_FINGERPRINT_SIZE;
-				pgp_key_fingerprint(key, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
-				break;
-			case PGP_KEY_V4:
-				packet->key_octet_count += PGP_KEY_V4_FINGERPRINT_SIZE;
-				pgp_key_fingerprint(key, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
-			default:
-				return NULL;
-			}
+			packet->key_octet_count += pgp_key_fingerprint(key, packet->key_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 		}
 		else
 		{
-			pgp_key_id(key, packet->key_id);
+			packet->key_octet_count += pgp_key_id(key, packet->key_id);
 		}
 	}
 
@@ -488,6 +477,7 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 		packet->encrypted_session_key = pgp_rsa_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+		packet->encrypted_session_key_size = 514;
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 		// packet->encrypted_session_key =

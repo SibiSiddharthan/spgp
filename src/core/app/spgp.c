@@ -512,7 +512,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 				// Consume the option
 				argparse(actx, 0);
 
-				command->decrypt.file = result->data;
+				command->encrypt.file = result->data;
 			}
 		}
 		break;

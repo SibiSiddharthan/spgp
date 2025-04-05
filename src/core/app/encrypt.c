@@ -8,6 +8,7 @@
 #include <spgp.h>
 #include <packet.h>
 #include <key.h>
+#include <crypto.h>
 #include <session.h>
 #include <seipd.h>
 #include <signature.h>
@@ -55,12 +56,8 @@ static pgp_key_packet *spgp_search_key_from_user(char *user)
 uint32_t spgp_encrypt(spgp_command *command)
 {
 	pgp_stream_t *stream = NULL;
-	pgp_skesk_packet *session = NULL;
 	pgp_seipd_packet *seipd = NULL;
 	pgp_literal_packet *literal = NULL;
-
-	pgp_s2k s2k = {.id = PGP_S2K_ITERATED,
-				   .iterated = {.hash_id = PGP_SHA1, .count = 200, .salt = {0x06, 0xa1, 0x02, 0x2a, 0x22, 0x51, 0xc1, 0x6a}}};
 
 	byte_t session_key[64] = {0};
 	byte_t session_key_size = 0;
@@ -70,19 +67,13 @@ uint32_t spgp_encrypt(spgp_command *command)
 
 	void *lit_buffer = NULL;
 
-	buffer = spgp_read_file(command->decrypt.file, SPGP_STD_INPUT, &size);
-
-	if (command->passhprase == NULL)
-	{
-		printf("Passphrase required.\n");
-		exit(1);
-	}
+	buffer = spgp_read_file(command->encrypt.file, SPGP_STD_INPUT, &size);
 
 	literal = pgp_literal_packet_new(PGP_HEADER);
 
-	if (command->decrypt.file != NULL)
+	if (command->encrypt.file != NULL)
 	{
-		literal = pgp_literal_packet_set_filename(literal, command->decrypt.file, strlen(command->decrypt.file));
+		literal = pgp_literal_packet_set_filename(literal, command->encrypt.file, strlen(command->encrypt.file));
 	}
 
 	literal = pgp_literal_packet_set_data(literal, PGP_LITERAL_DATA_BINARY, 0, buffer, size);
@@ -90,17 +81,44 @@ uint32_t spgp_encrypt(spgp_command *command)
 	lit_buffer = malloc(PGP_PACKET_OCTETS(literal->header));
 	pgp_literal_packet_write(literal, lit_buffer, PGP_PACKET_OCTETS(literal->header));
 
-	session = pgp_skesk_packet_new(PGP_SKESK_V4, PGP_AES_128, 0, &s2k);
-	session = pgp_skesk_packet_session_key_encrypt(session, command->passhprase, strlen(command->passhprase), NULL, 0, NULL, 0);
+	stream = pgp_stream_new(2);
 
-	session_key_size = pgp_s2k_hash(&s2k, command->passhprase, strlen(command->passhprase), session_key, 16);
+	if (command->encrypt.symmetric)
+	{
+		pgp_skesk_packet *session = NULL;
+		pgp_s2k s2k = {.id = PGP_S2K_ITERATED,
+					   .iterated = {.hash_id = PGP_SHA1, .count = 200, .salt = {0x06, 0xa1, 0x02, 0x2a, 0x22, 0x51, 0xc1, 0x6a}}};
+
+		if (command->passhprase == NULL)
+		{
+			printf("Passphrase required.\n");
+			exit(1);
+		}
+
+		session = pgp_skesk_packet_new(PGP_SKESK_V4, PGP_AES_128, 0, &s2k);
+		session = pgp_skesk_packet_session_key_encrypt(session, command->passhprase, strlen(command->passhprase), NULL, 0, NULL, 0);
+
+		session_key_size = pgp_s2k_hash(&s2k, command->passhprase, strlen(command->passhprase), session_key, 16);
+
+		pgp_stream_push_packet(stream, session);
+	}
+	else
+	{
+		pgp_pkesk_packet *session = NULL;
+		pgp_key_packet *key = NULL;
+
+		session = pgp_pkesk_packet_new(PGP_PKESK_V3, PGP_RSA_ENCRYPT_ONLY, PGP_AES_128);
+		key = spgp_search_key_from_user(command->user);
+
+		session_key_size = pgp_rand(session_key, 16);
+		session = pgp_pkesk_packet_session_key_encrypt(session, key, session_key, session_key_size, 0);
+
+		pgp_stream_push_packet(stream, session);
+	}
 
 	seipd = pgp_seipd_packet_new(PGP_SEIPD_V1, PGP_AES_128, 0, 0);
 	seipd = pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, lit_buffer, PGP_PACKET_OCTETS(literal->header));
 
-	stream = pgp_stream_new(2);
-
-	pgp_stream_push_packet(stream, session);
 	pgp_stream_push_packet(stream, seipd);
 
 	spgp_write_pgp_packets(command->output, SPGP_STD_OUTPUT, stream);
