@@ -396,6 +396,59 @@ status_t os_truncate(handle_t root, const char *path, uint16_t length, size_t si
 	return OS_STATUS_SUCCESS;
 }
 
+status_t os_seek(handle_t handle, off_t offset, uint32_t whence)
+{
+	NTSTATUS status = 0;
+	IO_STATUS_BLOCK io = {0};
+	FILE_POSITION_INFORMATION pos_info = {0};
+	LONGLONG current_pos = 0;
+
+	switch (whence)
+	{
+	case SEEK_SET:
+	{
+		if (offset < 0)
+		{
+			return OS_STATUS_INVALID_PARAMETER;
+		}
+
+		current_pos = 0;
+	}
+	break;
+	case SEEK_CUR:
+	{
+		FILE_POSITION_INFORMATION curpos_info = {0};
+
+		status = NtQueryInformationFile(handle, &io, &curpos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+		current_pos = curpos_info.CurrentByteOffset.QuadPart;
+
+		if (status != STATUS_SUCCESS)
+		{
+			return _os_status(status);
+		}
+	}
+	break;
+	case SEEK_END:
+	{
+		FILE_STANDARD_INFORMATION standard_info = {0};
+
+		status = NtQueryInformationFile(handle, &io, &standard_info, sizeof(FILE_STANDARD_INFORMATION), FileStandardInformation);
+		current_pos = standard_info.EndOfFile.QuadPart;
+
+		if (status != STATUS_SUCCESS)
+		{
+			return _os_status(status);
+		}
+	}
+	break;
+	}
+
+	pos_info.CurrentByteOffset.QuadPart = current_pos + offset;
+	status = NtSetInformationFile(handle, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+
+	return _os_status(status);
+}
+
 status_t os_mkdir(handle_t root, const char *path, uint16_t length, uint32_t mode)
 {
 	NTSTATUS status = 0;

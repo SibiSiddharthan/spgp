@@ -85,10 +85,6 @@ typedef struct _file_t
 	size_t pos;
 } file_t;
 
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
-
 #define FILE_READ   0x1
 #define FILE_WRITE  0x2
 #define FILE_APPEND 0x4
