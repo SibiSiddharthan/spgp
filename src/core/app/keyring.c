@@ -187,6 +187,7 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
 		}
 	}
 
+	os_seek(command.keyring, 0, SEEK_SET);
 	os_truncate(command.keyring, NULL, 0, 0);
 	spgp_write_pgp_packets_to_handle(command.keyring, stream);
 
