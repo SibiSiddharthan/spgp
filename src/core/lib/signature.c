@@ -1302,7 +1302,8 @@ static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_k
 	pgp_compute_uid_hash(hctx, version, user);
 }
 
-static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], uint32_t flags, void *data, size_t data_size)
+static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *key, byte_t hash[64], uint32_t flags, void *data,
+								 size_t data_size)
 {
 	hash_ctx *hctx = NULL;
 
@@ -1377,18 +1378,18 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, byte_t hash[64], 
 	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
-		pgp_compute_certification_hash(hctx, packet->version, NULL, NULL);
+		pgp_compute_certification_hash(hctx, packet->version, key, data);
 		break;
 
 	case PGP_SUBKEY_BINDING_SIGNATURE:
 	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
-		pgp_key_hash(hctx, NULL); // Primary key
-		pgp_key_hash(hctx, NULL); // Subkey
+		pgp_key_hash(hctx, key);  // Primary key
+		pgp_key_hash(hctx, data); // Subkey
 		break;
 
 	case PGP_KEY_REVOCATION_SIGNATURE:
-		pgp_key_hash(hctx, NULL); // Primary key
+		pgp_key_hash(hctx, key); // Primary key
 		break;
 
 	case PGP_TIMESTAMP_SIGNATURE:
@@ -1629,7 +1630,7 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 		pgp_signature_packet_unhashed_subpacket_add(packet, key_id_subpacket);
 	}
 
-	hash_size = pgp_compute_hash(packet, hash, 0, data, size);
+	hash_size = pgp_compute_hash(packet, key, hash, 0, data, size);
 
 	if (hash_size == 0)
 	{
@@ -1676,7 +1677,7 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
-	hash_size = pgp_compute_hash(packet, hash, 0, data, size);
+	hash_size = pgp_compute_hash(packet, key, hash, 0, data, size);
 
 	if (hash_size == 0)
 	{

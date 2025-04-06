@@ -272,6 +272,17 @@ uint32_t spgp_import_keys(spgp_command *command)
 	key = pgp_key_packet_make_definition(key, sign);
 	spgp_write_key(primary_fingerprint, primary_fingerprint_size, key);
 
+	uint32_t result = pgp_signature_packet_verify(sign, key, uid, PGP_PACKET_OCTETS(uid->header));
+	if (result == 1)
+	{
+		printf("Good Certification Signature.\n");
+	}
+	else
+	{
+		printf("Bad Certification Signature.\n");
+		exit(1);
+	}
+
 	keyring_packet = pgp_keyring_packet_new(key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
 
 	for (uint16_t i = 3; i < key_stream->count; ++i)
@@ -309,6 +320,16 @@ uint32_t spgp_import_keys(spgp_command *command)
 			}
 
 			spgp_write_key(subkey_fingerprint, subkey_fingerprint_size, subkey);
+
+			uint32_t result = pgp_signature_packet_verify(subsign, key, subkey, PGP_PACKET_OCTETS(subkey->header));
+			if (result == 1)
+			{
+				printf("Good Subkey Binding Signature.\n");
+			}
+			else
+			{
+				printf("Bad Subkey Binding Signature.\n");
+			}
 		}
 	}
 
