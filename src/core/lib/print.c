@@ -242,7 +242,7 @@ static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt (Tag 1)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt or Sign (Tag 1)\n");
 		break;
 	case PGP_RSA_ENCRYPT_ONLY:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Encrypt Only) (Tag 2)\n");
@@ -294,7 +294,7 @@ static size_t pgp_kex_algorithm_print(pgp_public_key_algorithms algorithm, void 
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt (Tag 1)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt or Sign (Tag 1)\n");
 		break;
 	case PGP_RSA_ENCRYPT_ONLY:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Encrypt Only) (Tag 2)\n");
@@ -328,7 +328,7 @@ static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm,
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt (Tag 1)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA Encrypt or Sign (Tag 1)\n");
 		break;
 	case PGP_RSA_SIGN_ONLY:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "RSA (Sign Only) (Tag 2)\n");
@@ -2051,22 +2051,22 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 	switch (packet->format)
 	{
 	case PGP_LITERAL_DATA_BINARY:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Binary (Tag 'b')\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Binary (Tag 'b')\n");
 		break;
 	case PGP_LITERAL_DATA_MIME:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Mime (Tag 'm')\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Mime (Tag 'm')\n");
 		break;
 	case PGP_LITERAL_DATA_LOCAL:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Local (Tag 'l') (Deprecated)\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Local (Tag 'l') (Deprecated)\n");
 		break;
 	case PGP_LITERAL_DATA_TEXT:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Text (Tag 't')\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Text (Tag 't')\n");
 		break;
 	case PGP_LITERAL_DATA_UTF8:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "UTF-8 (Tag 'u')\n");
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "UTF-8 (Tag 'u')\n");
 		break;
 	default:
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
 	}
 
 	pos += print_timestamp(1, "Date", packet->date, PTR_OFFSET(str, pos), size - pos);
