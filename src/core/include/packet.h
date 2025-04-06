@@ -9,6 +9,7 @@
 #define SPGP_PACKET_H
 
 #include <pgp.h>
+#include <error.h>
 #include <stream.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5 Packet Types
@@ -53,6 +54,7 @@ typedef struct _pgp_packet_header
 	byte_t tag;
 	byte_t header_size;
 	byte_t partial;
+	uint16_t error;
 	size_t body_size;
 } pgp_packet_header, pgp_subpacket_header;
 
@@ -196,6 +198,7 @@ typedef struct _pgp_keyring_packet
 } pgp_keyring_packet;
 
 #define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : (((T) & 0x80) == 0x80) ? PGP_LEGACY_HEADER : PGP_UNKNOWN_HEADER)
+#define PGP_ERROR(H)                ((H).error != PGP_NO_ERROR)
 
 #define PGP_PACKET_OCTETS(H)    ((H).header_size + (H).body_size)
 #define PGP_SUBPACKET_OCTETS(H) ((H).header_size + (H).body_size)
