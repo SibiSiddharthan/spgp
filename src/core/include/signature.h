@@ -304,12 +304,56 @@ typedef struct _pgp_ed448_signature
 	byte_t sig[114];
 } pgp_ed448_signature;
 
+typedef struct _signature_data
+{
+	union
+	{
+		struct
+		{
+			void *data;
+			size_t data_size;
+
+			// For V5 signatures
+			void *literal; // Literal packet
+		} document;
+
+		struct
+		{
+			void *user; // UID or UAT packet
+		} certification;
+
+		struct
+		{
+			void *key; // Key packet
+		} binding;
+
+		struct
+		{
+			void *key; // Key packet
+		} revocation;
+	};
+
+} signature_data;
+
 pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
 uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
 								   uint32_t timestamp, void *data, size_t size);
 uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size);
+
+pgp_signature_packet *pgp_generate_document_signature(pgp_key_packet *key, byte_t version, byte_t type, pgp_hash_algorithms hash_algorithm,
+													  uint32_t timestamp, pgp_literal_packet *literal, void *data, size_t size);
+uint32_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal, void *data,
+									   size_t size);
+
+pgp_signature_packet *pgp_generate_certificate_signature(pgp_key_packet *key, byte_t version, byte_t type,
+														 pgp_hash_algorithms hash_algorithm, uint32_t timestamp, void *user);
+uint32_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
+
+pgp_signature_packet *pgp_generate_subkey_binding_signature(pgp_key_packet *key, byte_t version, byte_t type,
+															pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_key_packet *subkey);
+uint32_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
 
 pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
