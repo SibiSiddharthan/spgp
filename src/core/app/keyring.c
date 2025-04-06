@@ -78,11 +78,27 @@ pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_S
 
 size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_stream_t *stream)
 {
+	status_t status = 0;
+	handle_t handle = 0;
+	size_t result = 0;
+
 	char filename[256] = {0};
+	uint32_t length = 0;
 
-	get_cert_filename(filename, fingerprint, size);
+	length = get_cert_filename(filename, fingerprint, size);
+	status = os_open(&handle, command.certs, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700);
 
-	return spgp_write_pgp_packets(filename, 0, stream);
+	if (status != OS_STATUS_SUCCESS)
+	{
+		printf("Unable to open key file %s.\n", filename);
+		exit(1);
+	}
+
+	result = spgp_write_pgp_packets_to_handle(handle, stream);
+
+	os_close(handle);
+
+	return result;
 }
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
@@ -131,6 +147,47 @@ void spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t siz
 	spgp_write_pgp_packet_to_handle(handle, key);
 
 	os_close(handle);
+}
+
+static void spgp_import_certificates(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	pgp_packet_type type = 0;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
+	fingerprint_size = pgp_key_fingerprint(stream->packets[0], fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		type = pgp_packet_get_type(header->tag);
+
+		if (type == PGP_KEYDEF)
+		{
+			if (i == 0)
+			{
+				pgp_key_packet_transform(stream->packets[i], PGP_PUBKEY);
+			}
+			else
+			{
+				pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY);
+			}
+		}
+
+		if (type == PGP_SECKEY)
+		{
+			pgp_key_packet_transform(stream->packets[i], PGP_PUBKEY);
+		}
+
+		if (type == PGP_SECSUBKEY)
+		{
+			pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY);
+		}
+	}
+
+	spgp_write_certificate(fingerprint, fingerprint_size, stream);
 }
 
 pgp_stream_t *spgp_read_keyring()
@@ -256,6 +313,8 @@ uint32_t spgp_import_keys(spgp_command *command)
 	}
 
 	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
+	spgp_import_certificates(key_stream);
+
 	pgp_keyring_packet_delete(keyring_packet);
 
 	return 0;
