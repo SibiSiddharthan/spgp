@@ -216,7 +216,7 @@ uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t si
 	}
 
 	// Add packet size
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%u bytes)", header->body_size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%zu bytes)", header->body_size);
 
 	// Mention if packet is having legacy header format
 	if (format == PGP_LEGACY_HEADER)
@@ -1218,7 +1218,7 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 	}
 
 	// Add packet size
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%u bytes)\n", header.body_size);
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%zu bytes)\n", header.body_size);
 
 	return pos;
 }

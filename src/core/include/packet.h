@@ -52,7 +52,8 @@ typedef struct _pgp_packet_header
 {
 	byte_t tag;
 	byte_t header_size;
-	uint32_t body_size;
+	byte_t partial;
+	size_t body_size;
 } pgp_packet_header, pgp_subpacket_header;
 
 typedef struct _pgp_unknown_packet

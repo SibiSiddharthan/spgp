@@ -256,6 +256,7 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 		else
 		{
 			header.header_size = 2;
+			header.partial = 1;
 			header.body_size = (uint32_t)1 << (pdata[1] & 0x1F);
 		}
 	}
@@ -298,9 +299,8 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 		case 3:
 		{
 			// For legacy partial packets. Assume that the packet boundary is at the end of data.
-			// Ignore the truncation that might happen here. This only for historical support.
 			header.header_size = 1;
-			header.body_size = (uint32_t)(size - 1);
+			header.body_size = size - 1;
 		}
 		break;
 		}
