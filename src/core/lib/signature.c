@@ -1571,18 +1571,52 @@ void pgp_signature_packet_delete(pgp_signature_packet *packet)
 	free(packet);
 }
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
-								   uint32_t timestamp, void *data, size_t size)
+static void pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp)
 {
-	byte_t hash_size = 0;
-	byte_t hash[64] = {0};
-
 	pgp_timestamp_subpacket *timestamp_subpacket = NULL;
 	pgp_key_fingerprint_subpacket *fingerprint_subpacket = NULL;
 	pgp_issuer_key_id_subpacket *key_id_subpacket = NULL;
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
+
+	// Calculate issuer key fingerprint
+	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	fingerprint_subpacket =
+		pgp_key_fingerprint_subpacket_new(PGP_ISSUER_FINGERPRINT_SUBPACKET, key->version, fingerprint, fingerprint_size);
+
+	timestamp_subpacket = pgp_timestamp_subpacket_new(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, timestamp);
+
+	if (timestamp_subpacket == NULL || fingerprint_subpacket == NULL)
+	{
+		pgp_timestamp_subpacket_delete(timestamp_subpacket);
+		pgp_key_fingerprint_subpacket_delete(fingerprint_subpacket);
+
+		return;
+	}
+
+	pgp_signature_packet_hashed_subpacket_add(packet, timestamp_subpacket);
+	pgp_signature_packet_hashed_subpacket_add(packet, fingerprint_subpacket);
+
+	// Only for V4 signatures append the key id as an unhashed subpacket
+	if (packet->version == PGP_SIGNATURE_V4)
+	{
+		key_id_subpacket = pgp_issuer_key_id_subpacket_new(PTR_OFFSET(fingerprint, fingerprint_size - PGP_KEY_ID_SIZE));
+
+		if (key_id_subpacket == NULL)
+		{
+			return;
+		}
+
+		pgp_signature_packet_unhashed_subpacket_add(packet, key_id_subpacket);
+	}
+}
+
+uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
+								   uint32_t timestamp, void *data, size_t size)
+{
+	byte_t hash_size = 0;
+	byte_t hash[64] = {0};
 
 	if (pgp_hash_algorithm_validate(hash_algorithm) == 0)
 	{
@@ -1599,35 +1633,9 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 	packet->public_key_algorithm_id = key->public_key_algorithm_id;
 	packet->hash_algorithm_id = hash_algorithm;
 
-	// Calculate issuer key fingerprint
-	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-	fingerprint_subpacket =
-		pgp_key_fingerprint_subpacket_new(PGP_ISSUER_FINGERPRINT_SUBPACKET, key->version, fingerprint, fingerprint_size);
-
-	timestamp_subpacket = pgp_timestamp_subpacket_new(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, timestamp);
-
-	if (timestamp_subpacket == NULL || fingerprint_subpacket == NULL)
+	if (packet->hashed_subpackets == NULL)
 	{
-		pgp_timestamp_subpacket_delete(timestamp_subpacket);
-		pgp_key_fingerprint_subpacket_delete(fingerprint_subpacket);
-
-		return 0;
-	}
-
-	pgp_signature_packet_hashed_subpacket_add(packet, timestamp_subpacket);
-	pgp_signature_packet_hashed_subpacket_add(packet, fingerprint_subpacket);
-
-	// Only for V4 signatures append the key id as an unhashed subpacket
-	if (packet->version == PGP_SIGNATURE_V4)
-	{
-		key_id_subpacket = pgp_issuer_key_id_subpacket_new(PTR_OFFSET(fingerprint, fingerprint_size - PGP_KEY_ID_SIZE));
-
-		if (key_id_subpacket == NULL)
-		{
-			return 0;
-		}
-
-		pgp_signature_packet_unhashed_subpacket_add(packet, key_id_subpacket);
+		pgp_signature_packet_sign_setup(packet, key, timestamp);
 	}
 
 	hash_size = pgp_compute_hash(packet, key, hash, 0, data, size);
