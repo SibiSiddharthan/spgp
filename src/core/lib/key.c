@@ -2524,6 +2524,26 @@ pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, pgp_packet_type
 {
 	pgp_packet_type packet_type = pgp_packet_get_type(packet->header.tag);
 
+	// We cannot convert a public key to a secret key
+	if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
+	{
+		if (type == PGP_SECKEY || type == PGP_SECSUBKEY)
+		{
+			return NULL;
+		}
+	}
+
+	if (packet_type == PGP_KEYDEF)
+	{
+		if (packet->type == PGP_KEY_TYPE_PUBLIC)
+		{
+			if (type == PGP_SECKEY || type == PGP_SECSUBKEY)
+			{
+				return NULL;
+			}
+		}
+	}
+
 	if (type == PGP_KEYDEF)
 	{
 		if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
@@ -2534,15 +2554,6 @@ pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, pgp_packet_type
 		if (packet_type == PGP_SECKEY || packet_type == PGP_SECSUBKEY)
 		{
 			packet->type = PGP_KEY_TYPE_SECRET;
-		}
-	}
-
-	// We cannot convert a public key to a secret key
-	if (type == PGP_SECKEY || type == PGP_SECSUBKEY)
-	{
-		if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
-		{
-			return NULL;
 		}
 	}
 
