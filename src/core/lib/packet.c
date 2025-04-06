@@ -207,7 +207,7 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 	pgp_packet_header header = {0};
 	pgp_packet_header_format format = PGP_HEADER;
 
-	if (size < 2)
+	if (size < 1)
 	{
 		return header;
 	}
@@ -244,6 +244,11 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 		// 1 octed length
 		else if (pdata[1] < 192)
 		{
+			if (size < 2)
+			{
+				return error;
+			}
+
 			header.header_size = 2;
 			header.body_size = pdata[1];
 		}
@@ -289,9 +294,15 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 			header.body_size = ((uint32_t)pdata[1] << 24) | ((uint32_t)pdata[2] << 16) | ((uint32_t)pdata[3] << 8) | (uint32_t)pdata[4];
 		}
 		break;
-		// Legacy partial packets unsupported.
+		// Legacy partial packets.
 		case 3:
-			return error;
+		{
+			// For legacy partial packets. Assume that the packet boundary is at the end of data.
+			// Ignore the truncation that might happen here. This only for historical support.
+			header.header_size = 1;
+			header.body_size = (uint32_t)(size - 1);
+		}
+		break;
 		}
 	}
 	else
@@ -486,14 +497,21 @@ void *pgp_packet_read(void *data, size_t size)
 	pgp_packet_header header = pgp_packet_header_read(data, size);
 	pgp_packet_type ptype = pgp_packet_get_type(header.tag);
 
-	if (ptype == PGP_RESERVED || header.body_size == 0)
+	if (ptype == PGP_RESERVED)
 	{
+		// Invalid packet
+		return NULL;
+	}
+
+	if (header.body_size == 0)
+	{
+		// Invalid packet
 		return NULL;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		// Invalid packet
+		// Insufficient data
 		return NULL;
 	}
 
