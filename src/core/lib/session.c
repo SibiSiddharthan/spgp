@@ -311,7 +311,7 @@ static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 		// A 1-octet public key algorithm.
 		// Session key
 
-		body_size = 1 + 1 + 1 + packet->key_octet_count + packet->encrypted_session_key_size;
+		body_size = 1 + 1 + 1 + packet->key_octet_count + packet->encrypted_session_key_octets;
 		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_PKESK, body_size);
 	}
 
@@ -322,7 +322,7 @@ static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 		// A 1-octet public key algorithm.
 		// Session key
 
-		body_size = 1 + 8 + 1 + packet->encrypted_session_key_size;
+		body_size = 1 + 8 + 1 + packet->encrypted_session_key_octets;
 		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_PKESK, body_size);
 	}
 }
@@ -478,14 +478,30 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	{
 		pgp_rsa_kex *kex = pgp_rsa_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+
+		if (kex == NULL)
+		{
+			return NULL;
+		}
+
 		packet->encrypted_session_key = kex;
-		packet->encrypted_session_key_size = mpi_octets(kex->c->bits);
+		packet->encrypted_session_key_octets = mpi_octets(kex->c->bits);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		// packet->encrypted_session_key =
-		//	pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
-		break;
+	{
+		pgp_elgamal_kex *kex = NULL;
+		// kex = pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
+
+		if (kex == NULL)
+		{
+			return NULL;
+		}
+
+		packet->encrypted_session_key = kex;
+		packet->encrypted_session_key_octets = mpi_octets(kex->r->bits) + mpi_octets(kex->s->bits);
+	}
+	break;
 	case PGP_ECDH:
 	{
 		pgp_ecdh_kex *kex = NULL;
@@ -495,16 +511,41 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 		fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 		kex = pgp_ecdh_kex_encrypt(key->key, symmetric_key_algorithm_id, fingerprint, fingerprint_size, session_key, session_key_size);
 
+		if (kex == NULL)
+		{
+			return NULL;
+		}
+
 		packet->encrypted_session_key = kex;
-		packet->encrypted_session_key_size = mpi_octets(kex->ephemeral_point->bits) + 1 + kex->encoded_session_key_size;
+		packet->encrypted_session_key_octets = mpi_octets(kex->ephemeral_point->bits) + 1 + kex->encoded_session_key_size;
 	}
 	break;
 	case PGP_X25519:
-		packet->encrypted_session_key = pgp_x25519_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
-		break;
+	{
+		pgp_x25519_kex *kex = pgp_x25519_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+
+		if (kex == NULL)
+		{
+			return NULL;
+		}
+
+		packet->encrypted_session_key = kex;
+		packet->encrypted_session_key_octets = 32 + 1 + kex->octet_count;
+	}
+	break;
 	case PGP_X448:
-		packet->encrypted_session_key = pgp_x448_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
-		break;
+	{
+		pgp_x448_kex *kex = pgp_x448_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+
+		if (kex == NULL)
+		{
+			return NULL;
+		}
+
+		packet->encrypted_session_key = kex;
+		packet->encrypted_session_key_octets = 56 + 1 + kex->octet_count;
+	}
+	break;
 	default:
 		return NULL;
 	}

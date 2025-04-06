@@ -43,7 +43,7 @@ typedef struct _pgp_pkesk_packet
 		byte_t key_fingerprint[32];
 	};
 
-	uint16_t encrypted_session_key_size;
+	uint16_t encrypted_session_key_octets;
 	void *encrypted_session_key;
 
 } pgp_pkesk_packet;
