@@ -91,7 +91,6 @@ Output Options:\n\
 Key Selection:\n\
  -r, --recipient USER-ID        encrypt for USER-ID\n\
  -u, --local-user USER-ID       use USER-ID to sign or decrypt\n\
- -p, --key-packet FILE          use packet in FILE to sign, verify, encrypt and decrypt\n\
 \n\
 Algorithm Options:\n\
      --digest-algo ALGO         hash using ALGO\n\
@@ -157,7 +156,6 @@ typedef enum _spgp_option
 	// Key Selection
 	SPGP_OPTION_RECIPIENT,
 	SPGP_OPTION_USER_ID,
-	SPGP_OPTION_KEY_PACKET,
 
 	// Algorithm Options
 	SPGP_OPTION_DIGEST_ALGORITHM,
@@ -222,7 +220,6 @@ static arg_option_t spgp_options[] = {
 	// Key Selection
 	{"recipient", 'r', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_RECIPIENT},
 	{"local-user", 'u', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_USER_ID},
-	{"key-packet", 'p', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_KEY_PACKET},
 
 	// Algorithm Options
 	{"digest-algo", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_DIGEST_ALGORITHM},
@@ -635,19 +632,6 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		case SPGP_OPTION_USER_ID:
 		{
 			command->user = result->data;
-		}
-		break;
-		case SPGP_OPTION_KEY_PACKET:
-		{
-			if (command->operation == SPGP_OPERATION_SIGN)
-			{
-				command->sign.packet = result->data;
-			}
-
-			if (command->operation == SPGP_OPERATION_VERIFY)
-			{
-				command->verify.packet = result->data;
-			}
 		}
 		break;
 

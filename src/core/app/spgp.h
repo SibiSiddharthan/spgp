@@ -135,14 +135,12 @@ typedef struct _spgp_command
 			byte_t detach;
 			byte_t cleartext;
 			char *file;
-			char *packet;
 		} sign;
 
 		struct
 		{
 			char *sign;
 			char *file;
-			char *packet;
 		} verify;
 
 		struct
