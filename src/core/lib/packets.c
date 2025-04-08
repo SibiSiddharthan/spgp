@@ -1901,11 +1901,11 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size)
+pgp_error_t pgp_unknown_packet_read(pgp_unknown_packet **packet, void *data, size_t size)
 {
 	byte_t *in = data;
 
-	pgp_unknown_packet *packet = NULL;
+	pgp_unknown_packet *unknown = NULL;
 	pgp_packet_header header = {0};
 
 	size_t pos = 0;
@@ -1917,27 +1917,29 @@ pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size)
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_unknown_packet) + data_size);
+	unknown = malloc(sizeof(pgp_unknown_packet) + data_size);
 
-	if (packet == NULL)
+	if (unknown == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_unknown_packet) + data_size);
+	memset(unknown, 0, sizeof(pgp_unknown_packet) + data_size);
 
-	packet->data = PTR_OFFSET(packet, sizeof(pgp_unknown_packet));
+	unknown->data = PTR_OFFSET(unknown, sizeof(pgp_unknown_packet));
 
 	// Copy the header
-	packet->header = header;
+	unknown->header = header;
 
 	// Copy the data.
-	memcpy(packet->data, in + pos, data_size);
+	memcpy(unknown->data, in + pos, data_size);
 
-	return packet;
+	*packet = unknown;
+
+	return PGP_NO_ERROR;
 }
 
 size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size)

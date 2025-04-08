@@ -325,7 +325,7 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size);
 
 // Unknown Packet
-pgp_unknown_packet *pgp_unknown_packet_read(void *data, size_t size);
+pgp_error_t pgp_unknown_packet_read(pgp_unknown_packet **packet, void *data, size_t size);
 size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size);
 size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t size);
 
