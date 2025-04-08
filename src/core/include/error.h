@@ -30,11 +30,14 @@ typedef enum _pgp_error_t
 	// MDC Packet
 	PGP_MALFORMED_MDC_PACKET,
 
-	// Literal Packet,
+	// Literal Packet
 	PGP_UNKNOWN_LITERAL_FORMAT,
 	PGP_MALFORMED_LITERAL_PACKET,
 	PGP_LITERAL_PACKET_INVALID_FILENAME_SIZE,
 	PGP_LITERAL_PACKET_INVALID_DATA_SIZE,
+
+	// User ID Packet
+	PGP_INVALID_USER_ID,
 
 } pgp_error_t;
 

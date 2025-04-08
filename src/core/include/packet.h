@@ -262,11 +262,11 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t size);
 
 // User ID Packet (Tag 13)
-pgp_user_id_packet *pgp_user_id_packet_new(byte_t header_format, void *user_name, uint16_t user_name_size, void *user_comment,
-										   uint16_t user_comment_size, void *user_email, uint16_t user_email_size);
+pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_format, void *user_name, uint16_t user_name_size,
+								   void *user_comment, uint16_t user_comment_size, void *user_email, uint16_t user_email_size);
 void pgp_user_id_packet_delete(pgp_user_id_packet *packet);
 
-pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size);
+pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, size_t size);
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
 size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size);
 
