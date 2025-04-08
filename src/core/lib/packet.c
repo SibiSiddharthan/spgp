@@ -568,7 +568,8 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_KEYDEF:
 		return pgp_key_packet_read(data, size);
 	case PGP_KEYRING:
-		return pgp_keyring_packet_read(data, size);
+		error = pgp_keyring_packet_read((pgp_keyring_packet **)&packet, data, size);
+		return packet;
 	default:
 		error = pgp_unknown_packet_read((pgp_unknown_packet **)&packet, data, size);
 		return packet;

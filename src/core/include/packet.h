@@ -311,16 +311,17 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
 
 // Keyring Packet
-pgp_keyring_packet *pgp_keyring_packet_new(byte_t key_version, byte_t trust_level, byte_t primary_key[32], byte_t *uid, uint32_t uid_size);
+pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t trust_level, byte_t primary_key[32], byte_t *uid,
+								   uint32_t uid_size);
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet);
 
-pgp_keyring_packet *pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
-pgp_keyring_packet *pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
+pgp_error_t pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
+void pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
 
-pgp_keyring_packet *pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
-pgp_keyring_packet *pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
+pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
+void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 
-pgp_keyring_packet *pgp_keyring_packet_read(void *data, size_t size);
+pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, size_t size);
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);
 size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size);
 

@@ -283,7 +283,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 		exit(1);
 	}
 
-	keyring_packet = pgp_keyring_packet_new(key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
+	pgp_keyring_packet_new(&keyring_packet, key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
 
 	for (uint16_t i = 3; i < key_stream->count; ++i)
 	{
@@ -294,7 +294,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 		{
 			pgp_user_id_packet *other_uid = key_stream->packets[i];
 
-			keyring_packet = pgp_keyring_packet_add_uid(keyring_packet, other_uid->user_data, other_uid->header.body_size);
+			pgp_keyring_packet_add_uid(keyring_packet, other_uid->user_data, other_uid->header.body_size);
 		}
 
 		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
@@ -306,7 +306,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 			byte_t subkey_fingerprint_size = 0;
 
 			subkey_fingerprint_size = pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-			keyring_packet = pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
+			pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
 
 			if ((i + 1) < key_stream->count)
 			{
