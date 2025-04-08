@@ -17,6 +17,9 @@ typedef enum _pgp_error_t
 	PGP_NO_MEMORY,
 	PGP_INSUFFICIENT_DATA,
 
+	// Marker Packet
+	PGP_MALFORMED_MARKER_PACKET,
+
 } pgp_error_t;
 
 #endif

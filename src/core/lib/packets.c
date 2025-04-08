@@ -247,17 +247,6 @@ pgp_marker_packet *pgp_marker_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return NULL;
-	}
-
-	// Marker packets have only 3 bytes of marker data
-	if (header.body_size != 3)
-	{
-		return NULL;
-	}
-
 	packet = malloc(sizeof(pgp_marker_packet));
 
 	if (packet == NULL)
@@ -265,8 +254,23 @@ pgp_marker_packet *pgp_marker_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
+	memset(packet, 0, sizeof(pgp_marker_packet));
+
 	// Copy the header
 	packet->header = header;
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		packet->header.error = PGP_INSUFFICIENT_DATA;
+		return packet;
+	}
+
+	// Marker packets have only 3 bytes of marker data
+	if (header.body_size != 3)
+	{
+		packet->header.error = PGP_MALFORMED_MARKER_PACKET;
+		return packet;
+	}
 
 	// Copy the marker data
 	packet->marker[0] = in[pos + 0];
