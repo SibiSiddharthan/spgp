@@ -733,6 +733,8 @@ pgp_user_id_packet *pgp_user_id_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
+	memset(packet, 0, sizeof(pgp_user_id_packet) + header.body_size);
+
 	// Copy the header
 	packet->header = header;
 
@@ -1268,7 +1270,7 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-pgp_mdc_packet *pgp_mdc_packet_new(void)
+pgp_mdc_packet *pgp_mdc_packet_new(byte_t hash[20])
 {
 	pgp_mdc_packet *packet = malloc(sizeof(pgp_mdc_packet));
 
@@ -1279,6 +1281,8 @@ pgp_mdc_packet *pgp_mdc_packet_new(void)
 
 	// 20 octets of SHA-1 hash
 	memset(packet, 0, sizeof(pgp_mdc_packet));
+	memcpy(hash, packet->sha1_hash, 20);
+
 	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_MDC, 20);
 
 	return packet;
@@ -1287,16 +1291,6 @@ pgp_mdc_packet *pgp_mdc_packet_new(void)
 void pgp_mdc_packet_delete(pgp_mdc_packet *packet)
 {
 	free(packet);
-}
-
-void pgp_mdc_packet_get_hash(pgp_mdc_packet *packet, byte_t hash[20])
-{
-	memcpy(hash, packet->sha1_hash, 20);
-}
-
-void pgp_mdc_packet_set_hash(pgp_mdc_packet *packet, byte_t hash[20])
-{
-	memcpy(packet->sha1_hash, hash, 20);
 }
 
 pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
@@ -1316,17 +1310,6 @@ pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	// Checks for a valid modification detection code packet.
-	if (header.header_size != 2)
-	{
-		return NULL;
-	}
-
-	if (header.body_size != 20)
-	{
-		return NULL;
-	}
-
 	packet = malloc(sizeof(pgp_mdc_packet));
 
 	if (packet == NULL)
@@ -1334,8 +1317,16 @@ pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
+	memset(packet, 0, sizeof(pgp_mdc_packet));
+
 	// Copy the header
 	packet->header = header;
+
+	if (header.body_size != 20)
+	{
+		packet->header.error = PGP_MALFORMED_MDC_PACKET;
+		return packet;
+	}
 
 	// Copy the SHA-1 hash
 	memcpy(packet->sha1_hash, PTR_OFFSET(data, header.header_size), 20);

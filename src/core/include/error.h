@@ -16,6 +16,7 @@ typedef enum _pgp_error_t
 	// System errors
 	PGP_NO_MEMORY,
 	PGP_INSUFFICIENT_DATA,
+	PGP_INVALID_PARAMETER,
 
 	// Compressed Packet
 	PGP_UNSUPPORTED_COMPRESSION_ALGORITHM,
@@ -23,6 +24,9 @@ typedef enum _pgp_error_t
 
 	// Marker Packet
 	PGP_MALFORMED_MARKER_PACKET,
+	
+	// MDC Packet
+	PGP_MALFORMED_MDC_PACKET,
 
 } pgp_error_t;
 
