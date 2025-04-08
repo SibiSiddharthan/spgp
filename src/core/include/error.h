@@ -13,10 +13,11 @@ typedef enum _pgp_error_t
 	// No error
 	PGP_NO_ERROR = 0,
 
-	// System errors
+	// General errors
 	PGP_NO_MEMORY,
 	PGP_INSUFFICIENT_DATA,
 	PGP_INVALID_PARAMETER,
+	PGP_INVALID_HEADER_FORMAT,
 
 	// Compressed Packet
 	PGP_UNSUPPORTED_COMPRESSION_ALGORITHM,
@@ -24,7 +25,7 @@ typedef enum _pgp_error_t
 
 	// Marker Packet
 	PGP_MALFORMED_MARKER_PACKET,
-	
+
 	// MDC Packet
 	PGP_MALFORMED_MDC_PACKET,
 

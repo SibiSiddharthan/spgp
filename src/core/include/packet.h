@@ -243,10 +243,10 @@ size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size
 size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size_t size);
 
 // Marker Packet (Tag 10)
-pgp_marker_packet *pgp_marker_packet_new(byte_t header_format);
+pgp_error_t pgp_marker_packet_new(pgp_marker_packet **packet, byte_t header_format);
 void pgp_marker_packet_delete(pgp_marker_packet *packet);
 
-pgp_marker_packet *pgp_marker_packet_read(void *data, size_t size);
+pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_t size);
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
 size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size);
 

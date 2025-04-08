@@ -497,6 +497,9 @@ void *pgp_packet_read(void *data, size_t size)
 	pgp_packet_header header = pgp_packet_header_read(data, size);
 	pgp_packet_type ptype = pgp_packet_get_type(header.tag);
 
+	pgp_error_t error = 0;
+	void *packet = NULL;
+
 	if (ptype == PGP_RESERVED)
 	{
 		// Invalid packet
@@ -536,7 +539,8 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SED:
 		return pgp_sed_packet_read(data, size);
 	case PGP_MARKER:
-		return pgp_marker_packet_read(data, size);
+		error = pgp_marker_packet_read(&packet, data, size);
+		return packet;
 	case PGP_LIT:
 		return pgp_literal_packet_read(data, size);
 	case PGP_TRUST:
