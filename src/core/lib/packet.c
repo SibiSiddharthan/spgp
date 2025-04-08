@@ -546,7 +546,8 @@ void *pgp_packet_read(void *data, size_t size)
 		error = pgp_literal_packet_read((pgp_literal_packet **)&packet, data, size);
 		return packet;
 	case PGP_TRUST:
-		return pgp_trust_packet_read(data, size);
+		error = pgp_trust_packet_read((pgp_trust_packet **)&packet, data, size);
+		return packet;
 	case PGP_UID:
 		error = pgp_user_id_packet_read((pgp_user_id_packet **)&packet, data, size);
 		return packet;

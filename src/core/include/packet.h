@@ -303,10 +303,10 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
 size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size);
 
 // Trust Packet (Tag 12)
-pgp_trust_packet *pgp_trust_packet_new(byte_t header_format, byte_t trust_level);
+pgp_error_t pgp_trust_packet_new(pgp_trust_packet **packet, byte_t header_format, byte_t trust_level);
 void pgp_trust_packet_delete(pgp_trust_packet *packet);
 
-pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size);
+pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t size);
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
 

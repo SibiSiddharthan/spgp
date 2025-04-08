@@ -1389,28 +1389,35 @@ size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
-pgp_trust_packet *pgp_trust_packet_new(byte_t header_format, byte_t trust_level)
+pgp_error_t pgp_trust_packet_new(pgp_trust_packet **packet, byte_t header_format, byte_t trust_level)
 {
-	pgp_trust_packet *packet = NULL;
+	pgp_trust_packet *trust = NULL;
+
+	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
+	{
+		return PGP_INVALID_HEADER_FORMAT;
+	}
 
 	if (trust_level != PGP_TRUST_NEVER && trust_level != PGP_TRUST_MARGINAL && trust_level != PGP_TRUST_FULL &&
 		trust_level != PGP_TRUST_ULTIMATE)
 	{
-		return NULL;
+		return PGP_INVALID_TRUST_LEVEL;
 	}
 
-	packet = malloc(sizeof(pgp_trust_packet));
+	trust = malloc(sizeof(pgp_trust_packet));
 
-	if (packet == NULL)
+	if (trust == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_trust_packet));
-	packet->header = pgp_encode_packet_header(header_format, PGP_TRUST, 1);
-	packet->level = trust_level;
+	memset(trust, 0, sizeof(pgp_trust_packet));
+	trust->header = pgp_encode_packet_header(header_format, PGP_TRUST, 1);
+	trust->level = trust_level;
 
-	return packet;
+	*packet = trust;
+
+	return PGP_NO_ERROR;
 }
 
 void pgp_trust_packet_delete(pgp_trust_packet *packet)
@@ -1418,11 +1425,11 @@ void pgp_trust_packet_delete(pgp_trust_packet *packet)
 	free(packet);
 }
 
-pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size)
+pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t size)
 {
 	byte_t *in = data;
 
-	pgp_trust_packet *packet = NULL;
+	pgp_trust_packet *trust = NULL;
 	pgp_packet_header header = {0};
 
 	size_t pos = 0;
@@ -1432,28 +1439,36 @@ pgp_trust_packet *pgp_trust_packet_read(void *data, size_t size)
 
 	if (pgp_packet_get_type(header.tag) != PGP_TRUST)
 	{
-		return NULL;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_trust_packet));
-
-	if (packet == NULL)
+	// Body should only contain 1 octet of trust level
+	if (header.body_size != 1)
 	{
-		return NULL;
+		return PGP_MALFORMED_TRUST_PACKET;
+	}
+
+	trust = malloc(sizeof(pgp_trust_packet));
+
+	if (trust == NULL)
+	{
+		return PGP_NO_ERROR;
 	}
 
 	// Copy the header
-	packet->header = header;
+	trust->header = header;
 
-	LOAD_8(&packet->level, in + pos);
+	LOAD_8(&trust->level, in + pos);
 	pos += 1;
 
-	return packet;
+	*packet = trust;
+
+	return PGP_NO_ERROR;
 }
 
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)
