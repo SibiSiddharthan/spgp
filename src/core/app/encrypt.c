@@ -69,14 +69,16 @@ uint32_t spgp_encrypt(spgp_command *command)
 
 	buffer = spgp_read_file(command->encrypt.file, SPGP_STD_INPUT, &size);
 
-	literal = pgp_literal_packet_new(PGP_HEADER);
-
 	if (command->encrypt.file != NULL)
 	{
-		literal = pgp_literal_packet_set_filename(literal, command->encrypt.file, strlen(command->encrypt.file));
+		pgp_literal_packet_new(&literal, PGP_HEADER, 0, command->encrypt.file, strlen(command->encrypt.file));
+	}
+	else
+	{
+		pgp_literal_packet_new(&literal, PGP_HEADER, 0, NULL, 0);
 	}
 
-	literal = pgp_literal_packet_set_data(literal, PGP_LITERAL_DATA_BINARY, 0, buffer, size);
+	pgp_literal_packet_set_data(literal, PGP_LITERAL_DATA_BINARY, buffer, size);
 
 	lit_buffer = malloc(PGP_PACKET_OCTETS(literal->header));
 	pgp_literal_packet_write(literal, lit_buffer, PGP_PACKET_OCTETS(literal->header));
@@ -208,7 +210,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 		exit(1);
 	}
 
-	literal = pgp_literal_packet_read(buffer, data_size);
+	pgp_literal_packet_read(&literal, buffer, data_size);
 
 	if (literal == NULL)
 	{
