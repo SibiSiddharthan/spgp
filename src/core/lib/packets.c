@@ -13,6 +13,7 @@
 #include <session.h>
 #include <signature.h>
 #include <stream.h>
+#include <crypto.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -1237,25 +1238,48 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 	return pos;
 }
 
-pgp_padding_packet *pgp_padding_packet_new(void *data, size_t size)
+pgp_error_t pgp_padding_packet_new(pgp_padding_packet **packet, void *data, uint32_t size)
 {
-	pgp_padding_packet *packet = NULL;
-	size_t required_size = sizeof(pgp_packet_header) + size;
+	pgp_padding_packet *padding = NULL;
+	uint32_t required_size = sizeof(pgp_packet_header) + size;
 
-	packet = malloc(required_size);
-
-	if (packet == NULL)
+	if (size == 0)
 	{
-		return NULL;
+		return PGP_EMPTY_PADDING_PACKET;
 	}
 
-	memset(packet, 0, required_size);
+	padding = malloc(required_size);
+
+	if (padding == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(padding, 0, required_size);
+
+	if (data != NULL)
+	{
+		memcpy(padding->data, data, size);
+	}
+	else
+	{
+		// Generate random data
+		// Only consider the error case if we output no padding data.
+		size = pgp_rand(padding->data, size);
+
+		if (size == 0)
+		{
+			pgp_padding_packet_delete(padding);
+			return PGP_RAND_ERROR;
+		}
+	}
 
 	// N octets of padding data
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_PADDING, size);
-	memcpy(packet->data, data, size);
+	padding->header = pgp_encode_packet_header(PGP_HEADER, PGP_PADDING, size);
 
-	return packet;
+	*packet = padding;
+
+	return PGP_NO_ERROR;
 }
 
 void pgp_padding_packet_delete(pgp_padding_packet *packet)
@@ -1263,37 +1287,44 @@ void pgp_padding_packet_delete(pgp_padding_packet *packet)
 	free(packet);
 }
 
-pgp_padding_packet *pgp_padding_packet_read(void *data, size_t size)
+pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, size_t size)
 {
-	pgp_padding_packet *packet = NULL;
+	pgp_padding_packet *padding = NULL;
 	pgp_packet_header header = {0};
 
 	header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_PADDING)
 	{
-		return NULL;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_padding_packet) + header.body_size);
-
-	if (packet == NULL)
+	if (header.body_size == 0)
 	{
-		return NULL;
+		return PGP_EMPTY_PADDING_PACKET;
+	}
+
+	padding = malloc(sizeof(pgp_padding_packet) + header.body_size);
+
+	if (padding == NULL)
+	{
+		return PGP_NO_MEMORY;
 	}
 
 	// Copy the header
-	packet->header = header;
+	padding->header = header;
 
 	// Copy the padding data.
-	memcpy(packet->data, PTR_OFFSET(data, header.header_size), header.body_size);
+	memcpy(padding->data, PTR_OFFSET(data, header.header_size), header.body_size);
 
-	return packet;
+	*packet = padding;
+
+	return PGP_NO_ERROR;
 }
 
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size)

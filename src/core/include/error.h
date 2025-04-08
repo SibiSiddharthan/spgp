@@ -20,6 +20,9 @@ typedef enum _pgp_error_t
 	PGP_INVALID_HEADER_FORMAT,
 	PGP_INCORRECT_FUNCTION,
 
+	// Cryptographic error
+	PGP_RAND_ERROR,
+
 	// Compressed Packet
 	PGP_UNSUPPORTED_COMPRESSION_ALGORITHM,
 	PGP_UNKNOWN_COMPRESSION_ALGORITHM,
@@ -44,6 +47,9 @@ typedef enum _pgp_error_t
 	// Trust Packet
 	PGP_INVALID_TRUST_LEVEL,
 	PGP_MALFORMED_TRUST_PACKET,
+
+	// Padding Packet
+	PGP_EMPTY_PADDING_PACKET
 
 } pgp_error_t;
 

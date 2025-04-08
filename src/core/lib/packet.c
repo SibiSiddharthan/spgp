@@ -563,7 +563,8 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_AEAD:
 		return pgp_aead_packet_read(data, size);
 	case PGP_PADDING:
-		return pgp_padding_packet_read(data, size);
+		error = pgp_padding_packet_read((pgp_padding_packet **)&packet, data, size);
+		return packet;
 	case PGP_KEYDEF:
 		return pgp_key_packet_read(data, size);
 	case PGP_KEYRING:

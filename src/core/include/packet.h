@@ -287,10 +287,10 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *str, size_t size);
 
 // Padding Packet (Tag 21)
-pgp_padding_packet *pgp_padding_packet_new(void *data, size_t size);
+pgp_error_t pgp_padding_packet_new(pgp_padding_packet **packet, void *data, uint32_t size);
 void pgp_padding_packet_delete(pgp_padding_packet *packet);
 
-pgp_padding_packet *pgp_padding_packet_read(void *data, size_t size);
+pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
 size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size);
 
