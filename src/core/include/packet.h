@@ -232,13 +232,13 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options);
 void pgp_packet_delete(void *packet);
 
 // Compressed Packet (Tag 8)
-pgp_compresed_packet *pgp_compressed_packet_new(byte_t header_format, byte_t compression_algorithm_id);
+pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t header_format, byte_t compression_algorithm_id);
 void pgp_compressed_packet_delete(pgp_compresed_packet *packet);
 
 pgp_compresed_packet *pgp_compressed_packet_compress_data(pgp_compresed_packet *packet, void *ptr, size_t size);
 size_t pgp_compressed_packet_decompress_data(pgp_compresed_packet *packet, void *ptr, size_t size);
 
-pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size);
+pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
 size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size_t size);
 

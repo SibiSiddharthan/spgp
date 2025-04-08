@@ -535,7 +535,8 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SECSUBKEY:
 		return pgp_secret_key_packet_read(data, size);
 	case PGP_COMP:
-		return pgp_compressed_packet_read(data, size);
+		error = pgp_compressed_packet_read(&packet, data, size);
+		return packet;
 	case PGP_SED:
 		return pgp_sed_packet_read(data, size);
 	case PGP_MARKER:
