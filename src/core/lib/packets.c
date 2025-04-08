@@ -168,6 +168,12 @@ pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data
 		return PGP_INSUFFICIENT_DATA;
 	}
 
+	// Ensure atleast the compression algorithm is given
+	if (header.body_size == 0)
+	{
+		return PGP_MALFORMED_COMPRESSED_PACKET;
+	}
+
 	packet = malloc(sizeof(pgp_compresed_packet));
 
 	if (packet == NULL)
@@ -757,6 +763,11 @@ pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, siz
 	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_USER_ID;
 	}
 
 	uid = malloc(sizeof(pgp_user_id_packet) + header.body_size);
@@ -1484,7 +1495,7 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)
 	// Header
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
-	// Trust level
+	// 1 octet trust level
 	LOAD_8(out + pos, &packet->level);
 	pos += 1;
 

@@ -23,6 +23,7 @@ typedef enum _pgp_error_t
 	// Compressed Packet
 	PGP_UNSUPPORTED_COMPRESSION_ALGORITHM,
 	PGP_UNKNOWN_COMPRESSION_ALGORITHM,
+	PGP_MALFORMED_COMPRESSED_PACKET,
 
 	// Marker Packet
 	PGP_MALFORMED_MARKER_PACKET,
@@ -38,6 +39,8 @@ typedef enum _pgp_error_t
 
 	// User ID Packet
 	PGP_INVALID_USER_ID,
+	PGP_EMPTY_USER_ID,
+
 
 	// Trust Packet
 	PGP_INVALID_TRUST_LEVEL,
