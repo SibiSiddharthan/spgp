@@ -1316,22 +1316,24 @@ size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-pgp_mdc_packet *pgp_mdc_packet_new(byte_t hash[20])
+pgp_error_t pgp_mdc_packet_new(pgp_mdc_packet **packet, byte_t hash[20])
 {
-	pgp_mdc_packet *packet = malloc(sizeof(pgp_mdc_packet));
+	pgp_mdc_packet *mdc = malloc(sizeof(pgp_mdc_packet));
 
-	if (packet == NULL)
+	if (mdc == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	// 20 octets of SHA-1 hash
-	memset(packet, 0, sizeof(pgp_mdc_packet));
-	memcpy(hash, packet->sha1_hash, 20);
+	memset(mdc, 0, sizeof(pgp_mdc_packet));
+	memcpy(mdc->sha1_hash, hash, 20);
 
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_MDC, 20);
+	mdc->header = pgp_encode_packet_header(PGP_HEADER, PGP_MDC, 20);
 
-	return packet;
+	*packet = mdc;
+
+	return PGP_NO_ERROR;
 }
 
 void pgp_mdc_packet_delete(pgp_mdc_packet *packet)
@@ -1339,45 +1341,47 @@ void pgp_mdc_packet_delete(pgp_mdc_packet *packet)
 	free(packet);
 }
 
-pgp_mdc_packet *pgp_mdc_packet_read(void *data, size_t size)
+pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size)
 {
-	pgp_mdc_packet *packet = NULL;
+	pgp_mdc_packet *mdc = NULL;
 	pgp_packet_header header = {0};
 
 	header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_MDC)
 	{
-		return NULL;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_mdc_packet));
-
-	if (packet == NULL)
-	{
-		return NULL;
-	}
-
-	memset(packet, 0, sizeof(pgp_mdc_packet));
-
-	// Copy the header
-	packet->header = header;
-
+	// The body size should be the length of the SHA-1 hash size
 	if (header.body_size != 20)
 	{
-		packet->header.error = PGP_MALFORMED_MDC_PACKET;
-		return packet;
+		return PGP_MALFORMED_MDC_PACKET;
 	}
 
-	// Copy the SHA-1 hash
-	memcpy(packet->sha1_hash, PTR_OFFSET(data, header.header_size), 20);
+	mdc = malloc(sizeof(pgp_mdc_packet));
 
-	return packet;
+	if (mdc == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(mdc, 0, sizeof(pgp_mdc_packet));
+
+	// Copy the header
+	mdc->header = header;
+
+	// Copy the SHA-1 hash
+	memcpy(mdc->sha1_hash, PTR_OFFSET(data, header.header_size), 20);
+
+	*packet = mdc;
+
+	return PGP_NO_ERROR;
 }
 
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)

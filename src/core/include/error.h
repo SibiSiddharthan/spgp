@@ -41,7 +41,6 @@ typedef enum _pgp_error_t
 	PGP_INVALID_USER_ID,
 	PGP_EMPTY_USER_ID,
 
-
 	// Trust Packet
 	PGP_INVALID_TRUST_LEVEL,
 	PGP_MALFORMED_TRUST_PACKET,

@@ -558,7 +558,8 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SEIPD:
 		return pgp_seipd_packet_read(data, size);
 	case PGP_MDC:
-		return pgp_mdc_packet_read(data, size);
+		error = pgp_mdc_packet_read((pgp_mdc_packet **)&packet, data, size);
+		return packet;
 	case PGP_AEAD:
 		return pgp_aead_packet_read(data, size);
 	case PGP_PADDING:
