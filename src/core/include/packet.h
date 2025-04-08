@@ -235,9 +235,8 @@ void pgp_packet_delete(void *packet);
 pgp_compresed_packet *pgp_compressed_packet_new(byte_t header_format, byte_t compression_algorithm_id);
 void pgp_compressed_packet_delete(pgp_compresed_packet *packet);
 
-pgp_compresed_packet *pgp_compressed_packet_set_data(pgp_compresed_packet *packet, void *ptr, size_t size);
-size_t pgp_compressed_packet_get_data(pgp_compresed_packet *packet, void *ptr, size_t size);
-size_t pgp_compressed_packet_get_raw_data(pgp_compresed_packet *packet, void *ptr, size_t size);
+pgp_compresed_packet *pgp_compressed_packet_compress_data(pgp_compresed_packet *packet, void *ptr, size_t size);
+size_t pgp_compressed_packet_decompress_data(pgp_compresed_packet *packet, void *ptr, size_t size);
 
 pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);

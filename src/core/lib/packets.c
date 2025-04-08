@@ -54,7 +54,7 @@ void pgp_compressed_packet_delete(pgp_compresed_packet *packet)
 	free(packet);
 }
 
-pgp_compresed_packet *pgp_compressed_packet_set_data(pgp_compresed_packet *packet, void *ptr, size_t size)
+pgp_compresed_packet *pgp_compressed_packet_compress_data(pgp_compresed_packet *packet, void *ptr, size_t size)
 {
 
 	switch (packet->compression_algorithm_id)
@@ -79,14 +79,20 @@ pgp_compresed_packet *pgp_compressed_packet_set_data(pgp_compresed_packet *packe
 	case PGP_DEFALTE:
 	case PGP_ZLIB:
 	case PGP_BZIP2:
+	{
 		// TODO: Implement compression
-		return NULL;
+		packet->header.error = PGP_UNSUPPORTED_COMPRESSION_ALGORITHM;
+		return packet;
+	}
 	default:
-		return NULL;
+	{
+		packet->header.error = PGP_UNKNOWN_COMPRESSION_ALGORITHM;
+		return packet;
+	}
 	}
 }
 
-size_t pgp_compressed_packet_get_data(pgp_compresed_packet *packet, void *ptr, size_t size)
+size_t pgp_compressed_packet_decompress_data(pgp_compresed_packet *packet, void *ptr, size_t size)
 {
 	size_t uncompressed_data_size = 0;
 
@@ -108,25 +114,17 @@ size_t pgp_compressed_packet_get_data(pgp_compresed_packet *packet, void *ptr, s
 	case PGP_DEFALTE:
 	case PGP_ZLIB:
 	case PGP_BZIP2:
-		// TODO: Implement decompression
-		return 0;
-	default:
-		return 0;
-	}
-}
-
-size_t pgp_compressed_packet_get_raw_data(pgp_compresed_packet *packet, void *ptr, size_t size)
-{
-	size_t data_size = packet->header.body_size - 1;
-
-	if (size < data_size)
 	{
+		// TODO: Implement compression
+		packet->header.error = PGP_UNSUPPORTED_COMPRESSION_ALGORITHM;
 		return 0;
 	}
-
-	memcpy(ptr, packet->data, data_size);
-
-	return data_size;
+	default:
+	{
+		packet->header.error = PGP_UNKNOWN_COMPRESSION_ALGORITHM;
+		return 0;
+	}
+	}
 }
 
 pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size)
@@ -148,16 +146,22 @@ pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return NULL;
-	}
-
 	packet = malloc(sizeof(pgp_compresed_packet));
 
 	if (packet == NULL)
 	{
 		return NULL;
+	}
+
+	memset(packet, 0, sizeof(pgp_compresed_packet));
+
+	// Copy the header
+	packet->header = header;
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		packet->header.error = PGP_INSUFFICIENT_DATA;
+		return packet;
 	}
 
 	packet->data = malloc(data_size);
@@ -166,9 +170,6 @@ pgp_compresed_packet *pgp_compressed_packet_read(void *data, size_t size)
 	{
 		pgp_compressed_packet_delete(packet);
 	}
-
-	// Copy the header
-	packet->header = header;
 
 	// Get the compression algorithm
 	LOAD_8(&packet->compression_algorithm_id, in + pos);
