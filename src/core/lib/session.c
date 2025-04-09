@@ -763,94 +763,71 @@ static void pgp_skesk_packet_encode_header(pgp_skesk_packet *packet)
 	}
 }
 
-static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+pgp_error_t pgp_skesk_packet_new(pgp_skesk_packet **packet, byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
+								 pgp_s2k *s2k)
 {
-	byte_t *out = ptr;
-	size_t pos = 0;
+	pgp_skesk_packet *session = NULL;
 
-	if (size < PGP_PACKET_OCTETS(packet->header))
+	if (version != PGP_SKESK_V4 && version != PGP_SKESK_V5 && version != PGP_SKESK_V6)
 	{
-		return 0;
+		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
-	// Header
-	pos += pgp_packet_header_write(&packet->header, out + pos);
-
-	// 1 octet version
-	LOAD_8(out + pos, &packet->version);
-	pos += 1;
-
-	// 1 octet symmetric key algorithm
-	LOAD_8(out + pos, &packet->symmetric_key_algorithm_id);
-	pos += 1;
-
-	// S2K specifier
-	pos += pgp_s2k_write(&packet->s2k, out + pos);
-
-	// (Optional) Session key
-	if (packet->session_key_size > 0)
+	if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 	{
-		memcpy(out + pos, packet->session_key, packet->session_key_size);
-		pos += packet->session_key_size;
+		return PGP_INVALID_CIPHER_ALGORITHM;
 	}
 
-	return pos;
+	if (version == PGP_SKESK_V6 || version == PGP_SKESK_V5)
+	{
+		// Unsupported ciphers for AEAD.
+		if (symmetric_key_algorithm_id == PGP_PLAINTEXT || symmetric_key_algorithm_id == PGP_BLOWFISH ||
+			symmetric_key_algorithm_id == PGP_TDES || symmetric_key_algorithm_id == PGP_IDEA)
+		{
+			return PGP_INVALID_AEAD_CIPHER_PAIR;
+		}
+
+		if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
+		{
+			return PGP_INVALID_AEAD_ALGORITHM;
+		}
+	}
+
+	session = malloc(sizeof(pgp_skesk_packet));
+
+	if (session == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(session, 0, sizeof(pgp_skesk_packet));
+
+	session->version = version;
+	session->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
+
+	if (version == PGP_SKESK_V6 || version == PGP_SKESK_V5)
+	{
+		session->aead_algorithm_id = aead_algorithm_id;
+		session->tag_size = PGP_AEAD_TAG_SIZE;
+	}
+	else
+	{
+		session->aead_algorithm_id = 0;
+		session->iv_size = 0;
+		session->tag_size = 0;
+	}
+
+	memcpy(&session->s2k, s2k, sizeof(pgp_s2k));
+	pgp_skesk_packet_encode_header(session);
+
+	*packet = session;
+
+	return PGP_NO_ERROR;
 }
 
-static size_t pgp_skesk_packet_v5_v6_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+void pgp_skesk_packet_delete(pgp_skesk_packet *packet)
 {
-	byte_t *out = ptr;
-	byte_t s2k_size = 0;
-	size_t pos = 0;
-
-	s2k_size = pgp_s2k_octets(&packet->s2k);
-
-	if (size < PGP_PACKET_OCTETS(packet->header))
-	{
-		return 0;
-	}
-
-	// Header
-	pos += pgp_packet_header_write(&packet->header, out + pos);
-
-	// 1 octet version
-	LOAD_8(out + pos, &packet->version);
-	pos += 1;
-
-	// A 1-octet count of below 5 fields
-	byte_t count = 1 + 1 + 1 + s2k_size + packet->iv_size;
-
-	LOAD_8(out + pos, &count);
-	pos += 1;
-
-	// 1 octet symmetric key algorithm
-	LOAD_8(out + pos, &packet->symmetric_key_algorithm_id);
-	pos += 1;
-
-	// 1 octet AEAD algorithm
-	LOAD_8(out + pos, &packet->aead_algorithm_id);
-	pos += 1;
-
-	// 1 octet S2K size
-	LOAD_8(out + pos, &s2k_size);
-	pos += 1;
-
-	// S2K specifier
-	pos += pgp_s2k_write(&packet->s2k, out + pos);
-
-	// IV
-	memcpy(out + pos, packet->iv, packet->iv_size);
-	pos += packet->iv_size;
-
-	// Encrypted session key.
-	memcpy(out + pos, packet->session_key, packet->session_key_size);
-	pos += packet->session_key_size;
-
-	// Authetication key tag.
-	memcpy(out + pos, packet->tag, packet->tag_size);
-	pos += packet->tag_size;
-
-	return pos;
+	free(packet);
 }
 
 static pgp_skesk_packet *pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size,
@@ -1020,70 +997,6 @@ static uint32_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *pac
 	return session_key_size;
 }
 
-pgp_skesk_packet *pgp_skesk_packet_new(byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, pgp_s2k *s2k)
-{
-	pgp_skesk_packet *packet = NULL;
-
-	if (version != PGP_SKESK_V4 && version != PGP_SKESK_V5 && version != PGP_SKESK_V6)
-	{
-		return NULL;
-	}
-
-	if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
-	{
-		return NULL;
-	}
-
-	if (version == PGP_SKESK_V6 || version == PGP_SKESK_V5)
-	{
-		// Unsupported ciphers for AEAD.
-		if (symmetric_key_algorithm_id == PGP_PLAINTEXT || symmetric_key_algorithm_id == PGP_BLOWFISH ||
-			symmetric_key_algorithm_id == PGP_TDES || symmetric_key_algorithm_id == PGP_IDEA)
-		{
-			return NULL;
-		}
-
-		if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
-		{
-			return NULL;
-		}
-	}
-
-	packet = malloc(sizeof(pgp_skesk_packet));
-
-	if (packet == NULL)
-	{
-		return NULL;
-	}
-
-	memset(packet, 0, sizeof(pgp_skesk_packet));
-
-	packet->version = version;
-	packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
-
-	if (version == PGP_SKESK_V6 || version == PGP_SKESK_V5)
-	{
-		packet->aead_algorithm_id = aead_algorithm_id;
-		packet->tag_size = PGP_AEAD_TAG_SIZE;
-	}
-	else
-	{
-		packet->aead_algorithm_id = 0;
-		packet->iv_size = 0;
-		packet->tag_size = 0;
-	}
-
-	memcpy(&packet->s2k, s2k, sizeof(pgp_s2k));
-	pgp_skesk_packet_encode_header(packet);
-
-	return packet;
-}
-
-void pgp_skesk_packet_delete(pgp_skesk_packet *packet)
-{
-	free(packet);
-}
-
 pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
 													   size_t session_key_size, void *iv, size_t iv_size)
 {
@@ -1134,11 +1047,11 @@ uint32_t pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void *pa
 	return 0;
 }
 
-pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
+pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t size)
 {
 	byte_t *in = data;
 
-	pgp_skesk_packet *packet = NULL;
+	pgp_skesk_packet *session = NULL;
 	pgp_packet_header header = {0};
 
 	size_t pos = 0;
@@ -1148,46 +1061,54 @@ pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
 
 	if (pgp_packet_get_type(header.tag) != PGP_SKESK)
 	{
-		return NULL;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_skesk_packet));
+	session = malloc(sizeof(pgp_skesk_packet));
 
-	if (packet == NULL)
+	if (session == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_skesk_packet));
+	memset(session, 0, sizeof(pgp_skesk_packet));
 
 	// Copy the header
-	packet->header = header;
+	session->header = header;
 
 	// 1 octet version
-	LOAD_8(&packet->version, in + pos);
+	LOAD_8(&session->version, in + pos);
 	pos += 1;
 
-	if (packet->version == PGP_SKESK_V6 || packet->version == PGP_SKESK_V5)
+	if (session->version == PGP_SKESK_V6 || session->version == PGP_SKESK_V5)
 	{
 		void *result;
 		byte_t count = 0;
 		byte_t s2k_size = 0;
+
+		// Ensure atleast 4 byte for the below fields.
+		// Other routines below will validate their respective size constraints
+		if (header.body_size - (pos - header.header_size) < 4)
+		{
+			pgp_skesk_packet_delete(session);
+			return PGP_MALFORMED_SYMMETRIC_SESSION_PACKET;
+		}
 
 		// A 1-octet count of below 5 fields
 		LOAD_8(&count, in + pos);
 		pos += 1;
 
 		// 1 octet symmetric key algorithm
-		LOAD_8(&packet->symmetric_key_algorithm_id, in + pos);
+		LOAD_8(&session->symmetric_key_algorithm_id, in + pos);
 		pos += 1;
 
 		// 1 octet AEAD algorithm
-		LOAD_8(&packet->aead_algorithm_id, in + pos);
+		LOAD_8(&session->aead_algorithm_id, in + pos);
 		pos += 1;
 
 		// 1 octet S2K size
@@ -1195,64 +1116,173 @@ pgp_skesk_packet *pgp_skesk_packet_read(void *data, size_t size)
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - (pos - packet->header.header_size));
+		if (header.body_size - (pos - header.header_size) < s2k_size)
+		{
+			pgp_skesk_packet_delete(session);
+			return PGP_MALFORMED_SYMMETRIC_SESSION_PACKET;
+		}
+
+		result = pgp_s2k_read(&session->s2k, in + pos, s2k_size);
 
 		if (result == NULL)
 		{
-			return NULL;
+			pgp_skesk_packet_delete(session);
+			return PGP_INVALID_S2K;
 		}
 
 		pos += s2k_size;
 
 		// IV
-		packet->iv_size = PGP_AEAD_TAG_SIZE;
-		memcpy(packet->iv, in + pos, packet->iv_size);
-		pos += packet->iv_size;
+		session->iv_size = pgp_symmetric_cipher_block_size(session->symmetric_key_algorithm_id);
+		memcpy(session->iv, in + pos, session->iv_size);
+		pos += session->iv_size;
 
 		// Encrypted session key.
-		packet->session_key_size = packet->header.body_size - pos - 16;
-		memcpy(packet->session_key, in + pos, packet->session_key_size);
-		pos += packet->session_key_size;
+		session->session_key_size = session->header.body_size - (pos - header.header_size) - PGP_AEAD_TAG_SIZE;
+		memcpy(session->session_key, in + pos, session->session_key_size);
+		pos += session->session_key_size;
 
 		// Authetication key tag.
-		packet->tag_size = 16;
-		memcpy(packet->tag, in + pos, packet->tag_size);
-		pos += packet->tag_size;
+		session->tag_size = PGP_AEAD_TAG_SIZE;
+		memcpy(session->tag, in + pos, session->tag_size);
+		pos += session->tag_size;
 	}
-	else if (packet->version == PGP_SKESK_V4)
+	else if (session->version == PGP_SKESK_V4)
 	{
 		void *result;
 
+		// Ensure atleast one byte for the symmetric cipher.
+		// Other routines below will validate their respective size constraints
+		if (header.body_size - (pos - header.header_size) < 1)
+		{
+			pgp_skesk_packet_delete(session);
+			return PGP_MALFORMED_SYMMETRIC_SESSION_PACKET;
+		}
+
 		// 1 octet symmetric key algorithm
-		LOAD_8(&packet->symmetric_key_algorithm_id, in + pos);
+		LOAD_8(&session->symmetric_key_algorithm_id, in + pos);
 		pos += 1;
 
 		// S2K specifier
-		result = pgp_s2k_read(&packet->s2k, in + pos, packet->header.body_size - (pos - packet->header.header_size));
+		result = pgp_s2k_read(&session->s2k, in + pos, session->header.body_size - (pos - session->header.header_size));
 
 		if (result == NULL)
 		{
-			return NULL;
+			pgp_skesk_packet_delete(session);
+			return PGP_INVALID_S2K;
 		}
 
-		pos += pgp_s2k_octets(&packet->s2k);
+		pos += pgp_s2k_octets(&session->s2k);
 
 		// (Optional) Session key
-		packet->session_key_size = packet->header.body_size - (pos - packet->header.header_size);
+		session->session_key_size = session->header.body_size - (pos - session->header.header_size);
 
-		if (packet->session_key_size > 0)
+		if (session->session_key_size > 0)
 		{
-			memcpy(packet->session_key, in + pos, packet->session_key_size);
-			pos += packet->session_key_size;
+			memcpy(session->session_key, in + pos, session->session_key_size);
+			pos += session->session_key_size;
 		}
 	}
 	else
 	{
 		// Unknown version.
-		return NULL;
+		pgp_skesk_packet_delete(session);
+		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
-	return packet;
+	*packet = session;
+
+	return PGP_NO_ERROR;
+}
+
+static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t pos = 0;
+
+	if (size < PGP_PACKET_OCTETS(packet->header))
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet version
+	LOAD_8(out + pos, &packet->version);
+	pos += 1;
+
+	// 1 octet symmetric key algorithm
+	LOAD_8(out + pos, &packet->symmetric_key_algorithm_id);
+	pos += 1;
+
+	// S2K specifier
+	pos += pgp_s2k_write(&packet->s2k, out + pos);
+
+	// (Optional) Session key
+	if (packet->session_key_size > 0)
+	{
+		memcpy(out + pos, packet->session_key, packet->session_key_size);
+		pos += packet->session_key_size;
+	}
+
+	return pos;
+}
+
+static size_t pgp_skesk_packet_v5_v6_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	byte_t s2k_size = 0;
+	size_t pos = 0;
+
+	s2k_size = pgp_s2k_octets(&packet->s2k);
+
+	if (size < PGP_PACKET_OCTETS(packet->header))
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet version
+	LOAD_8(out + pos, &packet->version);
+	pos += 1;
+
+	// A 1-octet count of below 5 fields
+	byte_t count = 1 + 1 + 1 + s2k_size + packet->iv_size;
+
+	LOAD_8(out + pos, &count);
+	pos += 1;
+
+	// 1 octet symmetric key algorithm
+	LOAD_8(out + pos, &packet->symmetric_key_algorithm_id);
+	pos += 1;
+
+	// 1 octet AEAD algorithm
+	LOAD_8(out + pos, &packet->aead_algorithm_id);
+	pos += 1;
+
+	// 1 octet S2K size
+	LOAD_8(out + pos, &s2k_size);
+	pos += 1;
+
+	// S2K specifier
+	pos += pgp_s2k_write(&packet->s2k, out + pos);
+
+	// IV
+	memcpy(out + pos, packet->iv, packet->iv_size);
+	pos += packet->iv_size;
+
+	// Encrypted session key.
+	memcpy(out + pos, packet->session_key, packet->session_key_size);
+	pos += packet->session_key_size;
+
+	// Authetication key tag.
+	memcpy(out + pos, packet->tag, packet->tag_size);
+	pos += packet->tag_size;
+
+	return pos;
 }
 
 size_t pgp_skesk_packet_write(pgp_skesk_packet *packet, void *ptr, size_t size)

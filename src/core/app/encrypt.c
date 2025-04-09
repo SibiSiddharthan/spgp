@@ -97,7 +97,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 			exit(1);
 		}
 
-		session = pgp_skesk_packet_new(PGP_SKESK_V4, PGP_AES_128, 0, &s2k);
+		pgp_skesk_packet_new(&session, PGP_SKESK_V4, PGP_AES_128, 0, &s2k);
 		session = pgp_skesk_packet_session_key_encrypt(session, command->passhprase, strlen(command->passhprase), NULL, 0, NULL, 0);
 
 		session_key_size = pgp_s2k_hash(&s2k, command->passhprase, strlen(command->passhprase), session_key, 16);

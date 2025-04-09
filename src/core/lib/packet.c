@@ -525,7 +525,8 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SIG:
 		return pgp_signature_packet_read(data, size);
 	case PGP_SKESK:
-		return pgp_skesk_packet_read(data, size);
+		error = pgp_skesk_packet_read((pgp_skesk_packet **)&packet, data, size);
+		return packet;
 	case PGP_OPS:
 		return pgp_one_pass_signature_packet_read(data, size);
 	case PGP_SECKEY:
