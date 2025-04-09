@@ -63,7 +63,7 @@ pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t head
 
 	*packet = compressed;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_compressed_packet_delete(pgp_compresed_packet *packet)
@@ -204,7 +204,7 @@ pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data
 
 	*packet = compressed;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size)
@@ -259,7 +259,7 @@ pgp_error_t pgp_marker_packet_new(pgp_marker_packet **packet, byte_t header_form
 
 	*packet = marker;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_marker_packet_delete(pgp_marker_packet *packet)
@@ -313,7 +313,7 @@ pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_
 
 	*packet = marker;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size)
@@ -395,7 +395,7 @@ pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_fo
 
 	*packet = literal;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_literal_packet_delete(pgp_literal_packet *packet)
@@ -516,7 +516,7 @@ pgp_error_t pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_
 
 	pgp_literal_packet_encode_header(packet, 0);
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, size_t size)
@@ -553,6 +553,8 @@ pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, siz
 	{
 		return PGP_NO_MEMORY;
 	}
+
+	memset(literal, 0, sizeof(pgp_literal_packet));
 
 	// Copy the header
 	literal->header = header;
@@ -618,7 +620,7 @@ pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, siz
 
 	*packet = literal;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size)
@@ -741,7 +743,7 @@ pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_fo
 
 	*packet = uid;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_user_id_packet_delete(pgp_user_id_packet *packet)
@@ -788,7 +790,7 @@ pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, siz
 
 	*packet = uid;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size)
@@ -1279,7 +1281,7 @@ pgp_error_t pgp_padding_packet_new(pgp_padding_packet **packet, void *data, uint
 
 	*packet = padding;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_padding_packet_delete(pgp_padding_packet *packet)
@@ -1324,7 +1326,7 @@ pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, siz
 
 	*packet = padding;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size)
@@ -1364,7 +1366,7 @@ pgp_error_t pgp_mdc_packet_new(pgp_mdc_packet **packet, byte_t hash[20])
 
 	*packet = mdc;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_mdc_packet_delete(pgp_mdc_packet *packet)
@@ -1412,7 +1414,7 @@ pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size
 
 	*packet = mdc;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
@@ -1463,7 +1465,7 @@ pgp_error_t pgp_trust_packet_new(pgp_trust_packet **packet, byte_t header_format
 
 	*packet = trust;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_trust_packet_delete(pgp_trust_packet *packet)
@@ -1503,7 +1505,7 @@ pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t 
 
 	if (trust == NULL)
 	{
-		return PGP_NO_ERROR;
+		return PGP_SUCCESS;
 	}
 
 	// Copy the header
@@ -1514,7 +1516,7 @@ pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t 
 
 	*packet = trust;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)
@@ -1607,7 +1609,7 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 
 	*packet = keyring;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet)
@@ -1643,7 +1645,7 @@ pgp_error_t pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_t *uid, 
 
 	pgp_keyring_packet_encode_header(packet);
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size)
@@ -1718,7 +1720,7 @@ pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t sub
 
 	pgp_keyring_packet_encode_header(packet);
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32])
@@ -1766,7 +1768,7 @@ pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, siz
 		return PGP_INSUFFICIENT_DATA;
 	}
 
-	// Ensure atlease 26 octets of data (key version, trust level, subkey and uid sizes, v3 fingerprint)
+	// Ensure atleast 26 octets of data (key version, trust level, subkey and uid sizes, v3 fingerprint)
 	if (header.body_size < 26)
 	{
 		return PGP_MALFORMED_KEYRING_PACKET;
@@ -1905,7 +1907,7 @@ pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, siz
 
 	*packet = keyring;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size)
@@ -1991,7 +1993,7 @@ pgp_error_t pgp_unknown_packet_read(pgp_unknown_packet **packet, void *data, siz
 
 	*packet = unknown;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size)

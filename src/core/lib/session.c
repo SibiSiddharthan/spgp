@@ -822,7 +822,7 @@ pgp_error_t pgp_skesk_packet_new(pgp_skesk_packet **packet, byte_t version, byte
 
 	*packet = session;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 void pgp_skesk_packet_delete(pgp_skesk_packet *packet)
@@ -1192,7 +1192,7 @@ pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t 
 
 	*packet = session;
 
-	return PGP_NO_ERROR;
+	return PGP_SUCCESS;
 }
 
 static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, size_t size)

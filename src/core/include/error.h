@@ -11,7 +11,7 @@
 typedef enum _pgp_error_t
 {
 	// No error
-	PGP_NO_ERROR = 0,
+	PGP_SUCCESS = 0,
 
 	// General errors
 	PGP_NO_MEMORY,
