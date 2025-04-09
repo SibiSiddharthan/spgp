@@ -14,14 +14,14 @@
 
 #include <string.h>
 
-pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
+uint32_t pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 {
 	byte_t *in = data;
 	uint32_t pos = 0;
 
 	if (size < 1)
 	{
-		return NULL;
+		return 0;
 	}
 
 	// 1 octet id
@@ -34,20 +34,20 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 	{
 		if (size < 2)
 		{
-			return NULL;
+			return 0;
 		}
 
 		// 1 octet hash algorithm id
 		LOAD_8(&s2k->simple.hash_id, in + pos);
 		pos += 1;
 
-		return s2k;
+		return pos;
 	}
 	case PGP_S2K_SALTED:
 	{
 		if (size < 10)
 		{
-			return NULL;
+			return 0;
 		}
 
 		// 1 octet hash algorithm id
@@ -58,14 +58,13 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 		LOAD_64(&s2k->salted.salt, in + pos);
 		pos += 8;
 
-		return s2k;
+		return pos;
 	}
 	case PGP_S2K_ITERATED:
 	{
-
 		if (size < 11)
 		{
-			return NULL;
+			return 0;
 		}
 
 		// 1 octet hash algorithm id
@@ -80,13 +79,13 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 		LOAD_8(&s2k->iterated.count, in + pos);
 		pos += 1;
 
-		return s2k;
+		return pos;
 	}
 	case PGP_S2K_ARGON2:
 	{
 		if (size < 20)
 		{
-			return NULL;
+			return 0;
 		}
 
 		// 16 octet salt
@@ -105,10 +104,10 @@ pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
 		LOAD_8(&s2k->argon2.m, in + pos);
 		pos += 1;
 
-		return s2k;
+		return pos;
 	}
 	default:
-		return NULL;
+		return 0;
 	}
 }
 

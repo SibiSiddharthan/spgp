@@ -2215,8 +2215,6 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 
 	if (packet->s2k_usage != 0)
 	{
-		void *result;
-
 		byte_t s2k_size = 0;
 		byte_t conditional_field_size = 0;
 
@@ -2248,14 +2246,16 @@ pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size)
 		// S2K specifier
 		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
 		{
+			uint32_t result = 0;
+
 			result = pgp_s2k_read(&packet->s2k, in + pos, s2k_size != 0 ? s2k_size : (packet->header.body_size - pos));
 
-			if (result == NULL)
+			if (result == 0)
 			{
 				return NULL;
 			}
 
-			pos += pgp_s2k_octets(&packet->s2k);
+			pos += result;
 		}
 
 		// IV
@@ -2911,8 +2911,6 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 
 	if (packet->s2k_usage != 0)
 	{
-		void *result;
-
 		byte_t s2k_size = 0;
 		byte_t conditional_field_size = 0;
 
@@ -2938,14 +2936,16 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 		// S2K specifier
 		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
 		{
+			uint32_t result = 0;
+
 			result = pgp_s2k_read(&packet->s2k, in + pos, s2k_size != 0 ? s2k_size : (packet->header.body_size - pos));
 
-			if (result == NULL)
+			if (result == 0)
 			{
 				return NULL;
 			}
 
-			pos += pgp_s2k_octets(&packet->s2k);
+			pos += result;
 		}
 
 		// IV

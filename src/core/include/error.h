@@ -27,7 +27,7 @@ typedef enum _pgp_error_t
 	PGP_INVALID_AEAD_CIPHER_PAIR,
 
 	// S2K errors
-	PGP_INVALID_S2K,
+	PGP_INVALID_S2K_SPECIFIER,
 
 	// Key errors
 	PGP_INVALID_KEY_VERSION,

@@ -9,6 +9,7 @@
 #define SPGP_S2K_H
 
 #include <pgp.h>
+#include <error.h>
 
 // Refer RFC 9580 - OpenPGP, Section 3.7 String-to-Key (S2K) Specifier
 
@@ -77,7 +78,7 @@ static inline uint32_t pgp_s2k_octets(pgp_s2k *s2k)
 	return 0;
 }
 
-pgp_s2k *pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size);
+uint32_t pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size);
 uint32_t pgp_s2k_write(pgp_s2k *s2k, void *ptr);
 
 pgp_s2k *pgp_s2k_simple_init(pgp_s2k *s2k, byte_t hash_id);

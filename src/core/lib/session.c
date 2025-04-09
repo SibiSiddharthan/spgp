@@ -1087,7 +1087,7 @@ pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t 
 
 	if (session->version == PGP_SKESK_V6 || session->version == PGP_SKESK_V5)
 	{
-		void *result;
+		uint32_t result = 0;
 		byte_t count = 0;
 		byte_t s2k_size = 0;
 
@@ -1124,10 +1124,10 @@ pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t 
 
 		result = pgp_s2k_read(&session->s2k, in + pos, s2k_size);
 
-		if (result == NULL)
+		if (result == 0)
 		{
 			pgp_skesk_packet_delete(session);
-			return PGP_INVALID_S2K;
+			return PGP_INVALID_S2K_SPECIFIER;
 		}
 
 		pos += s2k_size;
@@ -1149,7 +1149,7 @@ pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t 
 	}
 	else if (session->version == PGP_SKESK_V4)
 	{
-		void *result;
+		uint32_t result = 0;
 
 		// Ensure atleast one byte for the symmetric cipher.
 		// Other routines below will validate their respective size constraints
@@ -1166,13 +1166,13 @@ pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t 
 		// S2K specifier
 		result = pgp_s2k_read(&session->s2k, in + pos, session->header.body_size - (pos - session->header.header_size));
 
-		if (result == NULL)
+		if (result == 0)
 		{
 			pgp_skesk_packet_delete(session);
-			return PGP_INVALID_S2K;
+			return PGP_INVALID_S2K_SPECIFIER;
 		}
 
-		pos += pgp_s2k_octets(&session->s2k);
+		pos += result;
 
 		// (Optional) Session key
 		session->session_key_size = session->header.body_size - (pos - session->header.header_size);
