@@ -171,12 +171,6 @@ pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet
 	buffer_t buffer = {0};
 	pgp_compresed_packet *compressed = NULL;
 
-	// Ensure atleast the compression algorithm is given
-	if (header->body_size == 0)
-	{
-		return PGP_MALFORMED_COMPRESSED_PACKET;
-	}
-
 	compressed = malloc(sizeof(pgp_compresed_packet));
 
 	if (compressed == NULL)
