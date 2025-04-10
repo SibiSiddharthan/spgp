@@ -19,6 +19,7 @@ typedef enum _pgp_error_t
 	PGP_INVALID_PARAMETER,
 	PGP_INVALID_HEADER_FORMAT,
 	PGP_INCORRECT_FUNCTION,
+	PGP_EMPTY_PACKET,
 
 	// Cryptographic errors
 	PGP_RAND_ERROR,

@@ -145,19 +145,73 @@ size_t pgp_compressed_packet_decompress_data(pgp_compresed_packet *packet, void 
 	}
 }
 
+static pgp_error_t pgp_compressed_packet_read_body(pgp_compresed_packet *packet, buffer_t *buffer)
+{
+
+	packet->data_size = packet->header.body_size - 1;
+	packet->data = malloc(packet->data_size);
+
+	if (packet->data == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	// Get the compression algorithm
+	CHECK_READ(read8(buffer, &packet->compression_algorithm_id), PGP_MALFORMED_COMPRESSED_PACKET);
+
+	// Copy the compressed data.
+	CHECK_READ(readn(buffer, packet->data, packet->data_size), PGP_MALFORMED_COMPRESSED_PACKET);
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_compresed_packet *compressed = NULL;
+
+	// Ensure atleast the compression algorithm is given
+	if (header->body_size == 0)
+	{
+		return PGP_MALFORMED_COMPRESSED_PACKET;
+	}
+
+	compressed = malloc(sizeof(pgp_compresed_packet));
+
+	if (compressed == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(compressed, 0, sizeof(pgp_compresed_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	compressed->header = *header;
+
+	// Read the body
+	error = pgp_compressed_packet_read_body(compressed, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_compressed_packet_delete(compressed);
+		return error;
+	}
+
+	*packet = compressed;
+
+	return error;
+}
+
 pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data, size_t size)
 {
-	byte_t *in = data;
-
-	pgp_compresed_packet *compressed = NULL;
 	pgp_packet_header header = {0};
 
-	size_t pos = 0;
-	uint32_t data_size = 0;
-
 	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-	data_size = header.body_size - 1;
 
 	if (pgp_packet_get_type(header.tag) != PGP_COMP)
 	{
@@ -169,42 +223,12 @@ pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data
 		return PGP_INSUFFICIENT_DATA;
 	}
 
-	// Ensure atleast the compression algorithm is given
 	if (header.body_size == 0)
 	{
-		return PGP_MALFORMED_COMPRESSED_PACKET;
+		return PGP_EMPTY_PACKET;
 	}
 
-	packet = malloc(sizeof(pgp_compresed_packet));
-
-	if (packet == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(packet, 0, sizeof(pgp_compresed_packet));
-
-	compressed->data = malloc(data_size);
-
-	if (compressed->data == NULL)
-	{
-		pgp_compressed_packet_delete(compressed);
-		return PGP_NO_MEMORY;
-	}
-
-	// Copy the header
-	compressed->header = header;
-
-	// Get the compression algorithm
-	LOAD_8(&compressed->compression_algorithm_id, in + pos);
-	pos += 1;
-
-	// Copy the compressed data.
-	memcpy(compressed->data, in + pos, data_size);
-
-	*packet = compressed;
-
-	return PGP_SUCCESS;
+	return pgp_compressed_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size)

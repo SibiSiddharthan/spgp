@@ -492,15 +492,18 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
 	return pos;
 }
 
+// Internal read functions
+pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet, pgp_packet_header *header, void *data);
+
 void *pgp_packet_read(void *data, size_t size)
 {
 	pgp_packet_header header = pgp_packet_header_read(data, size);
-	pgp_packet_type ptype = pgp_packet_get_type(header.tag);
+	pgp_packet_type type = pgp_packet_get_type(header.tag);
 
 	pgp_error_t error = 0;
 	void *packet = NULL;
 
-	if (ptype == PGP_RESERVED)
+	if (type == PGP_RESERVED)
 	{
 		// Invalid packet
 		return NULL;
@@ -518,7 +521,7 @@ void *pgp_packet_read(void *data, size_t size)
 		return NULL;
 	}
 
-	switch (ptype)
+	switch (type)
 	{
 	case PGP_PKESK:
 		return pgp_pkesk_packet_read(data, size);
@@ -536,7 +539,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SECSUBKEY:
 		return pgp_secret_key_packet_read(data, size);
 	case PGP_COMP:
-		error = pgp_compressed_packet_read((pgp_compresed_packet **)&packet, data, size);
+		error = pgp_compressed_packet_read_with_header((pgp_compresed_packet **)&packet, &header, data);
 		return packet;
 	case PGP_SED:
 		return pgp_sed_packet_read(data, size);
