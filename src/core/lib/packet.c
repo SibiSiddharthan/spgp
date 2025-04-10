@@ -494,6 +494,7 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
 
 // Internal read functions
 pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet, pgp_packet_header *header, void *data);
+pgp_error_t pgp_marker_packet_read_with_header(pgp_marker_packet **packet, pgp_packet_header *header, void *data);
 
 void *pgp_packet_read(void *data, size_t size)
 {
@@ -544,7 +545,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SED:
 		return pgp_sed_packet_read(data, size);
 	case PGP_MARKER:
-		error = pgp_marker_packet_read((pgp_marker_packet **)&packet, data, size);
+		error = pgp_marker_packet_read_with_header((pgp_marker_packet **)&packet, &header, data);
 		return packet;
 	case PGP_LIT:
 		error = pgp_literal_packet_read((pgp_literal_packet **)&packet, data, size);
