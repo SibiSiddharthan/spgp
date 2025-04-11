@@ -14,9 +14,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32_t size)
+static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, uint32_t size)
 {
-	byte_t *in = ptr;
+	byte_t *in = data;
 	size_t pos = 0;
 
 	switch (packet->public_key_algorithm_id)
@@ -44,6 +44,7 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		pos += mpi_read(sk->c, in, size);
 
 		packet->encrypted_session_key = sk;
+		packet->encrypted_session_key_octets = pos;
 
 		return PGP_SUCCESS;
 	}
@@ -91,6 +92,7 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		pos += mpi_read(sk->s, in + pos, size - pos);
 
 		packet->encrypted_session_key = sk;
+		packet->encrypted_session_key_octets = pos;
 
 		return PGP_SUCCESS;
 	}
@@ -100,7 +102,7 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		uint16_t mpi_point_bits = ((uint16_t)in[0] << 8) + in[1];
 		uint32_t mpi_point_size = mpi_size(mpi_point_bits);
 
-		if (size < mpi_octets(mpi_point_bits))
+		if (size < mpi_octets(mpi_point_bits) + 1) // For session key octet count
 		{
 			return PGP_MALFORMED_ECDH_SESSION_KEY;
 		}
@@ -120,17 +122,30 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		LOAD_8(&sk->encoded_session_key_size, in + pos);
 		pos += 1;
 
+		if (size - pos < sk->encoded_session_key_size)
+		{
+			return PGP_MALFORMED_ECDH_SESSION_KEY;
+		}
+
 		// Encrypted session key
 		memcpy(sk->encoded_session_key, in + pos, sk->encoded_session_key_size);
 		pos += sk->encoded_session_key_size;
 
 		packet->encrypted_session_key = sk;
+		packet->encrypted_session_key_octets = pos;
 
 		return PGP_SUCCESS;
 	}
 	case PGP_X25519:
 	{
-		pgp_x25519_kex *sk = malloc(sizeof(pgp_x25519_kex));
+		pgp_x25519_kex *sk = NULL;
+
+		if (size - pos < 33)
+		{
+			return PGP_MALFORMED_X25519_SESSION_KEY;
+		}
+
+		sk = malloc(sizeof(pgp_x25519_kex));
 
 		if (sk == NULL)
 		{
@@ -147,6 +162,11 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		LOAD_8(&sk->octet_count, in + pos);
 		pos += 1;
 
+		if (size - pos < sk->octet_count)
+		{
+			return PGP_MALFORMED_X25519_SESSION_KEY;
+		}
+
 		if (packet->version == PGP_PKESK_V3)
 		{
 			// 1 octet algorithm id
@@ -161,12 +181,20 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		pos += encrypted_session_key_size;
 
 		packet->encrypted_session_key = sk;
+		packet->encrypted_session_key_octets = pos;
 
 		return PGP_SUCCESS;
 	}
 	case PGP_X448:
 	{
-		pgp_x448_kex *sk = malloc(sizeof(pgp_x448_kex));
+		pgp_x448_kex *sk = NULL;
+
+		if (size - pos < 57)
+		{
+			return PGP_MALFORMED_X448_SESSION_KEY;
+		}
+
+		sk = malloc(sizeof(pgp_x448_kex));
 
 		if (sk == NULL)
 		{
@@ -183,6 +211,11 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		LOAD_8(&sk->octet_count, in + pos);
 		pos += 1;
 
+		if (size - pos < sk->octet_count)
+		{
+			return PGP_MALFORMED_X448_SESSION_KEY;
+		}
+
 		if (packet->version == PGP_PKESK_V3)
 		{
 			// 1 octet algorithm id
@@ -197,11 +230,21 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uin
 		pos += encrypted_session_key_size;
 
 		packet->encrypted_session_key = sk;
+		packet->encrypted_session_key_octets = pos;
 
 		return PGP_SUCCESS;
 	}
 	default:
+		pgp_unknown_kex *sk = malloc(size);
+
+		if (sk == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		memcpy(sk->encrypted_session_key, data, size);
 		packet->encrypted_session_key_octets = size;
+
 		return PGP_SUCCESS;
 	}
 }
