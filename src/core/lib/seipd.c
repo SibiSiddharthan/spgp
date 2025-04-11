@@ -6,6 +6,7 @@
 */
 
 #include <pgp.h>
+#include <error.h>
 #include <packet.h>
 #include <seipd.h>
 #include <crypto.h>
@@ -15,9 +16,18 @@
 
 #include <sha.h>
 
-pgp_sed_packet *pgp_sed_packet_new()
+pgp_error_t pgp_sed_packet_new(pgp_sed_packet **packet)
 {
-	return malloc(sizeof(pgp_sed_packet));
+	*packet = malloc(sizeof(pgp_sed_packet));
+
+	if (*packet == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(*packet, 0, sizeof(pgp_sed_packet));
+
+	return PGP_SUCCESS;
 }
 
 void pgp_sed_packet_delete(pgp_sed_packet *packet)
@@ -101,45 +111,58 @@ size_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algor
 	return plaintext_size;
 }
 
-pgp_sed_packet *pgp_sed_packet_read(void *data, size_t size)
+pgp_error_t pgp_sed_packet_read_with_header(pgp_sed_packet **packet, pgp_packet_header *header, void *data)
 {
-	pgp_sed_packet *packet = NULL;
-	pgp_packet_header header = {0};
+	pgp_sed_packet *sed = NULL;
 
-	header = pgp_packet_header_read(data, size);
+	sed = malloc(sizeof(pgp_sed_packet));
+
+	if (packet == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sed, 0, sizeof(pgp_sed_packet));
+
+	sed->data = malloc(header->body_size);
+
+	if (sed->data == NULL)
+	{
+		pgp_sed_packet_delete(sed);
+		return PGP_NO_MEMORY;
+	}
+
+	// Copy the header
+	sed->header = *header;
+
+	// Copy the packet data.
+	memcpy(sed->data, PTR_OFFSET(data, header->header_size), header->body_size);
+
+	*packet = sed;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_sed_packet_read(pgp_sed_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_SED)
 	{
-		return NULL;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_sed_packet));
-
-	if (packet == NULL)
+	if (header.body_size == 0)
 	{
-		return NULL;
+		return PGP_EMPTY_PACKET;
 	}
 
-	packet->data = malloc(header.body_size);
-
-	if (packet->data == NULL)
-	{
-		free(packet);
-		return NULL;
-	}
-
-	// Copy the header
-	packet->header = header;
-
-	// Copy the packet data.
-	memcpy(packet->data, PTR_OFFSET(data, header.header_size), packet->header.body_size);
-
-	return packet;
+	return pgp_sed_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
