@@ -498,6 +498,8 @@ pgp_error_t pgp_skesk_packet_read_with_header(pgp_skesk_packet **packet, pgp_pac
 
 pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signature_packet **packet, pgp_packet_header *header, void *data);
 
+pgp_error_t pgp_public_key_packet_read_with_header(pgp_key_packet **packet, pgp_packet_header *header, void *data);
+
 pgp_error_t pgp_sed_packet_read_with_header(pgp_sed_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_seipd_packet_read_with_header(pgp_seipd_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_aead_packet_read_with_header(pgp_aead_packet **packet, pgp_packet_header *header, void *data);
@@ -554,7 +556,8 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_SECKEY:
 		return pgp_secret_key_packet_read(data, size);
 	case PGP_PUBKEY:
-		return pgp_public_key_packet_read(data, size);
+		error = pgp_public_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		return packet;
 	case PGP_SECSUBKEY:
 		return pgp_secret_key_packet_read(data, size);
 	case PGP_COMP:
@@ -576,7 +579,8 @@ void *pgp_packet_read(void *data, size_t size)
 		error = pgp_user_id_packet_read_with_header((pgp_user_id_packet **)&packet, &header, data);
 		return packet;
 	case PGP_PUBSUBKEY:
-		return pgp_public_key_packet_read(data, size);
+		error = pgp_public_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		return packet;
 	case PGP_UAT:
 		return pgp_user_attribute_packet_read(data, size);
 	case PGP_SEIPD:

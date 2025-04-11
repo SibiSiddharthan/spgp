@@ -175,7 +175,7 @@ pgp_key_packet *pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase,
 									   void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id);
 pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size);
 
-pgp_key_packet *pgp_public_key_packet_read(void *data, size_t size);
+pgp_error_t pgp_public_key_packet_read(pgp_key_packet **packet, void *data, size_t size);
 size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
 size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 

@@ -36,6 +36,8 @@ typedef enum _pgp_error_t
 
 	// Key errors
 	PGP_INVALID_KEY_VERSION,
+	PGP_MALFORMED_PUBLIC_KEY_PACKET,
+	PGP_MALFORMED_SECRET_KEY_PACKET,
 
 	// Session errors
 	PGP_MALFORMED_RSA_SESSION_KEY,
