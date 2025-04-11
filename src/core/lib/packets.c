@@ -331,6 +331,11 @@ pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_
 		return PGP_INSUFFICIENT_DATA;
 	}
 
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
 	return pgp_marker_packet_read_with_header(packet, &header, data);
 }
 
@@ -771,12 +776,38 @@ void pgp_user_id_packet_delete(pgp_user_id_packet *packet)
 	free(packet);
 }
 
-pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, size_t size)
+pgp_error_t pgp_user_id_packet_read_with_header(pgp_user_id_packet **packet, pgp_packet_header *header, void *data)
 {
 	pgp_user_id_packet *uid = NULL;
-	pgp_packet_header header = {0};
 
-	header = pgp_packet_header_read(data, size);
+	if (header->body_size == 0)
+	{
+		return PGP_EMPTY_USER_ID;
+	}
+
+	uid = malloc(sizeof(pgp_user_id_packet) + header->body_size);
+
+	if (uid == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(uid, 0, sizeof(pgp_user_id_packet) + header->body_size);
+
+	// Copy the header
+	uid->header = *header;
+
+	// Copy the user data.
+	memcpy(uid->user_data, PTR_OFFSET(data, header->header_size), header->body_size);
+
+	*packet = uid;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_UID)
 	{
@@ -790,27 +821,10 @@ pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, siz
 
 	if (header.body_size == 0)
 	{
-		return PGP_EMPTY_USER_ID;
+		return PGP_EMPTY_PACKET;
 	}
 
-	uid = malloc(sizeof(pgp_user_id_packet) + header.body_size);
-
-	if (uid == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(uid, 0, sizeof(pgp_user_id_packet) + header.body_size);
-
-	// Copy the header
-	uid->header = header;
-
-	// Copy the user data.
-	memcpy(uid->user_data, PTR_OFFSET(data, header.header_size), header.body_size);
-
-	*packet = uid;
-
-	return PGP_SUCCESS;
+	return pgp_user_id_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size)
