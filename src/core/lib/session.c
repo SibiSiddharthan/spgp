@@ -26,7 +26,14 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, ui
 	{
 		// MPI of (m^e) mod n
 		pgp_rsa_kex *sk = NULL;
-		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+		uint16_t mpi_bits = 0;
+
+		if (size < 2)
+		{
+			return PGP_MALFORMED_RSA_SESSION_KEY;
+		}
+
+		mpi_bits = ((uint16_t)in[0] << 8) + in[1];
 
 		if (size < mpi_octets(mpi_bits))
 		{
@@ -58,6 +65,11 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, ui
 		uint16_t mpi_s_bits = 0;
 		uint32_t mpi_r_size = 0;
 		uint32_t mpi_s_size = 0;
+
+		if (size < 2)
+		{
+			return PGP_MALFORMED_ELGAMAL_SESSION_KEY;
+		}
 
 		mpi_r_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_r_bits);
@@ -99,8 +111,16 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, ui
 	case PGP_ECDH:
 	{
 		pgp_ecdh_kex *sk = NULL;
-		uint16_t mpi_point_bits = ((uint16_t)in[0] << 8) + in[1];
-		uint32_t mpi_point_size = mpi_size(mpi_point_bits);
+		uint16_t mpi_point_bits = 0;
+		uint32_t mpi_point_size = 0;
+
+		if (size < 2)
+		{
+			return PGP_MALFORMED_ECDH_SESSION_KEY;
+		}
+
+		mpi_point_bits = ((uint16_t)in[0] << 8) + in[1];
+		mpi_point_size = mpi_size(mpi_point_bits);
 
 		if (size < mpi_octets(mpi_point_bits) + 1) // For session key octet count
 		{
