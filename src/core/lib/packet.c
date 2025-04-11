@@ -500,6 +500,7 @@ pgp_error_t pgp_trust_packet_read_with_header(pgp_trust_packet **packet, pgp_pac
 pgp_error_t pgp_user_id_packet_read_with_header(pgp_user_id_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_mdc_packet_read_with_header(pgp_mdc_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_padding_packet_read_with_header(pgp_padding_packet **packet, pgp_packet_header *header, void *data);
+pgp_error_t pgp_keyring_packet_read_with_header(pgp_keyring_packet **packet, pgp_packet_header *header, void *data);
 
 void *pgp_packet_read(void *data, size_t size)
 {
@@ -578,7 +579,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_KEYDEF:
 		return pgp_key_packet_read(data, size);
 	case PGP_KEYRING:
-		error = pgp_keyring_packet_read((pgp_keyring_packet **)&packet, data, size);
+		error = pgp_keyring_packet_read_with_header((pgp_keyring_packet **)&packet, &header, data);
 		return packet;
 	default:
 		error = pgp_unknown_packet_read((pgp_unknown_packet **)&packet, data, size);
