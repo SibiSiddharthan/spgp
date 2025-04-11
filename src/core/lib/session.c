@@ -14,7 +14,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32_t size)
+static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
 	size_t pos = 0;
@@ -30,14 +30,14 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		if (size < mpi_octets(mpi_bits))
 		{
-			return 0;
+			return PGP_MALFORMED_RSA_SESSION_KEY;
 		}
 
 		sk = malloc(sizeof(pgp_rsa_kex) + mpi_size(mpi_bits));
 
 		if (sk == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		sk->c = mpi_init(PTR_OFFSET(sk, sizeof(pgp_rsa_kex)), mpi_size(mpi_bits), mpi_bits);
@@ -45,7 +45,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		packet->encrypted_session_key = sk;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
@@ -58,23 +58,30 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 		uint32_t mpi_r_size = 0;
 		uint32_t mpi_s_size = 0;
 
-		mpi_r_bits = ((uint16_t)in[0] << 8) + in[1];
-		offset = mpi_octets(mpi_r_bits);
+		mpi_r_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		offset += mpi_octets(mpi_r_bits);
+
+		if (size < offset)
+		{
+			return PGP_MALFORMED_ELGAMAL_SESSION_KEY;
+		}
+
 		mpi_s_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		offset += mpi_octets(mpi_s_bits);
+
+		if (size < offset)
+		{
+			return PGP_MALFORMED_ELGAMAL_SESSION_KEY;
+		}
 
 		mpi_r_size = mpi_size(mpi_r_bits);
 		mpi_s_size = mpi_size(mpi_s_bits);
-
-		if (size < (mpi_octets(mpi_r_bits) + mpi_octets(mpi_s_bits)))
-		{
-			return 0;
-		}
 
 		sk = malloc(sizeof(pgp_elgamal_kex) + mpi_r_size + mpi_s_size);
 
 		if (sk == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		sk->r = mpi_init(PTR_OFFSET(sk, sizeof(pgp_elgamal_kex)), mpi_r_size, mpi_r_bits);
@@ -85,7 +92,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		packet->encrypted_session_key = sk;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_ECDH:
 	{
@@ -95,14 +102,14 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		if (size < mpi_octets(mpi_point_bits))
 		{
-			return 0;
+			return PGP_MALFORMED_ECDH_SESSION_KEY;
 		}
 
 		sk = malloc(sizeof(pgp_ecdh_kex) + mpi_point_size);
 
 		if (sk == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		// MPI of EC point
@@ -119,7 +126,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		packet->encrypted_session_key = sk;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_X25519:
 	{
@@ -127,7 +134,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		if (sk == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(sk, 0, sizeof(pgp_x25519_kex));
@@ -155,7 +162,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		packet->encrypted_session_key = sk;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_X448:
 	{
@@ -163,7 +170,7 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		if (sk == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(sk, 0, sizeof(pgp_x448_kex));
@@ -191,10 +198,11 @@ static uint32_t pgp_session_key_read(pgp_pkesk_packet *packet, void *ptr, uint32
 
 		packet->encrypted_session_key = sk;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	default:
-		return 0;
+		packet->encrypted_session_key_octets = size;
+		return PGP_SUCCESS;
 	}
 }
 
@@ -327,109 +335,41 @@ static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 	}
 }
 
-static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
+pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t session_key_algorithm_id)
 {
-	byte_t *out = ptr;
-	size_t pos = 0;
-
-	if (size < PGP_PACKET_OCTETS(packet->header))
-	{
-		return 0;
-	}
-
-	// Header
-	pos += pgp_packet_header_write(&packet->header, out + pos);
-
-	// 1 octet version
-	LOAD_8(out + pos, &packet->version);
-	pos += 1;
-
-	// A 8-octet key ID
-	LOAD_64(out + pos, &packet->key_id);
-	pos += 8;
-
-	// 1 octet public-key algorithm
-	LOAD_8(out + pos, &packet->public_key_algorithm_id);
-	pos += 1;
-
-	pos += pgp_session_key_write(packet, out + pos, size - pos);
-
-	return pos;
-}
-
-static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
-{
-	byte_t *out = ptr;
-	size_t pos = 0;
-
-	if (size < PGP_PACKET_OCTETS(packet->header))
-	{
-		return 0;
-	}
-
-	// Header
-	pos += pgp_packet_header_write(&packet->header, out + pos);
-
-	// 1 octet version
-	LOAD_8(out + pos, &packet->version);
-	pos += 1;
-
-	// 1 octet octet count flag
-	LOAD_8(out + pos, &packet->key_octet_count);
-	pos += 1;
-
-	if (packet->key_octet_count > 0)
-	{
-		// 1 octet key version
-		LOAD_8(out + pos, &packet->key_version);
-		pos += 1;
-
-		if ((packet->key_octet_count - 1) == 32) // V6 key
-		{
-			memcpy(out + pos, packet->key_fingerprint, 32);
-			pos += 32;
-		}
-		else // V4 key
-		{
-			memcpy(out + pos, packet->key_fingerprint, 20);
-			pos += 20;
-		}
-	}
-
-	// 1 octet public-key algorithm
-	LOAD_8(out + pos, &packet->public_key_algorithm_id);
-	pos += 1;
-
-	pos += pgp_session_key_write(packet, out + pos, size - pos);
-
-	return pos;
-}
-
-pgp_pkesk_packet *pgp_pkesk_packet_new(byte_t version, byte_t public_key_algorithm_id, byte_t session_key_algorithm_id)
-{
-	pgp_pkesk_packet *packet = NULL;
+	pgp_pkesk_packet *session = NULL;
 
 	if (version != PGP_PKESK_V6 && version != PGP_PKESK_V3)
 	{
-		return NULL;
+		return PGP_INVALID_PUBLIC_SESSION_PACKET_VERSION;
+	}
+
+	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return PGP_INVALID_PUBLIC_ALGORITHM;
+	}
+
+	if (pgp_symmetric_cipher_algorithm_validate(session_key_algorithm_id) == 0)
+	{
+		return PGP_INVALID_CIPHER_ALGORITHM;
 	}
 
 	packet = malloc(sizeof(pgp_pkesk_packet));
 
 	if (packet == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	memset(packet, 0, sizeof(pgp_pkesk_packet));
 
-	packet->version = version;
-	packet->public_key_algorithm_id = public_key_algorithm_id;
-	packet->symmetric_key_algorithm_id = session_key_algorithm_id;
+	session->version = version;
+	session->public_key_algorithm_id = public_key_algorithm_id;
+	session->symmetric_key_algorithm_id = session_key_algorithm_id;
 
-	pgp_pkesk_packet_encode_header(packet);
+	pgp_pkesk_packet_encode_header(session);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
 void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet)
@@ -633,90 +573,187 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 	return result;
 }
 
-pgp_pkesk_packet *pgp_pkesk_packet_read(void *data, size_t size)
+pgp_error_t pgp_pkesk_packet_read_body(pgp_pkesk_packet *packet, buffer_t *buffer)
 {
-	byte_t *in = data;
-
-	pgp_pkesk_packet *packet = NULL;
-	pgp_packet_header header = {0};
-
-	size_t pos = 0;
-
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-
-	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
-	{
-		return NULL;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return NULL;
-	}
-
-	packet = malloc(sizeof(pgp_pkesk_packet));
-
-	if (packet == NULL)
-	{
-		return NULL;
-	}
-
-	// Copy the header
-	packet->header = header;
-
 	// 1 octet version
-	LOAD_8(&packet->version, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
 
 	if (packet->version == PGP_PKESK_V6)
 	{
 		// 1 octet anonymous flag
-		LOAD_8(&packet->key_octet_count, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->key_octet_count), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
 
 		if (packet->key_octet_count > 0)
 		{
 			// 1 octet key version
-			LOAD_8(&packet->key_version, in + pos);
-			pos += 1;
+			CHECK_READ(read8(buffer, &packet->key_version), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
 
-			if ((packet->key_octet_count - 1) == 32) // V6 key
+			if ((packet->key_octet_count - 1) == PGP_KEY_V6_FINGERPRINT_SIZE) // V6 or V5 key
 			{
-				memcpy(packet->key_fingerprint, in + pos, 32);
-				pos += 32;
+				CHECK_READ(readn(buffer, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
 			}
-			else if ((packet->key_octet_count - 1) == 20) // V4 key
+			else if ((packet->key_octet_count - 1) == PGP_KEY_V4_FINGERPRINT_SIZE) // V4 key
 			{
-				memcpy(packet->key_fingerprint, in + pos, 20);
-				pos += 20;
+				CHECK_READ(readn(buffer, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
 			}
 			else
 			{
-				// Invalid key fingerprint.
-				return NULL;
+				return PGP_MALFORMED_PUBLIC_SESSION_PACKET_COUNT;
 			}
 		}
 	}
 	else if (packet->version == PGP_PKESK_V3)
 	{
 		// A 8-octet Key ID of the signer.
-		LOAD_64(packet->key_id, in + pos);
-		pos += 8;
+		CHECK_READ(read64(buffer, packet->key_id), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
 	}
 	else
 	{
 		// Unknown version.
-		return NULL;
+		return PGP_INVALID_PUBLIC_SESSION_PACKET_VERSION;
 	}
 
 	// 1 octet public-key algorithm
-	LOAD_8(&packet->public_key_algorithm_id, in + pos);
+	CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
+
+	// Read the encrypted session key
+	return pgp_session_key_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
+}
+
+pgp_error_t pgp_pkesk_packet_read_with_header(pgp_pkesk_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_pkesk_packet *session = NULL;
+
+	session = malloc(sizeof(pgp_pkesk_packet));
+
+	if (session == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(session, 0, sizeof(pgp_pkesk_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	session->header = *header;
+
+	// Read the body
+	error = pgp_pkesk_packet_read_body(session, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_pkesk_packet_delete(session);
+		return error;
+	}
+
+	*packet = session;
+
+	return error;
+}
+
+pgp_error_t pgp_pkesk_packet_read(pgp_pkesk_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	return pgp_pkesk_packet_read_with_header(packet, &header, data);
+}
+
+static size_t pgp_pkesk_packet_v3_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t pos = 0;
+
+	if (size < PGP_PACKET_OCTETS(packet->header))
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet version
+	LOAD_8(out + pos, &packet->version);
 	pos += 1;
 
-	pgp_session_key_read(packet, in + pos, packet->header.body_size - (pos - packet->header.header_size));
+	// A 8-octet key ID
+	LOAD_64(out + pos, &packet->key_id);
+	pos += 8;
 
-	return packet;
+	// 1 octet public-key algorithm
+	LOAD_8(out + pos, &packet->public_key_algorithm_id);
+	pos += 1;
+
+	pos += pgp_session_key_write(packet, out + pos, size - pos);
+
+	return pos;
+}
+
+static size_t pgp_pkesk_packet_v6_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t pos = 0;
+
+	if (size < PGP_PACKET_OCTETS(packet->header))
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet version
+	LOAD_8(out + pos, &packet->version);
+	pos += 1;
+
+	// 1 octet octet count flag
+	LOAD_8(out + pos, &packet->key_octet_count);
+	pos += 1;
+
+	if (packet->key_octet_count > 0)
+	{
+		// 1 octet key version
+		LOAD_8(out + pos, &packet->key_version);
+		pos += 1;
+
+		if ((packet->key_octet_count - 1) == 32) // V6 key
+		{
+			memcpy(out + pos, packet->key_fingerprint, 32);
+			pos += 32;
+		}
+		else // V4 key
+		{
+			memcpy(out + pos, packet->key_fingerprint, 20);
+			pos += 20;
+		}
+	}
+
+	// 1 octet public-key algorithm
+	LOAD_8(out + pos, &packet->public_key_algorithm_id);
+	pos += 1;
+
+	pos += pgp_session_key_write(packet, out + pos, size - pos);
+
+	return pos;
 }
 
 size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size)
