@@ -2071,60 +2071,60 @@ void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
 	free(subpacket);
 }
 
-pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
-																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
-																 void *key_fingerprint, byte_t key_fingerprint_size)
+pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **packet, byte_t version, byte_t type, byte_t nested,
+											  byte_t public_key_algorithm_id, byte_t hash_algorithm_id, void *salt, byte_t salt_size,
+											  void *key_fingerprint, byte_t key_fingerprint_size)
 {
-	pgp_one_pass_signature_packet *packet = NULL;
+	pgp_one_pass_signature_packet *ops = NULL;
 
 	if (version != PGP_ONE_PASS_SIGNATURE_V3 && version != PGP_ONE_PASS_SIGNATURE_V6)
 	{
-		return NULL;
+		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
 	}
 
 	if (pgp_signature_type_validate(type) == 0)
 	{
-		return NULL;
+		return PGP_INVALID_SIGNATURE_TYPE;
 	}
 
 	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
 	{
-		return NULL;
+		return PGP_INVALID_SIGNATURE_ALGORITHM;
 	}
 
 	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
 	{
-		return NULL;
+		return PGP_INVALID_HASH_ALGORITHM;
 	}
 
 	if (version == PGP_ONE_PASS_SIGNATURE_V6)
 	{
 		if (key_fingerprint_size != PGP_KEY_V6_FINGERPRINT_SIZE)
 		{
-			return NULL;
+			return PGP_INVALID_PARAMETER;
 		}
 
 		if (pgp_hash_salt_size(hash_algorithm_id) == 0 || pgp_hash_salt_size(hash_algorithm_id) != salt_size)
 		{
-			return NULL;
+			return PGP_INVALID_HASH_SALT_SIZE;
 		}
 	}
 	else
 	{
 		if (key_fingerprint_size != PGP_KEY_ID_SIZE)
 		{
-			return NULL;
+			return PGP_INVALID_PARAMETER;
 		}
 	}
 
-	packet = malloc(sizeof(pgp_one_pass_signature_packet));
+	ops = malloc(sizeof(pgp_one_pass_signature_packet));
 
-	if (packet == NULL)
+	if (ops == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_one_pass_signature_packet));
+	memset(ops, 0, sizeof(pgp_one_pass_signature_packet));
 
 	// A 1-octet version number.
 	// A 1-octet Signature Type ID.
@@ -2136,28 +2136,30 @@ pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version,
 	// (For V6) A 32-octet key fingerprint.
 	// A 1-octet flag for nested signatures.
 
-	packet->version = version;
-	packet->type = type;
-	packet->nested = nested;
-	packet->public_key_algorithm_id = public_key_algorithm_id;
-	packet->hash_algorithm_id = hash_algorithm_id;
+	ops->version = version;
+	ops->type = type;
+	ops->nested = nested;
+	ops->public_key_algorithm_id = public_key_algorithm_id;
+	ops->hash_algorithm_id = hash_algorithm_id;
 
-	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
+	if (ops->version == PGP_ONE_PASS_SIGNATURE_V6)
 	{
-		packet->salt_size = salt_size;
-		memcpy(packet->salt, salt, packet->salt_size);
+		ops->salt_size = salt_size;
+		memcpy(ops->salt, salt, ops->salt_size);
 
-		memcpy(packet->key_fingerprint, key_fingerprint, key_fingerprint_size);
+		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
 
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
+		ops->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
 	}
 	else // packet->version == PGP_ONE_PASS_SIGNATURE_V3
 	{
-		memcpy(packet->key_fingerprint, key_fingerprint, key_fingerprint_size);
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 5 + PGP_KEY_ID_SIZE);
+		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
+		ops->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 5 + PGP_KEY_ID_SIZE);
 	}
 
-	return packet;
+	*packet = ops;
+
+	return PGP_SUCCESS;
 }
 
 void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
@@ -2165,85 +2167,104 @@ void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
 	free(packet);
 }
 
-pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, size_t size)
+static pgp_error_t pgp_one_pass_signature_packet_read_body(pgp_one_pass_signature_packet *packet, buffer_t *buffer)
 {
-	byte_t *in = data;
-
-	pgp_one_pass_signature_packet *packet = NULL;
-	pgp_packet_header header = {0};
-
-	size_t pos = 0;
-
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-
-	if (pgp_packet_get_type(header.tag) != PGP_OPS)
-	{
-		return NULL;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return NULL;
-	}
-
-	packet = malloc(sizeof(pgp_one_pass_signature_packet));
-
-	if (packet == NULL)
-	{
-		return NULL;
-	}
-
-	// Copy the header
-	packet->header = header;
-
 	// 1 octet version
-	LOAD_8(&packet->version, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 
 	// 1 octet signature type
-	LOAD_8(&packet->type, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 
 	// 1 octet hash algorithm
-	LOAD_8(&packet->hash_algorithm_id, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 
 	// 1 octet public-key algorithm
-	LOAD_8(&packet->public_key_algorithm_id, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 
 	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
 	{
 		// 1 octed salt size
-		LOAD_8(&packet->salt_size, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->salt_size), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 
 		// Salt
-		memcpy(packet->salt, in + pos, packet->salt_size);
-		pos += packet->salt_size;
+		CHECK_READ(readn(buffer, packet->salt, packet->salt_size), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 
 		// A 32-octet key fingerprint.
-		memcpy(packet->key_fingerprint, in + pos, 32);
-		pos += 32;
+		CHECK_READ(readn(buffer, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 	}
 	else if (packet->version == PGP_ONE_PASS_SIGNATURE_V3)
 	{
 		// A 8-octet Key ID of the signer.
-		LOAD_64(packet->key_id, in + pos);
-		pos += 8;
+		CHECK_READ(readn(buffer, packet->key_id, PGP_KEY_ID_SIZE), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 	}
 	else
 	{
 		// Unknown version.
-		return NULL;
+		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
 	}
 
 	// A 1-octet flag for nested signatures.
-	LOAD_8(&packet->nested, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->nested), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
 
-	return packet;
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signature_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_one_pass_signature_packet *ops = NULL;
+
+	ops = malloc(sizeof(pgp_one_pass_signature_packet));
+
+	if (ops == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(ops, 0, sizeof(pgp_one_pass_signature_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	ops->header = *header;
+
+	// Read the body
+	error = pgp_one_pass_signature_packet_read_body(ops, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_one_pass_signature_packet_delete(ops);
+		return error;
+	}
+
+	*packet = ops;
+
+	return error;
+}
+
+pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_OPS)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	return pgp_one_pass_signature_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size)

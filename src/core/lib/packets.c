@@ -585,12 +585,6 @@ pgp_error_t pgp_literal_packet_read_with_header(pgp_literal_packet **packet, pgp
 	buffer_t buffer = {0};
 	pgp_literal_packet *literal = NULL;
 
-	// Ensure atleast 6 bytes are present (format, filename size, date)
-	if (header->body_size < 6)
-	{
-		return PGP_MALFORMED_MARKER_PACKET;
-	}
-
 	literal = malloc(sizeof(pgp_literal_packet));
 
 	if (literal == NULL)

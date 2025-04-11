@@ -9,6 +9,7 @@
 #define SPGP_SIGNATURE_H
 
 #include <pgp.h>
+#include <error.h>
 #include <packet.h>
 #include <stream.h>
 #include <key.h>
@@ -371,19 +372,19 @@ void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpack
 pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE]);
 void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
 
-pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_new(byte_t version, byte_t type, byte_t nested, byte_t public_key_algorithm_id,
-																 byte_t hash_algorithm_id, void *salt, byte_t salt_size,
-																 void *key_fingerprint, byte_t key_fingerprint_size);
-void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet);
-
-pgp_one_pass_signature_packet *pgp_one_pass_signature_packet_read(void *data, size_t size);
-size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
-size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
-
 pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);
 void pgp_rsa_signature_delete(pgp_rsa_signature *sign);
 
 pgp_dsa_signature *pgp_dsa_signature_new(uint16_t bits);
 void pgp_dsa_signature_delete(pgp_dsa_signature *sign);
+
+pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **packet, byte_t version, byte_t type, byte_t nested,
+											  byte_t public_key_algorithm_id, byte_t hash_algorithm_id, void *salt, byte_t salt_size,
+											  void *key_fingerprint, byte_t key_fingerprint_size);
+void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet);
+
+pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size);
+size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
+size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
 
 #endif
