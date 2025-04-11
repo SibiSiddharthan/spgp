@@ -118,7 +118,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 		pgp_stream_push_packet(stream, session);
 	}
 
-	seipd = pgp_seipd_packet_new(PGP_SEIPD_V1, PGP_AES_128, 0, 0);
+	pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_128, 0, 0);
 	seipd = pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, lit_buffer, PGP_PACKET_OCTETS(literal->header));
 
 	pgp_stream_push_packet(stream, seipd);

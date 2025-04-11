@@ -616,7 +616,7 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 	return result;
 }
 
-pgp_error_t pgp_pkesk_packet_read_body(pgp_pkesk_packet *packet, buffer_t *buffer)
+static pgp_error_t pgp_pkesk_packet_read_body(pgp_pkesk_packet *packet, buffer_t *buffer)
 {
 	// 1 octet version
 	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_PUBLIC_SESSION_PACKET);
