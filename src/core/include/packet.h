@@ -100,7 +100,7 @@ typedef struct _pgp_literal_packet
 	byte_t filename_size;
 	void *filename;
 
-	uint32_t data_size;
+	size_t data_size;
 	void *data;
 
 } pgp_literal_packet;

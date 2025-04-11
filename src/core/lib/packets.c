@@ -147,7 +147,6 @@ size_t pgp_compressed_packet_decompress_data(pgp_compresed_packet *packet, void 
 
 static pgp_error_t pgp_compressed_packet_read_body(pgp_compresed_packet *packet, buffer_t *buffer)
 {
-
 	packet->data_size = packet->header.body_size - 1;
 	packet->data = malloc(packet->data_size);
 
@@ -156,7 +155,7 @@ static pgp_error_t pgp_compressed_packet_read_body(pgp_compresed_packet *packet,
 		return PGP_NO_MEMORY;
 	}
 
-	// Get the compression algorithm
+	// 1 octet compression algorithm
 	CHECK_READ(read8(buffer, &packet->compression_algorithm_id), PGP_MALFORMED_COMPRESSED_PACKET);
 
 	// Copy the compressed data.
@@ -203,9 +202,7 @@ pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet
 
 pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = {0};
-
-	header = pgp_packet_header_read(data, size);
+	pgp_packet_header header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_COMP)
 	{
@@ -287,7 +284,6 @@ void pgp_marker_packet_delete(pgp_marker_packet *packet)
 
 pgp_error_t pgp_marker_packet_read_with_header(pgp_marker_packet **packet, pgp_packet_header *header, void *data)
 {
-	pgp_error_t error = 0;
 	pgp_marker_packet *marker = NULL;
 
 	byte_t *in = data;
@@ -323,9 +319,7 @@ pgp_error_t pgp_marker_packet_read_with_header(pgp_marker_packet **packet, pgp_p
 
 pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = {0};
-
-	header = pgp_packet_header_read(data, size);
+	pgp_packet_header header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_MARKER)
 	{
@@ -337,7 +331,7 @@ pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_
 		return PGP_INSUFFICIENT_DATA;
 	}
 
-	return pgp_compressed_packet_read_with_header(packet, &header, data);
+	return pgp_marker_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size)
@@ -543,32 +537,58 @@ pgp_error_t pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, size_t size)
+static pgp_error_t pgp_literal_packet_read_body(pgp_literal_packet *packet, buffer_t *buffer)
 {
-	byte_t *in = data;
+	// 1-octet format specifier
+	CHECK_READ(read8(buffer, &packet->format), PGP_MALFORMED_LITERAL_PACKET);
 
+	// A 1-octet denoting file name length
+	CHECK_READ(read8(buffer, &packet->filename_size), PGP_MALFORMED_LITERAL_PACKET);
+
+	// N-octets of filename
+	if (packet->filename_size > 0)
+	{
+		packet->filename = malloc(packet->filename_size);
+
+		if (packet->filename == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		CHECK_READ(readn(buffer, packet->filename, packet->filename_size), PGP_LITERAL_PACKET_INVALID_FILENAME_SIZE);
+	}
+
+	// A 4-octet date
+	CHECK_READ(read32_be(buffer, &packet->date), PGP_MALFORMED_LITERAL_PACKET);
+
+	packet->data_size = packet->header.body_size - (4 + 1 + 1 + packet->filename_size);
+
+	// Literal data
+	if (packet->data_size > 0)
+	{
+		packet->data = malloc(packet->data_size);
+
+		if (packet->data == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		CHECK_READ(readn(buffer, packet->data, packet->data_size), PGP_MALFORMED_LITERAL_PACKET);
+	}
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_literal_packet_read_with_header(pgp_literal_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
 	pgp_literal_packet *literal = NULL;
-	pgp_packet_header header = {0};
-
-	size_t pos = 0;
-
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-
-	if (pgp_packet_get_type(header.tag) != PGP_LIT)
-	{
-		return PGP_INCORRECT_FUNCTION;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return PGP_INSUFFICIENT_DATA;
-	}
 
 	// Ensure atleast 6 bytes are present (format, filename size, date)
-	if (header.body_size < 6)
+	if (header->body_size < 6)
 	{
-		return PGP_MALFORMED_LITERAL_PACKET;
+		return PGP_MALFORMED_MARKER_PACKET;
 	}
 
 	literal = malloc(sizeof(pgp_literal_packet));
@@ -580,71 +600,47 @@ pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, siz
 
 	memset(literal, 0, sizeof(pgp_literal_packet));
 
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
 	// Copy the header
-	literal->header = header;
+	literal->header = *header;
 
-	// 1-octet format specifier
-	LOAD_8(&literal->format, in + pos);
-	pos += 1;
+	// Read the body
+	error = pgp_literal_packet_read_body(literal, &buffer);
 
-	// A 1-octet denoting file name length
-	LOAD_8(&literal->filename_size, in + pos);
-	pos += 1;
-
-	// N-octets of filename
-	if (literal->filename_size > 0)
+	if (error != PGP_SUCCESS)
 	{
-		if (literal->filename_size > header.body_size - (pos - header.header_size))
-		{
-			pgp_literal_packet_delete(literal);
-			return PGP_LITERAL_PACKET_INVALID_FILENAME_SIZE;
-		}
-
-		literal->filename = malloc(literal->filename_size);
-
-		if (literal->filename == NULL)
-		{
-			pgp_literal_packet_delete(literal);
-			return PGP_NO_MEMORY;
-		}
-
-		memcpy(literal->filename, in + pos, literal->filename_size);
-		pos += literal->filename_size;
-	}
-
-	// A 4-octet date
-	uint32_t date_be;
-
-	LOAD_32(&date_be, in + pos);
-	literal->date = BSWAP_32(date_be);
-	pos += 4;
-
-	literal->data_size = header.body_size - (4 + 1 + 1 + literal->filename_size);
-
-	// Literal data
-	if (literal->data_size > 0)
-	{
-		if (literal->data_size > header.body_size - (pos - header.header_size))
-		{
-			pgp_literal_packet_delete(literal);
-			return PGP_LITERAL_PACKET_INVALID_DATA_SIZE;
-		}
-
-		literal->data = malloc(literal->data_size);
-
-		if (literal->data == NULL)
-		{
-			pgp_literal_packet_delete(literal);
-			return PGP_NO_MEMORY;
-		}
-
-		memcpy(literal->data, in + pos, literal->data_size);
-		pos += literal->data_size;
+		pgp_literal_packet_delete(literal);
+		return error;
 	}
 
 	*packet = literal;
 
-	return PGP_SUCCESS;
+	return error;
+}
+
+pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_LIT)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	return pgp_literal_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size)
