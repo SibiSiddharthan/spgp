@@ -265,7 +265,7 @@ pgp_error_t pgp_seipd_packet_new(pgp_seipd_packet **packet, byte_t version, byte
 		seipd->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
 	}
 
-	pgp_seipd_packet_encode_header(packet);
+	pgp_seipd_packet_encode_header(seipd);
 
 	*packet = seipd;
 
@@ -811,30 +811,44 @@ static void pgp_aead_packet_encode_header(pgp_aead_packet *packet)
 	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_AEAD, body_size);
 }
 
-pgp_aead_packet *pgp_aead_packet_new(byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size)
+pgp_error_t pgp_aead_packet_new(pgp_aead_packet **packet, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size)
 {
-	pgp_aead_packet *packet = NULL;
+	pgp_aead_packet *aead = NULL;
+
+	if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
+	{
+		return PGP_INVALID_CIPHER_ALGORITHM;
+	}
+
+	if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
+	{
+		return PGP_INVALID_AEAD_ALGORITHM;
+	}
 
 	if (chunk_size > PGP_MAX_CHUNK_SIZE)
 	{
-		return NULL;
+		return PGP_INVALID_CHUNK_SIZE;
 	}
 
 	packet = malloc(sizeof(pgp_aead_packet));
 
 	if (packet == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	memset(packet, 0, sizeof(pgp_aead_packet));
 
-	packet->version = PGP_AEAD_V1;
-	packet->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
-	packet->aead_algorithm_id = aead_algorithm_id;
-	packet->chunk_size = chunk_size;
+	aead->version = PGP_AEAD_V1;
+	aead->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
+	aead->aead_algorithm_id = aead_algorithm_id;
+	aead->chunk_size = chunk_size;
 
-	return packet;
+	pgp_aead_packet_encode_header(aead);
+
+	*packet = aead;
+
+	return PGP_SUCCESS;
 }
 
 void pgp_aead_packet_delete(pgp_aead_packet *packet)
@@ -982,89 +996,106 @@ size_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_
 	return out_pos;
 }
 
-pgp_aead_packet *pgp_aead_packet_read(void *data, size_t size)
+pgp_error_t pgp_aead_packet_read_body(pgp_aead_packet *packet, buffer_t *buffer)
 {
-	byte_t *in = data;
-
-	pgp_aead_packet *packet = NULL;
-	pgp_packet_header header = {0};
-
-	size_t pos = 0;
-
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-
-	if (pgp_packet_get_type(header.tag) != PGP_AEAD)
-	{
-		return NULL;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return NULL;
-	}
-
-	packet = malloc(sizeof(pgp_aead_packet));
-
-	if (packet == NULL)
-	{
-		return NULL;
-	}
-
-	memset(packet, 0, sizeof(pgp_aead_packet));
-
-	// Copy the header
-	packet->header = header;
-
 	// 1 octet version
-	LOAD_8(&packet->version, in + pos);
+	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_AEAD_PACKET);
 
 	if (packet->version == PGP_AEAD_V1)
 	{
 		// 1 octet symmetric key algorithm
-		LOAD_8(&packet->symmetric_key_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->symmetric_key_algorithm_id), PGP_MALFORMED_AEAD_PACKET);
 
 		// 1 octet AEAD algorithm
-		LOAD_8(&packet->aead_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->aead_algorithm_id), PGP_MALFORMED_AEAD_PACKET);
 
 		// 1 octet chunk size
-		LOAD_8(&packet->chunk_size, in + pos);
-		pos += 1;
-
-		packet->iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
+		CHECK_READ(read8(buffer, &packet->chunk_size), PGP_MALFORMED_AEAD_PACKET);
 
 		// IV
-		memcpy(packet->iv, in + pos, packet->iv_size);
-		pos += packet->iv_size;
+		packet->iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
+		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_AEAD_PACKET);
 
 		// Data
-		packet->data_size = packet->header.body_size - pos - PGP_AEAD_TAG_SIZE;
+		packet->data_size = buffer->size - buffer->pos - PGP_AEAD_TAG_SIZE;
 		packet->data = malloc(packet->data_size);
 
 		if (packet->data == NULL)
 		{
-			free(packet);
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		memcpy(packet->data, in + pos, packet->data_size);
-		pos += packet->data_size;
+		CHECK_READ(readn(buffer, packet->data, packet->data_size), PGP_MALFORMED_AEAD_PACKET);
 
 		// Tag
 		packet->tag_size = PGP_AEAD_TAG_SIZE;
-		memcpy(packet->tag, in + pos, packet->tag_size);
-		pos += packet->tag_size;
+		CHECK_READ(readn(buffer, packet->tag, packet->tag_size), PGP_MALFORMED_AEAD_PACKET);
 	}
 	else
 	{
 		// Unknown version
-		free(packet);
-		return NULL;
+		return PGP_INVALID_AEAD_PACKET_VERSION;
 	}
 
-	return packet;
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_aead_packet_read_with_header(pgp_aead_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_aead_packet *aead = NULL;
+
+	aead = malloc(sizeof(pgp_aead_packet));
+
+	if (aead == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(aead, 0, sizeof(pgp_aead_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	aead->header = *header;
+
+	// Read the body
+	error = pgp_aead_packet_read_body(aead, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_aead_packet_delete(aead);
+		return error;
+	}
+
+	*packet = aead;
+
+	return error;
+}
+
+pgp_error_t pgp_aead_packet_read(pgp_aead_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_AEAD)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	return pgp_aead_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_aead_packet_write(pgp_aead_packet *packet, void *ptr, size_t size)
