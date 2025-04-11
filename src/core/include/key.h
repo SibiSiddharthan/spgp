@@ -179,7 +179,7 @@ pgp_error_t pgp_public_key_packet_read(pgp_key_packet **packet, void *data, size
 size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
 size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 
-pgp_key_packet *pgp_secret_key_packet_read(void *data, size_t size);
+pgp_error_t pgp_secret_key_packet_read(pgp_key_packet **packet, void *data, size_t size);
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
 size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
 
