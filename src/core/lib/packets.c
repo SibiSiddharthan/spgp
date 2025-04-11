@@ -331,11 +331,6 @@ pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_
 		return PGP_INSUFFICIENT_DATA;
 	}
 
-	if (header.body_size == 0)
-	{
-		return PGP_EMPTY_PACKET;
-	}
-
 	return pgp_marker_packet_read_with_header(packet, &header, data);
 }
 
@@ -1407,25 +1402,12 @@ void pgp_mdc_packet_delete(pgp_mdc_packet *packet)
 	free(packet);
 }
 
-pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size)
+pgp_error_t pgp_mdc_packet_read_with_header(pgp_mdc_packet **packet, pgp_packet_header *header, void *data)
 {
 	pgp_mdc_packet *mdc = NULL;
-	pgp_packet_header header = {0};
-
-	header = pgp_packet_header_read(data, size);
-
-	if (pgp_packet_get_type(header.tag) != PGP_MDC)
-	{
-		return PGP_INCORRECT_FUNCTION;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return PGP_INSUFFICIENT_DATA;
-	}
 
 	// The body size should be the length of the SHA-1 hash size
-	if (header.body_size != 20)
+	if (header->body_size != 20)
 	{
 		return PGP_MALFORMED_MDC_PACKET;
 	}
@@ -1440,14 +1422,31 @@ pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size
 	memset(mdc, 0, sizeof(pgp_mdc_packet));
 
 	// Copy the header
-	mdc->header = header;
+	mdc->header = *header;
 
 	// Copy the SHA-1 hash
-	memcpy(mdc->sha1_hash, PTR_OFFSET(data, header.header_size), 20);
+	memcpy(mdc->sha1_hash, PTR_OFFSET(data, header->header_size), 20);
 
 	*packet = mdc;
 
 	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_MDC)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	return pgp_mdc_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size)
