@@ -497,6 +497,7 @@ pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet
 pgp_error_t pgp_marker_packet_read_with_header(pgp_marker_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_literal_packet_read_with_header(pgp_literal_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_user_id_packet_read_with_header(pgp_user_id_packet **packet, pgp_packet_header *header, void *data);
+pgp_error_t pgp_padding_packet_read_with_header(pgp_padding_packet **packet, pgp_packet_header *header, void *data);
 
 void *pgp_packet_read(void *data, size_t size)
 {
@@ -570,7 +571,7 @@ void *pgp_packet_read(void *data, size_t size)
 	case PGP_AEAD:
 		return pgp_aead_packet_read(data, size);
 	case PGP_PADDING:
-		error = pgp_padding_packet_read((pgp_padding_packet **)&packet, data, size);
+		error = pgp_padding_packet_read_with_header((pgp_padding_packet **)&packet, &header, data);
 		return packet;
 	case PGP_KEYDEF:
 		return pgp_key_packet_read(data, size);

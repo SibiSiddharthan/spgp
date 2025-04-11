@@ -780,11 +780,6 @@ pgp_error_t pgp_user_id_packet_read_with_header(pgp_user_id_packet **packet, pgp
 {
 	pgp_user_id_packet *uid = NULL;
 
-	if (header->body_size == 0)
-	{
-		return PGP_EMPTY_USER_ID;
-	}
-
 	uid = malloc(sizeof(pgp_user_id_packet) + header->body_size);
 
 	if (uid == NULL)
@@ -1323,12 +1318,31 @@ void pgp_padding_packet_delete(pgp_padding_packet *packet)
 	free(packet);
 }
 
-pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, size_t size)
+pgp_error_t pgp_padding_packet_read_with_header(pgp_padding_packet **packet, pgp_packet_header *header, void *data)
 {
 	pgp_padding_packet *padding = NULL;
-	pgp_packet_header header = {0};
 
-	header = pgp_packet_header_read(data, size);
+	padding = malloc(sizeof(pgp_padding_packet) + header->body_size);
+
+	if (padding == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	// Copy the header
+	padding->header = *header;
+
+	// Copy the padding data.
+	memcpy(padding->data, PTR_OFFSET(data, header->header_size), header->body_size);
+
+	*packet = padding;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_PADDING)
 	{
@@ -1342,25 +1356,10 @@ pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, siz
 
 	if (header.body_size == 0)
 	{
-		return PGP_EMPTY_PADDING_PACKET;
+		return PGP_EMPTY_PACKET;
 	}
 
-	padding = malloc(sizeof(pgp_padding_packet) + header.body_size);
-
-	if (padding == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	// Copy the header
-	padding->header = header;
-
-	// Copy the padding data.
-	memcpy(padding->data, PTR_OFFSET(data, header.header_size), header.body_size);
-
-	*packet = padding;
-
-	return PGP_SUCCESS;
+	return pgp_padding_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size)
