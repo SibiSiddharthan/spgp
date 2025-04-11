@@ -1505,30 +1505,12 @@ void pgp_trust_packet_delete(pgp_trust_packet *packet)
 	free(packet);
 }
 
-pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t size)
+pgp_error_t pgp_trust_packet_read_with_header(pgp_trust_packet **packet, pgp_packet_header *header, void *data)
 {
-	byte_t *in = data;
-
 	pgp_trust_packet *trust = NULL;
-	pgp_packet_header header = {0};
-
-	size_t pos = 0;
-
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-
-	if (pgp_packet_get_type(header.tag) != PGP_TRUST)
-	{
-		return PGP_INCORRECT_FUNCTION;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return PGP_INSUFFICIENT_DATA;
-	}
 
 	// Body should only contain 1 octet of trust level
-	if (header.body_size != 1)
+	if (header->body_size != 1)
 	{
 		return PGP_MALFORMED_TRUST_PACKET;
 	}
@@ -1541,14 +1523,31 @@ pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t 
 	}
 
 	// Copy the header
-	trust->header = header;
+	trust->header = *header;
 
-	LOAD_8(&trust->level, in + pos);
-	pos += 1;
+	// 1 octet trust level
+	LOAD_8(&trust->level, PTR_OFFSET(data, header->header_size));
 
 	*packet = trust;
 
 	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_TRUST)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	return pgp_trust_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size)

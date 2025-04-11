@@ -496,6 +496,7 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
 pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_marker_packet_read_with_header(pgp_marker_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_literal_packet_read_with_header(pgp_literal_packet **packet, pgp_packet_header *header, void *data);
+pgp_error_t pgp_trust_packet_read_with_header(pgp_trust_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_user_id_packet_read_with_header(pgp_user_id_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_mdc_packet_read_with_header(pgp_mdc_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_padding_packet_read_with_header(pgp_padding_packet **packet, pgp_packet_header *header, void *data);
@@ -555,7 +556,7 @@ void *pgp_packet_read(void *data, size_t size)
 		error = pgp_literal_packet_read_with_header((pgp_literal_packet **)&packet, &header, data);
 		return packet;
 	case PGP_TRUST:
-		error = pgp_trust_packet_read((pgp_trust_packet **)&packet, data, size);
+		error = pgp_trust_packet_read_with_header((pgp_trust_packet **)&packet, &header, data);
 		return packet;
 	case PGP_UID:
 		error = pgp_user_id_packet_read_with_header((pgp_user_id_packet **)&packet, &header, data);
