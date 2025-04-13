@@ -1198,7 +1198,7 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Intended Recipient Fingerprint (Tag 35)");
 		break;
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
-		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Attested Certifications (Tag 37)");
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Attested Certifications (Tag 37) (Deprecated)");
 		break;
 	case PGP_KEY_BLOCK_SUBPACKET:
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Block (Tag 38)");
@@ -1561,14 +1561,34 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
 		pgp_attested_certifications_subpacket *attestation_subpacket = subpacket;
-		uint32_t hash_size = attestation_subpacket->header.body_size / attestation_subpacket->count;
+		uint32_t hash_size = 0;
+		uint32_t hash_count = 0;
 
-		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Attestations:\n");
-
-		for (uint16_t i = 0; i < attestation_subpacket->count; ++i)
+		// Try 32 (SHA-256), 20 (SHA-1)
+		if (header->body_size % 32 == 0)
 		{
-			pos += print_bytes(indent + 2, "", PTR_OFFSET(str, pos), size - pos, PTR_OFFSET(attestation_subpacket->hash, hash_size * i),
-							   hash_size);
+			hash_size = 32;
+			hash_count = header->body_size / 32;
+		}
+		else if (header->body_size % 20 == 0)
+		{
+			hash_size = 20;
+			hash_count = header->body_size / 20;
+		}
+
+		if (hash_count != 0)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Attestations:\n");
+			for (uint16_t i = 0; i < hash_count; ++i)
+			{
+				pos += print_bytes(indent + 2, "", PTR_OFFSET(str, pos), size - pos, PTR_OFFSET(attestation_subpacket->hash, hash_size * i),
+								   hash_size);
+			}
+		}
+		else
+		{
+			pos +=
+				print_bytes(indent + 1, "Attestations: ", PTR_OFFSET(str, pos), size - pos, attestation_subpacket->hash, header->body_size);
 		}
 	}
 	break;

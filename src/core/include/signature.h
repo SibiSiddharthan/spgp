@@ -80,7 +80,7 @@ typedef enum _pgp_signature_subpacket_type
 	PGP_ISSUER_FINGERPRINT_SUBPACKET = 33,
 	PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET = 34, // Deprecated
 	PGP_RECIPIENT_FINGERPRINT_SUBPACKET = 35,
-	PGP_ATTESTED_CERTIFICATIONS_SUBPACKET = 37, // Deprecated (TODO: Maybe remove this)
+	PGP_ATTESTED_CERTIFICATIONS_SUBPACKET = 37, // Deprecated
 	PGP_KEY_BLOCK_SUBPACKET = 38,
 	PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET = 39,
 	PGP_LITERAL_DATA_META_HASH_SUBPACKET = 40,
@@ -274,7 +274,6 @@ typedef pgp_signature_packet pgp_embedded_signature_subpacket;
 typedef struct _pgp_attested_certifications_subpacket
 {
 	pgp_subpacket_header header;
-	uint16_t count;
 	void *hash;
 } pgp_attested_certifications_subpacket;
 

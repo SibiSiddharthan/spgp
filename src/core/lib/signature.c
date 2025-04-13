@@ -2011,43 +2011,6 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 		}
 
 		buffer->pos += packet->signature_octets;
-
-#if 0
-		// This is deprecated. TODO (remove)
-		// Extra bookeeping stuff that is better to do just here.
-		// Count the number of attested certifications
-		{
-			if (packet->hashed_subpackets != NULL)
-			{
-				for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
-				{
-					pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
-
-					if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
-					{
-						pgp_attested_certifications_subpacket *subpacket = packet->hashed_subpackets->packets[i];
-
-						subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
-					}
-				}
-			}
-
-			if (packet->unhashed_subpackets != NULL)
-			{
-				for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
-				{
-					pgp_subpacket_header *header = packet->unhashed_subpackets->packets[i];
-
-					if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
-					{
-						pgp_attested_certifications_subpacket *subpacket = packet->unhashed_subpackets->packets[i];
-
-						subpacket->count = header->body_size / pgp_hash_size(packet->hash_algorithm_id);
-					}
-				}
-			}
-		}
-#endif
 	}
 	else if (packet->version == PGP_SIGNATURE_V3)
 	{
