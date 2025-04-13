@@ -845,18 +845,41 @@ static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *p
 		uint16_t mpi_q_bits = 0;
 		uint16_t mpi_u_bits = 0;
 
+		if (size < 2)
+		{
+			return PGP_MALFORMED_RSA_SECRET_KEY;
+		}
+
 		mpi_d_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_d_bits);
+
+		if (size < (offset + 2))
+		{
+			return PGP_MALFORMED_RSA_SECRET_KEY;
+		}
+
 		mpi_p_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_p_bits);
+
+		if (size < (offset + 2))
+		{
+			return PGP_MALFORMED_RSA_SECRET_KEY;
+		}
+
 		mpi_q_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_q_bits);
+
+		if (size < (offset + 2))
+		{
+			return PGP_MALFORMED_RSA_SECRET_KEY;
+		}
+
 		mpi_u_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_u_bits);
 
 		if (size < offset)
 		{
-			return 0;
+			return PGP_MALFORMED_RSA_SECRET_KEY;
 		}
 
 		key->d = mpi_new(mpi_d_bits);
@@ -866,12 +889,13 @@ static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *p
 
 		if (key->d == NULL || key->p == NULL || key->q == NULL || key->u == NULL)
 		{
+			// Only delete the secret parts
 			mpi_delete(key->d);
 			mpi_delete(key->p);
 			mpi_delete(key->q);
 			mpi_delete(key->d);
 
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		pos += mpi_read(key->d, in + pos, size - pos);
@@ -881,139 +905,190 @@ static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *p
 
 		packet->private_key_data_octets = pos;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_key *key = packet->key;
-		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+		uint16_t mpi_bits = 0;
+
+		if (size < 2)
+		{
+			return PGP_MALFORMED_ELGAMAL_SECRET_KEY;
+		}
+
+		mpi_bits = ((uint16_t)in[0] << 8) + in[1];
 
 		if (size < mpi_octets(mpi_bits))
 		{
-			return 0;
+			return PGP_MALFORMED_ELGAMAL_SECRET_KEY;
 		}
 
 		key->x = mpi_new(mpi_bits);
 
 		if (key->x == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		pos += mpi_read(key->x, in, size);
 		packet->private_key_data_octets = pos;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_DSA:
 	{
 		pgp_dsa_key *key = packet->key;
-		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+		uint16_t mpi_bits = 0;
+
+		if (size < 2)
+		{
+			return PGP_MALFORMED_DSA_SECRET_KEY;
+		}
+
+		mpi_bits = ((uint16_t)in[0] << 8) + in[1];
 
 		if (size < mpi_octets(mpi_bits))
 		{
-			return 0;
+			return PGP_MALFORMED_DSA_SECRET_KEY;
 		}
 
 		key->x = mpi_new(mpi_bits);
 
 		if (key->x == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		pos += mpi_read(key->x, in, size);
 		packet->private_key_data_octets = pos;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_ECDH:
 	{
 		pgp_ecdh_key *key = packet->key;
-		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+		uint16_t mpi_bits = 0;
+
+		if (size < 2)
+		{
+			return PGP_MALFORMED_ECDH_SECRET_KEY;
+		}
+
+		mpi_bits = ((uint16_t)in[0] << 8) + in[1];
 
 		if (size < mpi_octets(mpi_bits))
 		{
-			return 0;
+			return PGP_MALFORMED_ECDH_SECRET_KEY;
 		}
 
 		key->x = mpi_new(mpi_bits);
 
 		if (key->x == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		pos += mpi_read(key->x, in, size);
 		packet->private_key_data_octets = pos;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_ECDSA:
 	case PGP_EDDSA:
 	{
 		pgp_ecdsa_key *key = packet->key;
-		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+		uint16_t mpi_bits = 0;
+		pgp_error_t error =
+			(packet->public_key_algorithm_id == PGP_ECDSA) ? PGP_MALFORMED_ECDSA_SECRET_KEY : PGP_MALFORMED_EDDSA_SECRET_KEY;
+
+		if (size < 2)
+		{
+			return error;
+		}
+
+		mpi_bits = ((uint16_t)in[0] << 8) + in[1];
 
 		if (size < mpi_octets(mpi_bits))
 		{
-			return 0;
+			return error;
 		}
 
 		key->x = mpi_new(mpi_bits);
 
 		if (key->x == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		pos += mpi_read(key->x, in, size);
 		packet->private_key_data_octets = pos;
 
-		return pos;
+		return PGP_SUCCESS;
 	}
 	case PGP_X25519:
 	{
 		pgp_x25519_key *key = packet->key;
 
+		if (size < 32)
+		{
+			return PGP_MALFORMED_X25519_SECRET_KEY;
+		}
+
 		// 32 octets
 		memcpy(key->private_key, in, 32);
 		packet->private_key_data_octets = 32;
 
-		return 32;
+		return PGP_SUCCESS;
 	}
 	case PGP_X448:
 	{
 		pgp_x448_key *key = packet->key;
 
+		if (size < 56)
+		{
+			return PGP_MALFORMED_X448_SECRET_KEY;
+		}
+
 		// 56 octets
 		memcpy(key->private_key, in, 56);
 		packet->private_key_data_octets = 56;
 
-		return 56;
+		return PGP_SUCCESS;
 	}
 	case PGP_ED25519:
 	{
 		pgp_ed25519_key *key = packet->key;
 
+		if (size < 32)
+		{
+			return PGP_MALFORMED_ED25519_SECRET_KEY;
+		}
+
 		// 32 octets
 		memcpy(key->private_key, in, 32);
 		packet->private_key_data_octets = 32;
 
-		return 32;
+		return PGP_SUCCESS;
 	}
 	case PGP_ED448:
 	{
 		pgp_ed448_key *key = packet->key;
 
+		if (size < 57)
+		{
+			return PGP_MALFORMED_ED448_SECRET_KEY;
+		}
+
 		// 57 octets
 		memcpy(key->private_key, in, 57);
 		packet->private_key_data_octets = 57;
 
-		return 57;
+		return PGP_SUCCESS;
 	}
 	default:
-		return 0;
+		packet->private_key_data_octets = size;
+		return PGP_SUCCESS;
 	}
 }
 
@@ -1277,6 +1352,8 @@ static pgp_error_t pgp_public_key_packet_read_body(pgp_key_packet *packet, buffe
 			return PGP_MALFORMED_PUBLIC_KEY_COUNT;
 		}
 	}
+
+	buffer->pos += packet->public_key_data_octets;
 
 	return PGP_SUCCESS;
 }
@@ -2177,6 +2254,8 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 		}
 	}
 
+	buffer->pos += packet->public_key_data_octets;
+
 	// 1 octet of S2K usage
 	CHECK_READ(read8(buffer, &packet->s2k_usage), PGP_MALFORMED_SECRET_KEY_PACKET);
 
@@ -2264,13 +2343,34 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 	}
 	else
 	{
+		uint32_t private_key_data_octets = 0;
+
 		if (packet->version == PGP_KEY_V5)
 		{
-			CHECK_READ(read32_be(buffer, &packet->private_key_data_octets), PGP_MALFORMED_SECRET_KEY_PACKET);
+			CHECK_READ(read32_be(buffer, &private_key_data_octets), PGP_MALFORMED_SECRET_KEY_PACKET);
+		}
+		else
+		{
+			private_key_data_octets = buffer->size - buffer->pos;
 		}
 
 		// Plaintext private key
-		pgp_private_key_material_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
+		error = pgp_private_key_material_read(packet, buffer->data + buffer->pos, private_key_data_octets);
+
+		if (error != PGP_SUCCESS)
+		{
+			return error;
+		}
+
+		if (packet->version == PGP_KEY_V5)
+		{
+			if (packet->private_key_data_octets != private_key_data_octets)
+			{
+				return PGP_MALFORMED_SECRET_KEY_COUNT;
+			}
+		}
+
+		buffer->pos += packet->private_key_data_octets;
 
 		if (packet->version != PGP_KEY_V6)
 		{
