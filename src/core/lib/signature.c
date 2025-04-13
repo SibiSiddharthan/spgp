@@ -117,6 +117,7 @@ static pgp_error_t pgp_signature_data_read(pgp_signature_packet *packet, void *p
 		sig->e = mpi_init(PTR_OFFSET(sig, sizeof(pgp_rsa_signature)), mpi_size(mpi_bits), mpi_bits);
 		pos += mpi_read(sig->e, in, size);
 
+		packet->signature = sig;
 		packet->signature_octets = pos;
 
 		return PGP_SUCCESS;
@@ -188,6 +189,7 @@ static pgp_error_t pgp_signature_data_read(pgp_signature_packet *packet, void *p
 		pos += mpi_read(sig->r, in + pos, size - pos);
 		pos += mpi_read(sig->s, in + pos, size - pos);
 
+		packet->signature = sig;
 		packet->signature_octets = pos;
 
 		return PGP_SUCCESS;
@@ -210,6 +212,8 @@ static pgp_error_t pgp_signature_data_read(pgp_signature_packet *packet, void *p
 		}
 
 		memcpy(sig, in, 64);
+
+		packet->signature = sig;
 		packet->signature_octets = 64;
 
 		return PGP_SUCCESS;
@@ -232,6 +236,8 @@ static pgp_error_t pgp_signature_data_read(pgp_signature_packet *packet, void *p
 		}
 
 		memcpy(sig, in, 114);
+
+		packet->signature = sig;
 		packet->signature_octets = 114;
 
 		return PGP_SUCCESS;
@@ -509,7 +515,7 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		}
 
 		// The body size should be only one of 16, 20 or 32 octets plus 1 octet
-		if (header.body_size != (PGP_KEY_V3_FINGERPRINT_SIZE + 1) && header.body_size != (PGP_KEY_V5_FINGERPRINT_SIZE + 1) &&
+		if (header.body_size != (PGP_KEY_V3_FINGERPRINT_SIZE + 1) && header.body_size != (PGP_KEY_V4_FINGERPRINT_SIZE + 1) &&
 			header.body_size != (PGP_KEY_V6_FINGERPRINT_SIZE + 1))
 		{
 			return error;
@@ -782,6 +788,7 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	}
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
+		pgp_error_t error = 0;
 		pgp_embedded_signature_subpacket *embedded_subpacket = NULL;
 
 		embedded_subpacket = malloc(sizeof(pgp_embedded_signature_subpacket));
@@ -796,7 +803,15 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		// Copy the header
 		embedded_subpacket->header = header;
 
-		pgp_signature_packet_body_read(embedded_subpacket, buffer);
+		error = pgp_signature_packet_body_read(embedded_subpacket, buffer);
+
+		if (error != PGP_SUCCESS)
+		{
+			pgp_signature_packet_delete(embedded_subpacket);
+			return error;
+		}
+
+		*subpacket = embedded_subpacket;
 
 		return PGP_SUCCESS;
 	}
@@ -1857,7 +1872,6 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer)
 {
 	pgp_error_t error = 0;
-	void *subpacket = NULL;
 	void *result = NULL;
 
 	size_t old_size = 0;
@@ -1893,10 +1907,19 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 
 		while (buffer->pos < buffer->size)
 		{
+			void *subpacket = NULL;
+
 			error = pgp_signature_subpacket_read(&subpacket, buffer);
 
 			if (error != PGP_SUCCESS)
 			{
+				// Just a free should be enough here.
+				// The embedded signature subpacket is freed in pgp_signature_subpacket_read.
+				if (subpacket != NULL)
+				{
+					free(subpacket);
+				}
+
 				if (error == PGP_INSUFFICIENT_DATA)
 				{
 					return PGP_MALFORMED_SIGNATURE_HASHED_SUBPACKET_SIZE;
@@ -1934,10 +1957,19 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 
 		while (buffer->pos < buffer->size)
 		{
+			void *subpacket = NULL;
+
 			error = pgp_signature_subpacket_read(&subpacket, buffer);
 
 			if (error != PGP_SUCCESS)
 			{
+				// Just a free should be enough here.
+				// The embedded signature subpacket is freed in pgp_signature_subpacket_read.
+				if (subpacket != NULL)
+				{
+					free(subpacket);
+				}
+
 				if (error == PGP_INSUFFICIENT_DATA)
 				{
 					return PGP_MALFORMED_SIGNATURE_UNHASHED_SUBPACKET_SIZE;
@@ -1977,6 +2009,8 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 		{
 			return error;
 		}
+
+		buffer->pos += packet->signature_octets;
 
 #if 0
 		// This is deprecated. TODO (remove)
@@ -2050,6 +2084,8 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 		{
 			return error;
 		}
+
+		buffer->pos += packet->signature_octets;
 	}
 	else
 	{

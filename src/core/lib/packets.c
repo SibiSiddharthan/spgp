@@ -1171,11 +1171,12 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 static pgp_error_t pgp_user_attribute_packet_read_body(pgp_user_attribute_packet *packet, buffer_t *buffer)
 {
 	pgp_error_t error = 0;
-	void *subpacket = NULL;
-	void *result = NULL;
 
 	while (buffer->pos < buffer->size)
 	{
+		void *subpacket = NULL;
+		void *result = NULL;
+
 		error = pgp_user_attribute_subpacket_read(&subpacket, buffer);
 
 		if (error != PGP_SUCCESS)
