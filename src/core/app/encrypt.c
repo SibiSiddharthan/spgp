@@ -167,7 +167,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 			exit(1);
 		}
 
-		key = pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
+		pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
 
 		session_key_size = pgp_pkesk_packet_session_key_decrypt(session, key, session_key, 64);
 		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
