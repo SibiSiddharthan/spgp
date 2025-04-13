@@ -271,7 +271,7 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size);
 
 // User Attribute Packet (Tag 17)
-pgp_user_attribute_packet *pgp_user_attribute_packet_new(void);
+pgp_error_t pgp_user_attribute_packet_new(pgp_user_attribute_packet **packet);
 void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet);
 
 size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, void *image, size_t size);
@@ -282,7 +282,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 															 void *user_comment, uint16_t user_comment_size, void *user_email,
 															 uint16_t user_email_size);
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t size);
+pgp_error_t pgp_user_attribute_packet_read(pgp_user_attribute_packet **packet, void *data, size_t size);
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size);
 size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *str, size_t size);
 

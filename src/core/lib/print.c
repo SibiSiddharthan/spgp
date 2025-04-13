@@ -2139,6 +2139,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 
 			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "Image Size: %u bytes\n", image_size);
 		}
+		break;
 		case PGP_USER_ATTRIBUTE_UID:
 		{
 			pgp_user_attribute_uid_subpacket *uid_subpacket = packet->subpackets->packets[i];

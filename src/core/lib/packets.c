@@ -831,25 +831,21 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
+static pgp_error_t pgp_user_attribute_subpacket_read(void **subpacket, buffer_t *buffer)
 {
-	byte_t *in = data;
-
-	pgp_packet_header header = {0};
-	size_t pos = 0;
-
-	header = pgp_subpacket_header_read(data, size);
-	pos = header.header_size;
+	pgp_subpacket_header header = pgp_subpacket_header_read(buffer->data + buffer->pos, buffer->size - buffer->pos);
 
 	if (header.tag == 0)
 	{
-		return NULL;
+		return PGP_INVALID_SUBPACKET_TAG;
 	}
 
-	if (size < PGP_SUBPACKET_OCTETS(header))
+	if (buffer->size - buffer->pos < PGP_SUBPACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
+
+	buffer->pos += header.header_size;
 
 	switch (header.tag & PGP_SUBPACKET_TAG_MASK)
 	{
@@ -862,7 +858,7 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 
 		if (image_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(image_subpacket, 0, sizeof(pgp_user_attribute_image_subpacket) + image_size);
@@ -871,27 +867,25 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 		image_subpacket->header = header;
 
 		// 2 octets of image length in little endian
-		LOAD_16(&image_subpacket->image_header_size, in + pos);
-		pos += 2;
+		CHECK_READ(read16(buffer, &image_subpacket->image_header_size), PGP_MALFORMED_USER_ATTRIBUTE_IMAGE);
 
 		// 1 octet image header version
-		LOAD_8(&image_subpacket->image_header_version, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &image_subpacket->image_header_version), PGP_MALFORMED_USER_ATTRIBUTE_IMAGE);
 
 		// 1 octet image encoding
-		LOAD_8(&image_subpacket->image_encoding, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &image_subpacket->image_encoding), PGP_MALFORMED_USER_ATTRIBUTE_IMAGE);
 
 		// 12 octets of reserved zeros
 		memset(image_subpacket->reserved, 0, 12);
-		pos += 12;
+		buffer->pos += 12;
 
 		// N octets of image data
 		image_subpacket->image_data = PTR_OFFSET(image_subpacket, sizeof(pgp_user_attribute_image_subpacket));
-		memcpy(image_subpacket->image_data, in + pos, image_size);
-		pos += image_size;
+		CHECK_READ(readn(buffer, image_subpacket->image_data, image_size), PGP_MALFORMED_USER_ATTRIBUTE_IMAGE);
 
-		return image_subpacket;
+		*subpacket = image_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_USER_ATTRIBUTE_UID:
 	{
@@ -902,7 +896,7 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 
 		if (uid_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(uid_subpacket, 0, sizeof(pgp_subpacket_header) + uid_size);
@@ -911,29 +905,32 @@ static void *pgp_user_attribute_subpacket_read(void *data, size_t size)
 		uid_subpacket->header = header;
 
 		// Copy the UID
-		memcpy(uid_subpacket->user_data, in + pos, uid_size);
-		pos += uid_size;
+		CHECK_READ(readn(buffer, uid_subpacket->user_data, uid_size), PGP_MALFORMED_USER_ATTRIBUTE_ID);
 
-		return uid_subpacket;
+		*subpacket = uid_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	default:
 	{
-		pgp_unknown_subpacket *subpacket = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
+		pgp_unknown_subpacket *unknown = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
 
-		if (subpacket == NULL)
+		if (unknown == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		subpacket->header = header;
-		subpacket->data = PTR_OFFSET(subpacket, sizeof(pgp_unknown_subpacket));
-		memcpy(subpacket->data, in + pos, header.body_size);
+		unknown->header = header;
+		unknown->data = PTR_OFFSET(unknown, sizeof(pgp_unknown_subpacket));
+		CHECK_READ(readn(buffer, unknown->data, header.body_size), PGP_INSUFFICIENT_DATA);
 
-		return subpacket;
+		*subpacket = unknown;
+
+		return PGP_SUCCESS;
 	}
 	}
 
-	return NULL;
+	return PGP_SUCCESS;
 }
 
 static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, size_t size)
@@ -998,20 +995,22 @@ static void pgp_user_attribute_encode_header(pgp_user_attribute_packet *packet)
 	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_UAT, packet->subpacket_octets);
 }
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_new(void)
+pgp_error_t pgp_user_attribute_packet_new(pgp_user_attribute_packet **packet)
 {
-	pgp_user_attribute_packet *packet = NULL;
+	pgp_user_attribute_packet *uat = NULL;
 
-	packet = malloc(sizeof(pgp_user_attribute_packet));
+	uat = malloc(sizeof(pgp_user_attribute_packet));
 
-	if (packet == NULL)
+	if (uat == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_user_attribute_packet));
+	memset(uat, 0, sizeof(pgp_user_attribute_packet));
 
-	return packet;
+	*packet = uat;
+
+	return PGP_SUCCESS;
 }
 
 void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet)
@@ -1169,71 +1168,99 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 	return packet;
 }
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_read(void *data, size_t size)
+static pgp_error_t pgp_user_attribute_packet_read_body(pgp_user_attribute_packet *packet, buffer_t *buffer)
 {
-	byte_t *in = data;
+	pgp_error_t error = 0;
+	void *subpacket = NULL;
+	void *result = NULL;
 
-	pgp_user_attribute_packet *packet = NULL;
-	pgp_packet_header header = {0};
+	while (buffer->pos < buffer->size)
+	{
+		error = pgp_user_attribute_subpacket_read(&subpacket, buffer);
 
-	size_t pos = 0;
-	size_t subpacket_pos = 0;
+		if (error != PGP_SUCCESS)
+		{
+			return error;
+		}
 
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
+		result = pgp_stream_push_packet(packet->subpackets, subpacket);
+
+		if (result == NULL)
+		{
+			pgp_user_attribute_packet_delete(packet);
+			return PGP_NO_MEMORY;
+		}
+
+		packet->subpackets = result;
+	}
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_user_attribute_packet_read_with_header(pgp_user_attribute_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_user_attribute_packet *uat = NULL;
+
+	uat = malloc(sizeof(pgp_user_attribute_packet));
+
+	if (uat == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(uat, 0, sizeof(pgp_user_attribute_packet));
+
+	uat->subpackets = pgp_stream_new(4);
+
+	if (uat->subpackets == NULL)
+	{
+		pgp_user_attribute_packet_delete(uat);
+		return PGP_NO_MEMORY;
+	}
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	uat->header = *header;
+
+	// Read the body
+	error = pgp_user_attribute_packet_read_body(uat, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_user_attribute_packet_delete(uat);
+		return error;
+	}
+
+	*packet = uat;
+
+	return error;
+}
+
+pgp_error_t pgp_user_attribute_packet_read(pgp_user_attribute_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
 
 	if (pgp_packet_get_type(header.tag) != PGP_UAT)
 	{
-		return NULL;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_user_attribute_packet));
-
-	if (packet == NULL)
+	if (header.body_size == 0)
 	{
-		return NULL;
+		return PGP_EMPTY_PACKET;
 	}
 
-	memset(packet, 0, sizeof(pgp_user_attribute_packet));
-
-	packet->subpackets = pgp_stream_new(4);
-
-	if (packet->subpackets == NULL)
-	{
-		pgp_user_attribute_packet_delete(packet);
-		return NULL;
-	}
-
-	// Copy the header
-	packet->header = header;
-
-	while (subpacket_pos < packet->header.body_size)
-	{
-		void *subpacket = pgp_user_attribute_subpacket_read(PTR_OFFSET(in, pos), packet->header.body_size - subpacket_pos);
-		pgp_subpacket_header *subpacket_header = subpacket;
-
-		if (subpacket == NULL)
-		{
-			pgp_user_attribute_packet_delete(packet);
-			return NULL;
-		}
-
-		if ((packet->subpackets = pgp_stream_push_packet(packet->subpackets, subpacket)) == NULL)
-		{
-			pgp_user_attribute_packet_delete(packet);
-			return NULL;
-		}
-
-		subpacket_pos += subpacket_header->header_size + subpacket_header->body_size;
-		pos += subpacket_header->header_size + subpacket_header->body_size;
-	}
-
-	return packet;
+	return pgp_user_attribute_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size)
