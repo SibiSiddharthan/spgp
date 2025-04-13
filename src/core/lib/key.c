@@ -255,7 +255,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 	if (size == 0)
 	{
-		return PGP_INSUFFICIENT_DATA;
+		return PGP_EMPTY_PUBLIC_KEY;
 	}
 
 	switch (packet->public_key_algorithm_id)
@@ -272,7 +272,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < 2)
 		{
-			return PGP_MALFORMED_RSA_KEY;
+			return PGP_MALFORMED_RSA_PUBLIC_KEY;
 		}
 
 		mpi_n_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -280,7 +280,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 2))
 		{
-			return PGP_MALFORMED_RSA_KEY;
+			return PGP_MALFORMED_RSA_PUBLIC_KEY;
 		}
 
 		mpi_e_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -288,7 +288,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < offset)
 		{
-			return PGP_MALFORMED_RSA_KEY;
+			return PGP_MALFORMED_RSA_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_rsa_key));
@@ -328,7 +328,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < 2)
 		{
-			return PGP_MALFORMED_ELGAMAL_KEY;
+			return PGP_MALFORMED_ELGAMAL_PUBLIC_KEY;
 		}
 
 		mpi_p_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -336,7 +336,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 2))
 		{
-			return PGP_MALFORMED_ELGAMAL_KEY;
+			return PGP_MALFORMED_ELGAMAL_PUBLIC_KEY;
 		}
 
 		mpi_g_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -344,7 +344,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 2))
 		{
-			return PGP_MALFORMED_ELGAMAL_KEY;
+			return PGP_MALFORMED_ELGAMAL_PUBLIC_KEY;
 		}
 
 		mpi_y_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -352,7 +352,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < offset)
 		{
-			return PGP_MALFORMED_ELGAMAL_KEY;
+			return PGP_MALFORMED_ELGAMAL_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_elgamal_key));
@@ -395,7 +395,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < 2)
 		{
-			return PGP_MALFORMED_DSA_KEY;
+			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
 
 		mpi_p_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -403,7 +403,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 2))
 		{
-			return PGP_MALFORMED_DSA_KEY;
+			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
 
 		mpi_q_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -411,7 +411,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 2))
 		{
-			return PGP_MALFORMED_DSA_KEY;
+			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
 
 		mpi_g_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -419,7 +419,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 2))
 		{
-			return PGP_MALFORMED_DSA_KEY;
+			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
 
 		mpi_y_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -427,7 +427,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < offset)
 		{
-			return PGP_MALFORMED_DSA_KEY;
+			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_dsa_key));
@@ -468,7 +468,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 2))
 		{
-			return PGP_MALFORMED_ECDH_KEY;
+			return PGP_MALFORMED_ECDH_PUBLIC_KEY;
 		}
 
 		mpi_point_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
@@ -476,7 +476,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < (offset + 4)) // 4 octets for KDF
 		{
-			return PGP_MALFORMED_ECDH_KEY;
+			return PGP_MALFORMED_ECDH_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_ecdh_key));
@@ -534,7 +534,8 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		pgp_ecdsa_key *key = NULL;
 		uint16_t offset = in[0] + 1;
 		uint16_t mpi_point_bits = 0;
-		pgp_error_t error = (packet->public_key_algorithm_id == PGP_ECDSA) ? PGP_MALFORMED_ECDSA_KEY : PGP_MALFORMED_EDDSA_KEY;
+		pgp_error_t error =
+			(packet->public_key_algorithm_id == PGP_ECDSA) ? PGP_MALFORMED_ECDSA_PUBLIC_KEY : PGP_MALFORMED_EDDSA_PUBLIC_KEY;
 
 		if (size < (offset + 2))
 		{
@@ -592,7 +593,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < 32)
 		{
-			return PGP_MALFORMED_X25519_KEY;
+			return PGP_MALFORMED_X25519_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_x25519_key));
@@ -617,7 +618,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < 56)
 		{
-			return PGP_MALFORMED_X448_KEY;
+			return PGP_MALFORMED_X448_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_x448_key));
@@ -642,7 +643,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < 32)
 		{
-			return PGP_MALFORMED_ED25519_KEY;
+			return PGP_MALFORMED_ED25519_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_ed25519_key));
@@ -667,7 +668,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 
 		if (size < 57)
 		{
-			return PGP_MALFORMED_ED448_KEY;
+			return PGP_MALFORMED_ED448_PUBLIC_KEY;
 		}
 
 		key = malloc(sizeof(pgp_ed448_key));
@@ -816,14 +817,19 @@ static uint32_t pgp_public_key_material_write(pgp_key_packet *packet, void *ptr,
 }
 
 // This should only be called after `pgp_public_key_material_read` which will allocate the key.
-static uint32_t pgp_private_key_material_read(pgp_key_packet *packet, void *ptr, uint32_t size)
+static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
 	uint32_t pos = 0;
 
 	if (packet->key == NULL)
 	{
-		return 0;
+		return PGP_INTERNAL_BUG;
+	}
+
+	if (size == 0)
+	{
+		return PGP_EMPTY_SECRET_KEY;
 	}
 
 	switch (packet->public_key_algorithm_id)
