@@ -43,7 +43,7 @@ static byte_t pgp_signature_type_validate(pgp_signature_type type)
 	}
 }
 
-static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet *packet, void *data, size_t size);
+static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer);
 static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
 static uint32_t get_signature_octets(pgp_public_key_algorithms algorithm, void *signature)
@@ -74,10 +74,15 @@ static uint32_t get_signature_octets(pgp_public_key_algorithms algorithm, void *
 	}
 }
 
-static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, uint32_t size)
+static pgp_error_t pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, uint32_t size)
 {
 	byte_t *in = ptr;
 	uint32_t pos = 0;
+
+	if (size == 0)
+	{
+		return PGP_EMPTY_SIGNATURE;
+	}
 
 	switch (packet->public_key_algorithm_id)
 	{
@@ -86,18 +91,25 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 	{
 		// MPI of (M^d)%n
 		pgp_rsa_signature *sig = NULL;
-		uint16_t mpi_bits = ((uint16_t)in[0] << 8) + in[1];
+		uint16_t mpi_bits = 0;
+
+		if (size < 2)
+		{
+			return PGP_MALFORMED_RSA_SIGNATURE;
+		}
+
+		mpi_bits = ((uint16_t)in[0] << 8) + in[1];
 
 		if (size < mpi_octets(mpi_bits))
 		{
-			return 0;
+			return PGP_MALFORMED_RSA_SIGNATURE;
 		}
 
 		sig = malloc(sizeof(pgp_rsa_signature) + mpi_size(mpi_bits));
 
 		if (sig == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(sig, 0, sizeof(pgp_rsa_signature) + mpi_size(mpi_bits));
@@ -107,7 +119,7 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 
 		packet->signature_octets = pos;
 
-		return sig;
+		return PGP_SUCCESS;
 	}
 	case PGP_DSA:
 	case PGP_ECDSA:
@@ -115,29 +127,57 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 	{
 		// MPI of (r,s)
 		pgp_dsa_signature *sig = NULL;
+		pgp_error_t error = 0;
 		uint16_t offset = 0;
 		uint16_t mpi_r_bits = 0;
 		uint16_t mpi_s_bits = 0;
 		uint32_t mpi_r_size = 0;
 		uint32_t mpi_s_size = 0;
 
+		if (packet->public_key_algorithm_id == PGP_DSA)
+		{
+			error = PGP_MALFORMED_DSA_SIGNATURE;
+		}
+
+		if (packet->public_key_algorithm_id == PGP_ECDSA)
+		{
+			error = PGP_MALFORMED_ECDSA_SIGNATURE;
+		}
+
+		if (packet->public_key_algorithm_id == PGP_EDDSA)
+		{
+			error = PGP_MALFORMED_EDDSA_SIGNATURE;
+		}
+
+		if (size < 2)
+		{
+			return error;
+		}
+
 		mpi_r_bits = ((uint16_t)in[0] << 8) + in[1];
-		offset = mpi_octets(mpi_r_bits);
+		offset += mpi_octets(mpi_r_bits);
+
+		if (size < (offset + 2))
+		{
+			return error;
+		}
+
 		mpi_s_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
+		offset += mpi_octets(mpi_s_bits);
+
+		if (size < offset)
+		{
+			return error;
+		}
 
 		mpi_r_size = mpi_size(mpi_r_bits);
 		mpi_s_size = mpi_size(mpi_s_bits);
-
-		if (size < (mpi_octets(mpi_r_bits) + mpi_octets(mpi_s_bits)))
-		{
-			return 0;
-		}
 
 		sig = malloc(sizeof(pgp_dsa_signature) + mpi_r_size + mpi_s_size);
 
 		if (sig == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(sig, 0, sizeof(pgp_dsa_signature) + mpi_r_size + mpi_s_size);
@@ -150,7 +190,7 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 
 		packet->signature_octets = pos;
 
-		return sig;
+		return PGP_SUCCESS;
 	}
 	case PGP_ED25519:
 	{
@@ -159,20 +199,20 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 
 		if (size < 64)
 		{
-			return 0;
+			return PGP_MALFORMED_ED25519_SIGNATURE;
 		}
 
 		sig = malloc(sizeof(pgp_ed25519_signature));
 
 		if (sig == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		memcpy(sig, in, 64);
 		packet->signature_octets = 64;
 
-		return sig;
+		return PGP_SUCCESS;
 	}
 	case PGP_ED448:
 	{
@@ -181,23 +221,24 @@ static void *pgp_signature_data_read(pgp_signature_packet *packet, void *ptr, ui
 
 		if (size < 114)
 		{
-			return 0;
+			return PGP_MALFORMED_ED448_SIGNATURE;
 		}
 
 		sig = malloc(sizeof(pgp_ed448_signature));
 
 		if (sig == NULL)
 		{
-			return 0;
+			return PGP_NO_MEMORY;
 		}
 
 		memcpy(sig, in, 114);
 		packet->signature_octets = 114;
 
-		return sig;
+		return PGP_SUCCESS;
 	}
 	default:
-		return NULL;
+		packet->signature_octets = size;
+		return PGP_SUCCESS;
 	}
 }
 
@@ -243,25 +284,21 @@ static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, 
 	}
 }
 
-static void *pgp_signature_subpacket_read(void *data, size_t size)
+static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buffer)
 {
-	byte_t *in = data;
-
-	pgp_packet_header header = {0};
-	size_t pos = 0;
-
-	header = pgp_subpacket_header_read(data, size);
-	pos = header.header_size;
+	pgp_packet_header header = pgp_subpacket_header_read(buffer->data + buffer->pos, buffer->size - buffer->pos);
 
 	if (header.tag == 0)
 	{
-		return NULL;
+		return PGP_INVALID_SIGNATURE_SUBPACKET_TAG;
 	}
 
-	if (size < PGP_SUBPACKET_OCTETS(header))
+	if (buffer->size - buffer->pos < PGP_SUBPACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
+
+	buffer->pos += header.header_size;
 
 	switch (header.tag & PGP_SUBPACKET_TAG_MASK)
 	{
@@ -270,13 +307,34 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
 	{
 		struct _pgp_timestamp_subpacket *timestamp_subpacket = NULL;
-		uint32_t timestamp = 0;
+		pgp_error_t error = 0;
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_CREATION_TIME_SUBPACKET)
+		{
+			error = PGP_MALFORMED_SIGNATURE_CREATION_TIME_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET)
+		{
+			error = PGP_MALFORMED_SIGNATURE_EXPIRY_TIME_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_KEY_EXPIRATION_TIME_SUBPACKET)
+		{
+			error = PGP_MALFORMED_KEY_EXPIRATION_TIME_SUBPACKET;
+		}
+
+		// Timestamp packets should only be of 4 octets
+		if (header.body_size != 4)
+		{
+			return error;
+		}
 
 		timestamp_subpacket = malloc(sizeof(struct _pgp_timestamp_subpacket));
 
 		if (timestamp_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(timestamp_subpacket, 0, sizeof(struct _pgp_timestamp_subpacket));
@@ -285,24 +343,46 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		timestamp_subpacket->header = header;
 
 		// 4 octet timestamp
-		LOAD_32(&timestamp, in + pos);
-		timestamp_subpacket->timestamp = BSWAP_32(timestamp);
-		pos += 4;
+		CHECK_READ(read32_be(buffer, &timestamp_subpacket->timestamp), error);
 
-		return timestamp_subpacket;
+		*subpacket = timestamp_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_EXPORTABLE_SUBPACKET:
 	case PGP_REVOCABLE_SUBPACKET:
 	case PGP_PRIMARY_USER_ID_SUBPACKET:
 	{
 		struct _pgp_boolean_subpacket *boolean_subpacket = NULL;
+		pgp_error_t error = 0;
 		byte_t value = 0;
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
+		{
+			error = PGP_MALFORMED_EXPORTABLE_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_REVOCABLE_SUBPACKET)
+		{
+			error = PGP_MALFORMED_REVOCABLE_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PRIMARY_USER_ID_SUBPACKET)
+		{
+			error = PGP_MALFORMED_PRIMARY_USER_ID_SUBPACKET;
+		}
+
+		// Boolean packets should only be of 1 octet
+		if (header.body_size != 1)
+		{
+			return error;
+		}
 
 		boolean_subpacket = malloc(sizeof(struct _pgp_boolean_subpacket));
 
 		if (boolean_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(boolean_subpacket, 0, sizeof(struct _pgp_boolean_subpacket));
@@ -311,23 +391,40 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		boolean_subpacket->header = header;
 
 		// 1 octet value
-		LOAD_8(&value, in + pos);
+		CHECK_READ(read8(buffer, &value), error);
 		boolean_subpacket->state = value & 0x1;
-		pos += 1;
 
-		return boolean_subpacket;
+		*subpacket = boolean_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
 	case PGP_KEY_FLAGS_SUBPACKET:
 	case PGP_FEATURES_SUBPACKET:
 	{
 		struct _pgp_flags_subpacket *flags_subpacket = NULL;
+		pgp_error_t error = 0;
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_KEY_SERVER_PREFERENCES_SUBPACKET)
+		{
+			error = PGP_MALFORMED_KEY_SERVER_PREFERENCES_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_KEY_FLAGS_SUBPACKET)
+		{
+			error = PGP_MALFORMED_KEY_FLAGS_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_FEATURES_SUBPACKET)
+		{
+			error = PGP_MALFORMED_FEATURES_SUBPACKET;
+		}
 
 		flags_subpacket = malloc(sizeof(pgp_subpacket_header) + header.body_size);
 
 		if (flags_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(flags_subpacket, 0, sizeof(pgp_subpacket_header) + header.body_size);
@@ -336,10 +433,11 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		flags_subpacket->header = header;
 
 		// N octets of flags
-		memcpy(flags_subpacket->flags, in + pos, flags_subpacket->header.body_size);
-		pos += flags_subpacket->header.body_size;
+		CHECK_READ(readn(buffer, flags_subpacket->flags, header.body_size), error);
 
-		return flags_subpacket;
+		*subpacket = flags_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
 	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
@@ -348,12 +446,38 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
 		struct _pgp_preferred_algorithm_subpacket *preferred_algorithm_subpacket = NULL;
+		pgp_error_t error = 0;
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET)
+		{
+			error = PGP_MALFORMED_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET)
+		{
+			error = PGP_MALFORMED_PREFERRED_HASH_ALGORITHMS_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET)
+		{
+			error = PGP_MALFORMED_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET)
+		{
+			error = PGP_MALFORMED_PREFERRED_ENCRYPTION_MODES_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET)
+		{
+			error = PGP_MALFORMED_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET;
+		}
 
 		preferred_algorithm_subpacket = malloc(sizeof(pgp_subpacket_header) + header.body_size);
 
 		if (preferred_algorithm_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(preferred_algorithm_subpacket, 0, sizeof(pgp_subpacket_header) + header.body_size);
@@ -362,21 +486,40 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		preferred_algorithm_subpacket->header = header;
 
 		// N octets of algorithms
-		memcpy(preferred_algorithm_subpacket->preferred_algorithms, in + pos, preferred_algorithm_subpacket->header.body_size);
-		pos += preferred_algorithm_subpacket->header.body_size;
+		CHECK_READ(readn(buffer, preferred_algorithm_subpacket->preferred_algorithms, header.body_size), error);
 
-		return preferred_algorithm_subpacket;
+		*subpacket = preferred_algorithm_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
 	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
 	{
 		struct _pgp_key_fingerprint_subpacket *key_fingerprint_subpacket = NULL;
+		pgp_error_t error = 0;
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+		{
+			error = PGP_MALFORMED_ISSUER_FINGERPRINT_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_RECIPIENT_FINGERPRINT_SUBPACKET)
+		{
+			error = PGP_MALFORMED_RECIPIENT_FINGERPRINT_SUBPACKET;
+		}
+
+		// The body size should be only one of 16, 20 or 32 octets plus 1 octet
+		if (header.body_size != (PGP_KEY_V3_FINGERPRINT_SIZE + 1) && header.body_size != (PGP_KEY_V5_FINGERPRINT_SIZE + 1) &&
+			header.body_size != (PGP_KEY_V6_FINGERPRINT_SIZE + 1))
+		{
+			return error;
+		}
 
 		key_fingerprint_subpacket = malloc(sizeof(struct _pgp_key_fingerprint_subpacket));
 
 		if (key_fingerprint_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(key_fingerprint_subpacket, 0, sizeof(struct _pgp_key_fingerprint_subpacket));
@@ -385,35 +528,32 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		key_fingerprint_subpacket->header = header;
 
 		// 1 octet key version
-		LOAD_8(&key_fingerprint_subpacket->version, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &key_fingerprint_subpacket->version), error);
 
-		if (key_fingerprint_subpacket->version == PGP_KEY_V6)
+		if (key_fingerprint_subpacket->version == PGP_KEY_V6 || key_fingerprint_subpacket->version == PGP_KEY_V5)
 		{
-			// 32 octets of V6 key fingerprint
-			memcpy(key_fingerprint_subpacket->fingerprint, in + pos, PGP_KEY_V6_FINGERPRINT_SIZE);
-			pos += PGP_KEY_V6_FINGERPRINT_SIZE;
+			// 32 octets of V6 or V5 key fingerprint
+			CHECK_READ(readn(buffer, key_fingerprint_subpacket->fingerprint, 32), error);
 		}
 		else if (key_fingerprint_subpacket->version == PGP_KEY_V4)
 		{
 			// 20 octets of V4 key fingerprint
-			memcpy(key_fingerprint_subpacket->fingerprint, in + pos, PGP_KEY_V4_FINGERPRINT_SIZE);
-			pos += PGP_KEY_V4_FINGERPRINT_SIZE;
+			CHECK_READ(readn(buffer, key_fingerprint_subpacket->fingerprint, 20), error);
 		}
 		else if (key_fingerprint_subpacket->version == PGP_KEY_V3)
 		{
 			// 16 octets of V3 key fingerprint
-			memcpy(key_fingerprint_subpacket->fingerprint, in + pos, PGP_KEY_V3_FINGERPRINT_SIZE);
-			pos += PGP_KEY_V3_FINGERPRINT_SIZE;
+			CHECK_READ(readn(buffer, key_fingerprint_subpacket->fingerprint, 16), error);
 		}
 		else
 		{
-			// Copy atmost 32 octets
-			memcpy(key_fingerprint_subpacket->fingerprint, in + pos, MIN(32, header.body_size - 1));
-			pos += header.body_size - 1;
+			// Unknown key version
+			CHECK_READ(readn(buffer, key_fingerprint_subpacket->fingerprint, header.body_size - 1), error);
 		}
 
-		return key_fingerprint_subpacket;
+		*subpacket = key_fingerprint_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_REGULAR_EXPRESSION_SUBPACKET:
 	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
@@ -421,12 +561,33 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 	case PGP_SIGNER_USER_ID_SUBPACKET:
 	{
 		struct _pgp_string_subpacket *string_subpacket = NULL;
+		pgp_error_t error = 0;
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_REGULAR_EXPRESSION_SUBPACKET)
+		{
+			error = PGP_MALFORMED_REGULAR_EXPRESSION_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_KEY_SERVER_SUBPACKET)
+		{
+			error = PGP_MALFORMED_PREFERRED_KEY_SERVER_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_POLICY_URI_SUBPACKET)
+		{
+			error = PGP_MALFORMED_POLICY_URI_SUBPACKET;
+		}
+
+		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNER_USER_ID_SUBPACKET)
+		{
+			error = PGP_MALFORMED_SIGNER_USER_ID_SUBPACKET;
+		}
 
 		string_subpacket = malloc(sizeof(struct _pgp_string_subpacket) + header.body_size);
 
 		if (string_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(string_subpacket, 0, sizeof(struct _pgp_string_subpacket) + header.body_size);
@@ -436,20 +597,26 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		string_subpacket->header = header;
 
 		// Null terminated UTF-8 string
-		memcpy(string_subpacket->data, in + pos, string_subpacket->header.body_size);
-		pos += string_subpacket->header.body_size;
+		CHECK_READ(readn(buffer, string_subpacket->data, header.body_size), error);
 
-		return string_subpacket;
+		*subpacket = string_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_TRUST_SIGNATURE_SUBPACKET:
 	{
 		pgp_trust_signature_subpacket *trust_subpacket = NULL;
 
+		if (header.body_size != 2)
+		{
+			return PGP_MALFORMED_TRUST_SIGNATURE_SUBPACKET;
+		}
+
 		trust_subpacket = malloc(sizeof(pgp_trust_signature_subpacket));
 
 		if (trust_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(trust_subpacket, 0, sizeof(pgp_trust_signature_subpacket));
@@ -458,54 +625,58 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		trust_subpacket->header = header;
 
 		// 1 octet level
-		LOAD_8(&trust_subpacket->trust_level, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &trust_subpacket->trust_level), PGP_MALFORMED_TRUST_SIGNATURE_SUBPACKET);
 
 		// 1 octet amount
-		LOAD_8(&trust_subpacket->trust_amount, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &trust_subpacket->trust_amount), PGP_MALFORMED_TRUST_SIGNATURE_SUBPACKET);
 
-		return trust_subpacket;
+		*subpacket = trust_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_REVOCATION_KEY_SUBPACKET:
 	{
-		pgp_revocation_key_subpacket *rk_subpacket = NULL;
+		pgp_revocation_key_subpacket *revocation_subpacket = NULL;
 
-		rk_subpacket = malloc(sizeof(pgp_revocation_key_subpacket));
+		revocation_subpacket = malloc(sizeof(pgp_revocation_key_subpacket));
 
-		if (rk_subpacket == NULL)
+		if (revocation_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		memset(rk_subpacket, 0, sizeof(pgp_revocation_key_subpacket));
+		memset(revocation_subpacket, 0, sizeof(pgp_revocation_key_subpacket));
 
 		// Copy the header
-		rk_subpacket->header = header;
+		revocation_subpacket->header = header;
 
 		// 1 octet class
-		LOAD_8(&rk_subpacket->revocation_class, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &revocation_subpacket->revocation_class), PGP_MALFORMED_REVOCATION_KEY_SUBPACKET);
 
 		// 1 octet public key algorithm
-		LOAD_8(&rk_subpacket->algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &revocation_subpacket->algorithm_id), PGP_MALFORMED_REVOCATION_KEY_SUBPACKET);
 
 		// N octets key fingerprint
-		memcpy(rk_subpacket->fingerprint, in + pos, rk_subpacket->header.body_size - 2);
-		pos += rk_subpacket->header.body_size - 2;
+		CHECK_READ(readn(buffer, revocation_subpacket->fingerprint, header.body_size - 2), PGP_MALFORMED_REVOCATION_KEY_SUBPACKET);
 
-		return rk_subpacket;
+		*subpacket = revocation_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_ISSUER_KEY_ID_SUBPACKET:
 	{
 		pgp_issuer_key_id_subpacket *key_id_subpacket = NULL;
 
+		if (header.body_size != PGP_KEY_ID_SIZE)
+		{
+			return PGP_MALFORMED_ISSUER_KEY_ID_SUBPACKET;
+		}
+
 		key_id_subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket));
 
 		if (key_id_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(key_id_subpacket, 0, sizeof(pgp_issuer_key_id_subpacket));
@@ -514,23 +685,21 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		key_id_subpacket->header = header;
 
 		// 8 octets of key id
-		memcpy(key_id_subpacket->key_id, in + pos, PGP_KEY_ID_SIZE);
-		pos += 8;
+		CHECK_READ(read64(buffer, &key_id_subpacket->key_id), PGP_MALFORMED_ISSUER_KEY_ID_SUBPACKET);
 
-		return key_id_subpacket;
+		*subpacket = key_id_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_NOTATION_DATA_SUBPACKET:
 	{
 		pgp_notation_data_subpacket *notation_subpacket = NULL;
-		uint32_t flags = 0;
-		uint16_t name_size = 0;
-		uint16_t value_size = 0;
 
 		notation_subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket) + (header.body_size - 8));
 
 		if (notation_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(notation_subpacket, 0, sizeof(pgp_issuer_key_id_subpacket) + (header.body_size - 8));
@@ -539,25 +708,21 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		notation_subpacket->header = header;
 
 		// 4 octets of flags
-		LOAD_32(&flags, in + pos);
-		notation_subpacket->flags = BSWAP_32(flags);
-		pos += 4;
+		CHECK_READ(read32_be(buffer, &notation_subpacket->flags), PGP_MALFORMED_NOTATION_DATA_SUBPACKET);
 
 		// 2 octets of name length(N)
-		LOAD_16(&name_size, in + pos);
-		notation_subpacket->name_size = BSWAP_16(name_size);
-		pos += 2;
+		CHECK_READ(read16_be(buffer, &notation_subpacket->name_size), PGP_MALFORMED_NOTATION_DATA_SUBPACKET);
 
 		// 2 octets of value length(M)
-		LOAD_16(&value_size, in + pos);
-		notation_subpacket->value_size = BSWAP_16(value_size);
-		pos += 2;
+		CHECK_READ(read16_be(buffer, &notation_subpacket->value_size), PGP_MALFORMED_NOTATION_DATA_SUBPACKET);
 
 		// (N + M) octets of data
-		memcpy(notation_subpacket->data, in + pos, name_size + value_size);
-		pos += name_size + value_size;
+		CHECK_READ(readn(buffer, notation_subpacket->data, notation_subpacket->name_size + notation_subpacket->value_size),
+				   PGP_MALFORMED_NOTATION_DATA_SUBPACKET);
 
-		return notation_subpacket;
+		*subpacket = notation_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
 	{
@@ -567,7 +732,7 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 
 		if (revocation_reason_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(revocation_reason_subpacket, 0, sizeof(pgp_reason_for_revocation_subpacket) + header.body_size);
@@ -577,14 +742,14 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		revocation_reason_subpacket->header = header;
 
 		// 1 octet of revocation code
-		LOAD_8(&revocation_reason_subpacket->code, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &revocation_reason_subpacket->code), PGP_MALFORMED_REASON_FOR_REVOCATION_SUBPACKET);
 
 		// N octets of reason
-		memcpy(revocation_reason_subpacket->reason, in + pos, revocation_reason_subpacket->header.body_size - 1);
-		pos += (revocation_reason_subpacket->header.body_size - 1);
+		CHECK_READ(readn(buffer, revocation_reason_subpacket->reason, header.body_size - 1), PGP_MALFORMED_REASON_FOR_REVOCATION_SUBPACKET);
 
-		return revocation_reason_subpacket;
+		*subpacket = revocation_reason_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_SIGNATURE_TARGET_SUBPACKET:
 	{
@@ -594,7 +759,7 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 
 		if (target_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(target_subpacket, 0, sizeof(pgp_subpacket_header) + header.body_size);
@@ -603,18 +768,17 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		target_subpacket->header = header;
 
 		// 1 octet public key algorithm
-		LOAD_8(&target_subpacket->public_key_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &target_subpacket->public_key_algorithm_id), PGP_MALFORMED_SIGNATURE_TARGET_SUBPACKET);
 
 		// 1 octet hash algorithm
-		LOAD_8(&target_subpacket->hash_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &target_subpacket->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_TARGET_SUBPACKET);
 
 		// N octets of hash
-		memcpy(target_subpacket->hash, in + pos, target_subpacket->header.body_size - 2);
-		pos += (target_subpacket->header.body_size - 2);
+		CHECK_READ(readn(buffer, target_subpacket->hash, header.body_size - 2), PGP_MALFORMED_SIGNATURE_TARGET_SUBPACKET);
 
-		return target_subpacket;
+		*subpacket = target_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
@@ -624,7 +788,7 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 
 		if (embedded_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(embedded_subpacket, 0, sizeof(pgp_embedded_signature_subpacket));
@@ -632,7 +796,9 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		// Copy the header
 		embedded_subpacket->header = header;
 
-		return pgp_signature_packet_body_read(embedded_subpacket, PTR_OFFSET(data, header.header_size), size - header.header_size);
+		pgp_signature_packet_body_read(embedded_subpacket, buffer);
+
+		return PGP_SUCCESS;
 	}
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
@@ -642,26 +808,33 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 
 		if (attestation_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(attestation_subpacket, 0, sizeof(pgp_attested_certifications_subpacket) + header.body_size);
+		attestation_subpacket->hash = PTR_OFFSET(attestation_subpacket, sizeof(pgp_attested_certifications_subpacket));
 
 		// N octets of hash
-		attestation_subpacket->hash = PTR_OFFSET(attestation_subpacket, sizeof(pgp_attested_certifications_subpacket));
-		memcpy(attestation_subpacket->hash, in + pos, header.body_size);
+		CHECK_READ(readn(buffer, attestation_subpacket->hash, header.body_size), PGP_MALFORMED_ATTESTED_CERTIFICATIONS_SUBPACKET);
 
-		return attestation_subpacket;
+		*subpacket = attestation_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
 	{
 		pgp_literal_data_meta_hash_subpacket *meta_subpacket = NULL;
 
+		if (header.body_size != 33)
+		{
+			return PGP_MALFORMED_LITERAL_DATA_META_HASH_SUBPACKET;
+		}
+
 		meta_subpacket = malloc(sizeof(pgp_literal_data_meta_hash_subpacket));
 
 		if (meta_subpacket == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
 		memset(meta_subpacket, 0, sizeof(pgp_literal_data_meta_hash_subpacket));
@@ -670,34 +843,36 @@ static void *pgp_signature_subpacket_read(void *data, size_t size)
 		meta_subpacket->header = header;
 
 		// 1 octet
-		LOAD_8(&meta_subpacket->octet, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &meta_subpacket->octet), PGP_MALFORMED_LITERAL_DATA_META_HASH_SUBPACKET);
 
 		// 32 octets of hash
-		memcpy(meta_subpacket->hash, in + pos, 32);
-		pos += 32;
+		CHECK_READ(readn(buffer, meta_subpacket->hash, 32), PGP_MALFORMED_LITERAL_DATA_META_HASH_SUBPACKET);
 
-		return meta_subpacket;
+		*subpacket = meta_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	break;
 	default:
 	{
-		pgp_unknown_subpacket *subpacket = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
+		pgp_unknown_subpacket *unknown = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
 
-		if (subpacket == NULL)
+		if (unknown == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		subpacket->header = header;
-		subpacket->data = PTR_OFFSET(subpacket, sizeof(pgp_unknown_subpacket));
-		memcpy(subpacket->data, in + pos, header.body_size);
+		unknown->header = header;
+		unknown->data = PTR_OFFSET(subpacket, sizeof(pgp_unknown_subpacket));
+		CHECK_READ(readn(buffer, unknown->data, header.body_size), PGP_INSUFFICIENT_DATA);
 
-		return subpacket;
+		*subpacket = unknown;
+
+		return PGP_SUCCESS;
 	}
 	}
 
-	return NULL;
+	return PGP_SUCCESS;
 }
 
 static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t size)
@@ -1679,134 +1854,132 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 	return 0;
 }
 
-static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet *packet, void *data, size_t size)
+static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer)
 {
-	byte_t *in = data;
-	size_t pos = 0;
+	pgp_error_t error = 0;
+	void *subpacket = NULL;
+	void *result = NULL;
+
+	size_t old_size = 0;
 
 	// 1 octet version
-	LOAD_8(&packet->version, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_SIGNATURE_PACKET);
 
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
 	{
-		uint32_t hashed_subpacket_data_read = 0;
-		uint32_t unhashed_subpacket_data_read = 0;
-
 		// 1 octet signature type
-		LOAD_8(&packet->type, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// 1 octet public key algorithm
-		LOAD_8(&packet->public_key_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// 1 octet hash algorithm
-		LOAD_8(&packet->hash_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		if (packet->version == PGP_SIGNATURE_V6)
 		{
 			// 4 octet count for the hashed subpacket data
-			uint32_t hashed_size = 0;
-			LOAD_32(&hashed_size, in + pos);
-			packet->hashed_octets = BSWAP_32(hashed_size);
-			pos += 4;
+			CHECK_READ(read32_be(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
 		}
 		else
 		{
 			// 2 octet count for the hashed subpacket data
-			uint32_t hashed_size = 0;
-			LOAD_16(&hashed_size, in + pos);
-			packet->hashed_octets = BSWAP_16(hashed_size);
-			pos += 2;
+			CHECK_READ(read16_be(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
 		}
 
 		// Hashed subpackets
-		while (hashed_subpacket_data_read < packet->hashed_octets)
+		old_size = buffer->size;
+		buffer->size = buffer->pos + packet->hashed_octets;
+
+		while (buffer->pos < buffer->size)
 		{
-			void *subpacket = pgp_signature_subpacket_read(PTR_OFFSET(in, pos), packet->header.body_size - pos);
-			pgp_subpacket_header *header = subpacket;
+			error = pgp_signature_subpacket_read(&subpacket, buffer);
 
-			if (subpacket == NULL)
+			if (error != PGP_SUCCESS)
 			{
-				pgp_signature_packet_delete(packet);
-				return NULL;
+				if (error == PGP_INSUFFICIENT_DATA)
+				{
+					return PGP_MALFORMED_SIGNATURE_HASHED_SUBPACKET_SIZE;
+				}
+
+				return error;
 			}
 
-			if ((packet->hashed_subpackets = pgp_stream_push_packet(packet->hashed_subpackets, subpacket)) == NULL)
+			result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
+
+			if (result == NULL)
 			{
-				pgp_signature_packet_delete(packet);
-				return NULL;
+				return PGP_NO_MEMORY;
 			}
 
-			hashed_subpacket_data_read += header->header_size + header->body_size;
-			pos += header->header_size + header->body_size;
+			packet->hashed_subpackets = result;
 		}
+
+		buffer->size = old_size;
 
 		if (packet->version == PGP_SIGNATURE_V6)
 		{
 			// 4 octet count for the hashed subpacket data
-			uint32_t uhashed_size = 0;
-			LOAD_32(&uhashed_size, in + pos);
-			packet->unhashed_octets = BSWAP_32(uhashed_size);
-			pos += 4;
+			CHECK_READ(read32_be(buffer, &packet->unhashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
 		}
 		else
 		{
 			// 2 octet count for the hashed subpacket data
-			uint32_t unhashed_size = 0;
-			LOAD_16(&unhashed_size, in + pos);
-			packet->unhashed_octets = BSWAP_16(unhashed_size);
-			pos += 2;
+			CHECK_READ(read16_be(buffer, &packet->unhashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
 		}
 
 		// Unhashed subpackets
-		while (unhashed_subpacket_data_read < packet->unhashed_octets)
+		old_size = buffer->size;
+		buffer->size = buffer->pos + packet->unhashed_octets;
+
+		while (buffer->pos < buffer->size)
 		{
-			void *subpacket = pgp_signature_subpacket_read(PTR_OFFSET(in, pos), packet->header.body_size - pos);
-			pgp_subpacket_header *header = subpacket;
+			error = pgp_signature_subpacket_read(&subpacket, buffer);
 
-			if (subpacket == NULL)
+			if (error != PGP_SUCCESS)
 			{
-				pgp_signature_packet_delete(packet);
-				return NULL;
+				if (error == PGP_INSUFFICIENT_DATA)
+				{
+					return PGP_MALFORMED_SIGNATURE_UNHASHED_SUBPACKET_SIZE;
+				}
+
+				return error;
 			}
 
-			if ((packet->unhashed_subpackets = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket)) == NULL)
+			result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
+
+			if (result == NULL)
 			{
-				pgp_signature_packet_delete(packet);
-				return NULL;
+				return PGP_NO_MEMORY;
 			}
 
-			unhashed_subpacket_data_read += header->header_size + header->body_size;
-			pos += header->header_size + header->body_size;
+			packet->unhashed_subpackets = result;
 		}
 
+		buffer->size = old_size;
+
 		// 2 octet field holding left 16 bits of the signed hash value
-		LOAD_16(&packet->quick_hash, in + pos);
-		pos += 2;
+		CHECK_READ(read16(buffer, &packet->quick_hash), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		if (packet->version == PGP_SIGNATURE_V6)
 		{
 			// 1 octed salt size
-			LOAD_8(&packet->salt_size, in + pos);
-			pos += 1;
+			CHECK_READ(read16(buffer, &packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET);
 
 			// Salt
-			memcpy(packet->salt, in + pos, packet->salt_size);
-			pos += packet->salt_size;
+			CHECK_READ(readn(buffer, packet->salt, packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET_SALT_SIZE);
 		}
 
 		// Signature data
-		packet->signature = pgp_signature_data_read(packet, in + pos, size - pos);
+		error = pgp_signature_data_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
 
-		if (packet->signature == NULL)
+		if (error != PGP_SUCCESS)
 		{
-			pgp_signature_packet_delete(packet);
-			return NULL;
+			return error;
 		}
 
+#if 0
+		// This is deprecated. TODO (remove)
 		// Extra bookeeping stuff that is better to do just here.
 		// Count the number of attested certifications
 		{
@@ -1840,94 +2013,109 @@ static pgp_signature_packet *pgp_signature_packet_body_read(pgp_signature_packet
 				}
 			}
 		}
+#endif
 	}
 	else if (packet->version == PGP_SIGNATURE_V3)
 	{
 		// 1 octet hashed length (5)
-		LOAD_8(&packet->hashed_octets, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		if (packet->hashed_octets != 5)
 		{
-			pgp_signature_packet_delete(packet);
-			return NULL;
+			return PGP_MALFORMED_SIGNATURE_PACKET;
 		}
 
 		// 1 octet signature type
-		LOAD_8(&packet->type, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// 4 octet creation time
-		uint32_t timestamp = 0;
-		LOAD_32(&timestamp, in + pos);
-		packet->timestamp = BSWAP_32(timestamp);
-		pos += 4;
+		CHECK_READ(read32_be(buffer, &packet->timestamp), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// 8 octet key-id
-		LOAD_64(&packet->key_id, in + pos);
-		pos += 8;
+		CHECK_READ(readn(buffer, &packet->key_id, PGP_KEY_ID_SIZE), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// 1 octet public key algorithm
-		LOAD_8(&packet->public_key_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// 1 octet hash algorithm
-		LOAD_8(&packet->hash_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// 2 octet field holding left 16 bits of the signed hash value
-		LOAD_16(&packet->quick_hash, in + pos);
-		pos += 2;
+		CHECK_READ(read16(buffer, &packet->quick_hash), PGP_MALFORMED_SIGNATURE_PACKET);
 
 		// Signature data
-		packet->signature = pgp_signature_data_read(packet, in + pos, size - pos);
+		error = pgp_signature_data_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
 
-		if (packet->signature == NULL)
+		if (error != PGP_SUCCESS)
 		{
-			pgp_signature_packet_delete(packet);
-			return NULL;
+			return error;
 		}
 	}
 	else
 	{
 		// Unknown version.
-		pgp_signature_packet_delete(packet);
-		return NULL;
+		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
 	}
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size)
+pgp_error_t pgp_signature_packet_read_with_header(pgp_signature_packet **packet, pgp_packet_header *header, void *data)
 {
-	pgp_signature_packet *packet = NULL;
-	pgp_packet_header header = {0};
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_signature_packet *signature = NULL;
 
-	header = pgp_packet_header_read(data, size);
+	signature = malloc(sizeof(pgp_signature_packet));
 
-	if (pgp_packet_get_type(header.tag) != PGP_SIG)
+	if (signature == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
+	}
+
+	memset(signature, 0, sizeof(pgp_signature_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	signature->header = *header;
+
+	// Read the body
+	error = pgp_signature_packet_body_read(signature, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(signature);
+		return error;
+	}
+
+	*packet = signature;
+
+	return error;
+}
+
+pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_LIT)
+	{
+		return PGP_INCORRECT_FUNCTION;
 	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
-		return NULL;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
-	packet = malloc(sizeof(pgp_signature_packet));
-
-	if (packet == NULL)
+	if (header.body_size == 0)
 	{
-		return NULL;
+		return PGP_EMPTY_PACKET;
 	}
 
-	memset(packet, 0, sizeof(pgp_signature_packet));
-
-	// Copy the header
-	packet->header = header;
-
-	return pgp_signature_packet_body_read(packet, PTR_OFFSET(data, header.header_size), size - header.header_size);
+	return pgp_signature_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size)

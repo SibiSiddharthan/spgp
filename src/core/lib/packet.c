@@ -496,6 +496,7 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
 pgp_error_t pgp_pkesk_packet_read_with_header(pgp_pkesk_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_skesk_packet_read_with_header(pgp_skesk_packet **packet, pgp_packet_header *header, void *data);
 
+pgp_error_t pgp_signature_packet_read_with_header(pgp_signature_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signature_packet **packet, pgp_packet_header *header, void *data);
 
 pgp_error_t pgp_public_key_packet_read_with_header(pgp_key_packet **packet, pgp_packet_header *header, void *data);
@@ -549,7 +550,8 @@ void *pgp_packet_read(void *data, size_t size)
 		error = pgp_pkesk_packet_read_with_header((pgp_pkesk_packet **)&packet, &header, data);
 		return packet;
 	case PGP_SIG:
-		return pgp_signature_packet_read(data, size);
+		error = pgp_signature_packet_read_with_header((pgp_signature_packet **)&packet, &header, data);
+		return packet;
 	case PGP_SKESK:
 		error = pgp_skesk_packet_read_with_header((pgp_skesk_packet **)&packet, &header, data);
 		return packet;

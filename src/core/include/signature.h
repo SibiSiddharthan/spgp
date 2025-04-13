@@ -356,7 +356,7 @@ pgp_signature_packet *pgp_generate_subkey_binding_signature(pgp_key_packet *key,
 															pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_key_packet *subkey);
 uint32_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
 
-pgp_signature_packet *pgp_signature_packet_read(void *data, size_t size);
+pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
 size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
 

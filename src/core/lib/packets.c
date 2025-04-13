@@ -837,7 +837,7 @@ static pgp_error_t pgp_user_attribute_subpacket_read(void **subpacket, buffer_t 
 
 	if (header.tag == 0)
 	{
-		return PGP_INVALID_SUBPACKET_TAG;
+		return PGP_INVALID_USER_ATTRIBUTE_SUBPACKET_TAG;
 	}
 
 	if (buffer->size - buffer->pos < PGP_SUBPACKET_OCTETS(header))
@@ -1187,7 +1187,6 @@ static pgp_error_t pgp_user_attribute_packet_read_body(pgp_user_attribute_packet
 
 		if (result == NULL)
 		{
-			pgp_user_attribute_packet_delete(packet);
 			return PGP_NO_MEMORY;
 		}
 
