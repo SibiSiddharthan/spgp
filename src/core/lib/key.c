@@ -3519,6 +3519,35 @@ void pgp_rsa_key_delete(pgp_rsa_key *key)
 	free(key);
 }
 
+pgp_elgamal_key *pgp_elgamal_key_new()
+{
+	pgp_elgamal_key *key = malloc(sizeof(pgp_elgamal_key));
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, sizeof(pgp_elgamal_key));
+
+	return key;
+}
+
+void pgp_elgamal_key_delete(pgp_elgamal_key *key)
+{
+	if (key == NULL)
+	{
+		return;
+	}
+
+	mpi_delete(key->p);
+	mpi_delete(key->g);
+	mpi_delete(key->x);
+	mpi_delete(key->y);
+
+	free(key);
+}
+
 pgp_dsa_key *pgp_dsa_key_new()
 {
 	pgp_dsa_key *key = malloc(sizeof(pgp_dsa_key));

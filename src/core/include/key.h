@@ -208,6 +208,9 @@ void pgp_ed448_generate_key(pgp_ed448_key *key);
 pgp_rsa_key *pgp_rsa_key_new();
 void pgp_rsa_key_delete(pgp_rsa_key *key);
 
+pgp_elgamal_key *pgp_elgamal_key_new();
+void pgp_elgamal_key_delete(pgp_elgamal_key *key);
+
 pgp_dsa_key *pgp_dsa_key_new();
 void pgp_dsa_key_delete(pgp_dsa_key *key);
 
