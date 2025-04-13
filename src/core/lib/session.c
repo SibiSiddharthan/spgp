@@ -1178,7 +1178,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 		// S2K specifier
 		if ((buffer->pos + s2k_size) > buffer->size)
 		{
-			return PGP_MALFORMED_SYMMETRIC_SESSION_PACKET_S2K_SIZE;
+			return PGP_MALFORMED_S2K_SIZE;
 		}
 
 		result = pgp_s2k_read(&packet->s2k, buffer->data + buffer->pos, s2k_size);
@@ -1190,7 +1190,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 
 		if (result != s2k_size)
 		{
-			return PGP_MALFORMED_SYMMETRIC_SESSION_PACKET_S2K_SIZE;
+			return PGP_MALFORMED_S2K_SIZE;
 		}
 
 		buffer->pos += s2k_size;

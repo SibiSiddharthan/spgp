@@ -2301,7 +2301,7 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 			{
 				if (result != s2k_size)
 				{
-					return PGP_MALFORMED_SYMMETRIC_SESSION_PACKET_S2K_SIZE;
+					return PGP_MALFORMED_S2K_SIZE;
 				}
 			}
 
@@ -2320,8 +2320,8 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 		}
 
 		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_SECRET_KEY_PACKET);
-		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_SECRET_KEY_PACKET);
 
+		// Encrypted secret key
 		if (packet->version == PGP_KEY_V5)
 		{
 			CHECK_READ(read32_be(buffer, &packet->encrypted_octets), PGP_MALFORMED_SECRET_KEY_PACKET);
@@ -2331,7 +2331,6 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 			packet->encrypted_octets = buffer->size - buffer->pos;
 		}
 
-		// Encrypted private key
 		packet->encrypted = malloc(packet->encrypted_octets);
 
 		if (packet->encrypted == NULL)
@@ -2437,7 +2436,7 @@ pgp_error_t pgp_secret_key_packet_read(pgp_key_packet **packet, void *data, size
 		return PGP_EMPTY_PACKET;
 	}
 
-	return pgp_public_key_packet_read_with_header(packet, &header, data);
+	return pgp_secret_key_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
@@ -2951,91 +2950,65 @@ pgp_key_packet *pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase,
 	return packet;
 }
 
-pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
+static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *buffer)
 {
-	byte_t *in = data;
-
-	pgp_key_packet *packet = NULL;
-	pgp_packet_header header = {0};
-
-	size_t pos = 0;
-
-	header = pgp_packet_header_read(data, size);
-	pos = header.header_size;
-
-	if (pgp_packet_get_type(header.tag) != PGP_KEYDEF)
-	{
-		return NULL;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return NULL;
-	}
-
-	packet = malloc(sizeof(pgp_key_packet));
-
-	if (packet == NULL)
-	{
-		return NULL;
-	}
-
-	memset(packet, 0, sizeof(pgp_key_packet));
-
-	// Copy the header
-	packet->header = header;
+	pgp_error_t error = 0;
+	uint32_t public_key_data_octets = 0;
 
 	// 1 octet version
-	LOAD_8(&packet->version, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_KEYDEF_PACKET);
+
+	if (packet->version != PGP_KEY_V2 && packet->version != PGP_KEY_V3 && packet->version != PGP_KEY_V4 && packet->version != PGP_KEY_V5 &&
+		packet->version != PGP_KEY_V6)
+	{
+		return PGP_INVALID_KEY_VERSION;
+	}
 
 	// 1 octet key type
-	LOAD_8(&packet->type, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_KEYDEF_PACKET);
 
-	// 1 octet key capabilities
-	LOAD_8(&packet->capabilities, in + pos);
-	pos += 1;
+	if (packet->type != PGP_KEY_TYPE_PUBLIC && packet->type != PGP_KEY_TYPE_SECRET)
+	{
+		return PGP_INVALID_KEY_TYPE;
+	}
+
+	// 1 octet key capabilitie
+	CHECK_READ(read8(buffer, &packet->capabilities), PGP_MALFORMED_KEYDEF_PACKET);
 
 	// 4-octet number denoting the time that the key was created.
-	uint32_t key_creation_time_be = 0;
-
-	LOAD_32(&key_creation_time_be, in + pos);
-	packet->key_creation_time = BSWAP_32(key_creation_time_be);
-	pos += 4;
+	CHECK_READ(read32_be(buffer, &packet->key_creation_time), PGP_MALFORMED_KEYDEF_PACKET);
 
 	// 4-octet number denoting the time that the key will expire.
-	uint32_t key_expiry_time_be = 0;
+	CHECK_READ(read32_be(buffer, &packet->key_expiry_seconds), PGP_MALFORMED_KEYDEF_PACKET);
 
-	LOAD_32(&key_expiry_time_be, in + pos);
-	pos += 4;
-
-	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V2)
+	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
 	{
-		packet->key_expiry_days = BSWAP_32(key_expiry_time_be) / 86400;
-	}
-	else
-	{
-		packet->key_expiry_seconds = BSWAP_32(key_expiry_time_be);
+		packet->key_expiry_days = packet->key_expiry_seconds / 86400;
 	}
 
 	// 1-octet public key algorithm.
-	LOAD_8(&packet->public_key_algorithm_id, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_KEYDEF_PACKET);
 
 	// 4-octet scalar count for the public key material
-	uint32_t public_key_data_octets_be;
+	CHECK_READ(read32_be(buffer, &public_key_data_octets), PGP_MALFORMED_KEYDEF_PACKET);
 
-	LOAD_32(&public_key_data_octets_be, in + pos);
-	packet->public_key_data_octets = BSWAP_32(public_key_data_octets_be);
-	pos += 4;
+	error = pgp_public_key_material_read(packet, buffer->data + buffer->pos, public_key_data_octets);
 
-	// Public key material
-	pos += pgp_public_key_material_read(packet, in + pos, packet->header.body_size - pos);
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	// Check whether the given count is correct
+	if (packet->public_key_data_octets != public_key_data_octets)
+	{
+		return PGP_MALFORMED_PUBLIC_KEY_COUNT;
+	}
+
+	buffer->pos += packet->public_key_data_octets;
 
 	// 1 octet of S2K usage
-	LOAD_8(&packet->s2k_usage, in + pos);
-	pos += 1;
+	CHECK_READ(read8(buffer, &packet->s2k_usage), PGP_MALFORMED_KEYDEF_PACKET);
 
 	if (packet->s2k_usage != 0)
 	{
@@ -3043,37 +3016,41 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 		byte_t conditional_field_size = 0;
 
 		// 1-octet scalar count of S2K fields
-		LOAD_8(&conditional_field_size, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &conditional_field_size), PGP_MALFORMED_KEYDEF_PACKET);
 
 		// 1 octet symmetric key algorithm
-		LOAD_8(&packet->symmetric_key_algorithm_id, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &packet->symmetric_key_algorithm_id), PGP_MALFORMED_KEYDEF_PACKET);
 
 		if (packet->s2k_usage == 253)
 		{
 			// 1 octet AEAD algorithm
-			LOAD_8(&packet->aead_algorithm_id, in + pos);
-			pos += 1;
+			CHECK_READ(read8(buffer, &packet->aead_algorithm_id), PGP_MALFORMED_KEYDEF_PACKET);
 		}
 
 		// 1-octet count of S2K specifier
-		LOAD_8(&s2k_size, in + pos);
-		pos += 1;
+		CHECK_READ(read8(buffer, &s2k_size), PGP_MALFORMED_KEYDEF_PACKET);
 
 		// S2K specifier
 		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
 		{
 			uint32_t result = 0;
 
-			result = pgp_s2k_read(&packet->s2k, in + pos, s2k_size != 0 ? s2k_size : (packet->header.body_size - pos));
+			result = pgp_s2k_read(&packet->s2k, buffer->data + buffer->pos, s2k_size);
 
 			if (result == 0)
 			{
-				return NULL;
+				return PGP_INVALID_S2K_SPECIFIER;
 			}
 
-			pos += result;
+			if (s2k_size != 0)
+			{
+				if (result != s2k_size)
+				{
+					return PGP_MALFORMED_S2K_SIZE;
+				}
+			}
+
+			buffer->pos += result;
 		}
 
 		// IV
@@ -3087,37 +3064,109 @@ pgp_key_packet *pgp_key_packet_read(void *data, size_t size)
 			packet->iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 		}
 
-		memcpy(packet->iv, in + pos, packet->iv_size);
-		pos += packet->iv_size;
+		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_KEYDEF_PACKET);
 
 		// Secret key octet count
-		LOAD_32(&packet->encrypted_octets, in + pos);
-		pos += 4;
+		CHECK_READ(read32_be(buffer, &packet->encrypted_octets), PGP_MALFORMED_KEYDEF_PACKET);
 
 		// Encrypted private key
-		packet->encrypted_octets = packet->header.body_size - (pos - packet->header.header_size);
 		packet->encrypted = malloc(packet->encrypted_octets);
 
 		if (packet->encrypted == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		memcpy(packet->encrypted, in + pos, packet->encrypted_octets);
-		pos += packet->encrypted_octets;
+		CHECK_READ(readn(buffer, packet->encrypted, packet->encrypted_octets), PGP_MALFORMED_KEYDEF_PACKET);
 	}
 	else
 	{
+		uint32_t private_key_data_octets = 0;
 
-		// Secret key octet count
-		LOAD_32(&packet->private_key_data_octets, in + pos);
-		pos += 4;
+		if (packet->version == PGP_KEY_V5)
+		{
+			// Secret key octet count
+			CHECK_READ(read32_be(buffer, &private_key_data_octets), PGP_MALFORMED_KEYDEF_PACKET);
+		}
 
 		// Plaintext private key
-		pos += pgp_private_key_material_read(packet, in + pos, packet->header.body_size - (pos - packet->header.header_size));
+		error = pgp_private_key_material_read(packet, buffer->data + buffer->pos, private_key_data_octets);
+
+		if (error != PGP_SUCCESS)
+		{
+			return error;
+		}
+
+		if (packet->version == PGP_KEY_V5)
+		{
+			if (packet->private_key_data_octets != private_key_data_octets)
+			{
+				return PGP_MALFORMED_SECRET_KEY_COUNT;
+			}
+		}
+
+		buffer->pos += packet->private_key_data_octets;
 	}
 
-	return packet;
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_key_packet_read_with_header(pgp_key_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_key_packet *key = NULL;
+
+	key = malloc(sizeof(pgp_key_packet));
+
+	if (packet == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(key, 0, sizeof(pgp_key_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	key->header = *header;
+
+	// Read the body
+	error = pgp_key_packet_read_body(key, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_key_packet_delete(key);
+		return error;
+	}
+
+	*packet = key;
+
+	return error;
+}
+
+pgp_error_t pgp_key_packet_read(pgp_key_packet **packet, void *data, size_t size)
+{
+	pgp_packet_header header = pgp_packet_header_read(data, size);
+
+	if (pgp_packet_get_type(header.tag) != PGP_KEYDEF)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	return pgp_key_packet_read_with_header(packet, &header, data);
 }
 
 size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)

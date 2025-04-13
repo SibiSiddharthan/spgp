@@ -500,6 +500,7 @@ pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signatur
 
 pgp_error_t pgp_public_key_packet_read_with_header(pgp_key_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_secret_key_packet_read_with_header(pgp_key_packet **packet, pgp_packet_header *header, void *data);
+pgp_error_t pgp_key_packet_read_with_header(pgp_key_packet **packet, pgp_packet_header *header, void *data);
 
 pgp_error_t pgp_sed_packet_read_with_header(pgp_sed_packet **packet, pgp_packet_header *header, void *data);
 pgp_error_t pgp_seipd_packet_read_with_header(pgp_seipd_packet **packet, pgp_packet_header *header, void *data);
@@ -599,7 +600,8 @@ void *pgp_packet_read(void *data, size_t size)
 		error = pgp_padding_packet_read_with_header((pgp_padding_packet **)&packet, &header, data);
 		return packet;
 	case PGP_KEYDEF:
-		return pgp_key_packet_read(data, size);
+		error = pgp_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		return packet;
 	case PGP_KEYRING:
 		error = pgp_keyring_packet_read_with_header((pgp_keyring_packet **)&packet, &header, data);
 		return packet;
