@@ -19,6 +19,11 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, ui
 	byte_t *in = data;
 	size_t pos = 0;
 
+	if (size == 0)
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
 	switch (packet->public_key_algorithm_id)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
