@@ -55,7 +55,7 @@ static arg_option_t *argparse_find_long_option(argparse_t *actx, char *arg, uint
 	return NULL;
 }
 
-static argparse_t *argparse_result_push(argparse_t *actx, uint16_t value, void *data)
+static argparse_t *argparse_result_push(argparse_t *actx, uint32_t value, void *data)
 {
 	if (actx->result_capacity == 0)
 	{
