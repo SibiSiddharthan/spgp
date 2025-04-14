@@ -46,27 +46,25 @@ Basic Commands:\n\
  -e, --encrypt                  encrypt data\n\
  -c, --symmetric                encryption only with symmetric cipher\n\
  -d, --decrypt                  decrypt data\n\
-     --verify                   verify a signature\n\
+ -v  --verify                   verify a signature\n\
  -a, --armor                    create ascii armored output\n\
-     --dearmor                  create pgp packet output (default)\n\
+ -p  --dearmor                  create pgp packet output (default)\n\
 \n\
 Key Commands:\n\
 \n\
  -k, --list-keys                list keys\n\
-     --list-signatures          list keys and signatures\n\
      --check-signatures         list and check key signatures\n\
-     --fingerprint              list keys and fingerprints\n\
  -K, --list-secret-keys         list secret keys\n\
-     --generate-key             generate a new key pair\n\
-     --full-generate-key        full featured key pair generation\n\
-     --generate-revocation      generate a revocation certificate\n\
-     --delete-keys              remove keys from the public keyring\n\
-     --delete-secret-keys       remove keys from the secret keyring\n\
+ -g  --generate-key             generate a new key pair\n\
+ -G  --full-generate-key        full featured key pair generation\n\
+ -R  --generate-revocation      generate a revocation certificate\n\
+ -w  --delete-keys              remove keys from the public keyring\n\
+ -W  --delete-secret-keys       remove keys from the secret keyring\n\
      --sign-key                 sign a key\n\
      --edit-key                 sign or edit a key\n\
-     --export                   export keys\n\
-     --export-secret-keys       export secret keys\n\
-     --import                   import keys\n\
+ -x  --export                   export keys\n\
+ -X  --export-secret-keys       export secret keys\n\
+ -i  --import                   import keys\n\
      --change-passphrase        change a passphrase\n\
      --send-keys                export keys to a keyserver\n\
      --receive-keys             import keys from a keyserver\n\
@@ -74,8 +72,8 @@ Key Commands:\n\
      --refresh-keys             update all keys from a keyserver\n\
 \n\
 Packet Commands:\n\
-     --list-packets             list PGP packets\n\
-     --dump-packets             dump PGP packets\n\
+ -L   --list-packets             list PGP packets\n\
+ -D   --dump-packets             dump PGP packets\n\
 \n\
 Miscellaneous Commands:\n\
      -h, --help                 help\n\
@@ -83,8 +81,8 @@ Miscellaneous Commands:\n\
 \n\
 Output Options:\n\
 \n\
- -v, --verbose                  verbose\n\
- -q, --quiet                    quiet\n\
+     --verbose                  verbose\n\
+     --quiet                    quiet\n\
  -o, --output FILE              write output to FILE\n\
  -z  --compress-level N         compression level to N (0 disables)\n\
 \n\
@@ -103,8 +101,8 @@ Operation Modes:\n\
      --librepgp                 conform to librepgp specification\n\
 \n\
 Miscellaneous Options:\n\
- -n, --dry-run                  dry run (no modifications)\n\
- -i, --interactive              prompt before overwriting\n\
+     --dry-run                  dry run (no modifications)\n\
+     --interactive              prompt before overwriting\n\
      --batch                    enable batch mode\n\
      --expert                   enable expert mode\n\
      --no-mpis                  dont print mpis when dumping packets\n\
@@ -184,36 +182,36 @@ static arg_option_t spgp_options[] = {
 	{"sign", 's', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_SIGN},
 	{"detach-sign", 'b', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DETACH_SIGN},
 	{"clear-sign", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_CLEAR_SIGN},
-	{"verify", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_VERIFY},
+	{"verify", 'v', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_VERIFY},
 	{"symmetric", 'c', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_SYMMETRIC_ENCRYPT},
 	{"encrypt", 'e', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_ENCRYPT},
 	{"decrypt", 'd', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DECRYPT},
 	{"armor", 'a', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_ARMOR},
-	{"dearmor", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DEARMOR},
+	{"dearmor", 'p', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DEARMOR},
 
 	// Key Commands
 	{"list-keys", 'k', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_LIST_KEYS},
 	{"list-secret-keys", 'K', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_LIST_SECRET_KEYS},
-	{"delete-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DELETE_KEYS},
-	{"delete-secret-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DELETE_SECRET_KEYS},
-	{"export-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPORT_KEYS},
-	{"export-secret-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPORT_SECRET_KEYS},
+	{"delete-keys", 'w', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DELETE_KEYS},
+	{"delete-secret-keys", 'W', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DELETE_SECRET_KEYS},
+	{"export-keys", 'x', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPORT_KEYS},
+	{"export-secret-keys", 'X', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPORT_SECRET_KEYS},
 	{"import-keys", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_IMPORT_KEYS},
-	{"generate-revocation", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_GENERATE_REVOCATION},
-	{"generate-key", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_GENERATE_KEY},
-	{"full-generate-key", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_FULL_GENERATE_KEY},
+	{"generate-revocation", 'R', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_GENERATE_REVOCATION},
+	{"generate-key", 'g', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_GENERATE_KEY},
+	{"full-generate-key", 'G', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_FULL_GENERATE_KEY},
 
 	// Packet Commands
-	{"list-packets", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_LIST_PACKETS},
-	{"dump-packets", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DUMP_PACKETS},
+	{"list-packets", 'L', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_LIST_PACKETS},
+	{"dump-packets", 'D', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DUMP_PACKETS},
 
 	// Miscellaneous Commands
 	{"help", 'h', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_HELP},
 	{"version", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_VERSION},
 
 	// Output Options
-	{"verbose", 'v', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_VERBOSE},
-	{"quiet", 'q', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_QUIET},
+	{"verbose", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_VERBOSE},
+	{"quiet", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_QUIET},
 	{"output", 'o', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_OUTPUT},
 	{"compress-level", 'z', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_COMPRESS_LEVEL},
 
@@ -232,8 +230,8 @@ static arg_option_t spgp_options[] = {
 	{"librepgp", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_LIBREPGP},
 
 	// Miscellaneous Options
-	{"dry-run", 'n', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DRY_RUN},
-	{"interactive", 'i', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_INTERACTIVE},
+	{"dry-run", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_DRY_RUN},
+	{"interactive", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_INTERACTIVE},
 	{"batch", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_BATCH},
 	{"expert", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPERT},
 	{"no-mpis", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_NO_MPIS},
