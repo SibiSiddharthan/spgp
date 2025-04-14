@@ -121,12 +121,44 @@ typedef struct _spgp_command
 	handle_t keyring;
 
 	void *homedir;
-	void *output;
-	void *user;
 	void *passhprase;
 
-	byte_t armor;
+	void *output;
+	void *user;
+	pgp_stream_t *users;
+	pgp_stream_t *recipients;
+
 	time_t timestamp;
+	byte_t cipher_algorithm;
+	byte_t hash_algorithm;
+	byte_t compression_algorithm;
+
+	byte_t armor : 1;
+	byte_t dearmor : 1;
+
+#if 0
+	byte_t sign : 1;
+	byte_t detach_sign : 1;
+	byte_t clear_sign : 1;
+	byte_t verify : 1;
+
+	byte_t encrypt : 1;
+	byte_t symmetric : 1;
+	byte_t decrypt : 1;
+
+	byte_t import_keys : 1;
+	byte_t export_keys : 1;
+	byte_t export_secret_keys : 1;
+
+	byte_t list_keys : 1;
+	byte_t list_secret_keys : 1;
+
+	byte_t generate_key : 1;
+	byte_t full_generate_key : 1;
+
+	byte_t list_packets : 1;
+	byte_t dump_packets : 1;
+#endif
 
 	union
 	{
