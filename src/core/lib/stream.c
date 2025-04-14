@@ -41,20 +41,25 @@ pgp_stream_t *pgp_stream_new(uint16_t capacity)
 	return stream;
 }
 
-void pgp_stream_delete(pgp_stream_t *stream)
+void pgp_stream_delete(pgp_stream_t *stream, void (*deleter)(void *))
 {
 	if (stream == NULL)
 	{
 		return;
 	}
 
+	if (deleter == NULL)
+	{
+		goto end;
+	}
+
 	for (uint16_t i = 0; i < stream->count; ++i)
 	{
-		// TODO change this.
-		free(stream->packets[i]);
+		deleter(stream->packets[i]);
 		stream->packets[i] = NULL;
 	}
 
+end:
 	free(stream->packets);
 	free(stream);
 }
@@ -253,7 +258,7 @@ static pgp_stream_t *pgp_stream_read_armor(void *data, size_t size)
 		if (status != ARMOR_SUCCESS)
 		{
 			pgp_armor_delete(armor);
-			pgp_stream_delete(stream);
+			pgp_stream_delete(stream, pgp_packet_delete);
 			return NULL;
 		}
 
@@ -263,7 +268,7 @@ static pgp_stream_t *pgp_stream_read_armor(void *data, size_t size)
 
 			if (packet == NULL)
 			{
-				pgp_stream_delete(stream);
+				pgp_stream_delete(stream, pgp_packet_delete);
 				pgp_armor_delete(armor);
 
 				return NULL;
@@ -274,7 +279,7 @@ static pgp_stream_t *pgp_stream_read_armor(void *data, size_t size)
 
 			if (pgp_stream_push_packet(stream, packet) == NULL)
 			{
-				pgp_stream_delete(stream);
+				pgp_stream_delete(stream, pgp_packet_delete);
 				pgp_armor_delete(armor);
 			}
 		}
@@ -329,7 +334,7 @@ static pgp_stream_t *pgp_stream_read_binary(void *data, size_t size)
 
 		if (packet == NULL)
 		{
-			pgp_stream_delete(stream);
+			pgp_stream_delete(stream, pgp_packet_delete);
 			return NULL;
 		}
 
