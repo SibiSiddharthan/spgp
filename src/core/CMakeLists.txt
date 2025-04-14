@@ -29,3 +29,4 @@ add_executable(spgp app/spgp.c app/argparse.c app/io.c app/keyring.c app/packets
 target_include_directories(spgp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app)
 target_link_libraries(spgp pgp crypto io)
 set_target_properties(spgp PROPERTIES RUNTIME_OUTPUT_NAME "spgp")
+set_target_properties(spgp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
