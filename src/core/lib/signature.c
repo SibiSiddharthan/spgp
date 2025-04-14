@@ -802,18 +802,11 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 
 		// Copy the header
 		embedded_subpacket->header = header;
+		*subpacket = embedded_subpacket;
 
 		error = pgp_signature_packet_body_read(embedded_subpacket, buffer);
 
-		if (error != PGP_SUCCESS)
-		{
-			pgp_signature_packet_delete(embedded_subpacket);
-			return error;
-		}
-
-		*subpacket = embedded_subpacket;
-
-		return PGP_SUCCESS;
+		return error;
 	}
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
@@ -1120,6 +1113,54 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	}
 
 	return pos;
+}
+
+static void pgp_signature_subpacket_delete(void *subpacket)
+{
+	pgp_subpacket_header *header = subpacket;
+
+	switch (header->tag & PGP_SUBPACKET_TAG_MASK)
+	{
+	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
+	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
+	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
+	case PGP_EXPORTABLE_SUBPACKET:
+	case PGP_REVOCABLE_SUBPACKET:
+	case PGP_PRIMARY_USER_ID_SUBPACKET:
+	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+	case PGP_KEY_FLAGS_SUBPACKET:
+	case PGP_FEATURES_SUBPACKET:
+	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
+	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+	case PGP_POLICY_URI_SUBPACKET:
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+	case PGP_TRUST_SIGNATURE_SUBPACKET:
+	case PGP_REVOCATION_KEY_SUBPACKET:
+	case PGP_ISSUER_KEY_ID_SUBPACKET:
+	case PGP_NOTATION_DATA_SUBPACKET:
+	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
+	case PGP_SIGNATURE_TARGET_SUBPACKET:
+	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
+		free(subpacket);
+		break;
+	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
+		pgp_signature_packet_delete(subpacket);
+		break;
+	case PGP_KEY_BLOCK_SUBPACKET:
+		pgp_key_packet_delete(subpacket);
+		break;
+	default:
+		free(subpacket);
+		break;
+	}
 }
 
 static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
@@ -1713,9 +1754,14 @@ pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type)
 
 void pgp_signature_packet_delete(pgp_signature_packet *packet)
 {
+	if (packet == NULL)
+	{
+		return;
+	}
+
 	// Free the subpackets first
-	pgp_stream_delete(packet->hashed_subpackets);
-	pgp_stream_delete(packet->unhashed_subpackets);
+	pgp_stream_delete(packet->hashed_subpackets, pgp_signature_subpacket_delete);
+	pgp_stream_delete(packet->unhashed_subpackets, pgp_signature_subpacket_delete);
 	free(packet->signature);
 	free(packet);
 }

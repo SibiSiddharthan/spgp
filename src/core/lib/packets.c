@@ -989,6 +989,11 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 	return pos;
 }
 
+static void pgp_user_attribute_subpacket_delete(void *subpacket)
+{
+	free(subpacket);
+}
+
 static void pgp_user_attribute_encode_header(pgp_user_attribute_packet *packet)
 {
 	// N octets of subpackets
@@ -1016,7 +1021,7 @@ pgp_error_t pgp_user_attribute_packet_new(pgp_user_attribute_packet **packet)
 void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet)
 {
 	// Free subpackets first.
-	pgp_stream_delete(packet->subpackets);
+	pgp_stream_delete(packet->subpackets, pgp_user_attribute_subpacket_delete);
 	free(packet);
 }
 

@@ -19,7 +19,7 @@ typedef struct _pgp_stream_t
 } pgp_stream_t;
 
 pgp_stream_t *pgp_stream_new(uint16_t capacity);
-void pgp_stream_delete(pgp_stream_t *stream);
+void pgp_stream_delete(pgp_stream_t *stream, void (*deleter)(void *));
 
 size_t pgp_stream_octets(pgp_stream_t *stream);
 size_t pgp_stream_armor_size(pgp_stream_t *stream);
