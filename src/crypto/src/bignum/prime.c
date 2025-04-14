@@ -130,12 +130,6 @@ uint32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn)
 		return 0;
 	}
 
-	// Check divisibility by 5
-	if (bn->words[0] % 5 == 0)
-	{
-		return 0;
-	}
-
 	// 4 Temporaries
 	ctx_size = 4 * bignum_size(bn->bits);
 
