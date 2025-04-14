@@ -134,13 +134,17 @@ typedef struct _spgp_command
 	byte_t hash_algorithm;
 	byte_t compression_algorithm;
 
-	byte_t armor : 1;
-	byte_t dearmor : 1;
+	union
+	{
+		struct
+		{
+			byte_t armor : 1;
+			byte_t dearmor : 1;
 
-	byte_t sign : 1;
-	byte_t detach_sign : 1;
-	byte_t clear_sign : 1;
-	byte_t verify : 1;
+			byte_t sign : 1;
+			byte_t detach_sign : 1;
+			byte_t clear_sign : 1;
+			byte_t verify : 1;
 #if 0
 
 	byte_t encrypt : 1;
@@ -157,9 +161,14 @@ typedef struct _spgp_command
 	byte_t generate_key : 1;
 	byte_t full_generate_key : 1;
 
-	byte_t list_packets : 1;
-	byte_t dump_packets : 1;
 #endif
+			byte_t list_packets : 1;
+			byte_t dump_packets : 1;
+			byte_t no_print_mpis : 1;
+		};
+
+		uint64_t options;
+	};
 
 	union
 	{
@@ -194,13 +203,6 @@ typedef struct _spgp_command
 		{
 			byte_t secret;
 		} list_keys;
-
-		struct
-		{
-			byte_t dump;
-			byte_t no_mpi;
-			char *file;
-		} list_packets;
 	};
 
 } spgp_command;

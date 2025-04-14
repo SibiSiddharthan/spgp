@@ -19,20 +19,33 @@ uint32_t spgp_list_packets(spgp_command *command)
 	char str[65536] = {0};
 	uint16_t options = 0;
 
-	stream = spgp_read_pgp_packets(command->list_packets.file, SPGP_STD_INPUT);
-
-	if (command->list_packets.dump == 0)
+	if (command->list_packets == 1 && command->dump_packets == 0)
 	{
 		options |= PGP_PRINT_HEADER_ONLY;
 	}
 
-	if (command->list_packets.no_mpi)
+	if (command->no_print_mpis)
 	{
 		options |= PGP_PRINT_MPI_MINIMAL;
 	}
 
-	pgp_stream_print(stream, str, 65536, options);
-	printf("%s", str);
+	if (command->files != NULL)
+	{
+		for (uint16_t i = 0; i < command->files->count; ++i)
+		{
+			stream = spgp_read_pgp_packets(command->files->packets[i], SPGP_STD_INPUT);
+
+			pgp_stream_print(stream, str, 65536, options);
+			printf("%s", str);
+		}
+	}
+	else
+	{
+		stream = spgp_read_pgp_packets(NULL, SPGP_STD_INPUT);
+
+		pgp_stream_print(stream, str, 65536, options);
+		printf("%s", str);
+	}
 
 	return 0;
 }

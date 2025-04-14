@@ -367,6 +367,11 @@ void spgp_initialize_home(spgp_command *spgp)
 
 static uint32_t spgp_execute_operation(spgp_command *command)
 {
+	if (command->list_packets || command->dump_packets)
+	{
+		return spgp_list_packets(command);
+	}
+
 	switch (command->operation)
 	{
 	case SPGP_OPERATION_SIGN:
@@ -540,33 +545,11 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:
+			command->list_packets = 1;
+			break;
 		case SPGP_OPTION_DUMP_PACKETS:
-		{
-			if (!(command->operation == SPGP_OPERATION_NONE || command->operation == SPGP_OPERATION_LIST_PACKETS))
-			{
-				break;
-			}
-
-			command->operation = SPGP_OPERATION_LIST_PACKETS;
-			command->list_packets.dump = (result->value == SPGP_OPTION_DUMP_PACKETS) ? 1 : 0;
-
-			// Get the argument
-			result = argparse(actx, ARGPARSE_PEEK);
-
-			if (result == NULL)
-			{
-				break;
-			}
-
-			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
-			{
-				// Consume the option
-				argparse(actx, 0);
-
-				command->list_packets.file = result->data;
-			}
-		}
-		break;
+			command->dump_packets = 1;
+			break;
 
 		// Key Selection
 		case SPGP_OPTION_USER_ID:
@@ -627,10 +610,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		break;
 		case SPGP_OPTION_NO_MPIS:
 		{
-			if (command->operation == SPGP_OPERATION_LIST_PACKETS)
-			{
-				command->list_packets.no_mpi = 1;
-			}
+			command->no_print_mpis = 1;
 		}
 		break;
 
@@ -661,7 +641,7 @@ int main(int argc, char **argv)
 	spgp_parse_arguments(&command, argc, argv);
 
 	// No command given, print help
-	if (command.operation == SPGP_OPERATION_NONE)
+	if (command.options == 0)
 	{
 		spgp_print_help();
 		exit(EXIT_SUCCESS);
