@@ -416,75 +416,17 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		// Basic Commands
 		case SPGP_OPTION_SIGN:
+			command->sign = 1;
+			break;
 		case SPGP_OPTION_DETACH_SIGN:
+			command->detach_sign = 1;
+			break;
 		case SPGP_OPTION_CLEAR_SIGN:
-		{
-			if (!(command->operation == SPGP_OPERATION_NONE || command->operation == SPGP_OPERATION_SIGN))
-			{
-				break;
-			}
-
-			command->operation = SPGP_OPERATION_SIGN;
-			command->sign.detach = (result->value == SPGP_OPTION_DETACH_SIGN) ? 1 : 0;
-			command->sign.cleartext = (result->value == SPGP_OPTION_CLEAR_SIGN) ? 1 : 0;
-
-			// Get the argument
-			result = argparse(actx, ARGPARSE_PEEK);
-
-			if (result == NULL)
-			{
-				break;
-			}
-
-			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
-			{
-				// Consume the option
-				argparse(actx, 0);
-
-				command->sign.file = result->data;
-			}
-		}
-		break;
+			command->clear_sign = 1;
+			break;
 		case SPGP_OPTION_VERIFY:
-		{
-			if (command->operation != SPGP_OPERATION_NONE)
-			{
-				break;
-			}
-
-			command->operation = SPGP_OPERATION_VERIFY;
-
-			result = argparse(actx, ARGPARSE_PEEK);
-
-			if (result == NULL)
-			{
-				break;
-			}
-
-			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
-			{
-				// Consume the option
-				argparse(actx, 0);
-
-				command->verify.sign = result->data;
-			}
-
-			result = argparse(actx, ARGPARSE_PEEK);
-
-			if (result == NULL)
-			{
-				break;
-			}
-
-			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
-			{
-				// Consume the option
-				argparse(actx, 0);
-
-				command->verify.file = result->data;
-			}
-		}
-		break;
+			command->verify = 1;
+			break;
 		case SPGP_OPTION_ENCRYPT:
 		case SPGP_OPTION_SYMMETRIC_ENCRYPT:
 		{
@@ -629,16 +571,31 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		// Key Selection
 		case SPGP_OPTION_USER_ID:
 		{
-			command->user = result->data;
+			command->users = pgp_stream_push_packet(command->users, result->data);
+
+			if (command->users == NULL)
+			{
+				printf("No memory");
+				exit(1);
+			}
+		}
+		break;
+		case SPGP_OPTION_RECIPIENT:
+		{
+			command->recipients = pgp_stream_push_packet(command->recipients, result->data);
+
+			if (command->recipients == NULL)
+			{
+				printf("No memory");
+				exit(1);
+			}
 		}
 		break;
 
 		// Output Options
 		case SPGP_OPTION_OUTPUT:
-		{
 			command->output = result->data;
-		}
-		break;
+			break;
 
 		// Operation Modes
 		case SPGP_OPTION_RFC4880:
@@ -676,6 +633,19 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 			}
 		}
 		break;
+
+		case ARGPARSE_RETURN_NON_OPTION:
+		{
+			command->files = pgp_stream_push_packet(command->files, result->data);
+
+			if (command->files == NULL)
+			{
+				printf("No memory");
+				exit(1);
+			}
+		}
+		break;
+
 		default:
 			break;
 		}

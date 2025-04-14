@@ -125,6 +125,7 @@ typedef struct _spgp_command
 
 	void *output;
 	void *user;
+	pgp_stream_t *files;
 	pgp_stream_t *users;
 	pgp_stream_t *recipients;
 
@@ -136,11 +137,11 @@ typedef struct _spgp_command
 	byte_t armor : 1;
 	byte_t dearmor : 1;
 
-#if 0
 	byte_t sign : 1;
 	byte_t detach_sign : 1;
 	byte_t clear_sign : 1;
 	byte_t verify : 1;
+#if 0
 
 	byte_t encrypt : 1;
 	byte_t symmetric : 1;
@@ -162,19 +163,6 @@ typedef struct _spgp_command
 
 	union
 	{
-		struct
-		{
-			byte_t detach;
-			byte_t cleartext;
-			char *file;
-		} sign;
-
-		struct
-		{
-			char *sign;
-			char *file;
-		} verify;
-
 		struct
 		{
 			byte_t symmetric;

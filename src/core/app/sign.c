@@ -53,6 +53,7 @@ static pgp_key_packet *spgp_search_key_from_user(char *user)
 uint32_t spgp_sign(spgp_command *command)
 {
 	void *buffer = NULL;
+	void *file = NULL;
 	size_t size = 0;
 
 	pgp_key_packet *key = NULL;
@@ -65,7 +66,12 @@ uint32_t spgp_sign(spgp_command *command)
 		exit(1);
 	}
 
-	buffer = spgp_read_file(command->sign.file, 0, &size);
+	if (command->files != NULL)
+	{
+		file = command->files->packets[0];
+	}
+
+	buffer = spgp_read_file(file, 0, &size);
 
 	if (command->passhprase != NULL)
 	{
@@ -95,8 +101,14 @@ uint32_t spgp_verify(spgp_command *command)
 	pgp_key_packet *key = NULL;
 	pgp_signature_packet *sign = NULL;
 
-	sign = spgp_read_pgp_packet(command->verify.sign, SPGP_STD_INPUT);
-	buffer = spgp_read_file(command->verify.file, 0, &size);
+	if (command->files == NULL || command->files->count != 2)
+	{
+		printf("Bad usage.\n");
+		exit(1);
+	}
+
+	sign = spgp_read_pgp_packet(command->files->packets[0], SPGP_STD_INPUT);
+	buffer = spgp_read_file(command->files->packets[1], 0, &size);
 
 	if (sign->hashed_subpackets != NULL)
 	{
