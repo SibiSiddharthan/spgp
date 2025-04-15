@@ -83,36 +83,8 @@ typedef enum _spgp_mode
 	SPGP_MODE_LIBREPGP,
 } spgp_mode;
 
-typedef enum _spgp_operation
-{
-	// Reserved Command
-	SPGP_OPERATION_NONE = 0,
-
-	// Basic Commands
-	SPGP_OPERATION_SIGN,
-	SPGP_OPERATION_VERIFY,
-
-	SPGP_OPERATION_ENCRYPT,
-	SPGP_OPERATION_DECRYPT,
-
-	SPGP_OPERATION_ARMOR,
-	SPGP_OPERATION_DEARMOR,
-
-	// Key Commands
-	SPGP_OPERATION_LIST_KEYS,
-	SPGP_OPERATION_DELETE_KEYS,
-	SPGP_OPERATION_EXPORT_KEYS,
-	SPGP_OPERATION_IMPORT_KEYS,
-	SPGP_OPERATION_GENERATE_ROVOCATION,
-	SPGP_OPERATION_GENERATE_KEY,
-
-	// Packet Commands
-	SPGP_OPERATION_LIST_PACKETS
-} spgp_operation;
-
 typedef struct _spgp_command
 {
-	spgp_operation operation;
 	spgp_mode mode;
 
 	handle_t home;
@@ -150,48 +122,25 @@ typedef struct _spgp_command
 			byte_t symmetric : 1;
 			byte_t decrypt : 1;
 
-#if 0
-	byte_t import_keys : 1;
-	byte_t export_keys : 1;
-	byte_t export_secret_keys : 1;
+			byte_t import_keys : 1;
+			byte_t export_keys : 1;
+			byte_t export_secret_keys : 1;
 
-	byte_t list_keys : 1;
-	byte_t list_secret_keys : 1;
+			byte_t delete_keys : 1;
+			byte_t delete_secret_keys : 1;
 
-	byte_t generate_key : 1;
-	byte_t full_generate_key : 1;
+			byte_t list_keys : 1;
+			byte_t list_secret_keys : 1;
 
-#endif
+			byte_t generate_key : 1;
+			byte_t full_generate_key : 1;
+
 			byte_t list_packets : 1;
 			byte_t dump_packets : 1;
 			byte_t no_print_mpis : 1;
 		};
 
 		uint64_t options;
-	};
-
-	union
-	{
-		struct
-		{
-			char *file;
-		} import;
-
-		struct
-		{
-			byte_t secret;
-			char *key;
-		} export;
-
-		struct
-		{
-			char *key;
-		} delete;
-
-		struct
-		{
-			byte_t secret;
-		} list_keys;
 	};
 
 } spgp_command;
