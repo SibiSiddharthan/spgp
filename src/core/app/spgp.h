@@ -102,6 +102,9 @@ typedef struct _spgp_command
 	pgp_stream_t *recipients;
 
 	time_t timestamp;
+	byte_t need_home;
+	byte_t stateless;
+
 	byte_t cipher_algorithm;
 	byte_t hash_algorithm;
 	byte_t compression_algorithm;

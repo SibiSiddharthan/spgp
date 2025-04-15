@@ -434,24 +434,32 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		// Basic Commands
 		case SPGP_OPTION_SIGN:
+			command->need_home = 1;
 			command->sign = 1;
 			break;
 		case SPGP_OPTION_DETACH_SIGN:
+			command->need_home = 1;
 			command->detach_sign = 1;
 			break;
 		case SPGP_OPTION_CLEAR_SIGN:
+			command->need_home = 1;
 			command->clear_sign = 1;
 			break;
 		case SPGP_OPTION_VERIFY:
+			command->need_home = 1;
 			command->verify = 1;
 			break;
 		case SPGP_OPTION_ENCRYPT:
+			command->need_home = 1;
 			command->encrypt = 1;
 			break;
+			command->need_home = 1;
 		case SPGP_OPTION_SYMMETRIC_ENCRYPT:
+			command->need_home = 1;
 			command->symmetric = 1;
 			break;
 		case SPGP_OPTION_DECRYPT:
+			command->need_home = 1;
 			command->decrypt = 1;
 			break;
 		case SPGP_OPTION_ARMOR:
@@ -463,13 +471,16 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		// Key Commands
 		case SPGP_OPTION_LIST_KEYS:
+			command->need_home = 1;
 			command->list_keys = 1;
 			break;
 		case SPGP_OPTION_LIST_SECRET_KEYS:
+			command->need_home = 1;
 			command->list_secret_keys = 1;
 			break;
 
 		case SPGP_OPTION_IMPORT_KEYS:
+			command->need_home = 1;
 			command->import_keys = 1;
 			break;
 
@@ -578,14 +589,18 @@ int main(int argc, char **argv)
 	}
 
 	// The operations do not require setting up the home directory, execute them immediately.
-	if ((command.list_packets || command.dump_packets || command.armor || command.dearmor))
+	if (command.need_home == 0)
 	{
 		return (int)spgp_execute_operation(&command);
 	}
 
 	// Setup home and execute.
 	// If home initialization fails process will exit.
-	spgp_initialize_home(&command);
+	if (command.stateless == 0)
+	{
+		spgp_initialize_home(&command);
+	}
+
 	exit_code = spgp_execute_operation(&command);
 
 	return (int)exit_code;
