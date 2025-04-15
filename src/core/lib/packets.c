@@ -1803,6 +1803,161 @@ void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[
 	pgp_keyring_packet_encode_header(packet);
 }
 
+#define TO_UPPER(c) ((c) & ~0x20)
+#define IS_HEX(c)   (((c) >= '0' && (c) <= '9') || (TO_UPPER((c)) >= 'A' && TO_UPPER((c)) <= 'F'))
+
+static byte_t is_key_id(void *input, uint16_t size)
+{
+	byte_t *in = input;
+
+	if (size < 16)
+	{
+		return 0;
+	}
+
+	if (size % 4 != 0)
+	{
+		if (!(in[0] == '0' && TO_UPPER(in[1]) == 'X'))
+		{
+			return 0;
+		}
+
+		in += 2;
+		size -= 2;
+
+		if (in[size - 1] == '!')
+		{
+			size -= 1;
+		}
+	}
+
+	if (size == 16)
+	{
+		uint16_t i = 0;
+
+		if (size == 18)
+		{
+			if (!(in[0] == '0' && TO_UPPER(in[1]) == 'X'))
+			{
+				return 0;
+			}
+
+			i = 2;
+		}
+
+		while (i < size)
+		{
+			if (!IS_HEX(in[i]))
+			{
+				return 0;
+			}
+
+			++i;
+		}
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static byte_t is_key_fingerprint(void *input, uint16_t size)
+{
+	byte_t *in = input;
+
+	if (size < 32)
+	{
+		return 0;
+	}
+
+	if (size % 4 != 0)
+	{
+		if (!(in[0] == '0' && TO_UPPER(in[1]) == 'X'))
+		{
+			return 0;
+		}
+
+		in += 2;
+		size -= 2;
+
+		if (in[size - 1] == '!')
+		{
+			size -= 1;
+		}
+	}
+
+	if (size == 32 || size == 40 || size == 64)
+	{
+		uint16_t i = 0;
+
+		while (i < size)
+		{
+			if (!IS_HEX(in[i]))
+			{
+				return 0;
+			}
+
+			++i;
+		}
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static byte_t keyring_search_key_id(pgp_keyring_packet *packet, void *input, size_t size)
+{
+}
+
+static byte_t keyring_search_key_fingerprint(pgp_keyring_packet *packet, void *input, size_t size)
+{
+	byte_t *in = input;
+
+	if (size % 4 != 0)
+	{
+		// No need to check here.
+		in += 2;
+		size -= 2;
+	}
+
+	if (packet->fingerprint_size * 2 != size)
+	{
+		return 0;
+	}
+}
+
+static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t size)
+{
+	byte_t *in = input;
+
+	// TODO
+	return 0;
+}
+
+pgp_error_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size)
+{
+	byte_t *in = input;
+
+	if (in[0] == '<' || in[0] == '=' || in[0] == '@')
+	{
+		return keyring_search_uid(packet, input, size);
+	}
+
+	if (is_key_id(input, size))
+	{
+		return keyring_search_key_id(packet, input, size);
+	}
+
+	if (is_key_fingerprint(input, size))
+	{
+		return keyring_search_key_fingerprint(packet, input, size);
+	}
+
+	// Assume uid
+	return keyring_search_uid(packet, input, size);
+}
+
 static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buffer_t *buffer)
 {
 	//  A 1-octet key version
