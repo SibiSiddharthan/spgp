@@ -145,12 +145,12 @@ typedef struct _spgp_command
 			byte_t detach_sign : 1;
 			byte_t clear_sign : 1;
 			byte_t verify : 1;
+
+			byte_t encrypt : 1;
+			byte_t symmetric : 1;
+			byte_t decrypt : 1;
+
 #if 0
-
-	byte_t encrypt : 1;
-	byte_t symmetric : 1;
-	byte_t decrypt : 1;
-
 	byte_t import_keys : 1;
 	byte_t export_keys : 1;
 	byte_t export_secret_keys : 1;
@@ -172,17 +172,6 @@ typedef struct _spgp_command
 
 	union
 	{
-		struct
-		{
-			byte_t symmetric;
-			char *file;
-		} encrypt;
-
-		struct
-		{
-			char *file;
-		} decrypt;
-
 		struct
 		{
 			char *file;

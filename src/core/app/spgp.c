@@ -433,74 +433,20 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 			command->verify = 1;
 			break;
 		case SPGP_OPTION_ENCRYPT:
+			command->encrypt = 1;
+			break;
 		case SPGP_OPTION_SYMMETRIC_ENCRYPT:
-		{
-			if (command->operation == SPGP_OPERATION_NONE)
-			{
-				command->operation = SPGP_OPERATION_ENCRYPT;
-			}
-
-			command->encrypt.symmetric = (result->value == SPGP_OPTION_SYMMETRIC_ENCRYPT) ? 1 : 0;
-
-			result = argparse(actx, ARGPARSE_PEEK);
-
-			if (result == NULL)
-			{
-				break;
-			}
-
-			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
-			{
-				// Consume the option
-				argparse(actx, 0);
-
-				command->encrypt.file = result->data;
-			}
-		}
-		break;
+			command->symmetric = 1;
+			break;
 		case SPGP_OPTION_DECRYPT:
-		{
-			if (command->operation == SPGP_OPERATION_NONE)
-			{
-				command->operation = SPGP_OPERATION_DECRYPT;
-			}
-
-			result = argparse(actx, ARGPARSE_PEEK);
-
-			if (result == NULL)
-			{
-				break;
-			}
-
-			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
-			{
-				// Consume the option
-				argparse(actx, 0);
-
-				command->decrypt.file = result->data;
-			}
-		}
-		break;
+			command->decrypt = 1;
+			break;
 		case SPGP_OPTION_ARMOR:
-		{
-			if (command->operation == SPGP_OPERATION_NONE)
-			{
-				command->operation = SPGP_OPERATION_ARMOR;
-			}
-
 			command->armor = 1;
-		}
-		break;
+			break;
 		case SPGP_OPTION_DEARMOR:
-		{
-			if (command->operation == SPGP_OPERATION_NONE)
-			{
-				command->operation = SPGP_OPERATION_DEARMOR;
-			}
-
-			command->armor = 0;
-		}
-		break;
+			command->dearmor = 0;
+			break;
 
 		// Key Commands
 		case SPGP_OPTION_LIST_KEYS:

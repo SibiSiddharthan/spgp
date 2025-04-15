@@ -62,16 +62,22 @@ uint32_t spgp_encrypt(spgp_command *command)
 	byte_t session_key[64] = {0};
 	byte_t session_key_size = 0;
 
+	void *file = NULL;
 	void *buffer = NULL;
 	size_t size = 0;
 
 	void *lit_buffer = NULL;
 
-	buffer = spgp_read_file(command->encrypt.file, SPGP_STD_INPUT, &size);
-
-	if (command->encrypt.file != NULL)
+	if (command->files != NULL)
 	{
-		pgp_literal_packet_new(&literal, PGP_HEADER, 0, command->encrypt.file, strlen(command->encrypt.file));
+		file = command->files->packets[0];
+	}
+
+	buffer = spgp_read_file(file, SPGP_STD_INPUT, &size);
+
+	if (file != NULL)
+	{
+		pgp_literal_packet_new(&literal, PGP_HEADER, 0, file, strlen(file));
 	}
 	else
 	{
@@ -85,7 +91,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 
 	stream = pgp_stream_new(2);
 
-	if (command->encrypt.symmetric)
+	if (command->symmetric)
 	{
 		pgp_skesk_packet *session = NULL;
 		pgp_s2k s2k = {.id = PGP_S2K_ITERATED,
@@ -142,10 +148,16 @@ uint32_t spgp_decrypt(spgp_command *command)
 	byte_t session_key[64] = {0};
 	byte_t session_key_size = 0;
 
+	void *file = NULL;
 	void *buffer = NULL;
 	uint32_t data_size = 0;
 
-	stream = spgp_read_pgp_packets(command->decrypt.file, SPGP_STD_INPUT);
+	if (command->files != NULL)
+	{
+		file = command->files->packets[0];
+	}
+
+	stream = spgp_read_pgp_packets(file, SPGP_STD_INPUT);
 
 	if (stream == NULL)
 	{
