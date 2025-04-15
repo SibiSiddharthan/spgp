@@ -262,7 +262,14 @@ uint32_t spgp_import_keys(spgp_command *command)
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t primary_fingerprint_size = 0;
 
-	key_stream = spgp_read_pgp_packets(command->import.file, SPGP_STD_INPUT);
+	void *file = NULL;
+
+	if (command->files != NULL)
+	{
+		file = command->files->packets[0];
+	}
+
+	key_stream = spgp_read_pgp_packets(file, SPGP_STD_INPUT);
 
 	key = key_stream->packets[0];
 	uid = key_stream->packets[1];

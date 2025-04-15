@@ -372,26 +372,39 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 		return spgp_list_packets(command);
 	}
 
-	switch (command->operation)
+	if (command->sign || command->detach_sign || command->clear_sign)
 	{
-	case SPGP_OPERATION_SIGN:
 		return spgp_sign(command);
-	case SPGP_OPERATION_VERIFY:
-		return spgp_verify(command);
-	case SPGP_OPERATION_ENCRYPT:
-		return spgp_encrypt(command);
-	case SPGP_OPERATION_DECRYPT:
-		return spgp_decrypt(command);
-	case SPGP_OPERATION_IMPORT_KEYS:
-		return spgp_import_keys(command);
-	case SPGP_OPERATION_LIST_KEYS:
-		return spgp_list_keys(command);
-	case SPGP_OPERATION_LIST_PACKETS:
-		return spgp_list_packets(command);
-	default:
-		// Unreachable
-		return 0;
 	}
+
+	if (command->verify)
+	{
+		return spgp_verify(command);
+	}
+
+	if (command->encrypt || command->symmetric)
+	{
+		return spgp_encrypt(command);
+	}
+
+	if (command->decrypt)
+	{
+		return spgp_decrypt(command);
+	}
+
+	if (command->import_keys)
+	{
+		return spgp_import_keys(command);
+	}
+
+	if (command->list_keys || command->list_secret_keys)
+	{
+		return spgp_list_keys(command);
+	}
+
+	spgp_print_help();
+
+	return 0;
 }
 
 static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **argv)
@@ -450,44 +463,15 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		// Key Commands
 		case SPGP_OPTION_LIST_KEYS:
+			command->list_keys = 1;
+			break;
 		case SPGP_OPTION_LIST_SECRET_KEYS:
-		{
-			if (command->operation != SPGP_OPERATION_NONE)
-			{
-				break;
-			}
-
-			command->operation = SPGP_OPERATION_LIST_KEYS;
-			command->list_keys.secret = (result->value == SPGP_OPTION_LIST_SECRET_KEYS) ? 1 : 0;
-		}
-		break;
+			command->list_secret_keys = 1;
+			break;
 
 		case SPGP_OPTION_IMPORT_KEYS:
-		{
-			if (command->operation != SPGP_OPERATION_NONE)
-			{
-				break;
-			}
-
-			command->operation = SPGP_OPERATION_IMPORT_KEYS;
-
-			// Get the argument
-			result = argparse(actx, ARGPARSE_PEEK);
-
-			if (result == NULL)
-			{
-				break;
-			}
-
-			if (result->value == (uint16_t)ARGPARSE_RETURN_NON_OPTION)
-			{
-				// Consume the option
-				argparse(actx, 0);
-
-				command->import.file = result->data;
-			}
-		}
-		break;
+			command->import_keys = 1;
+			break;
 
 		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:
@@ -594,8 +578,7 @@ int main(int argc, char **argv)
 	}
 
 	// The operations do not require setting up the home directory, execute them immediately.
-	if (command.operation == SPGP_OPERATION_ARMOR || command.operation == SPGP_OPERATION_DEARMOR ||
-		command.operation == SPGP_OPERATION_LIST_PACKETS)
+	if ((command.list_packets || command.dump_packets || command.armor || command.dearmor))
 	{
 		return (int)spgp_execute_operation(&command);
 	}
