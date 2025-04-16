@@ -321,7 +321,7 @@ void pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, byte_t *uid, uint
 pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 
-pgp_error_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size);
+byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size, byte_t fingerprint[32]);
 
 pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, size_t size);
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);

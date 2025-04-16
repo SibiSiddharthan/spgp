@@ -1806,15 +1806,46 @@ void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[
 #define TO_UPPER(c) ((c) & ~0x20)
 #define IS_HEX(c)   (((c) >= '0' && (c) <= '9') || (TO_UPPER((c)) >= 'A' && TO_UPPER((c)) <= 'F'))
 
-static byte_t is_key_id(void *input, uint16_t size)
+// clang-format off
+static const byte_t hex_to_nibble_table[256] = 
+{
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255, 255, 255, 255, 255,                       // 0 - 9
+	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // A - F
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // a - f
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+};
+// clang-format on
+
+static void hex_to_data(void *input, byte_t input_size, byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 	byte_t *in = input;
+	byte_t pos = 0;
 
-	if (size < 16)
+	for (byte_t i = 0; i < input_size; i += 2)
 	{
-		return 0;
+		output[pos] = (hex_to_nibble_table[in[i]] << 4) + hex_to_nibble_table[in[i + 1]];
 	}
+}
 
+static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, void *input, byte_t size,
+												   byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
+{
+	byte_t *in = input;
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+
+	// Check for 0x and trailing !
 	if (size % 4 != 0)
 	{
 		if (!(in[0] == '0' && TO_UPPER(in[1]) == 'X'))
@@ -1831,100 +1862,92 @@ static byte_t is_key_id(void *input, uint16_t size)
 		}
 	}
 
-	if (size == 16)
+	// Check valid hex characters
+	if (size == 16 || size == (packet->fingerprint_size * 2))
 	{
-		uint16_t i = 0;
-
-		if (size == 18)
-		{
-			if (!(in[0] == '0' && TO_UPPER(in[1]) == 'X'))
-			{
-				return 0;
-			}
-
-			i = 2;
-		}
-
-		while (i < size)
+		for (byte_t i = 0; i < size; ++i)
 		{
 			if (!IS_HEX(in[i]))
 			{
 				return 0;
 			}
-
-			++i;
 		}
-
-		return 1;
 	}
-
-	return 0;
-}
-
-static byte_t is_key_fingerprint(void *input, uint16_t size)
-{
-	byte_t *in = input;
-
-	if (size < 32)
+	else
 	{
 		return 0;
 	}
 
-	if (size % 4 != 0)
+	// Convert to bytes
+	hex_to_data(in, size, fingerprint);
+
+	if (size == (packet->fingerprint_size * 2))
 	{
-		if (!(in[0] == '0' && TO_UPPER(in[1]) == 'X'))
+		// Check primary key first
+		if (memcmp(packet->primary_fingerprint, fingerprint, packet->fingerprint_size) == 0)
 		{
-			return 0;
+			memcpy(output, fingerprint, packet->fingerprint_size);
+			return packet->fingerprint_size;
 		}
 
-		in += 2;
-		size -= 2;
-
-		if (in[size - 1] == '!')
+		// Check subkeys in order
+		for (byte_t i = 0; i < packet->subkey_count; ++i)
 		{
-			size -= 1;
+			if (memcmp(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), fingerprint, packet->fingerprint_size) == 0)
+			{
+				memcpy(output, fingerprint, packet->fingerprint_size);
+				return packet->fingerprint_size;
+			}
 		}
 	}
-
-	if (size == 32 || size == 40 || size == 64)
+	else // size == 16
 	{
-		uint16_t i = 0;
-
-		while (i < size)
+		if (packet->key_version == PGP_KEY_V5)
 		{
-			if (!IS_HEX(in[i]))
+			// First 8 octets
+			// Check primary key first
+			if (memcmp(packet->primary_fingerprint, fingerprint, PGP_KEY_ID_SIZE) == 0)
 			{
-				return 0;
+				memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
+				return packet->fingerprint_size;
 			}
 
-			++i;
+			// Check subkeys in order
+			for (byte_t i = 0; i < packet->subkey_count; ++i)
+			{
+				if (memcmp(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), fingerprint, PGP_KEY_ID_SIZE) == 0)
+				{
+					memcpy(output, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
+					return packet->fingerprint_size;
+				}
+			}
 		}
+		else
+		{
+			// Last 8 octets
+			// Check primary key first
+			if (memcmp(PTR_OFFSET(packet->primary_fingerprint, packet->fingerprint_size - PGP_KEY_ID_SIZE), fingerprint, PGP_KEY_ID_SIZE) ==
+				0)
+			{
+				memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
+				return packet->fingerprint_size;
+			}
 
-		return 1;
+			// Check subkeys in order
+			for (byte_t i = 0; i < packet->subkey_count; ++i)
+			{
+				if (memcmp(PTR_OFFSET(packet->subkey_fingerprints,
+									  (i * packet->fingerprint_size) + (packet->fingerprint_size - PGP_KEY_ID_SIZE)),
+						   fingerprint, PGP_KEY_ID_SIZE) == 0)
+				{
+					memcpy(output, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
+					return packet->fingerprint_size;
+				}
+			}
+		}
 	}
 
 	return 0;
-}
-
-static byte_t keyring_search_key_id(pgp_keyring_packet *packet, void *input, size_t size)
-{
-}
-
-static byte_t keyring_search_key_fingerprint(pgp_keyring_packet *packet, void *input, size_t size)
-{
-	byte_t *in = input;
-
-	if (size % 4 != 0)
-	{
-		// No need to check here.
-		in += 2;
-		size -= 2;
-	}
-
-	if (packet->fingerprint_size * 2 != size)
-	{
-		return 0;
-	}
 }
 
 static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t size)
@@ -1935,8 +1958,9 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t
 	return 0;
 }
 
-pgp_error_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size)
+byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
+	byte_t result = 0;
 	byte_t *in = input;
 
 	if (in[0] == '<' || in[0] == '=' || in[0] == '@')
@@ -1944,18 +1968,18 @@ pgp_error_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, s
 		return keyring_search_uid(packet, input, size);
 	}
 
-	if (is_key_id(input, size))
+	if (size < 65)
 	{
-		return keyring_search_key_id(packet, input, size);
+		result = keyring_search_key_fingerprint_or_id(packet, input, size, fingerprint);
 	}
 
-	if (is_key_fingerprint(input, size))
+	if (result == 0)
 	{
-		return keyring_search_key_fingerprint(packet, input, size);
+		// Assume uid
+		result = keyring_search_uid(packet, input, size);
 	}
 
-	// Assume uid
-	return keyring_search_uid(packet, input, size);
+	return result;
 }
 
 static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buffer_t *buffer)
