@@ -1952,33 +1952,57 @@ static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, v
 
 static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t size, byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
+
 	byte_t *in = input;
+	byte_t match = 0;
 
-	// Absolute full uid match
-	if (in[0] == '=')
+	uint32_t pos = 0;
+	uint32_t uid_size = 0;
+
+	if (in[0] == '<' || in[0] == '=' || in[0] == '@')
 	{
-		uint32_t pos = 0;
-		uint32_t uid_size = 0;
-
+		match = in[0];
 		in += 1;
 		size -= 1;
+	}
 
-		for (byte_t i = 0; i < packet->uid_count; ++i)
+	for (byte_t i = 0; i < packet->uid_count; ++i)
+	{
+		uid_size = strnlen(PTR_OFFSET(packet->uids, pos), packet->uid_size - pos);
+
+		// Absolute full uid match
+		if (match == '=')
 		{
-			uid_size = strnlen(PTR_OFFSET(packet->uids, pos), packet->uid_size - pos);
-
 			if (size == uid_size)
 			{
-				if (strncmp(input, PTR_OFFSET(packet->uids, pos), uid_size) == 0)
+				if (strncmp(in, PTR_OFFSET(packet->uids, pos), uid_size) == 0)
 				{
 					goto copy_primary_fingerprint;
 				}
 			}
+		}
 
-			if (uid_size < (packet->uid_size - pos))
-			{
-				pos += 1;
-			}
+		// Full email match
+		if (match == '<')
+		{
+			// TODO
+		}
+
+		// Partial email match
+		if (match == '@')
+		{
+			// TODO
+		}
+
+		// Partial case insensitive match (TODO case)
+		if (strstr(PTR_OFFSET(packet->uids, pos), in) != NULL)
+		{
+			goto copy_primary_fingerprint;
+		}
+
+		if (uid_size < (packet->uid_size - pos))
+		{
+			pos += 1;
 		}
 	}
 
