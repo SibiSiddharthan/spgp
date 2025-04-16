@@ -18,10 +18,15 @@
 
 // Refer RFC 9580 - OpenPGP, Section 4.2 Packet Headers
 
-static byte_t get_packet_header_size(pgp_packet_header_format format, size_t size)
+static byte_t get_packet_header_size(pgp_packet_header_format format, byte_t partial, size_t size)
 {
 	if (format == PGP_HEADER)
 	{
+		if (partial)
+		{
+			return 1 + 1;
+		}
+
 		// New format packet lengths
 		// 1 octed length
 		if (size < 192)
@@ -34,13 +39,23 @@ static byte_t get_packet_header_size(pgp_packet_header_format format, size_t siz
 			return 1 + 2;
 		}
 		// 5 octet length
-		else
+		else if (size < 4294967296)
 		{
 			return 1 + 5;
+		}
+		// Partial body
+		else
+		{
+			return 1 + 1;
 		}
 	}
 	else
 	{
+		if (partial)
+		{
+			return 1;
+		}
+
 		// Legacy format packet lengths
 		// 1 octed length
 		if (size < 256)
@@ -53,14 +68,19 @@ static byte_t get_packet_header_size(pgp_packet_header_format format, size_t siz
 			return 1 + 2;
 		}
 		// 4 octet length
-		else
+		else if (size < 4294967296)
 		{
 			return 1 + 4;
+		}
+		// Partial body
+		else
+		{
+			return 1;
 		}
 	}
 }
 
-byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type packet_type, uint32_t size)
+static byte_t get_packet_tag(pgp_packet_header_format header_type, pgp_packet_type packet_type, byte_t partial, size_t size)
 {
 	byte_t tag = 0;
 
@@ -73,6 +93,11 @@ byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type pack
 		// Old format packet
 		tag = 0x80 | ((byte_t)packet_type << 2);
 
+		if (partial)
+		{
+			goto partial_body;
+		}
+
 		// 1 octed length
 		if (size < 256)
 		{
@@ -84,21 +109,27 @@ byte_t pgp_packet_tag(pgp_packet_header_format header_type, pgp_packet_type pack
 			tag |= 1;
 		}
 		// 4 octet length
-		else
+		else if (size < 4294967296)
 		{
 			tag |= 2;
+		}
+		// Partial body
+		else
+		{
+		partial_body:
+			tag |= 3;
 		}
 	}
 
 	return tag;
 }
 
-pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, uint32_t body_size)
+pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size)
 {
 	pgp_packet_header header = {0};
 
-	header.tag = pgp_packet_tag(header_format, packet_type, body_size);
-	header.header_size = get_packet_header_size(header_format, body_size);
+	header.tag = get_packet_tag(header_format, packet_type, 0, body_size);
+	header.header_size = get_packet_header_size(header_format, 0, body_size);
 	header.body_size = body_size;
 
 	return header;
@@ -230,8 +261,15 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 			header.header_size = 6;
 			header.body_size = (((uint32_t)pdata[2] << 24) | ((uint32_t)pdata[3] << 16) | ((uint32_t)pdata[4] << 8) | (uint32_t)pdata[5]);
 		}
+		// Partial body length
+		else if (pdata[1] >= 224 && pdata[2] <= 254)
+		{
+			header.header_size = 2;
+			header.partial = 1;
+			header.body_size = (uint32_t)1 << (pdata[1] & 0x1F);
+		}
 		// 2 octet legnth
-		else if (pdata[1] >= 192 && pdata[2] <= 233)
+		else if (pdata[1] >= 192 && pdata[2] <= 223)
 		{
 			if (size < 3)
 			{
@@ -242,7 +280,7 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 			header.body_size = ((pdata[1] - 192) << 8) + pdata[2] + 192;
 		}
 		// 1 octed length
-		else if (pdata[1] < 192)
+		else // if (pdata[1] < 192)
 		{
 			if (size < 2)
 			{
@@ -251,13 +289,6 @@ pgp_packet_header pgp_packet_header_read(void *data, size_t size)
 
 			header.header_size = 2;
 			header.body_size = pdata[1];
-		}
-		// Partial body length
-		else
-		{
-			header.header_size = 2;
-			header.partial = 1;
-			header.body_size = (uint32_t)1 << (pdata[1] & 0x1F);
 		}
 	}
 	else if (format == PGP_LEGACY_HEADER)
@@ -324,6 +355,11 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 		LOAD_8(out + pos, &header->tag);
 		pos += 1;
 
+		// Partial length
+		if (header->partial)
+		{
+		}
+
 		// 1 octed length
 		if (header->body_size < 192)
 		{
@@ -382,12 +418,16 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 			pos += 2;
 		}
 		// 4 octet length
-		else
+		else if (header->body_size < 4294967296)
 		{
 			uint32_t size = BSWAP_32((uint32_t)header->body_size);
 
 			LOAD_32(out + pos, &size);
 			pos += 4;
+		}
+		// Partial body length
+		else
+		{
 		}
 	}
 
