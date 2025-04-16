@@ -1975,7 +1975,7 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t
 		{
 			if (size == uid_size)
 			{
-				if (strncmp(in, PTR_OFFSET(packet->uids, pos), uid_size) == 0)
+				if (strncmp((void *)in, PTR_OFFSET(packet->uids, pos), uid_size) == 0)
 				{
 					goto copy_primary_fingerprint;
 				}
@@ -1995,7 +1995,7 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t
 		}
 
 		// Partial case insensitive match (TODO case)
-		if (strstr(PTR_OFFSET(packet->uids, pos), in) != NULL)
+		if (strstr(PTR_OFFSET(packet->uids, pos), (void *)in) != NULL)
 		{
 			goto copy_primary_fingerprint;
 		}
