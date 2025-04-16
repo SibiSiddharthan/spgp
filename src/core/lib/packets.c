@@ -1683,7 +1683,7 @@ pgp_error_t pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_t *uid, 
 	{
 		void *temp = NULL;
 
-		packet->uid_capacity = MAX(packet->subkey_capacity * 2, packet->uid_size + uid_size + 1);
+		packet->uid_capacity = MAX(packet->uid_capacity * 2, packet->uid_size + uid_size + 1);
 		temp = realloc(packet->uids, packet->uid_capacity);
 
 		if (temp == NULL)
@@ -1950,12 +1950,43 @@ static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, v
 	return 0;
 }
 
-static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t size)
+static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t size, byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 	byte_t *in = input;
 
-	// TODO
+	// Absolute full uid match
+	if (in[0] == '=')
+	{
+		uint32_t pos = 0;
+		uint32_t uid_size = 0;
+
+		in += 1;
+		size -= 1;
+
+		for (byte_t i = 0; i < packet->uid_count; ++i)
+		{
+			uid_size = strnlen(PTR_OFFSET(packet->uids, pos), packet->uid_size - pos);
+
+			if (size == uid_size)
+			{
+				if (strncmp(input, PTR_OFFSET(packet->uids, pos), uid_size) == 0)
+				{
+					goto copy_primary_fingerprint;
+				}
+			}
+
+			if (uid_size < (packet->uid_size - pos))
+			{
+				pos += 1;
+			}
+		}
+	}
+
 	return 0;
+
+copy_primary_fingerprint:
+	memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
+	return packet->fingerprint_size;
 }
 
 byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE])
@@ -1965,7 +1996,7 @@ byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t
 
 	if (in[0] == '<' || in[0] == '=' || in[0] == '@')
 	{
-		return keyring_search_uid(packet, input, size);
+		return keyring_search_uid(packet, input, size, fingerprint);
 	}
 
 	if (size < 65)
@@ -1976,7 +2007,7 @@ byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t
 	if (result == 0)
 	{
 		// Assume uid
-		result = keyring_search_uid(packet, input, size);
+		result = keyring_search_uid(packet, input, size, fingerprint);
 	}
 
 	return result;
