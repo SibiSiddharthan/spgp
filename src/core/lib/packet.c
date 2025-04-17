@@ -947,3 +947,67 @@ void pgp_packet_delete(void *packet)
 		return free(packet);
 	}
 }
+
+pgp_error_t pgp_partial_packet_read(pgp_partial_packet **packet, void *data, size_t size)
+{
+	pgp_partial_header header = pgp_partial_header_read(data, size);
+	pgp_partial_packet *partial = NULL;
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	partial = malloc(sizeof(pgp_partial_packet));
+
+	if (partial == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(partial, 0, sizeof(pgp_partial_packet));
+
+	if (header.body_size != 0)
+	{
+		partial->data = malloc(header.body_size);
+
+		if (partial->data == NULL)
+		{
+			free(partial);
+			return PGP_NO_MEMORY;
+		}
+	}
+
+	// Copy the header
+	partial->header = header;
+
+	// Copy the data
+	if (header.body_size != 0)
+	{
+		memcpy(partial->data, PTR_OFFSET(data, header.header_size), header.body_size);
+	}
+
+	*packet = partial;
+
+	return PGP_SUCCESS;
+}
+
+size_t pgp_partial_packet_write(pgp_partial_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t pos = 0;
+
+	if (size < PGP_PACKET_OCTETS(packet->header))
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// Padding data
+	memcpy(out + pos, packet->data, packet->header.body_size);
+	pos += packet->header.body_size;
+
+	return pos;
+}

@@ -347,7 +347,7 @@ size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size
 	// Header
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
-	// Padding data
+	// Marker data
 	memcpy(out + pos, packet->marker, 3);
 	pos += 3;
 

@@ -58,6 +58,12 @@ typedef struct _pgp_packet_header
 	size_t body_size;
 } pgp_packet_header, pgp_subpacket_header, pgp_partial_header;
 
+typedef struct _pgp_partial_packet
+{
+	pgp_partial_header header;
+	void *data;
+} pgp_partial_packet;
+
 typedef struct _pgp_unknown_packet
 {
 	struct _pgp_packet_header header;
@@ -232,6 +238,9 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size);
 size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options);
 
 void pgp_packet_delete(void *packet);
+
+pgp_error_t pgp_partial_packet_read(pgp_partial_packet **packet, void *data, size_t size);
+size_t pgp_partial_packet_write(pgp_partial_packet *packet, void *ptr, size_t size);
 
 // Compressed Packet (Tag 8)
 pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t header_format, byte_t compression_algorithm_id);
