@@ -221,7 +221,7 @@ typedef struct _pgp_keyring_packet
 #define PGP_PRINT_HEADER_ONLY 0x1
 #define PGP_PRINT_MPI_MINIMAL 0x2
 
-pgp_packet_header pgp_packet_header_read(void *data, size_t size);
+pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
 uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size);
 
