@@ -29,6 +29,7 @@ typedef enum _pgp_aead_version
 typedef struct _pgp_sed_packet
 {
 	pgp_packet_header header;
+	pgp_stream_t *partials;
 	byte_t *data;
 
 } pgp_sed_packet;
@@ -53,9 +54,10 @@ typedef struct _pgp_seipd_packet
 
 	byte_t tag_size;
 	byte_t iv_size;
-	uint32_t data_size;
+	size_t data_size;
 
 	void *data;
+	pgp_stream_t *partials;
 
 } pgp_seipd_packet, pgp_aead_packet;
 

@@ -76,8 +76,11 @@ typedef struct _pgp_compressed_packet
 
 	byte_t compression_algorithm_id;
 
-	uint32_t data_size;
+	size_t data_size;
 	void *data;
+
+	pgp_stream_t *partials;
+
 } pgp_compresed_packet;
 
 typedef struct _pgp_marker_packet
@@ -108,6 +111,8 @@ typedef struct _pgp_literal_packet
 
 	size_t data_size;
 	void *data;
+
+	pgp_stream_t *partials;
 
 } pgp_literal_packet;
 
