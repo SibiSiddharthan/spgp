@@ -131,15 +131,11 @@ pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_forma
 
 	header.tag = get_packet_tag(header_format, packet_type, 0, body_size);
 	header.header_size = get_packet_header_size(header_format, 0, body_size);
+	header.body_size = body_size;
 
 	if (body_size > 4294967295)
 	{
-		header.body_size = 0;
 		header.partial = 1;
-	}
-	else
-	{
-		header.body_size = body_size;
 	}
 
 	return header;
@@ -247,7 +243,7 @@ pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t
 
 	if (size < 1)
 	{
-		return PGP_MALFORMED_PACKET_HEADER;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
 	// Get the tag
@@ -457,12 +453,14 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 	return pos;
 }
 
-pgp_subpacket_header pgp_subpacket_header_read(void *data, size_t size)
+pgp_error_t pgp_subpacket_header_read(pgp_subpacket_header *header, void *data, size_t size)
 {
-	pgp_subpacket_header header = {0};
-	pgp_subpacket_header error = {0};
-
 	byte_t *in = data;
+
+	if (size < 1)
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
 
 	// 1,2, or 5 octets of subpacket length
 	// 5 octet length
@@ -470,40 +468,40 @@ pgp_subpacket_header pgp_subpacket_header_read(void *data, size_t size)
 	{
 		if (size < 6)
 		{
-			return error;
+			return PGP_MALFORMED_SUBPACKET_HEADER;
 		}
 
-		header.header_size = 6;
-		header.body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
+		header->header_size = 6;
+		header->body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
 	}
 	// 2 octet legnth
 	else if (in[0] >= 192 && in[0] <= 233)
 	{
 		if (size < 3)
 		{
-			return error;
+			return PGP_MALFORMED_SUBPACKET_HEADER;
 		}
 
-		header.header_size = 3;
-		header.body_size = ((in[0] - 192) << 8) + in[1] + 192;
+		header->header_size = 3;
+		header->body_size = ((in[0] - 192) << 8) + in[1] + 192;
 	}
 	// 1 octed length
 	else if (in[0] < 192)
 	{
 		if (size < 2)
 		{
-			return error;
+			return PGP_MALFORMED_SUBPACKET_HEADER;
 		}
 
-		header.header_size = 2;
-		header.body_size = in[0];
+		header->header_size = 2;
+		header->body_size = in[0];
 	}
 
 	// 1 octet subpacket type
-	header.tag = in[header.header_size - 1];
-	header.body_size -= 1; // Exclude the subpacket tag
+	header->tag = in[header->header_size - 1];
+	header->body_size -= 1; // Exclude the subpacket tag
 
-	return header;
+	return PGP_SUCCESS;
 }
 
 uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
@@ -555,24 +553,21 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr)
 	return pos;
 }
 
-pgp_partial_header pgp_partial_header_read(void *data, size_t size)
+pgp_error_t pgp_partial_header_read(pgp_partial_header *header, void *data, size_t size)
 {
 	byte_t *in = data;
 
-	pgp_packet_header error = {0};
-	pgp_packet_header header = {0};
-
 	if (size < 1)
 	{
-		return error;
+		return PGP_INSUFFICIENT_DATA;
 	}
 
 	// Partial continue
 	if (in[0] >= 224 && in[1] <= 254)
 	{
-		header.header_size = 1;
-		header.partial = 1;
-		header.body_size = (uint32_t)1 << (in[0] & 0x1F);
+		header->header_size = 1;
+		header->partial = 1;
+		header->body_size = (uint32_t)1 << (in[0] & 0x1F);
 	}
 	// Partial end
 	else
@@ -582,32 +577,32 @@ pgp_partial_header pgp_partial_header_read(void *data, size_t size)
 		{
 			if (size < 5)
 			{
-				return error;
+				return PGP_MALFORMED_PARTIAL_LENGTH_HEADER;
 			}
 
-			header.header_size = 5;
-			header.body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
+			header->header_size = 5;
+			header->body_size = (((uint32_t)in[1] << 24) | ((uint32_t)in[2] << 16) | ((uint32_t)in[3] << 8) | (uint32_t)in[4]);
 		}
 		// 2 octet legnth
 		else if (in[0] >= 192 && in[0] <= 223)
 		{
 			if (size < 2)
 			{
-				return error;
+				return PGP_MALFORMED_PARTIAL_LENGTH_HEADER;
 			}
 
-			header.header_size = 2;
-			header.body_size = ((in[0] - 192) << 8) + in[1] + 192;
+			header->header_size = 2;
+			header->body_size = ((in[0] - 192) << 8) + in[1] + 192;
 		}
 		// 1 octed length
 		else // if (pdata[1] < 192)
 		{
-			header.header_size = 1;
-			header.body_size = in[1];
+			header->header_size = 1;
+			header->body_size = in[1];
 		}
 	}
 
-	return header;
+	return PGP_SUCCESS;
 }
 
 uint32_t pgp_partial_header_write(pgp_partial_header *header, void *ptr)
