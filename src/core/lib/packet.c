@@ -719,70 +719,70 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 	switch (type)
 	{
 	case PGP_PKESK:
-		error = pgp_pkesk_packet_read_with_header((pgp_pkesk_packet **)&packet, &header, data);
+		error = pgp_pkesk_packet_read_with_header((pgp_pkesk_packet **)packet, &header, data);
 		break;
 	case PGP_SIG:
-		error = pgp_signature_packet_read_with_header((pgp_signature_packet **)&packet, &header, data);
+		error = pgp_signature_packet_read_with_header((pgp_signature_packet **)packet, &header, data);
 		break;
 	case PGP_SKESK:
-		error = pgp_skesk_packet_read_with_header((pgp_skesk_packet **)&packet, &header, data);
+		error = pgp_skesk_packet_read_with_header((pgp_skesk_packet **)packet, &header, data);
 		break;
 	case PGP_OPS:
-		error = pgp_one_pass_signature_packet_read_with_header((pgp_one_pass_signature_packet **)&packet, &header, data);
+		error = pgp_one_pass_signature_packet_read_with_header((pgp_one_pass_signature_packet **)packet, &header, data);
 		break;
 	case PGP_SECKEY:
-		error = pgp_secret_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		error = pgp_secret_key_packet_read_with_header((pgp_key_packet **)packet, &header, data);
 		break;
 	case PGP_PUBKEY:
-		error = pgp_public_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		error = pgp_public_key_packet_read_with_header((pgp_key_packet **)packet, &header, data);
 		break;
 	case PGP_SECSUBKEY:
-		error = pgp_secret_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		error = pgp_secret_key_packet_read_with_header((pgp_key_packet **)packet, &header, data);
 		break;
 	case PGP_COMP:
-		error = pgp_compressed_packet_read_with_header((pgp_compresed_packet **)&packet, &header, data);
+		error = pgp_compressed_packet_read_with_header((pgp_compresed_packet **)packet, &header, data);
 		break;
 	case PGP_SED:
-		error = pgp_sed_packet_read_with_header((pgp_sed_packet **)&packet, &header, data);
+		error = pgp_sed_packet_read_with_header((pgp_sed_packet **)packet, &header, data);
 		break;
 	case PGP_MARKER:
-		error = pgp_marker_packet_read_with_header((pgp_marker_packet **)&packet, &header, data);
+		error = pgp_marker_packet_read_with_header((pgp_marker_packet **)packet, &header, data);
 		break;
 	case PGP_LIT:
-		error = pgp_literal_packet_read_with_header((pgp_literal_packet **)&packet, &header, data);
+		error = pgp_literal_packet_read_with_header((pgp_literal_packet **)packet, &header, data);
 		break;
 	case PGP_TRUST:
-		error = pgp_trust_packet_read_with_header((pgp_trust_packet **)&packet, &header, data);
+		error = pgp_trust_packet_read_with_header((pgp_trust_packet **)packet, &header, data);
 		break;
 	case PGP_UID:
-		error = pgp_user_id_packet_read_with_header((pgp_user_id_packet **)&packet, &header, data);
+		error = pgp_user_id_packet_read_with_header((pgp_user_id_packet **)packet, &header, data);
 		break;
 	case PGP_PUBSUBKEY:
-		error = pgp_public_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		error = pgp_public_key_packet_read_with_header((pgp_key_packet **)packet, &header, data);
 		break;
 	case PGP_UAT:
-		error = pgp_user_attribute_packet_read_with_header((pgp_user_attribute_packet **)&packet, &header, data);
+		error = pgp_user_attribute_packet_read_with_header((pgp_user_attribute_packet **)packet, &header, data);
 		break;
 	case PGP_SEIPD:
-		error = pgp_seipd_packet_read_with_header((pgp_seipd_packet **)&packet, &header, data);
+		error = pgp_seipd_packet_read_with_header((pgp_seipd_packet **)packet, &header, data);
 		break;
 	case PGP_MDC:
-		error = pgp_mdc_packet_read_with_header((pgp_mdc_packet **)&packet, &header, data);
+		error = pgp_mdc_packet_read_with_header((pgp_mdc_packet **)packet, &header, data);
 		break;
 	case PGP_AEAD:
-		error = pgp_aead_packet_read_with_header((pgp_aead_packet **)&packet, &header, data);
+		error = pgp_aead_packet_read_with_header((pgp_aead_packet **)packet, &header, data);
 		break;
 	case PGP_PADDING:
-		error = pgp_padding_packet_read_with_header((pgp_padding_packet **)&packet, &header, data);
+		error = pgp_padding_packet_read_with_header((pgp_padding_packet **)packet, &header, data);
 		break;
 	case PGP_KEYDEF:
-		error = pgp_key_packet_read_with_header((pgp_key_packet **)&packet, &header, data);
+		error = pgp_key_packet_read_with_header((pgp_key_packet **)packet, &header, data);
 		break;
 	case PGP_KEYRING:
-		error = pgp_keyring_packet_read_with_header((pgp_keyring_packet **)&packet, &header, data);
+		error = pgp_keyring_packet_read_with_header((pgp_keyring_packet **)packet, &header, data);
 		break;
 	default:
-		error = pgp_unknown_packet_read_with_header((pgp_unknown_packet **)&packet, &header, data);
+		error = pgp_unknown_packet_read_with_header((pgp_unknown_packet **)packet, &header, data);
 		break;
 	}
 
@@ -1028,7 +1028,7 @@ size_t pgp_partial_packet_write(pgp_partial_packet *packet, void *ptr, size_t si
 	}
 
 	// Header
-	pos += pgp_packet_header_write(&packet->header, out + pos);
+	pos += pgp_partial_header_write(&packet->header, out + pos);
 
 	// Padding data
 	memcpy(out + pos, packet->data, packet->header.body_size);

@@ -230,26 +230,16 @@ static size_t pgp_stream_write_binary(pgp_stream_t *stream, void *buffer, size_t
 	return pos;
 }
 
-static pgp_stream_t *pgp_stream_read_armor(void *data, size_t size)
+static pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *data, size_t size)
 {
+	pgp_error_t error = 0;
 	armor_status status = 0;
 
-	pgp_stream_t *stream = NULL;
 	pgp_armor_ctx *armor = NULL;
-
-	pgp_packet_header *header = NULL;
-	void *packet = NULL;
 
 	size_t pos = 0;
 	size_t offset = 0;
 	size_t result = 0;
-
-	stream = pgp_stream_new(4);
-
-	if (stream == NULL)
-	{
-		return NULL;
-	}
 
 	while (pos < size)
 	{
@@ -259,108 +249,81 @@ static pgp_stream_t *pgp_stream_read_armor(void *data, size_t size)
 		{
 			pgp_armor_delete(armor);
 			pgp_stream_delete(stream, pgp_packet_delete);
-			return NULL;
+			return PGP_INTERNAL_BUG;
 		}
 
 		while (offset < armor->data.size)
 		{
-			packet = pgp_packet_read(PTR_OFFSET(armor->data.data, offset), armor->data.size);
+			pgp_packet_header *header = NULL;
+			void *packet = NULL;
 
-			if (packet == NULL)
+			error = pgp_packet_read(&packet, PTR_OFFSET(armor->data.data, offset), armor->data.size);
+
+			if (error != PGP_SUCCESS)
 			{
-				pgp_stream_delete(stream, pgp_packet_delete);
-				pgp_armor_delete(armor);
+				return error;
+			}
 
-				return NULL;
+			stream = pgp_stream_push_packet(stream, packet);
+
+			if (stream == NULL)
+			{
+				return PGP_NO_MEMORY;
 			}
 
 			header = packet;
 			offset += header->body_size + header->header_size;
-
-			if (pgp_stream_push_packet(stream, packet) == NULL)
-			{
-				pgp_stream_delete(stream, pgp_packet_delete);
-				pgp_armor_delete(armor);
-			}
 		}
 
 		pos += result;
 	}
 
-	return stream;
+	return error;
 }
 
-static pgp_stream_t *pgp_stream_read_binary(void *data, size_t size)
+static pgp_error_t pgp_stream_read_binary(pgp_stream_t *stream, void *data, size_t size)
 {
-	pgp_stream_t *stream = NULL;
-
+	pgp_error_t error = 0;
 	size_t pos = 0;
-	uint16_t count = 0;
 
 	// Check packet header validity and count the packets.
 	while (pos < size)
 	{
-		pgp_packet_header header = pgp_packet_header_read(PTR_OFFSET(data, pos), size - pos);
-
-		if (header.tag == 0)
-		{
-			return NULL;
-		}
-
-		if ((header.body_size + header.header_size) > (size - pos))
-		{
-			return NULL;
-		}
-
-		pos += header.body_size + header.header_size;
-		count += 1;
-	}
-
-	stream = pgp_stream_new(count);
-
-	if (stream == NULL)
-	{
-		return NULL;
-	}
-
-	pos = 0;
-	count = 0;
-
-	// Read the packets
-	while (pos < size)
-	{
 		pgp_packet_header *header = NULL;
-		void *packet = pgp_packet_read(PTR_OFFSET(data, pos), size - pos);
+		void *packet = NULL;
 
-		if (packet == NULL)
+		error = pgp_packet_read(&packet, PTR_OFFSET(data, pos), size - pos);
+
+		if (error != PGP_SUCCESS)
 		{
-			pgp_stream_delete(stream, pgp_packet_delete);
-			return NULL;
+			return error;
 		}
 
-		stream->packets[count] = packet;
+		stream = pgp_stream_push_packet(stream, packet);
+
+		if (stream == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
 
 		header = packet;
 		pos += header->body_size + header->header_size;
-		count += 1;
 	}
 
-	stream->count = count;
-
-	return stream;
+	return error;
 }
 
-pgp_stream_t *pgp_stream_read(void *data, size_t size)
+pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 {
 	byte_t *in = data;
 
 	// Check if data is armored
 	if (PGP_PACKET_HEADER_FORMAT(in[0]) == PGP_UNKNOWN_HEADER)
 	{
-		return pgp_stream_read_armor(data, size);
+		return pgp_stream_read_armor(stream, data, size);
 	}
 
-	return pgp_stream_read_binary(data, size);
+	return pgp_stream_read_binary(stream, data, size);
 }
 
 size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options)

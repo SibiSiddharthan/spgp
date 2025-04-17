@@ -190,14 +190,15 @@ pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options)
 	void *buffer = NULL;
 	size_t size = 0;
 
-	pgp_stream_t *stream = NULL;
+	pgp_error_t error = 0;
+	pgp_stream_t *stream = pgp_stream_new(4);
 
 	buffer = spgp_read_file(file, options, &size);
-	stream = pgp_stream_read(buffer, size);
+	error = pgp_stream_read(stream, buffer, size);
 
 	free(buffer);
 
-	if (stream == NULL)
+	if (error != PGP_SUCCESS)
 	{
 		printf("Invalid pgp stream.\n");
 		exit(1);
@@ -212,12 +213,14 @@ void *spgp_read_pgp_packet(const char *file, uint32_t options)
 	void *packet = NULL;
 	size_t size = 0;
 
+	pgp_error_t error = 0;
+
 	buffer = spgp_read_file(file, options, &size);
-	packet = pgp_packet_read(buffer, size);
+	error = pgp_packet_read(&packet, buffer, size);
 
 	free(buffer);
 
-	if (packet == NULL)
+	if (error != PGP_SUCCESS)
 	{
 		printf("Bad packet.\n");
 		exit(1);
@@ -230,9 +233,11 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 {
 	status_t status = 0;
 
-	pgp_stream_t *stream = NULL;
 	void *buffer = NULL;
 	size_t size = 0;
+
+	pgp_error_t error = 0;
+	pgp_stream_t *stream = pgp_stream_new(4);
 
 	status = spgp_read_handle(handle, &buffer, &size);
 
@@ -242,7 +247,13 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 		exit(2);
 	}
 
-	stream = pgp_stream_read(buffer, size);
+	error = pgp_stream_read(stream, buffer, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		printf("Invalid pgp stream.\n");
+		exit(1);
+	}
 
 	free(buffer);
 
@@ -257,6 +268,8 @@ void *spgp_read_pgp_packet_from_handle(handle_t handle)
 	void *packet = NULL;
 	size_t size = 0;
 
+	pgp_error_t error = 0;
+
 	status = spgp_read_handle(handle, &buffer, &size);
 
 	if (status != OS_STATUS_SUCCESS)
@@ -265,11 +278,11 @@ void *spgp_read_pgp_packet_from_handle(handle_t handle)
 		exit(2);
 	}
 
-	packet = pgp_packet_read(buffer, size);
+	error = pgp_packet_read(&packet, buffer, size);
 
 	free(buffer);
 
-	if (packet == NULL)
+	if (error != PGP_SUCCESS)
 	{
 		printf("Bad packet.\n");
 		exit(1);
