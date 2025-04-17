@@ -145,7 +145,15 @@ pgp_error_t pgp_sed_packet_read_with_header(pgp_sed_packet **packet, pgp_packet_
 
 pgp_error_t pgp_sed_packet_read(pgp_sed_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_SED)
 	{
@@ -694,7 +702,15 @@ pgp_error_t pgp_seipd_packet_read_with_header(pgp_seipd_packet **packet, pgp_pac
 
 pgp_error_t pgp_seipd_packet_read(pgp_seipd_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_SEIPD)
 	{
@@ -1078,7 +1094,15 @@ pgp_error_t pgp_aead_packet_read_with_header(pgp_aead_packet **packet, pgp_packe
 
 pgp_error_t pgp_aead_packet_read(pgp_aead_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_AEAD)
 	{

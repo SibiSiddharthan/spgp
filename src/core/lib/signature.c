@@ -292,7 +292,15 @@ static size_t pgp_signature_data_write(pgp_signature_packet *packet, void *ptr, 
 
 static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buffer)
 {
-	pgp_packet_header header = pgp_subpacket_header_read(buffer->data + buffer->pos, buffer->size - buffer->pos);
+	pgp_error_t error = 0;
+	pgp_subpacket_header header = {0};
+
+	error = pgp_subpacket_header_read(&header, buffer->data + buffer->pos, buffer->size - buffer->pos);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (header.tag == 0)
 	{
@@ -2143,7 +2151,15 @@ pgp_error_t pgp_signature_packet_read_with_header(pgp_signature_packet **packet,
 
 pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_LIT)
 	{
@@ -2480,7 +2496,15 @@ pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signatur
 
 pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_OPS)
 	{

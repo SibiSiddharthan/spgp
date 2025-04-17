@@ -726,7 +726,15 @@ pgp_error_t pgp_pkesk_packet_read_with_header(pgp_pkesk_packet **packet, pgp_pac
 
 pgp_error_t pgp_pkesk_packet_read(pgp_pkesk_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
 	{
@@ -1284,7 +1292,15 @@ pgp_error_t pgp_skesk_packet_read_with_header(pgp_skesk_packet **packet, pgp_pac
 
 pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_SKESK)
 	{

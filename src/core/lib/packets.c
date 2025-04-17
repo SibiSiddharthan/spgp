@@ -202,7 +202,15 @@ pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet
 
 pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_COMP)
 	{
@@ -319,7 +327,15 @@ pgp_error_t pgp_marker_packet_read_with_header(pgp_marker_packet **packet, pgp_p
 
 pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_MARKER)
 	{
@@ -617,7 +633,15 @@ pgp_error_t pgp_literal_packet_read_with_header(pgp_literal_packet **packet, pgp
 
 pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_LIT)
 	{
@@ -791,7 +815,15 @@ pgp_error_t pgp_user_id_packet_read_with_header(pgp_user_id_packet **packet, pgp
 
 pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_UID)
 	{
@@ -833,7 +865,15 @@ size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t si
 
 static pgp_error_t pgp_user_attribute_subpacket_read(void **subpacket, buffer_t *buffer)
 {
-	pgp_subpacket_header header = pgp_subpacket_header_read(buffer->data + buffer->pos, buffer->size - buffer->pos);
+	pgp_error_t error = 0;
+	pgp_subpacket_header header = {0};
+
+	error = pgp_subpacket_header_read(&header, buffer->data + buffer->pos, buffer->size - buffer->pos);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (header.tag == 0)
 	{
@@ -1248,7 +1288,15 @@ pgp_error_t pgp_user_attribute_packet_read_with_header(pgp_user_attribute_packet
 
 pgp_error_t pgp_user_attribute_packet_read(pgp_user_attribute_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_UAT)
 	{
@@ -1363,7 +1411,15 @@ pgp_error_t pgp_padding_packet_read_with_header(pgp_padding_packet **packet, pgp
 
 pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_PADDING)
 	{
@@ -1460,7 +1516,15 @@ pgp_error_t pgp_mdc_packet_read_with_header(pgp_mdc_packet **packet, pgp_packet_
 
 pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_MDC)
 	{
@@ -1561,7 +1625,15 @@ pgp_error_t pgp_trust_packet_read_with_header(pgp_trust_packet **packet, pgp_pac
 
 pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_TRUST)
 	{
@@ -2163,7 +2235,15 @@ pgp_error_t pgp_keyring_packet_read_with_header(pgp_keyring_packet **packet, pgp
 
 pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (pgp_packet_get_type(header.tag) != PGP_KEYRING)
 	{
@@ -2256,7 +2336,15 @@ pgp_error_t pgp_unknown_packet_read_with_header(pgp_unknown_packet **packet, pgp
 
 pgp_error_t pgp_unknown_packet_read(pgp_unknown_packet **packet, void *data, size_t size)
 {
-	pgp_packet_header header = pgp_packet_header_read(data, size);
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (size < PGP_PACKET_OCTETS(header))
 	{
