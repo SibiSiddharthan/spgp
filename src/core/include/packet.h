@@ -247,6 +247,7 @@ void pgp_partial_packet_delete(pgp_partial_packet *packet);
 
 pgp_error_t pgp_partial_packet_read(pgp_partial_packet **packet, void *data, size_t size);
 size_t pgp_partial_packet_write(pgp_partial_packet *packet, void *ptr, size_t size);
+size_t pgp_partial_packet_print(pgp_partial_packet *packet, void *str, size_t size);
 
 // Compressed Packet (Tag 8)
 pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t header_format, byte_t compression_algorithm_id);

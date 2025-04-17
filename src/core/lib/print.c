@@ -143,7 +143,6 @@ uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t si
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header->tag);
 	pgp_packet_type type = pgp_packet_get_type(header->tag);
 
-	char *footer = NULL;
 	uint32_t pos = 0;
 
 	switch (type)
@@ -221,14 +220,16 @@ uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t si
 	// Mention if packet is having legacy header format
 	if (format == PGP_LEGACY_HEADER)
 	{
-		footer = " (Old)";
-	}
-	else
-	{
-		footer = "";
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "%s", " (Old)");
 	}
 
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "%s\n", footer);
+	// Mention if packet is having partial data
+	if (header->partial)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "%s", " (Partial)");
+	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "\n");
 
 	return pos;
 }
@@ -2376,6 +2377,22 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "%s\n", PTR_OFFSET(packet->uids, offset));
 			offset = (uintptr_t)memchr(PTR_OFFSET(packet->uids, offset), 0, packet->uid_size - offset) - (uintptr_t)packet->uids + 1;
 		}
+	}
+
+	return pos;
+}
+
+size_t pgp_partial_packet_print(pgp_partial_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	if (packet->header.partial)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Partial Packet (continue) (%zu bytes)\n", packet->header.body_size);
+	}
+	else
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Partial Packet (end) (%zu bytes)\n", packet->header.body_size);
 	}
 
 	return pos;
