@@ -288,7 +288,7 @@ pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t
 			header->body_size = ((in[1] - 192) << 8) + in[2] + 192;
 		}
 		// 1 octed length
-		else // if (pdata[1] < 192)
+		else // if (in[1] < 192)
 		{
 			if (size < 2)
 			{
@@ -563,7 +563,7 @@ pgp_error_t pgp_partial_header_read(pgp_partial_header *header, void *data, size
 	}
 
 	// Partial continue
-	if (in[0] >= 224 && in[1] <= 254)
+	if (in[0] >= 224 && in[0] <= 254)
 	{
 		header->header_size = 1;
 		header->partial = 1;
@@ -595,10 +595,10 @@ pgp_error_t pgp_partial_header_read(pgp_partial_header *header, void *data, size
 			header->body_size = ((in[0] - 192) << 8) + in[1] + 192;
 		}
 		// 1 octed length
-		else // if (pdata[1] < 192)
+		else // if (in[1] < 192)
 		{
 			header->header_size = 1;
-			header->body_size = in[1];
+			header->body_size = in[0];
 		}
 	}
 
@@ -714,6 +714,14 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 	if (size < PGP_PACKET_OCTETS(header))
 	{
 		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.partial)
+	{
+		if (type != PGP_COMP && type != PGP_LIT && type != PGP_SED && type != PGP_SEIPD && type != PGP_AEAD)
+		{
+			return PGP_INVALID_PARTIAL_PACKET_TYPE;
+		}
 	}
 
 	switch (type)
@@ -962,7 +970,7 @@ void pgp_partial_packet_delete(pgp_partial_packet *packet)
 	free(packet);
 }
 
-pgp_error_t pgp_partial_packet_read(pgp_partial_packet **packet, void *data, size_t size)
+pgp_error_t pgp_partial_packet_read(void **packet, void *data, size_t size)
 {
 	pgp_error_t error = 0;
 	pgp_partial_header header = {0};

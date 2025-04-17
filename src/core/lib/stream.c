@@ -308,6 +308,34 @@ static pgp_error_t pgp_stream_read_binary(pgp_stream_t *stream, void *data, size
 
 		header = packet;
 		pos += header->body_size + header->header_size;
+
+		if (header->partial)
+		{
+			while (pos < size)
+			{
+				error = pgp_partial_packet_read(&packet, PTR_OFFSET(data, pos), size - pos);
+
+				if (error != PGP_SUCCESS)
+				{
+					return error;
+				}
+
+				stream = pgp_stream_push_packet(stream, packet);
+
+				if (stream == NULL)
+				{
+					return PGP_NO_MEMORY;
+				}
+
+				header = packet;
+				pos += header->body_size + header->header_size;
+
+				if (header->partial == 0)
+				{
+					break;
+				}
+			}
+		}
 	}
 
 	return error;
@@ -342,6 +370,8 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 
 	for (uint16_t i = 0; i < stream->count; ++i)
 	{
+		pgp_packet_header *header = NULL;
+
 		if (options & PGP_PRINT_HEADER_ONLY)
 		{
 			pos += pgp_packet_header_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
@@ -349,6 +379,24 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 		}
 
 		pos += pgp_packet_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos, options & PGP_PRINT_MPI_MINIMAL);
+		header = stream->packets[i];
+
+		if (header->partial)
+		{
+			++i;
+			while (i < stream->count)
+			{
+				pos += pgp_partial_packet_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+				header = stream->packets[i];
+
+				if (header->partial == 0)
+				{
+					break;
+				}
+
+				++i;
+			}
+		}
 	}
 
 	return pos;
