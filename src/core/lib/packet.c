@@ -948,6 +948,17 @@ void pgp_packet_delete(void *packet)
 	}
 }
 
+void pgp_partial_packet_delete(pgp_partial_packet *packet)
+{
+	if (packet == NULL)
+	{
+		return;
+	}
+
+	free(packet->data);
+	free(packet);
+}
+
 pgp_error_t pgp_partial_packet_read(pgp_partial_packet **packet, void *data, size_t size)
 {
 	pgp_partial_header header = pgp_partial_header_read(data, size);
@@ -958,6 +969,9 @@ pgp_error_t pgp_partial_packet_read(pgp_partial_packet **packet, void *data, siz
 		return PGP_INSUFFICIENT_DATA;
 	}
 
+	// Allocate with 2 separate malloc calls.
+	// The body size will always be a power of 2.
+	// This helps in reducing heap fragmentation.
 	partial = malloc(sizeof(pgp_partial_packet));
 
 	if (partial == NULL)

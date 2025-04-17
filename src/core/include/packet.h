@@ -238,6 +238,7 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size);
 size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options);
 
 void pgp_packet_delete(void *packet);
+void pgp_partial_packet_delete(pgp_partial_packet *packet);
 
 pgp_error_t pgp_partial_packet_read(pgp_partial_packet **packet, void *data, size_t size);
 size_t pgp_partial_packet_write(pgp_partial_packet *packet, void *ptr, size_t size);
