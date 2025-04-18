@@ -314,6 +314,24 @@ typedef struct _pgp_ed448_signature
 #define PGP_SIGNATURE_FLAG_DETACHED  0x1
 #define PGP_SIGNATURE_FLAG_CLEARTEXT 0x2
 
+typedef struct _key_preferences
+{
+	byte_t hash_algorithm_preferences_count;
+	byte_t cipher_algorithm_preferences_count;
+	byte_t compression_algorithm_preferences_count;
+	byte_t cipher_modes_preferences_count;
+	byte_t aead_algorithm_preferences_count;
+
+	byte_t key_server;
+	byte_t features;
+
+	byte_t hash_algorithm_preferences[16];
+	byte_t cipher_algorithm_preferences[16];
+	byte_t compression_algorithm_preferences[4];
+	byte_t cipher_modes_preferences[4];
+	byte_t aead_algorithm_preferences[64];
+} key_preferences;
+
 pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
@@ -325,9 +343,9 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal);
 pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
 
-pgp_signature_packet *pgp_generate_certificate_signature(pgp_key_packet *key, byte_t version, byte_t type,
-														 pgp_hash_algorithms hash_algorithm, uint32_t timestamp, void *user);
-uint32_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
+pgp_error_t pgp_generate_certificate_signature(pgp_key_packet *key, byte_t version, byte_t type, pgp_hash_algorithms hash_algorithm,
+											   uint32_t timestamp, uint32_t expiry, key_preferences *preferences, void *user);
+pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
 
 pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t version,
 											   byte_t type, pgp_hash_algorithms hash_algorithm, uint32_t timestamp, uint32_t expiry,

@@ -2445,7 +2445,7 @@ pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timest
 
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
-	subpacket->header = pgp_encode_subpacket_header(tag, 0, 4);
+	subpacket->header = pgp_encode_subpacket_header(tag, 1, 4);
 	subpacket->timestamp = timestamp;
 
 	return subpacket;
@@ -2484,7 +2484,7 @@ pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byt
 	subpacket->version = version;
 	memcpy(subpacket->fingerprint, fingerprint, size);
 
-	subpacket->header = pgp_encode_subpacket_header(tag, 0, size + 1);
+	subpacket->header = pgp_encode_subpacket_header(tag, 1, size + 1);
 
 	return subpacket;
 }
@@ -2541,12 +2541,12 @@ pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags)
 
 		if ((flags >> 8) == 0)
 		{
-			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 0, 1);
+			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 1);
 		}
 		else
 		{
 			subpacket->flags[1] = (flags >> 8) & PGP_KEY_FLAG_SECOND_OCTET_MASK;
-			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 0, 2);
+			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 2);
 		}
 	}
 
