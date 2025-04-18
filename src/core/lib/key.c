@@ -2546,7 +2546,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 		// Secret key octet count
 		if (packet->version == PGP_KEY_V5)
 		{
-			LOAD_32(out + pos, &packet->encrypted_octets);
+			LOAD_32BE(out + pos, &packet->encrypted_octets);
 			pos += 4;
 		}
 
@@ -3320,7 +3320,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 		pos += 16;
 
 		// Secret key octet count
-		LOAD_32(out + pos, &packet->encrypted_octets);
+		LOAD_32BE(out + pos, &packet->encrypted_octets);
 		pos += 4;
 
 		// Encrypted private key
