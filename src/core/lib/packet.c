@@ -722,6 +722,15 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 		{
 			return PGP_INVALID_PARTIAL_PACKET_TYPE;
 		}
+
+		// The first partial packet should be atleast 512 bytes
+		if (PGP_PACKET_HEADER_FORMAT(header.tag) == PGP_HEADER)
+		{
+			if (header.body_size < 512)
+			{
+				return PGP_INVALID_PARTIAL_PACKET_START_SIZE;
+			}
+		}
 	}
 
 	switch (type)
