@@ -911,10 +911,9 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
 	{
 		struct _pgp_timestamp_subpacket *timestamp_subpacket = subpacket;
-		uint32_t timestamp = BSWAP_32(timestamp_subpacket->timestamp);
 
 		// 4 octet timestamp
-		LOAD_32(out + pos, &timestamp);
+		LOAD_32BE(out + pos, &timestamp_subpacket->timestamp);
 		pos += 4;
 	}
 	break;
@@ -1038,20 +1037,16 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	{
 		pgp_notation_data_subpacket *notation_subpacket = subpacket;
 
-		uint32_t flags = BSWAP_32(notation_subpacket->flags);
-		uint16_t name_size = BSWAP_16(notation_subpacket->name_size);
-		uint16_t value_size = BSWAP_16(notation_subpacket->value_size);
-
 		// 4 octets of flags
-		LOAD_32(out + pos, &flags);
+		LOAD_32BE(out + pos, &notation_subpacket->flags);
 		pos += 4;
 
 		// 2 octets of name length(N)
-		LOAD_16(out + pos, &name_size);
+		LOAD_16BE(out + pos, &notation_subpacket->name_size);
 		pos += 2;
 
 		// 2 octets of value length(M)
-		LOAD_16(out + pos, &value_size);
+		LOAD_16BE(out + pos, &notation_subpacket->value_size);
 		pos += 2;
 
 		// (N + M) octets of data
@@ -1237,8 +1232,7 @@ static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *
 	pos += 1;
 
 	// 4 octet timestamp
-	uint32_t timestamp = BSWAP_32(packet->timestamp);
-	LOAD_32(out + pos, &timestamp);
+	LOAD_32BE(out + pos, &packet->timestamp);
 	pos += 4;
 
 	// 8 octet key-id
@@ -1287,17 +1281,13 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	if (packet->version == PGP_SIGNATURE_V6)
 	{
 		// 4 octet count for the hashed subpacket data
-		uint32_t size = BSWAP_32(packet->hashed_octets);
-
-		LOAD_32(out + pos, &size);
+		LOAD_32BE(out + pos, &packet->hashed_octets);
 		pos += 4;
 	}
 	else
 	{
 		// 2 octet count for the hashed subpacket data
-		uint16_t size = BSWAP_16(packet->hashed_octets);
-
-		LOAD_16(out + pos, &size);
+		LOAD_16BE(out + pos, &packet->hashed_octets);
 		pos += 2;
 	}
 
@@ -1313,17 +1303,13 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	if (packet->version == PGP_SIGNATURE_V6)
 	{
 		// 4 octet count for the unhashed subpacket data
-		uint32_t size = BSWAP_32(packet->unhashed_octets);
-
-		LOAD_32(out + pos, &size);
+		LOAD_32BE(out + pos, &packet->unhashed_octets);
 		pos += 4;
 	}
 	else
 	{
 		// 2 octet count for the unhashed subpacket data
-		uint16_t size = BSWAP_16(packet->unhashed_octets);
-
-		LOAD_16(out + pos, &size);
+		LOAD_16BE(out + pos, &size);
 		pos += 2;
 	}
 

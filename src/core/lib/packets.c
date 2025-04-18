@@ -159,7 +159,7 @@ static pgp_error_t pgp_compressed_packet_read_body(pgp_compresed_packet *packet,
 	CHECK_READ(read8(buffer, &packet->compression_algorithm_id), PGP_MALFORMED_COMPRESSED_PACKET);
 
 	// Copy the compressed data.
-	CHECK_READ(readn(buffer, packet->data, packet->data_size), PGP_MALFORMED_COMPRESSED_PACKET);
+	readn(buffer, packet->data, packet->data_size);
 
 	return PGP_SUCCESS;
 }
@@ -690,9 +690,7 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 	}
 
 	// A 4-octet date
-	uint32_t date = BSWAP_32(packet->date);
-
-	LOAD_32(out + pos, &date);
+	LOAD_32BE(out + pos, &packet->date);
 	pos += 4;
 
 	// Literal data
@@ -921,7 +919,7 @@ static pgp_error_t pgp_user_attribute_subpacket_read(void **subpacket, buffer_t 
 
 		// N octets of image data
 		image_subpacket->image_data = PTR_OFFSET(image_subpacket, sizeof(pgp_user_attribute_image_subpacket));
-		CHECK_READ(readn(buffer, image_subpacket->image_data, image_size), PGP_MALFORMED_USER_ATTRIBUTE_IMAGE);
+		readn(buffer, image_subpacket->image_data, image_size);
 
 		*subpacket = image_subpacket;
 
@@ -945,7 +943,7 @@ static pgp_error_t pgp_user_attribute_subpacket_read(void **subpacket, buffer_t 
 		uid_subpacket->header = header;
 
 		// Copy the UID
-		CHECK_READ(readn(buffer, uid_subpacket->user_data, uid_size), PGP_MALFORMED_USER_ATTRIBUTE_ID);
+		readn(buffer, uid_subpacket->user_data, uid_size);
 
 		*subpacket = uid_subpacket;
 
@@ -962,7 +960,7 @@ static pgp_error_t pgp_user_attribute_subpacket_read(void **subpacket, buffer_t 
 
 		unknown->header = header;
 		unknown->data = PTR_OFFSET(unknown, sizeof(pgp_unknown_subpacket));
-		CHECK_READ(readn(buffer, unknown->data, header.body_size), PGP_INSUFFICIENT_DATA);
+		readn(buffer, unknown->data, header.body_size);
 
 		*subpacket = unknown;
 
@@ -2137,23 +2135,26 @@ static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buff
 	// A 4-octet subkey fingerprint size
 	CHECK_READ(read32_be(buffer, &packet->subkey_size), PGP_MALFORMED_KEYRING_PACKET);
 
-	if (packet->subkey_size % packet->fingerprint_size != 0)
+	if (packet->subkey_size > 0)
 	{
-		return PGP_KEYRING_PACKET_INVALID_SUBKEY_SIZE;
+		if (packet->subkey_size % packet->fingerprint_size != 0)
+		{
+			return PGP_KEYRING_PACKET_INVALID_SUBKEY_SIZE;
+		}
+
+		// N octets of subkey fingerprints.
+		packet->subkey_fingerprints = malloc(packet->subkey_size);
+
+		if (packet->subkey_fingerprints == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		packet->subkey_capacity = packet->subkey_size;
+		packet->subkey_count = packet->subkey_size / packet->fingerprint_size;
+
+		CHECK_READ(readn(buffer, packet->subkey_fingerprints, packet->subkey_size), PGP_MALFORMED_KEYRING_SUBKEYS);
 	}
-
-	// N octets of subkey fingerprints.
-	packet->subkey_fingerprints = malloc(packet->subkey_size);
-
-	if (packet->subkey_fingerprints == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	packet->subkey_capacity = packet->subkey_size;
-	packet->subkey_count = packet->subkey_size / packet->fingerprint_size;
-
-	CHECK_READ(readn(buffer, packet->subkey_fingerprints, packet->subkey_size), PGP_MALFORMED_KEYRING_SUBKEYS);
 
 	// A 4-octet uid size
 	CHECK_READ(read32_be(buffer, &packet->uid_size), PGP_MALFORMED_KEYRING_PACKET);
@@ -2289,8 +2290,7 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	pos += packet->fingerprint_size;
 
 	// A 4-octet subkey fingerprint size
-	uint32_t subkey_size_be = BSWAP_32(packet->subkey_size);
-	LOAD_32(out + pos, &subkey_size_be);
+	LOAD_32BE(out + pos, &packet->subkey_size);
 	pos += 4;
 
 	// N octets of subkey fingerprints.
@@ -2298,8 +2298,7 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	pos += packet->subkey_size;
 
 	// A 4-octet uid size
-	uint32_t uid_size_be = BSWAP_32(packet->uid_size);
-	LOAD_32(out + pos, &uid_size_be);
+	LOAD_32BE(out + pos, &packet->uid_size);
 	pos += 4;
 
 	memcpy(out + pos, packet->uids, packet->uid_size);

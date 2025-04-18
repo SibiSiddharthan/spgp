@@ -1442,17 +1442,13 @@ size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	pos += 1;
 
 	// 4-octet number denoting the time that the key was created
-	uint32_t key_creation_time = BSWAP_32(packet->key_creation_time);
-
-	LOAD_32(out + pos, &key_creation_time);
+	LOAD_32BE(out + pos, &packet->key_creation_time);
 	pos += 4;
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
 	{
 		// 2-octet number denoting expiry in days.
-		uint16_t key_expiry_days = BSWAP_16(packet->key_expiry_days);
-
-		LOAD_16(out + pos, &key_expiry_days);
+		LOAD_16BE(out + pos, &packet->key_expiry_days);
 		pos += 2;
 	}
 
@@ -1463,9 +1459,7 @@ size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 	{
 		// 4-octet scalar count for the public key material
-		uint32_t key_data_octets_be = BSWAP_32(packet->public_key_data_octets);
-
-		LOAD_32(out + pos, &key_data_octets_be);
+		LOAD_32BE(out + pos, &packet->public_key_data_octets);
 		pos += 4;
 	}
 
@@ -2009,14 +2003,12 @@ static pgp_error_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, 
 	LOAD_8(buffer + pos, &packet->version);
 	pos += 1;
 
-	uint32_t creation_time_be = BSWAP_32(packet->key_creation_time);
-	LOAD_32(buffer + pos, &creation_time_be);
+	LOAD_32BE(buffer + pos, &packet->key_creation_time);
 	pos += 4;
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 	{
-		uint32_t public_key_octets_be = BSWAP_32(packet->public_key_data_octets);
-		LOAD_32(buffer + pos, &public_key_octets_be);
+		LOAD_32BE(buffer + pos, &packet->public_key_data_octets);
 		pos += 4;
 	}
 
@@ -2107,14 +2099,12 @@ static pgp_error_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, 
 	LOAD_8(buffer + pos, &packet->version);
 	pos += 1;
 
-	uint32_t creation_time_be = BSWAP_32(packet->key_creation_time);
-	LOAD_32(buffer + pos, &creation_time_be);
+	LOAD_32BE(buffer + pos, &packet->key_creation_time);
 	pos += 4;
 
 	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 	{
-		uint32_t public_key_octets_be = BSWAP_32(packet->public_key_data_octets);
-		LOAD_32(buffer + pos, &public_key_octets_be);
+		LOAD_32BE(buffer + pos, &packet->public_key_data_octets);
 		pos += 4;
 	}
 
@@ -2476,17 +2466,13 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	pos += 1;
 
 	// 4-octet number denoting the time that the key was created
-	uint32_t key_creation_time = BSWAP_32(packet->key_creation_time);
-
-	LOAD_32(out + pos, &key_creation_time);
+	LOAD_32BE(out + pos, &packet->key_creation_time);
 	pos += 4;
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
 	{
 		// 2-octet number denoting expiry in days.
-		uint16_t key_expiry_days = BSWAP_16(packet->key_expiry_days);
-
-		LOAD_16(out + pos, &key_expiry_days);
+		LOAD_16BE(out + pos, &packet->key_expiry_days);
 		pos += 2;
 	}
 
@@ -2497,9 +2483,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	if (packet->version == PGP_KEY_V5 || packet->version == PGP_KEY_V6)
 	{
 		// 4-octet scalar count for the public key material
-		uint32_t public_key_data_octets_be = BSWAP_32(packet->public_key_data_octets);
-
-		LOAD_32(out + pos, &public_key_data_octets_be);
+		LOAD_32BE(out + pos, &packet->public_key_data_octets);
 		pos += 4;
 	}
 
@@ -3252,9 +3236,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	pos += 1;
 
 	// 4-octet number denoting the time that the key was created.
-	uint32_t key_creation_time = BSWAP_32(packet->key_creation_time);
-
-	LOAD_32(out + pos, &key_creation_time);
+	LOAD_32BE(out + pos, &packet->key_creation_time);
 	pos += 4;
 
 	// 4-octet number denoting the time that the key will expire.
@@ -3269,9 +3251,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 		key_expiry_seconds = packet->key_expiry_seconds;
 	}
 
-	key_expiry_seconds = BSWAP_32(key_expiry_seconds);
-
-	LOAD_32(out + pos, &key_expiry_seconds);
+	LOAD_32BE(out + pos, &key_expiry_seconds);
 	pos += 4;
 
 	// 1-octet public key algorithm.
@@ -3279,9 +3259,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	pos += 1;
 
 	// 4-octet scalar count for the public key material
-	uint32_t public_key_data_octets_be = BSWAP_32(packet->public_key_data_octets);
-
-	LOAD_32(out + pos, &public_key_data_octets_be);
+	LOAD_32BE(out + pos, &packet->public_key_data_octets);
 	pos += 4;
 
 	// Public key material
