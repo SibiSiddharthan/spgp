@@ -342,10 +342,9 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 								   uint32_t timestamp, void *data, size_t size);
 uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size);
 
-pgp_signature_packet *pgp_generate_document_signature(pgp_key_packet *key, byte_t version, byte_t type, pgp_hash_algorithms hash_algorithm,
-													  uint32_t timestamp, pgp_literal_packet *literal, void *data, size_t size);
-uint32_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal, void *data,
-									   size_t size);
+pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type,
+											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal);
+pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
 
 pgp_signature_packet *pgp_generate_certificate_signature(pgp_key_packet *key, byte_t version, byte_t type,
 														 pgp_hash_algorithms hash_algorithm, uint32_t timestamp, void *user);

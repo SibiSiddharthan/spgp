@@ -1733,7 +1733,7 @@ pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t versi
 
 	sign = malloc(sizeof(pgp_signature_packet));
 
-	if (packet == NULL)
+	if (sign == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
@@ -1909,6 +1909,80 @@ uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packe
 	}
 
 	return 0;
+}
+
+pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type,
+											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
+	{
+		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
+	}
+
+	if (type != PGP_BINARY_SIGNATURE && type != PGP_TEXT_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (type == PGP_TEXT_SIGNATURE)
+	{
+		if (literal->format != PGP_LITERAL_DATA_MIME && literal->format != PGP_LITERAL_DATA_TEXT &&
+			literal->format != PGP_LITERAL_DATA_UTF8)
+		{
+			return PGP_INVALID_LITERAL_PACKET_FORMAT_FOR_TEXT_SIGNATURE;
+		}
+	}
+
+	if ((key->capabilities & PGP_KEY_FLAG_SIGN) == 0)
+	{
+		return PGP_UNUSABLE_KEY_FOR_SIGNING;
+	}
+
+	if (key->encrypted != NULL)
+	{
+		return PGP_KEY_NOT_DECRYPTED;
+	}
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = version;
+	sign->type = type;
+
+	pgp_signature_packet_sign_setup(sign, key, timestamp);
+	pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, literal, 0);
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal)
+{
+	if (sign->type != PGP_BINARY_SIGNATURE && sign->type != PGP_TEXT_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (sign->type == PGP_TEXT_SIGNATURE)
+	{
+		if (literal->format != PGP_LITERAL_DATA_MIME && literal->format != PGP_LITERAL_DATA_TEXT &&
+			literal->format != PGP_LITERAL_DATA_UTF8)
+		{
+			return PGP_INVALID_LITERAL_PACKET_FORMAT_FOR_TEXT_SIGNATURE;
+		}
+	}
+
+	return pgp_signature_packet_verify(sign, key, literal, 0);
 }
 
 static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer)
