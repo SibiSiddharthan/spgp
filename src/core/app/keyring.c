@@ -5,6 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <spgp.h>
 #include <packet.h>
 #include <key.h>
@@ -348,36 +350,306 @@ uint32_t spgp_import_keys(spgp_command *command)
 	return 0;
 }
 
-uint32_t spgp_list_keys(spgp_command *command)
+static size_t print_prefix(byte_t primary, byte_t secret, void *str, size_t size)
+{
+	if (primary && secret)
+	{
+		return snprintf(str, size, "sec");
+	}
+	else if (primary && !secret)
+	{
+		return snprintf(str, size, "pub");
+	}
+	else if (!primary && secret)
+	{
+		return snprintf(str, size, "ssb");
+	}
+	else // if (!primary && !secret)
+	{
+		return snprintf(str, size, "sub");
+	}
+}
+
+static size_t print_algorithm(pgp_key_packet *key, void *str, size_t size)
+{
+	switch (key->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_rsa_key *rsa_key = key->key;
+		return snprintf(str, size, "rsa%u", ROUND_UP(rsa_key->n->bits, 1024));
+	}
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_elgamal_key *elgmal_key = key->key;
+		return snprintf(str, size, "elg%u", ROUND_UP(elgmal_key->p->bits, 1024));
+	}
+	case PGP_DSA:
+	{
+		pgp_dsa_key *dsa_key = key->key;
+		return snprintf(str, size, "dsa%u", ROUND_UP(dsa_key->p->bits, 1024));
+	}
+	case PGP_ECDH:
+	case PGP_ECDSA:
+	case PGP_EDDSA:
+	{
+		byte_t *curve_id = key->key;
+		char *curve = NULL;
+
+		// Only need first byte.
+		switch (*curve_id)
+		{
+		case PGP_EC_NIST_P256:
+			curve = "nistp256";
+			break;
+		case PGP_EC_NIST_P384:
+			curve = "nistp384";
+			break;
+		case PGP_EC_NIST_P521:
+			curve = "nistp521";
+			break;
+		case PGP_EC_BRAINPOOL_256R1:
+			curve = "brainpoolP256r1";
+			break;
+		case PGP_EC_BRAINPOOL_384R1:
+			curve = "brainpoolP384r1";
+			break;
+		case PGP_EC_BRAINPOOL_512R1:
+			curve = "brainpoolP512r1";
+			break;
+		case PGP_EC_CURVE25519:
+			curve = "cv25519";
+			break;
+		case PGP_EC_CURVE448:
+			curve = "cv448";
+			break;
+		case PGP_EC_ED25519:
+			curve = "ed25519";
+			break;
+		case PGP_EC_ED448:
+			curve = "ed448";
+			break;
+
+		default:
+			curve = "unkown";
+			break;
+		}
+
+		return snprintf(str, size, "%s", curve);
+	}
+	case PGP_X25519:
+		return snprintf(str, size, "x25519");
+	case PGP_X448:
+		return snprintf(str, size, "x448");
+	case PGP_ED25519:
+		return snprintf(str, size, "ed25519");
+	case PGP_ED448:
+		return snprintf(str, size, "ed448");
+	default:
+		return snprintf(str, size, "unknown");
+	}
+}
+
+static size_t print_capabilities(pgp_key_packet *key, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	if (key->capabilities == 0)
+	{
+		return 0;
+	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "[");
+
+	if (key->capabilities & PGP_KEY_FLAG_CERTIFY)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "C");
+	}
+
+	if (key->capabilities & PGP_KEY_FLAG_SIGN)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "S");
+	}
+
+	if (key->capabilities & PGP_KEY_FLAG_ENCRYPT)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "E");
+	}
+
+	if (key->capabilities & PGP_KEY_FLAG_AUTHENTICATION)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "A");
+	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "]");
+
+	return pos;
+}
+
+static size_t print_times(pgp_key_packet *key, void *str, size_t size)
+{
+	time_t timestamp = 0;
+	char date_buffer[64] = {0};
+	size_t pos = 0;
+
+	// Creation time
+	timestamp = key->key_creation_time;
+	strftime(date_buffer, 64, "%Y-%m-%d %H:%M:%S", gmtime(&timestamp));
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "[created: %s]", date_buffer);
+
+	// Expiry time
+	if (key->key_expiry_seconds != 0)
+	{
+		time_t current_time = time(NULL);
+
+		memset(date_buffer, 0, 64);
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, " ");
+
+		if (key->version > PGP_KEY_V3)
+		{
+			timestamp = key->key_creation_time + key->key_expiry_seconds;
+		}
+		else
+		{
+			timestamp = key->key_creation_time + (key->key_expiry_days * 86400);
+		}
+
+		strftime(date_buffer, 64, "%Y-%m-%d %H:%M:%S", gmtime(&timestamp));
+
+		if (current_time > timestamp)
+		{
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "[expired: %s]", date_buffer);
+		}
+		else
+		{
+			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "[expires: %s]", date_buffer);
+		}
+	}
+
+	return pos;
+}
+
+static size_t print_fingerprint(byte_t *fingerprint, byte_t size, byte_t *out)
+{
+	byte_t pos = 0;
+
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		byte_t a, b;
+
+		a = fingerprint[i] / 16;
+		b = fingerprint[i] % 16;
+
+		out[pos++] = hex_table[a];
+		out[pos++] = hex_table[b];
+	}
+
+	return pos;
+}
+
+static size_t print_key(pgp_key_packet *key, byte_t primary, byte_t secret, byte_t *fingerprint, byte_t fingerprint_size, void *str,
+						size_t str_size)
+{
+	size_t pos = 0;
+
+	pos += print_prefix(primary, secret, PTR_OFFSET(str, pos), str_size - pos);
+	pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "   "); // 3 spaces
+
+	pos += print_algorithm(key, PTR_OFFSET(str, pos), str_size - pos);
+	pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, " ");
+
+	pos += print_capabilities(key, PTR_OFFSET(str, pos), str_size - pos);
+	pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, " ");
+
+	pos += print_times(key, PTR_OFFSET(str, pos), str_size - pos);
+	pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "\n");
+
+	pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "         "); // 9 spaces
+	pos += print_fingerprint(fingerprint, fingerprint_size, PTR_OFFSET(str, pos));
+	pos += snprintf(PTR_OFFSET(str, pos), str_size - pos, "\n");
+
+	return pos;
+}
+
+static char *get_trust_value(byte_t trust)
+{
+	switch (trust)
+	{
+	case PGP_TRUST_NEVER:
+		return "never";
+	case PGP_TRUST_MARGINAL:
+		return "marginal";
+	case PGP_TRUST_FULL:
+		return "full";
+	case PGP_TRUST_ULTIMATE:
+		return "ultimate";
+	default:
+		return "unknown";
+	}
+}
+
+static size_t print_uid(byte_t *uid, byte_t trust, void *str, size_t size)
+{
+	return snprintf(str, size, "uid         [%s] %s\n", get_trust_value(trust), uid); // 9 spaces
+}
+
+uint32_t spgp_list_keys(void)
 {
 	pgp_stream_t *stream = NULL;
 	pgp_keyring_packet *keyring = NULL;
 	pgp_key_packet *key = NULL;
 
 	char buffer[65536] = {0};
+	size_t size = 65536;
 	size_t pos = 0;
 
 	stream = spgp_read_keyring();
 
 	for (uint16_t i = 0; i < stream->count; ++i)
 	{
+		uint32_t uid_size = 0;
+		uint32_t uid_offset = 0;
+
 		keyring = stream->packets[i];
 
-		// Add primary key
 		key = spgp_read_key(keyring->primary_fingerprint, keyring->fingerprint_size);
-		pos += snprintf(PTR_OFFSET(buffer, pos), 65536, "%d %d %hhx%hhx\n", key->public_key_algorithm_id, key->capabilities,
-						keyring->primary_fingerprint[0], keyring->primary_fingerprint[1]);
+
+		if (command.list_secret_keys)
+		{
+			// Skip non secret keys
+			if (key->type == PGP_KEY_TYPE_PUBLIC)
+			{
+				continue;
+			}
+		}
+
+		// Primary key
+		pos += print_key(key, 1, command.list_secret_keys, keyring->primary_fingerprint, keyring->fingerprint_size, PTR_OFFSET(buffer, pos),
+						 size - pos);
 
 		// Add uids
-		snprintf(PTR_OFFSET(buffer, pos), 65536, "%s\n", (char *)keyring->uids);
+		for (byte_t j = 0; j < keyring->uid_count; ++j)
+		{
+			uid_size = strnlen(PTR_OFFSET(keyring->uids, uid_offset), keyring->uid_size - uid_offset);
+			pos += print_uid(PTR_OFFSET(keyring->uids, uid_offset), keyring->trust_level, PTR_OFFSET(buffer, pos), size - pos);
+
+			if (uid_size < (keyring->uid_size - uid_offset))
+			{
+				uid_offset += 1;
+			}
+		}
 
 		// Add subkeys
 		for (uint16_t j = 0; j < keyring->subkey_count; ++j)
 		{
 			key = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, keyring->fingerprint_size * j), keyring->fingerprint_size);
-			pos += snprintf(PTR_OFFSET(buffer, pos), 65536, "%d %d %hhx%hhx\n", key->public_key_algorithm_id, key->capabilities,
-							keyring->primary_fingerprint[0], keyring->primary_fingerprint[1]);
+			pos += print_key(key, 0, command.list_secret_keys, PTR_OFFSET(keyring->subkey_fingerprints, keyring->fingerprint_size * j),
+							 keyring->fingerprint_size, PTR_OFFSET(buffer, pos), size - pos);
 		}
+
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "\n");
 	}
 
 	printf("%s", buffer);

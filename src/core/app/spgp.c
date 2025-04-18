@@ -399,7 +399,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->list_keys || command->list_secret_keys)
 	{
-		return spgp_list_keys(command);
+		return spgp_list_keys();
 	}
 
 	spgp_print_help();

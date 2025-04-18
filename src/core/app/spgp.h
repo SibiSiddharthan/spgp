@@ -164,7 +164,7 @@ uint32_t spgp_verify(spgp_command *command);
 uint32_t spgp_encrypt(spgp_command *command);
 uint32_t spgp_decrypt(spgp_command *command);
 
-uint32_t spgp_list_keys(spgp_command *command);
+uint32_t spgp_list_keys(void);
 uint32_t spgp_list_packets(spgp_command *command);
 
 uint32_t spgp_import_keys(spgp_command *command);
