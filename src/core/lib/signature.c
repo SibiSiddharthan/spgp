@@ -1398,6 +1398,24 @@ static void pgp_compute_text_hash(hash_ctx *hctx, void *data, size_t size)
 	}
 }
 
+static void pgp_compute_literal_hash(hash_ctx *hctx, pgp_literal_packet *literal)
+{
+	// Hash the data
+	hash_update(hctx, literal->data, literal->data_size);
+
+	// Hash the partials
+	if (literal->partials)
+	{
+		pgp_partial_packet *packet = NULL;
+
+		for (uint16_t i = 0; i < literal->partials->count; ++i)
+		{
+			packet = literal->partials->packets[i];
+			hash_update(hctx, packet->data, packet->header.body_size);
+		}
+	}
+}
+
 static void pgp_compute_uid_hash(hash_ctx *hctx, byte_t version, pgp_user_id_packet *uid)
 {
 	byte_t octet = 0xB4;
@@ -1486,8 +1504,7 @@ static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_k
 	pgp_compute_uid_hash(hctx, version, user);
 }
 
-static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *key, byte_t hash[64], uint32_t flags, void *data,
-								 size_t data_size)
+static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *key, byte_t hash[64], void *data)
 {
 	hash_ctx *hctx = NULL;
 
@@ -1549,10 +1566,10 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 	switch (packet->type)
 	{
 	case PGP_BINARY_SIGNATURE:
-		hash_update(hctx, data, data_size);
+		pgp_compute_literal_hash(hctx, data);
 		break;
 	case PGP_TEXT_SIGNATURE:
-		pgp_compute_text_hash(hctx, data, data_size);
+		pgp_compute_literal_hash(hctx, data);
 		break;
 	case PGP_STANDALONE_SIGNATURE:
 		// Nothing to hash here.
@@ -1577,7 +1594,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 		break;
 
 	case PGP_TIMESTAMP_SIGNATURE:
-		hash_update(hctx, data, data_size);
+		// hash_update(hctx, data, data_size); TODO
 		break;
 	}
 
@@ -1650,34 +1667,23 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 
 		if (packet->version == PGP_SIGNATURE_V5 && (packet->type == PGP_BINARY_SIGNATURE || packet->type == PGP_TEXT_SIGNATURE))
 		{
-			if (flags == 0)
+			pgp_literal_packet *literal = data;
+
+			// 1 octet content format
+			hash_update(hctx, &literal->format, 1);
+
+			// 1 octet file name length
+			hash_update(hctx, &literal->filename_size, 1);
+
+			// N octets of file name
+			if (literal->filename_size > 0)
 			{
-				// 1 octet content format
-
-				// 1 octet file name length
-
-				// N octets of file name
-
-				// 4 octets of data
+				hash_update(hctx, &literal->filename, literal->filename_size);
 			}
-			else if (flags == PGP_SIGNATURE_FLAG_DETACHED)
-			{
-				// 6 octets of zero
-				byte_t zero[6] = {0};
 
-				hash_update(hctx, zero, 6);
-				hashed_size += 6;
-			}
-			else if (flags == PGP_SIGNATURE_FLAG_CLEARTEXT)
-			{
-				// 1 octet of 't'
-				// 5 octets of zero
-				byte_t in[6] = {0};
-
-				in[0] = 't';
-				hash_update(hctx, in, 6);
-				hashed_size += 6;
-			}
+			// 4 octets of date
+			uint32_t date_be = BSWAP_32(literal->date);
+			hash_update(hctx, &date_be, 4);
 		}
 
 		// Stop counting the hashed size from here on
@@ -1762,7 +1768,7 @@ void pgp_signature_packet_delete(pgp_signature_packet *packet)
 	free(packet);
 }
 
-static void pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp)
+static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp)
 {
 	pgp_timestamp_subpacket *timestamp_subpacket = NULL;
 	pgp_key_fingerprint_subpacket *fingerprint_subpacket = NULL;
@@ -1783,7 +1789,7 @@ static void pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_ke
 		pgp_timestamp_subpacket_delete(timestamp_subpacket);
 		pgp_key_fingerprint_subpacket_delete(fingerprint_subpacket);
 
-		return;
+		return PGP_NO_MEMORY;
 	}
 
 	pgp_signature_packet_hashed_subpacket_add(packet, timestamp_subpacket);
@@ -1796,28 +1802,31 @@ static void pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_ke
 
 		if (key_id_subpacket == NULL)
 		{
-			return;
+			return PGP_NO_MEMORY;
 		}
 
 		pgp_signature_packet_unhashed_subpacket_add(packet, key_id_subpacket);
 	}
+
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
-								   uint32_t timestamp, void *data, size_t size)
+pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
+									  uint32_t timestamp, void *data)
 {
+	pgp_error_t error = 0;
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
 	if (pgp_hash_algorithm_validate(hash_algorithm) == 0)
 	{
-		return 0;
+		return PGP_INVALID_HASH_ALGORITHM;
 	}
 
 	// Incompatible signature and key versions
 	if (packet->version != key->version)
 	{
-		return 0;
+		return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_VERSION;
 	}
 
 	// Set the algorithms
@@ -1826,10 +1835,16 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 
 	if (packet->hashed_subpackets == NULL)
 	{
-		pgp_signature_packet_sign_setup(packet, key, timestamp);
+		error = pgp_signature_packet_sign_setup(packet, key, timestamp);
+
+		if (error != PGP_SUCCESS)
+		{
+			pgp_signature_packet_delete(packet);
+			return error;
+		}
 	}
 
-	hash_size = pgp_compute_hash(packet, key, hash, 0, data, size);
+	hash_size = pgp_compute_hash(packet, key, hash, data);
 
 	if (hash_size == 0)
 	{
@@ -1868,15 +1883,15 @@ uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet 
 	packet->signature_octets = get_signature_octets(packet->public_key_algorithm_id, packet->signature);
 	pgp_signature_packet_encode_header(packet);
 
-	return 0;
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data, size_t size)
+pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
 {
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
-	hash_size = pgp_compute_hash(packet, key, hash, 0, data, size);
+	hash_size = pgp_compute_hash(packet, key, hash, data);
 
 	if (hash_size == 0)
 	{
@@ -1958,8 +1973,43 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 	sign->version = version;
 	sign->type = type;
 
-	pgp_signature_packet_sign_setup(sign, key, timestamp);
-	pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, literal, 0);
+	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	// if (flags == 0)
+	//{
+	// }
+	// else if (flags == PGP_SIGNATURE_FLAG_DETACHED)
+	//{
+	//	// 6 octets of zero
+	//	byte_t zero[6] = {0};
+	//
+	//	hash_update(hctx, zero, 6);
+	//	hashed_size += 6;
+	//}
+	// else if (flags == PGP_SIGNATURE_FLAG_CLEARTEXT)
+	//{
+	//	// 1 octet of 't'
+	//	// 5 octets of zero
+	//	byte_t in[6] = {0};
+	//
+	//	in[0] = 't';
+	//	hash_update(hctx, in, 6);
+	//	hashed_size += 6;
+	//}
+
+	error = pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, literal);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
 
 	*packet = sign;
 
@@ -1982,7 +2032,7 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 		}
 	}
 
-	return pgp_signature_packet_verify(sign, key, literal, 0);
+	return pgp_signature_packet_verify(sign, key, literal);
 }
 
 static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer)

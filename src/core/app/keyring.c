@@ -281,7 +281,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 	key = pgp_key_packet_make_definition(key, sign);
 	spgp_write_key(primary_fingerprint, primary_fingerprint_size, key);
 
-	uint32_t result = pgp_signature_packet_verify(sign, key, uid, PGP_PACKET_OCTETS(uid->header));
+	uint32_t result = pgp_signature_packet_verify(sign, key, uid);
 	if (result == 1)
 	{
 		printf("Good Certification Signature.\n");
@@ -330,7 +330,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 			spgp_write_key(subkey_fingerprint, subkey_fingerprint_size, subkey);
 
-			uint32_t result = pgp_signature_packet_verify(subsign, key, subkey, PGP_PACKET_OCTETS(subkey->header));
+			uint32_t result = pgp_signature_packet_verify(subsign, key, subkey);
 			if (result == 1)
 			{
 				printf("Good Subkey Binding Signature.\n");

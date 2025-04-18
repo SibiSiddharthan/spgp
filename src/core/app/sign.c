@@ -87,7 +87,7 @@ uint32_t spgp_sign(spgp_command *command)
 
 	pgp_signature_packet_new(&sign, PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE);
 
-	pgp_signature_packet_sign(sign, key, PGP_SHA2_256, time(NULL), buffer, size);
+	// pgp_signature_packet_sign(sign, key, PGP_SHA2_256, time(NULL), buffer, size);
 	spgp_write_pgp_packet(command->output, SPGP_STD_OUTPUT, sign);
 
 	free(buffer);
@@ -135,9 +135,9 @@ uint32_t spgp_verify(spgp_command *command)
 		exit(1);
 	}
 
-	uint32_t result = pgp_signature_packet_verify(sign, key, buffer, size);
+	// uint32_t result = pgp_signature_packet_verify(sign, key, buffer, size);
 
-	printf("%s\n", result == 1 ? "Good Signature" : "Bad Signature");
+	// printf("%s\n", result == 1 ? "Good Signature" : "Bad Signature");
 
 	free(buffer);
 
