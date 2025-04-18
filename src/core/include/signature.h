@@ -100,6 +100,8 @@ typedef enum _pgp_revocation_code
 #define PGP_KEY_SERVER_NO_MODIFY 0x80       // The key can only be modified by the keyholder or an administrator of the key server
 #define PGP_NOTATION_DATA_UTF8   0x80000000 // Notation value is UTF-8 text
 
+#define PGP_KEY_SERVER_FLAGS_MASK 0x80
+
 // Key Flags
 // First Octet
 #define PGP_KEY_FLAG_CERTIFY         0x01 // This key may be used to make User ID certifications or Direct Key signatures over other keys
@@ -114,6 +116,9 @@ typedef enum _pgp_revocation_code
 #define PGP_KEY_FLAG_ENCRYPT   0x04 // This key may be used to encrypt communications or storage
 #define PGP_KEY_FLAG_TIMESTAMP 0x08 // This key may be used for timestamping
 
+#define PGP_KEY_FLAG_FIRST_OCTET_MASK  0xBF
+#define PGP_KEY_FLAG_SECOND_OCTET_MASK 0x0C
+
 // Feature Flags
 // LibrePGP
 #define PGP_FEATURE_MDC    0x01 // Modification Detection (packets 18 and 19)
@@ -123,6 +128,8 @@ typedef enum _pgp_revocation_code
 // OpenPGP
 #define PGP_FEATURE_SEIPD_V1 0x01 // Version 1 Symmetrically Encrypted and Integrity Protected Data packet
 #define PGP_FEATURE_SEIPD_V2 0x08 // Version 2 Symmetrically Encrypted and Integrity Protected Data packet
+
+#define PGP_FEATURE_FLAG_MASK 0x0F
 
 // Revocation Class
 #define PGP_REVOCATION_CLASS_SENSITIVE 0x40
@@ -199,7 +206,7 @@ typedef struct _pgp_flags_subpacket
 {
 	pgp_subpacket_header header;
 	byte_t flags[1];
-} pgp_key_server_preferences_subpacket, pgp_key_flags_subpacket, pgp_features_subpacket;
+} pgp_flags_subpacket, pgp_key_server_preferences_subpacket, pgp_key_flags_subpacket, pgp_features_subpacket;
 
 typedef struct _pgp_string_subpacket
 {
@@ -322,9 +329,10 @@ pgp_signature_packet *pgp_generate_certificate_signature(pgp_key_packet *key, by
 														 pgp_hash_algorithms hash_algorithm, uint32_t timestamp, void *user);
 uint32_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
 
-pgp_signature_packet *pgp_generate_subkey_binding_signature(pgp_key_packet *key, byte_t version, byte_t type,
-															pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_key_packet *subkey);
-uint32_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
+pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t version,
+											   byte_t type, pgp_hash_algorithms hash_algorithm, uint32_t timestamp, uint32_t expiry,
+											   uint32_t flags);
+pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
 
 pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
@@ -341,6 +349,9 @@ void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpack
 
 pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE]);
 void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
+
+pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags);
+void pgp_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket);
 
 pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);
 void pgp_rsa_signature_delete(pgp_rsa_signature *sign);

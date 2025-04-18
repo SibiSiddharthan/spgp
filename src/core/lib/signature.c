@@ -1547,11 +1547,14 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 		break;
 
 	case PGP_SUBKEY_BINDING_SIGNATURE:
-	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
 		pgp_key_hash(hctx, key);  // Primary key
 		pgp_key_hash(hctx, data); // Subkey
 		break;
+
+	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
+		pgp_key_hash(hctx, data); // Primary key
+		pgp_key_hash(hctx, key);  // Subkey
 
 	case PGP_KEY_REVOCATION_SIGNATURE:
 		pgp_key_hash(hctx, key); // Primary key
@@ -1793,6 +1796,16 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 		return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_VERSION;
 	}
 
+	if ((key->capabilities & PGP_KEY_FLAG_SIGN) == 0)
+	{
+		return PGP_UNUSABLE_KEY_FOR_SIGNING;
+	}
+
+	if (key->encrypted != NULL)
+	{
+		return PGP_KEY_NOT_DECRYPTED;
+	}
+
 	// Set the algorithms
 	packet->public_key_algorithm_id = key->public_key_algorithm_id;
 	packet->hash_algorithm_id = hash_algorithm;
@@ -1854,6 +1867,11 @@ pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_pa
 {
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
+
+	if ((key->capabilities & PGP_KEY_FLAG_SIGN) == 0)
+	{
+		return PGP_UNUSABLE_KEY_FOR_SIGNING;
+	}
 
 	hash_size = pgp_compute_hash(packet, key, hash, data);
 
@@ -1917,16 +1935,6 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		{
 			return PGP_INVALID_LITERAL_PACKET_FORMAT_FOR_TEXT_SIGNATURE;
 		}
-	}
-
-	if ((key->capabilities & PGP_KEY_FLAG_SIGN) == 0)
-	{
-		return PGP_UNUSABLE_KEY_FOR_SIGNING;
-	}
-
-	if (key->encrypted != NULL)
-	{
-		return PGP_KEY_NOT_DECRYPTED;
 	}
 
 	sign = malloc(sizeof(pgp_signature_packet));
@@ -2007,6 +2015,98 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 	}
 
 	return pgp_signature_packet_verify(sign, key, literal);
+}
+
+pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t version,
+											   byte_t type, pgp_hash_algorithms hash_algorithm, uint32_t timestamp, uint32_t expiry,
+											   uint32_t flags)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
+	{
+		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
+	}
+
+	if (type != PGP_SUBKEY_BINDING_SIGNATURE && type != PGP_PRIMARY_KEY_BINDING_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = version;
+	sign->type = type;
+
+	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	if (type == PGP_SUBKEY_BINDING_SIGNATURE)
+	{
+		pgp_key_flags_subpacket *flags_subpacket = NULL;
+		pgp_key_expiration_time_subpacket *expiry_subpacket = NULL;
+
+		// Add key flags subpacket
+		flags_subpacket = pgp_flags_subpacket_new(PGP_KEY_FLAGS_SUBPACKET, flags);
+
+		// Add key expiration subpacket
+		expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, expiry);
+
+		if (flags_subpacket == NULL || expiry_subpacket == NULL)
+		{
+			free(flags_subpacket);
+			free(expiry_subpacket);
+
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(sign, flags_subpacket);
+		pgp_signature_packet_hashed_subpacket_add(sign, expiry_subpacket);
+
+		error = pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, subkey);
+	}
+	else
+	{
+		error = pgp_signature_packet_sign(sign, subkey, hash_algorithm, timestamp, key);
+	}
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey)
+{
+	if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
+	{
+		return pgp_signature_packet_verify(sign, key, subkey);
+	}
+
+	if (sign->type == PGP_PRIMARY_KEY_BINDING_SIGNATURE)
+	{
+		return pgp_signature_packet_verify(sign, subkey, key);
+	}
+
+	return PGP_INCORRECT_FUNCTION;
 }
 
 static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer)
@@ -2402,6 +2502,60 @@ pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_K
 }
 
 void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags)
+{
+	pgp_flags_subpacket *subpacket = NULL;
+
+	if (tag != PGP_KEY_FLAGS_SUBPACKET && tag != PGP_FEATURES_SUBPACKET && tag != PGP_KEY_SERVER_PREFERENCES_SUBPACKET)
+	{
+		return NULL;
+	}
+
+	// Allocate for 4 bytes of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + 4);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 4);
+
+	if (tag == PGP_KEY_FLAGS_SUBPACKET)
+	{
+		subpacket->flags[0] = flags & PGP_KEY_FLAG_FIRST_OCTET_MASK;
+
+		if ((flags >> 8) == 0)
+		{
+			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 0, 1);
+		}
+		else
+		{
+			subpacket->flags[1] = (flags >> 8) & PGP_KEY_FLAG_SECOND_OCTET_MASK;
+			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 0, 2);
+		}
+	}
+
+	if (tag == PGP_FEATURES_SUBPACKET)
+	{
+		subpacket->flags[0] = flags & PGP_FEATURE_FLAG_MASK;
+		subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, 1);
+	}
+
+	if (tag == PGP_KEY_SERVER_PREFERENCES_SUBPACKET)
+	{
+		subpacket->flags[0] = flags & PGP_KEY_SERVER_FLAGS_MASK;
+		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
+	}
+
+	return subpacket;
+}
+
+void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
 {
 	free(subpacket);
 }
