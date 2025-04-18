@@ -2062,19 +2062,29 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 		// Add key flags subpacket
 		flags_subpacket = pgp_flags_subpacket_new(PGP_KEY_FLAGS_SUBPACKET, flags);
 
-		// Add key expiration subpacket
-		expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, expiry);
-
-		if (flags_subpacket == NULL || expiry_subpacket == NULL)
+		if (flags_subpacket == NULL)
 		{
-			free(flags_subpacket);
-			free(expiry_subpacket);
-
+			pgp_signature_packet_delete(sign);
 			return PGP_NO_MEMORY;
 		}
 
 		pgp_signature_packet_hashed_subpacket_add(sign, flags_subpacket);
-		pgp_signature_packet_hashed_subpacket_add(sign, expiry_subpacket);
+
+		// Add key expiration subpacket
+		if (expiry > 0)
+		{
+			expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, expiry);
+
+			if (expiry_subpacket == NULL)
+			{
+				free(flags_subpacket);
+				pgp_signature_packet_delete(sign);
+
+				return PGP_NO_MEMORY;
+			}
+
+			pgp_signature_packet_hashed_subpacket_add(sign, expiry_subpacket);
+		}
 
 		error = pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, subkey);
 	}
