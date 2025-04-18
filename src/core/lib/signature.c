@@ -1717,33 +1717,35 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 	return hctx->hash_size;
 }
 
-pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type)
+pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type)
 {
-	pgp_signature_packet *packet = NULL;
+	pgp_signature_packet *sign = NULL;
 
 	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
 	{
-		return NULL;
+		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
 	}
 
 	if (pgp_signature_type_validate(type) == 0)
 	{
-		return NULL;
+		return PGP_INVALID_SIGNATURE_TYPE;
 	}
 
-	packet = malloc(sizeof(pgp_signature_packet));
+	sign = malloc(sizeof(pgp_signature_packet));
 
 	if (packet == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_signature_packet));
+	memset(sign, 0, sizeof(pgp_signature_packet));
 
-	packet->version = version;
-	packet->type = type;
+	sign->version = version;
+	sign->type = type;
 
-	return packet;
+	*packet = sign;
+
+	return PGP_SUCCESS;
 }
 
 void pgp_signature_packet_delete(pgp_signature_packet *packet)

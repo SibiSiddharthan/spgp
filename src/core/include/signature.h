@@ -335,7 +335,7 @@ typedef struct _signature_data
 
 } signature_data;
 
-pgp_signature_packet *pgp_signature_packet_new(byte_t version, byte_t type);
+pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
 uint32_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
