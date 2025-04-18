@@ -1362,42 +1362,6 @@ static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, 
 	return pos;
 }
 
-#define PGP_SIGNATURE_FLAG_DETACHED  0x1
-#define PGP_SIGNATURE_FLAG_CLEARTEXT 0x2
-
-static void pgp_compute_text_hash(hash_ctx *hctx, void *data, size_t size)
-{
-	byte_t *in = data;
-	size_t start = 0;
-
-	for (size_t i = 0; i < size; ++i)
-	{
-		// Edge case
-		if (i == 0)
-		{
-			if (in[i] == '\n')
-			{
-				hash_update(hctx, "\r\n", 2);
-				start = i + 1;
-				continue;
-			}
-		}
-
-		if (in[i] == '\n' && in[i - 1] != '\r')
-		{
-			hash_update(hctx, PTR_OFFSET(data, start), i - start + 1);
-			hash_update(hctx, "\r\n", 2);
-			start = i + 1;
-		}
-	}
-
-	// Last bits
-	if (start < size)
-	{
-		hash_update(hctx, PTR_OFFSET(data, start), size - start);
-	}
-}
-
 static void pgp_compute_literal_hash(hash_ctx *hctx, pgp_literal_packet *literal)
 {
 	// Hash the data
@@ -1926,11 +1890,15 @@ pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_pa
 	return 0;
 }
 
-pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type,
+pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type, byte_t flags,
 											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal)
 {
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
+
+	byte_t format_copy = 0;
+	byte_t filename_size_copy = 0;
+	uint32_t date_copy = 0;
 
 	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
 	{
@@ -1981,29 +1949,35 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		return error;
 	}
 
-	// if (flags == 0)
-	//{
-	// }
-	// else if (flags == PGP_SIGNATURE_FLAG_DETACHED)
-	//{
-	//	// 6 octets of zero
-	//	byte_t zero[6] = {0};
-	//
-	//	hash_update(hctx, zero, 6);
-	//	hashed_size += 6;
-	//}
-	// else if (flags == PGP_SIGNATURE_FLAG_CLEARTEXT)
-	//{
-	//	// 1 octet of 't'
-	//	// 5 octets of zero
-	//	byte_t in[6] = {0};
-	//
-	//	in[0] = 't';
-	//	hash_update(hctx, in, 6);
-	//	hashed_size += 6;
-	//}
+	// If these flags are set modify the literal packet
+	// Make a copy of the literal fields
+	format_copy = literal->format;
+	filename_size_copy = literal->filename_size;
+	date_copy = literal->date;
+
+	if (flags == PGP_SIGNATURE_FLAG_DETACHED)
+	{
+		// 6 octets of zero
+		literal->format = 0;
+		literal->filename_size = 0;
+		literal->date = 0;
+	}
+
+	if (flags == PGP_SIGNATURE_FLAG_CLEARTEXT)
+	{
+		// 1 octet of 't'
+		// 5 octets of zero
+		literal->format = PGP_LITERAL_DATA_TEXT;
+		literal->filename_size = 0;
+		literal->date = 0;
+	}
 
 	error = pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, literal);
+
+	// Restore the fields
+	literal->format = format_copy;
+	literal->filename_size = filename_size_copy;
+	literal->date = date_copy;
 
 	if (error != PGP_SUCCESS)
 	{

@@ -304,36 +304,8 @@ typedef struct _pgp_ed448_signature
 	byte_t sig[114];
 } pgp_ed448_signature;
 
-typedef struct _signature_data
-{
-	union
-	{
-		struct
-		{
-			void *data;
-			size_t data_size;
-
-			// For V5 signatures
-			void *literal; // Literal packet
-		} document;
-
-		struct
-		{
-			void *user; // UID or UAT packet
-		} certification;
-
-		struct
-		{
-			void *key; // Key packet
-		} binding;
-
-		struct
-		{
-			void *key; // Key packet
-		} revocation;
-	};
-
-} signature_data;
+#define PGP_SIGNATURE_FLAG_DETACHED  0x1
+#define PGP_SIGNATURE_FLAG_CLEARTEXT 0x2
 
 pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
@@ -342,7 +314,7 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 									  uint32_t timestamp, void *data);
 pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
 
-pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type,
+pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type, byte_t flags,
 											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal);
 pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
 
