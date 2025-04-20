@@ -710,14 +710,15 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	{
 		pgp_notation_data_subpacket *notation_subpacket = NULL;
 
-		notation_subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket) + (header.body_size - 8));
+		notation_subpacket = malloc(sizeof(pgp_notation_data_subpacket) + (header.body_size - 8));
 
 		if (notation_subpacket == NULL)
 		{
 			return PGP_NO_MEMORY;
 		}
 
-		memset(notation_subpacket, 0, sizeof(pgp_issuer_key_id_subpacket) + (header.body_size - 8));
+		memset(notation_subpacket, 0, sizeof(pgp_notation_data_subpacket) + (header.body_size - 8));
+		notation_subpacket->data = PTR_OFFSET(notation_subpacket, sizeof(pgp_notation_data_subpacket));
 
 		// Copy the header
 		notation_subpacket->header = header;
@@ -742,16 +743,16 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
 	{
 		pgp_reason_for_revocation_subpacket *revocation_reason_subpacket = NULL;
+		uint32_t reason_size = header.body_size - 1;
 
-		revocation_reason_subpacket = malloc(sizeof(pgp_reason_for_revocation_subpacket) + header.body_size);
+		revocation_reason_subpacket = malloc(sizeof(pgp_reason_for_revocation_subpacket) + reason_size);
 
 		if (revocation_reason_subpacket == NULL)
 		{
 			return PGP_NO_MEMORY;
 		}
 
-		memset(revocation_reason_subpacket, 0, sizeof(pgp_reason_for_revocation_subpacket) + header.body_size);
-		revocation_reason_subpacket->reason = PTR_OFFSET(revocation_reason_subpacket, sizeof(pgp_reason_for_revocation_subpacket));
+		memset(revocation_reason_subpacket, 0, sizeof(pgp_reason_for_revocation_subpacket) + reason_size);
 
 		// Copy the header
 		revocation_reason_subpacket->header = header;
@@ -760,7 +761,12 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		CHECK_READ(read8(buffer, &revocation_reason_subpacket->code), PGP_MALFORMED_REASON_FOR_REVOCATION_SUBPACKET);
 
 		// N octets of reason
-		CHECK_READ(readn(buffer, revocation_reason_subpacket->reason, header.body_size - 1), PGP_MALFORMED_REASON_FOR_REVOCATION_SUBPACKET);
+		if (reason_size > 0)
+		{
+			revocation_reason_subpacket->reason = PTR_OFFSET(revocation_reason_subpacket, sizeof(pgp_reason_for_revocation_subpacket));
+			memcpy(revocation_reason_subpacket->reason, buffer->data + buffer->pos, reason_size);
+			buffer->pos += reason_size;
+		}
 
 		*subpacket = revocation_reason_subpacket;
 
