@@ -1245,7 +1245,24 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
 	{
 		pgp_signature_expiry_time_subpacket *timestamp_subpacket = subpacket;
-		pos += print_timestamp(indent + 1, "Expiry Time", timestamp_subpacket->timestamp, PTR_OFFSET(str, pos), size - pos);
+		uint32_t expiry_seconds = timestamp_subpacket->duration;
+
+		if (expiry_seconds == 0)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Expiry Time: Never\n");
+		}
+		else if ((expiry_seconds % 31536000) == 0)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Expiry Time: %u years\n", expiry_seconds / 31536000);
+		}
+		else if ((expiry_seconds % 86400) == 0)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Expiry Time: %u days\n", expiry_seconds / 86400);
+		}
+		else
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Expiry Time: %u seconds\n", expiry_seconds);
+		}
 	}
 	break;
 	case PGP_EXPORTABLE_SUBPACKET:
@@ -1277,7 +1294,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
 	{
 		pgp_key_expiration_time_subpacket *timestamp_subpacket = subpacket;
-		uint32_t expiry_seconds = timestamp_subpacket->timestamp;
+		uint32_t expiry_seconds = timestamp_subpacket->duration;
 
 		if (expiry_seconds == 0)
 		{

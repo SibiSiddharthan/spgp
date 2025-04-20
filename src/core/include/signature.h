@@ -186,7 +186,13 @@ typedef struct _pgp_one_pass_signature_packet
 typedef struct _pgp_timestamp_subpacket
 {
 	pgp_subpacket_header header;
-	uint32_t timestamp;
+
+	union
+	{
+		uint32_t timestamp;
+		uint32_t duration;
+	};
+
 } pgp_timestamp_subpacket, pgp_signature_creation_time_subpacket, pgp_signature_expiry_time_subpacket, pgp_key_expiration_time_subpacket;
 
 typedef struct _pgp_boolean_subpacket
