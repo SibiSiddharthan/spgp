@@ -473,7 +473,7 @@ static size_t print_capabilities(pgp_key_packet *key, void *str, size_t size)
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "S");
 	}
 
-	if (key->capabilities & PGP_KEY_FLAG_ENCRYPT)
+	if (key->capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "E");
 	}

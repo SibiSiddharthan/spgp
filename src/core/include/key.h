@@ -47,6 +47,7 @@ typedef struct _pgp_key_packet
 	byte_t version; // 3, 4, 5, 6
 	byte_t type;
 	byte_t capabilities;
+	byte_t flags;
 
 	uint32_t key_creation_time;
 

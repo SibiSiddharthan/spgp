@@ -113,8 +113,8 @@ typedef enum _pgp_revocation_code
 #define PGP_KEY_FLAG_PRIVATE_SHARED  0x80 // The private component of this key may be in the possession of more than one person
 
 // Second Octet
-#define PGP_KEY_FLAG_ENCRYPT   0x04 // This key may be used to encrypt communications or storage
-#define PGP_KEY_FLAG_TIMESTAMP 0x08 // This key may be used for timestamping
+#define PGP_KEY_FLAG_RESTRICTED_ENCRYPT 0x04 // This key may be used to encrypt communications or storage
+#define PGP_KEY_FLAG_TIMESTAMP          0x08 // This key may be used for timestamping
 
 #define PGP_KEY_FLAG_FIRST_OCTET_MASK  0xBF
 #define PGP_KEY_FLAG_SECOND_OCTET_MASK 0x0C

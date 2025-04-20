@@ -78,7 +78,7 @@ static void parse_algorithm(pgp_key_specfication *spec, byte_t *in, byte_t lengt
 		}
 	}
 
-	if (length = 8)
+	if (length == 8)
 	{
 		if (memcmp(in, "nistp256", 5) == 0)
 		{
@@ -102,7 +102,7 @@ static void parse_algorithm(pgp_key_specfication *spec, byte_t *in, byte_t lengt
 		}
 	}
 
-	if (length = 15)
+	if (length == 15)
 	{
 		if (memcmp(in, "brainpoolP256r1", 15) == 0)
 		{
@@ -154,7 +154,7 @@ static void parse_capabilities(pgp_key_specfication *spec, byte_t *in, byte_t le
 		}
 		if (TO_UPPER(in[i]) == 'E')
 		{
-			spec->flags |= PGP_KEY_FLAG_ENCRYPT;
+			spec->flags |= (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE);
 		}
 		if (TO_UPPER(in[i]) == 'A')
 		{

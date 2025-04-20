@@ -2722,27 +2722,13 @@ static void pgp_key_packet_process_signature_subpacket(pgp_key_packet *key, void
 		pgp_key_flags_subpacket *flags_subpacket = subpacket;
 		byte_t count = flags_subpacket->header.body_size;
 
-		for (byte_t j = 0; j < count; ++j)
+		switch (count)
 		{
-			if (flags_subpacket->flags[j] & PGP_KEY_FLAG_CERTIFY)
-			{
-				key->capabilities |= PGP_KEY_FLAG_CERTIFY;
-			}
-
-			if (flags_subpacket->flags[j] & PGP_KEY_FLAG_SIGN)
-			{
-				key->capabilities |= PGP_KEY_FLAG_SIGN;
-			}
-
-			if (flags_subpacket->flags[j] & PGP_KEY_FLAG_AUTHENTICATION)
-			{
-				key->capabilities |= PGP_KEY_FLAG_AUTHENTICATION;
-			}
-
-			if (flags_subpacket->flags[j] & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
-			{
-				key->capabilities |= PGP_KEY_FLAG_ENCRYPT;
-			}
+		case 2:
+			key->flags = flags_subpacket->flags[1] & PGP_KEY_FLAG_SECOND_OCTET_MASK;
+		case 1:
+			key->capabilities = flags_subpacket->flags[0] & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_ENCRYPT_COM |
+															 PGP_KEY_FLAG_ENCRYPT_STORAGE | PGP_KEY_FLAG_AUTHENTICATION);
 		}
 	}
 }

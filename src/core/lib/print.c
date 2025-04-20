@@ -1455,9 +1455,9 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 			// Second Octet
 			if (i == 1)
 			{
-				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_ENCRYPT)
+				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_RESTRICTED_ENCRYPT)
 				{
-					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Encryption Key (0x04)\n");
+					pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Restricted Encryption Key (0x04)\n");
 				}
 				if (key_flags_subpacket->flags[i] & PGP_KEY_FLAG_TIMESTAMP)
 				{
@@ -2296,7 +2296,7 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 	{
 		strncat(buffer, "Sign ", 5);
 	}
-	if (packet->capabilities & PGP_KEY_FLAG_ENCRYPT)
+	if (packet->capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
 	{
 		strncat(buffer, "Encrypt ", 8);
 	}
