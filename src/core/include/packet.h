@@ -54,6 +54,7 @@ typedef struct _pgp_packet_header
 	byte_t tag;
 	byte_t header_size;
 	byte_t partial;
+	byte_t critical;
 	uint16_t error;
 	size_t body_size;
 } pgp_packet_header, pgp_subpacket_header, pgp_partial_header;

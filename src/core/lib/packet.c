@@ -148,6 +148,7 @@ pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critica
 
 	header.tag = type | ((set_critical & 0x1) << 7);
 	header.body_size = body_size;
+	header.critical = set_critical;
 
 	total_size = body_size + 1; // Include tag
 
@@ -500,6 +501,12 @@ pgp_error_t pgp_subpacket_header_read(pgp_subpacket_header *header, void *data, 
 	// 1 octet subpacket type
 	header->tag = in[header->header_size - 1];
 	header->body_size -= 1; // Exclude the subpacket tag
+
+	// Set the critical bit
+	if ((header->tag >> 7) == 1)
+	{
+		header->critical = 1;
+	}
 
 	return PGP_SUCCESS;
 }

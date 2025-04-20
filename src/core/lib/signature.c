@@ -871,7 +871,14 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	break;
 	default:
 	{
-		pgp_unknown_subpacket *unknown = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
+		pgp_unknown_subpacket *unknown = NULL;
+
+		if (header.critical)
+		{
+			return PGP_UNKNOWN_CRITICAL_SUBPACKET;
+		}
+
+		unknown = malloc(sizeof(pgp_unknown_subpacket) + header.body_size);
 
 		if (unknown == NULL)
 		{
