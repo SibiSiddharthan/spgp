@@ -2725,10 +2725,11 @@ static void pgp_key_packet_process_signature_subpacket(pgp_key_packet *key, void
 		switch (count)
 		{
 		case 2:
-			key->flags = flags_subpacket->flags[1] & PGP_KEY_FLAG_SECOND_OCTET_MASK;
+			key->flags |= flags_subpacket->flags[1] & (PGP_KEY_FLAG_RESTRICTED_ENCRYPT | PGP_KEY_FLAG_TIMESTAMP);
 		case 1:
-			key->capabilities = flags_subpacket->flags[0] & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_ENCRYPT_COM |
-															 PGP_KEY_FLAG_ENCRYPT_STORAGE | PGP_KEY_FLAG_AUTHENTICATION);
+			key->capabilities |= flags_subpacket->flags[0] & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_ENCRYPT_COM |
+															  PGP_KEY_FLAG_ENCRYPT_STORAGE | PGP_KEY_FLAG_AUTHENTICATION);
+			key->flags |= flags_subpacket->flags[0] & (PGP_KEY_FLAG_PRIVATE_SPLIT | PGP_KEY_FLAG_PRIVATE_SHARED);
 		}
 	}
 }
