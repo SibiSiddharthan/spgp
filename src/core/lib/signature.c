@@ -1915,7 +1915,7 @@ pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_pa
 	return 0;
 }
 
-pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type, byte_t flags,
+pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type, byte_t flags,
 											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal)
 {
 	pgp_error_t error = 0;
@@ -1924,11 +1924,6 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 	byte_t format_copy = 0;
 	byte_t filename_size_copy = 0;
 	uint32_t date_copy = 0;
-
-	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
-	{
-		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
-	}
 
 	if (type != PGP_BINARY_SIGNATURE && type != PGP_TEXT_SIGNATURE)
 	{
@@ -1953,7 +1948,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 
 	memset(sign, 0, sizeof(pgp_signature_packet));
 
-	sign->version = version;
+	sign->version = key->version;
 	sign->type = type;
 
 	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
@@ -2150,19 +2145,14 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, uint32_t expiry,
-											   key_preferences *preferences, void *user)
+pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, key_preferences *preferences,
+											   void *user)
 {
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
 	pgp_key_expiration_time_subpacket *expiry_subpacket = NULL;
 	pgp_packet_header *header = user;
-
-	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
-	{
-		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
-	}
 
 	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
 	{
@@ -2184,7 +2174,7 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 
 	memset(sign, 0, sizeof(pgp_signature_packet));
 
-	sign->version = version;
+	sign->version = key->version;
 	sign->type = type;
 
 	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
@@ -2196,9 +2186,9 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 	}
 
 	// Add key expiration subpacket
-	if (expiry > 0)
+	if (key->key_expiry_seconds > 0)
 	{
-		expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, expiry);
+		expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, key->key_expiry_seconds);
 
 		if (expiry_subpacket == NULL)
 		{
@@ -2248,17 +2238,11 @@ pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key
 	return pgp_signature_packet_verify(sign, key, user);
 }
 
-pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t version,
-											   byte_t type, pgp_hash_algorithms hash_algorithm, uint32_t timestamp, uint32_t expiry,
-											   uint32_t flags)
+pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t type,
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp)
 {
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
-
-	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
-	{
-		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
-	}
 
 	if (type != PGP_SUBKEY_BINDING_SIGNATURE && type != PGP_PRIMARY_KEY_BINDING_SIGNATURE)
 	{
@@ -2274,7 +2258,7 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 
 	memset(sign, 0, sizeof(pgp_signature_packet));
 
-	sign->version = version;
+	sign->version = key->version;
 	sign->type = type;
 
 	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
@@ -2291,7 +2275,7 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 		pgp_key_expiration_time_subpacket *expiry_subpacket = NULL;
 
 		// Add key flags subpacket
-		flags_subpacket = pgp_flags_subpacket_new(PGP_KEY_FLAGS_SUBPACKET, flags);
+		flags_subpacket = pgp_flags_subpacket_new(PGP_KEY_FLAGS_SUBPACKET, key->capabilities);
 
 		if (flags_subpacket == NULL)
 		{
@@ -2302,9 +2286,9 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 		pgp_signature_packet_hashed_subpacket_add(sign, flags_subpacket);
 
 		// Add key expiration subpacket
-		if (expiry > 0)
+		if (key->key_expiry_seconds > 0)
 		{
-			expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, expiry);
+			expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, key->key_expiry_seconds);
 
 			if (expiry_subpacket == NULL)
 			{
