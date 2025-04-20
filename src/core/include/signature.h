@@ -336,8 +336,8 @@ typedef struct _key_preferences
 pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
-pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
-									  uint32_t timestamp, void *data);
+pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm, void *salt,
+									  byte_t size, void *data);
 pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
 
 pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type, byte_t flags,

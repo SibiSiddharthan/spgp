@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 static byte_t pgp_signature_type_validate(pgp_signature_type type)
 {
@@ -1785,8 +1786,8 @@ static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet,
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm,
-									  uint32_t timestamp, void *data)
+pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm, void *salt,
+									  byte_t size, void *data)
 {
 	pgp_error_t error = 0;
 	byte_t hash_size = 0;
@@ -1817,9 +1818,33 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 	packet->public_key_algorithm_id = key->public_key_algorithm_id;
 	packet->hash_algorithm_id = hash_algorithm;
 
+	if (packet->version == PGP_SIGNATURE_V6)
+	{
+		if (size > 32)
+		{
+			return PGP_SIGNATURE_SALT_TOO_BIG;
+		}
+
+		// Generate 32 bytes of salt
+		if (salt == NULL || size == 0)
+		{
+			packet->salt_size = pgp_rand(packet->salt, 32);
+
+			if (packet->salt_size == 0)
+			{
+				return PGP_RAND_ERROR;
+			}
+		}
+		else
+		{
+			memcpy(packet->salt, salt, size);
+			packet->salt_size = size;
+		}
+	}
+
 	if (packet->hashed_subpackets == NULL)
 	{
-		error = pgp_signature_packet_sign_setup(packet, key, timestamp);
+		error = pgp_signature_packet_sign_setup(packet, key, time(NULL));
 
 		if (error != PGP_SUCCESS)
 		{
@@ -1982,7 +2007,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		literal->date = 0;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, literal);
+	error = pgp_signature_packet_sign(sign, key, hash_algorithm, NULL, 0, literal);
 
 	// Restore the fields
 	literal->format = format_copy;
@@ -2207,7 +2232,7 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 		return error;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, user);
+	error = pgp_signature_packet_sign(sign, key, hash_algorithm, NULL, 0, user);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -2301,11 +2326,11 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 			pgp_signature_packet_hashed_subpacket_add(sign, expiry_subpacket);
 		}
 
-		error = pgp_signature_packet_sign(sign, key, hash_algorithm, timestamp, subkey);
+		error = pgp_signature_packet_sign(sign, key, hash_algorithm, NULL, 0, subkey);
 	}
 	else
 	{
-		error = pgp_signature_packet_sign(sign, subkey, hash_algorithm, timestamp, key);
+		error = pgp_signature_packet_sign(sign, subkey, hash_algorithm, NULL, 0, key);
 	}
 
 	if (error != PGP_SUCCESS)
