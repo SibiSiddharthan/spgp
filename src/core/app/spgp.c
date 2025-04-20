@@ -397,6 +397,11 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 		return spgp_import_keys(command);
 	}
 
+	if (command->generate_key)
+	{
+		return spgp_generate_key();
+	}
+
 	if (command->list_keys || command->list_secret_keys)
 	{
 		return spgp_list_keys();
@@ -482,6 +487,15 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		case SPGP_OPTION_IMPORT_KEYS:
 			command->need_home = 1;
 			command->import_keys = 1;
+			break;
+
+		case SPGP_OPTION_GENERATE_KEY:
+			command->need_home = 1;
+			command->generate_key = 1;
+			break;
+		case SPGP_OPTION_FULL_GENERATE_KEY:
+			command->need_home = 1;
+			command->full_generate_key = 1;
 			break;
 
 		// Packet Commands

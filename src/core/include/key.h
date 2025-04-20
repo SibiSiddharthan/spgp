@@ -77,6 +77,26 @@ typedef struct _pgp_key_packet
 
 } pgp_key_packet;
 
+typedef struct _pgp_key_specfication
+{
+	byte_t algorithm;
+	byte_t flags;
+
+	uint32_t expiry;
+
+	union
+	{
+		uint16_t bits;
+
+		struct
+		{
+			byte_t curve;
+			byte_t legacy;
+		};
+	};
+
+} pgp_key_specfication;
+
 typedef struct _pgp_rsa_key
 {
 	// Public
