@@ -459,7 +459,7 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
-		struct _pgp_preferred_algorithm_subpacket *preferred_algorithm_subpacket = NULL;
+		struct _pgp_preferred_algorithms_subpacket *preferred_algorithm_subpacket = NULL;
 		pgp_error_t error = 0;
 
 		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET)
@@ -946,7 +946,7 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
-		struct _pgp_preferred_algorithm_subpacket *preferred_algorithm_subpacket = subpacket;
+		struct _pgp_preferred_algorithms_subpacket *preferred_algorithm_subpacket = subpacket;
 
 		// N octets of algorithms
 		memcpy(out + pos, preferred_algorithm_subpacket->preferred_algorithms, preferred_algorithm_subpacket->header.body_size);
@@ -2019,6 +2019,127 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 
 static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_preferences *preferences)
 {
+	// Add preferences
+	if (preferences->cipher_algorithm_preferences_count > 0)
+	{
+		pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+		subpacket = pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET,
+														   preferences->cipher_algorithm_preferences_count,
+														   preferences->cipher_algorithm_preferences);
+
+		if (subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+	}
+
+	if (preferences->hash_algorithm_preferences_count > 0)
+	{
+		pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+		subpacket =
+			pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, preferences->hash_algorithm_preferences_count,
+												   preferences->hash_algorithm_preferences);
+
+		if (subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+	}
+
+	if (preferences->compression_algorithm_preferences_count > 0)
+	{
+		pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+		subpacket = pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET,
+														   preferences->compression_algorithm_preferences_count,
+														   preferences->compression_algorithm_preferences);
+
+		if (subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+	}
+
+	if (preferences->cipher_modes_preferences_count > 0)
+	{
+		pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+		subpacket = pgp_preferred_algorithms_subpacket_new(
+			PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET, preferences->cipher_modes_preferences_count, preferences->cipher_modes_preferences);
+
+		if (subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+	}
+
+	if (preferences->aead_algorithm_preferences_count > 0)
+	{
+		pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+		subpacket =
+			pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, preferences->aead_algorithm_preferences_count,
+												   preferences->aead_algorithm_preferences);
+
+		if (subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+	}
+
+	// Add flags and features
+	pgp_key_flags_subpacket *flags_subpacket = NULL;
+	pgp_features_subpacket *features_subpacket = NULL;
+	pgp_key_server_preferences_subpacket *server_subpacket = NULL;
+
+	if (preferences->key_flags != 0)
+	{
+		flags_subpacket = pgp_flags_subpacket_new(PGP_KEY_FLAGS_SUBPACKET, preferences->key_flags);
+
+		if (flags_subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, flags_subpacket);
+	}
+
+	if (preferences->features != 0)
+	{
+		features_subpacket = pgp_flags_subpacket_new(PGP_FEATURES_SUBPACKET, preferences->features);
+
+		if (features_subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, features_subpacket);
+	}
+
+	if (preferences->key_server != 0)
+	{
+		server_subpacket = pgp_flags_subpacket_new(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, preferences->key_server);
+
+		if (server_subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		pgp_signature_packet_hashed_subpacket_add(packet, server_subpacket);
+	}
+
 	return PGP_SUCCESS;
 }
 
@@ -2656,7 +2777,7 @@ pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags)
 	if (tag == PGP_FEATURES_SUBPACKET)
 	{
 		subpacket->flags[0] = flags & PGP_FEATURE_FLAG_MASK;
-		subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, 1);
+		subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 1, 1);
 	}
 
 	if (tag == PGP_KEY_SERVER_PREFERENCES_SUBPACKET)
@@ -2669,6 +2790,41 @@ pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags)
 }
 
 void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_t tag, byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+	byte_t size = count;
+
+	if (tag != PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET && tag != PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET &&
+		tag != PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET && tag != PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET &&
+		tag != PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET)
+	{
+		return NULL;
+	}
+
+	if (tag == PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET)
+	{
+		size *= 2;
+	}
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memcpy(subpacket->preferred_algorithms, prefs, size);
+	subpacket->header = pgp_encode_subpacket_header(tag, 0, size);
+
+	return subpacket;
+}
+
+void pgp_preferred_algorithms_subpacket_delete(pgp_preferred_algorithms_subpacket *subpacket)
 {
 	free(subpacket);
 }

@@ -195,12 +195,12 @@ typedef struct _pgp_boolean_subpacket
 	byte_t state : 1; // 1 for yes, 0 for no.
 } pgp_exportable_subpacket, pgp_revocable_subpacket, pgp_primary_user_id_subpacket;
 
-typedef struct _pgp_preferred_algorithm_subpacket
+typedef struct _pgp_preferred_algorithms_subpacket
 {
 	pgp_subpacket_header header;
 	byte_t preferred_algorithms[1];
-} pgp_preferred_symmetric_ciphers_subpacket, pgp_preferred_hash_algorithms_subpacket, pgp_preferred_compression_algorithms_subpacket,
-	pgp_preferred_encryption_modes_subpacket, pgp_preferred_aead_ciphersuites_subpacket;
+} pgp_preferred_algorithms_subpacket, pgp_preferred_symmetric_ciphers_subpacket, pgp_preferred_hash_algorithms_subpacket,
+	pgp_preferred_compression_algorithms_subpacket, pgp_preferred_encryption_modes_subpacket, pgp_preferred_aead_ciphersuites_subpacket;
 
 typedef struct _pgp_flags_subpacket
 {
@@ -322,6 +322,7 @@ typedef struct _key_preferences
 	byte_t cipher_modes_preferences_count;
 	byte_t aead_algorithm_preferences_count;
 
+	uint32_t key_flags;
 	byte_t key_server;
 	byte_t features;
 
@@ -371,6 +372,9 @@ void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
 
 pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags);
 void pgp_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket);
+
+pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_t tag, byte_t count, byte_t prefs[]);
+void pgp_preferred_algorithms_subpacket_delete(pgp_preferred_algorithms_subpacket *subpacket);
 
 pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);
 void pgp_rsa_signature_delete(pgp_rsa_signature *sign);
