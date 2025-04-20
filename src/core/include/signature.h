@@ -343,8 +343,9 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal);
 pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
 
-pgp_error_t pgp_generate_certificate_signature(pgp_key_packet *key, byte_t version, byte_t type, pgp_hash_algorithms hash_algorithm,
-											   uint32_t timestamp, uint32_t expiry, key_preferences *preferences, void *user);
+pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t version, byte_t type,
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, uint32_t expiry,
+											   key_preferences *preferences, void *user);
 pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
 
 pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t version,
