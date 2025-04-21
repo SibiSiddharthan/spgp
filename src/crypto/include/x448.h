@@ -10,16 +10,16 @@
 
 #include <crypt.h>
 
-#define X448_OCTET_SIZE 56
+#define X448_KEY_OCTETS 56
 #define X448_BITS       448
 
 typedef struct _x448_key
 {
-	byte_t private_key[X448_OCTET_SIZE];
-	byte_t public_key[X448_OCTET_SIZE];
+	byte_t private_key[X448_KEY_OCTETS];
+	byte_t public_key[X448_KEY_OCTETS];
 } x448_key;
 
-x448_key *x448_key_generate(x448_key *key, byte_t secret[X448_OCTET_SIZE]);
-void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OCTET_SIZE]);
+x448_key *x448_key_generate(x448_key *key, byte_t secret[X448_KEY_OCTETS]);
+void x448(byte_t v[X448_KEY_OCTETS], byte_t u[X448_KEY_OCTETS], byte_t k[X448_KEY_OCTETS]);
 
 #endif

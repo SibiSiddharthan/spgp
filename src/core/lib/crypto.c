@@ -850,12 +850,16 @@ void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_i
 
 void pgp_x25519_generate_key(pgp_x25519_key *key)
 {
-	x25519_key_generate((x25519_key *)key);
+	byte_t zero[X25519_KEY_OCTETS] = {0};
+
+	x25519_key_generate((x25519_key *)key, zero);
 }
 
 void pgp_x448_generate_key(pgp_x448_key *key)
 {
-	x448_key_generate((x448_key *)key);
+	byte_t zero[X448_KEY_OCTETS] = {0};
+
+	x448_key_generate((x448_key *)key, zero);
 }
 
 void pgp_ed25519_generate_key(pgp_ed25519_key *key)
@@ -1371,8 +1375,8 @@ pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_key *key, byte_t symmetric_key
 	pgp_x25519_kex *kex = NULL;
 
 	pgp_x25519_key ephemeral_key = {0};
-	byte_t shared_secret[X25519_OCTET_SIZE] = {0};
-	byte_t hkdf_input[3 * X25519_OCTET_SIZE] = {0};
+	byte_t shared_secret[X25519_KEY_OCTETS] = {0};
+	byte_t hkdf_input[3 * X25519_KEY_OCTETS] = {0};
 	uint16_t pos = 0;
 
 	byte_t key_wrap_key[AES128_KEY_SIZE] = {0};
@@ -1389,18 +1393,18 @@ pgp_x25519_kex *pgp_x25519_kex_encrypt(pgp_x25519_key *key, byte_t symmetric_key
 	pgp_x25519_generate_key(&ephemeral_key);
 	x25519(shared_secret, key->public_key, ephemeral_key.private_key);
 
-	memcpy(hkdf_input + pos, ephemeral_key.public_key, X25519_OCTET_SIZE);
-	pos += X25519_OCTET_SIZE;
+	memcpy(hkdf_input + pos, ephemeral_key.public_key, X25519_KEY_OCTETS);
+	pos += X25519_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, key->public_key, X25519_OCTET_SIZE);
-	pos += X25519_OCTET_SIZE;
+	memcpy(hkdf_input + pos, key->public_key, X25519_KEY_OCTETS);
+	pos += X25519_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, shared_secret, X25519_OCTET_SIZE);
-	pos += X25519_OCTET_SIZE;
+	memcpy(hkdf_input + pos, shared_secret, X25519_KEY_OCTETS);
+	pos += X25519_KEY_OCTETS;
 
 	hkdf(HASH_SHA256, hkdf_input, pos, NULL, 0, "OpenPGP X25519", 14, key_wrap_key, AES128_KEY_SIZE);
 
-	memcpy(kex->ephemeral_key, ephemeral_key.public_key, X25519_OCTET_SIZE);
+	memcpy(kex->ephemeral_key, ephemeral_key.public_key, X25519_KEY_OCTETS);
 
 	if (symmetric_key_algorithm_id != 0)
 	{
@@ -1419,22 +1423,22 @@ uint32_t pgp_x25519_kex_decrypt(pgp_x25519_kex *kex, pgp_x25519_key *key, byte_t
 {
 	uint32_t result = 0;
 
-	byte_t shared_secret[X25519_OCTET_SIZE] = {0};
-	byte_t hkdf_input[3 * X25519_OCTET_SIZE] = {0};
+	byte_t shared_secret[X25519_KEY_OCTETS] = {0};
+	byte_t hkdf_input[3 * X25519_KEY_OCTETS] = {0};
 	uint16_t pos = 0;
 
 	byte_t key_wrap_key[AES128_KEY_SIZE] = {0};
 
 	x25519(shared_secret, kex->ephemeral_key, key->private_key);
 
-	memcpy(hkdf_input + pos, kex->ephemeral_key, X25519_OCTET_SIZE);
-	pos += X25519_OCTET_SIZE;
+	memcpy(hkdf_input + pos, kex->ephemeral_key, X25519_KEY_OCTETS);
+	pos += X25519_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, key->public_key, X25519_OCTET_SIZE);
-	pos += X25519_OCTET_SIZE;
+	memcpy(hkdf_input + pos, key->public_key, X25519_KEY_OCTETS);
+	pos += X25519_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, shared_secret, X25519_OCTET_SIZE);
-	pos += X25519_OCTET_SIZE;
+	memcpy(hkdf_input + pos, shared_secret, X25519_KEY_OCTETS);
+	pos += X25519_KEY_OCTETS;
 
 	hkdf(HASH_SHA256, hkdf_input, pos, NULL, 0, "OpenPGP X25519", 14, key_wrap_key, AES128_KEY_SIZE);
 
@@ -1455,8 +1459,8 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_key *key, byte_t symmetric_key_algor
 	pgp_x448_kex *kex = NULL;
 
 	pgp_x448_key ephemeral_key = {0};
-	byte_t shared_secret[X448_OCTET_SIZE] = {0};
-	byte_t hkdf_input[3 * X448_OCTET_SIZE] = {0};
+	byte_t shared_secret[X448_KEY_OCTETS] = {0};
+	byte_t hkdf_input[3 * X448_KEY_OCTETS] = {0};
 	uint16_t pos = 0;
 
 	byte_t key_wrap_key[AES256_KEY_SIZE] = {0};
@@ -1473,18 +1477,18 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_key *key, byte_t symmetric_key_algor
 	pgp_x448_generate_key(&ephemeral_key);
 	x448(shared_secret, key->public_key, ephemeral_key.private_key);
 
-	memcpy(hkdf_input + pos, ephemeral_key.public_key, X448_OCTET_SIZE);
-	pos += X448_OCTET_SIZE;
+	memcpy(hkdf_input + pos, ephemeral_key.public_key, X448_KEY_OCTETS);
+	pos += X448_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, key->public_key, X448_OCTET_SIZE);
-	pos += X448_OCTET_SIZE;
+	memcpy(hkdf_input + pos, key->public_key, X448_KEY_OCTETS);
+	pos += X448_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, shared_secret, X448_OCTET_SIZE);
-	pos += X448_OCTET_SIZE;
+	memcpy(hkdf_input + pos, shared_secret, X448_KEY_OCTETS);
+	pos += X448_KEY_OCTETS;
 
 	hkdf(HASH_SHA256, hkdf_input, pos, NULL, 0, "OpenPGP X448", 12, key_wrap_key, AES256_KEY_SIZE);
 
-	memcpy(kex->ephemeral_key, ephemeral_key.public_key, X448_OCTET_SIZE);
+	memcpy(kex->ephemeral_key, ephemeral_key.public_key, X448_KEY_OCTETS);
 
 	if (symmetric_key_algorithm_id != 0)
 	{
@@ -1503,22 +1507,22 @@ uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_key *key, byte_t *symm
 {
 	uint32_t result = 0;
 
-	byte_t shared_secret[X448_OCTET_SIZE] = {0};
-	byte_t hkdf_input[3 * X448_OCTET_SIZE] = {0};
+	byte_t shared_secret[X448_KEY_OCTETS] = {0};
+	byte_t hkdf_input[3 * X448_KEY_OCTETS] = {0};
 	uint16_t pos = 0;
 
 	byte_t key_wrap_key[AES256_KEY_SIZE] = {0};
 
 	x448(shared_secret, kex->ephemeral_key, key->private_key);
 
-	memcpy(hkdf_input + pos, kex->ephemeral_key, X448_OCTET_SIZE);
-	pos += X448_OCTET_SIZE;
+	memcpy(hkdf_input + pos, kex->ephemeral_key, X448_KEY_OCTETS);
+	pos += X448_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, key->public_key, X448_OCTET_SIZE);
-	pos += X448_OCTET_SIZE;
+	memcpy(hkdf_input + pos, key->public_key, X448_KEY_OCTETS);
+	pos += X448_KEY_OCTETS;
 
-	memcpy(hkdf_input + pos, shared_secret, X448_OCTET_SIZE);
-	pos += X448_OCTET_SIZE;
+	memcpy(hkdf_input + pos, shared_secret, X448_KEY_OCTETS);
+	pos += X448_KEY_OCTETS;
 
 	hkdf(HASH_SHA256, hkdf_input, pos, NULL, 0, "OpenPGP X448", 12, key_wrap_key, AES256_KEY_SIZE);
 

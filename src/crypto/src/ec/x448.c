@@ -27,7 +27,7 @@ static const bn_word_t curve448_p_words[7] = {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFF
 		(y) = (void *)((uintptr_t)(y) ^ dummy);                     \
 	}
 
-static void x448_decode_scalar(byte_t k[X448_OCTET_SIZE])
+static void x448_decode_scalar(byte_t k[X448_KEY_OCTETS])
 {
 	// Set the 2 least significant bits of first byte to 0
 	k[0] &= 252;
@@ -36,9 +36,9 @@ static void x448_decode_scalar(byte_t k[X448_OCTET_SIZE])
 	k[55] |= 128;
 }
 
-void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OCTET_SIZE])
+void x448(byte_t v[X448_KEY_OCTETS], byte_t u[X448_KEY_OCTETS], byte_t k[X448_KEY_OCTETS])
 {
-	bignum_t p = {.bits = 448, .flags = 0, .resize = 0, .sign = 1, .size = X448_OCTET_SIZE, .words = (bn_word_t *)curve448_p_words};
+	bignum_t p = {.bits = 448, .flags = 0, .resize = 0, .sign = 1, .size = X448_KEY_OCTETS, .words = (bn_word_t *)curve448_p_words};
 	const uint32_t a24 = 39081;
 
 	bignum_ctx *bctx = NULL;
@@ -58,7 +58,7 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	bignum_t *da = NULL;
 	bignum_t *cb = NULL;
 
-	byte_t kcopy[X448_OCTET_SIZE] = {0};
+	byte_t kcopy[X448_KEY_OCTETS] = {0};
 
 	uintptr_t swap = 0;
 
@@ -68,7 +68,7 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	size_t ctx_size = 16 * bignum_size(X448_BITS);
 
 	// Zero output
-	memset(v, 0, X448_OCTET_SIZE);
+	memset(v, 0, X448_KEY_OCTETS);
 
 	// Initialize arena
 	bctx = bignum_ctx_new(ctx_size + 128);
@@ -102,11 +102,11 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	cb = bignum_ctx_allocate_bignum(bctx, X448_BITS);
 
 	// Decode k
-	memcpy(kcopy, k, X448_OCTET_SIZE);
+	memcpy(kcopy, k, X448_KEY_OCTETS);
 	x448_decode_scalar(kcopy);
 
 	// Initialization
-	bignum_set_bytes_le(x1, u, X448_OCTET_SIZE);
+	bignum_set_bytes_le(x1, u, X448_KEY_OCTETS);
 	bignum_set_word(x2, 1);
 	bignum_copy(x3, x1);
 
@@ -161,34 +161,34 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	x1 = bignum_modexp(bctx, x1, z2, pm2, &p);
 	x1 = bignum_modmul(bctx, x1, x1, x2, &p);
 
-	memcpy(v, x1->words, X448_OCTET_SIZE);
+	memcpy(v, x1->words, X448_KEY_OCTETS);
 
 	// Cleanup
 	bignum_ctx_end(bctx);
 	bignum_ctx_delete(bctx);
 }
 
-x448_key *x448_key_generate(x448_key *key, byte_t secret[X448_OCTET_SIZE])
+x448_key *x448_key_generate(x448_key *key, byte_t secret[X448_KEY_OCTETS])
 {
 	uint32_t result = 0;
 
-	byte_t zero[X448_OCTET_SIZE] = {0};
-	byte_t base[X448_OCTET_SIZE] = {0};
+	byte_t zero[X448_KEY_OCTETS] = {0};
+	byte_t base[X448_KEY_OCTETS] = {0};
 
 	base[0] = 0x05;
 
-	if (memcmp(secret, zero, X448_OCTET_SIZE) == 0)
+	if (memcmp(secret, zero, X448_KEY_OCTETS) == 0)
 	{
-		result = drbg_generate(get_default_drbg(), 0, "X448 Key Generation", 19, key->private_key, X448_OCTET_SIZE);
+		result = drbg_generate(get_default_drbg(), 0, "X448 Key Generation", 19, key->private_key, X448_KEY_OCTETS);
 
-		if (result != X448_OCTET_SIZE)
+		if (result != X448_KEY_OCTETS)
 		{
 			return NULL;
 		}
 	}
 	else
 	{
-		memcpy(key->private_key, secret, X448_OCTET_SIZE);
+		memcpy(key->private_key, secret, X448_KEY_OCTETS);
 	}
 
 	x448(key->public_key, base, key->private_key);

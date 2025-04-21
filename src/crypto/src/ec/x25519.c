@@ -26,13 +26,13 @@ static const bn_word_t curve25519_p_words[4] = {0xFFFFFFFFFFFFFFED, 0xFFFFFFFFFF
 		(y) = (void *)((uintptr_t)(y) ^ dummy);                     \
 	}
 
-static void x25519_decode_u_coordinate(byte_t k[X25519_OCTET_SIZE])
+static void x25519_decode_u_coordinate(byte_t k[X25519_KEY_OCTETS])
 {
 	// Mask the most significant bit
 	k[31] &= 127;
 }
 
-static void x25519_decode_scalar(byte_t k[X25519_OCTET_SIZE])
+static void x25519_decode_scalar(byte_t k[X25519_KEY_OCTETS])
 {
 	// Set the 3 least significant bits of first byte to 0
 	k[0] &= 248;
@@ -44,9 +44,9 @@ static void x25519_decode_scalar(byte_t k[X25519_OCTET_SIZE])
 	k[31] |= 64;
 }
 
-void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X25519_OCTET_SIZE])
+void x25519(byte_t v[X25519_KEY_OCTETS], byte_t u[X25519_KEY_OCTETS], byte_t k[X25519_KEY_OCTETS])
 {
-	bignum_t p = {.bits = 255, .flags = 0, .resize = 0, .sign = 1, .size = X25519_OCTET_SIZE, .words = (bn_word_t *)curve25519_p_words};
+	bignum_t p = {.bits = 255, .flags = 0, .resize = 0, .sign = 1, .size = X25519_KEY_OCTETS, .words = (bn_word_t *)curve25519_p_words};
 	const uint32_t a24 = 121665;
 
 	bignum_ctx *bctx = NULL;
@@ -66,8 +66,8 @@ void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X
 	bignum_t *da = NULL;
 	bignum_t *cb = NULL;
 
-	byte_t ucopy[X25519_OCTET_SIZE] = {0};
-	byte_t kcopy[X25519_OCTET_SIZE] = {0};
+	byte_t ucopy[X25519_KEY_OCTETS] = {0};
+	byte_t kcopy[X25519_KEY_OCTETS] = {0};
 
 	uintptr_t swap = 0;
 
@@ -77,7 +77,7 @@ void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X
 	size_t ctx_size = 16 * bignum_size(X25519_BITS);
 
 	// Zero output
-	memset(v, 0, X25519_OCTET_SIZE);
+	memset(v, 0, X25519_KEY_OCTETS);
 
 	// Initialize arena
 	bctx = bignum_ctx_new(ctx_size + 128);
@@ -111,14 +111,14 @@ void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X
 	cb = bignum_ctx_allocate_bignum(bctx, X25519_BITS);
 
 	// Decode u and k
-	memcpy(ucopy, u, X25519_OCTET_SIZE);
-	memcpy(kcopy, k, X25519_OCTET_SIZE);
+	memcpy(ucopy, u, X25519_KEY_OCTETS);
+	memcpy(kcopy, k, X25519_KEY_OCTETS);
 
 	x25519_decode_u_coordinate(ucopy);
 	x25519_decode_scalar(kcopy);
 
 	// Initialization
-	bignum_set_bytes_le(x1, ucopy, X25519_OCTET_SIZE);
+	bignum_set_bytes_le(x1, ucopy, X25519_KEY_OCTETS);
 	bignum_set_word(x2, 1);
 	bignum_copy(x3, x1);
 
@@ -173,34 +173,34 @@ void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X
 	x1 = bignum_modexp(bctx, x1, z2, pm2, &p);
 	x1 = bignum_modmul(bctx, x1, x1, x2, &p);
 
-	memcpy(v, x1->words, X25519_OCTET_SIZE);
+	memcpy(v, x1->words, X25519_KEY_OCTETS);
 
 	// Cleanup
 	bignum_ctx_end(bctx);
 	bignum_ctx_delete(bctx);
 }
 
-x25519_key *x25519_key_generate(x25519_key *key, byte_t secret[X25519_OCTET_SIZE])
+x25519_key *x25519_key_generate(x25519_key *key, byte_t secret[X25519_KEY_OCTETS])
 {
 	uint32_t result = 0;
 
-	byte_t zero[X25519_OCTET_SIZE] = {0};
-	byte_t base[X25519_OCTET_SIZE] = {0};
+	byte_t zero[X25519_KEY_OCTETS] = {0};
+	byte_t base[X25519_KEY_OCTETS] = {0};
 
 	base[0] = 0x09;
 
-	if (memcmp(secret, zero, X25519_OCTET_SIZE) == 0)
+	if (memcmp(secret, zero, X25519_KEY_OCTETS) == 0)
 	{
-		result = drbg_generate(get_default_drbg(), 0, "X25519 Key Generation", 21, key->private_key, X25519_OCTET_SIZE);
+		result = drbg_generate(get_default_drbg(), 0, "X25519 Key Generation", 21, key->private_key, X25519_KEY_OCTETS);
 
-		if (result != X25519_OCTET_SIZE)
+		if (result != X25519_KEY_OCTETS)
 		{
 			return NULL;
 		}
 	}
 	else
 	{
-		memcpy(key->private_key, secret, X25519_OCTET_SIZE);
+		memcpy(key->private_key, secret, X25519_KEY_OCTETS);
 	}
 
 	x25519(key->public_key, base, key->private_key);
