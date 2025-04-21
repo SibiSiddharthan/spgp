@@ -1274,8 +1274,41 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 	case PGP_TRUST_SIGNATURE_SUBPACKET:
 	{
 		pgp_trust_signature_subpacket *trust_subpacket = subpacket;
-		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu\n", trust_subpacket->trust_level);
-		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Amount: %hhu\n", trust_subpacket->trust_amount);
+		char *level = NULL;
+		char *amount = NULL;
+
+		switch (trust_subpacket->trust_level)
+		{
+		case PGP_TRUST_LEVEL_ORDINARY:
+			level = "Ordinary";
+			break;
+		case PGP_TRUST_LEVEL_TRUSTED:
+			level = "Trusted";
+			break;
+		case PGP_TRUST_LEVEL_ISSUER:
+			level = "Issuer";
+			break;
+		default:
+			level = "Issuer";
+			break;
+		}
+
+		if (trust_subpacket->trust_amount < PGP_TRUST_AMOUNT_PARTIAL)
+		{
+			amount = "Untrusted";
+		}
+		else if (trust_subpacket->trust_amount < PGP_TRUST_AMOUNT_COMPLETE)
+		{
+			amount = "Partial";
+		}
+		else
+		{
+			amount = "Complete";
+		}
+
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Level: %hhu (%s)\n", trust_subpacket->trust_level, level);
+		pos +=
+			print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Trust Amount: %hhu (%s)\n", trust_subpacket->trust_amount, amount);
 	}
 	break;
 	case PGP_REGULAR_EXPRESSION_SUBPACKET:

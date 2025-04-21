@@ -96,6 +96,15 @@ typedef enum _pgp_revocation_code
 	PGP_REVOCATION_USER_ID_INVALID = 32 // User ID information is no longer valid
 } pgp_revocation_code;
 
+// Trust Levels
+#define PGP_TRUST_LEVEL_ORDINARY  0
+#define PGP_TRUST_LEVEL_TRUSTED 1
+#define PGP_TRUST_LEVEL_ISSUER  2
+
+// Trust Amounts
+#define PGP_TRUST_AMOUNT_PARTIAL  60
+#define PGP_TRUST_AMOUNT_COMPLETE 120
+
 // Subpacket Flags
 #define PGP_KEY_SERVER_NO_MODIFY 0x80       // The key can only be modified by the keyholder or an administrator of the key server
 #define PGP_NOTATION_DATA_UTF8   0x80000000 // Notation value is UTF-8 text
