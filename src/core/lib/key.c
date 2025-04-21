@@ -3700,20 +3700,21 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE])
 {
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-
-	if (pgp_public_cipher_algorithm_validate(key->public_key_algorithm_id) == 0)
-	{
-		return 0;
-	}
+	byte_t size = 0;
 
 	if (key->version > 3)
 	{
-		pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+		size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+
+		if (size == 0)
+		{
+			return 0;
+		}
 
 		if (key->version == PGP_KEY_V4 || key->version == PGP_KEY_V6)
 		{
 			// Low 64 bits of fingerprint
-			LOAD_64(id, PTR_OFFSET(fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE - 8));
+			LOAD_64(id, PTR_OFFSET(fingerprint, size - 8));
 			return 8;
 		}
 
@@ -3735,6 +3736,25 @@ uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE])
 	}
 
 	// Unreachable
+	return 0;
+}
+
+uint32_t pgp_key_id_from_fingerprint(pgp_key_version version, byte_t id[PGP_KEY_ID_SIZE], void *fingerprint, uint32_t size)
+{
+	if (version == PGP_KEY_V4 || version == PGP_KEY_V6)
+	{
+		// Low 64 bits of fingerprint
+		LOAD_64(id, PTR_OFFSET(fingerprint, size - 8));
+		return 8;
+	}
+
+	if (version == PGP_KEY_V5)
+	{
+		// High 64 bits of fingerprint
+		LOAD_64(id, PTR_OFFSET(fingerprint, 8));
+		return 8;
+	}
+
 	return 0;
 }
 

@@ -213,6 +213,7 @@ byte_t pgp_key_fingerprint_size(byte_t version);
 void pgp_key_hash(void *ctx, pgp_key_packet *key);
 uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size);
 uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE]);
+uint32_t pgp_key_id_from_fingerprint(pgp_key_version version, byte_t id[PGP_KEY_ID_SIZE], void *fingerprint, uint32_t size);
 
 void *pgp_rsa_generate_key(uint32_t bits);
 void *pgp_dsa_generate_key(uint32_t p_bits, uint32_t q_bits);
