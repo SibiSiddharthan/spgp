@@ -71,7 +71,7 @@ ed25519_key *ed25519_key_generate(ed25519_key *key, byte_t private_key[ED25519_K
 
 	if (memcmp(zero, private_key, ED25519_KEY_OCTETS) == 0)
 	{
-		result = drbg_generate(get_default_drbg(), 0, NULL, 0, key->private_key, ED25519_KEY_OCTETS);
+		result = drbg_generate(get_default_drbg(), 0, "Ed25519 Key Generation", 22, key->private_key, ED25519_KEY_OCTETS);
 
 		if (result != ED25519_KEY_OCTETS)
 		{
@@ -130,7 +130,7 @@ ed448_key *ed448_key_generate(ed448_key *key, byte_t private_key[ED448_KEY_OCTET
 
 	if (memcmp(zero, private_key, ED448_KEY_OCTETS) == 0)
 	{
-		result = drbg_generate(get_default_drbg(), 0, NULL, 0, key->private_key, ED448_KEY_OCTETS);
+		result = drbg_generate(get_default_drbg(), 0, "Ed448 Key Generation", 20, key->private_key, ED448_KEY_OCTETS);
 
 		if (result != ED448_KEY_OCTETS)
 		{

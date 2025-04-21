@@ -19,7 +19,7 @@ typedef struct _x25519_key
 	byte_t public_key[X25519_OCTET_SIZE];
 } x25519_key;
 
-uint32_t x25519_key_generate(x25519_key *key);
+x25519_key *x25519_key_generate(x25519_key *key, byte_t secret[X25519_OCTET_SIZE]);
 void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X25519_OCTET_SIZE]);
 
 #endif

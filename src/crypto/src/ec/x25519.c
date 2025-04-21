@@ -180,27 +180,30 @@ void x25519(byte_t v[X25519_OCTET_SIZE], byte_t u[X25519_OCTET_SIZE], byte_t k[X
 	bignum_ctx_delete(bctx);
 }
 
-uint32_t x25519_key_generate(x25519_key *key)
+x25519_key *x25519_key_generate(x25519_key *key, byte_t secret[X25519_OCTET_SIZE])
 {
 	uint32_t result = 0;
-	drbg_ctx *drbg = get_default_drbg();
 
+	byte_t zero[X25519_OCTET_SIZE] = {0};
 	byte_t base[X25519_OCTET_SIZE] = {0};
+
 	base[0] = 0x09;
 
-	if (drbg == NULL)
+	if (memcmp(secret, zero, X25519_OCTET_SIZE) == 0)
 	{
-		return -1u;
+		result = drbg_generate(get_default_drbg(), 0, "X25519 Key Generation", 21, key->private_key, X25519_OCTET_SIZE);
+
+		if (result != X25519_OCTET_SIZE)
+		{
+			return NULL;
+		}
 	}
-
-	result = drbg_generate(drbg, 0, "X25519 Key Generation", 21, key->private_key, X25519_OCTET_SIZE);
-
-	if (result != X25519_OCTET_SIZE)
+	else
 	{
-		return -1u;
+		memcpy(key->private_key, secret, X25519_OCTET_SIZE);
 	}
 
 	x25519(key->public_key, base, key->private_key);
 
-	return 0;
+	return key;
 }

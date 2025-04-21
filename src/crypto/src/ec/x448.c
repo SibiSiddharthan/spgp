@@ -13,7 +13,8 @@
 #include <xor.h>
 #include <string.h>
 
-static const bn_word_t curve448_p_words[7] = {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFEFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF};
+static const bn_word_t curve448_p_words[7] = {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFEFFFFFFFF,
+											  0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF};
 
 #define GET_BIT(K, I) ((K[(I) / 8] >> (I) % 8) & 0x1)
 
@@ -167,27 +168,30 @@ void x448(byte_t v[X448_OCTET_SIZE], byte_t u[X448_OCTET_SIZE], byte_t k[X448_OC
 	bignum_ctx_delete(bctx);
 }
 
-uint32_t x448_key_generate(x448_key *key)
+x448_key *x448_key_generate(x448_key *key, byte_t secret[X448_OCTET_SIZE])
 {
 	uint32_t result = 0;
-	drbg_ctx *drbg = get_default_drbg();
 
+	byte_t zero[X448_OCTET_SIZE] = {0};
 	byte_t base[X448_OCTET_SIZE] = {0};
+
 	base[0] = 0x05;
 
-	if (drbg == NULL)
+	if (memcmp(secret, zero, X448_OCTET_SIZE) == 0)
 	{
-		return -1u;
+		result = drbg_generate(get_default_drbg(), 0, "X448 Key Generation", 19, key->private_key, X448_OCTET_SIZE);
+
+		if (result != X448_OCTET_SIZE)
+		{
+			return NULL;
+		}
 	}
-
-	result = drbg_generate(drbg, 0, "X448 Key Generation", 19, key->private_key, X448_OCTET_SIZE);
-
-	if (result != X448_OCTET_SIZE)
+	else
 	{
-		return -1u;
+		memcpy(key->private_key, secret, X448_OCTET_SIZE);
 	}
 
 	x448(key->public_key, base, key->private_key);
 
-	return 0;
+	return key;
 }
