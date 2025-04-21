@@ -2561,12 +2561,12 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	return pos;
 }
 
-pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, uint32_t key_creation_time, uint32_t key_expiry_seconds,
-							   byte_t public_key_algorithm_id, byte_t capabilities, void *key)
+pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t capabilities, byte_t flags,
+							 uint32_t key_creation_time, uint32_t key_expiry_seconds, void *parameters)
 {
 	pgp_key_packet *pgpkey = NULL;
+	void *key = NULL;
 
-	// Don't generate V3 keys
 	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
 	{
 		return PGP_INVALID_KEY_VERSION;
@@ -2577,9 +2577,63 @@ pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, uint32_t
 		return PGP_INVALID_PUBLIC_ALGORITHM;
 	}
 
-	if (key == NULL)
+	if (capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION))
 	{
-		return PGP_INVALID_PARAMETER;
+		if (public_key_algorithm_id == PGP_RSA_ENCRYPT_ONLY || public_key_algorithm_id == PGP_ECDH ||
+			public_key_algorithm_id == PGP_ELGAMAL_ENCRYPT_ONLY || public_key_algorithm_id == PGP_X25519 ||
+			public_key_algorithm_id == PGP_X448)
+		{
+			return PGP_INVALID_SIGNATURE_ALGORITHM;
+		}
+	}
+
+	if (capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
+	{
+		if (public_key_algorithm_id == PGP_RSA_SIGN_ONLY || public_key_algorithm_id == PGP_DSA || public_key_algorithm_id == PGP_ECDSA ||
+			public_key_algorithm_id == PGP_EDDSA || public_key_algorithm_id == PGP_ED25519 || public_key_algorithm_id == PGP_ED448)
+		{
+			return PGP_INVALID_KEY_EXCHANGE_ALGORITHM;
+		}
+	}
+
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+		key = pgp_rsa_generate_key(4096);
+		break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		// TODO
+		break;
+	case PGP_DSA:
+		// key = pgp_dsa_generate_key(2048, 256);
+		break;
+	case PGP_ECDH:
+		key = pgp_ecdh_generate_key(0, 0, 0);
+		break;
+	case PGP_ECDSA:
+		key = pgp_ecdsa_generate_key(0);
+		break;
+	case PGP_EDDSA:
+		key = pgp_ecdsa_generate_key(0);
+		break;
+	case PGP_X25519:
+		pgp_x25519_generate_key(NULL);
+		break;
+	case PGP_X448:
+		pgp_x448_generate_key(NULL);
+		break;
+	case PGP_ED25519:
+		pgp_ed25519_generate_key(NULL);
+		break;
+	case PGP_ED448:
+		pgp_ed448_generate_key(NULL);
+		break;
+
+	default:
+		// Unreachable
+		return PGP_INTERNAL_BUG;
 	}
 
 	pgpkey = malloc(sizeof(pgp_key_packet));
@@ -2592,14 +2646,82 @@ pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, uint32_t
 	memset(pgpkey, 0, sizeof(pgp_key_packet));
 
 	pgpkey->version = version;
-	pgpkey->capabilities = capabilities;
 	pgpkey->key_creation_time = key_creation_time;
 	pgpkey->key_expiry_seconds = key_expiry_seconds;
+	pgpkey->capabilities = capabilities & PGP_KEY_CAPABILITIES_MASK;
+	pgpkey->flags = flags & PGP_KEY_FLAGS_MASK;
 
-	if (pgpkey->version == PGP_KEY_V2 || pgpkey->version == PGP_KEY_V3)
+	pgpkey->key = key;
+	pgpkey->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);
+	pgpkey->private_key_data_octets = get_private_key_material_octets(public_key_algorithm_id, key);
+
+	if (pgpkey->public_key_data_octets == 0)
 	{
-		pgpkey->key_expiry_days = key_expiry_seconds / 86400;
+		free(pgpkey);
+		return PGP_MALFORMED_KEY;
 	}
+
+	pgpkey->key_checksum = pgp_private_key_material_checksum(pgpkey);
+	pgp_key_packet_encode_header(pgpkey, PGP_KEYDEF);
+
+	*packet = pgpkey;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, uint32_t key_creation_time,
+							   uint32_t key_expiry_seconds, byte_t capabilities, byte_t flags, void *key)
+{
+	pgp_key_packet *pgpkey = NULL;
+
+	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
+	{
+		return PGP_INVALID_KEY_VERSION;
+	}
+
+	if (key == NULL)
+	{
+		return PGP_INVALID_PARAMETER;
+	}
+
+	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return PGP_INVALID_PUBLIC_ALGORITHM;
+	}
+
+	if (capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION))
+	{
+		if (public_key_algorithm_id == PGP_RSA_ENCRYPT_ONLY || public_key_algorithm_id == PGP_ECDH ||
+			public_key_algorithm_id == PGP_ELGAMAL_ENCRYPT_ONLY || public_key_algorithm_id == PGP_X25519 ||
+			public_key_algorithm_id == PGP_X448)
+		{
+			return PGP_INVALID_SIGNATURE_ALGORITHM;
+		}
+	}
+
+	if (capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
+	{
+		if (public_key_algorithm_id == PGP_RSA_SIGN_ONLY || public_key_algorithm_id == PGP_DSA || public_key_algorithm_id == PGP_ECDSA ||
+			public_key_algorithm_id == PGP_EDDSA || public_key_algorithm_id == PGP_ED25519 || public_key_algorithm_id == PGP_ED448)
+		{
+			return PGP_INVALID_KEY_EXCHANGE_ALGORITHM;
+		}
+	}
+
+	pgpkey = malloc(sizeof(pgp_key_packet));
+
+	if (pgpkey == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(pgpkey, 0, sizeof(pgp_key_packet));
+
+	pgpkey->version = version;
+	pgpkey->key_creation_time = key_creation_time;
+	pgpkey->key_expiry_seconds = key_expiry_seconds;
+	pgpkey->capabilities = capabilities & PGP_KEY_CAPABILITIES_MASK;
+	pgpkey->flags = flags & PGP_KEY_FLAGS_MASK;
 
 	pgpkey->key = key;
 	pgpkey->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);

@@ -50,6 +50,7 @@ typedef struct _pgp_key_packet
 	byte_t flags;
 
 	uint32_t key_creation_time;
+	uint32_t key_revocation_time;
 
 	union
 	{
@@ -183,10 +184,11 @@ typedef struct _pgp_ed448_key
 	byte_t private_key[57];
 } pgp_ed448_key;
 
-void *pgp_key_generate(byte_t public_key_algorithm_id);
+pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t capabilities, byte_t flags,
+							 uint32_t key_creation_time, uint32_t key_expiry_seconds, void *parameters);
 
-pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, uint32_t key_creation_time, uint32_t key_expiry_seconds,
-							   byte_t public_key_algorithm_id, byte_t capabilities, void *key);
+pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, uint32_t key_creation_time,
+							   uint32_t key_expiry_seconds, byte_t capabilities, byte_t flags, void *key);
 void pgp_key_packet_delete(pgp_key_packet *packet);
 
 pgp_key_packet *pgp_key_packet_transform(pgp_key_packet *packet, pgp_packet_type type);
