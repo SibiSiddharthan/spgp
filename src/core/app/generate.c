@@ -53,28 +53,39 @@ typedef enum _spgp_key_id
 
 } spgp_key_id;
 
-static void parse_algorithm(pgp_key_specfication *spec, byte_t *in, byte_t length)
+typedef struct _key_specfication
+{
+	byte_t algorithm;
+	byte_t capabilities;
+	byte_t flags;
+
+	uint32_t expiry;
+	pgp_key_parameters parameters;
+
+} key_specfication;
+
+static void parse_algorithm(key_specfication *spec, byte_t *in, byte_t length)
 {
 	if (length == 3)
 	{
 		if (memcmp(in, "rsa", 3) == 0)
 		{
 			spec->algorithm = PGP_RSA_ENCRYPT_OR_SIGN;
-			spec->bits = 4096;
+			spec->parameters.bits = 4096;
 			return;
 		}
 
 		if (memcmp(in, "dsa", 3) == 0)
 		{
 			spec->algorithm = PGP_DSA;
-			spec->bits = 2048;
+			spec->parameters.bits = 2048;
 			return;
 		}
 
 		if (memcmp(in, "elg", 3) == 0)
 		{
 			spec->algorithm = PGP_ELGAMAL_ENCRYPT_ONLY;
-			spec->bits = 4096;
+			spec->parameters.bits = 4096;
 			return;
 		}
 	}
@@ -84,21 +95,21 @@ static void parse_algorithm(pgp_key_specfication *spec, byte_t *in, byte_t lengt
 		if (memcmp(in, "nistp256", 5) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
-			spec->curve = PGP_EC_NIST_P256;
+			spec->parameters.curve = PGP_EC_NIST_P256;
 			return;
 		}
 
 		if (memcmp(in, "nistp384", 5) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
-			spec->curve = PGP_EC_NIST_P384;
+			spec->parameters.curve = PGP_EC_NIST_P384;
 			return;
 		}
 
 		if (memcmp(in, "nistp521", 5) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
-			spec->curve = PGP_EC_NIST_P521;
+			spec->parameters.curve = PGP_EC_NIST_P521;
 			return;
 		}
 	}
@@ -108,21 +119,21 @@ static void parse_algorithm(pgp_key_specfication *spec, byte_t *in, byte_t lengt
 		if (memcmp(in, "brainpoolP256r1", 15) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
-			spec->curve = PGP_EC_BRAINPOOL_256R1;
+			spec->parameters.curve = PGP_EC_BRAINPOOL_256R1;
 			return;
 		}
 
 		if (memcmp(in, "brainpoolP384r1", 15) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
-			spec->curve = PGP_EC_BRAINPOOL_384R1;
+			spec->parameters.curve = PGP_EC_BRAINPOOL_384R1;
 			return;
 		}
 
 		if (memcmp(in, "brainpoolP512r1", 15) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
-			spec->curve = PGP_EC_BRAINPOOL_512R1;
+			spec->parameters.curve = PGP_EC_BRAINPOOL_512R1;
 			return;
 		}
 	}
@@ -135,7 +146,7 @@ static void parse_algorithm(pgp_key_specfication *spec, byte_t *in, byte_t lengt
 #define TO_NUM(c)   ((c) - 48)
 #define TO_UPPER(c) ((c) & ~0x20)
 
-static void parse_capabilities(pgp_key_specfication *spec, byte_t *in, byte_t length)
+static void parse_capabilities(key_specfication *spec, byte_t *in, byte_t length)
 {
 	if (length > 4)
 	{
@@ -147,24 +158,24 @@ static void parse_capabilities(pgp_key_specfication *spec, byte_t *in, byte_t le
 	{
 		if (TO_UPPER(in[i]) == 'C')
 		{
-			spec->flags |= PGP_KEY_FLAG_CERTIFY;
+			spec->capabilities |= PGP_KEY_FLAG_CERTIFY;
 		}
 		if (TO_UPPER(in[i]) == 'S')
 		{
-			spec->flags |= PGP_KEY_FLAG_SIGN;
+			spec->capabilities |= PGP_KEY_FLAG_SIGN;
 		}
 		if (TO_UPPER(in[i]) == 'E')
 		{
-			spec->flags |= (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE);
+			spec->capabilities |= (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE);
 		}
 		if (TO_UPPER(in[i]) == 'A')
 		{
-			spec->flags |= PGP_KEY_FLAG_AUTHENTICATION;
+			spec->capabilities |= PGP_KEY_FLAG_AUTHENTICATION;
 		}
 	}
 }
 
-static void parse_expiry(pgp_key_specfication *spec, byte_t *in, byte_t length)
+static void parse_expiry(key_specfication *spec, byte_t *in, byte_t length)
 {
 	uint32_t value = 0;
 
@@ -202,7 +213,7 @@ static void parse_expiry(pgp_key_specfication *spec, byte_t *in, byte_t length)
 	spec->expiry = value;
 }
 
-static void parse_key(pgp_key_specfication *spec, byte_t *in, byte_t length)
+static void parse_key(key_specfication *spec, byte_t *in, byte_t length)
 {
 	byte_t count = 0;
 	byte_t capabilities_offset = 0;
@@ -250,9 +261,9 @@ static void parse_key(pgp_key_specfication *spec, byte_t *in, byte_t length)
 }
 
 // Key specification: algorithm[:usage[:expiry]]/algorithm[:usage[:expiry]]
-static uint32_t parse_spec(byte_t *in, pgp_key_specfication **out)
+static uint32_t parse_spec(byte_t *in, key_specfication **out)
 {
-	pgp_key_specfication *spec = NULL;
+	key_specfication *spec = NULL;
 	uint32_t count = 0;
 
 	// Count number of keys in spec.
@@ -264,7 +275,7 @@ static uint32_t parse_spec(byte_t *in, pgp_key_specfication **out)
 		}
 	}
 
-	spec = malloc(sizeof(pgp_key_specfication) * count);
+	spec = malloc(sizeof(key_specfication) * count);
 
 	if (spec == NULL)
 	{
@@ -272,7 +283,7 @@ static uint32_t parse_spec(byte_t *in, pgp_key_specfication **out)
 		exit(1);
 	}
 
-	memset(spec, 0, sizeof(pgp_key_specfication) * count);
+	memset(spec, 0, sizeof(key_specfication) * count);
 
 	uint32_t start = 0;
 	uint32_t end = 0;
@@ -314,7 +325,7 @@ uint32_t spgp_generate_key(void)
 	byte_t *uid = NULL;
 	byte_t *spec = NULL;
 
-	pgp_key_specfication *key_specs = NULL;
+	key_specfication *key_specs = NULL;
 	pgp_key_packet **key_packets = NULL;
 	uint32_t count = 0;
 
@@ -341,7 +352,8 @@ uint32_t spgp_generate_key(void)
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		pgp_key_generate(&key_packets[i], PGP_KEY_V4, key_specs->algorithm, 0, 0, time(NULL), key_specs->expiry, NULL);
+		pgp_key_generate(&key_packets[i], PGP_KEY_V4, key_specs->algorithm, key_specs->capabilities, key_specs->flags, time(NULL),
+						 key_specs->expiry, &key_specs->parameters);
 	}
 
 	return 0;

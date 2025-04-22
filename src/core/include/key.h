@@ -79,25 +79,25 @@ typedef struct _pgp_key_packet
 
 } pgp_key_packet;
 
-typedef struct _pgp_key_specfication
+typedef struct _pgp_key_parameters
 {
-	byte_t algorithm;
-	byte_t flags;
-
-	uint32_t expiry;
-
 	union
 	{
-		uint16_t bits;
+		uint16_t bits; // RSA, DSA, Elgamal
 
 		struct
 		{
+			// ECDSA, EDDSA
 			byte_t curve;
 			byte_t legacy;
+
+			// ECDH
+			byte_t hash_algorithm;
+			byte_t cipher_algorithm;
 		};
 	};
 
-} pgp_key_specfication;
+} pgp_key_parameters;
 
 typedef struct _pgp_rsa_key
 {
@@ -184,9 +184,6 @@ typedef struct _pgp_ed448_key
 	byte_t private_key[57];
 } pgp_ed448_key;
 
-pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t capabilities, byte_t flags,
-							 uint32_t key_creation_time, uint32_t key_expiry_seconds, void *parameters);
-
 pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, uint32_t key_creation_time,
 							   uint32_t key_expiry_seconds, byte_t capabilities, byte_t flags, void *key);
 void pgp_key_packet_delete(pgp_key_packet *packet);
@@ -216,6 +213,9 @@ void pgp_key_hash(void *ctx, pgp_key_packet *key);
 uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size);
 uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE]);
 uint32_t pgp_key_id_from_fingerprint(pgp_key_version version, byte_t id[PGP_KEY_ID_SIZE], void *fingerprint, uint32_t size);
+
+pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t capabilities, byte_t flags,
+							 uint32_t key_creation_time, uint32_t key_expiry_seconds, pgp_key_parameters *parameters);
 
 void *pgp_rsa_generate_key(uint32_t bits);
 void *pgp_dsa_generate_key(uint32_t p_bits, uint32_t q_bits);

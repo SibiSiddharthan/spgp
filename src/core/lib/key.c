@@ -2562,7 +2562,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 }
 
 pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t capabilities, byte_t flags,
-							 uint32_t key_creation_time, uint32_t key_expiry_seconds, void *parameters)
+							 uint32_t key_creation_time, uint32_t key_expiry_seconds, pgp_key_parameters *parameters)
 {
 	pgp_key_packet *pgpkey = NULL;
 	void *key = NULL;
