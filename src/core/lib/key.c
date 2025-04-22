@@ -2567,6 +2567,8 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	pgp_key_packet *pgpkey = NULL;
 	void *key = NULL;
 
+	byte_t legacy_oid = 0;
+
 	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
 	{
 		return PGP_INVALID_KEY_VERSION;
@@ -2628,40 +2630,91 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		}
 	}
 
+	if (version == PGP_KEY_V4)
+	{
+		if ((public_key_algorithm_id == PGP_EDDSA && parameters->curve == PGP_EC_ED25519) ||
+			(public_key_algorithm_id == PGP_ECDH && parameters->curve == PGP_EC_CURVE25519))
+		{
+			legacy_oid = 1;
+		}
+	}
+
 	switch (public_key_algorithm_id)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
-		key = pgp_rsa_generate_key(4096);
+		key = pgp_rsa_generate_key(ROUND_UP(parameters->bits, 1024));
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 		// TODO
 		break;
 	case PGP_DSA:
-		// key = pgp_dsa_generate_key(2048, 256);
+		// key = pgp_dsa_generate_key(ROUND_UP(parameters->bits, 1024));
 		break;
 	case PGP_ECDH:
-		key = pgp_ecdh_generate_key(0, 0, 0);
+		key = pgp_ecdh_generate_key(parameters->curve, parameters->hash_algorithm, parameters->cipher_algorithm, legacy_oid);
 		break;
 	case PGP_ECDSA:
-		key = pgp_ecdsa_generate_key(0);
+		key = pgp_ecdsa_generate_key(parameters->curve);
 		break;
 	case PGP_EDDSA:
-		key = pgp_ecdsa_generate_key(0);
+		key = pgp_eddsa_generate_key(parameters->curve, legacy_oid);
 		break;
 	case PGP_X25519:
-		pgp_x25519_generate_key(NULL);
-		break;
+	{
+		key = malloc(sizeof(pgp_x25519_key));
+
+		if (key == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		memset(key, 0, sizeof(pgp_x25519_key));
+
+		pgp_x25519_generate_key(key);
+	}
+	break;
 	case PGP_X448:
+	{
+		key = malloc(sizeof(pgp_x448_key));
+
+		if (key == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		memset(key, 0, sizeof(pgp_x448_key));
+
 		pgp_x448_generate_key(NULL);
-		break;
+	}
+	break;
 	case PGP_ED25519:
+	{
+		key = malloc(sizeof(pgp_ed25519_key));
+
+		if (key == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		memset(key, 0, sizeof(pgp_ed25519_key));
 		pgp_ed25519_generate_key(NULL);
-		break;
+	}
+	break;
 	case PGP_ED448:
+	{
+		key = malloc(sizeof(pgp_ed448_key));
+
+		if (key == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		memset(key, 0, sizeof(pgp_ed448_key));
 		pgp_ed448_generate_key(NULL);
-		break;
+	}
+	break;
 
 	default:
 		// Unreachable

@@ -796,7 +796,7 @@ void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve)
 	return pgp_key;
 }
 
-void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_id, byte_t symmetric_key_algorithm_id)
+void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_id, byte_t symmetric_key_algorithm_id, byte_t legacy_oid)
 {
 	ec_group *group = NULL;
 	ec_key *key = NULL;
