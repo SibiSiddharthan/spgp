@@ -382,35 +382,58 @@ pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_pa
 pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 
 pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new(uint32_t timestamp);
+void pgp_signature_creation_time_subpacket_delete(pgp_signature_creation_time_subpacket *subpacket);
+
 pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uint32_t duration);
+void pgp_signature_expiry_time_subpacket_delete(pgp_signature_expiry_time_subpacket *subpacket);
+
 pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_t duration);
+void pgp_key_expiration_time_subpacket_delete(pgp_key_expiration_time_subpacket *subpacket);
 
 pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size);
+void pgp_issuer_fingerprint_subpacket_delete(pgp_issuer_fingerprint_subpacket *subpacket);
+
 pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size);
+void pgp_recipient_fingerprint_subpacket_delete(pgp_recipient_fingerprint_subpacket *subpacket);
+
 pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE]);
+void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
 
 pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second);
+void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket);
+
 pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags);
+void pgp_features_subpacket_delete(pgp_features_subpacket *subpacket);
+
 pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(byte_t flags);
+void pgp_key_server_preferences_subpacket_delete(pgp_key_server_preferences_subpacket *subpacket);
 
 pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state);
+void pgp_exportable_subpacket_delete(pgp_exportable_subpacket *subpacket);
+
 pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state);
+void pgp_revocable_subpacket_delete(pgp_revocable_subpacket *subpacket);
+
 pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state);
+void pgp_primary_user_id_subpacket_delete(pgp_primary_user_id_subpacket *subpacket);
 
 pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_level, byte_t trust_amount);
 void pgp_trust_signature_subpacket_delete(pgp_trust_signature_subpacket *subpacket);
 
 pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[]);
-pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
-pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
-pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpacket_new(byte_t count, byte_t prefs[]);
-pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2]);
+void pgp_preferred_symmetric_ciphers_subpacket_delete(pgp_preferred_symmetric_ciphers_subpacket *subpacket);
 
-void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
-void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);
-void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
-void pgp_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket);
-void pgp_preferred_algorithms_subpacket_delete(pgp_preferred_algorithms_subpacket *subpacket);
+pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
+void pgp_preferred_hash_algorithms_subpacket_delete(pgp_preferred_hash_algorithms_subpacket *subpacket);
+
+pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
+void pgp_preferred_compression_algorithms_subpacket_delete(pgp_preferred_compression_algorithms_subpacket *subpacket);
+
+pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpacket_new(byte_t count, byte_t prefs[]);
+void pgp_preferred_encryption_modes_subpacket_delete(pgp_preferred_encryption_modes_subpacket *subpacket);
+
+pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2]);
+void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket);
 
 pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);
 void pgp_rsa_signature_delete(pgp_rsa_signature *sign);

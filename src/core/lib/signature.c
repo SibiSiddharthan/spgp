@@ -1766,8 +1766,8 @@ static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet,
 
 	if (timestamp_subpacket == NULL || fingerprint_subpacket == NULL)
 	{
-		pgp_timestamp_subpacket_delete(timestamp_subpacket);
-		pgp_key_fingerprint_subpacket_delete(fingerprint_subpacket);
+		free(timestamp_subpacket);
+		free(fingerprint_subpacket);
 
 		return PGP_NO_MEMORY;
 	}
@@ -2685,6 +2685,11 @@ pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new
 	return subpacket;
 }
 
+void pgp_signature_creation_time_subpacket_delete(pgp_signature_creation_time_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uint32_t duration)
 {
 	pgp_timestamp_subpacket *subpacket = NULL;
@@ -2704,6 +2709,11 @@ pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uin
 	return subpacket;
 }
 
+void pgp_signature_expiry_time_subpacket_delete(pgp_signature_expiry_time_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_t duration)
 {
 	pgp_timestamp_subpacket *subpacket = NULL;
@@ -2721,6 +2731,11 @@ pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_
 	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
 
 	return subpacket;
+}
+
+void pgp_key_expiration_time_subpacket_delete(pgp_key_expiration_time_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
@@ -2755,6 +2770,11 @@ pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t ve
 	return subpacket;
 }
 
+void pgp_issuer_fingerprint_subpacket_delete(pgp_issuer_fingerprint_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
 {
 	pgp_key_fingerprint_subpacket *subpacket = NULL;
@@ -2787,6 +2807,11 @@ pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byt
 	return subpacket;
 }
 
+void pgp_recipient_fingerprint_subpacket_delete(pgp_recipient_fingerprint_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE])
 {
 	pgp_issuer_key_id_subpacket *subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket));
@@ -2802,6 +2827,11 @@ pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_K
 	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_KEY_ID_SUBPACKET, 0, PGP_KEY_ID_SIZE);
 
 	return subpacket;
+}
+
+void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second)
@@ -2833,6 +2863,11 @@ pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second
 	return subpacket;
 }
 
+void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags)
 {
 	pgp_flags_subpacket *subpacket = NULL;
@@ -2851,6 +2886,11 @@ pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags)
 	subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, 1);
 
 	return subpacket;
+}
+
+void pgp_features_subpacket_delete(pgp_features_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(byte_t flags)
@@ -2873,6 +2913,11 @@ pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(b
 	return subpacket;
 }
 
+void pgp_key_server_preferences_subpacket_delete(pgp_key_server_preferences_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state)
 {
 	pgp_boolean_subpacket *subpacket = NULL;
@@ -2890,6 +2935,11 @@ pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state)
 	subpacket->header = pgp_encode_subpacket_header(PGP_EXPORTABLE_SUBPACKET, 1, 1); // Critical
 
 	return subpacket;
+}
+
+void pgp_exportable_subpacket_delete(pgp_exportable_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state)
@@ -2911,6 +2961,11 @@ pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state)
 	return subpacket;
 }
 
+void pgp_revocable_subpacket_delete(pgp_revocable_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
 {
 	pgp_boolean_subpacket *subpacket = NULL;
@@ -2928,6 +2983,11 @@ pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
 	subpacket->header = pgp_encode_subpacket_header(PGP_PRIMARY_USER_ID_SUBPACKET, 0, 1);
 
 	return subpacket;
+}
+
+void pgp_primary_user_id_subpacket_delete(pgp_primary_user_id_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_level, byte_t trust_amount)
@@ -2974,6 +3034,11 @@ pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpa
 	return subpacket;
 }
 
+void pgp_preferred_symmetric_ciphers_subpacket_delete(pgp_preferred_symmetric_ciphers_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[])
 {
 	pgp_preferred_algorithms_subpacket *subpacket = NULL;
@@ -2991,6 +3056,11 @@ pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket
 	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, 0, count);
 
 	return subpacket;
+}
+
+void pgp_preferred_hash_algorithms_subpacket_delete(pgp_preferred_hash_algorithms_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[])
@@ -3012,6 +3082,11 @@ pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algori
 	return subpacket;
 }
 
+void pgp_preferred_compression_algorithms_subpacket_delete(pgp_preferred_compression_algorithms_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpacket_new(byte_t count, byte_t prefs[])
 {
 	pgp_preferred_algorithms_subpacket *subpacket = NULL;
@@ -3031,9 +3106,14 @@ pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpack
 	return subpacket;
 }
 
+void pgp_preferred_encryption_modes_subpacket_delete(pgp_preferred_encryption_modes_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2])
 {
-	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+	pgp_preferred_aead_ciphersuites_subpacket *subpacket = NULL;
 	byte_t size = count * 2;
 
 	subpacket = malloc(sizeof(pgp_subpacket_header) + size);
@@ -3049,27 +3129,7 @@ pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpa
 	return subpacket;
 }
 
-void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-void pgp_preferred_algorithms_subpacket_delete(pgp_preferred_algorithms_subpacket *subpacket)
+void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket)
 {
 	free(subpacket);
 }
