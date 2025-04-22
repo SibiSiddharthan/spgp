@@ -2683,8 +2683,8 @@ pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new
 
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, 1, 4); // Critical
 	subpacket->timestamp = timestamp;
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, 1, 4); // Critical
 
 	return subpacket;
 }
@@ -2702,8 +2702,8 @@ pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uin
 
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET, 1, 4); // Critical
 	subpacket->duration = duration;
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET, 1, 4); // Critical
 
 	return subpacket;
 }
@@ -2721,8 +2721,8 @@ pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_
 
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
 	subpacket->duration = duration;
+	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
 
 	return subpacket;
 }
@@ -2873,6 +2873,63 @@ pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(b
 
 	subpacket->flags[0] = flags & PGP_KEY_SERVER_FLAGS_MASK;
 	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
+
+	return subpacket;
+}
+
+pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state)
+{
+	pgp_boolean_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_boolean_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
+
+	subpacket->state = state & 0x1;
+	subpacket->header = pgp_encode_subpacket_header(PGP_EXPORTABLE_SUBPACKET, 1, 1); // Critical
+
+	return subpacket;
+}
+
+pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state)
+{
+	pgp_boolean_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_boolean_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
+
+	subpacket->state = state & 0x1;
+	subpacket->header = pgp_encode_subpacket_header(PGP_REVOCABLE_SUBPACKET, 0, 1);
+
+	return subpacket;
+}
+
+pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
+{
+	pgp_boolean_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_boolean_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
+
+	subpacket->state = state & 0x1;
+	subpacket->header = pgp_encode_subpacket_header(PGP_PRIMARY_USER_ID_SUBPACKET, 0, 1);
 
 	return subpacket;
 }

@@ -214,7 +214,7 @@ typedef struct _pgp_boolean_subpacket
 {
 	pgp_subpacket_header header;
 	byte_t state : 1; // 1 for yes, 0 for no.
-} pgp_exportable_subpacket, pgp_revocable_subpacket, pgp_primary_user_id_subpacket;
+} pgp_boolean_subpacket, pgp_exportable_subpacket, pgp_revocable_subpacket, pgp_primary_user_id_subpacket;
 
 typedef struct _pgp_preferred_algorithms_subpacket
 {
@@ -392,6 +392,10 @@ pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_K
 pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second);
 pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags);
 pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(byte_t flags);
+
+pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state);
+pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state);
+pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state);
 
 void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
 void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);
