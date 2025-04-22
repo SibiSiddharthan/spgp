@@ -351,7 +351,7 @@ typedef struct _key_preferences
 	byte_t cipher_algorithm_preferences[16];
 	byte_t compression_algorithm_preferences[4];
 	byte_t cipher_modes_preferences[4];
-	byte_t aead_algorithm_preferences[64];
+	byte_t aead_algorithm_preferences[32][2];
 } key_preferences;
 
 pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type);
@@ -397,12 +397,16 @@ pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state);
 pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state);
 pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state);
 
+pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[]);
+pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
+pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
+pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpacket_new(byte_t count, byte_t prefs[]);
+pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2]);
+
 void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
 void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);
 void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
 void pgp_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket);
-
-pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_t tag, byte_t count, byte_t prefs[]);
 void pgp_preferred_algorithms_subpacket_delete(pgp_preferred_algorithms_subpacket *subpacket);
 
 pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);

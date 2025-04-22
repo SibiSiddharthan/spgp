@@ -2056,9 +2056,8 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET,
-														   preferences->cipher_algorithm_preferences_count,
-														   preferences->cipher_algorithm_preferences);
+		subpacket = pgp_preferred_symmetric_ciphers_subpacket_new(preferences->cipher_algorithm_preferences_count,
+																  preferences->cipher_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -2072,9 +2071,8 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket =
-			pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, preferences->hash_algorithm_preferences_count,
-												   preferences->hash_algorithm_preferences);
+		subpacket = pgp_preferred_hash_algorithms_subpacket_new(preferences->hash_algorithm_preferences_count,
+																preferences->hash_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -2088,9 +2086,8 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET,
-														   preferences->compression_algorithm_preferences_count,
-														   preferences->compression_algorithm_preferences);
+		subpacket = pgp_preferred_compression_algorithms_subpacket_new(preferences->compression_algorithm_preferences_count,
+																	   preferences->compression_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -2104,8 +2101,8 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_algorithms_subpacket_new(
-			PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET, preferences->cipher_modes_preferences_count, preferences->cipher_modes_preferences);
+		subpacket = pgp_preferred_encryption_modes_subpacket_new(preferences->cipher_modes_preferences_count,
+																 preferences->cipher_modes_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -2119,9 +2116,8 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket =
-			pgp_preferred_algorithms_subpacket_new(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, preferences->aead_algorithm_preferences_count,
-												   preferences->aead_algorithm_preferences);
+		subpacket = pgp_preferred_aead_ciphersuites_subpacket_new(preferences->aead_algorithm_preferences_count,
+																  preferences->aead_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -2934,22 +2930,86 @@ pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
 	return subpacket;
 }
 
-pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_t tag, byte_t count, byte_t prefs[])
+pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[])
 {
 	pgp_preferred_algorithms_subpacket *subpacket = NULL;
-	byte_t size = count;
 
-	if (tag != PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET && tag != PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET &&
-		tag != PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET && tag != PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET &&
-		tag != PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET)
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
 	{
 		return NULL;
 	}
 
-	if (tag == PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET)
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
 	{
-		size *= 2;
+		return NULL;
 	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpacket_new(byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+	byte_t size = count * 2;
 
 	subpacket = malloc(sizeof(pgp_subpacket_header) + size);
 
@@ -2959,7 +3019,7 @@ pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_
 	}
 
 	memcpy(subpacket->preferred_algorithms, prefs, size);
-	subpacket->header = pgp_encode_subpacket_header(tag, 0, size);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, 0, size);
 
 	return subpacket;
 }
