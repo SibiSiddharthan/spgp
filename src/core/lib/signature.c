@@ -2930,6 +2930,31 @@ pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
 	return subpacket;
 }
 
+pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_level, byte_t trust_amount)
+{
+	pgp_trust_signature_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_trust_signature_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_trust_signature_subpacket));
+
+	subpacket->trust_level = trust_level;
+	subpacket->trust_amount = trust_amount;
+	subpacket->header = pgp_encode_subpacket_header(PGP_TRUST_SIGNATURE_SUBPACKET, 0, 2);
+
+	return subpacket;
+}
+
+void pgp_trust_signature_subpacket_delete(pgp_trust_signature_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[])
 {
 	pgp_preferred_algorithms_subpacket *subpacket = NULL;

@@ -397,6 +397,9 @@ pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state);
 pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state);
 pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state);
 
+pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_level, byte_t trust_amount);
+void pgp_trust_signature_subpacket_delete(pgp_trust_signature_subpacket *subpacket);
+
 pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[]);
 pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
 pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[]);
