@@ -796,6 +796,58 @@ void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve)
 	return pgp_key;
 }
 
+void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid)
+{
+	pgp_eddsa_key *pgp_key = NULL;
+	curve_id id = pgp_ec_curve_to_curve_id(curve);
+
+	pgp_key = pgp_ecdsa_key_new();
+
+	if (pgp_key == NULL)
+	{
+		return NULL;
+	}
+
+	if (curve == PGP_ED25519)
+	{
+		ed25519_key key = {0};
+		byte_t zero[ED25519_KEY_OCTETS] = {0};
+
+		ed25519_key_generate(&key, zero);
+
+		pgp_key->curve = curve;
+
+		if (legacy_oid)
+		{
+			pgp_key->oid_size = 9;
+			memcpy(pgp_key->oid, "\x2B\x06\x01\x04\x01\xDA\x47\x0F\x01", 9);
+		}
+		else
+		{
+			pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
+		}
+
+		pgp_key->point = mpi_from_ec_point(NULL, NULL);
+		pgp_key->x = mpi_from_bignum(NULL);
+	}
+
+	if (curve == PGP_ED448)
+	{
+		ed448_key key = {0};
+		byte_t zero[ED448_KEY_OCTETS] = {0};
+
+		ed448_key_generate(&key, zero);
+
+		pgp_key->curve = curve;
+		pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
+		pgp_key->point = mpi_from_ec_point(NULL, NULL);
+		pgp_key->x = mpi_from_bignum(NULL);
+	}
+
+	// Unreachable
+	return NULL;
+}
+
 void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_id, byte_t symmetric_key_algorithm_id, byte_t legacy_oid)
 {
 	ec_group *group = NULL;
@@ -834,7 +886,17 @@ void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_i
 	}
 
 	pgp_key->curve = curve;
-	pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
+
+	if (curve == PGP_EC_CURVE25519 && legacy_oid)
+	{
+		pgp_key->oid_size = 10;
+		memcpy(pgp_key->oid, "\x2B\x06\x01\x04\x01\x97\x55\x01\x05\x01", 10);
+	}
+	else
+	{
+		pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
+	}
+
 	pgp_key->point = mpi_from_ec_point(key->eg, key->q);
 	pgp_key->x = mpi_from_bignum(key->d);
 
