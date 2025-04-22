@@ -354,32 +354,21 @@ typedef struct _key_preferences
 	byte_t aead_algorithm_preferences[32][2];
 } key_preferences;
 
+pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **packet, byte_t version, byte_t type, byte_t nested,
+											  byte_t public_key_algorithm_id, byte_t hash_algorithm_id, void *salt, byte_t salt_size,
+											  void *key_fingerprint, byte_t key_fingerprint_size);
+void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet);
+
+pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size);
+size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
+size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
+
 pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
-
-pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm, void *salt,
-									  byte_t size, void *data);
-pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
-
-pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type, byte_t flags,
-											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal);
-pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
-
-pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, key_preferences *preferences,
-											   void *user);
-pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
-
-pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp);
-pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
 
 pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
 size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
-
-pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
-pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 
 pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new(uint32_t timestamp);
 void pgp_signature_creation_time_subpacket_delete(pgp_signature_creation_time_subpacket *subpacket);
@@ -435,19 +424,30 @@ void pgp_preferred_encryption_modes_subpacket_delete(pgp_preferred_encryption_mo
 pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2]);
 void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket);
 
+pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
+pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
+
+pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm, void *salt,
+									  byte_t size, void *data);
+pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
+
+pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type, byte_t flags,
+											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal);
+pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
+
+pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, key_preferences *preferences,
+											   void *user);
+pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
+
+pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t type,
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp);
+pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
+
 pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);
 void pgp_rsa_signature_delete(pgp_rsa_signature *sign);
 
 pgp_dsa_signature *pgp_dsa_signature_new(uint16_t bits);
 void pgp_dsa_signature_delete(pgp_dsa_signature *sign);
-
-pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **packet, byte_t version, byte_t type, byte_t nested,
-											  byte_t public_key_algorithm_id, byte_t hash_algorithm_id, void *salt, byte_t salt_size,
-											  void *key_fingerprint, byte_t key_fingerprint_size);
-void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet);
-
-pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size);
-size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
-size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
 
 #endif

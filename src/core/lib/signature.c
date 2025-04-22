@@ -44,6 +44,271 @@ static byte_t pgp_signature_type_validate(pgp_signature_type type)
 	}
 }
 
+pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **packet, byte_t version, byte_t type, byte_t nested,
+											  byte_t public_key_algorithm_id, byte_t hash_algorithm_id, void *salt, byte_t salt_size,
+											  void *key_fingerprint, byte_t key_fingerprint_size)
+{
+	pgp_one_pass_signature_packet *ops = NULL;
+
+	if (version != PGP_ONE_PASS_SIGNATURE_V3 && version != PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
+	}
+
+	if (pgp_signature_type_validate(type) == 0)
+	{
+		return PGP_INVALID_SIGNATURE_TYPE;
+	}
+
+	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return PGP_INVALID_SIGNATURE_ALGORITHM;
+	}
+
+	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
+	{
+		return PGP_INVALID_HASH_ALGORITHM;
+	}
+
+	if (version == PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		if (key_fingerprint_size != PGP_KEY_V6_FINGERPRINT_SIZE)
+		{
+			return PGP_INVALID_PARAMETER;
+		}
+
+		if (pgp_hash_salt_size(hash_algorithm_id) == 0 || pgp_hash_salt_size(hash_algorithm_id) != salt_size)
+		{
+			return PGP_INVALID_HASH_SALT_SIZE;
+		}
+	}
+	else
+	{
+		if (key_fingerprint_size != PGP_KEY_ID_SIZE)
+		{
+			return PGP_INVALID_PARAMETER;
+		}
+	}
+
+	ops = malloc(sizeof(pgp_one_pass_signature_packet));
+
+	if (ops == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(ops, 0, sizeof(pgp_one_pass_signature_packet));
+
+	// A 1-octet version number.
+	// A 1-octet Signature Type ID.
+	// A 1-octet hash algorithm.
+	// A 1-octet public key algorithm.
+	// (For V3) A 8-octet Key ID of the signer.
+	// (For V6) A 1-octet salt size.
+	// (For V6) The salt.
+	// (For V6) A 32-octet key fingerprint.
+	// A 1-octet flag for nested signatures.
+
+	ops->version = version;
+	ops->type = type;
+	ops->nested = nested;
+	ops->public_key_algorithm_id = public_key_algorithm_id;
+	ops->hash_algorithm_id = hash_algorithm_id;
+
+	if (ops->version == PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		ops->salt_size = salt_size;
+		memcpy(ops->salt, salt, ops->salt_size);
+
+		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
+
+		ops->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
+	}
+	else // packet->version == PGP_ONE_PASS_SIGNATURE_V3
+	{
+		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
+		ops->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 5 + PGP_KEY_ID_SIZE);
+	}
+
+	*packet = ops;
+
+	return PGP_SUCCESS;
+}
+
+void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
+{
+	free(packet);
+}
+
+static pgp_error_t pgp_one_pass_signature_packet_read_body(pgp_one_pass_signature_packet *packet, buffer_t *buffer)
+{
+	// 1 octet version
+	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+
+	// 1 octet signature type
+	CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+
+	// 1 octet hash algorithm
+	CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+
+	// 1 octet public-key algorithm
+	CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+
+	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		// 1 octed salt size
+		CHECK_READ(read8(buffer, &packet->salt_size), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+
+		// Salt
+		CHECK_READ(readn(buffer, packet->salt, packet->salt_size), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+
+		// A 32-octet key fingerprint.
+		CHECK_READ(readn(buffer, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+	}
+	else if (packet->version == PGP_ONE_PASS_SIGNATURE_V3)
+	{
+		// A 8-octet Key ID of the signer.
+		CHECK_READ(readn(buffer, packet->key_id, PGP_KEY_ID_SIZE), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+	}
+	else
+	{
+		// Unknown version.
+		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
+	}
+
+	// A 1-octet flag for nested signatures.
+	CHECK_READ(read8(buffer, &packet->nested), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signature_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_one_pass_signature_packet *ops = NULL;
+
+	ops = malloc(sizeof(pgp_one_pass_signature_packet));
+
+	if (ops == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(ops, 0, sizeof(pgp_one_pass_signature_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	ops->header = *header;
+
+	// Read the body
+	error = pgp_one_pass_signature_packet_read_body(ops, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_one_pass_signature_packet_delete(ops);
+		return error;
+	}
+
+	*packet = ops;
+
+	return error;
+}
+
+pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size)
+{
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	if (pgp_packet_get_type(header.tag) != PGP_OPS)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	return pgp_one_pass_signature_packet_read_with_header(packet, &header, data);
+}
+
+size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	size_t pos = 0;
+
+	if (size < PGP_PACKET_OCTETS(packet->header))
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet version
+	LOAD_8(out + pos, &packet->version);
+	pos += 1;
+
+	// 1 octet signature type
+	LOAD_8(out + pos, &packet->type);
+	pos += 1;
+
+	// 1 octet hash algorithm
+	LOAD_8(out + pos, &packet->hash_algorithm_id);
+	pos += 1;
+
+	// 1 octet public-key algorithm
+	LOAD_8(out + pos, &packet->public_key_algorithm_id);
+	pos += 1;
+
+	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
+	{
+		// 1 octed salt size
+		LOAD_8(out + pos, &packet->salt_size);
+		pos += 1;
+
+		// Salt
+		memcpy(out + pos, packet->salt, packet->salt_size);
+		pos += packet->salt_size;
+
+		// A 32-octet key fingerprint.
+		memcpy(out + pos, packet->key_fingerprint, 32);
+		pos += 32;
+	}
+	else //(packet->version == PGP_ONE_PASS_SIGNATURE_V3)
+	{
+		// A 8-octet Key ID of the signer.
+		LOAD_64(out + pos, &packet->key_id);
+		pos += 8;
+	}
+
+	// A 8-octet Key ID of the signer.
+	LOAD_64(out + pos, &packet->key_id);
+	pos += 8;
+
+	// A 1-octet flag for nested signatures.
+	LOAD_8(out + pos, &packet->nested);
+	pos += 1;
+
+	return pos;
+}
+
 static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer);
 static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void *ptr, size_t size);
 
@@ -1172,7 +1437,7 @@ static void pgp_signature_subpacket_delete(void *subpacket)
 		pgp_signature_packet_delete(subpacket);
 		break;
 	case PGP_KEY_BLOCK_SUBPACKET:
-		pgp_key_packet_delete(subpacket);
+		// TODO
 		break;
 	default:
 		free(subpacket);
@@ -1218,6 +1483,307 @@ static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
 		body_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + packet->signature_octets;
 		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, body_size);
 	}
+}
+
+pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type)
+{
+	pgp_signature_packet *sign = NULL;
+
+	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
+	{
+		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
+	}
+
+	if (pgp_signature_type_validate(type) == 0)
+	{
+		return PGP_INVALID_SIGNATURE_TYPE;
+	}
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = version;
+	sign->type = type;
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+void pgp_signature_packet_delete(pgp_signature_packet *packet)
+{
+	if (packet == NULL)
+	{
+		return;
+	}
+
+	// Free the subpackets first
+	pgp_stream_delete(packet->hashed_subpackets, pgp_signature_subpacket_delete);
+	pgp_stream_delete(packet->unhashed_subpackets, pgp_signature_subpacket_delete);
+	free(packet->signature);
+	free(packet);
+}
+
+static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer)
+{
+	pgp_error_t error = 0;
+	void *result = NULL;
+
+	size_t old_size = 0;
+
+	// 1 octet version
+	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_SIGNATURE_PACKET);
+
+	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
+	{
+		// 1 octet signature type
+		CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// 1 octet public key algorithm
+		CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// 1 octet hash algorithm
+		CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			// 4 octet count for the hashed subpacket data
+			CHECK_READ(read32_be(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
+		}
+		else
+		{
+			// 2 octet count for the hashed subpacket data
+			CHECK_READ(read16_be(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
+		}
+
+		// Hashed subpackets
+		old_size = buffer->size;
+		buffer->size = buffer->pos + packet->hashed_octets;
+
+		while (buffer->pos < buffer->size)
+		{
+			void *subpacket = NULL;
+
+			error = pgp_signature_subpacket_read(&subpacket, buffer);
+
+			if (error != PGP_SUCCESS)
+			{
+				// Just a free should be enough here.
+				// The embedded signature subpacket is freed in pgp_signature_subpacket_read.
+				if (subpacket != NULL)
+				{
+					free(subpacket);
+				}
+
+				if (error == PGP_INSUFFICIENT_DATA)
+				{
+					return PGP_MALFORMED_SIGNATURE_HASHED_SUBPACKET_SIZE;
+				}
+
+				return error;
+			}
+
+			result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
+
+			if (result == NULL)
+			{
+				return PGP_NO_MEMORY;
+			}
+
+			packet->hashed_subpackets = result;
+		}
+
+		buffer->size = old_size;
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			// 4 octet count for the hashed subpacket data
+			CHECK_READ(read32_be(buffer, &packet->unhashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
+		}
+		else
+		{
+			// 2 octet count for the hashed subpacket data
+			CHECK_READ(read16_be(buffer, &packet->unhashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
+		}
+
+		// Unhashed subpackets
+		old_size = buffer->size;
+		buffer->size = buffer->pos + packet->unhashed_octets;
+
+		while (buffer->pos < buffer->size)
+		{
+			void *subpacket = NULL;
+
+			error = pgp_signature_subpacket_read(&subpacket, buffer);
+
+			if (error != PGP_SUCCESS)
+			{
+				// Just a free should be enough here.
+				// The embedded signature subpacket is freed in pgp_signature_subpacket_read.
+				if (subpacket != NULL)
+				{
+					free(subpacket);
+				}
+
+				if (error == PGP_INSUFFICIENT_DATA)
+				{
+					return PGP_MALFORMED_SIGNATURE_UNHASHED_SUBPACKET_SIZE;
+				}
+
+				return error;
+			}
+
+			result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
+
+			if (result == NULL)
+			{
+				return PGP_NO_MEMORY;
+			}
+
+			packet->unhashed_subpackets = result;
+		}
+
+		buffer->size = old_size;
+
+		// 2 octet field holding left 16 bits of the signed hash value
+		CHECK_READ(read16(buffer, &packet->quick_hash), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		if (packet->version == PGP_SIGNATURE_V6)
+		{
+			// 1 octed salt size
+			CHECK_READ(read16(buffer, &packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET);
+
+			// Salt
+			CHECK_READ(readn(buffer, packet->salt, packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET_SALT_SIZE);
+		}
+
+		// Signature data
+		error = pgp_signature_data_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
+
+		if (error != PGP_SUCCESS)
+		{
+			return error;
+		}
+
+		buffer->pos += packet->signature_octets;
+	}
+	else if (packet->version == PGP_SIGNATURE_V3)
+	{
+		// 1 octet hashed length (5)
+		CHECK_READ(read8(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		if (packet->hashed_octets != 5)
+		{
+			return PGP_MALFORMED_SIGNATURE_PACKET;
+		}
+
+		// 1 octet signature type
+		CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// 4 octet creation time
+		CHECK_READ(read32_be(buffer, &packet->timestamp), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// 8 octet key-id
+		CHECK_READ(readn(buffer, &packet->key_id, PGP_KEY_ID_SIZE), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// 1 octet public key algorithm
+		CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// 1 octet hash algorithm
+		CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// 2 octet field holding left 16 bits of the signed hash value
+		CHECK_READ(read16(buffer, &packet->quick_hash), PGP_MALFORMED_SIGNATURE_PACKET);
+
+		// Signature data
+		error = pgp_signature_data_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
+
+		if (error != PGP_SUCCESS)
+		{
+			return error;
+		}
+
+		buffer->pos += packet->signature_octets;
+	}
+	else
+	{
+		// Unknown version.
+		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
+	}
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_signature_packet_read_with_header(pgp_signature_packet **packet, pgp_packet_header *header, void *data)
+{
+	pgp_error_t error = 0;
+	buffer_t buffer = {0};
+	pgp_signature_packet *signature = NULL;
+
+	signature = malloc(sizeof(pgp_signature_packet));
+
+	if (signature == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(signature, 0, sizeof(pgp_signature_packet));
+
+	buffer.data = data;
+	buffer.pos = header->header_size;
+	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+
+	// Copy the header
+	signature->header = *header;
+
+	// Read the body
+	error = pgp_signature_packet_body_read(signature, &buffer);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(signature);
+		return error;
+	}
+
+	*packet = signature;
+
+	return error;
+}
+
+pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size)
+{
+	pgp_error_t error = 0;
+	pgp_packet_header header = {0};
+
+	error = pgp_packet_header_read(&header, data, size);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	if (pgp_packet_get_type(header.tag) != PGP_LIT)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (size < PGP_PACKET_OCTETS(header))
+	{
+		return PGP_INSUFFICIENT_DATA;
+	}
+
+	if (header.body_size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	return pgp_signature_packet_read_with_header(packet, &header, data);
 }
 
 static size_t pgp_signature_packet_v3_write(pgp_signature_packet *packet, void *ptr, size_t size)
@@ -1374,6 +1940,524 @@ static size_t pgp_signature_packet_v4_v5_v6_write(pgp_signature_packet *packet, 
 	pos += pgp_signature_packet_body_write(packet, PTR_OFFSET(out, pos), size - pos);
 
 	return pos;
+}
+
+size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size)
+{
+	switch (packet->version)
+	{
+	case PGP_SIGNATURE_V3:
+		return pgp_signature_packet_v3_write(packet, ptr, size);
+	case PGP_SIGNATURE_V4:
+	case PGP_SIGNATURE_V6:
+		return pgp_signature_packet_v4_v5_v6_write(packet, ptr, size);
+	default:
+		return 0;
+	}
+}
+
+pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new(uint32_t timestamp)
+{
+	pgp_timestamp_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
+
+	subpacket->timestamp = timestamp;
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, 1, 4); // Critical
+
+	return subpacket;
+}
+
+void pgp_signature_creation_time_subpacket_delete(pgp_signature_creation_time_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uint32_t duration)
+{
+	pgp_timestamp_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
+
+	subpacket->duration = duration;
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET, 1, 4); // Critical
+
+	return subpacket;
+}
+
+void pgp_signature_expiry_time_subpacket_delete(pgp_signature_expiry_time_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_t duration)
+{
+	pgp_timestamp_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
+
+	subpacket->duration = duration;
+	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
+
+	return subpacket;
+}
+
+void pgp_key_expiration_time_subpacket_delete(pgp_key_expiration_time_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
+{
+	pgp_key_fingerprint_subpacket *subpacket = NULL;
+
+	// Check key version
+	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
+	{
+		return NULL;
+	}
+
+	if (size != pgp_key_fingerprint_size(version))
+	{
+		return NULL;
+	}
+
+	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_key_fingerprint_subpacket));
+
+	subpacket->version = version;
+	memcpy(subpacket->fingerprint, fingerprint, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
+
+	return subpacket;
+}
+
+void pgp_issuer_fingerprint_subpacket_delete(pgp_issuer_fingerprint_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
+{
+	pgp_key_fingerprint_subpacket *subpacket = NULL;
+
+	// Check key version
+	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
+	{
+		return NULL;
+	}
+
+	if (size != pgp_key_fingerprint_size(version))
+	{
+		return NULL;
+	}
+
+	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_key_fingerprint_subpacket));
+
+	subpacket->version = version;
+	memcpy(subpacket->fingerprint, fingerprint, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_RECIPIENT_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
+
+	return subpacket;
+}
+
+void pgp_recipient_fingerprint_subpacket_delete(pgp_recipient_fingerprint_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE])
+{
+	pgp_issuer_key_id_subpacket *subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_issuer_key_id_subpacket));
+	memcpy(subpacket->key_id, key_id, PGP_KEY_ID_SIZE);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_KEY_ID_SUBPACKET, 0, PGP_KEY_ID_SIZE);
+
+	return subpacket;
+}
+
+void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second)
+{
+	pgp_flags_subpacket *subpacket = NULL;
+
+	// Allocate for 2 bytes of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + 2);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 2);
+
+	if (second == 0)
+	{
+		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
+		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 1); // Critical
+	}
+	else
+	{
+		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
+		subpacket->flags[1] = second & PGP_KEY_FLAG_SECOND_OCTET_MASK;
+		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 2); // Critical
+	}
+
+	return subpacket;
+}
+
+void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags)
+{
+	pgp_flags_subpacket *subpacket = NULL;
+
+	// Allocate for 1 byte of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + 1);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
+
+	subpacket->flags[0] = flags & PGP_FEATURE_FLAG_MASK;
+	subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, 1);
+
+	return subpacket;
+}
+
+void pgp_features_subpacket_delete(pgp_features_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(byte_t flags)
+{
+	pgp_flags_subpacket *subpacket = NULL;
+
+	// Allocate for 1 byte of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + 1);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
+
+	subpacket->flags[0] = flags & PGP_KEY_SERVER_FLAGS_MASK;
+	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
+
+	return subpacket;
+}
+
+void pgp_key_server_preferences_subpacket_delete(pgp_key_server_preferences_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state)
+{
+	pgp_boolean_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_boolean_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
+
+	subpacket->state = state & 0x1;
+	subpacket->header = pgp_encode_subpacket_header(PGP_EXPORTABLE_SUBPACKET, 1, 1); // Critical
+
+	return subpacket;
+}
+
+void pgp_exportable_subpacket_delete(pgp_exportable_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state)
+{
+	pgp_boolean_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_boolean_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
+
+	subpacket->state = state & 0x1;
+	subpacket->header = pgp_encode_subpacket_header(PGP_REVOCABLE_SUBPACKET, 0, 1);
+
+	return subpacket;
+}
+
+void pgp_revocable_subpacket_delete(pgp_revocable_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
+{
+	pgp_boolean_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_boolean_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
+
+	subpacket->state = state & 0x1;
+	subpacket->header = pgp_encode_subpacket_header(PGP_PRIMARY_USER_ID_SUBPACKET, 0, 1);
+
+	return subpacket;
+}
+
+void pgp_primary_user_id_subpacket_delete(pgp_primary_user_id_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_level, byte_t trust_amount)
+{
+	pgp_trust_signature_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_trust_signature_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_trust_signature_subpacket));
+
+	subpacket->trust_level = trust_level;
+	subpacket->trust_amount = trust_amount;
+	subpacket->header = pgp_encode_subpacket_header(PGP_TRUST_SIGNATURE_SUBPACKET, 0, 2);
+
+	return subpacket;
+}
+
+void pgp_trust_signature_subpacket_delete(pgp_trust_signature_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+void pgp_preferred_symmetric_ciphers_subpacket_delete(pgp_preferred_symmetric_ciphers_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+void pgp_preferred_hash_algorithms_subpacket_delete(pgp_preferred_hash_algorithms_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+void pgp_preferred_compression_algorithms_subpacket_delete(pgp_preferred_compression_algorithms_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpacket_new(byte_t count, byte_t prefs[])
+{
+	pgp_preferred_algorithms_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
+
+	memcpy(subpacket->preferred_algorithms, prefs, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET, 0, count);
+
+	return subpacket;
+}
+
+void pgp_preferred_encryption_modes_subpacket_delete(pgp_preferred_encryption_modes_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2])
+{
+	pgp_preferred_aead_ciphersuites_subpacket *subpacket = NULL;
+	byte_t size = count * 2;
+
+	subpacket = malloc(sizeof(pgp_subpacket_header) + size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memcpy(subpacket->preferred_algorithms, prefs, size);
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, 0, size);
+
+	return subpacket;
+}
+
+void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
+{
+	void *result = NULL;
+	pgp_subpacket_header *header = subpacket;
+
+	result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
+
+	if (result == NULL)
+	{
+		return NULL;
+	}
+
+	packet->hashed_subpackets = result;
+	packet->hashed_octets += header->header_size + header->body_size;
+
+	return packet;
+}
+
+pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
+{
+	void *result = NULL;
+	pgp_subpacket_header *header = subpacket;
+
+	result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
+
+	if (result == NULL)
+	{
+		return NULL;
+	}
+
+	packet->unhashed_subpackets = result;
+	packet->unhashed_octets += header->header_size + header->body_size;
+
+	return packet;
 }
 
 static void pgp_compute_literal_hash(hash_ctx *hctx, pgp_literal_packet *literal)
@@ -1702,51 +2786,6 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 	hash_final(hctx, hash, 64);
 
 	return hctx->hash_size;
-}
-
-pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type)
-{
-	pgp_signature_packet *sign = NULL;
-
-	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
-	{
-		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
-	}
-
-	if (pgp_signature_type_validate(type) == 0)
-	{
-		return PGP_INVALID_SIGNATURE_TYPE;
-	}
-
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = version;
-	sign->type = type;
-
-	*packet = sign;
-
-	return PGP_SUCCESS;
-}
-
-void pgp_signature_packet_delete(pgp_signature_packet *packet)
-{
-	if (packet == NULL)
-	{
-		return;
-	}
-
-	// Free the subpackets first
-	pgp_stream_delete(packet->hashed_subpackets, pgp_signature_subpacket_delete);
-	pgp_stream_delete(packet->unhashed_subpackets, pgp_signature_subpacket_delete);
-	free(packet->signature);
-	free(packet);
 }
 
 static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp)
@@ -2358,1045 +3397,6 @@ pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key
 	}
 
 	return PGP_INCORRECT_FUNCTION;
-}
-
-static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, buffer_t *buffer)
-{
-	pgp_error_t error = 0;
-	void *result = NULL;
-
-	size_t old_size = 0;
-
-	// 1 octet version
-	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_SIGNATURE_PACKET);
-
-	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
-	{
-		// 1 octet signature type
-		CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// 1 octet public key algorithm
-		CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// 1 octet hash algorithm
-		CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		if (packet->version == PGP_SIGNATURE_V6)
-		{
-			// 4 octet count for the hashed subpacket data
-			CHECK_READ(read32_be(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
-		}
-		else
-		{
-			// 2 octet count for the hashed subpacket data
-			CHECK_READ(read16_be(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
-		}
-
-		// Hashed subpackets
-		old_size = buffer->size;
-		buffer->size = buffer->pos + packet->hashed_octets;
-
-		while (buffer->pos < buffer->size)
-		{
-			void *subpacket = NULL;
-
-			error = pgp_signature_subpacket_read(&subpacket, buffer);
-
-			if (error != PGP_SUCCESS)
-			{
-				// Just a free should be enough here.
-				// The embedded signature subpacket is freed in pgp_signature_subpacket_read.
-				if (subpacket != NULL)
-				{
-					free(subpacket);
-				}
-
-				if (error == PGP_INSUFFICIENT_DATA)
-				{
-					return PGP_MALFORMED_SIGNATURE_HASHED_SUBPACKET_SIZE;
-				}
-
-				return error;
-			}
-
-			result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
-
-			if (result == NULL)
-			{
-				return PGP_NO_MEMORY;
-			}
-
-			packet->hashed_subpackets = result;
-		}
-
-		buffer->size = old_size;
-
-		if (packet->version == PGP_SIGNATURE_V6)
-		{
-			// 4 octet count for the hashed subpacket data
-			CHECK_READ(read32_be(buffer, &packet->unhashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
-		}
-		else
-		{
-			// 2 octet count for the hashed subpacket data
-			CHECK_READ(read16_be(buffer, &packet->unhashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
-		}
-
-		// Unhashed subpackets
-		old_size = buffer->size;
-		buffer->size = buffer->pos + packet->unhashed_octets;
-
-		while (buffer->pos < buffer->size)
-		{
-			void *subpacket = NULL;
-
-			error = pgp_signature_subpacket_read(&subpacket, buffer);
-
-			if (error != PGP_SUCCESS)
-			{
-				// Just a free should be enough here.
-				// The embedded signature subpacket is freed in pgp_signature_subpacket_read.
-				if (subpacket != NULL)
-				{
-					free(subpacket);
-				}
-
-				if (error == PGP_INSUFFICIENT_DATA)
-				{
-					return PGP_MALFORMED_SIGNATURE_UNHASHED_SUBPACKET_SIZE;
-				}
-
-				return error;
-			}
-
-			result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
-
-			if (result == NULL)
-			{
-				return PGP_NO_MEMORY;
-			}
-
-			packet->unhashed_subpackets = result;
-		}
-
-		buffer->size = old_size;
-
-		// 2 octet field holding left 16 bits of the signed hash value
-		CHECK_READ(read16(buffer, &packet->quick_hash), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		if (packet->version == PGP_SIGNATURE_V6)
-		{
-			// 1 octed salt size
-			CHECK_READ(read16(buffer, &packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET);
-
-			// Salt
-			CHECK_READ(readn(buffer, packet->salt, packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET_SALT_SIZE);
-		}
-
-		// Signature data
-		error = pgp_signature_data_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
-
-		if (error != PGP_SUCCESS)
-		{
-			return error;
-		}
-
-		buffer->pos += packet->signature_octets;
-	}
-	else if (packet->version == PGP_SIGNATURE_V3)
-	{
-		// 1 octet hashed length (5)
-		CHECK_READ(read8(buffer, &packet->hashed_octets), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		if (packet->hashed_octets != 5)
-		{
-			return PGP_MALFORMED_SIGNATURE_PACKET;
-		}
-
-		// 1 octet signature type
-		CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// 4 octet creation time
-		CHECK_READ(read32_be(buffer, &packet->timestamp), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// 8 octet key-id
-		CHECK_READ(readn(buffer, &packet->key_id, PGP_KEY_ID_SIZE), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// 1 octet public key algorithm
-		CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// 1 octet hash algorithm
-		CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// 2 octet field holding left 16 bits of the signed hash value
-		CHECK_READ(read16(buffer, &packet->quick_hash), PGP_MALFORMED_SIGNATURE_PACKET);
-
-		// Signature data
-		error = pgp_signature_data_read(packet, buffer->data + buffer->pos, buffer->size - buffer->pos);
-
-		if (error != PGP_SUCCESS)
-		{
-			return error;
-		}
-
-		buffer->pos += packet->signature_octets;
-	}
-	else
-	{
-		// Unknown version.
-		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
-	}
-
-	return PGP_SUCCESS;
-}
-
-pgp_error_t pgp_signature_packet_read_with_header(pgp_signature_packet **packet, pgp_packet_header *header, void *data)
-{
-	pgp_error_t error = 0;
-	buffer_t buffer = {0};
-	pgp_signature_packet *signature = NULL;
-
-	signature = malloc(sizeof(pgp_signature_packet));
-
-	if (signature == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(signature, 0, sizeof(pgp_signature_packet));
-
-	buffer.data = data;
-	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
-
-	// Copy the header
-	signature->header = *header;
-
-	// Read the body
-	error = pgp_signature_packet_body_read(signature, &buffer);
-
-	if (error != PGP_SUCCESS)
-	{
-		pgp_signature_packet_delete(signature);
-		return error;
-	}
-
-	*packet = signature;
-
-	return error;
-}
-
-pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size)
-{
-	pgp_error_t error = 0;
-	pgp_packet_header header = {0};
-
-	error = pgp_packet_header_read(&header, data, size);
-
-	if (error != PGP_SUCCESS)
-	{
-		return error;
-	}
-
-	if (pgp_packet_get_type(header.tag) != PGP_LIT)
-	{
-		return PGP_INCORRECT_FUNCTION;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return PGP_INSUFFICIENT_DATA;
-	}
-
-	if (header.body_size == 0)
-	{
-		return PGP_EMPTY_PACKET;
-	}
-
-	return pgp_signature_packet_read_with_header(packet, &header, data);
-}
-
-size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size)
-{
-	switch (packet->version)
-	{
-	case PGP_SIGNATURE_V3:
-		return pgp_signature_packet_v3_write(packet, ptr, size);
-	case PGP_SIGNATURE_V4:
-	case PGP_SIGNATURE_V6:
-		return pgp_signature_packet_v4_v5_v6_write(packet, ptr, size);
-	default:
-		return 0;
-	}
-}
-
-pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
-{
-	void *result = NULL;
-	pgp_subpacket_header *header = subpacket;
-
-	result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
-
-	if (result == NULL)
-	{
-		return NULL;
-	}
-
-	packet->hashed_subpackets = result;
-	packet->hashed_octets += header->header_size + header->body_size;
-
-	return packet;
-}
-
-pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
-{
-	void *result = NULL;
-	pgp_subpacket_header *header = subpacket;
-
-	result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
-
-	if (result == NULL)
-	{
-		return NULL;
-	}
-
-	packet->unhashed_subpackets = result;
-	packet->unhashed_octets += header->header_size + header->body_size;
-
-	return packet;
-}
-
-pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new(uint32_t timestamp)
-{
-	pgp_timestamp_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
-
-	subpacket->timestamp = timestamp;
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, 1, 4); // Critical
-
-	return subpacket;
-}
-
-void pgp_signature_creation_time_subpacket_delete(pgp_signature_creation_time_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uint32_t duration)
-{
-	pgp_timestamp_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
-
-	subpacket->duration = duration;
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET, 1, 4); // Critical
-
-	return subpacket;
-}
-
-void pgp_signature_expiry_time_subpacket_delete(pgp_signature_expiry_time_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_t duration)
-{
-	pgp_timestamp_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
-
-	subpacket->duration = duration;
-	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
-
-	return subpacket;
-}
-
-void pgp_key_expiration_time_subpacket_delete(pgp_key_expiration_time_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
-{
-	pgp_key_fingerprint_subpacket *subpacket = NULL;
-
-	// Check key version
-	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
-	{
-		return NULL;
-	}
-
-	if (size != pgp_key_fingerprint_size(version))
-	{
-		return NULL;
-	}
-
-	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_key_fingerprint_subpacket));
-
-	subpacket->version = version;
-	memcpy(subpacket->fingerprint, fingerprint, size);
-
-	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
-
-	return subpacket;
-}
-
-void pgp_issuer_fingerprint_subpacket_delete(pgp_issuer_fingerprint_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
-{
-	pgp_key_fingerprint_subpacket *subpacket = NULL;
-
-	// Check key version
-	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
-	{
-		return NULL;
-	}
-
-	if (size != pgp_key_fingerprint_size(version))
-	{
-		return NULL;
-	}
-
-	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_key_fingerprint_subpacket));
-
-	subpacket->version = version;
-	memcpy(subpacket->fingerprint, fingerprint, size);
-
-	subpacket->header = pgp_encode_subpacket_header(PGP_RECIPIENT_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
-
-	return subpacket;
-}
-
-void pgp_recipient_fingerprint_subpacket_delete(pgp_recipient_fingerprint_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE])
-{
-	pgp_issuer_key_id_subpacket *subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_issuer_key_id_subpacket));
-	memcpy(subpacket->key_id, key_id, PGP_KEY_ID_SIZE);
-
-	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_KEY_ID_SUBPACKET, 0, PGP_KEY_ID_SIZE);
-
-	return subpacket;
-}
-
-void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second)
-{
-	pgp_flags_subpacket *subpacket = NULL;
-
-	// Allocate for 2 bytes of flags
-	subpacket = malloc(sizeof(pgp_subpacket_header) + 2);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 2);
-
-	if (second == 0)
-	{
-		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
-		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 1); // Critical
-	}
-	else
-	{
-		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
-		subpacket->flags[1] = second & PGP_KEY_FLAG_SECOND_OCTET_MASK;
-		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 2); // Critical
-	}
-
-	return subpacket;
-}
-
-void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags)
-{
-	pgp_flags_subpacket *subpacket = NULL;
-
-	// Allocate for 1 byte of flags
-	subpacket = malloc(sizeof(pgp_subpacket_header) + 1);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
-
-	subpacket->flags[0] = flags & PGP_FEATURE_FLAG_MASK;
-	subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, 1);
-
-	return subpacket;
-}
-
-void pgp_features_subpacket_delete(pgp_features_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(byte_t flags)
-{
-	pgp_flags_subpacket *subpacket = NULL;
-
-	// Allocate for 1 byte of flags
-	subpacket = malloc(sizeof(pgp_subpacket_header) + 1);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
-
-	subpacket->flags[0] = flags & PGP_KEY_SERVER_FLAGS_MASK;
-	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
-
-	return subpacket;
-}
-
-void pgp_key_server_preferences_subpacket_delete(pgp_key_server_preferences_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state)
-{
-	pgp_boolean_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_boolean_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
-
-	subpacket->state = state & 0x1;
-	subpacket->header = pgp_encode_subpacket_header(PGP_EXPORTABLE_SUBPACKET, 1, 1); // Critical
-
-	return subpacket;
-}
-
-void pgp_exportable_subpacket_delete(pgp_exportable_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state)
-{
-	pgp_boolean_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_boolean_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
-
-	subpacket->state = state & 0x1;
-	subpacket->header = pgp_encode_subpacket_header(PGP_REVOCABLE_SUBPACKET, 0, 1);
-
-	return subpacket;
-}
-
-void pgp_revocable_subpacket_delete(pgp_revocable_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
-{
-	pgp_boolean_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_boolean_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
-
-	subpacket->state = state & 0x1;
-	subpacket->header = pgp_encode_subpacket_header(PGP_PRIMARY_USER_ID_SUBPACKET, 0, 1);
-
-	return subpacket;
-}
-
-void pgp_primary_user_id_subpacket_delete(pgp_primary_user_id_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_level, byte_t trust_amount)
-{
-	pgp_trust_signature_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_trust_signature_subpacket));
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_trust_signature_subpacket));
-
-	subpacket->trust_level = trust_level;
-	subpacket->trust_amount = trust_amount;
-	subpacket->header = pgp_encode_subpacket_header(PGP_TRUST_SIGNATURE_SUBPACKET, 0, 2);
-
-	return subpacket;
-}
-
-void pgp_trust_signature_subpacket_delete(pgp_trust_signature_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[])
-{
-	pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
-
-	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET, 0, count);
-
-	return subpacket;
-}
-
-void pgp_preferred_symmetric_ciphers_subpacket_delete(pgp_preferred_symmetric_ciphers_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket_new(byte_t count, byte_t prefs[])
-{
-	pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
-
-	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, 0, count);
-
-	return subpacket;
-}
-
-void pgp_preferred_hash_algorithms_subpacket_delete(pgp_preferred_hash_algorithms_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algorithms_subpacket_new(byte_t count, byte_t prefs[])
-{
-	pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
-
-	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET, 0, count);
-
-	return subpacket;
-}
-
-void pgp_preferred_compression_algorithms_subpacket_delete(pgp_preferred_compression_algorithms_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpacket_new(byte_t count, byte_t prefs[])
-{
-	pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
-
-	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET, 0, count);
-
-	return subpacket;
-}
-
-void pgp_preferred_encryption_modes_subpacket_delete(pgp_preferred_encryption_modes_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2])
-{
-	pgp_preferred_aead_ciphersuites_subpacket *subpacket = NULL;
-	byte_t size = count * 2;
-
-	subpacket = malloc(sizeof(pgp_subpacket_header) + size);
-
-	if (subpacket == NULL)
-	{
-		return NULL;
-	}
-
-	memcpy(subpacket->preferred_algorithms, prefs, size);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, 0, size);
-
-	return subpacket;
-}
-
-void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
-pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **packet, byte_t version, byte_t type, byte_t nested,
-											  byte_t public_key_algorithm_id, byte_t hash_algorithm_id, void *salt, byte_t salt_size,
-											  void *key_fingerprint, byte_t key_fingerprint_size)
-{
-	pgp_one_pass_signature_packet *ops = NULL;
-
-	if (version != PGP_ONE_PASS_SIGNATURE_V3 && version != PGP_ONE_PASS_SIGNATURE_V6)
-	{
-		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
-	}
-
-	if (pgp_signature_type_validate(type) == 0)
-	{
-		return PGP_INVALID_SIGNATURE_TYPE;
-	}
-
-	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
-	{
-		return PGP_INVALID_SIGNATURE_ALGORITHM;
-	}
-
-	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
-	{
-		return PGP_INVALID_HASH_ALGORITHM;
-	}
-
-	if (version == PGP_ONE_PASS_SIGNATURE_V6)
-	{
-		if (key_fingerprint_size != PGP_KEY_V6_FINGERPRINT_SIZE)
-		{
-			return PGP_INVALID_PARAMETER;
-		}
-
-		if (pgp_hash_salt_size(hash_algorithm_id) == 0 || pgp_hash_salt_size(hash_algorithm_id) != salt_size)
-		{
-			return PGP_INVALID_HASH_SALT_SIZE;
-		}
-	}
-	else
-	{
-		if (key_fingerprint_size != PGP_KEY_ID_SIZE)
-		{
-			return PGP_INVALID_PARAMETER;
-		}
-	}
-
-	ops = malloc(sizeof(pgp_one_pass_signature_packet));
-
-	if (ops == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(ops, 0, sizeof(pgp_one_pass_signature_packet));
-
-	// A 1-octet version number.
-	// A 1-octet Signature Type ID.
-	// A 1-octet hash algorithm.
-	// A 1-octet public key algorithm.
-	// (For V3) A 8-octet Key ID of the signer.
-	// (For V6) A 1-octet salt size.
-	// (For V6) The salt.
-	// (For V6) A 32-octet key fingerprint.
-	// A 1-octet flag for nested signatures.
-
-	ops->version = version;
-	ops->type = type;
-	ops->nested = nested;
-	ops->public_key_algorithm_id = public_key_algorithm_id;
-	ops->hash_algorithm_id = hash_algorithm_id;
-
-	if (ops->version == PGP_ONE_PASS_SIGNATURE_V6)
-	{
-		ops->salt_size = salt_size;
-		memcpy(ops->salt, salt, ops->salt_size);
-
-		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
-
-		ops->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
-	}
-	else // packet->version == PGP_ONE_PASS_SIGNATURE_V3
-	{
-		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
-		ops->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 5 + PGP_KEY_ID_SIZE);
-	}
-
-	*packet = ops;
-
-	return PGP_SUCCESS;
-}
-
-void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
-{
-	free(packet);
-}
-
-static pgp_error_t pgp_one_pass_signature_packet_read_body(pgp_one_pass_signature_packet *packet, buffer_t *buffer)
-{
-	// 1 octet version
-	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-
-	// 1 octet signature type
-	CHECK_READ(read8(buffer, &packet->type), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-
-	// 1 octet hash algorithm
-	CHECK_READ(read8(buffer, &packet->hash_algorithm_id), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-
-	// 1 octet public-key algorithm
-	CHECK_READ(read8(buffer, &packet->public_key_algorithm_id), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-
-	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
-	{
-		// 1 octed salt size
-		CHECK_READ(read8(buffer, &packet->salt_size), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-
-		// Salt
-		CHECK_READ(readn(buffer, packet->salt, packet->salt_size), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-
-		// A 32-octet key fingerprint.
-		CHECK_READ(readn(buffer, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-	}
-	else if (packet->version == PGP_ONE_PASS_SIGNATURE_V3)
-	{
-		// A 8-octet Key ID of the signer.
-		CHECK_READ(readn(buffer, packet->key_id, PGP_KEY_ID_SIZE), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-	}
-	else
-	{
-		// Unknown version.
-		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
-	}
-
-	// A 1-octet flag for nested signatures.
-	CHECK_READ(read8(buffer, &packet->nested), PGP_MALFORMED_ONE_PASS_SIGNATURE_PACKET);
-
-	return PGP_SUCCESS;
-}
-
-pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signature_packet **packet, pgp_packet_header *header, void *data)
-{
-	pgp_error_t error = 0;
-	buffer_t buffer = {0};
-	pgp_one_pass_signature_packet *ops = NULL;
-
-	ops = malloc(sizeof(pgp_one_pass_signature_packet));
-
-	if (ops == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(ops, 0, sizeof(pgp_one_pass_signature_packet));
-
-	buffer.data = data;
-	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
-
-	// Copy the header
-	ops->header = *header;
-
-	// Read the body
-	error = pgp_one_pass_signature_packet_read_body(ops, &buffer);
-
-	if (error != PGP_SUCCESS)
-	{
-		pgp_one_pass_signature_packet_delete(ops);
-		return error;
-	}
-
-	*packet = ops;
-
-	return error;
-}
-
-pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size)
-{
-	pgp_error_t error = 0;
-	pgp_packet_header header = {0};
-
-	error = pgp_packet_header_read(&header, data, size);
-
-	if (error != PGP_SUCCESS)
-	{
-		return error;
-	}
-
-	if (pgp_packet_get_type(header.tag) != PGP_OPS)
-	{
-		return PGP_INCORRECT_FUNCTION;
-	}
-
-	if (size < PGP_PACKET_OCTETS(header))
-	{
-		return PGP_INSUFFICIENT_DATA;
-	}
-
-	if (header.body_size == 0)
-	{
-		return PGP_EMPTY_PACKET;
-	}
-
-	return pgp_one_pass_signature_packet_read_with_header(packet, &header, data);
-}
-
-size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size)
-{
-	byte_t *out = ptr;
-	size_t pos = 0;
-
-	if (size < PGP_PACKET_OCTETS(packet->header))
-	{
-		return 0;
-	}
-
-	// Header
-	pos += pgp_packet_header_write(&packet->header, out + pos);
-
-	// 1 octet version
-	LOAD_8(out + pos, &packet->version);
-	pos += 1;
-
-	// 1 octet signature type
-	LOAD_8(out + pos, &packet->type);
-	pos += 1;
-
-	// 1 octet hash algorithm
-	LOAD_8(out + pos, &packet->hash_algorithm_id);
-	pos += 1;
-
-	// 1 octet public-key algorithm
-	LOAD_8(out + pos, &packet->public_key_algorithm_id);
-	pos += 1;
-
-	if (packet->version == PGP_ONE_PASS_SIGNATURE_V6)
-	{
-		// 1 octed salt size
-		LOAD_8(out + pos, &packet->salt_size);
-		pos += 1;
-
-		// Salt
-		memcpy(out + pos, packet->salt, packet->salt_size);
-		pos += packet->salt_size;
-
-		// A 32-octet key fingerprint.
-		memcpy(out + pos, packet->key_fingerprint, 32);
-		pos += 32;
-	}
-	else //(packet->version == PGP_ONE_PASS_SIGNATURE_V3)
-	{
-		// A 8-octet Key ID of the signer.
-		LOAD_64(out + pos, &packet->key_id);
-		pos += 8;
-	}
-
-	// A 8-octet Key ID of the signer.
-	LOAD_64(out + pos, &packet->key_id);
-	pos += 8;
-
-	// A 1-octet flag for nested signatures.
-	LOAD_8(out + pos, &packet->nested);
-	pos += 1;
-
-	return pos;
 }
 
 pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits)
