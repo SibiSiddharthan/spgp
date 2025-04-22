@@ -2138,7 +2138,7 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 
 	if (preferences->key_flags != 0)
 	{
-		flags_subpacket = pgp_flags_subpacket_new(PGP_KEY_FLAGS_SUBPACKET, preferences->key_flags);
+		flags_subpacket = pgp_key_flags_subpacket_new(preferences->key_flags, 0);
 
 		if (flags_subpacket == NULL)
 		{
@@ -2150,7 +2150,7 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 
 	if (preferences->features != 0)
 	{
-		features_subpacket = pgp_flags_subpacket_new(PGP_FEATURES_SUBPACKET, preferences->features);
+		features_subpacket = pgp_features_subpacket_new(preferences->features);
 
 		if (features_subpacket == NULL)
 		{
@@ -2162,7 +2162,7 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 
 	if (preferences->key_server != 0)
 	{
-		server_subpacket = pgp_flags_subpacket_new(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, preferences->key_server);
+		server_subpacket = pgp_key_server_preferences_subpacket_new(preferences->key_server);
 
 		if (server_subpacket == NULL)
 		{
@@ -2305,7 +2305,7 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 		pgp_key_expiration_time_subpacket *expiry_subpacket = NULL;
 
 		// Add key flags subpacket
-		flags_subpacket = pgp_flags_subpacket_new(PGP_KEY_FLAGS_SUBPACKET, key->capabilities);
+		flags_subpacket = pgp_key_flags_subpacket_new(key->capabilities, 0);
 
 		if (flags_subpacket == NULL)
 		{
@@ -2808,51 +2808,71 @@ pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_K
 	return subpacket;
 }
 
-pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags)
+pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second)
 {
 	pgp_flags_subpacket *subpacket = NULL;
 
-	if (tag != PGP_KEY_FLAGS_SUBPACKET && tag != PGP_FEATURES_SUBPACKET && tag != PGP_KEY_SERVER_PREFERENCES_SUBPACKET)
-	{
-		return NULL;
-	}
-
-	// Allocate for 4 bytes of flags
-	subpacket = malloc(sizeof(pgp_subpacket_header) + 4);
+	// Allocate for 2 bytes of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + 2);
 
 	if (subpacket == NULL)
 	{
 		return NULL;
 	}
 
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 4);
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 2);
 
-	if (tag == PGP_KEY_FLAGS_SUBPACKET)
+	if (second == 0)
 	{
-		subpacket->flags[0] = flags & PGP_KEY_FLAG_FIRST_OCTET_MASK;
-
-		if ((flags >> 8) == 0)
-		{
-			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 1);
-		}
-		else
-		{
-			subpacket->flags[1] = (flags >> 8) & PGP_KEY_FLAG_SECOND_OCTET_MASK;
-			subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 2);
-		}
+		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
+		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 1); // Critical
+	}
+	else
+	{
+		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
+		subpacket->flags[1] = second & PGP_KEY_FLAG_SECOND_OCTET_MASK;
+		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 2); // Critical
 	}
 
-	if (tag == PGP_FEATURES_SUBPACKET)
+	return subpacket;
+}
+
+pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags)
+{
+	pgp_flags_subpacket *subpacket = NULL;
+
+	// Allocate for 1 byte of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + 1);
+
+	if (subpacket == NULL)
 	{
-		subpacket->flags[0] = flags & PGP_FEATURE_FLAG_MASK;
-		subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 1, 1);
+		return NULL;
 	}
 
-	if (tag == PGP_KEY_SERVER_PREFERENCES_SUBPACKET)
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
+
+	subpacket->flags[0] = flags & PGP_FEATURE_FLAG_MASK;
+	subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, 1);
+
+	return subpacket;
+}
+
+pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(byte_t flags)
+{
+	pgp_flags_subpacket *subpacket = NULL;
+
+	// Allocate for 1 byte of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + 1);
+
+	if (subpacket == NULL)
 	{
-		subpacket->flags[0] = flags & PGP_KEY_SERVER_FLAGS_MASK;
-		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
+		return NULL;
 	}
+
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
+
+	subpacket->flags[0] = flags & PGP_KEY_SERVER_FLAGS_MASK;
+	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
 
 	return subpacket;
 }

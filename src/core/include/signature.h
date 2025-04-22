@@ -389,11 +389,13 @@ pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t ve
 pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size);
 pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE]);
 
+pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second);
+pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags);
+pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(byte_t flags);
+
 void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
 void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);
 void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
-
-pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags);
 void pgp_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket);
 
 pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_t tag, byte_t count, byte_t prefs[]);
