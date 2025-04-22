@@ -385,12 +385,12 @@ pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new
 pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uint32_t duration);
 pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_t duration);
 
-void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
-
-pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size);
-void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);
-
+pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size);
+pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size);
 pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE]);
+
+void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
+void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket);
 void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket);
 
 pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags);

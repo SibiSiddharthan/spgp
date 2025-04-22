@@ -1760,8 +1760,7 @@ static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet,
 
 	// Calculate issuer key fingerprint
 	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-	fingerprint_subpacket =
-		pgp_key_fingerprint_subpacket_new(PGP_ISSUER_FINGERPRINT_SUBPACKET, key->version, fingerprint, fingerprint_size);
+	fingerprint_subpacket = pgp_issuer_fingerprint_subpacket_new(key->version, fingerprint, fingerprint_size);
 
 	timestamp_subpacket = pgp_signature_creation_time_subpacket_new(timestamp);
 
@@ -2728,18 +2727,17 @@ pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_
 	return subpacket;
 }
 
-pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size)
+pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
 {
 	pgp_key_fingerprint_subpacket *subpacket = NULL;
 
-	// Check tag
-	if (tag != PGP_ISSUER_FINGERPRINT_SUBPACKET && tag != PGP_RECIPIENT_FINGERPRINT_SUBPACKET)
+	// Check key version
+	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
 	{
 		return NULL;
 	}
 
-	// Check key version
-	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
+	if (size != pgp_key_fingerprint_size(version))
 	{
 		return NULL;
 	}
@@ -2756,7 +2754,39 @@ pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byt
 	subpacket->version = version;
 	memcpy(subpacket->fingerprint, fingerprint, size);
 
-	subpacket->header = pgp_encode_subpacket_header(tag, 1, size + 1);
+	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
+
+	return subpacket;
+}
+
+pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
+{
+	pgp_key_fingerprint_subpacket *subpacket = NULL;
+
+	// Check key version
+	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
+	{
+		return NULL;
+	}
+
+	if (size != pgp_key_fingerprint_size(version))
+	{
+		return NULL;
+	}
+
+	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_key_fingerprint_subpacket));
+
+	subpacket->version = version;
+	memcpy(subpacket->fingerprint, fingerprint, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_RECIPIENT_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
 
 	return subpacket;
 }
