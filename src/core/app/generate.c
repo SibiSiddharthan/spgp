@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 typedef enum _spgp_key_id
 {
@@ -234,14 +235,14 @@ static void parse_key(pgp_key_specfication *spec, byte_t *in, byte_t length)
 	switch (count)
 	{
 	case 0:
-		parse_key(spec, in, length);
+		parse_algorithm(spec, in, length);
 		break;
 	case 1:
-		parse_key(spec, in, capabilities_offset - 2);
+		parse_algorithm(spec, in, capabilities_offset - 2);
 		parse_capabilities(spec, in + capabilities_offset, length - capabilities_offset);
 		break;
 	case 2:
-		parse_key(spec, in, capabilities_offset - 2);
+		parse_algorithm(spec, in, capabilities_offset - 2);
 		parse_capabilities(spec, in + capabilities_offset, expiry_offset - 2);
 		parse_expiry(spec, in + expiry_offset, length - expiry_offset);
 		break;
@@ -302,12 +303,20 @@ static uint32_t parse_spec(byte_t *in, pgp_key_specfication **out)
 
 		parse_key(&spec[i], PTR_OFFSET(in, pos), end - start);
 	}
+
+	*out = spec;
+
+	return count;
 }
 
 uint32_t spgp_generate_key(void)
 {
 	byte_t *uid = NULL;
 	byte_t *spec = NULL;
+
+	pgp_key_specfication *key_specs = NULL;
+	pgp_key_packet **key_packets = NULL;
+	uint32_t count = 0;
 
 	if (command.files == NULL || command.files->count != 2)
 	{
@@ -317,4 +326,23 @@ uint32_t spgp_generate_key(void)
 
 	uid = command.files->packets[0];
 	spec = command.files->packets[1];
+
+	count = parse_spec(spec, &key_specs);
+
+	key_packets = malloc(sizeof(void *) * count);
+
+	if (key_packets == NULL)
+	{
+		printf("No memory");
+		exit(1);
+	}
+
+	memset(key_packets, 0, sizeof(void *) * count);
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		pgp_key_generate(&key_packets[i], PGP_KEY_V4, key_specs->algorithm, 0, 0, time(NULL), key_specs->expiry, NULL);
+	}
+
+	return 0;
 }
