@@ -97,9 +97,9 @@ typedef enum _pgp_revocation_code
 } pgp_revocation_code;
 
 // Trust Levels
-#define PGP_TRUST_LEVEL_ORDINARY  0
-#define PGP_TRUST_LEVEL_TRUSTED 1
-#define PGP_TRUST_LEVEL_ISSUER  2
+#define PGP_TRUST_LEVEL_ORDINARY 0
+#define PGP_TRUST_LEVEL_TRUSTED  1
+#define PGP_TRUST_LEVEL_ISSUER   2
 
 // Trust Amounts
 #define PGP_TRUST_AMOUNT_PARTIAL  60
@@ -381,7 +381,10 @@ size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_
 pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 
-pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timestamp);
+pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new(uint32_t timestamp);
+pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uint32_t duration);
+pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_t duration);
+
 void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket);
 
 pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size);

@@ -1763,7 +1763,7 @@ static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet,
 	fingerprint_subpacket =
 		pgp_key_fingerprint_subpacket_new(PGP_ISSUER_FINGERPRINT_SUBPACKET, key->version, fingerprint, fingerprint_size);
 
-	timestamp_subpacket = pgp_timestamp_subpacket_new(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, timestamp);
+	timestamp_subpacket = pgp_signature_creation_time_subpacket_new(timestamp);
 
 	if (timestamp_subpacket == NULL || fingerprint_subpacket == NULL)
 	{
@@ -2219,7 +2219,7 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 	// Add key expiration subpacket
 	if (key->key_expiry_seconds > 0)
 	{
-		expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, key->key_expiry_seconds);
+		expiry_subpacket = pgp_key_expiration_time_subpacket_new(key->key_expiry_seconds);
 
 		if (expiry_subpacket == NULL)
 		{
@@ -2319,7 +2319,7 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 		// Add key expiration subpacket
 		if (key->key_expiry_seconds > 0)
 		{
-			expiry_subpacket = pgp_timestamp_subpacket_new(PGP_KEY_EXPIRATION_TIME_SUBPACKET, key->key_expiry_seconds);
+			expiry_subpacket = pgp_key_expiration_time_subpacket_new(key->key_expiry_seconds);
 
 			if (expiry_subpacket == NULL)
 			{
@@ -2671,16 +2671,9 @@ pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_
 	return packet;
 }
 
-pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timestamp)
+pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new(uint32_t timestamp)
 {
 	pgp_timestamp_subpacket *subpacket = NULL;
-
-	// Check tag
-	if (tag != PGP_SIGNATURE_CREATION_TIME_SUBPACKET && tag != PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET &&
-		tag != PGP_KEY_EXPIRATION_TIME_SUBPACKET)
-	{
-		return NULL;
-	}
 
 	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
 
@@ -2691,15 +2684,48 @@ pgp_timestamp_subpacket *pgp_timestamp_subpacket_new(byte_t tag, uint32_t timest
 
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
-	subpacket->header = pgp_encode_subpacket_header(tag, 1, 4);
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, 1, 4); // Critical
 	subpacket->timestamp = timestamp;
 
 	return subpacket;
 }
 
-void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket)
+pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uint32_t duration)
 {
-	free(subpacket);
+	pgp_timestamp_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET, 1, 4); // Critical
+	subpacket->duration = duration;
+
+	return subpacket;
+}
+
+pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_t duration)
+{
+	pgp_timestamp_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_timestamp_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
+	subpacket->duration = duration;
+
+	return subpacket;
 }
 
 pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byte_t version, byte_t *fingerprint, byte_t size)
@@ -2735,11 +2761,6 @@ pgp_key_fingerprint_subpacket *pgp_key_fingerprint_subpacket_new(byte_t tag, byt
 	return subpacket;
 }
 
-void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
 pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_KEY_ID_SIZE])
 {
 	pgp_issuer_key_id_subpacket *subpacket = malloc(sizeof(pgp_issuer_key_id_subpacket));
@@ -2755,11 +2776,6 @@ pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_K
 	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_KEY_ID_SUBPACKET, 0, PGP_KEY_ID_SIZE);
 
 	return subpacket;
-}
-
-void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
-{
-	free(subpacket);
 }
 
 pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags)
@@ -2811,11 +2827,6 @@ pgp_flags_subpacket *pgp_flags_subpacket_new(byte_t tag, uint32_t flags)
 	return subpacket;
 }
 
-void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
-{
-	free(subpacket);
-}
-
 pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_t tag, byte_t count, byte_t prefs[])
 {
 	pgp_preferred_algorithms_subpacket *subpacket = NULL;
@@ -2844,6 +2855,26 @@ pgp_preferred_algorithms_subpacket *pgp_preferred_algorithms_subpacket_new(byte_
 	subpacket->header = pgp_encode_subpacket_header(tag, 0, size);
 
 	return subpacket;
+}
+
+void pgp_timestamp_subpacket_delete(pgp_timestamp_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+void pgp_key_fingerprint_subpacket_delete(pgp_key_fingerprint_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+void pgp_issuer_key_id_subpacket_delete(pgp_issuer_key_id_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
+{
+	free(subpacket);
 }
 
 void pgp_preferred_algorithms_subpacket_delete(pgp_preferred_algorithms_subpacket *subpacket)
