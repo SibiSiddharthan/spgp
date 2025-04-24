@@ -579,6 +579,8 @@ uint32_t spgp_generate_key(void)
 	pgp_user_id_packet *user = NULL;
 	pgp_key_version version = 0;
 
+	pgp_stream_t *certificate = NULL;
+	pgp_signature_packet *signature = NULL;
 	user_preferences preferences = {0};
 
 	if (command.files == NULL || command.files->count != 2)
@@ -626,6 +628,40 @@ uint32_t spgp_generate_key(void)
 		pgp_key_generate(&key_packets[i], version, key_specs->algorithm, key_specs->capabilities, key_specs->flags, time(NULL),
 						 key_specs->expiry, &key_specs->parameters);
 	}
+
+	// Create the certificate
+	certificate = pgp_stream_new(3 + (count * 2));
+
+	if (certificate == NULL)
+	{
+		printf("No memory");
+		exit(1);
+	}
+
+	pgp_stream_push_packet(certificate, key_packets[0]);
+	pgp_stream_push_packet(certificate, user);
+
+	pgp_generate_certificate_signature(&signature, key_packets[0], PGP_POSITIVE_CERTIFICATION_SIGNATURE,
+									   preferences.hash_algorithm_preferences[0], time(NULL), &preferences, user);
+	pgp_stream_push_packet(certificate, signature);
+
+	for (uint32_t i = 1; i < count; ++i)
+	{
+		signature = NULL;
+
+		pgp_stream_push_packet(certificate, key_packets[i]);
+		pgp_generate_key_binding_signature(&signature, key_packets[0], key_packets[i], PGP_SUBKEY_BINDING_SIGNATURE,
+										   preferences.hash_algorithm_preferences[0], time(NULL));
+		pgp_stream_push_packet(certificate, signature);
+	}
+
+	// Write the keys and certificate
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		spgp_write_key(NULL, 0, key_packets[i]);
+	}
+
+	spgp_write_certificate(NULL, 0, certificate);
 
 	return 0;
 }
