@@ -3088,7 +3088,7 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 	return pgp_signature_packet_verify(sign, key, literal);
 }
 
-static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_preferences *preferences)
+static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_preferences *preferences)
 {
 	// Add preferences
 	if (preferences->cipher_algorithm_preferences_count > 0)
@@ -3211,7 +3211,7 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, key_prefe
 }
 
 pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, key_preferences *preferences,
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, user_preferences *preferences,
 											   void *user)
 {
 	pgp_error_t error = 0;

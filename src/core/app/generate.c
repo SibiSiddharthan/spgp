@@ -15,44 +15,6 @@
 #include <string.h>
 #include <time.h>
 
-typedef enum _spgp_key_id
-{
-	SPGP_UNKNOWN = 0,
-
-	// RSA
-	SPGP_RSA2048,
-	SPGP_RSA3072,
-	SPGP_RSA4096,
-
-	// DSA
-	SPGP_DSA1024,
-	SPGP_DSA2048,
-	SPGP_DSA3072,
-
-	// Elgamal
-	SPGP_ELGAMAL1024,
-	SPGP_ELGAMAL2048,
-	SPGP_ELGAMAL3072,
-	SPGP_ELGAMAL4096,
-
-	// ECC
-	SPGP_EC_NISTP256,
-	SPGP_EC_NISTP384,
-	SPGP_EC_NISTP521,
-	SPGP_EC_BRAINPOOL256R1,
-	SPGP_EC_BRAINPOOL384R1,
-	SPGP_EC_BRAINPOOL512R1,
-	SPGP_EC_CURVE25519,
-	SPGP_EC_CURVE448,
-	SPGP_EC_ED25519,
-	SPGP_EC_ED448,
-
-	// Legacy
-	SPGP_EC_CURVE25519_LEGACY,
-	SPGP_EC_ED25519_LEGACY,
-
-} spgp_key_id;
-
 typedef struct _key_specfication
 {
 	byte_t algorithm;
@@ -547,6 +509,64 @@ static uint32_t parse_spec(byte_t *in, key_specfication **out)
 	return count;
 }
 
+static void make_default_preferences(user_preferences *preferences)
+{
+	// Set cipher, hash and compression preferences
+	preferences->cipher_algorithm_preferences_count = 3;
+	preferences->cipher_algorithm_preferences[0] = PGP_AES_256;
+	preferences->cipher_algorithm_preferences[1] = PGP_AES_192;
+	preferences->cipher_algorithm_preferences[2] = PGP_AES_128;
+
+	if (command.mode == SPGP_MODE_OPENPGP || command.mode == SPGP_MODE_LIBREPGP)
+	{
+		preferences->hash_algorithm_preferences_count = 4;
+		preferences->hash_algorithm_preferences[0] = PGP_SHA3_512;
+		preferences->hash_algorithm_preferences[1] = PGP_SHA3_256;
+		preferences->hash_algorithm_preferences[2] = PGP_SHA2_512;
+		preferences->hash_algorithm_preferences[3] = PGP_SHA2_256;
+	}
+	else
+	{
+		preferences->hash_algorithm_preferences_count = 3;
+		preferences->hash_algorithm_preferences[1] = PGP_SHA2_512;
+		preferences->hash_algorithm_preferences[2] = PGP_SHA2_256;
+		preferences->hash_algorithm_preferences[3] = PGP_SHA1;
+	}
+
+	preferences->compression_algorithm_preferences_count = 1;
+	preferences->compression_algorithm_preferences[0] = PGP_UNCOMPRESSED;
+
+	if (command.mode == SPGP_MODE_OPENPGP)
+	{
+		preferences->aead_algorithm_preferences_count = 3;
+
+		preferences->aead_algorithm_preferences[0][0] = PGP_AES_256;
+		preferences->aead_algorithm_preferences[0][1] = PGP_AEAD_GCM;
+
+		preferences->aead_algorithm_preferences[1][0] = PGP_AES_192;
+		preferences->aead_algorithm_preferences[1][1] = PGP_AEAD_GCM;
+
+		preferences->aead_algorithm_preferences[2][0] = PGP_AES_128;
+		preferences->aead_algorithm_preferences[2][1] = PGP_AEAD_GCM;
+	}
+
+	// Set the features
+	switch (command.mode)
+	{
+	case SPGP_MODE_RFC4880:
+		preferences->features = PGP_FEATURE_MDC;
+		break;
+	case SPGP_MODE_LIBREPGP:
+		preferences->features = PGP_FEATURE_MDC | PGP_FEATURE_AEAD | PGP_FEATURE_KEY_V5;
+		break;
+	case SPGP_MODE_OPENPGP:
+		preferences->features = PGP_FEATURE_SEIPD_V1 | PGP_FEATURE_SEIPD_V2;
+		break;
+	}
+
+	preferences->key_server = PGP_KEY_SERVER_NO_MODIFY;
+}
+
 uint32_t spgp_generate_key(void)
 {
 	void *uid = NULL;
@@ -558,6 +578,8 @@ uint32_t spgp_generate_key(void)
 
 	pgp_user_id_packet *user = NULL;
 	pgp_key_version version = 0;
+
+	user_preferences preferences = {0};
 
 	if (command.files == NULL || command.files->count != 2)
 	{
@@ -582,8 +604,11 @@ uint32_t spgp_generate_key(void)
 		break;
 	}
 
+	// Set user id and preferences
 	pgp_user_id_packet_new(&user, PGP_HEADER, uid, strlen(uid));
+	make_default_preferences(&preferences);
 
+	// Create the keys
 	count = parse_spec(spec, &key_specs);
 
 	key_packets = malloc(sizeof(void *) * count);
