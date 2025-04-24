@@ -66,6 +66,7 @@ typedef struct _key_specfication
 
 static void parse_algorithm(key_specfication *spec, byte_t *in, byte_t length)
 {
+	// RSA, DSA, Elgamal
 	if (length == 3)
 	{
 		if (memcmp(in, "rsa", 3) == 0)
@@ -78,7 +79,7 @@ static void parse_algorithm(key_specfication *spec, byte_t *in, byte_t length)
 		if (memcmp(in, "dsa", 3) == 0)
 		{
 			spec->algorithm = PGP_DSA;
-			spec->parameters.bits = 2048;
+			spec->parameters.bits = 3072;
 			return;
 		}
 
@@ -90,23 +91,138 @@ static void parse_algorithm(key_specfication *spec, byte_t *in, byte_t length)
 		}
 	}
 
+	if (length == 7)
+	{
+		if (memcmp(in, "rsa1024", 7) == 0)
+		{
+			spec->algorithm = PGP_RSA_ENCRYPT_OR_SIGN;
+			spec->parameters.bits = 1024;
+			return;
+		}
+
+		if (memcmp(in, "rsa2048", 7) == 0)
+		{
+			spec->algorithm = PGP_RSA_ENCRYPT_OR_SIGN;
+			spec->parameters.bits = 2048;
+			return;
+		}
+
+		if (memcmp(in, "rsa3072", 7) == 0)
+		{
+			spec->algorithm = PGP_RSA_ENCRYPT_OR_SIGN;
+			spec->parameters.bits = 3072;
+			return;
+		}
+
+		if (memcmp(in, "rsa4096", 7) == 0)
+		{
+			spec->algorithm = PGP_RSA_ENCRYPT_OR_SIGN;
+			spec->parameters.bits = 4096;
+			return;
+		}
+
+		if (memcmp(in, "dsa1024", 7) == 0)
+		{
+			spec->algorithm = PGP_DSA;
+			spec->parameters.bits = 1024;
+			return;
+		}
+
+		if (memcmp(in, "dsa2048", 7) == 0)
+		{
+			spec->algorithm = PGP_RSA_ENCRYPT_OR_SIGN;
+			spec->parameters.bits = 2048;
+			return;
+		}
+
+		if (memcmp(in, "dsa3072", 7) == 0)
+		{
+			spec->algorithm = PGP_DSA;
+			spec->parameters.bits = 3072;
+			return;
+		}
+
+		if (memcmp(in, "elg1024", 7) == 0)
+		{
+			spec->algorithm = PGP_ELGAMAL_ENCRYPT_ONLY;
+			spec->parameters.bits = 1024;
+			return;
+		}
+
+		if (memcmp(in, "elg2048", 7) == 0)
+		{
+			spec->algorithm = PGP_ELGAMAL_ENCRYPT_ONLY;
+			spec->parameters.bits = 2048;
+			return;
+		}
+
+		if (memcmp(in, "elg3072", 7) == 0)
+		{
+			spec->algorithm = PGP_ELGAMAL_ENCRYPT_ONLY;
+			spec->parameters.bits = 3072;
+			return;
+		}
+
+		if (memcmp(in, "elg4096", 7) == 0)
+		{
+			spec->algorithm = PGP_ELGAMAL_ENCRYPT_ONLY;
+			spec->parameters.bits = 4096;
+			return;
+		}
+	}
+
+	// Elliptic curves
+	if (length == 5)
+	{
+		if (memcmp(in, "ed448", 5) == 0)
+		{
+			spec->algorithm = PGP_EDDSA;
+			spec->parameters.curve = PGP_EC_ED448;
+			return;
+		}
+
+		if (memcmp(in, "cv448", 5) == 0)
+		{
+			spec->algorithm = PGP_ECDH;
+			spec->parameters.curve = PGP_EC_CURVE448;
+			return;
+		}
+	}
+
+	if (length == 7)
+	{
+		if (memcmp(in, "ed25519", 7) == 0)
+		{
+			spec->algorithm = PGP_EDDSA;
+			spec->parameters.curve = PGP_EC_ED25519;
+			return;
+		}
+
+		if (memcmp(in, "cv25519", 7) == 0)
+		{
+			spec->algorithm = PGP_ECDH;
+			spec->parameters.curve = PGP_EC_CURVE25519;
+			return;
+		}
+	}
+
 	if (length == 8)
 	{
-		if (memcmp(in, "nistp256", 5) == 0)
+		if (memcmp(in, "nistp256", 8) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
 			spec->parameters.curve = PGP_EC_NIST_P256;
 			return;
 		}
 
-		if (memcmp(in, "nistp384", 5) == 0)
+		if (memcmp(in, "nistp384", 8) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
 			spec->parameters.curve = PGP_EC_NIST_P384;
 			return;
 		}
 
-		if (memcmp(in, "nistp521", 5) == 0)
+		if (memcmp(in, "nistp521", 8) == 0)
 		{
 			spec->algorithm = PGP_ECDSA;
 			spec->parameters.curve = PGP_EC_NIST_P521;
@@ -136,6 +252,18 @@ static void parse_algorithm(key_specfication *spec, byte_t *in, byte_t length)
 			spec->parameters.curve = PGP_EC_BRAINPOOL_512R1;
 			return;
 		}
+	}
+
+	if ((length == 6) && (memcmp(in, "x25519", 6) == 0))
+	{
+		spec->algorithm = PGP_X25519;
+		return;
+	}
+
+	if ((length == 4) && (memcmp(in, "x448", 4) == 0))
+	{
+		spec->algorithm = PGP_X448;
+		return;
 	}
 
 	printf("Bad algo");
