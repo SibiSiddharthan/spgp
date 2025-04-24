@@ -700,22 +700,16 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_format, void *user_name, uint16_t user_name_size,
-								   void *user_comment, uint16_t user_comment_size, void *user_email, uint16_t user_email_size)
+uint32_t pgp_user_id_generate(void *buffer, uint32_t size, void *user_name, uint16_t user_name_size, void *user_comment,
+							  uint16_t user_comment_size, void *user_email, uint16_t user_email_size)
 {
-	pgp_user_id_packet *uid = NULL;
-	size_t required_size = sizeof(pgp_packet_header) + user_name_size + user_comment_size + user_email_size;
-	size_t pos = 0;
+	byte_t *out = buffer;
+	uint32_t pos = 0;
+	uint32_t required_size = user_name_size + user_comment_size + user_email_size;
 
-	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
+	if (required_size == 0)
 	{
-		return PGP_INVALID_HEADER_FORMAT;
-	}
-
-	// Require user_name atleast
-	if (user_name_size == 0)
-	{
-		return PGP_INVALID_USER_ID;
+		return 0;
 	}
 
 	if (user_comment_size > 0)
@@ -728,6 +722,55 @@ pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_fo
 		required_size += 3; // '<' and '>' and ' '
 	}
 
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Data is stored as "user_name (user_comment) <user_email>"
+	memcpy(out + pos, user_name, user_name_size);
+	pos += user_name_size;
+
+	if (user_comment_size > 0)
+	{
+		out[pos++] = ' ';
+		out[pos++] = '(';
+
+		memcpy(out + pos, user_comment, user_comment_size);
+		pos += user_comment_size;
+
+		out[pos++] = '(';
+	}
+
+	if (user_email_size > 0)
+	{
+		out[pos++] = ' ';
+		out[pos++] = '<';
+
+		memcpy(out + pos, user_email, user_email_size);
+		pos += user_email_size;
+
+		out[pos++] = '>';
+	}
+
+	return required_size;
+}
+
+pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_format, void *user, uint16_t user_size)
+{
+	pgp_user_id_packet *uid = NULL;
+	size_t required_size = sizeof(pgp_packet_header) + user_size;
+
+	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
+	{
+		return PGP_INVALID_HEADER_FORMAT;
+	}
+
+	if (user_size == 0)
+	{
+		return PGP_EMPTY_USER_ID;
+	}
+
 	uid = malloc(required_size);
 
 	if (uid == NULL)
@@ -738,44 +781,8 @@ pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_fo
 	memset(uid, 0, required_size);
 
 	// N octets of user data
-	uid->header = pgp_encode_packet_header(header_format, PGP_UID, user_name_size + user_comment_size + user_email_size);
-
-	// Data is stored as "user_name (user_comment) <user_email>"
-	memcpy(uid->user_data + pos, user_name, user_name_size);
-	pos += user_name_size;
-
-	uid->user_data[pos] = ' ';
-	pos += 1;
-
-	if (user_comment_size > 0)
-	{
-		uid->user_data[pos] = '(';
-		pos += 1;
-
-		memcpy(uid->user_data + pos, user_comment, user_comment_size);
-		pos += user_comment_size;
-
-		uid->user_data[pos] = '(';
-		pos += 1;
-
-		if (user_email_size > 0)
-		{
-			uid->user_data[pos] = ' ';
-			pos += 1;
-		}
-	}
-
-	if (user_email_size > 0)
-	{
-		uid->user_data[pos] = '<';
-		pos += 1;
-
-		memcpy(uid->user_data + pos, user_email, user_email_size);
-		pos += user_email_size;
-
-		uid->user_data[pos] = '>';
-		pos += 1;
-	}
+	memcpy(uid->user_data, user, user_size);
+	uid->header = pgp_encode_packet_header(header_format, PGP_UID, user_size);
 
 	*packet = uid;
 
@@ -1174,17 +1181,14 @@ size_t pgp_user_attribute_packet_get_uid(pgp_user_attribute_packet *packet, void
 	return 0;
 }
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_packet *packet, void *user_name, uint16_t user_name_size,
-															 void *user_comment, uint16_t user_comment_size, void *user_email,
-															 uint16_t user_email_size)
+pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_packet *packet, void *user, uint16_t user_size)
 {
 	void *result = NULL;
 
 	pgp_user_attribute_uid_subpacket *uid_subpacket = NULL;
 	pgp_user_id_packet *uid_packet = NULL;
 
-	pgp_user_id_packet_new(&uid_packet, PGP_HEADER, user_name, user_name_size, user_comment, user_comment_size, user_email,
-						   user_email_size);
+	pgp_user_id_packet_new(&uid_packet, PGP_HEADER, user, user_size);
 
 	if (uid_packet == NULL)
 	{

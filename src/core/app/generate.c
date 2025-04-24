@@ -450,12 +450,14 @@ static uint32_t parse_spec(byte_t *in, key_specfication **out)
 
 uint32_t spgp_generate_key(void)
 {
-	byte_t *uid = NULL;
-	byte_t *spec = NULL;
+	void *uid = NULL;
+	void *spec = NULL;
 
 	key_specfication *key_specs = NULL;
 	pgp_key_packet **key_packets = NULL;
 	uint32_t count = 0;
+
+	pgp_user_id_packet *user = NULL;
 
 	if (command.files == NULL || command.files->count != 2)
 	{
@@ -465,6 +467,8 @@ uint32_t spgp_generate_key(void)
 
 	uid = command.files->packets[0];
 	spec = command.files->packets[1];
+
+	pgp_user_id_packet_new(&user, PGP_HEADER, uid, strlen(uid));
 
 	count = parse_spec(spec, &key_specs);
 
