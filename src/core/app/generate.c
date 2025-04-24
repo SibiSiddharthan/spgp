@@ -210,21 +210,21 @@ static void parse_algorithm(key_specfication *spec, byte_t *in, byte_t length)
 	{
 		if (memcmp(in, "nistp256", 8) == 0)
 		{
-			spec->algorithm = PGP_ECDSA;
+			spec->algorithm = 0;
 			spec->parameters.curve = PGP_EC_NIST_P256;
 			return;
 		}
 
 		if (memcmp(in, "nistp384", 8) == 0)
 		{
-			spec->algorithm = PGP_ECDSA;
+			spec->algorithm = 0;
 			spec->parameters.curve = PGP_EC_NIST_P384;
 			return;
 		}
 
 		if (memcmp(in, "nistp521", 8) == 0)
 		{
-			spec->algorithm = PGP_ECDSA;
+			spec->algorithm = 0;
 			spec->parameters.curve = PGP_EC_NIST_P521;
 			return;
 		}
@@ -234,21 +234,21 @@ static void parse_algorithm(key_specfication *spec, byte_t *in, byte_t length)
 	{
 		if (memcmp(in, "brainpoolP256r1", 15) == 0)
 		{
-			spec->algorithm = PGP_ECDSA;
+			spec->algorithm = 0;
 			spec->parameters.curve = PGP_EC_BRAINPOOL_256R1;
 			return;
 		}
 
 		if (memcmp(in, "brainpoolP384r1", 15) == 0)
 		{
-			spec->algorithm = PGP_ECDSA;
+			spec->algorithm = 0;
 			spec->parameters.curve = PGP_EC_BRAINPOOL_384R1;
 			return;
 		}
 
 		if (memcmp(in, "brainpoolP512r1", 15) == 0)
 		{
-			spec->algorithm = PGP_ECDSA;
+			spec->algorithm = 0;
 			spec->parameters.curve = PGP_EC_BRAINPOOL_512R1;
 			return;
 		}
@@ -388,6 +388,97 @@ static void parse_key(key_specfication *spec, byte_t *in, byte_t length)
 	}
 }
 
+static void process_key(key_specfication *spec)
+{
+	// Convert to openpgp algorithm identifiers
+	if (command.mode == SPGP_MODE_OPENPGP)
+	{
+		if (spec->algorithm == PGP_EDDSA)
+		{
+			if (spec->parameters.curve == PGP_EC_ED25519)
+			{
+				spec->algorithm = PGP_ED25519;
+			}
+
+			if (spec->parameters.curve == PGP_EC_ED448)
+			{
+				spec->algorithm = PGP_ED448;
+			}
+		}
+
+		if (spec->algorithm == PGP_ECDH)
+		{
+			if (spec->parameters.curve == PGP_EC_CURVE25519)
+			{
+				spec->algorithm = PGP_X25519;
+			}
+
+			if (spec->parameters.curve == PGP_EC_CURVE448)
+			{
+				spec->algorithm = PGP_X448;
+			}
+		}
+	}
+
+	// Convert to librenpgp algorithm identifiers
+	if (command.mode == SPGP_MODE_LIBREPGP)
+	{
+		if (spec->algorithm == PGP_X25519)
+		{
+			spec->algorithm = PGP_ECDH;
+			spec->parameters.curve = PGP_EC_CURVE25519;
+		}
+
+		if (spec->algorithm == PGP_X448)
+		{
+			spec->algorithm = PGP_ECDH;
+			spec->parameters.curve = PGP_EC_CURVE448;
+		}
+	}
+
+	// Check elliptic curve capabilities
+	if (spec->algorithm == 0)
+	{
+		if ((spec->capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION)) &&
+			(spec->capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE)))
+		{
+			printf("Cannot sign and encrypt");
+			exit(1);
+		}
+
+		if (spec->capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION))
+		{
+			spec->algorithm = PGP_ECDSA;
+		}
+
+		if (spec->capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
+		{
+			spec->algorithm = PGP_ECDH;
+		}
+	}
+
+	// Check capabilities
+	if (spec->capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION))
+	{
+		if (spec->algorithm == PGP_ECDH || spec->algorithm == PGP_ELGAMAL_ENCRYPT_ONLY || spec->algorithm == PGP_X25519 ||
+			spec->algorithm == PGP_X448)
+		{
+			printf("Bad signature algorithm");
+			exit(1);
+		}
+
+		if (spec->capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
+		{
+			if (spec->algorithm == PGP_DSA || spec->algorithm == PGP_ECDSA || spec->algorithm == PGP_EDDSA ||
+				spec->algorithm == PGP_ED25519 || spec->algorithm == PGP_ED448)
+			{
+				printf("Bad encryption algorithm");
+				exit(1);
+			}
+		}
+	}
+}
+
 // Key specification: algorithm[:usage[:expiry]]/algorithm[:usage[:expiry]]
 static uint32_t parse_spec(byte_t *in, key_specfication **out)
 {
@@ -441,6 +532,14 @@ static uint32_t parse_spec(byte_t *in, key_specfication **out)
 		}
 
 		parse_key(&spec[i], PTR_OFFSET(in, pos), end - start);
+
+		// The primary key should always have certification capability
+		if (i == 0)
+		{
+			spec[i].capabilities |= PGP_KEY_FLAG_CERTIFY;
+		}
+
+		process_key(&spec[i]);
 	}
 
 	*out = spec;
@@ -458,6 +557,7 @@ uint32_t spgp_generate_key(void)
 	uint32_t count = 0;
 
 	pgp_user_id_packet *user = NULL;
+	pgp_key_version version = 0;
 
 	if (command.files == NULL || command.files->count != 2)
 	{
@@ -467,6 +567,20 @@ uint32_t spgp_generate_key(void)
 
 	uid = command.files->packets[0];
 	spec = command.files->packets[1];
+
+	// Set the version
+	switch (command.mode)
+	{
+	case SPGP_MODE_RFC4880:
+		version = PGP_KEY_V4;
+		break;
+	case SPGP_MODE_LIBREPGP:
+		version = PGP_KEY_V5;
+		break;
+	case SPGP_MODE_OPENPGP:
+		version = PGP_KEY_V6;
+		break;
+	}
 
 	pgp_user_id_packet_new(&user, PGP_HEADER, uid, strlen(uid));
 
@@ -484,7 +598,7 @@ uint32_t spgp_generate_key(void)
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		pgp_key_generate(&key_packets[i], PGP_KEY_V4, key_specs->algorithm, key_specs->capabilities, key_specs->flags, time(NULL),
+		pgp_key_generate(&key_packets[i], version, key_specs->algorithm, key_specs->capabilities, key_specs->flags, time(NULL),
 						 key_specs->expiry, &key_specs->parameters);
 	}
 
