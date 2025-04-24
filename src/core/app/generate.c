@@ -352,6 +352,16 @@ static void parse_key(key_specfication *spec, byte_t *in, byte_t length)
 
 static void process_key(key_specfication *spec)
 {
+	// Check unsupported algorithms
+	if (command.mode == SPGP_MODE_OPENPGP)
+	{
+		if (spec->algorithm == PGP_DSA || spec->algorithm == PGP_ELGAMAL_ENCRYPT_ONLY)
+		{
+			printf("Unsupported V6 key algorithm");
+			exit(1);
+		}
+	}
+
 	// Convert to openpgp algorithm identifiers
 	if (command.mode == SPGP_MODE_OPENPGP)
 	{

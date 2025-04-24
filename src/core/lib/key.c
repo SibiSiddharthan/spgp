@@ -2598,38 +2598,6 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		}
 	}
 
-	if (version == PGP_KEY_V6)
-	{
-		if (public_key_algorithm_id == PGP_DSA || public_key_algorithm_id == PGP_ELGAMAL_ENCRYPT_ONLY)
-		{
-			return PGP_UNSUPPORTED_ALGORITHM_FOR_V6_KEY;
-		}
-
-		if ((public_key_algorithm_id == PGP_EDDSA && parameters->curve == PGP_EC_ED448) ||
-			(public_key_algorithm_id == PGP_ECDH && parameters->curve == PGP_EC_CURVE448))
-		{
-			return PGP_UNSUPPORTED_ALGORITHM_FOR_V6_KEY;
-		}
-	}
-
-	if (version == PGP_KEY_V5 || version == PGP_KEY_V4)
-	{
-		if (public_key_algorithm_id == PGP_ED25519 || public_key_algorithm_id == PGP_ED448 || public_key_algorithm_id == PGP_X25519 ||
-			public_key_algorithm_id == PGP_X448)
-		{
-			return PGP_UNSUPPORTED_ALGORITHM_FOR_V5_KEY;
-		}
-
-		if (version == PGP_KEY_V4)
-		{
-			if ((public_key_algorithm_id == PGP_EDDSA && parameters->curve == PGP_EC_ED448) ||
-				(public_key_algorithm_id == PGP_ECDH && parameters->curve == PGP_EC_CURVE448))
-			{
-				return PGP_UNSUPPORTED_ALGORITHM_FOR_V4_KEY;
-			}
-		}
-	}
-
 	if (version == PGP_KEY_V4)
 	{
 		if ((public_key_algorithm_id == PGP_EDDSA && parameters->curve == PGP_EC_ED25519) ||
