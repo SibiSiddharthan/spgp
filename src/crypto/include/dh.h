@@ -59,6 +59,8 @@ uint32_t dh_group_generate(dh_group *group, hash_ctx *hctx, uint32_t p_bits, uin
 uint32_t dh_group_validate(dh_group *group, hash_ctx *hctx, uint32_t counter, void *seed, size_t seed_size);
 
 dh_key *dh_key_generate(dh_group *group, bignum_t *x);
+uint32_t dh_key_validate(dh_key *key, uint32_t full);
+
 dh_key *dh_key_new(dh_group *group, bignum_t *x, bignum_t *y);
 void dh_key_delete(dh_key *key);
 

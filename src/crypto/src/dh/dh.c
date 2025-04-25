@@ -466,6 +466,50 @@ dh_key *dh_key_generate(dh_group *group, bignum_t *x)
 	return key;
 }
 
+uint32_t dh_key_validate(dh_key *key, uint32_t full)
+{
+	uint32_t status = 0;
+
+	bignum_t *pm2 = NULL;
+	bignum_t *r = NULL;
+
+	// y < 2
+	if (key->y->bits < 2)
+	{
+		goto end;
+	}
+
+	// y > p-2
+	pm2 = bignum_dup(NULL, key->group->p);
+	pm2 = bignum_usub_word(pm2, key->group->p, 2);
+
+	if (bignum_cmp_abs(key->y, pm2) > 0)
+	{
+		goto end;
+	}
+
+	bignum_delete(pm2);
+
+	// (y^q)modp != 1
+	if (full)
+	{
+		r = bignum_modexp(key->group->bctx, NULL, key->y, key->group->q, key->group->p);
+
+		if (r->bits != 1)
+		{
+			goto end;
+		}
+	}
+
+	status = 1;
+
+end:
+	bignum_delete(pm2);
+	bignum_delete(r);
+
+	return status;
+}
+
 dh_key *dh_key_new(dh_group *group, bignum_t *x, bignum_t *y)
 {
 	dh_key *key = NULL;
