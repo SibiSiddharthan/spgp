@@ -15,20 +15,20 @@ uint32_t ff_dh(dh_key *self_key, bignum_t *public_key, void *shared_secret, uint
 	bignum_t *r = NULL;
 	bignum_t *pm1 = NULL;
 
-	if (size < CEIL_DIV(self_key->p_bits, 8))
+	if (size < CEIL_DIV(self_key->group->p->bits, 8))
 	{
 		return 0;
 	}
 
-	r = bignum_new(self_key->p_bits);
-	pm1 = bignum_new(self_key->p_bits);
+	r = bignum_new(self_key->group->p->bits);
+	pm1 = bignum_new(self_key->group->p->bits);
 
 	if (r == NULL || pm1 == NULL)
 	{
 		goto end;
 	}
 
-	r = bignum_modexp(self_key->bctx, r, public_key, self_key->x, self_key->p);
+	r = bignum_modexp(self_key->group->bctx, r, public_key, self_key->x, self_key->group->p);
 	pm1 = bignum_usub_word(pm1, pm1, 1);
 
 	if ((r->bits == 0) || bignum_cmp(r, pm1) == 0)

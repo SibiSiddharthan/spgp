@@ -57,6 +57,8 @@ cipher/modes/cbc.c
 cipher/modes/cfb.c
 cipher/modes/ofb.c
 cipher/modes/ctr.c
+#dh
+dh/dh.c
 #hash
 hash/md5.c hash/ripemd.c
 hash/sha1.c hash/sha256.c hash/sha512.c hash/sha3.c

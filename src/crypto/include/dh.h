@@ -14,8 +14,6 @@
 
 typedef enum _dh_safe_prime_id
 {
-	DH_CUSTOM = 0,
-
 	// MODP
 	DH_MODP_1024 = 1,
 	DH_MODP_1536,
