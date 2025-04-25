@@ -2615,7 +2615,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_SIGN_ONLY:
 	{
-		status = pgp_rsa_generate_key((pgp_rsa_key **)&key, ROUND_UP(parameters->bits, 1024));
+		status = pgp_rsa_generate_key((pgp_rsa_key **)&key, parameters->bits);
 
 		if (status != PGP_SUCCESS)
 		{
@@ -2624,11 +2624,18 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		// TODO
-		break;
+	{
+		status = pgp_elgamal_generate_key((pgp_elgamal_key **)&key, parameters->bits);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
+	}
+	break;
 	case PGP_DSA:
 	{
-		status = pgp_dsa_generate_key((pgp_dsa_key **)&key, ROUND_UP(parameters->bits, 1024));
+		status = pgp_dsa_generate_key((pgp_dsa_key **)&key, parameters->bits);
 
 		if (status != PGP_SUCCESS)
 		{

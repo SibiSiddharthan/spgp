@@ -219,6 +219,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 
 pgp_error_t pgp_rsa_generate_key(pgp_rsa_key **key, uint32_t bits);
 pgp_error_t pgp_dsa_generate_key(pgp_dsa_key **key, uint32_t bits);
+pgp_error_t pgp_elgamal_generate_key(pgp_elgamal_key **key, uint32_t bits);
 
 void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve);
 void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid);

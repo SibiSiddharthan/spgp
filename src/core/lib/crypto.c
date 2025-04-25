@@ -851,6 +851,74 @@ pgp_error_t pgp_dsa_generate_key(pgp_dsa_key **key, uint32_t bits)
 	return PGP_SUCCESS;
 }
 
+pgp_error_t pgp_elgamal_generate_key(pgp_elgamal_key **key, uint32_t bits)
+{
+	dh_group *group = NULL;
+	dh_key *dh_key = NULL;
+	pgp_elgamal_key *pgp_key = NULL;
+
+	bits = ROUND_UP(bits, 1024);
+
+	if (bits > 4096)
+	{
+		return PGP_ELGAMAL_KEY_UNSUPPORTED_BIT_SIZE;
+	}
+
+	switch (bits)
+	{
+	case 1024:
+		group = dh_group_new(DH_MODP_1024); // Use modp group for this alone
+		break;
+	case 2048:
+		group = dh_group_new(DH_FFDHE_2048);
+		break;
+	case 3072:
+		group = dh_group_new(DH_FFDHE_3072);
+		break;
+	case 4096:
+		group = dh_group_new(DH_FFDHE_4096);
+		break;
+	}
+
+	if (group == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	dh_key = dh_key_generate(group, NULL);
+
+	if (dh_key == NULL)
+	{
+		dh_group_delete(group);
+		return PGP_NO_MEMORY;
+	}
+
+	pgp_key = pgp_elgamal_key_new();
+
+	if (pgp_key == NULL)
+	{
+		dh_key_delete(dh_key);
+		return PGP_NO_MEMORY;
+	}
+
+	pgp_key->p = mpi_from_bignum(dh_key->group->p);
+	pgp_key->g = mpi_from_bignum(dh_key->group->g);
+	pgp_key->x = mpi_from_bignum(dh_key->x);
+	pgp_key->y = mpi_from_bignum(dh_key->y);
+
+	dh_key_delete(dh_key);
+
+	if (pgp_key->p == NULL || pgp_key->g == NULL || pgp_key->x == NULL || pgp_key->y == NULL)
+	{
+		pgp_elgamal_key_delete(pgp_key);
+		return PGP_NO_MEMORY;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
+}
+
 void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve)
 {
 	ec_group *group = NULL;
