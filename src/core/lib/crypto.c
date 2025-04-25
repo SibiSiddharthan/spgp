@@ -724,6 +724,14 @@ pgp_error_t pgp_rsa_generate_key(pgp_rsa_key **key, uint32_t bits)
 	pgp_rsa_key *pgp_key = NULL;
 	bignum_t *e = NULL;
 
+	bits = ROUND_UP(bits, 1024);
+
+	if (bits > 4096)
+	{
+		status = PGP_RSA_KEY_UNSUPPORTED_BIT_SIZE;
+		goto fail;
+	}
+
 	e = bignum_new(64);
 
 	if (e == NULL)
@@ -768,13 +776,79 @@ pgp_error_t pgp_rsa_generate_key(pgp_rsa_key **key, uint32_t bits)
 
 end:
 	bignum_delete(e);
-	rsa_key_delete(key);
+	rsa_key_delete(rsa_key);
 
 	return status;
 
 fail:
 	pgp_rsa_key_delete(pgp_key);
 	goto end;
+}
+
+pgp_error_t pgp_dsa_generate_key(pgp_dsa_key **key, uint32_t bits)
+{
+	dsa_group *group = NULL;
+	dsa_key *dsa_key = NULL;
+	pgp_dsa_key *pgp_key = NULL;
+
+	uint32_t p_bits = ROUND_UP(bits, 1024);
+	uint32_t q_bits = 0;
+
+	switch (p_bits)
+	{
+	case 1024:
+		q_bits = 160;
+		break;
+	case 2048:
+		q_bits = 224;
+		break;
+	case 3072:
+		q_bits = 256;
+		break;
+	default:
+		return PGP_DSA_KEY_UNSUPPORTED_BIT_SIZE;
+	}
+
+	group = dsa_group_generate(p_bits, q_bits);
+
+	if (group == NULL)
+	{
+		return PGP_DSA_KEY_GENERATION_FAILURE;
+	}
+
+	dsa_key = dsa_key_generate(group, NULL);
+
+	if (dsa_key == NULL)
+	{
+		dsa_group_delete(group);
+		return PGP_DSA_KEY_GENERATION_FAILURE;
+	}
+
+	pgp_key = pgp_dsa_key_new();
+
+	if (pgp_key == NULL)
+	{
+		dsa_key_delete(dsa_key);
+		return PGP_NO_MEMORY;
+	}
+
+	pgp_key->p = mpi_from_bignum(dsa_key->group->p);
+	pgp_key->q = mpi_from_bignum(dsa_key->group->q);
+	pgp_key->g = mpi_from_bignum(dsa_key->group->g);
+	pgp_key->x = mpi_from_bignum(dsa_key->x);
+	pgp_key->y = mpi_from_bignum(dsa_key->y);
+
+	dsa_key_delete(dsa_key);
+
+	if (pgp_key->p == NULL || pgp_key->q == NULL || pgp_key->g == NULL || pgp_key->x == NULL || pgp_key->y == NULL)
+	{
+		pgp_dsa_key_delete(pgp_key);
+		return PGP_NO_MEMORY;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
 }
 
 void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve)

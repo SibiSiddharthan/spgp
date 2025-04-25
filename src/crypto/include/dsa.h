@@ -27,6 +27,7 @@ typedef struct _dsa_signature
 } dsa_signature;
 
 dsa_group *dsa_group_generate(uint32_t p_bits, uint32_t q_bits);
+void dsa_group_delete(dsa_group *group);
 
 dsa_key *dsa_key_generate(dsa_group *group, bignum_t *x);
 dsa_key *dsa_key_new(dsa_group *group, bignum_t *x, bignum_t *y);

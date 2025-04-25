@@ -75,6 +75,11 @@ dsa_group *dsa_group_generate(uint32_t p_bits, uint32_t q_bits)
 	return dh_group_generate(p_bits, q_bits, hctx, seed, seed_size, NULL);
 }
 
+void dsa_group_delete(dsa_group *group)
+{
+	dh_group_delete(group);
+}
+
 dsa_key *dsa_key_generate(dsa_group *group, bignum_t *x)
 {
 	// Check bits

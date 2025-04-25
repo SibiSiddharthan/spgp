@@ -2627,8 +2627,15 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		// TODO
 		break;
 	case PGP_DSA:
-		// key = pgp_dsa_generate_key(ROUND_UP(parameters->bits, 1024));
-		break;
+	{
+		status = pgp_dsa_generate_key((pgp_dsa_key **)&key, ROUND_UP(parameters->bits, 1024));
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
+	}
+	break;
 	case PGP_ECDH:
 		key = pgp_ecdh_generate_key(parameters->curve, parameters->hash_algorithm, parameters->cipher_algorithm, legacy_oid);
 		break;
