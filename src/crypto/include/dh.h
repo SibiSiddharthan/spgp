@@ -14,7 +14,8 @@
 typedef enum _dh_safe_prime_id
 {
 	// MODP
-	MODP_1536 = 1,
+	MODP_1024 = 1,
+	MODP_1536,
 	MODP_2048,
 	MODP_3072,
 	MODP_4096,
@@ -37,6 +38,7 @@ typedef enum _dh_safe_prime_id
 
 typedef struct _dh_key
 {
+	byte_t safe;
 	uint16_t p_bits, q_bits;
 	bignum_t *p, *q, *g;
 	bignum_t *x, *y;
