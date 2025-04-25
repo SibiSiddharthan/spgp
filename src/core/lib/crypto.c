@@ -716,37 +716,65 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
 }
 
-void *pgp_rsa_generate_key(uint32_t bits)
+pgp_error_t pgp_rsa_generate_key(pgp_rsa_key **key, uint32_t bits)
 {
-	rsa_key *key = NULL;
+	pgp_error_t status = 0;
+
+	rsa_key *rsa_key = NULL;
 	pgp_rsa_key *pgp_key = NULL;
+	bignum_t *e = NULL;
+
+	e = bignum_new(64);
+
+	if (e == NULL)
+	{
+		status = PGP_NO_MEMORY;
+		goto fail;
+	}
+
+	// Use default e
+	bignum_set_word(e, 65537);
+	rsa_key = rsa_key_generate(bits, e);
+
+	if (rsa_key == NULL)
+	{
+		status = PGP_RSA_KEY_GENERATION_FAILURE;
+		goto fail;
+	}
 
 	pgp_key = pgp_rsa_key_new();
 
 	if (pgp_key == NULL)
 	{
-		return NULL;
+		status = PGP_NO_MEMORY;
+		goto fail;
 	}
 
-	// Use default e
-	key = rsa_key_generate(bits, NULL);
+	pgp_key->n = mpi_from_bignum(rsa_key->n);
+	pgp_key->e = mpi_from_bignum(rsa_key->e);
+	pgp_key->d = mpi_from_bignum(rsa_key->d);
+	pgp_key->p = mpi_from_bignum(rsa_key->p);
+	pgp_key->q = mpi_from_bignum(rsa_key->q);
+	pgp_key->u = mpi_from_bignum(rsa_key->iqmp);
 
-	if (key == NULL)
+	if (pgp_key->n == NULL || pgp_key->e == NULL || pgp_key->d == NULL || pgp_key->p == NULL || pgp_key->q == NULL || pgp_key->u == NULL)
 	{
-		pgp_rsa_key_delete(pgp_key);
-		return NULL;
+		status = PGP_NO_MEMORY;
+		goto fail;
 	}
 
-	pgp_key->n = mpi_from_bignum(key->n);
-	pgp_key->e = mpi_from_bignum(key->e);
-	pgp_key->d = mpi_from_bignum(key->d);
-	pgp_key->p = mpi_from_bignum(key->p);
-	pgp_key->q = mpi_from_bignum(key->q);
-	pgp_key->u = mpi_from_bignum(key->iqmp);
+	*key = pgp_key;
+	status = PGP_SUCCESS;
 
+end:
+	bignum_delete(e);
 	rsa_key_delete(key);
 
-	return pgp_key;
+	return status;
+
+fail:
+	pgp_rsa_key_delete(pgp_key);
+	goto end;
 }
 
 void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve)

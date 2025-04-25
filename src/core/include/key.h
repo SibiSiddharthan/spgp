@@ -217,7 +217,7 @@ uint32_t pgp_key_id_from_fingerprint(pgp_key_version version, byte_t id[PGP_KEY_
 pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t capabilities, byte_t flags,
 							 uint32_t key_creation_time, uint32_t key_expiry_seconds, pgp_key_parameters *parameters);
 
-void *pgp_rsa_generate_key(uint32_t bits);
+pgp_error_t pgp_rsa_generate_key(pgp_rsa_key **key, uint32_t bits);
 void *pgp_dsa_generate_key(uint32_t p_bits, uint32_t q_bits);
 
 void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve);
