@@ -995,8 +995,10 @@ pgp_error_t pgp_ecdsa_generate_key(pgp_ecdsa_key **key, pgp_elliptic_curve_id cu
 	return PGP_SUCCESS;
 }
 
-void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid)
+pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id curve, byte_t legacy_oid)
 {
+	void *result = NULL;
+
 	pgp_eddsa_key *pgp_key = NULL;
 	curve_id id = pgp_ec_curve_to_curve_id(curve);
 
@@ -1004,15 +1006,22 @@ void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid)
 
 	if (pgp_key == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	if (curve == PGP_ED25519)
 	{
-		ed25519_key key = {0};
+		uint32_t bits = 256 + 7;
+		ed25519_key ed25519_key = {0};
 		byte_t zero[ED25519_KEY_OCTETS] = {0};
 
-		ed25519_key_generate(&key, zero);
+		result = ed25519_key_generate(&ed25519_key, zero);
+
+		if (result == NULL)
+		{
+			pgp_ecdsa_key_delete(pgp_key);
+			return PGP_EDDSA_KEY_GENERATION_FAILURE;
+		}
 
 		pgp_key->curve = curve;
 
@@ -1026,25 +1035,71 @@ void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid)
 			pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
 		}
 
-		pgp_key->point = mpi_from_ec_point(NULL, NULL);
-		pgp_key->x = mpi_from_bignum(NULL);
+		pgp_key->point = mpi_new(bits);
+		pgp_key->x = mpi_new(bits);
+
+		if (pgp_key->point == NULL || pgp_key->x == NULL)
+		{
+			pgp_ecdsa_key_delete(pgp_key);
+			return PGP_NO_MEMORY;
+		}
+
+		// Set the public point
+		pgp_key->point->bits = bits;
+		pgp_key->point->bytes[0] = 0x40;
+		memcpy(&pgp_key->point->bytes[1], ed25519_key.public_key, ED25519_KEY_OCTETS);
+
+		// Set the private scalar
+		pgp_key->x->bits = bits;
+		pgp_key->x->bytes[0] = 0x40;
+		memcpy(&pgp_key->x->bytes[1], ed25519_key.private_key, ED25519_KEY_OCTETS);
+
+		*key = pgp_key;
+		return PGP_SUCCESS;
 	}
 
 	if (curve == PGP_ED448)
 	{
-		ed448_key key = {0};
+		uint32_t bits = 448 + 7;
+		ed448_key ed448_key = {0};
 		byte_t zero[ED448_KEY_OCTETS] = {0};
 
-		ed448_key_generate(&key, zero);
+		result = ed448_key_generate(&ed448_key, zero);
+
+		if (result == NULL)
+		{
+			pgp_ecdsa_key_delete(pgp_key);
+			return PGP_EDDSA_KEY_GENERATION_FAILURE;
+		}
 
 		pgp_key->curve = curve;
 		pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
-		pgp_key->point = mpi_from_ec_point(NULL, NULL);
-		pgp_key->x = mpi_from_bignum(NULL);
+
+		pgp_key->point = mpi_new(bits);
+		pgp_key->x = mpi_new(bits);
+
+		if (pgp_key->point == NULL || pgp_key->x == NULL)
+		{
+			pgp_ecdsa_key_delete(pgp_key);
+			return PGP_NO_MEMORY;
+		}
+
+		// Set the public point
+		pgp_key->point->bits = bits;
+		pgp_key->point->bytes[0] = 0x40;
+		memcpy(&pgp_key->point->bytes[1], ed448_key.public_key, ED448_KEY_OCTETS);
+
+		// Set the private scalar
+		pgp_key->x->bits = bits;
+		pgp_key->x->bytes[0] = 0x40;
+		memcpy(&pgp_key->x->bytes[1], ed448_key.private_key, ED448_KEY_OCTETS);
+
+		*key = pgp_key;
+		return PGP_SUCCESS;
 	}
 
 	// Unreachable
-	return NULL;
+	return PGP_UNSUPPORTED_EDWARDS_CURVE;
 }
 
 pgp_error_t pgp_ecdh_generate_key(pgp_ecdh_key **key, pgp_elliptic_curve_id curve, byte_t hash_algorithm_id,

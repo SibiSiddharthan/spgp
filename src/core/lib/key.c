@@ -2665,8 +2665,15 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	}
 	break;
 	case PGP_EDDSA:
-		key = pgp_eddsa_generate_key(parameters->curve, legacy_oid);
-		break;
+	{
+		status = pgp_eddsa_generate_key((pgp_eddsa_key **)&key, parameters->curve, legacy_oid);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
+	}
+	break;
 	case PGP_X25519:
 	{
 		status = pgp_x25519_generate_key((pgp_x25519_key **)&key);
