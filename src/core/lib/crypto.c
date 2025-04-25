@@ -1080,18 +1080,58 @@ void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_i
 	return pgp_key;
 }
 
-void pgp_x25519_generate_key(pgp_x25519_key *key)
+pgp_error_t pgp_x25519_generate_key(pgp_x25519_key **key)
 {
+	void *result = NULL;
+
+	pgp_x25519_key *pgp_key = NULL;
 	byte_t zero[X25519_KEY_OCTETS] = {0};
 
-	x25519_key_generate((x25519_key *)key, zero);
+	pgp_key = malloc(sizeof(pgp_x25519_key));
+
+	if (pgp_key == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = x25519_key_generate((x25519_key *)key, zero);
+
+	if (result == NULL)
+	{
+		free(pgp_key);
+		return PGP_X25519_KEY_GENERATION_FAILURE;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
 }
 
-void pgp_x448_generate_key(pgp_x448_key *key)
+pgp_error_t pgp_x448_generate_key(pgp_x448_key **key)
 {
-	byte_t zero[X448_KEY_OCTETS] = {0};
+	void *result = NULL;
 
-	x448_key_generate((x448_key *)key, zero);
+	pgp_x448_key *pgp_key = NULL;
+	byte_t zero[X25519_KEY_OCTETS] = {0};
+
+	pgp_key = malloc(sizeof(pgp_x448_key));
+
+	if (pgp_key == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = x448_key_generate((x448_key *)key, zero);
+
+	if (result == NULL)
+	{
+		free(pgp_key);
+		return PGP_X448_KEY_GENERATION_FAILURE;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
 }
 
 void pgp_ed25519_generate_key(pgp_ed25519_key *key)

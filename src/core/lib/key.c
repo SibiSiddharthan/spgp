@@ -2654,30 +2654,22 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		break;
 	case PGP_X25519:
 	{
-		key = malloc(sizeof(pgp_x25519_key));
+		status = pgp_x25519_generate_key((pgp_x25519_key **)&key);
 
-		if (key == NULL)
+		if (status != PGP_SUCCESS)
 		{
-			return PGP_NO_MEMORY;
+			return status;
 		}
-
-		memset(key, 0, sizeof(pgp_x25519_key));
-
-		pgp_x25519_generate_key(key);
 	}
 	break;
 	case PGP_X448:
 	{
-		key = malloc(sizeof(pgp_x448_key));
+		status = pgp_x448_generate_key((pgp_x448_key **)&key);
 
-		if (key == NULL)
+		if (status != PGP_SUCCESS)
 		{
-			return PGP_NO_MEMORY;
+			return status;
 		}
-
-		memset(key, 0, sizeof(pgp_x448_key));
-
-		pgp_x448_generate_key(NULL);
 	}
 	break;
 	case PGP_ED25519:
@@ -2690,7 +2682,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		}
 
 		memset(key, 0, sizeof(pgp_ed25519_key));
-		pgp_ed25519_generate_key(NULL);
+		pgp_ed25519_generate_key(key);
 	}
 	break;
 	case PGP_ED448:
@@ -2703,7 +2695,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		}
 
 		memset(key, 0, sizeof(pgp_ed448_key));
-		pgp_ed448_generate_key(NULL);
+		pgp_ed448_generate_key(key);
 	}
 	break;
 
