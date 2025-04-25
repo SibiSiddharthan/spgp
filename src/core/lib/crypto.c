@@ -1047,44 +1047,39 @@ void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid)
 	return NULL;
 }
 
-void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_id, byte_t symmetric_key_algorithm_id, byte_t legacy_oid)
+pgp_error_t pgp_ecdh_generate_key(pgp_ecdh_key **key, pgp_elliptic_curve_id curve, byte_t hash_algorithm_id,
+								  byte_t symmetric_key_algorithm_id, byte_t legacy_oid)
 {
-	ec_group *group = NULL;
-	ec_key *key = NULL;
-	pgp_ecdh_key *pgp_key = NULL;
+	pgp_error_t status = 0;
 
+	ec_key *ec_key = NULL;
+	pgp_ecdh_key *pgp_key = NULL;
 	curve_id id = pgp_ec_curve_to_curve_id(curve);
 
 	if (id == 0)
 	{
-		return NULL;
+		return PGP_UNSUPPORTED_ELLIPTIC_CURVE;
+	}
+
+	status = pgp_ec_key_generate(&ec_key, id);
+
+	if (status != PGP_SUCCESS)
+	{
+		if (status == PGP_ELLIPTIC_CURVE_KEY_GENERATION_FAILURE)
+		{
+			status = PGP_ECDSA_KEY_GENERATION_FAILURE;
+		}
+
+		return status;
 	}
 
 	pgp_key = pgp_ecdh_key_new();
 
 	if (pgp_key == NULL)
 	{
-		return NULL;
+		ec_key_delete(ec_key);
+		return PGP_NO_MEMORY;
 	}
-
-	group = ec_group_new(id);
-
-	if (group == NULL)
-	{
-		pgp_ecdh_key_delete(pgp_key);
-		return NULL;
-	}
-
-	key = ec_key_generate(group, NULL);
-
-	if (key == NULL)
-	{
-		ec_group_delete(group);
-		free(pgp_key);
-		return NULL;
-	}
-
-	pgp_key->curve = curve;
 
 	if (curve == PGP_EC_CURVE25519 && legacy_oid)
 	{
@@ -1096,17 +1091,25 @@ void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_i
 		pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
 	}
 
-	pgp_key->point = mpi_from_ec_point(key->eg, key->q);
-	pgp_key->x = mpi_from_bignum(key->d);
+	pgp_key->point = mpi_from_ec_point(ec_key->eg, ec_key->q);
+	pgp_key->x = mpi_from_bignum(ec_key->d);
 
 	pgp_key->kdf.size = 3;
 	pgp_key->kdf.extensions = 1;
 	pgp_key->kdf.hash_algorithm_id = hash_algorithm_id;
 	pgp_key->kdf.symmetric_key_algorithm_id = symmetric_key_algorithm_id;
 
-	ec_key_delete(key);
+	ec_key_delete(ec_key);
 
-	return pgp_key;
+	if (pgp_key->point == NULL || pgp_key->x == NULL)
+	{
+		pgp_ecdh_key_delete(pgp_key);
+		return PGP_NO_MEMORY;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_x25519_generate_key(pgp_x25519_key **key)

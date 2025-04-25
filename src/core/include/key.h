@@ -223,7 +223,8 @@ pgp_error_t pgp_elgamal_generate_key(pgp_elgamal_key **key, uint32_t bits);
 
 pgp_error_t pgp_ecdsa_generate_key(pgp_ecdsa_key **key, pgp_elliptic_curve_id curve);
 void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid);
-void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_id, byte_t symmetric_key_algorithm_id, byte_t legacy_oid);
+pgp_error_t pgp_ecdh_generate_key(pgp_ecdh_key **key, pgp_elliptic_curve_id curve, byte_t hash_algorithm_id,
+								  byte_t symmetric_key_algorithm_id, byte_t legacy_oid);
 
 pgp_error_t pgp_x25519_generate_key(pgp_x25519_key **key);
 pgp_error_t pgp_x448_generate_key(pgp_x448_key **key);
