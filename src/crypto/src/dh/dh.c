@@ -56,6 +56,41 @@ static uint32_t dh_group_bits(dh_safe_prime_id id)
 	}
 }
 
+dh_group *dh_group_custom_new(bignum_t *p, bignum_t *q, bignum_t *g)
+{
+	dh_group *group = NULL;
+	uint32_t bits = p->bits;
+
+	if (q->bits >= p->bits)
+	{
+		return NULL;
+	}
+
+	group = malloc(sizeof(dh_group));
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	memset(group, 0, sizeof(dh_group));
+
+	group->id = 0;
+	group->bctx = bignum_ctx_new(32 * bignum_size(bits));
+
+	if (group->bctx == NULL)
+	{
+		free(group);
+		return NULL;
+	}
+
+	group->p = p;
+	group->q = q;
+	group->g = g;
+
+	return group;
+}
+
 dh_group *dh_group_new(dh_safe_prime_id id)
 {
 	dh_group *group = NULL;

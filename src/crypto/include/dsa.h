@@ -11,15 +11,10 @@
 #include <crypt.h>
 #include <bignum.h>
 #include <hash.h>
+#include <dh.h>
 
-typedef struct _dsa_key
-{
-	uint16_t p_bits, q_bits;
-	bignum_t *p, *q, *g;
-	bignum_t *x, *y;
-	bignum_t *mu;
-	bignum_ctx *bctx;
-} dsa_key;
+typedef dh_group dsa_group;
+typedef dh_key dsa_key;
 
 typedef struct _dsa_signature
 {
@@ -31,12 +26,8 @@ typedef struct _dsa_signature
 	} r, s;
 } dsa_signature;
 
-uint32_t dsa_parameters_generate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignum_t *g, uint32_t p_bits, uint32_t q_bits, void *seed,
-								 size_t seed_size);
-uint32_t dsa_parameters_validate(hash_ctx *hctx, bignum_t *p, bignum_t *q, bignum_t *g, uint32_t counter, void *seed, size_t seed_size);
-
-dsa_key *dsa_key_generate(bignum_t *p, bignum_t *q, bignum_t *g);
-dsa_key *dsa_key_new(uint32_t p_bits, uint32_t q_bits);
+dsa_key *dsa_key_generate(dsa_group *group, bignum_t *x);
+dsa_key *dsa_key_new(dsa_group *group, bignum_t *x, bignum_t *y);
 void dsa_key_delete(dsa_key *key);
 
 dsa_signature *dsa_signature_new(dsa_key *key);

@@ -52,6 +52,7 @@ typedef struct _dh_key
 	bignum_t *x, *y;
 } dh_key;
 
+dh_group *dh_group_custom_new(bignum_t *p, bignum_t *q, bignum_t *g);
 dh_group *dh_group_new(dh_safe_prime_id id);
 void dh_group_delete(dh_group *group);
 

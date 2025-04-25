@@ -1688,16 +1688,10 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 {
 	void *result = NULL;
 
+	dsa_group *group = NULL;
 	dsa_key *key = NULL;
 	pgp_dsa_signature *pgp_sign = NULL;
 	dsa_signature sign = {0};
-
-	key = dsa_key_new(pgp_key->p->bits, pgp_key->q->bits);
-
-	if (key == NULL)
-	{
-		return NULL;
-	}
 
 	pgp_sign = pgp_dsa_signature_new(pgp_key->q->bits);
 
@@ -1707,12 +1701,8 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 		return NULL;
 	}
 
-	key->p = mpi_to_bignum(pgp_key->p);
-	key->q = mpi_to_bignum(pgp_key->q);
-	key->g = mpi_to_bignum(pgp_key->g);
-
-	key->x = mpi_to_bignum(pgp_key->x);
-	key->y = mpi_to_bignum(pgp_key->y);
+	group = dh_group_custom_new(mpi_to_bignum(pgp_key->p), mpi_to_bignum(pgp_key->q), mpi_to_bignum(pgp_key->g));
+	key = dsa_key_new(group, mpi_to_bignum(pgp_key->x), mpi_to_bignum(pgp_key->y));
 
 	sign.r.size = CEIL_DIV(pgp_sign->r->bits, 8);
 	sign.s.size = CEIL_DIV(pgp_sign->s->bits, 8);
@@ -1739,21 +1729,12 @@ uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void
 {
 	uint32_t status = 0;
 
+	dsa_group *group = NULL;
 	dsa_key *key = NULL;
 	dsa_signature sign = {0};
 
-	key = dsa_key_new(pgp_key->p->bits, pgp_key->q->bits);
-
-	if (key == NULL)
-	{
-		return 0;
-	}
-
-	key->p = mpi_to_bignum(pgp_key->p);
-	key->q = mpi_to_bignum(pgp_key->q);
-	key->g = mpi_to_bignum(pgp_key->g);
-
-	key->y = mpi_to_bignum(pgp_key->y);
+	group = dh_group_custom_new(mpi_to_bignum(pgp_key->p), mpi_to_bignum(pgp_key->q), mpi_to_bignum(pgp_key->g));
+	key = dsa_key_new(group, NULL, mpi_to_bignum(pgp_key->y));
 
 	sign.r.size = CEIL_DIV(signature->r->bits, 8);
 	sign.s.size = CEIL_DIV(signature->s->bits, 8);

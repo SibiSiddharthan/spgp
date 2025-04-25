@@ -17,6 +17,7 @@ int32_t dsa_sign_tests(void)
 {
 	int32_t status = 0;
 
+	dsa_group *group = NULL;
 	dsa_key *key = NULL;
 	bignum_t *p = NULL, *q = NULL, *g = NULL, *x = NULL, *y = NULL;
 
@@ -49,14 +50,8 @@ int32_t dsa_sign_tests(void)
 		"8e5133fb57dc238b7fab2de2a49863ecf998751861ae668bf7cad136e6933f57dfdba544e3147ce0e7370fa6e8ff1de690c51b4aeedf0485183889205591e8",
 		256);
 
-	key = dsa_key_new(1024, 160);
-
-	key->p = p;
-	key->q = q;
-	key->g = g;
-
-	key->x = x;
-	key->y = y;
+	group = dh_group_custom_new(p, q, g);
+	key = dsa_key_new(group, x, y);
 
 	hex_to_block(
 		message, 128,
@@ -109,14 +104,8 @@ int32_t dsa_sign_tests(void)
 		"bb11a6b504a1fbe4f834ecb6ac254cab513e943b9a953a7084b3305c661bfad434f6a835503c9ade7f4a57f5c965ec301ecde938ee31b4deb038af97b3",
 		512);
 
-	key = dsa_key_new(2048, 224);
-
-	key->p = p;
-	key->q = q;
-	key->g = g;
-
-	key->x = x;
-	key->y = y;
+	group = dh_group_custom_new(p, q, g);
+	key = dsa_key_new(group, x, y);
 
 	hex_to_block(
 		message, 128,
@@ -169,14 +158,8 @@ int32_t dsa_sign_tests(void)
 		"69fe98045fe74002ba658f93475622f76791d9b2623d1b5fff2cc16844746efd2d30a6a8134bfc4c8cc80a46107901fb973c28fc553130f3286c1489da",
 		512);
 
-	key = dsa_key_new(2048, 256);
-
-	key->p = p;
-	key->q = q;
-	key->g = g;
-
-	key->x = x;
-	key->y = y;
+	group = dh_group_custom_new(p, q, g);
+	key = dsa_key_new(group, x, y);
 
 	hex_to_block(
 		message, 128,
@@ -235,14 +218,8 @@ int32_t dsa_sign_tests(void)
 		"dbc5d50421a4843a6f29690e78aa0f0cff304231818b81fc4a243fc00f09a54c466d6a8c73d32a55e1abd5ec8b4e1afa32a79b01df85a81f3f5cfe",
 		768);
 
-	key = dsa_key_new(3072, 256);
-
-	key->p = p;
-	key->q = q;
-	key->g = g;
-
-	key->x = x;
-	key->y = y;
+	group = dh_group_custom_new(p, q, g);
+	key = dsa_key_new(group, x, y);
 
 	hex_to_block(
 		message, 128,
