@@ -1112,7 +1112,7 @@ pgp_error_t pgp_x448_generate_key(pgp_x448_key **key)
 	void *result = NULL;
 
 	pgp_x448_key *pgp_key = NULL;
-	byte_t zero[X25519_KEY_OCTETS] = {0};
+	byte_t zero[X448_KEY_OCTETS] = {0};
 
 	pgp_key = malloc(sizeof(pgp_x448_key));
 
@@ -1134,18 +1134,58 @@ pgp_error_t pgp_x448_generate_key(pgp_x448_key **key)
 	return PGP_SUCCESS;
 }
 
-void pgp_ed25519_generate_key(pgp_ed25519_key *key)
+pgp_error_t pgp_ed25519_generate_key(pgp_ed25519_key **key)
 {
+	void *result = NULL;
+
+	pgp_ed25519_key *pgp_key = NULL;
 	byte_t zero[ED25519_KEY_OCTETS] = {0};
 
-	ed25519_key_generate((ed25519_key *)key, zero);
+	pgp_key = malloc(sizeof(pgp_ed25519_key));
+
+	if (pgp_key == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = ed25519_key_generate((ed25519_key *)key, zero);
+
+	if (result == NULL)
+	{
+		free(pgp_key);
+		return PGP_ED25519_KEY_GENERATION_FAILURE;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
 }
 
-void pgp_ed448_generate_key(pgp_ed448_key *key)
+pgp_error_t pgp_ed448_generate_key(pgp_ed448_key **key)
 {
+	void *result = NULL;
+
+	pgp_ed448_key *pgp_key = NULL;
 	byte_t zero[ED448_KEY_OCTETS] = {0};
 
-	ed448_key_generate((ed448_key *)key, zero);
+	pgp_key = malloc(sizeof(pgp_ed448_key));
+
+	if (pgp_key == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = ed448_key_generate((ed448_key *)key, zero);
+
+	if (result == NULL)
+	{
+		free(pgp_key);
+		return PGP_ED25519_KEY_GENERATION_FAILURE;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
 }
 
 pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)

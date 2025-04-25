@@ -228,8 +228,8 @@ void *pgp_ecdh_generate_key(pgp_elliptic_curve_id curve, byte_t hash_algorithm_i
 pgp_error_t pgp_x25519_generate_key(pgp_x25519_key **key);
 pgp_error_t pgp_x448_generate_key(pgp_x448_key **key);
 
-void pgp_ed25519_generate_key(pgp_ed25519_key *key);
-void pgp_ed448_generate_key(pgp_ed448_key *key);
+pgp_error_t pgp_ed25519_generate_key(pgp_ed25519_key **key);
+pgp_error_t pgp_ed448_generate_key(pgp_ed448_key **key);
 
 pgp_rsa_key *pgp_rsa_key_new();
 void pgp_rsa_key_delete(pgp_rsa_key *key);

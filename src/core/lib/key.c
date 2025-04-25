@@ -2674,28 +2674,22 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	break;
 	case PGP_ED25519:
 	{
-		key = malloc(sizeof(pgp_ed25519_key));
+		status = pgp_ed25519_generate_key((pgp_ed25519_key **)&key);
 
-		if (key == NULL)
+		if (status != PGP_SUCCESS)
 		{
-			return PGP_NO_MEMORY;
+			return status;
 		}
-
-		memset(key, 0, sizeof(pgp_ed25519_key));
-		pgp_ed25519_generate_key(key);
 	}
 	break;
 	case PGP_ED448:
 	{
-		key = malloc(sizeof(pgp_ed448_key));
+		status = pgp_ed448_generate_key((pgp_ed448_key **)&key);
 
-		if (key == NULL)
+		if (status != PGP_SUCCESS)
 		{
-			return PGP_NO_MEMORY;
+			return status;
 		}
-
-		memset(key, 0, sizeof(pgp_ed448_key));
-		pgp_ed448_generate_key(key);
 	}
 	break;
 
