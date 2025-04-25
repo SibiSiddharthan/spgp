@@ -401,3 +401,99 @@ dh_group *dh_group_new(dh_safe_prime_id id)
 
 	return group;
 }
+
+void dh_group_delete(dh_group *group)
+{
+	if (group == NULL)
+	{
+		return;
+	}
+
+	bignum_ctx_delete(group->bctx);
+
+	// Only free p,q,g if we generate a custom safe prime group
+	if (group->id == 0)
+	{
+		bignum_delete(group->p);
+		bignum_delete(group->q);
+		bignum_delete(group->g);
+	}
+
+	free(group);
+}
+
+dh_key *dh_key_generate(dh_group *group, bignum_t *x)
+{
+	dh_key *key = NULL;
+
+	key = malloc(sizeof(dh_key));
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, sizeof(dh_key));
+
+	if (x == NULL)
+	{
+		x = bignum_rand_max(NULL, x, group->q);
+
+		if (x == NULL)
+		{
+			free(key);
+			return NULL;
+		}
+	}
+	else
+	{
+		if (bignum_cmp(key->x, group->q) >= 0)
+		{
+			free(key);
+			return NULL;
+		}
+	}
+
+	// Set the group
+	key->group = group;
+
+	// Set the private key
+	key->x = x;
+
+	// Calculate the public key
+	key->y = bignum_modexp(group->bctx, NULL, group->g, key->x, group->p);
+
+	return key;
+}
+
+dh_key *dh_key_new(dh_group *group, bignum_t *x, bignum_t *y)
+{
+	dh_key *key = NULL;
+
+	key = malloc(sizeof(dh_key));
+
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	memset(key, 0, sizeof(dh_key));
+
+	key->group = group;
+	key->x = x;
+	key->y = y;
+
+	return key;
+}
+
+void dh_key_delete(dh_key *key)
+{
+	if (key == NULL)
+	{
+		return;
+	}
+
+	dh_group_delete(key->group);
+	bignum_delete(key->x);
+	bignum_delete(key->y);
+}
