@@ -447,7 +447,7 @@ dh_key *dh_key_generate(dh_group *group, bignum_t *x)
 	}
 	else
 	{
-		if (bignum_cmp(key->x, group->q) >= 0)
+		if (bignum_cmp_abs(x, group->q) >= 0)
 		{
 			free(key);
 			return NULL;

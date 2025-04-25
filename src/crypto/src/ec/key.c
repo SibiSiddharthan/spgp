@@ -62,6 +62,14 @@ ec_key *ec_key_generate(ec_group *eg, bignum_t *d)
 			return NULL;
 		}
 	}
+	else
+	{
+		if (bignum_cmp_abs(d, eg->n) >= 0)
+		{
+			free(key);
+			return NULL;
+		}
+	}
 
 	// Set the group
 	key->eg = eg;
