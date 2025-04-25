@@ -55,7 +55,7 @@ typedef struct _dh_key
 dh_group *dh_group_new(dh_safe_prime_id id);
 void dh_group_delete(dh_group *group);
 
-uint32_t dh_group_generate(dh_group *group, hash_ctx *hctx, uint32_t p_bits, uint32_t q_bits, void *seed, size_t seed_size);
+dh_group *dh_group_generate(hash_ctx *hctx, uint32_t p_bits, uint32_t q_bits, void *seed, size_t seed_size, uint32_t *counter);
 uint32_t dh_group_validate(dh_group *group, hash_ctx *hctx, uint32_t counter, void *seed, size_t seed_size);
 
 dh_key *dh_key_generate(dh_group *group, bignum_t *x);

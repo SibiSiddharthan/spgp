@@ -8,6 +8,7 @@
 #include <dh.h>
 #include <bignum.h>
 #include <bignum-internal.h>
+#include <drbg.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -420,6 +421,378 @@ void dh_group_delete(dh_group *group)
 	}
 
 	free(group);
+}
+
+static bignum_t *dh_generate_candidate_q(hash_ctx *hctx, bignum_t *qc, void *seed, size_t seed_size, uint32_t q_bits)
+{
+	drbg_ctx *drbg = get_default_drbg();
+
+	uint32_t hash_size = 0;
+	uint32_t hash_offset = 0;
+
+	uint32_t n = (q_bits / 8);
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	if (drbg == NULL)
+	{
+		return NULL;
+	}
+
+	drbg_generate(drbg, 0, NULL, 0, seed, seed_size);
+
+	hash_reset(hctx);
+	hash_update(hctx, seed, seed_size);
+	hash_final(hctx, hash, MAX_HASH_SIZE);
+
+	// Truncate to q_bits
+	hash_size = MIN(hctx->hash_size, n);
+	hash_offset = hctx->hash_size - hash_size;
+
+	// Set the first and last bits to 1.
+	bignum_set_bytes_be(qc, PTR_OFFSET(hash, hash_offset), hash_size);
+	bignum_set_bit(qc, 0);
+	bignum_set_bit(qc, q_bits - 1);
+
+	return qc;
+}
+
+static bignum_t *dh_generate_candidate_p(bignum_ctx *bctx, hash_ctx *hctx, bignum_t *pc, bignum_t *q, void *seed, size_t seed_size,
+										 uint32_t p_bits, uint32_t q_bits, uint32_t offset)
+{
+	bignum_t *q2 = NULL, *ds = NULL, *c = NULL;
+
+	uint32_t hash_size = 0;
+	uint32_t hash_offset = 0;
+
+	uint32_t l = (p_bits / 8);
+	uint32_t s = CEIL_DIV(l, hctx->hash_size);
+
+	uint32_t start = l;
+	uint32_t remaining = l;
+
+	void *pseed = NULL;
+	void *pbuffer = NULL;
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	bignum_ctx_start(bctx, (2 * bignum_size(q_bits + 1)) + bignum_size((seed_size + 1) * 8) + seed_size + l);
+
+	q2 = bignum_ctx_allocate_bignum(bctx, q_bits + 1);
+	ds = bignum_ctx_allocate_bignum(bctx, (seed_size + 1) * 8);
+	c = bignum_ctx_allocate_bignum(bctx, q_bits + 1);
+
+	pseed = bignum_ctx_allocate_raw(bctx, seed_size);
+	pbuffer = bignum_ctx_allocate_raw(bctx, l);
+
+	ds = bignum_set_bytes_be(ds, seed, seed_size);
+	ds = bignum_uadd_word(ds, ds, offset);
+
+	for (uint32_t j = 0; j < s; ++j)
+	{
+		ds = bignum_uadd_word(ds, ds, j);
+		ds = bignum_umod2p(ds, seed_size * 8);
+
+		bignum_get_bytes_be(ds, pseed, seed_size);
+
+		hash_reset(hctx);
+		hash_update(hctx, seed, seed_size);
+		hash_final(hctx, hash, MAX_HASH_SIZE);
+
+		hash_size = MIN(hctx->hash_size, remaining);
+		hash_offset = hctx->hash_size - hash_size;
+		start -= hash_size;
+
+		memcpy(PTR_OFFSET(pbuffer, start), PTR_OFFSET(hash, hash_offset), hash_size);
+	}
+
+	bignum_set_bytes_be(pc, pbuffer, l);
+	bignum_set_bit(pc, p_bits - 1);
+
+	q2 = bignum_lshift1(q2, q);
+	c = bignum_mod(bctx, c, pc, q2);
+	pc = bignum_sub(pc, pc, c);
+	pc = bignum_uadd_word(pc, pc, 1);
+
+	bignum_ctx_end(bctx);
+
+	return pc;
+}
+
+static bignum_t *dh_generate_candidate_g(bignum_ctx *bctx, hash_ctx *hctx, bignum_t *gc, bignum_t *p, bignum_t *q, void *seed,
+										 size_t seed_size, uint32_t p_bits)
+{
+	bignum_t *e = NULL, *w = NULL;
+
+	uint32_t l = (p_bits / 8);
+
+	uint16_t count_be = 0;
+	uint8_t index = 1;
+
+	byte_t hash[MAX_HASH_SIZE] = {0};
+
+	bignum_ctx_start(bctx, bignum_size(p_bits) + bignum_size(hctx->hash_size * 8));
+
+	e = bignum_ctx_allocate_bignum(bctx, p_bits);
+	w = bignum_ctx_allocate_bignum(bctx, hctx->hash_size * 8);
+
+	e = bignum_usub_word(e, p, 1);
+	e = bignum_div(bctx, e, e, q);
+
+	for (uint16_t c = 1; c < (4 * l); ++c)
+	{
+		count_be = BSWAP_16(c);
+
+		hash_reset(hctx);
+		hash_update(hctx, seed, seed_size);
+		hash_update(hctx, "ggen", 4);
+		hash_update(hctx, &index, 1);
+		hash_update(hctx, &count_be, 2);
+		hash_final(hctx, hash, MAX_HASH_SIZE);
+
+		w = bignum_set_bytes_be(w, hash, hctx->hash_size);
+		gc = bignum_modexp(bctx, gc, w, e, p);
+
+		if (gc->bits >= 2)
+		{
+			break;
+		}
+
+		if (c == ((4 * l) - 1))
+		{
+			gc = NULL;
+		}
+	}
+
+	bignum_ctx_end(bctx);
+
+	return gc;
+}
+
+dh_group *dh_group_generate(hash_ctx *hctx, uint32_t p_bits, uint32_t q_bits, void *seed, size_t seed_size, uint32_t *result)
+{
+	dh_group *group = NULL;
+
+	bignum_t *qc = NULL, *pc = NULL, *gc = NULL;
+	size_t ctx_size = 0;
+
+	uint32_t counter = (uint32_t)-1;
+	uint32_t offset = 1;
+
+	uint32_t l = (p_bits / 8);
+	uint32_t s = CEIL_DIV(l, hctx->hash_size);
+
+	p_bits = ROUND_UP(p_bits, 8);
+	q_bits = ROUND_UP(q_bits, 8);
+
+	// Check bits
+	if (q_bits > p_bits)
+	{
+		return NULL;
+	}
+
+	if (CEIL_DIV(q_bits, 8) > hctx->hash_size)
+	{
+		return NULL;
+	}
+
+	if (CEIL_DIV(q_bits, 8) > seed_size)
+	{
+		return NULL;
+	}
+
+	group = malloc(sizeof(dh_group));
+
+	if (group == NULL)
+	{
+		return NULL;
+	}
+
+	memset(group, 0, sizeof(dh_group));
+
+	group->id = 0;
+	group->bctx = bignum_ctx_new(32 * bignum_size(p_bits));
+
+	if (group->bctx == NULL)
+	{
+		free(group);
+		return NULL;
+	}
+
+	bignum_ctx_start(group->bctx, ctx_size);
+
+	qc = bignum_ctx_allocate_bignum(group->bctx, q_bits);
+	pc = bignum_ctx_allocate_bignum(group->bctx, p_bits);
+	gc = bignum_ctx_allocate_bignum(group->bctx, p_bits);
+
+	// Generate q
+	do
+	{
+		qc = dh_generate_candidate_q(hctx, qc, seed, seed_size, q_bits);
+
+		if (qc == NULL)
+		{
+			dh_group_delete(group);
+			return NULL;
+		}
+
+	} while (bignum_is_probable_prime(group->bctx, qc) == 0);
+
+	group->q = bignum_dup(NULL, qc);
+
+	// Generate p
+	for (uint32_t i = 0; i < (4 * l); ++i)
+	{
+		pc = dh_generate_candidate_p(group->bctx, hctx, pc, group->q, seed, seed_size, p_bits, q_bits, offset);
+
+		if (pc == NULL)
+		{
+			dh_group_delete(group);
+			return NULL;
+		}
+
+		if (bignum_get_bit(pc, p_bits - 1) == 0)
+		{
+			offset += s;
+			continue;
+		}
+
+		if (bignum_is_probable_prime(group->bctx, pc))
+		{
+			counter = i;
+			break;
+		}
+
+		offset += s;
+	}
+
+	group->p = bignum_dup(NULL, pc);
+
+	// Generate g
+	gc = dh_generate_candidate_g(group->bctx, hctx, gc, group->p, group->q, seed, seed_size, p_bits);
+
+	if (gc == NULL)
+	{
+		dh_group_delete(group);
+		return NULL;
+	}
+
+	group->g = bignum_dup(NULL, gc);
+
+	bignum_ctx_end(group->bctx);
+
+	if (result != NULL)
+	{
+		*result = counter;
+	}
+
+	return group;
+}
+
+uint32_t dh_group_validate(dh_group *group, hash_ctx *hctx, uint32_t counter, void *seed, size_t seed_size)
+{
+	bignum_t *qc = NULL, *pc = NULL, *gc = NULL;
+	size_t ctx_size = 0;
+
+	uint32_t p_bits = group->p->bits;
+	uint32_t q_bits = group->q->bits;
+
+	uint32_t offset = 1;
+
+	uint32_t l = (p_bits / 8);
+	uint32_t s = CEIL_DIV(l, hctx->hash_size);
+
+	// Check bits
+	if (CEIL_DIV(q_bits, 8) > hctx->hash_size)
+	{
+		return 0;
+	}
+
+	if (CEIL_DIV(q_bits, 8) > seed_size)
+	{
+		return 0;
+	}
+
+	if (counter >= (4 * l))
+	{
+		return 0;
+	}
+
+	ctx_size = bignum_size(q_bits) + (2 * bignum_size(p_bits));
+
+	bignum_ctx_start(group->bctx, ctx_size);
+
+	qc = bignum_ctx_allocate_bignum(group->bctx, q_bits);
+	pc = bignum_ctx_allocate_bignum(group->bctx, p_bits);
+	gc = bignum_ctx_allocate_bignum(group->bctx, p_bits);
+
+	// Check q
+	qc = dh_generate_candidate_q(hctx, qc, seed, seed_size, q_bits);
+
+	if (qc == NULL)
+	{
+		return 0;
+	}
+
+	if (bignum_cmp(group->q, qc) != 0)
+	{
+		return 0;
+	}
+
+	// Check prime
+	if (bignum_is_probable_prime(group->bctx, qc) == 0)
+	{
+		return 0;
+	}
+
+	// Check p
+	for (uint32_t i = 0; i < (4 * l); ++i)
+	{
+		pc = dh_generate_candidate_p(group->bctx, hctx, pc, group->q, seed, seed_size, p_bits, q_bits, offset);
+
+		if (pc == NULL)
+		{
+			return 0;
+		}
+
+		if (bignum_get_bit(pc, p_bits - 1) == 0)
+		{
+			offset += s;
+			continue;
+		}
+
+		if (bignum_is_probable_prime(group->bctx, pc))
+		{
+			if (i != counter)
+			{
+				return 0;
+			}
+
+			if (bignum_cmp(group->p, pc) != 0)
+			{
+				return 0;
+			}
+		}
+
+		offset += s;
+	}
+
+	// Check g
+	gc = dh_generate_candidate_g(group->bctx, hctx, gc, group->p, group->q, seed, seed_size, p_bits);
+
+	if (gc == NULL)
+	{
+		return 0;
+	}
+
+	if (bignum_cmp(group->g, gc) != 0)
+	{
+		return 0;
+	}
+
+	bignum_ctx_end(group->bctx);
+
+	return 1;
 }
 
 dh_key *dh_key_generate(dh_group *group, bignum_t *x)
