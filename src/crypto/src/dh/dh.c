@@ -604,21 +604,29 @@ static bignum_t *dh_generate_candidate_g(bignum_ctx *bctx, hash_ctx *hctx, bignu
 	return gc;
 }
 
-dh_group *dh_group_generate(hash_ctx *hctx, uint32_t p_bits, uint32_t q_bits, void *seed, size_t seed_size, uint32_t *result)
+dh_group *dh_group_generate(uint32_t p_bits, uint32_t q_bits, hash_ctx *hctx, void *seed, size_t seed_size, uint32_t *result)
 {
 	dh_group *group = NULL;
 
 	bignum_t *qc = NULL, *pc = NULL, *gc = NULL;
 	size_t ctx_size = 0;
 
-	uint32_t counter = (uint32_t)-1;
+	uint32_t counter = 0;
 	uint32_t offset = 1;
 
-	uint32_t l = (p_bits / 8);
-	uint32_t s = CEIL_DIV(l, hctx->hash_size);
+	uint32_t l = 0;
+	uint32_t s = 0;
+
+	if (hctx == NULL || seed == NULL)
+	{
+		return NULL;
+	}
 
 	p_bits = ROUND_UP(p_bits, 8);
 	q_bits = ROUND_UP(q_bits, 8);
+
+	l = (p_bits / 8);
+	s = CEIL_DIV(l, hctx->hash_size);
 
 	// Check bits
 	if (q_bits > p_bits)
@@ -724,7 +732,7 @@ dh_group *dh_group_generate(hash_ctx *hctx, uint32_t p_bits, uint32_t q_bits, vo
 	return group;
 }
 
-uint32_t dh_group_validate(dh_group *group, hash_ctx *hctx, uint32_t counter, void *seed, size_t seed_size)
+uint32_t dh_group_validate(dh_group *group, uint32_t counter, hash_ctx *hctx, void *seed, size_t seed_size)
 {
 	bignum_t *qc = NULL, *pc = NULL, *gc = NULL;
 	size_t ctx_size = 0;

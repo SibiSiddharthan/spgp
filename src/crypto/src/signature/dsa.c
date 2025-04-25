@@ -47,6 +47,34 @@ static uint32_t dsa_valid_pq_lengths(uint32_t p_bits, uint32_t q_bits)
 	return 1;
 }
 
+dsa_group *dsa_group_generate(uint32_t p_bits, uint32_t q_bits)
+{
+	byte_t buffer[1024] = {0};
+	byte_t seed[64] = {0};
+
+	drbg_ctx *drbg = NULL;
+	hash_ctx *hctx = NULL;
+	uint32_t seed_size = 0;
+
+	// Check bits
+	if (dsa_valid_pq_lengths(p_bits, q_bits) == 0)
+	{
+		return NULL;
+	}
+
+	drbg = get_default_drbg();
+	hctx = hash_init(buffer, 1024, HASH_SHA256);
+
+	if (drbg == NULL || hctx == NULL)
+	{
+		return NULL;
+	}
+
+	seed_size = drbg_generate(drbg, 0, NULL, 0, seed, 64);
+
+	return dh_group_generate(p_bits, q_bits, hctx, seed, seed_size, NULL);
+}
+
 dsa_key *dsa_key_generate(dsa_group *group, bignum_t *x)
 {
 	// Check bits
