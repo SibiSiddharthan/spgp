@@ -2609,117 +2609,6 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		}
 	}
 
-	switch (public_key_algorithm_id)
-	{
-	case PGP_RSA_ENCRYPT_OR_SIGN:
-	case PGP_RSA_ENCRYPT_ONLY:
-	case PGP_RSA_SIGN_ONLY:
-	{
-		status = pgp_rsa_generate_key((pgp_rsa_key **)&key, parameters->bits);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_ELGAMAL_ENCRYPT_ONLY:
-	{
-		status = pgp_elgamal_generate_key((pgp_elgamal_key **)&key, parameters->bits);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_DSA:
-	{
-		status = pgp_dsa_generate_key((pgp_dsa_key **)&key, parameters->bits);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_ECDH:
-	{
-		status = pgp_ecdh_generate_key((pgp_ecdh_key **)&key, parameters->curve, parameters->hash_algorithm, parameters->cipher_algorithm,
-									   legacy_oid);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_ECDSA:
-	{
-		status = pgp_ecdsa_generate_key((pgp_ecdsa_key **)&key, parameters->curve);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_EDDSA:
-	{
-		status = pgp_eddsa_generate_key((pgp_eddsa_key **)&key, parameters->curve, legacy_oid);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_X25519:
-	{
-		status = pgp_x25519_generate_key((pgp_x25519_key **)&key);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_X448:
-	{
-		status = pgp_x448_generate_key((pgp_x448_key **)&key);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_ED25519:
-	{
-		status = pgp_ed25519_generate_key((pgp_ed25519_key **)&key);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-	case PGP_ED448:
-	{
-		status = pgp_ed448_generate_key((pgp_ed448_key **)&key);
-
-		if (status != PGP_SUCCESS)
-		{
-			return status;
-		}
-	}
-	break;
-
-	default:
-		// Unreachable
-		return PGP_INTERNAL_BUG;
-	}
-
 	pgpkey = malloc(sizeof(pgp_key_packet));
 
 	if (pgpkey == NULL)
@@ -2728,6 +2617,53 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	}
 
 	memset(pgpkey, 0, sizeof(pgp_key_packet));
+
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+		status = pgp_rsa_generate_key((pgp_rsa_key **)&key, parameters->bits);
+		break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+		status = pgp_elgamal_generate_key((pgp_elgamal_key **)&key, parameters->bits);
+		break;
+	case PGP_DSA:
+		status = pgp_dsa_generate_key((pgp_dsa_key **)&key, parameters->bits);
+		break;
+	case PGP_ECDH:
+		status = pgp_ecdh_generate_key((pgp_ecdh_key **)&key, parameters->curve, parameters->hash_algorithm, parameters->cipher_algorithm,
+									   legacy_oid);
+		break;
+	case PGP_ECDSA:
+		status = pgp_ecdsa_generate_key((pgp_ecdsa_key **)&key, parameters->curve);
+		break;
+	case PGP_EDDSA:
+		status = pgp_eddsa_generate_key((pgp_eddsa_key **)&key, parameters->curve, legacy_oid);
+		break;
+	case PGP_X25519:
+		status = pgp_x25519_generate_key((pgp_x25519_key **)&key);
+		break;
+	case PGP_X448:
+		status = pgp_x448_generate_key((pgp_x448_key **)&key);
+		break;
+	case PGP_ED25519:
+		status = pgp_ed25519_generate_key((pgp_ed25519_key **)&key);
+		break;
+	case PGP_ED448:
+		status = pgp_ed448_generate_key((pgp_ed448_key **)&key);
+		break;
+
+	default:
+		// Unreachable
+		return PGP_INTERNAL_BUG;
+	}
+
+	if (status != PGP_SUCCESS)
+	{
+		free(pgpkey);
+		return status;
+	}
 
 	pgpkey->version = version;
 	pgpkey->key_creation_time = key_creation_time;
@@ -2738,12 +2674,6 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	pgpkey->key = key;
 	pgpkey->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);
 	pgpkey->private_key_data_octets = get_private_key_material_octets(public_key_algorithm_id, key);
-
-	if (pgpkey->public_key_data_octets == 0)
-	{
-		free(pgpkey);
-		return PGP_MALFORMED_KEY;
-	}
 
 	pgpkey->key_checksum = pgp_private_key_material_checksum(pgpkey);
 	pgp_key_packet_encode_header(pgpkey, PGP_KEYDEF);
