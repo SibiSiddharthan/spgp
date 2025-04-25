@@ -2647,8 +2647,15 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		key = pgp_ecdh_generate_key(parameters->curve, parameters->hash_algorithm, parameters->cipher_algorithm, legacy_oid);
 		break;
 	case PGP_ECDSA:
-		key = pgp_ecdsa_generate_key(parameters->curve);
-		break;
+	{
+		status = pgp_ecdsa_generate_key((pgp_ecdsa_key **)&key, parameters->curve);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
+	}
+	break;
 	case PGP_EDDSA:
 		key = pgp_eddsa_generate_key(parameters->curve, legacy_oid);
 		break;

@@ -919,51 +919,80 @@ pgp_error_t pgp_elgamal_generate_key(pgp_elgamal_key **key, uint32_t bits)
 	return PGP_SUCCESS;
 }
 
-void *pgp_ecdsa_generate_key(pgp_elliptic_curve_id curve)
+static pgp_error_t pgp_ec_key_generate(ec_key **key, curve_id id)
 {
 	ec_group *group = NULL;
-	ec_key *key = NULL;
-	pgp_ecdsa_key *pgp_key = NULL;
+	ec_key *ec_key = NULL;
 
+	group = ec_group_new(id);
+
+	if (group == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	ec_key = ec_key_generate(group, NULL);
+
+	if (ec_key == NULL)
+	{
+		ec_group_delete(group);
+		return PGP_ELLIPTIC_CURVE_KEY_GENERATION_FAILURE;
+	}
+
+	*key = ec_key;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_ecdsa_generate_key(pgp_ecdsa_key **key, pgp_elliptic_curve_id curve)
+{
+	pgp_error_t status = 0;
+
+	ec_key *ec_key = NULL;
+	pgp_ecdsa_key *pgp_key = NULL;
 	curve_id id = pgp_ec_curve_to_curve_id(curve);
 
 	if (id == 0)
 	{
-		return NULL;
+		return PGP_UNSUPPORTED_ELLIPTIC_CURVE;
+	}
+
+	status = pgp_ec_key_generate(&ec_key, id);
+
+	if (status != PGP_SUCCESS)
+	{
+		if (status == PGP_ELLIPTIC_CURVE_KEY_GENERATION_FAILURE)
+		{
+			status = PGP_ECDSA_KEY_GENERATION_FAILURE;
+		}
+
+		return status;
 	}
 
 	pgp_key = pgp_ecdsa_key_new();
 
 	if (pgp_key == NULL)
 	{
-		return NULL;
-	}
-
-	group = ec_group_new(id);
-
-	if (group == NULL)
-	{
-		pgp_ecdsa_key_delete(pgp_key);
-		return NULL;
-	}
-
-	key = ec_key_generate(group, NULL);
-
-	if (key == NULL)
-	{
-		ec_group_delete(group);
-		free(pgp_key);
-		return NULL;
+		ec_key_delete(ec_key);
+		return PGP_NO_MEMORY;
 	}
 
 	pgp_key->curve = curve;
 	pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
-	pgp_key->point = mpi_from_ec_point(key->eg, key->q);
-	pgp_key->x = mpi_from_bignum(key->d);
+	pgp_key->point = mpi_from_ec_point(ec_key->eg, ec_key->q);
+	pgp_key->x = mpi_from_bignum(ec_key->d);
 
-	ec_key_delete(key);
+	ec_key_delete(ec_key);
 
-	return pgp_key;
+	if (pgp_key->point == NULL || pgp_key->x == NULL)
+	{
+		pgp_ecdsa_key_delete(pgp_key);
+		return PGP_NO_MEMORY;
+	}
+
+	*key = pgp_key;
+
+	return PGP_SUCCESS;
 }
 
 void *pgp_eddsa_generate_key(pgp_elliptic_curve_id curve, byte_t legacy_oid)
