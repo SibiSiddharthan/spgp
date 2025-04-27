@@ -1987,6 +1987,7 @@ pgp_error_t pgp_rsa_sign(pgp_rsa_signature **signature, pgp_rsa_key *pgp_key, by
 
 	if (result == NULL)
 	{
+		pgp_rsa_signature_delete(pgp_sign);
 		return PGP_RSA_SIGNATURE_GENERATION_FAILURE;
 	}
 
@@ -2109,6 +2110,7 @@ pgp_error_t pgp_dsa_sign(pgp_dsa_signature **signature, pgp_dsa_key *pgp_key, vo
 
 	if (result == NULL)
 	{
+		pgp_dsa_signature_delete(pgp_sign);
 		return PGP_DSA_SIGNATURE_GENERATION_FAILURE;
 	}
 
@@ -2185,7 +2187,7 @@ pgp_error_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, v
 	return PGP_SUCCESS;
 }
 
-pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_ecdsa_sign(pgp_ecdsa_signature **signature, pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	void *result = NULL;
 
@@ -2193,33 +2195,39 @@ pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t
 	ec_key *key = NULL;
 	pgp_ecdsa_signature *pgp_sign = NULL;
 	ecdsa_signature sign = {0};
-
 	bignum_t *d = NULL;
-	ec_point *q = NULL;
 
 	curve_id id = pgp_ec_curve_to_curve_id(pgp_key->curve);
 
 	if (id == 0)
 	{
-		return NULL;
+		return PGP_UNSUPPORTED_ELLIPTIC_CURVE;
+	}
+
+	d = mpi_to_bignum(pgp_key->x);
+
+	if (d == NULL)
+	{
+		bignum_delete(d);
+		return PGP_NO_MEMORY;
 	}
 
 	group = ec_group_new(id);
 
 	if (group == NULL)
 	{
-		return NULL;
+		bignum_delete(d);
+		return PGP_NO_MEMORY;
 	}
 
-	d = mpi_to_bignum(pgp_key->x);
-	q = mpi_to_ec_point(group, pgp_key->point);
-
-	key = ec_key_new(group, d, q);
+	key = ec_key_new(group, d, NULL);
 
 	if (key == NULL)
 	{
 		ec_group_delete(group);
-		return NULL;
+		bignum_delete(d);
+
+		return PGP_NO_MEMORY;
 	}
 
 	// ecdsa and dsa share the same structure
@@ -2228,7 +2236,7 @@ pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t
 	if (pgp_sign == NULL)
 	{
 		ec_key_delete(key);
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	sign.r.size = CEIL_DIV(pgp_sign->r->bits, 8);
@@ -2243,16 +2251,19 @@ pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t
 
 	if (result == NULL)
 	{
-		return NULL;
+		pgp_dsa_signature_delete(pgp_sign);
+		return PGP_ECDSA_SIGNATURE_GENERATION_FAILURE;
 	}
 
 	pgp_sign->r->bits = sign.r.bits;
 	pgp_sign->s->bits = sign.s.bits;
 
-	return pgp_sign;
+	*signature = pgp_sign;
+
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
@@ -2266,14 +2277,14 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key
 
 	if (id == 0)
 	{
-		return 0;
+		return PGP_UNSUPPORTED_ELLIPTIC_CURVE;
 	}
 
 	group = ec_group_new(id);
 
 	if (group == NULL)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	q = mpi_to_ec_point(group, pgp_key->point);
@@ -2282,7 +2293,7 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key
 	if (key == NULL)
 	{
 		ec_group_delete(group);
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	sign.r.size = CEIL_DIV(signature->r->bits, 8);
@@ -2295,7 +2306,12 @@ uint32_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key
 
 	ec_key_delete(key);
 
-	return status;
+	if (status == 0)
+	{
+		return PGP_BAD_SIGNATURE;
+	}
+
+	return PGP_SUCCESS;
 }
 
 pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t hash_size)
