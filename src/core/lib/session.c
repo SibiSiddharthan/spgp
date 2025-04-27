@@ -512,15 +512,10 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 		byte_t fingerprint_size = 0;
 
 		fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-		kex = pgp_ecdh_kex_encrypt(key->key, symmetric_key_algorithm_id, fingerprint, fingerprint_size, session_key, session_key_size);
+		status = pgp_ecdh_kex_encrypt((pgp_ecdh_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, fingerprint,
+									  fingerprint_size, session_key, session_key_size);
 
-		if (kex == NULL)
-		{
-			return NULL;
-		}
-
-		packet->encrypted_session_key = kex;
-		packet->encrypted_session_key_octets = mpi_octets(kex->ephemeral_point->bits) + 1 + kex->encoded_session_key_size;
+		// packet->encrypted_session_key_octets = mpi_octets(kex->ephemeral_point->bits) + 1 + kex->encoded_session_key_size;
 	}
 	break;
 	case PGP_X25519:
@@ -601,8 +596,8 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 		byte_t fingerprint_size = 0;
 
 		fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-		result = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, fingerprint, fingerprint_size,
-									  session_key, session_key_size);
+		status = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, fingerprint, fingerprint_size,
+									  session_key, &session_key_size);
 		break;
 	case PGP_X25519:
 		result =

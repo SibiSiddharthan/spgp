@@ -1523,10 +1523,10 @@ static uint32_t pgp_ecdh_kw_decrypt(pgp_symmetric_key_algorithms algorithm, void
 	return cipher_key_wrap_decrypt(cctx, in, in_size, out, out_size);
 }
 
-pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_algorithm_id, byte_t *fingerprint, byte_t fingerprint_size,
-								   void *session_key, byte_t session_key_size)
+pgp_error_t pgp_ecdh_kex_encrypt(pgp_ecdh_kex **kex, pgp_ecdh_key *pgp_key, byte_t symmetric_key_algorithm_id, byte_t *fingerprint,
+								 byte_t fingerprint_size, void *session_key, byte_t session_key_size)
 {
-	pgp_ecdh_kex *kex = NULL;
+	pgp_ecdh_kex *ec_kex = NULL;
 	ec_group *group = NULL;
 	ec_key *ephemeral_key = NULL;
 	ec_point *shared_point = NULL;
@@ -1555,16 +1555,14 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 
 	if (id == 0)
 	{
-		return NULL;
+		return PGP_UNSUPPORTED_ELLIPTIC_CURVE;
 	}
-
-	pgp_ecdh_kdf_paramters(pgp_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
 
 	group = ec_group_new(id);
 
 	if (group == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	// Generate ephemeral key
@@ -1573,12 +1571,27 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 	if (ephemeral_key == NULL)
 	{
 		ec_group_delete(group);
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	// Compute shared point
 	public_point = ec_point_decode(group, NULL, pgp_key->point->bytes, CEIL_DIV(pgp_key->point->bits, 8));
+
+	if (public_point == NULL)
+	{
+		ec_key_delete(ephemeral_key);
+		return PGP_NO_MEMORY;
+	}
+
 	shared_point = ec_point_multiply(group, NULL, public_point, ephemeral_key->d);
+
+	if (shared_point == NULL)
+	{
+		ec_key_delete(ephemeral_key);
+		ec_point_delete(public_point);
+
+		return PGP_ECDH_ENCRYPTION_FAILURE;
+	}
 
 	xcoord_size = bignum_get_bytes_be(shared_point->x, xcoord, 128);
 
@@ -1600,6 +1613,8 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 	encoded_session_key[pos++] = session_key_checksum & 0xFF;
 
 	memset(encoded_session_key + pos, encoded_session_key_size - pos, encoded_session_key_size - pos);
+
+	pgp_ecdh_kdf_paramters(pgp_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
 
 	// Derive key
 	switch (cipher_algorithm_id)
@@ -1652,30 +1667,33 @@ pgp_ecdh_kex *pgp_ecdh_kex_encrypt(pgp_ecdh_key *pgp_key, byte_t symmetric_key_a
 	pgp_ecdh_kw_encrypt(cipher_algorithm_id, key_wrap_key, key_wrap_key_size, encoded_session_key, encoded_session_key_size,
 						wrapped_session_key, wrapped_session_key_size);
 
-	kex = malloc(sizeof(pgp_ecdh_kex));
+	ec_kex = malloc(sizeof(pgp_ecdh_kex));
 
 	if (kex == NULL)
 	{
 		ec_point_delete(shared_point);
 		ec_point_delete(public_point);
 		ec_key_delete(ephemeral_key);
+
+		return PGP_NO_MEMORY;
 	}
 
 	memset(kex, 0, sizeof(pgp_ecdh_kex));
 
-	kex->ephemeral_point = mpi_from_ec_point(ephemeral_key->eg, ephemeral_key->q);
-	kex->encoded_session_key_size = wrapped_session_key_size;
-	memcpy(kex->encoded_session_key, wrapped_session_key, wrapped_session_key_size);
+	ec_kex->ephemeral_point = mpi_from_ec_point(ephemeral_key->eg, ephemeral_key->q);
+	ec_kex->encoded_session_key_size = wrapped_session_key_size;
+	memcpy(ec_kex->encoded_session_key, wrapped_session_key, wrapped_session_key_size);
 
 	ec_point_delete(shared_point);
 	ec_point_delete(public_point);
 	ec_key_delete(ephemeral_key);
 
-	return kex;
+	*kex = ec_kex;
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *symmetric_key_algorithm_id, byte_t *fingerprint,
-							  byte_t fingerprint_size, void *session_key, uint32_t session_key_size)
+pgp_error_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *symmetric_key_algorithm_id, byte_t *fingerprint,
+								 byte_t fingerprint_size, void *session_key, byte_t *session_key_size)
 {
 	ec_group *group = NULL;
 	ec_point *shared_point = NULL;
@@ -1704,21 +1722,19 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *
 
 	if (id == 0)
 	{
-		return 0;
+		return PGP_UNSUPPORTED_ELLIPTIC_CURVE;
 	}
 
-	if (session_key_size < kex->encoded_session_key_size - 16)
+	if (*session_key_size < kex->encoded_session_key_size - 16)
 	{
-		return 0;
+		return PGP_BUFFER_TOO_SMALL;
 	}
-
-	pgp_ecdh_kdf_paramters(pgp_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
 
 	group = ec_group_new(id);
 
 	if (group == NULL)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	// Compute shared point
@@ -1727,6 +1743,8 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *
 	shared_point = ec_point_multiply(group, NULL, public_point, d);
 
 	xcoord_size = bignum_get_bytes_be(shared_point->x, xcoord, 128);
+
+	pgp_ecdh_kdf_paramters(pgp_key->curve, &hash_algorithm_id, &cipher_algorithm_id);
 
 	// Derive key
 	switch (cipher_algorithm_id)
@@ -1784,6 +1802,11 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *
 	ec_group_delete(group);
 	bignum_delete(d);
 
+	if (encoded_session_key_size == 0)
+	{
+		return PGP_ECDH_DECRYPTION_FAILURE;
+	}
+
 	// V3 packet
 	if (encoded_session_key[encoded_session_key_size - 1] == 0x05)
 	{
@@ -1801,12 +1824,13 @@ uint32_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_t *
 	if (((session_key_checksum >> 8) & 0xFF) != encoded_session_key[key_start + decoded_session_key_size] ||
 		(session_key_checksum & 0xFF) != encoded_session_key[key_start + decoded_session_key_size + 1])
 	{
-		return 0;
+		return PGP_SESSION_KEY_CHECKSUM_MISMATCH;
 	}
 
 	memcpy(session_key, encoded_session_key + key_start, decoded_session_key_size);
 
-	return decoded_session_key_size;
+	*session_key_size = decoded_session_key_size;
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_x25519_kex_encrypt(pgp_x25519_kex **kex, pgp_x25519_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key,
