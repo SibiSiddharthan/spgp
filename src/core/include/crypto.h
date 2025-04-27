@@ -80,11 +80,11 @@ pgp_error_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_
 pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t hash_size);
 uint32_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *key, void *hash, uint32_t hash_size);
 
-pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_key *key, void *hash, uint32_t hash_size);
-uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *key, void *hash, uint32_t hash_size);
+pgp_error_t pgp_ed25519_sign(pgp_ed25519_signature **signature, pgp_ed25519_key *pgp_key, void *hash, uint32_t hash_size);
+pgp_error_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *pgp_key, void *hash, uint32_t hash_size);
 
-pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_key *key, void *hash, uint32_t hash_size);
-uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *key, void *hash, uint32_t hash_size);
+pgp_error_t pgp_ed448_sign(pgp_ed448_signature **signature, pgp_ed448_key *pgp_key, void *hash, uint32_t hash_size);
+pgp_error_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *pgp_key, void *hash, uint32_t hash_size);
 
 // KDFs
 uint32_t pgp_argon2(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,

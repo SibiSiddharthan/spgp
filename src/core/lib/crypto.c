@@ -2429,70 +2429,84 @@ uint32_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *key, vo
 	return status;
 }
 
-pgp_ed25519_signature *pgp_ed25519_sign(pgp_ed25519_key *key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_ed25519_sign(pgp_ed25519_signature **signature, pgp_ed25519_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	void *status = NULL;
-	pgp_ed25519_signature *sign = NULL;
+	pgp_ed25519_signature *pgp_sign = NULL;
 
-	sign = malloc(sizeof(pgp_ed25519_signature));
+	pgp_sign = malloc(sizeof(pgp_ed25519_signature));
 
-	if (sign == NULL)
+	if (pgp_sign == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	status = ed25519_sign((ed25519_key *)key, (ed25519_signature *)sign, hash, hash_size);
+	status = ed25519_sign((ed25519_key *)pgp_key, (ed25519_signature *)pgp_sign, hash, hash_size);
 
 	if (status == NULL)
 	{
-		free(sign);
-		return NULL;
+		free(pgp_sign);
+		return PGP_ED25519_SIGNATURE_GENERATION_FAILURE;
 	}
 
-	return sign;
+	*signature = pgp_sign;
+
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
 	// TODO key validation
-	status = ed25519_verify((ed25519_key *)key, (ed25519_signature *)signature, hash, hash_size);
+	status = ed25519_verify((ed25519_key *)pgp_key, (ed25519_signature *)signature, hash, hash_size);
 
-	return status;
-}
-
-pgp_ed448_signature *pgp_ed448_sign(pgp_ed448_key *key, void *hash, uint32_t hash_size)
-{
-	void *status = NULL;
-	pgp_ed448_signature *sign = NULL;
-
-	sign = malloc(sizeof(pgp_ed448_signature));
-
-	if (sign == NULL)
+	if (status == 0)
 	{
-		return NULL;
+		return PGP_BAD_SIGNATURE;
 	}
 
-	status = ed448_sign((ed448_key *)key, (ed448_signature *)sign, NULL, 0, hash, hash_size);
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_ed448_sign(pgp_ed448_signature **signature, pgp_ed448_key *pgp_key, void *hash, uint32_t hash_size)
+{
+	void *status = NULL;
+	pgp_ed448_signature *pgp_sign = NULL;
+
+	pgp_sign = malloc(sizeof(pgp_ed448_signature));
+
+	if (pgp_sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	status = ed448_sign((ed448_key *)pgp_key, (ed448_signature *)pgp_sign, NULL, 0, hash, hash_size);
 
 	if (status == NULL)
 	{
-		free(sign);
-		return NULL;
+		free(pgp_sign);
+		return PGP_ED448_SIGNATURE_GENERATION_FAILURE;
 	}
 
-	return sign;
+	*signature = pgp_sign;
+
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
 	// TODO key validation
-	status = ed448_verify((ed448_key *)key, (ed448_signature *)signature, NULL, 0, hash, hash_size);
+	status = ed448_verify((ed448_key *)pgp_key, (ed448_signature *)signature, NULL, 0, hash, hash_size);
 
-	return status;
+	if (status == 0)
+	{
+		return PGP_BAD_SIGNATURE;
+	}
+
+	return PGP_SUCCESS;
 }
 
 uint32_t pgp_argon2(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,

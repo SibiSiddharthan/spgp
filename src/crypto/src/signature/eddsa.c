@@ -330,7 +330,6 @@ ed25519_signature *ed25519_sign(ed25519_key *key, ed25519_signature *edsign, voi
 
 	if (group == NULL)
 	{
-
 		return NULL;
 	}
 

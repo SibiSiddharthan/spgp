@@ -2924,10 +2924,10 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 		packet->signature = pgp_eddsa_sign(key->key, hash, hash_size);
 		break;
 	case PGP_ED25519:
-		packet->signature = pgp_ed25519_sign(key->key, hash, hash_size);
+		error = pgp_ed25519_sign((pgp_ed25519_signature **)&packet->signature, key->key, hash, hash_size);
 		break;
 	case PGP_ED448:
-		packet->signature = pgp_ed448_sign(key->key, hash, hash_size);
+		error = pgp_ed448_sign((pgp_ed448_signature **)&packet->signature, key->key, hash, hash_size);
 		break;
 	default:
 		return 0;
