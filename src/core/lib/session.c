@@ -525,28 +525,16 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	break;
 	case PGP_X25519:
 	{
-		pgp_x25519_kex *kex = pgp_x25519_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
-
-		if (kex == NULL)
-		{
-			return NULL;
-		}
-
-		packet->encrypted_session_key = kex;
-		packet->encrypted_session_key_octets = 32 + 1 + kex->octet_count;
+		status = pgp_x25519_kex_encrypt((pgp_x25519_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id,
+										session_key, session_key_size);
+		// packet->encrypted_session_key_octets = 32 + 1 + kex->octet_count;
 	}
 	break;
 	case PGP_X448:
 	{
-		pgp_x448_kex *kex = pgp_x448_kex_encrypt(key->key, symmetric_key_algorithm_id, session_key, session_key_size);
-
-		if (kex == NULL)
-		{
-			return NULL;
-		}
-
-		packet->encrypted_session_key = kex;
-		packet->encrypted_session_key_octets = 56 + 1 + kex->octet_count;
+		status = pgp_x448_kex_encrypt((pgp_x448_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key,
+									  session_key_size);
+		// packet->encrypted_session_key_octets = 56 + 1 + kex->octet_count;
 	}
 	break;
 	default:
@@ -617,10 +605,11 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 									  session_key, session_key_size);
 		break;
 	case PGP_X25519:
-		result = pgp_x25519_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+		result =
+			pgp_x25519_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, &session_key_size);
 		break;
 	case PGP_X448:
-		result = pgp_x448_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, session_key_size);
+		result = pgp_x448_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, &session_key_size);
 		break;
 	default:
 		return 0;
