@@ -2912,7 +2912,7 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
 	case PGP_RSA_SIGN_ONLY:
-		packet->signature = pgp_rsa_sign(key->key, packet->hash_algorithm_id, hash, hash_size);
+		error = pgp_rsa_sign((pgp_rsa_signature **)&packet->signature, key->key, packet->hash_algorithm_id, hash, hash_size);
 		break;
 	case PGP_DSA:
 		packet->signature = pgp_dsa_sign(key->key, hash, hash_size);
@@ -2931,6 +2931,11 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 		break;
 	default:
 		return 0;
+	}
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
 	}
 
 	packet->signature_octets = get_signature_octets(packet->public_key_algorithm_id, packet->signature);
@@ -2959,7 +2964,7 @@ pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_pa
 	// Check the left 2 octets first
 	if (hash[0] != packet->quick_hash[0] || hash[1] != packet->quick_hash[1])
 	{
-		return 0;
+		return PGP_QUICK_HASH_MISMATCH;
 	}
 
 	switch (packet->public_key_algorithm_id)
@@ -2978,10 +2983,11 @@ pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_pa
 	case PGP_ED448:
 		return pgp_ed448_verify(packet->signature, key->key, hash, hash_size);
 	default:
-		return 0;
+		return PGP_UNSUPPORTED_SIGNATURE_ALGORITHM;
 	}
 
-	return 0;
+	// Unreachable
+	return PGP_INTERNAL_BUG;
 }
 
 pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type, byte_t flags,

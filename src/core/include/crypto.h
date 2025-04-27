@@ -68,8 +68,8 @@ pgp_x448_kex *pgp_x448_kex_encrypt(pgp_x448_key *key, byte_t symmetric_key_algor
 uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_key *key, byte_t *symmetric_key_algorithm_id, void *session_key,
 							  uint32_t session_key_size);
 
-pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size);
-uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size);
+pgp_error_t pgp_rsa_sign(pgp_rsa_signature **signature, pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size);
+pgp_error_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size);
 
 pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *key, void *hash, uint32_t hash_size);
 uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *key, void *hash, uint32_t hash_size);

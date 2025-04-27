@@ -1937,7 +1937,7 @@ uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_key *key, byte_t *symm
 	return result;
 }
 
-pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
+pgp_error_t pgp_rsa_sign(pgp_rsa_signature **signature, pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
 {
 	void *result = NULL;
 
@@ -1949,25 +1949,33 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 
 	if (algorithm == 0)
 	{
-		return 0;
+		return PGP_INVALID_HASH_ALGORITHM;
 	}
 
 	key = rsa_key_new(pgp_key->n->bits);
 
 	if (key == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	key->n = mpi_to_bignum(pgp_key->n);
 	key->d = mpi_to_bignum(pgp_key->d);
+	key->p = mpi_to_bignum(pgp_key->p);
+	key->q = mpi_to_bignum(pgp_key->q);
+
+	if (key->n == NULL || key->d == NULL || key->p == NULL || key->q == NULL)
+	{
+		rsa_key_delete(key);
+		return PGP_NO_MEMORY;
+	}
 
 	pgp_sign = pgp_rsa_signature_new(pgp_key->n->bits);
 
 	if (pgp_sign == NULL)
 	{
 		rsa_key_delete(key);
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	sign.size = CEIL_DIV(pgp_key->n->bits, 8);
@@ -1979,15 +1987,16 @@ pgp_rsa_signature *pgp_rsa_sign(pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, 
 
 	if (result == NULL)
 	{
-		return NULL;
+		return PGP_RSA_SIGNATURE_GENERATION_FAILURE;
 	}
 
 	pgp_sign->e->bits = sign.bits;
+	*signature = pgp_sign;
 
-	return pgp_sign;
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
+pgp_error_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
 {
 	uint32_t status;
 
@@ -1997,18 +2006,24 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte
 
 	if (algorithm == 0)
 	{
-		return 0;
+		return PGP_INVALID_HASH_ALGORITHM;
 	}
 
 	key = rsa_key_new(pgp_key->n->bits);
 
 	if (key == NULL)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	key->n = mpi_to_bignum(pgp_key->n);
 	key->e = mpi_to_bignum(pgp_key->e);
+
+	if (key->n == NULL || key->e == NULL)
+	{
+		rsa_key_delete(key);
+		return PGP_NO_MEMORY;
+	}
 
 	sign.bits = signature->e->bits;
 	sign.size = CEIL_DIV(signature->e->bits, 8);
@@ -2018,7 +2033,12 @@ uint32_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, byte
 
 	rsa_key_delete(key);
 
-	return status;
+	if (status == 0)
+	{
+		return PGP_BAD_SIGNATURE;
+	}
+
+	return PGP_SUCCESS;
 }
 
 pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
