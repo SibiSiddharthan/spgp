@@ -2921,7 +2921,7 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 		error = pgp_ecdsa_sign((pgp_ecdsa_signature **)&packet->signature, key->key, hash, hash_size);
 		break;
 	case PGP_EDDSA:
-		packet->signature = pgp_eddsa_sign(key->key, hash, hash_size);
+		error = pgp_eddsa_sign((pgp_eddsa_signature **)&packet->signature, key->key, hash, hash_size);
 		break;
 	case PGP_ED25519:
 		error = pgp_ed25519_sign((pgp_ed25519_signature **)&packet->signature, key->key, hash, hash_size);

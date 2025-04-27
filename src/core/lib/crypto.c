@@ -2314,119 +2314,143 @@ pgp_error_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_
 	return PGP_SUCCESS;
 }
 
-pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	void *status = NULL;
-	pgp_eddsa_signature *sign = NULL;
+	pgp_eddsa_signature *pgp_sign = NULL;
 
-	if (key->curve == PGP_ED25519)
+	if (pgp_key->curve == PGP_ED25519)
 	{
 		ed25519_key edkey = {0};
 		ed25519_signature edsign = {0};
 
-		sign = pgp_dsa_signature_new(256);
+		// eddsa and dsa share the same structure
+		pgp_sign = pgp_dsa_signature_new(256);
 
-		if (sign == NULL)
+		if (pgp_sign == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		memcpy(edkey.private_key, key->x->bytes, 32);
-		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 32);
+		memcpy(edkey.private_key, pgp_key->x->bytes, ED25519_KEY_OCTETS);
+		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED25519_KEY_OCTETS);
 
 		status = ed25519_sign(&edkey, &edsign, hash, hash_size);
 
 		if (status == NULL)
 		{
-			free(sign);
-			return NULL;
+			pgp_dsa_signature_delete(pgp_sign);
+			return PGP_EDDSA_SIGNATURE_GENERATION_FAILURE;
 		}
 
-		sign->r->bits = 256;
-		sign->s->bits = 256;
+		pgp_sign->r->bits = 256;
+		pgp_sign->s->bits = 256;
 
-		memcpy(sign->r->bytes, edsign.sign, 32);
-		memcpy(sign->s->bytes, PTR_OFFSET(edsign.sign, 32), 32);
+		memcpy(pgp_sign->r->bytes, edsign.sign, ED25519_KEY_OCTETS);
+		memcpy(pgp_sign->s->bytes, PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS), ED25519_KEY_OCTETS);
+
+		*signature = pgp_sign;
+
+		return PGP_SUCCESS;
 	}
 
-	if (key->curve == PGP_ED448)
+	if (pgp_key->curve == PGP_ED448)
 	{
 		ed448_key edkey = {0};
 		ed448_signature edsign = {0};
 
-		sign = pgp_dsa_signature_new(448);
+		// eddsa and dsa share the same structure
+		pgp_sign = pgp_dsa_signature_new(456);
 
-		if (sign == NULL)
+		if (pgp_sign == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		memcpy(edkey.private_key, key->x->bytes, 57);
-		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 57);
+		memcpy(edkey.private_key, pgp_key->x->bytes, ED448_KEY_OCTETS);
+		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED448_KEY_OCTETS);
 
 		status = ed448_sign(&edkey, &edsign, NULL, 0, hash, hash_size);
 
 		if (status == NULL)
 		{
-			free(sign);
-			return NULL;
+			pgp_dsa_signature_delete(pgp_sign);
+			return PGP_EDDSA_SIGNATURE_GENERATION_FAILURE;
 		}
 
-		sign->r->bits = 456;
-		sign->s->bits = 456;
+		pgp_sign->r->bits = 456;
+		pgp_sign->s->bits = 456;
 
-		memcpy(sign->r->bytes, edsign.sign, 57);
-		memcpy(sign->s->bytes, PTR_OFFSET(edsign.sign, 57), 57);
+		memcpy(pgp_sign->r->bytes, edsign.sign, ED448_KEY_OCTETS);
+		memcpy(pgp_sign->s->bytes, PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
+
+		*signature = pgp_sign;
+
+		return PGP_SUCCESS;
 	}
 
-	return sign;
+	return PGP_UNSUPPORTED_EDWARDS_CURVE;
 }
 
-uint32_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
-	if (key->curve == PGP_ED25519)
+	if (pgp_key->curve == PGP_ED25519)
 	{
 		ed25519_key edkey = {0};
 		ed25519_signature edsign = {0};
 
-		if (CEIL_DIV(signature->r->bits, 8) != 32 || CEIL_DIV(signature->s->bits, 8) != 32)
+		if (CEIL_DIV(signature->r->bits, 8) != ED25519_KEY_OCTETS || CEIL_DIV(signature->s->bits, 8) != ED25519_KEY_OCTETS)
 		{
-			return 0;
+			return PGP_BAD_SIGNATURE;
 		}
 
 		// Copy signature
-		memcpy(edsign.sign, signature->r->bytes, 32);
-		memcpy(PTR_OFFSET(edsign.sign, 32), signature->s->bytes, 32);
+		memcpy(edsign.sign, signature->r->bytes, ED25519_KEY_OCTETS);
+		memcpy(PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS), signature->s->bytes, ED25519_KEY_OCTETS);
 
 		// Copy public key
-		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 32);
+		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED25519_KEY_OCTETS);
 
 		status = ed25519_verify(&edkey, &edsign, hash, hash_size);
+
+		if (status == 0)
+		{
+			return PGP_BAD_SIGNATURE;
+		}
+
+		return PGP_SUCCESS;
 	}
 
-	if (key->curve == PGP_ED448)
+	if (pgp_key->curve == PGP_ED448)
 	{
 		ed448_key edkey = {0};
 		ed448_signature edsign = {0};
 
-		if (CEIL_DIV(signature->r->bits, 8) != 57 || CEIL_DIV(signature->s->bits, 8) != 57)
+		if (CEIL_DIV(signature->r->bits, 8) != ED448_KEY_OCTETS || CEIL_DIV(signature->s->bits, 8) != ED448_KEY_OCTETS)
 		{
-			return 0;
+			return PGP_BAD_SIGNATURE;
 		}
 
 		// Copy signature
-		memcpy(edsign.sign, signature->r->bytes, 57);
-		memcpy(PTR_OFFSET(edsign.sign, 57), signature->s->bytes, 57);
+		memcpy(edsign.sign, signature->r->bytes, ED448_KEY_OCTETS);
+		memcpy(PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS), signature->s->bytes, ED448_KEY_OCTETS);
 
 		// Copy public key
-		memcpy(edkey.public_key, PTR_OFFSET(key->point->bytes, 1), 57);
+		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED448_KEY_OCTETS);
 
 		status = ed448_verify(&edkey, &edsign, NULL, 0, hash, hash_size);
+
+		if (status == 0)
+		{
+			return PGP_BAD_SIGNATURE;
+		}
+
+		return PGP_SUCCESS;
 	}
 
-	return status;
+	return PGP_UNSUPPORTED_EDWARDS_CURVE;
 }
 
 pgp_error_t pgp_ed25519_sign(pgp_ed25519_signature **signature, pgp_ed25519_key *pgp_key, void *hash, uint32_t hash_size)

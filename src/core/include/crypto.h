@@ -77,8 +77,8 @@ pgp_error_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, v
 pgp_error_t pgp_ecdsa_sign(pgp_ecdsa_signature **signature, pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size);
 pgp_error_t pgp_ecdsa_verify(pgp_ecdsa_signature *signature, pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size);
 
-pgp_eddsa_signature *pgp_eddsa_sign(pgp_eddsa_key *key, void *hash, uint32_t hash_size);
-uint32_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *key, void *hash, uint32_t hash_size);
+pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_key, void *hash, uint32_t hash_size);
+pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_key, void *hash, uint32_t hash_size);
 
 pgp_error_t pgp_ed25519_sign(pgp_ed25519_signature **signature, pgp_ed25519_key *pgp_key, void *hash, uint32_t hash_size);
 pgp_error_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key *pgp_key, void *hash, uint32_t hash_size);
