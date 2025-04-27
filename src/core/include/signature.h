@@ -444,10 +444,4 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp);
 pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
 
-pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits);
-void pgp_rsa_signature_delete(pgp_rsa_signature *sign);
-
-pgp_dsa_signature *pgp_dsa_signature_new(uint16_t bits);
-void pgp_dsa_signature_delete(pgp_dsa_signature *sign);
-
 #endif

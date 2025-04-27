@@ -1937,6 +1937,55 @@ uint32_t pgp_x448_kex_decrypt(pgp_x448_kex *kex, pgp_x448_key *key, byte_t *symm
 	return result;
 }
 
+static pgp_rsa_signature *pgp_rsa_signature_new(uint16_t bits)
+{
+	pgp_rsa_signature *sign = NULL;
+
+	sign = malloc(sizeof(pgp_rsa_signature) + mpi_size(bits));
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	memset(sign, 0, sizeof(pgp_rsa_signature) + mpi_size(bits));
+
+	// Initialize the MPI
+	sign->e = mpi_init(PTR_OFFSET(sign, sizeof(pgp_rsa_signature)), mpi_size(bits), bits);
+
+	return sign;
+}
+
+static void pgp_rsa_signature_delete(pgp_rsa_signature *sign)
+{
+	free(sign);
+}
+
+static pgp_dsa_signature *pgp_dsa_signature_new(uint16_t bits)
+{
+	pgp_dsa_signature *sign = NULL;
+
+	sign = malloc(sizeof(pgp_dsa_signature) + (2 * mpi_size(bits)));
+
+	if (sign == NULL)
+	{
+		return NULL;
+	}
+
+	memset(sign, 0, sizeof(pgp_dsa_signature) + mpi_size(bits));
+
+	// Initialize the MPIs
+	sign->r = mpi_init(PTR_OFFSET(sign, sizeof(pgp_dsa_signature)), mpi_size(bits), bits);
+	sign->s = mpi_init(PTR_OFFSET(sign, sizeof(pgp_dsa_signature) + mpi_size(bits)), mpi_size(bits), bits);
+
+	return sign;
+}
+
+static void pgp_dsa_signature_delete(pgp_dsa_signature *sign)
+{
+	free(sign);
+}
+
 pgp_error_t pgp_rsa_sign(pgp_rsa_signature **signature, pgp_rsa_key *pgp_key, byte_t hash_algorithm_id, void *hash, uint32_t hash_size)
 {
 	void *result = NULL;
