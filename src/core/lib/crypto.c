@@ -2041,7 +2041,7 @@ pgp_error_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, b
 	return PGP_SUCCESS;
 }
 
-pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_dsa_sign(pgp_dsa_signature **signature, pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	void *result = NULL;
 
@@ -2050,16 +2050,52 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 	pgp_dsa_signature *pgp_sign = NULL;
 	dsa_signature sign = {0};
 
+	bignum_t *p = NULL, *q = NULL, *g = NULL, *x = NULL;
+
+	p = mpi_to_bignum(pgp_key->p);
+	q = mpi_to_bignum(pgp_key->q);
+	g = mpi_to_bignum(pgp_key->g);
+	x = mpi_to_bignum(pgp_key->x);
+
+	if (p == NULL || q == NULL || g == NULL || x == NULL)
+	{
+		bignum_delete(p);
+		bignum_delete(q);
+		bignum_delete(g);
+		bignum_delete(x);
+
+		return PGP_NO_MEMORY;
+	}
+
+	group = dh_group_custom_new(p, q, g);
+
+	if (group == NULL)
+	{
+		bignum_delete(p);
+		bignum_delete(q);
+		bignum_delete(g);
+		bignum_delete(x);
+
+		return PGP_NO_MEMORY;
+	}
+
+	key = dsa_key_new(group, x, NULL);
+
+	if (key == NULL)
+	{
+		dsa_group_delete(group);
+		bignum_delete(x);
+
+		return PGP_NO_MEMORY;
+	}
+
 	pgp_sign = pgp_dsa_signature_new(pgp_key->q->bits);
 
 	if (pgp_sign == NULL)
 	{
 		dsa_key_delete(key);
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
-
-	group = dh_group_custom_new(mpi_to_bignum(pgp_key->p), mpi_to_bignum(pgp_key->q), mpi_to_bignum(pgp_key->g));
-	key = dsa_key_new(group, mpi_to_bignum(pgp_key->x), mpi_to_bignum(pgp_key->y));
 
 	sign.r.size = CEIL_DIV(pgp_sign->r->bits, 8);
 	sign.s.size = CEIL_DIV(pgp_sign->s->bits, 8);
@@ -2073,16 +2109,18 @@ pgp_dsa_signature *pgp_dsa_sign(pgp_dsa_key *pgp_key, void *hash, uint32_t hash_
 
 	if (result == NULL)
 	{
-		return NULL;
+		return PGP_DSA_SIGNATURE_GENERATION_FAILURE;
 	}
 
 	pgp_sign->r->bits = sign.r.bits;
 	pgp_sign->s->bits = sign.s.bits;
 
-	return pgp_sign;
+	*signature = pgp_sign;
+
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
+pgp_error_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void *hash, uint32_t hash_size)
 {
 	uint32_t status = 0;
 
@@ -2090,8 +2128,44 @@ uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void
 	dsa_key *key = NULL;
 	dsa_signature sign = {0};
 
-	group = dh_group_custom_new(mpi_to_bignum(pgp_key->p), mpi_to_bignum(pgp_key->q), mpi_to_bignum(pgp_key->g));
-	key = dsa_key_new(group, NULL, mpi_to_bignum(pgp_key->y));
+	bignum_t *p = NULL, *q = NULL, *g = NULL, *y = NULL;
+
+	p = mpi_to_bignum(pgp_key->p);
+	q = mpi_to_bignum(pgp_key->q);
+	g = mpi_to_bignum(pgp_key->g);
+	y = mpi_to_bignum(pgp_key->y);
+
+	if (p == NULL || q == NULL || g == NULL || y == NULL)
+	{
+		bignum_delete(p);
+		bignum_delete(q);
+		bignum_delete(g);
+		bignum_delete(y);
+
+		return PGP_NO_MEMORY;
+	}
+
+	group = dh_group_custom_new(p, q, g);
+
+	if (group == NULL)
+	{
+		bignum_delete(p);
+		bignum_delete(q);
+		bignum_delete(g);
+		bignum_delete(y);
+
+		return PGP_NO_MEMORY;
+	}
+
+	key = dsa_key_new(group, NULL, y);
+
+	if (key == NULL)
+	{
+		dsa_group_delete(group);
+		bignum_delete(y);
+
+		return PGP_NO_MEMORY;
+	}
 
 	sign.r.size = CEIL_DIV(signature->r->bits, 8);
 	sign.s.size = CEIL_DIV(signature->s->bits, 8);
@@ -2103,7 +2177,12 @@ uint32_t pgp_dsa_verify(pgp_dsa_signature *signature, pgp_dsa_key *pgp_key, void
 
 	dsa_key_delete(key);
 
-	return status;
+	if (status == 0)
+	{
+		return PGP_BAD_SIGNATURE;
+	}
+
+	return PGP_SUCCESS;
 }
 
 pgp_ecdsa_signature *pgp_ecdsa_sign(pgp_ecdsa_key *pgp_key, void *hash, uint32_t hash_size)

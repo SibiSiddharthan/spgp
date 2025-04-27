@@ -2915,7 +2915,7 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 		error = pgp_rsa_sign((pgp_rsa_signature **)&packet->signature, key->key, packet->hash_algorithm_id, hash, hash_size);
 		break;
 	case PGP_DSA:
-		packet->signature = pgp_dsa_sign(key->key, hash, hash_size);
+		error = pgp_dsa_sign((pgp_dsa_signature **)&packet->signature, key->key, hash, hash_size);
 		break;
 	case PGP_ECDSA:
 		packet->signature = pgp_ecdsa_sign(key->key, hash, hash_size);
