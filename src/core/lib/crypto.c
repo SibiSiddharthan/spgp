@@ -1275,12 +1275,37 @@ pgp_error_t pgp_ed448_generate_key(pgp_ed448_key **key)
 	return PGP_SUCCESS;
 }
 
-pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key, byte_t session_key_size)
+static pgp_rsa_kex *pgp_rsa_kex_new(uint32_t bits)
+{
+	pgp_rsa_kex *kex = NULL;
+
+	kex = malloc(sizeof(pgp_rsa_kex) + mpi_size(bits));
+
+	if (kex == NULL)
+	{
+		return NULL;
+	}
+
+	memset(kex, 0, sizeof(pgp_rsa_kex) + mpi_size(bits));
+
+	// Initialize the MPI
+	kex->c = mpi_init(PTR_OFFSET(kex, sizeof(pgp_rsa_kex)), mpi_size(bits), bits);
+
+	return kex;
+}
+
+static void pgp_rsa_kex_delete(pgp_rsa_kex *kex)
+{
+	free(kex);
+}
+
+pgp_error_t pgp_rsa_kex_encrypt(pgp_rsa_kex **kex, pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key,
+								byte_t session_key_size)
 {
 	uint32_t result = 0;
 
 	rsa_key *key = NULL;
-	pgp_rsa_kex *kex = NULL;
+	pgp_rsa_kex *rsa_kex = NULL;
 	byte_t *ps = session_key;
 
 	byte_t buffer[64] = {0};
@@ -1291,12 +1316,19 @@ pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algo
 
 	if (key == NULL)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	key->n = mpi_to_bignum(pgp_key->n);
 	key->e = mpi_to_bignum(pgp_key->e);
 
+	if (key->n == NULL || key->e == NULL)
+	{
+		rsa_key_delete(key);
+		return PGP_NO_MEMORY;
+	}
+
+	// V3 PKESK
 	if (symmetric_key_algorithm_id != 0)
 	{
 		buffer[pos] = symmetric_key_algorithm_id;
@@ -1311,36 +1343,34 @@ pgp_rsa_kex *pgp_rsa_kex_encrypt(pgp_rsa_key *pgp_key, byte_t symmetric_key_algo
 		checksum += ps[i];
 	}
 
-	buffer[pos] = (checksum >> 8) & 0xFF;
-	buffer[pos + 1] = checksum & 0xFF;
-	pos += 2;
+	buffer[pos++] = (checksum >> 8) & 0xFF;
+	buffer[pos++] = checksum & 0xFF;
 
-	kex = malloc(sizeof(pgp_rsa_kex) + mpi_size(pgp_key->n->bits));
+	rsa_kex = pgp_rsa_kex_new(pgp_key->n->bits);
 
-	if (kex == NULL)
+	if (rsa_kex == NULL)
 	{
 		rsa_key_delete(key);
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
-	memset(kex, 0, sizeof(pgp_rsa_kex) + mpi_size(pgp_key->n->bits));
-	kex->c = mpi_init(PTR_OFFSET(kex, sizeof(pgp_rsa_kex)), mpi_size(pgp_key->n->bits), pgp_key->n->bits);
-
-	result = rsa_encrypt_pkcs(key, buffer, pos, kex->c->bytes, CEIL_DIV(pgp_key->n->bits, 8), NULL);
+	result = rsa_encrypt_pkcs(key, buffer, pos, rsa_kex->c->bytes, CEIL_DIV(pgp_key->n->bits, 8), NULL);
 
 	rsa_key_delete(key);
 
 	if (result == 0)
 	{
-		free(kex);
-		return NULL;
+		pgp_rsa_kex_delete(rsa_kex);
+		return PGP_RSA_ENCRYPTION_FAILURE;
 	}
 
-	return kex;
+	*kex = rsa_kex;
+
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *symmetric_key_algorithm_id, void *session_key,
-							 uint32_t session_key_size)
+pgp_error_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *symmetric_key_algorithm_id, void *session_key,
+								byte_t *session_key_size)
 {
 	uint32_t result = 0;
 	uint16_t checksum = 0;
@@ -1353,27 +1383,38 @@ uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *sym
 
 	if (key == NULL)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	key->n = mpi_to_bignum(pgp_key->n);
 	key->d = mpi_to_bignum(pgp_key->d);
+	key->p = mpi_to_bignum(pgp_key->p);
+	key->q = mpi_to_bignum(pgp_key->q);
+
+	if (key->n == NULL || key->d == NULL || key->p == NULL || key->q == NULL)
+	{
+		rsa_key_delete(key);
+		return PGP_NO_MEMORY;
+	}
 
 	result = rsa_decrypt_pkcs(key, kex->c->bytes, CEIL_DIV(kex->c->bits, 8), buffer, 64);
 
+	rsa_key_delete(key);
+
+	// V6 PKESK
 	if (symmetric_key_algorithm_id == NULL)
 	{
-		for (uint16_t i = 0; i < (result - 2); ++i)
+		for (uint32_t i = 0; i < (result - 2); ++i)
 		{
 			checksum += buffer[i];
 		}
 	}
-	else
+	else // V3 PKESK
 	{
 		offset = 1;
 		*symmetric_key_algorithm_id = buffer[0];
 
-		for (uint16_t i = 1; i < (result - 2); ++i)
+		for (uint32_t i = 1; i < (result - 2); ++i)
 		{
 			checksum += buffer[i];
 		}
@@ -1383,23 +1424,22 @@ uint32_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *sym
 	{
 		result -= (2 + offset);
 
-		if (session_key_size >= result)
+		if (*session_key_size >= result)
 		{
 			memcpy(session_key, buffer + offset, result);
+			*session_key_size = result;
 		}
 		else
 		{
-			result = 0;
+			return PGP_BUFFER_TOO_SMALL;
 		}
 	}
 	else
 	{
-		result = 0;
+		return PGP_SESSION_KEY_CHECKSUM_MISMATCH;
 	}
 
-	rsa_key_delete(key);
-
-	return result;
+	return PGP_SUCCESS;
 }
 
 static void pgp_ecdh_kdf_paramters(curve_id id, pgp_hash_algorithms *hid, pgp_symmetric_key_algorithms *cid)
