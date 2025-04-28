@@ -125,7 +125,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 	}
 
 	pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_128, 0, 0);
-	seipd = pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, lit_buffer, PGP_PACKET_OCTETS(literal->header));
+	pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, NULL);
 
 	pgp_stream_push_packet(stream, seipd);
 
@@ -140,6 +140,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 uint32_t spgp_decrypt(spgp_command *command)
 {
 	pgp_stream_t *stream = NULL;
+	pgp_stream_t *decrypted_stream = NULL;
 	pgp_packet_header *header = NULL;
 
 	pgp_seipd_packet *seipd = NULL;
@@ -214,7 +215,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 		exit(2);
 	}
 
-	data_size = pgp_seipd_packet_decrypt(seipd, session_key, session_key_size, buffer, data_size);
+	data_size = pgp_seipd_packet_decrypt(seipd, session_key, session_key_size, &decrypted_stream);
 
 	if (data_size == 0)
 	{
@@ -222,14 +223,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 		exit(1);
 	}
 
-	pgp_literal_packet_read(&literal, buffer, data_size);
-
-	if (literal == NULL)
-	{
-		printf("Invalid literal packet.\n");
-		exit(1);
-	}
-
+	literal = decrypted_stream->packets[0];
 	spgp_write_file(command->output, SPGP_STD_OUTPUT, literal->data, literal->data_size);
 
 	free(buffer);

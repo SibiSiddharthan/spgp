@@ -93,6 +93,9 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, message_iv, iv_size + 2, packet->data,
 					iv_size + 2);
 
+	// Write the stream
+	pgp_stream_write(stream, PTR_OFFSET(packet->data, iv_size + 2), data_size, 0);
+
 	// Encrypt the data
 	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
 					PTR_OFFSET(packet->data, iv_size + 2), data_size, PTR_OFFSET(packet->data, iv_size + 2), data_size);
@@ -327,8 +330,7 @@ void pgp_seipd_packet_delete(pgp_seipd_packet *packet)
 	free(packet);
 }
 
-static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
-													 size_t data_size)
+static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t *stream)
 {
 	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
@@ -336,6 +338,7 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 	byte_t prefix[18] = {0};
 	byte_t trailer[2] = {0xD3, 0x14};
 
+	size_t data_size = pgp_stream_octets(stream);
 	uint64_t pos = 0;
 
 	packet->data_size = block_size + 2 + data_size + 2 + SHA1_HASH_SIZE;
@@ -343,7 +346,7 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 
 	if (packet->data == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	// Generate random prefix of block size
@@ -357,8 +360,8 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 	memcpy(PTR_OFFSET(packet->data, pos), prefix, block_size + 2);
 	pos += block_size + 2;
 
-	// Copy the plaintext
-	memcpy(PTR_OFFSET(packet->data, pos), data, data_size);
+	// Write the stream
+	pgp_stream_write(stream, PTR_OFFSET(packet->data, pos), data_size, 0);
 	pos += data_size;
 
 	// Copy the trailer
@@ -376,12 +379,12 @@ static pgp_seipd_packet *pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, v
 	// Update header
 	pgp_seipd_packet_encode_header(packet);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
-										  size_t data_size)
+static pgp_error_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t **stream)
 {
+	pgp_error_t status = 0;
 	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 	size_t plaintext_size = packet->data_size - (block_size + 4 + SHA1_HASH_SIZE);
 
@@ -391,16 +394,11 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 	byte_t zero_iv[16] = {0};
 	byte_t mdc[SHA1_HASH_SIZE] = {0};
 
-	if (data_size < plaintext_size)
-	{
-		return 0;
-	}
-
 	temp = malloc(packet->data_size);
 
 	if (temp == NULL)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	// Decrypt everything
@@ -414,7 +412,7 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 	if (prefix[block_size] != prefix[block_size - 2] || prefix[block_size + 1] != prefix[block_size - 1])
 	{
 		free(temp);
-		return 0;
+		return PGP_CFB_IV_CHECK_MISMATCH;
 	}
 
 	// Calculate the hash
@@ -424,18 +422,30 @@ static size_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *sessio
 	if (memcmp(mdc, PTR_OFFSET(temp, packet->data_size - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
 	{
 		free(temp);
-		return 0;
+		return PGP_MDC_TAG_MISMATCH;
 	}
 
-	// Copy the decrypted text
-	memcpy(data, PTR_OFFSET(temp, block_size + 2), plaintext_size);
+	// Read the decrypted text
+	status = pgp_stream_read(*stream, PTR_OFFSET(temp, block_size + 2), plaintext_size);
 	free(temp);
 
-	return plaintext_size;
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Check for any encrypted packets within
+	if (check_recursive_encryption_container(*stream))
+	{
+		// Don't delete the stream in this case.
+		return PGP_RECURSIVE_ENCRYPTION_CONTAINER;
+	}
+
+	return PGP_SUCCESS;
 }
 
-static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
-													 void *data, size_t data_size)
+static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
+											   pgp_stream_t *stream)
 {
 	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
@@ -444,12 +454,14 @@ static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, b
 	size_t in_pos = 0;
 	size_t out_pos = 0;
 	size_t count = 0;
+	size_t data_size = pgp_stream_octets(stream);
 
 	byte_t derived_key[48] = {0};
 	byte_t iv[16] = {0};
 	byte_t info[5] = {0};
 
-	byte_t *in = data;
+	void *data = NULL;
+	byte_t *in = NULL;
 	byte_t *out = NULL;
 
 	info[0] = packet->header.tag;
@@ -471,11 +483,19 @@ static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, b
 	packet->data_size = CEIL_DIV(data_size, chunk_size) * (chunk_size + PGP_AEAD_TAG_SIZE);
 	packet->data = malloc(packet->data_size);
 
-	if (packet->data == NULL)
+	data = malloc(data_size);
+
+	if (packet->data == NULL || data == NULL)
 	{
-		return NULL;
+		free(packet->data);
+		free(data);
+
+		return PGP_NO_MEMORY;
 	}
 
+	pgp_stream_write(stream, data, data_size, 0);
+
+	in = data;
 	out = packet->data;
 
 	while (in_pos < data_size)
@@ -492,13 +512,16 @@ static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, b
 
 		if (result == 0)
 		{
-			return NULL;
+			free(data);
+			return PGP_AEAD_TAG_MISMATCH;
 		}
 
 		in_pos += in_size;
 		out_pos += in_size + PGP_AEAD_TAG_SIZE;
 		++count;
 	}
+
+	free(data);
 
 	// Final authentication tag
 	byte_t aad[16] = {0};
@@ -529,12 +552,13 @@ static pgp_seipd_packet *pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, b
 	// Update header
 	pgp_seipd_packet_encode_header(packet);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data,
-										  size_t data_size)
+static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t **stream)
 {
+	pgp_error_t status = 0;
+
 	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
@@ -548,8 +572,9 @@ static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *sessio
 	byte_t iv[16] = {0};
 	byte_t info[5] = {0};
 
-	byte_t *in = packet->data;
-	byte_t *out = data;
+	void *temp = NULL;
+	byte_t *in = NULL;
+	byte_t *out = NULL;
 
 	info[0] = packet->header.tag;
 	info[1] = packet->version;
@@ -563,11 +588,21 @@ static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *sessio
 	// Copy part of the it as IV
 	memcpy(iv, PTR_OFFSET(derived_key, key_size), iv_size - 8);
 
+	temp = malloc(packet->data_size);
+
+	if (temp == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	in = packet->data;
+	out = temp;
+
 	// Decrypt the data paritioned by chunk size + tag size
 	while (in_pos < packet->data_size)
 	{
 		size_t result = 0;
-		uint32_t in_size = MIN(chunk_size + packet->tag_size, data_size - in_pos);
+		uint32_t in_size = MIN(chunk_size + packet->tag_size, packet->data_size - in_pos);
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(iv, iv_size - 8), &count_be, 8);
@@ -578,7 +613,8 @@ static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *sessio
 
 		if (result == 0)
 		{
-			return 0;
+			free(temp);
+			return PGP_AEAD_TAG_MISMATCH;
 		}
 
 		in_pos += in_size;
@@ -614,39 +650,55 @@ static size_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *sessio
 
 	if (memcmp(tag, packet->tag, PGP_AEAD_TAG_SIZE) != 0)
 	{
-		return 0;
+		return PGP_AEAD_TAG_MISMATCH;
 	}
 
-	return out_pos;
+	// Read the decrypted text
+	status = pgp_stream_read(*stream, temp, out_pos);
+	free(temp);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Check for any encrypted packets within
+	if (check_recursive_encryption_container(*stream))
+	{
+		// Don't delete the stream in this case.
+		return PGP_RECURSIVE_ENCRYPTION_CONTAINER;
+	}
+
+	return PGP_SUCCESS;
 }
 
-pgp_seipd_packet *pgp_seipd_packet_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
-										   void *data, size_t data_size)
+pgp_error_t pgp_seipd_packet_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
+									 pgp_stream_t *stream)
 {
 
 	switch (packet->version)
 	{
 	case PGP_SEIPD_V1:
-		return pgp_seipd_packet_v1_encrypt(packet, session_key, session_key_size, data, data_size);
+		return pgp_seipd_packet_v1_encrypt(packet, session_key, session_key_size, stream);
 	case PGP_SEIPD_V2:
-		return pgp_seipd_packet_v2_encrypt(packet, salt, session_key, session_key_size, data, data_size);
+		return pgp_seipd_packet_v2_encrypt(packet, salt, session_key, session_key_size, stream);
 	}
 
-	return NULL;
+	return PGP_INVALID_SEIPD_PACKET_VERSION;
 }
 
-size_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data, size_t data_size)
+pgp_error_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t **stream)
 {
 
 	switch (packet->version)
 	{
 	case PGP_SEIPD_V1:
-		return pgp_seipd_packet_v1_decrypt(packet, session_key, session_key_size, data, data_size);
+		return pgp_seipd_packet_v1_decrypt(packet, session_key, session_key_size, stream);
 	case PGP_SEIPD_V2:
-		return pgp_seipd_packet_v2_decrypt(packet, session_key, session_key_size, data, data_size);
+		return pgp_seipd_packet_v2_decrypt(packet, session_key, session_key_size, stream);
 	}
 
-	return 0;
+	return PGP_INVALID_SEIPD_PACKET_VERSION;
 }
 
 static pgp_error_t pgp_seipd_packet_read_body(pgp_seipd_packet *packet, buffer_t *buffer)

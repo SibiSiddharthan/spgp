@@ -77,9 +77,9 @@ pgp_error_t pgp_seipd_packet_new(pgp_seipd_packet **packet, byte_t version, byte
 								 byte_t chunk_size);
 void pgp_seipd_packet_delete(pgp_seipd_packet *packet);
 
-pgp_seipd_packet *pgp_seipd_packet_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
-										   void *data, size_t data_size);
-size_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, void *data, size_t data_size);
+pgp_error_t pgp_seipd_packet_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
+									 pgp_stream_t *stream);
+pgp_error_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t **stream);
 
 pgp_error_t pgp_seipd_packet_read(pgp_seipd_packet **packet, void *data, size_t size);
 size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size);
