@@ -935,8 +935,8 @@ void pgp_skesk_packet_delete(pgp_skesk_packet *packet)
 	free(packet);
 }
 
-static pgp_skesk_packet *pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size,
-																 void *session_key, size_t session_key_size)
+static pgp_error_t pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *packet, void *password, byte_t password_size,
+														   void *session_key, byte_t session_key_size)
 {
 	byte_t key[32] = {0};
 	byte_t buffer[48] = {0};
@@ -965,43 +965,48 @@ static pgp_skesk_packet *pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packe
 		pgp_skesk_packet_encode_header(packet);
 	}
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-static uint32_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
-														size_t session_key_size)
+static pgp_error_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *packet, void *password, byte_t password_size,
+														   void *session_key, byte_t *session_key_size)
 {
 	byte_t key[32] = {0};
 	byte_t buffer[48] = {0};
 	byte_t zero_iv[16] = {0};
 
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	byte_t iv_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
 	if (packet->session_key_size == 0)
 	{
-		return pgp_s2k_hash(&packet->s2k, password, password_size, session_key, session_key_size);
+		pgp_s2k_hash(&packet->s2k, password, password_size, session_key, *session_key_size);
 	}
 	else
 	{
-		if ((packet->session_key_size + 1) > session_key_size)
+		if ((packet->session_key_size - 1) > *session_key_size)
 		{
-			return 0;
+			return PGP_BUFFER_TOO_SMALL;
 		}
 
-		pgp_s2k_hash(&packet->s2k, password, password_size, session_key, session_key_size);
+		pgp_s2k_hash(&packet->s2k, password, password_size, key, key_size);
 
 		// Decrypt the session key
-		pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, session_key_size, zero_iv, iv_size, packet->session_key,
-						session_key_size + 1, buffer, session_key_size + 1);
+		pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, zero_iv, iv_size, packet->session_key, packet->session_key_size,
+						buffer, 48);
 
-		memcpy(session_key, PTR_OFFSET(buffer, 1), session_key_size);
+		// Set the new algorithm
+		packet->symmetric_key_algorithm_id = buffer[0];
+		*session_key_size = packet->session_key_size - 1;
+
+		memcpy(session_key, PTR_OFFSET(buffer, 1), packet->session_key_size - 1);
 	}
 
-	return 0;
+	return PGP_SUCCESS;
 }
 
-static pgp_skesk_packet *pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size,
-																	void *session_key, size_t session_key_size, void *iv, size_t iv_size)
+static pgp_error_t pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_packet *packet, void *password, byte_t password_size, void *iv,
+															  byte_t iv_size, void *session_key, byte_t session_key_size)
 {
 	byte_t ik[32] = {0};
 	byte_t sk[32] = {0};
@@ -1012,7 +1017,7 @@ static pgp_skesk_packet *pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_pa
 
 	if (iv_size != pgp_aead_iv_size(packet->aead_algorithm_id))
 	{
-		return NULL;
+		return PGP_INVALID_AEAD_IV_SIZE;
 	}
 
 	info[0] = packet->header.tag;
@@ -1043,17 +1048,17 @@ static pgp_skesk_packet *pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_pa
 
 	if (result == 0)
 	{
-		return NULL;
+		return PGP_AEAD_TAG_MISMATCH;
 	}
 
 	// Fill up the header now, we have enough information.
 	pgp_skesk_packet_encode_header(packet);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-static uint32_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size,
-														   void *session_key, size_t session_key_size)
+static pgp_error_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *packet, void *password, byte_t password_size,
+															  void *session_key, byte_t *session_key_size)
 {
 	byte_t ik[32] = {0};
 	byte_t sk[32] = {0};
@@ -1064,12 +1069,14 @@ static uint32_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *pac
 	byte_t *key = NULL;
 	size_t result = 0;
 
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
+
 	info[0] = packet->header.tag;
 	info[1] = packet->version;
 	info[2] = packet->symmetric_key_algorithm_id;
 	info[3] = packet->aead_algorithm_id;
 
-	pgp_s2k_hash(&packet->s2k, password, password_size, ik, session_key_size);
+	pgp_s2k_hash(&packet->s2k, password, password_size, ik, key_size);
 
 	if (packet->version == PGP_SKESK_V6)
 	{
@@ -1081,29 +1088,28 @@ static uint32_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *pac
 		key = ik;
 	}
 
-	result =
-		pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, session_key_size, packet->iv, packet->iv_size,
-						 info, 4, packet->session_key, session_key_size, temp, session_key_size, tag, PGP_AEAD_TAG_SIZE);
+	result = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
+							  info, 4, packet->session_key, *session_key_size, temp, *session_key_size, tag, PGP_AEAD_TAG_SIZE);
 
 	if (result == 0)
 	{
-		return 0;
+		return PGP_AEAD_TAG_MISMATCH;
 	}
 
 	// Check tag
 	if (memcmp(tag, packet->tag, PGP_AEAD_TAG_SIZE) != 0)
 	{
-		return 0;
+		return PGP_AEAD_TAG_MISMATCH;
 	}
 
 	// Copy the session key to the output
-	memcpy(session_key, temp, session_key_size);
+	memcpy(session_key, temp, *session_key_size);
 
-	return session_key_size;
+	return PGP_SUCCESS;
 }
 
-pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
-													   size_t session_key_size, void *iv, size_t iv_size)
+pgp_error_t pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet, void *password, byte_t password_size, void *iv, byte_t iv_size,
+												 void *session_key, byte_t session_key_size)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
@@ -1114,7 +1120,7 @@ pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet,
 	{
 		if (key_size != session_key_size)
 		{
-			return NULL;
+			return PGP_INVALID_CIPHER_KEY_SIZE;
 		}
 
 		return pgp_skesk_packet_session_key_v5_v6_encrypt(packet, password, password_size, session_key, session_key_size, iv, iv_size);
@@ -1122,34 +1128,36 @@ pgp_skesk_packet *pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet,
 	case PGP_SKESK_V4:
 		return pgp_skesk_packet_session_key_v4_encrypt(packet, password, password_size, session_key, session_key_size);
 	default:
-		return NULL;
+		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
-	return NULL;
+	// Unreachable
+	return PGP_INTERNAL_BUG;
 }
 
-uint32_t pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void *password, size_t password_size, void *session_key,
-											  size_t session_key_size)
+pgp_error_t pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void *password, byte_t password_size, void *session_key,
+												 byte_t *session_key_size)
 {
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
-	if (session_key_size < key_size)
+	if (*session_key_size < key_size)
 	{
-		return 0;
+		return PGP_BUFFER_TOO_SMALL;
 	}
 
 	switch (packet->version)
 	{
 	case PGP_SKESK_V6:
 	case PGP_SKESK_V5:
-		return pgp_skesk_packet_session_key_v5_v6_decrypt(packet, password, password_size, session_key, key_size);
+		return pgp_skesk_packet_session_key_v5_v6_decrypt(packet, password, password_size, session_key, session_key_size);
 	case PGP_SKESK_V4:
-		return pgp_skesk_packet_session_key_v4_decrypt(packet, password, password_size, session_key, key_size);
+		return pgp_skesk_packet_session_key_v4_decrypt(packet, password, password_size, session_key, session_key_size);
 	default:
-		return 0;
+		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
-	return 0;
+	// Unreachable
+	return PGP_INTERNAL_BUG;
 }
 
 static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t *buffer)

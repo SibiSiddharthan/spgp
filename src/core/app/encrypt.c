@@ -104,7 +104,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 		}
 
 		pgp_skesk_packet_new(&session, PGP_SKESK_V4, PGP_AES_128, 0, &s2k);
-		session = pgp_skesk_packet_session_key_encrypt(session, command->passhprase, strlen(command->passhprase), NULL, 0, NULL, 0);
+		pgp_skesk_packet_session_key_encrypt(session, command->passhprase, strlen(command->passhprase), NULL, 0, NULL, 0);
 
 		session_key_size = pgp_s2k_hash(&s2k, command->passhprase, strlen(command->passhprase), session_key, 16);
 
@@ -195,7 +195,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 			exit(1);
 		}
 
-		session_key_size = pgp_skesk_packet_session_key_decrypt(session, command->passhprase, strlen(command->passhprase), session_key, 64);
+		pgp_skesk_packet_session_key_decrypt(session, command->passhprase, strlen(command->passhprase), session_key, &session_key_size);
 		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 	}
 
