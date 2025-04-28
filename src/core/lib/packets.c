@@ -1070,13 +1070,13 @@ void pgp_user_attribute_packet_delete(pgp_user_attribute_packet *packet)
 	free(packet);
 }
 
-size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, void *image, size_t size)
+pgp_error_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, void *image, size_t *size)
 {
 	pgp_subpacket_header *subpacket_header = NULL;
 
 	if (packet->subpackets == NULL)
 	{
-		return 0;
+		return PGP_IMAGE_NOT_PRESENT_IN_USER_ATTRIBUTE;
 	}
 
 	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
@@ -1089,21 +1089,22 @@ size_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packet, vo
 			pgp_user_attribute_image_subpacket *image_subpacket = packet->subpackets->packets[i];
 			uint32_t image_size = image_subpacket->header.body_size - 16;
 
-			if (size < image_size)
+			if (*size < image_size)
 			{
-				return 0;
+				return PGP_BUFFER_TOO_SMALL;
 			}
 
 			memcpy(image, image_subpacket->image_data, image_size);
+			*size = image_size;
 
-			return image_size;
+			return PGP_SUCCESS;
 		}
 	}
 
-	return 0;
+	return PGP_IMAGE_NOT_PRESENT_IN_USER_ATTRIBUTE;
 }
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packet, byte_t format, void *image, size_t size)
+pgp_error_t pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packet, byte_t format, void *image, size_t size)
 {
 	void *result = NULL;
 
@@ -1112,7 +1113,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 
 	if (format != PGP_USER_ATTRIBUTE_IMAGE_JPEG)
 	{
-		return NULL;
+		return PGP_UNSUPPORTED_IMAGE_TYPE;
 	}
 
 	// Set the image data
@@ -1120,7 +1121,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 
 	if (image_subpacket == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	memset(image_subpacket, 0, required_size);
@@ -1137,7 +1138,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 	if (result == NULL)
 	{
 		pgp_user_attribute_packet_delete(packet);
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	packet->subpackets = result;
@@ -1145,16 +1146,16 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_image(pgp_user_attribut
 
 	pgp_user_attribute_encode_header(packet);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-size_t pgp_user_attribute_packet_get_uid(pgp_user_attribute_packet *packet, void *data, size_t size)
+pgp_error_t pgp_user_attribute_packet_get_uid(pgp_user_attribute_packet *packet, void *data, size_t *size)
 {
 	pgp_subpacket_header *subpacket_header = NULL;
 
 	if (packet->subpackets == NULL)
 	{
-		return 0;
+		return PGP_ID_NOT_PRESENT_IN_USER_ATTRIBUTE;
 	}
 
 	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
@@ -1167,32 +1168,34 @@ size_t pgp_user_attribute_packet_get_uid(pgp_user_attribute_packet *packet, void
 			pgp_user_attribute_uid_subpacket *uid_subpacket = packet->subpackets->packets[i];
 			uint32_t uid_size = uid_subpacket->header.body_size;
 
-			if (size < uid_size)
+			if (*size < uid_size)
 			{
-				return 0;
+				return PGP_BUFFER_TOO_SMALL;
 			}
 
 			memcpy(data, uid_subpacket->user_data, uid_size);
+			*size = uid_size;
 
-			return uid_size;
+			return PGP_SUCCESS;
 		}
 	}
 
-	return 0;
+	return PGP_ID_NOT_PRESENT_IN_USER_ATTRIBUTE;
 }
 
-pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_packet *packet, void *user, uint16_t user_size)
+pgp_error_t pgp_user_attribute_packet_set_uid(pgp_user_attribute_packet *packet, void *user, size_t size)
 {
 	void *result = NULL;
 
+	pgp_error_t status = 0;
 	pgp_user_attribute_uid_subpacket *uid_subpacket = NULL;
 	pgp_user_id_packet *uid_packet = NULL;
 
-	pgp_user_id_packet_new(&uid_packet, PGP_HEADER, user, user_size);
+	status = pgp_user_id_packet_new(&uid_packet, PGP_HEADER, user, size);
 
-	if (uid_packet == NULL)
+	if (status != PGP_SUCCESS)
 	{
-		return NULL;
+		return status;
 	}
 
 	// Layout is the same. Just change the tag.
@@ -1204,7 +1207,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 	if (result == NULL)
 	{
 		pgp_user_attribute_packet_delete(packet);
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	packet->subpackets = result;
@@ -1212,7 +1215,7 @@ pgp_user_attribute_packet *pgp_user_attribute_packet_set_uid(pgp_user_attribute_
 
 	pgp_user_attribute_encode_header(packet);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
 static pgp_error_t pgp_user_attribute_packet_read_body(pgp_user_attribute_packet *packet, buffer_t *buffer)
