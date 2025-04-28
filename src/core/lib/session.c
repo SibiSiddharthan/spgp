@@ -374,6 +374,51 @@ static uint32_t pgp_session_key_write(pgp_pkesk_packet *packet, void *ptr, uint3
 	}
 }
 
+static uint16_t get_kex_octets(pgp_public_key_algorithms public_key_algorithm_id, void *kex_data)
+{
+	switch (public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	{
+		pgp_rsa_kex *kex = kex_data;
+
+		return mpi_octets(kex->c->bits);
+	}
+	break;
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_elgamal_kex *kex = kex_data;
+
+		return mpi_octets(kex->r->bits) + mpi_octets(kex->s->bits);
+	}
+	break;
+	case PGP_ECDH:
+	{
+		pgp_ecdh_kex *kex = kex_data;
+
+		return mpi_octets(kex->ephemeral_point->bits) + 1 + kex->encoded_session_key_size;
+	}
+	break;
+	case PGP_X25519:
+	{
+		pgp_x25519_kex *kex = kex_data;
+
+		return 32 + 1 + kex->octet_count;
+	}
+	break;
+	case PGP_X448:
+	{
+		pgp_x25519_kex *kex = kex_data;
+
+		return 56 + 1 + kex->octet_count;
+	}
+	break;
+	default:
+		return 0;
+	}
+}
+
 static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 {
 	uint32_t body_size = 0;
@@ -487,35 +532,29 @@ pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_k
 	{
 		status = pgp_rsa_kex_encrypt((pgp_rsa_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key,
 									 session_key_size);
-		// packet->encrypted_session_key_octets = mpi_octets(kex->c->bits);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		// TODO
-		// packet->encrypted_session_key_octets = mpi_octets(kex->r->bits) + mpi_octets(kex->s->bits);
 	}
 	break;
 	case PGP_ECDH:
 	{
 		status = pgp_ecdh_kex_encrypt((pgp_ecdh_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, fingerprint,
 									  fingerprint_size, session_key, session_key_size);
-
-		// packet->encrypted_session_key_octets = mpi_octets(kex->ephemeral_point->bits) + 1 + kex->encoded_session_key_size;
 	}
 	break;
 	case PGP_X25519:
 	{
 		status = pgp_x25519_kex_encrypt((pgp_x25519_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id,
 										session_key, session_key_size);
-		// packet->encrypted_session_key_octets = 32 + 1 + kex->octet_count;
 	}
 	break;
 	case PGP_X448:
 	{
 		status = pgp_x448_kex_encrypt((pgp_x448_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key,
 									  session_key_size);
-		// packet->encrypted_session_key_octets = 56 + 1 + kex->octet_count;
 	}
 	break;
 	default:
@@ -528,6 +567,7 @@ pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_k
 	}
 
 	// Update the header
+	packet->encrypted_session_key_octets = get_kex_octets(packet->public_key_algorithm_id, packet->encrypted_session_key);
 	pgp_pkesk_packet_encode_header(packet);
 
 	return PGP_SUCCESS;
