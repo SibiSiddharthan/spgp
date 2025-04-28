@@ -225,6 +225,23 @@ static size_t pgp_stream_write_binary(pgp_stream_t *stream, void *buffer, size_t
 		}
 
 		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+
+		if (header->partial)
+		{
+			++i;
+			while (i < stream->count)
+			{
+				pos += pgp_partial_packet_write(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+				header = stream->packets[i];
+
+				if (header->partial == 0)
+				{
+					break;
+				}
+
+				++i;
+			}
+		}
 	}
 
 	return pos;
@@ -375,6 +392,12 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 		if (options & PGP_PRINT_HEADER_ONLY)
 		{
 			pos += pgp_packet_header_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+
+			if (header->partial)
+			{
+				goto partial;
+			}
+
 			continue;
 		}
 
@@ -383,6 +406,7 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 
 		if (header->partial)
 		{
+		partial:
 			++i;
 			while (i < stream->count)
 			{
