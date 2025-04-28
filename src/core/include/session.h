@@ -108,15 +108,13 @@ typedef struct _pgp_unknown_kex
 } pgp_unknown_kex;
 
 // Public Key Encrypted Session Key Packet (Tag 1)
-pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version, byte_t public_key_algorithm_id,
-								 byte_t session_key_algorithm_id);
+pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version);
 void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet);
 
-pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key,
-													   size_t session_key_size, byte_t anonymous);
-uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key, size_t session_key_size);
-
-size_t pgp_pkesk_packet_get_session_key(pgp_pkesk_packet *packet, void *key, size_t size);
+pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, byte_t anonymous,
+												 byte_t session_key_algorithm_id, void *session_key, byte_t session_key_size);
+pgp_error_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key,
+												 byte_t *session_key_size);
 
 pgp_error_t pgp_pkesk_packet_read(pgp_pkesk_packet **packet, void *data, size_t size);
 size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size);

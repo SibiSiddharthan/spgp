@@ -403,23 +403,13 @@ static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 	}
 }
 
-pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t session_key_algorithm_id)
+pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version)
 {
 	pgp_pkesk_packet *session = NULL;
 
 	if (version != PGP_PKESK_V6 && version != PGP_PKESK_V3)
 	{
 		return PGP_INVALID_PUBLIC_SESSION_PACKET_VERSION;
-	}
-
-	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
-	{
-		return PGP_INVALID_PUBLIC_ALGORITHM;
-	}
-
-	if (pgp_symmetric_cipher_algorithm_validate(session_key_algorithm_id) == 0)
-	{
-		return PGP_INVALID_CIPHER_ALGORITHM;
 	}
 
 	packet = malloc(sizeof(pgp_pkesk_packet));
@@ -431,11 +421,8 @@ pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version, byte
 
 	memset(packet, 0, sizeof(pgp_pkesk_packet));
 
-	session->version = version;
-	session->public_key_algorithm_id = public_key_algorithm_id;
-	session->symmetric_key_algorithm_id = session_key_algorithm_id;
-
 	pgp_pkesk_packet_encode_header(session);
+	session->version = version;
 
 	return PGP_SUCCESS;
 }
@@ -446,25 +433,36 @@ void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet)
 	free(packet);
 }
 
-pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key,
-													   size_t session_key_size, byte_t anonymous)
+pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, byte_t anonymous,
+												 byte_t session_key_algorithm_id, void *session_key, byte_t session_key_size)
 {
 	pgp_error_t status = 0;
-	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
-	byte_t symmetric_key_algorithm_id = packet->version == PGP_PKESK_V6 ? 0 : packet->symmetric_key_algorithm_id;
+	byte_t key_size = pgp_symmetric_cipher_key_size(session_key_algorithm_id);
+	byte_t symmetric_key_algorithm_id = packet->version == PGP_PKESK_V6 ? 0 : session_key_algorithm_id;
 
-	// Check the algorithms
-	// if (packet->public_key_algorithm_id != key->public_key_algorithm_id)
-	//{
-	//	return NULL;
-	//}
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
+	if (pgp_symmetric_cipher_algorithm_validate(session_key_algorithm_id) == 0)
+	{
+		return PGP_INVALID_CIPHER_ALGORITHM;
+	}
 
 	if (session_key_size != key_size)
 	{
-		return NULL;
+		return PGP_INVALID_CIPHER_KEY_SIZE;
 	}
 
 	packet->key_version = key->version;
+	packet->public_key_algorithm_id = key->public_key_algorithm_id;
+	packet->symmetric_key_algorithm_id = session_key_algorithm_id;
+
+	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+
+	if (fingerprint_size == 0)
+	{
+		return PGP_INVALID_KEY_VERSION;
+	}
 
 	if (anonymous == 0)
 	{
@@ -472,11 +470,12 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 
 		if (packet->version == PGP_PKESK_V6)
 		{
-			packet->key_octet_count += pgp_key_fingerprint(key, packet->key_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+			memcpy(packet->key_fingerprint, fingerprint, fingerprint_size);
+			packet->key_octet_count += fingerprint_size;
 		}
 		else
 		{
-			packet->key_octet_count += pgp_key_id(key, packet->key_id);
+			packet->key_octet_count += pgp_key_id_from_fingerprint(key->version, packet->key_id, fingerprint, fingerprint_size);
 		}
 	}
 
@@ -493,25 +492,12 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
-		pgp_elgamal_kex *kex = NULL;
-		// kex = pgp_elgamal_kex_encrypt(public_key->key_data, symmetric_key_algorithm_id, session_key, session_key_size);
-
-		if (kex == NULL)
-		{
-			return NULL;
-		}
-
-		packet->encrypted_session_key = kex;
-		packet->encrypted_session_key_octets = mpi_octets(kex->r->bits) + mpi_octets(kex->s->bits);
+		// TODO
+		// packet->encrypted_session_key_octets = mpi_octets(kex->r->bits) + mpi_octets(kex->s->bits);
 	}
 	break;
 	case PGP_ECDH:
 	{
-		pgp_ecdh_kex *kex = NULL;
-		byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-		byte_t fingerprint_size = 0;
-
-		fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 		status = pgp_ecdh_kex_encrypt((pgp_ecdh_kex **)&packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, fingerprint,
 									  fingerprint_size, session_key, session_key_size);
 
@@ -533,37 +519,36 @@ pgp_pkesk_packet *pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet,
 	}
 	break;
 	default:
-		return NULL;
+		return PGP_UNSUPPORTED_KEY_EXCHANGE_ALGORITHM;
 	}
 
-	if (packet->encrypted_session_key == NULL)
+	if (status != PGP_SUCCESS)
 	{
-		return NULL;
+		return status;
 	}
 
 	// Update the header
 	pgp_pkesk_packet_encode_header(packet);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key, size_t session_key_size)
+pgp_error_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_packet *key, void *session_key, byte_t *session_key_size)
 {
-	uint32_t result = 0;
 	pgp_error_t status = 0;
 	byte_t *symmetric_key_algorithm_id = NULL;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
+	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 
 	// Check whether key is corret
 	if (packet->version == PGP_PKESK_V6)
 	{
-		byte_t key_fingerprint_size = 0;
-		byte_t key_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-
-		key_fingerprint_size = pgp_key_fingerprint(key, key_fingerprint, 32);
-
-		if (memcmp(packet->key_fingerprint, key_fingerprint, key_fingerprint_size) != 0)
+		if (memcmp(packet->key_fingerprint, fingerprint, fingerprint_size) != 0)
 		{
-			return 0;
+			return PGP_INCORRECT_DECRYPTION_KEY;
 		}
 	}
 
@@ -571,11 +556,11 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 	{
 		byte_t key_id[PGP_KEY_ID_SIZE] = {0};
 
-		pgp_key_id(key, key_id);
+		pgp_key_id_from_fingerprint(key->version, key_id, fingerprint, fingerprint_size);
 
 		if (memcmp(packet->key_id, key_id, PGP_KEY_ID_SIZE) != 0)
 		{
-			return 0;
+			return PGP_INCORRECT_DECRYPTION_KEY;
 		}
 	}
 
@@ -589,33 +574,23 @@ uint32_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_key_
 	{
 	case PGP_RSA_ENCRYPT_ONLY:
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		status = pgp_rsa_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, &session_key_size);
+		status = pgp_rsa_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_ECDH:
-		byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-		byte_t fingerprint_size = 0;
-
-		fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 		status = pgp_ecdh_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, fingerprint, fingerprint_size,
-									  session_key, &session_key_size);
+									  session_key, session_key_size);
 		break;
 	case PGP_X25519:
-		result =
-			pgp_x25519_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, &session_key_size);
+		status = pgp_x25519_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	case PGP_X448:
-		result = pgp_x448_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, &session_key_size);
+		status = pgp_x448_kex_decrypt(packet->encrypted_session_key, key->key, symmetric_key_algorithm_id, session_key, session_key_size);
 		break;
 	default:
-		return 0;
+		return PGP_UNSUPPORTED_KEY_EXCHANGE_ALGORITHM;
 	}
 
-	if (result == 0)
-	{
-		return 0;
-	}
-
-	return result;
+	return status;
 }
 
 static pgp_error_t pgp_pkesk_packet_read_body(pgp_pkesk_packet *packet, buffer_t *buffer)

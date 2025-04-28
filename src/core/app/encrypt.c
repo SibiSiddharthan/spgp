@@ -116,10 +116,10 @@ uint32_t spgp_encrypt(spgp_command *command)
 		pgp_key_packet *key = NULL;
 
 		key = spgp_search_key_from_user(command->user);
-		pgp_pkesk_packet_new(&session, PGP_PKESK_V3, key->public_key_algorithm_id, PGP_AES_128);
+		pgp_pkesk_packet_new(&session, PGP_PKESK_V3);
 
 		session_key_size = pgp_rand(session_key, 16);
-		session = pgp_pkesk_packet_session_key_encrypt(session, key, session_key, session_key_size, 0);
+		pgp_pkesk_packet_session_key_encrypt(session, key, 0, PGP_AES_128, session_key, session_key_size);
 
 		pgp_stream_push_packet(stream, session);
 	}
@@ -146,7 +146,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 	pgp_literal_packet *literal = NULL;
 
 	byte_t session_key[64] = {0};
-	byte_t session_key_size = 0;
+	byte_t session_key_size = 64;
 
 	void *file = NULL;
 	void *buffer = NULL;
@@ -181,7 +181,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 
 		pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
 
-		session_key_size = pgp_pkesk_packet_session_key_decrypt(session, key, session_key, 64);
+		pgp_pkesk_packet_session_key_decrypt(session, key, session_key, &session_key_size);
 		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 	}
 
