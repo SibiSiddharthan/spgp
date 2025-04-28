@@ -966,18 +966,20 @@ void pgp_aead_packet_delete(pgp_aead_packet *packet)
 	free(packet);
 }
 
-pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte_t iv_size, void *session_key, size_t session_key_size,
-										 void *data, size_t data_size)
+pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte_t iv_size, void *session_key, size_t session_key_size,
+									pgp_stream_t *stream)
 {
 	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
 
 	size_t in_pos = 0;
 	size_t out_pos = 0;
 	size_t count = 0;
+	size_t data_size = pgp_stream_octets(stream);
 
 	byte_t aad[32] = {0};
 
-	byte_t *in = data;
+	void *data = NULL;
+	byte_t *in = NULL;
 	byte_t *out = NULL;
 
 	aad[0] = packet->header.tag;
@@ -988,7 +990,7 @@ pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16],
 
 	if (iv_size != pgp_aead_iv_size(packet->aead_algorithm_id))
 	{
-		return NULL;
+		return PGP_INVALID_AEAD_IV_SIZE;
 	}
 
 	packet->iv_size = iv_size;
@@ -997,11 +999,19 @@ pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16],
 	packet->data_size = CEIL_DIV(data_size, chunk_size) * (chunk_size + PGP_AEAD_TAG_SIZE);
 	packet->data = malloc(packet->data_size);
 
-	if (packet->data == NULL)
+	data = malloc(data_size);
+
+	if (packet->data == NULL || data == NULL)
 	{
-		return NULL;
+		free(packet->data);
+		free(data);
+
+		return PGP_NO_MEMORY;
 	}
 
+	pgp_stream_write(stream, data, data_size, 0);
+
+	in = data;
 	out = packet->data;
 
 	while (in_pos < data_size)
@@ -1018,7 +1028,8 @@ pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16],
 
 		if (result == 0)
 		{
-			return NULL;
+			free(data);
+			return PGP_AEAD_TAG_MISMATCH;
 		}
 
 		in_pos += in_size;
@@ -1026,11 +1037,13 @@ pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16],
 		++count;
 	}
 
-	packet->tag_size = PGP_AEAD_TAG_SIZE;
+	free(data);
 
 	// Final authentication tag
 	size_t count_be = BSWAP_64(count);
 	size_t octets_be = BSWAP_64(data_size);
+
+	packet->tag_size = PGP_AEAD_TAG_SIZE;
 
 	memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 	memcpy(PTR_OFFSET(aad, 13), &octets_be, 8);
@@ -1040,11 +1053,13 @@ pgp_aead_packet *pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16],
 
 	pgp_aead_packet_encode_header(packet);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-size_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_t session_key_size, void *data, size_t data_size)
+pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t **stream)
 {
+	pgp_error_t status = 0;
+
 	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
 	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
 
@@ -1055,8 +1070,9 @@ size_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_
 	byte_t tag[PGP_AEAD_TAG_SIZE] = {0};
 	byte_t aad[32] = {0};
 
-	byte_t *in = packet->data;
-	byte_t *out = data;
+	void *temp = NULL;
+	byte_t *in = NULL;
+	byte_t *out = NULL;
 
 	aad[0] = packet->header.tag;
 	aad[1] = packet->version;
@@ -1064,11 +1080,21 @@ size_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_
 	aad[3] = packet->aead_algorithm_id;
 	aad[4] = packet->chunk_size;
 
+	temp = malloc(packet->data_size);
+
+	if (temp == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	in = packet->data;
+	out = temp;
+
 	// Decrypt the data paritioned by chunk size + tag size
 	while (in_pos < packet->data_size)
 	{
 		size_t result = 0;
-		uint32_t in_size = MIN(chunk_size + packet->tag_size, data_size - in_pos);
+		uint32_t in_size = MIN(chunk_size + packet->tag_size, packet->data_size - in_pos);
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
@@ -1079,7 +1105,8 @@ size_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_
 
 		if (result == 0)
 		{
-			return 0;
+			free(temp);
+			return PGP_AEAD_TAG_MISMATCH;
 		}
 
 		in_pos += in_size;
@@ -1099,10 +1126,26 @@ size_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, size_
 
 	if (memcmp(tag, packet->tag, PGP_AEAD_TAG_SIZE) != 0)
 	{
-		return 0;
+		return PGP_AEAD_TAG_MISMATCH;
 	}
 
-	return out_pos;
+	// Read the decrypted text
+	status = pgp_stream_read(*stream, temp, out_pos);
+	free(temp);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Check for any encrypted packets within
+	if (check_recursive_encryption_container(*stream))
+	{
+		// Don't delete the stream in this case.
+		return PGP_RECURSIVE_ENCRYPTION_CONTAINER;
+	}
+
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_aead_packet_read_body(pgp_aead_packet *packet, buffer_t *buffer)
