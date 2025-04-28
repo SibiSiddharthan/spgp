@@ -16,6 +16,25 @@
 
 #include <sha.h>
 
+static byte_t check_recursive_encryption_container(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	pgp_packet_type type = 0;
+
+	for (uint16_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		type = pgp_packet_get_type(header->tag);
+
+		if (type == PGP_SED || type == PGP_SEIPD || type == PGP_AEAD)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 pgp_error_t pgp_sed_packet_new(pgp_sed_packet **packet)
 {
 	*packet = malloc(sizeof(pgp_sed_packet));
@@ -36,10 +55,11 @@ void pgp_sed_packet_delete(pgp_sed_packet *packet)
 	free(packet);
 }
 
-pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key,
-									   size_t session_key_size, void *data, size_t data_size)
+pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
+								   pgp_stream_t *stream)
 {
 	byte_t iv_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id);
+	size_t data_size = pgp_stream_octets(stream);
 	size_t total_data_size = iv_size + 2 + data_size;
 
 	uint32_t result = 0;
@@ -51,7 +71,7 @@ pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_
 
 	if (packet->data == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	// N bytes of symmetrically encryrpted data
@@ -62,7 +82,7 @@ pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_
 
 	if (result != iv_size)
 	{
-		return 0;
+		return PGP_RAND_ERROR;
 	}
 
 	// Last 2 octets
@@ -74,24 +94,29 @@ pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_
 					iv_size + 2);
 
 	// Encrypt the data
-	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size, data, data_size,
-					PTR_OFFSET(packet->data, iv_size + 2), data_size);
+	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
+					PTR_OFFSET(packet->data, iv_size + 2), data_size, PTR_OFFSET(packet->data, iv_size + 2), data_size);
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-size_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
-							  void *data, size_t data_size)
+pgp_error_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
+								   pgp_stream_t **stream)
 {
+	pgp_error_t status = 0;
 	size_t iv_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id);
 	size_t plaintext_size = packet->header.body_size - (iv_size + 2);
+
+	void *data = NULL;
 
 	byte_t zero_iv[16] = {0};
 	byte_t message_iv[32] = {0};
 
-	if (data_size < plaintext_size)
+	data = malloc(plaintext_size);
+
+	if (data == NULL)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
 
 	// Decrypt the iv
@@ -108,7 +133,23 @@ size_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algor
 	pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
 					PTR_OFFSET(packet->data, iv_size + 2), plaintext_size, data, plaintext_size);
 
-	return plaintext_size;
+	status = pgp_stream_read(*stream, data, plaintext_size);
+
+	free(data);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Check for any encrypted packets within
+	if (check_recursive_encryption_container(*stream))
+	{
+		// Don't delete the stream in this case.
+		return PGP_RECURSIVE_ENCRYPTION_CONTAINER;
+	}
+
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_sed_packet_read_with_header(pgp_sed_packet **packet, pgp_packet_header *header, void *data)

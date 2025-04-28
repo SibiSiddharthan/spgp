@@ -10,7 +10,7 @@
 
 #include <pgp.h>
 #include <packet.h>
-#include <mpi.h>
+#include <stream.h>
 
 #define PGP_MAX_CHUNK_SIZE 16
 #define CHUNK_SIZE(size)   ((uint64_t)1 << ((size) + 6))
@@ -64,10 +64,10 @@ typedef struct _pgp_seipd_packet
 pgp_error_t pgp_sed_packet_new(pgp_sed_packet **packet);
 void pgp_sed_packet_delete(pgp_sed_packet *packet);
 
-pgp_sed_packet *pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key,
-									   size_t session_key_size, void *data, size_t data_size);
-size_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
-							  void *data, size_t data_size);
+pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
+								   pgp_stream_t *stream);
+pgp_error_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
+								   pgp_stream_t **stream);
 
 pgp_error_t pgp_sed_packet_read(pgp_sed_packet **packet, void *data, size_t size);
 size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size);
