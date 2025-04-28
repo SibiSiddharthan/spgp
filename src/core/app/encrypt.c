@@ -84,7 +84,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 		pgp_literal_packet_new(&literal, PGP_HEADER, 0, NULL, 0);
 	}
 
-	pgp_literal_packet_set_data(literal, PGP_LITERAL_DATA_BINARY, buffer, size);
+	pgp_literal_packet_store(literal, PGP_LITERAL_DATA_BINARY, buffer, size);
 
 	lit_buffer = malloc(PGP_PACKET_OCTETS(literal->header));
 	pgp_literal_packet_write(literal, lit_buffer, PGP_PACKET_OCTETS(literal->header));

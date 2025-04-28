@@ -254,8 +254,8 @@ size_t pgp_partial_packet_print(pgp_partial_packet *packet, void *str, size_t si
 pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t header_format, byte_t compression_algorithm_id);
 void pgp_compressed_packet_delete(pgp_compresed_packet *packet);
 
-pgp_compresed_packet *pgp_compressed_packet_compress_data(pgp_compresed_packet *packet, void *ptr, size_t size);
-size_t pgp_compressed_packet_decompress_data(pgp_compresed_packet *packet, void *ptr, size_t size);
+pgp_error_t pgp_compressed_packet_compress(pgp_compresed_packet *packet, pgp_stream_t *stream);
+pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_stream_t **stream);
 
 pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
@@ -273,8 +273,8 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_format, uint32_t date, void *filename, byte_t filename_size);
 void pgp_literal_packet_delete(pgp_literal_packet *packet);
 
-size_t pgp_literal_packet_get_data(pgp_literal_packet *packet, void *data, size_t size);
-pgp_error_t pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_data_format format, void *data, size_t size);
+pgp_error_t pgp_literal_packet_store(pgp_literal_packet *packet, pgp_literal_data_format format, void *data, size_t size);
+pgp_error_t pgp_literal_packet_retrieve(pgp_literal_packet *packet, void *data, size_t size);
 
 pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, size_t size);
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size);

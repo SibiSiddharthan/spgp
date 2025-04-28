@@ -72,77 +72,75 @@ void pgp_compressed_packet_delete(pgp_compresed_packet *packet)
 	free(packet);
 }
 
-pgp_compresed_packet *pgp_compressed_packet_compress_data(pgp_compresed_packet *packet, void *ptr, size_t size)
+pgp_error_t pgp_compressed_packet_compress(pgp_compresed_packet *packet, pgp_stream_t *stream)
 {
 
 	switch (packet->compression_algorithm_id)
 	{
 	case PGP_UNCOMPRESSED:
 	{
-		packet->data = malloc(size);
+		size_t data_size = pgp_stream_octets(stream);
+
+		packet->data_size = data_size;
+		packet->data = malloc(data_size);
 
 		if (packet->data == NULL)
 		{
-			return NULL;
+			return PGP_NO_MEMORY;
 		}
 
-		packet->data_size = size;
-		memcpy(packet->data, ptr, size);
+		pgp_stream_write(stream, packet->data, data_size, 0);
 
 		// Set the header
 		pgp_compressed_packet_encode_header(packet, 0);
 
-		return packet;
+		return PGP_SUCCESS;
 	}
 	case PGP_DEFALTE:
 	case PGP_ZLIB:
 	case PGP_BZIP2:
-	{
 		// TODO: Implement compression
-		packet->header.error = PGP_UNSUPPORTED_COMPRESSION_ALGORITHM;
-		return packet;
-	}
 	default:
-	{
-		packet->header.error = PGP_UNKNOWN_COMPRESSION_ALGORITHM;
-		return packet;
-	}
+		return PGP_UNSUPPORTED_COMPRESSION_ALGORITHM;
 	}
 }
 
-size_t pgp_compressed_packet_decompress_data(pgp_compresed_packet *packet, void *ptr, size_t size)
+pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_stream_t **stream)
 {
-	size_t uncompressed_data_size = 0;
+	pgp_error_t status = 0;
+	pgp_packet_header *header = NULL;
 
 	switch (packet->compression_algorithm_id)
 	{
 	case PGP_UNCOMPRESSED:
 	{
-		uncompressed_data_size = packet->header.body_size - 1;
+		status = pgp_stream_read(*stream, packet->data, packet->data_size);
 
-		if (size < uncompressed_data_size)
+		if (status != PGP_SUCCESS)
 		{
-			return 0;
+			return status;
 		}
-
-		memcpy(ptr, packet->data, uncompressed_data_size);
-
-		return uncompressed_data_size;
 	}
 	case PGP_DEFALTE:
 	case PGP_ZLIB:
 	case PGP_BZIP2:
-	{
 		// TODO: Implement compression
-		packet->header.error = PGP_UNSUPPORTED_COMPRESSION_ALGORITHM;
-		return 0;
-	}
 	default:
+		return PGP_UNSUPPORTED_COMPRESSION_ALGORITHM;
+	}
+
+	// Check for recursive compression
+	for (uint16_t i = 0; i < (*stream)->count; ++i)
 	{
-		packet->header.error = PGP_UNKNOWN_COMPRESSION_ALGORITHM;
-		return 0;
+		header = (*stream)->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_COMP)
+		{
+			return PGP_RECURSIVE_COMPRESSION_CONTAINER;
+		}
 	}
-	}
+
+	return PGP_SUCCESS;
 }
 
 static pgp_error_t pgp_compressed_packet_read_body(pgp_compresed_packet *packet, buffer_t *buffer)
@@ -439,7 +437,7 @@ void pgp_literal_packet_delete(pgp_literal_packet *packet)
 	free(packet);
 }
 
-size_t pgp_literal_packet_get_data(pgp_literal_packet *packet, void *data, size_t size)
+pgp_error_t pgp_literal_packet_retrieve(pgp_literal_packet *packet, void *data, size_t size)
 {
 	if (packet->data == NULL)
 	{
@@ -457,7 +455,7 @@ size_t pgp_literal_packet_get_data(pgp_literal_packet *packet, void *data, size_
 	return packet->data_size;
 }
 
-pgp_error_t pgp_literal_packet_set_data(pgp_literal_packet *packet, pgp_literal_data_format format, void *data, size_t size)
+pgp_error_t pgp_literal_packet_store(pgp_literal_packet *packet, pgp_literal_data_format format, void *data, size_t size)
 {
 	size_t required_size = size;
 
