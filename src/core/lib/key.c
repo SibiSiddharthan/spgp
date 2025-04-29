@@ -3802,16 +3802,24 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 		return 0;
 	}
 
+	// Copy from cache
+	if (key->fingerprint_size != 0)
+	{
+	cache_read:
+		if (size < key->fingerprint_size)
+		{
+			return 0;
+		}
+
+		memcpy(fingerprint, key->fingerprint, key->fingerprint_size);
+		return key->fingerprint_size;
+	}
+
 	switch (key->version)
 	{
 	case PGP_KEY_V2:
 	case PGP_KEY_V3:
 	{
-		if (size < PGP_KEY_V3_FINGERPRINT_SIZE)
-		{
-			return 0;
-		}
-
 		hctx = hash_init(buffer, 512, HASH_MD5);
 
 		if (hctx == NULL)
@@ -3820,17 +3828,13 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 		}
 
 		pgp_key_v3_hash(hctx, key);
-		hash_final(hctx, fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
+		hash_final(hctx, key->fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
+		key->fingerprint_size = PGP_KEY_V3_FINGERPRINT_SIZE;
 
-		return PGP_KEY_V3_FINGERPRINT_SIZE;
+		goto cache_read;
 	}
 	case PGP_KEY_V4:
 	{
-		if (size < PGP_KEY_V4_FINGERPRINT_SIZE)
-		{
-			return 0;
-		}
-
 		hctx = hash_init(buffer, 512, HASH_SHA1);
 
 		if (hctx == NULL)
@@ -3839,17 +3843,13 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 		}
 
 		pgp_key_v4_hash(hctx, key);
-		hash_final(hctx, fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+		hash_final(hctx, key->fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+		key->fingerprint_size = PGP_KEY_V4_FINGERPRINT_SIZE;
 
-		return PGP_KEY_V4_FINGERPRINT_SIZE;
+		goto cache_read;
 	}
 	case PGP_KEY_V5:
 	{
-		if (size < PGP_KEY_V5_FINGERPRINT_SIZE)
-		{
-			return 0;
-		}
-
 		hctx = hash_init(buffer, 512, HASH_SHA256);
 
 		if (hctx == NULL)
@@ -3858,17 +3858,13 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 		}
 
 		pgp_key_v5_hash(hctx, key);
-		hash_final(hctx, fingerprint, PGP_KEY_V5_FINGERPRINT_SIZE);
+		hash_final(hctx, key->fingerprint, PGP_KEY_V5_FINGERPRINT_SIZE);
+		key->fingerprint_size = PGP_KEY_V5_FINGERPRINT_SIZE;
 
-		return PGP_KEY_V5_FINGERPRINT_SIZE;
+		goto cache_read;
 	}
 	case PGP_KEY_V6:
 	{
-		if (size < PGP_KEY_V6_FINGERPRINT_SIZE)
-		{
-			return 0;
-		}
-
 		hctx = hash_init(buffer, 512, HASH_SHA256);
 
 		if (hctx == NULL)
@@ -3877,9 +3873,10 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 		}
 
 		pgp_key_v6_hash(hctx, key);
-		hash_final(hctx, fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+		hash_final(hctx, key->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+		key->fingerprint_size = PGP_KEY_V6_FINGERPRINT_SIZE;
 
-		return PGP_KEY_V6_FINGERPRINT_SIZE;
+		goto cache_read;
 	}
 	default:
 		return 0;

@@ -58,6 +58,9 @@ typedef struct _pgp_key_packet
 		uint32_t key_expiry_seconds;
 	};
 
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE];
+	byte_t fingerprint_size;
+
 	byte_t public_key_algorithm_id;
 	byte_t symmetric_key_algorithm_id;
 	byte_t aead_algorithm_id;
