@@ -31,10 +31,10 @@ byte_t pgp_hash_size(pgp_hash_algorithms algorithm);
 byte_t pgp_hash_salt_size(pgp_hash_algorithms algorithm);
 byte_t pgp_elliptic_curve(byte_t *oid, byte_t size);
 
-size_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
-					   void *in, size_t in_size, void *out, size_t out_size);
-size_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
-					   void *in, size_t in_size, void *out, size_t out_size);
+pgp_error_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
+							void *in, size_t in_size, void *out, size_t out_size);
+pgp_error_t pgp_cfb_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
+							void *in, size_t in_size, void *out, size_t out_size);
 
 size_t pgp_aead_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, pgp_aead_algorithms aead_algorithm_id, void *key,
 						size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in, size_t in_size,
@@ -43,8 +43,6 @@ size_t pgp_aead_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id,
 size_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, pgp_aead_algorithms aead_algorithm_id, void *key,
 						size_t key_size, void *iv, byte_t iv_size, void *associated_data, size_t ad_size, void *in, size_t in_size,
 						void *out, size_t out_size, void *tag, size_t tag_size);
-
-uint32_t pgp_rand(void *buffer, uint32_t size);
 
 pgp_error_t pgp_rsa_kex_encrypt(pgp_rsa_kex **kex, pgp_rsa_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key,
 								byte_t session_key_size);
@@ -88,6 +86,9 @@ pgp_error_t pgp_ed25519_verify(pgp_ed25519_signature *signature, pgp_ed25519_key
 
 pgp_error_t pgp_ed448_sign(pgp_ed448_signature **signature, pgp_ed448_key *pgp_key, void *hash, uint32_t hash_size);
 pgp_error_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *pgp_key, void *hash, uint32_t hash_size);
+
+// RAND
+uint32_t pgp_rand(void *buffer, uint32_t size);
 
 // KDFs
 uint32_t pgp_argon2(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,

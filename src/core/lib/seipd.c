@@ -58,6 +58,8 @@ void pgp_sed_packet_delete(pgp_sed_packet *packet)
 pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_algorithm_id, void *session_key, size_t session_key_size,
 								   pgp_stream_t *stream)
 {
+	pgp_error_t status = 0;
+
 	byte_t iv_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id);
 	size_t data_size = pgp_stream_octets(stream);
 	size_t total_data_size = iv_size + 2 + data_size;
@@ -90,15 +92,25 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	message_iv[iv_size + 1] = message_iv[iv_size - 1];
 
 	// Generate the iv
-	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, message_iv, iv_size + 2, packet->data,
-					iv_size + 2);
+	status = pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, message_iv, iv_size + 2,
+							 packet->data, iv_size + 2);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Write the stream
 	pgp_stream_write(stream, PTR_OFFSET(packet->data, iv_size + 2), data_size, 0);
 
 	// Encrypt the data
-	pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
-					PTR_OFFSET(packet->data, iv_size + 2), data_size, PTR_OFFSET(packet->data, iv_size + 2), data_size);
+	status = pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
+							 PTR_OFFSET(packet->data, iv_size + 2), data_size, PTR_OFFSET(packet->data, iv_size + 2), data_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	return PGP_SUCCESS;
 }
@@ -107,6 +119,7 @@ pgp_error_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 								   pgp_stream_t **stream)
 {
 	pgp_error_t status = 0;
+
 	size_t iv_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id);
 	size_t plaintext_size = packet->header.body_size - (iv_size + 2);
 
@@ -123,18 +136,28 @@ pgp_error_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	}
 
 	// Decrypt the iv
-	pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, packet->data, iv_size + 2, message_iv,
-					iv_size + 2);
+	status = pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, iv_size, packet->data, iv_size + 2,
+							 message_iv, iv_size + 2);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Check if key is correct
 	if (message_iv[iv_size + 1] != message_iv[iv_size - 1] || message_iv[iv_size] != message_iv[iv_size - 2])
 	{
-		return 0;
+		return PGP_CFB_IV_CHECK_MISMATCH;
 	}
 
 	// Decrypt the data
-	pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
-					PTR_OFFSET(packet->data, iv_size + 2), plaintext_size, data, plaintext_size);
+	status = pgp_cfb_decrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
+							 PTR_OFFSET(packet->data, iv_size + 2), plaintext_size, data, plaintext_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	status = pgp_stream_read(*stream, data, plaintext_size);
 
@@ -332,6 +355,7 @@ void pgp_seipd_packet_delete(pgp_seipd_packet *packet)
 
 static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t *stream)
 {
+	pgp_error_t status = 0;
 	byte_t block_size = pgp_symmetric_cipher_block_size(packet->symmetric_key_algorithm_id);
 
 	byte_t zero_iv[16] = {0};
@@ -373,8 +397,13 @@ static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *s
 	pos += SHA1_HASH_SIZE;
 
 	// Encrypt the plaintext and mdc
-	pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
-					packet->data, packet->data_size);
+	status = pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data,
+							 packet->data_size, packet->data, packet->data_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Update header
 	pgp_seipd_packet_encode_header(packet);

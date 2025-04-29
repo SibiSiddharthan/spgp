@@ -938,6 +938,8 @@ void pgp_skesk_packet_delete(pgp_skesk_packet *packet)
 static pgp_error_t pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *packet, void *password, byte_t password_size,
 														   void *session_key, byte_t session_key_size)
 {
+	pgp_error_t status = 0;
+
 	byte_t key[32] = {0};
 	byte_t buffer[48] = {0};
 	byte_t zero_iv[16] = {0};
@@ -957,10 +959,14 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *pac
 		buffer[0] = packet->symmetric_key_algorithm_id;
 		memcpy(PTR_OFFSET(buffer, 1), session_key, session_key_size);
 
-		pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, key, session_key_size, zero_iv, iv_size, buffer, session_key_size + 1,
-						packet->session_key, session_key_size + 1);
-
+		status = pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, key, session_key_size, zero_iv, iv_size, buffer, session_key_size + 1,
+								 packet->session_key, session_key_size + 1);
 		packet->session_key_size = session_key_size + 1;
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
 
 		pgp_skesk_packet_encode_header(packet);
 	}
@@ -971,6 +977,8 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *pac
 static pgp_error_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *packet, void *password, byte_t password_size,
 														   void *session_key, byte_t *session_key_size)
 {
+	pgp_error_t status = 0;
+
 	byte_t key[32] = {0};
 	byte_t buffer[48] = {0};
 	byte_t zero_iv[16] = {0};
@@ -992,8 +1000,13 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *pac
 		pgp_s2k_hash(&packet->s2k, password, password_size, key, key_size);
 
 		// Decrypt the session key
-		pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, zero_iv, iv_size, packet->session_key, packet->session_key_size,
-						buffer, 48);
+		status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, zero_iv, iv_size, packet->session_key,
+								 packet->session_key_size, buffer, 48);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
 
 		// Set the new algorithm
 		packet->symmetric_key_algorithm_id = buffer[0];
