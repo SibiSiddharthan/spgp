@@ -2421,6 +2421,8 @@ static size_t print_flags(byte_t flags, void *str, size_t size, uint32_t indent)
 size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options)
 {
 	size_t pos = 0;
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
@@ -2429,6 +2431,9 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 		print_format(1, PTR_OFFSET(str, pos), size - pos, "Type: %s\n", packet->type == PGP_KEY_TYPE_PUBLIC ? "Public Key" : "Secret Key");
 	pos += print_capabilities(packet->capabilities, PTR_OFFSET(str, pos), size - pos, 1);
 	pos += print_flags(packet->flags, PTR_OFFSET(str, pos), size - pos, 1);
+
+	fingerprint_size = pgp_key_fingerprint(packet, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	pos += print_key(1, PTR_OFFSET(str, pos), size - pos, fingerprint, fingerprint_size);
 
 	pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
 
