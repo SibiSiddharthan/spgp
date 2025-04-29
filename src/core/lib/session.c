@@ -1021,12 +1021,14 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *pac
 static pgp_error_t pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_packet *packet, void *password, byte_t password_size, void *iv,
 															  byte_t iv_size, void *session_key, byte_t session_key_size)
 {
+	pgp_error_t status = 0;
+
 	byte_t ik[32] = {0};
 	byte_t sk[32] = {0};
 	byte_t info[4] = {0};
 
+	byte_t buffer[64] = {0};
 	byte_t *key = NULL;
-	size_t result = 0;
 
 	if (iv_size != pgp_aead_iv_size(packet->aead_algorithm_id))
 	{
@@ -1055,14 +1057,17 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_packet *
 		key = ik;
 	}
 
-	result = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, packet->session_key_size, packet->iv,
-							  packet->iv_size, info, 4, session_key, session_key_size, packet->session_key, packet->session_key_size,
-							  packet->tag, packet->tag_size);
+	status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, packet->session_key_size, packet->iv,
+							  packet->iv_size, info, 4, session_key, session_key_size, buffer, 64);
 
-	if (result == 0)
+	if (status != PGP_SUCCESS)
 	{
-		return PGP_AEAD_TAG_MISMATCH;
+		return status;
 	}
+
+	// Copy the aead encrypted output
+	memcpy(packet->session_key, buffer, packet->session_key_size);
+	memcpy(packet->tag, PTR_OFFSET(buffer, packet->session_key_size), packet->tag_size);
 
 	// Fill up the header now, we have enough information.
 	pgp_skesk_packet_encode_header(packet);
@@ -1073,14 +1078,16 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_packet *
 static pgp_error_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *packet, void *password, byte_t password_size,
 															  void *session_key, byte_t *session_key_size)
 {
+	pgp_error_t status = 0;
+
 	byte_t ik[32] = {0};
 	byte_t sk[32] = {0};
-	byte_t temp[32] = {0};
-	byte_t tag[PGP_AEAD_TAG_SIZE] = {0};
 	byte_t info[4] = {0};
 
+	byte_t buffer[64] = {0};
+	byte_t temp[64] = {0};
+
 	byte_t *key = NULL;
-	size_t result = 0;
 
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
@@ -1088,6 +1095,11 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *
 	info[1] = packet->version;
 	info[2] = packet->symmetric_key_algorithm_id;
 	info[3] = packet->aead_algorithm_id;
+
+	if (*session_key_size < packet->session_key_size)
+	{
+		return PGP_BUFFER_TOO_SMALL;
+	}
 
 	pgp_s2k_hash(&packet->s2k, password, password_size, ik, key_size);
 
@@ -1101,22 +1113,21 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *
 		key = ik;
 	}
 
-	result = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
-							  info, 4, packet->session_key, *session_key_size, temp, *session_key_size, tag, PGP_AEAD_TAG_SIZE);
+	// Store the encrypted session key and tag together
+	memcpy(buffer, packet->session_key, packet->session_key_size);
+	memcpy(PTR_OFFSET(buffer, packet->session_key_size), packet->tag, packet->tag_size);
 
-	if (result == 0)
-	{
-		return PGP_AEAD_TAG_MISMATCH;
-	}
+	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
+							  info, 4, buffer, packet->session_key_size + packet->tag_size, temp, 64);
 
-	// Check tag
-	if (memcmp(tag, packet->tag, PGP_AEAD_TAG_SIZE) != 0)
+	if (status != PGP_SUCCESS)
 	{
-		return PGP_AEAD_TAG_MISMATCH;
+		return status;
 	}
 
 	// Copy the session key to the output
-	memcpy(session_key, temp, *session_key_size);
+	memcpy(session_key, temp, packet->session_key_size);
+	*session_key_size = packet->session_key_size;
 
 	return PGP_SUCCESS;
 }

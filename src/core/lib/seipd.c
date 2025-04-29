@@ -476,6 +476,8 @@ static pgp_error_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *s
 static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t salt[32], void *session_key, size_t session_key_size,
 											   pgp_stream_t *stream)
 {
+	pgp_error_t status = 0;
+
 	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
@@ -529,20 +531,19 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 
 	while (in_pos < data_size)
 	{
-		size_t result = 0;
 		uint32_t in_size = MIN(chunk_size, data_size - in_pos);
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(iv, iv_size - 8), &count_be, 8);
 
 		// Encrypt the data
-		result = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size, iv, iv_size, info,
-								  5, in + in_pos, in_size, out + out_pos, in_size, out + (out_pos + in_size), PGP_AEAD_TAG_SIZE);
+		status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size, iv, iv_size, info,
+								  5, in + in_pos, in_size, out + out_pos, in_size + PGP_AEAD_TAG_SIZE);
 
-		if (result == 0)
+		if (status != PGP_SUCCESS)
 		{
 			free(data);
-			return PGP_AEAD_TAG_MISMATCH;
+			return status;
 		}
 
 		in_pos += in_size;
@@ -575,8 +576,13 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 	aad[11] = pc[1];
 	aad[12] = pc[0];
 
-	pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
-					 PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
+	status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
+							  PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, packet->tag, packet->tag_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Update header
 	pgp_seipd_packet_encode_header(packet);
@@ -630,20 +636,19 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 	// Decrypt the data paritioned by chunk size + tag size
 	while (in_pos < packet->data_size)
 	{
-		size_t result = 0;
 		uint32_t in_size = MIN(chunk_size + packet->tag_size, packet->data_size - in_pos);
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(iv, iv_size - 8), &count_be, 8);
 
 		// Decrypt the data
-		result = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size, iv, iv_size, info,
-								  5, in + in_pos, in_size, out + out_pos, in_size, tag, PGP_AEAD_TAG_SIZE);
+		status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size, iv, iv_size, info,
+								  5, in + in_pos, in_size, out + out_pos, in_size - PGP_AEAD_TAG_SIZE);
 
-		if (result == 0)
+		if (status != PGP_SUCCESS)
 		{
 			free(temp);
-			return PGP_AEAD_TAG_MISMATCH;
+			return status;
 		}
 
 		in_pos += in_size;
@@ -674,12 +679,12 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 	aad[11] = pc[1];
 	aad[12] = pc[0];
 
-	pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
-					 PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, NULL, 0, tag, PGP_AEAD_TAG_SIZE);
+	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
+							  PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, tag, PGP_AEAD_TAG_SIZE);
 
-	if (memcmp(tag, packet->tag, PGP_AEAD_TAG_SIZE) != 0)
+	if (status != PGP_SUCCESS)
 	{
-		return PGP_AEAD_TAG_MISMATCH;
+		return status;
 	}
 
 	// Read the decrypted text
@@ -998,6 +1003,7 @@ void pgp_aead_packet_delete(pgp_aead_packet *packet)
 pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte_t iv_size, void *session_key, size_t session_key_size,
 									pgp_stream_t *stream)
 {
+	pgp_error_t status = 0;
 	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
 
 	size_t in_pos = 0;
@@ -1045,20 +1051,19 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 
 	while (in_pos < data_size)
 	{
-		size_t result = 0;
 		uint32_t in_size = MIN(chunk_size, data_size - in_pos);
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 
 		// Encrypt the data
-		result = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size,
-								  aad, 13, in + in_pos, in_size, out + out_pos, in_size, out + (out_pos + in_size), PGP_AEAD_TAG_SIZE);
+		status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size,
+								  aad, 13, in + in_pos, in_size, out + out_pos, in_size + PGP_AEAD_TAG_SIZE);
 
-		if (result == 0)
+		if (status != PGP_SUCCESS)
 		{
 			free(data);
-			return PGP_AEAD_TAG_MISMATCH;
+			return status;
 		}
 
 		in_pos += in_size;
@@ -1077,8 +1082,13 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 	memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 	memcpy(PTR_OFFSET(aad, 13), &octets_be, 8);
 
-	pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size, aad, 21,
-					 NULL, 0, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
+	status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size,
+							  aad, 21, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	pgp_aead_packet_encode_header(packet);
 
@@ -1122,17 +1132,16 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 	// Decrypt the data paritioned by chunk size + tag size
 	while (in_pos < packet->data_size)
 	{
-		size_t result = 0;
 		uint32_t in_size = MIN(chunk_size + packet->tag_size, packet->data_size - in_pos);
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 
 		// Decrypt the data
-		result = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, packet->iv,
-								  iv_size, aad, 13, in + in_pos, in_size, out + out_pos, in_size, tag, PGP_AEAD_TAG_SIZE);
+		status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, packet->iv,
+								  iv_size, aad, 13, in + in_pos, in_size, out + out_pos, in_size - PGP_AEAD_TAG_SIZE);
 
-		if (result == 0)
+		if (status != PGP_SUCCESS)
 		{
 			free(temp);
 			return PGP_AEAD_TAG_MISMATCH;
@@ -1150,12 +1159,12 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 	memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 	memcpy(PTR_OFFSET(aad, 13), &octets_be, 8);
 
-	pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, packet->iv, iv_size, aad,
-					 21, NULL, 0, NULL, 0, tag, PGP_AEAD_TAG_SIZE);
+	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, packet->iv,
+							  iv_size, aad, 21, NULL, 0, tag, PGP_AEAD_TAG_SIZE);
 
-	if (memcmp(tag, packet->tag, PGP_AEAD_TAG_SIZE) != 0)
+	if (status != PGP_SUCCESS)
 	{
-		return PGP_AEAD_TAG_MISMATCH;
+		return status;
 	}
 
 	// Read the decrypted text

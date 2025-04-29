@@ -1985,13 +1985,14 @@ static pgp_error_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, v
 
 static pgp_error_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
+	pgp_error_t status = 0;
+
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	uint32_t aad_size = packet->public_key_data_octets + 16; // Upper bound
 	uint32_t aad_count = 0;
 	uint32_t count = 0;
 
 	size_t pos = 0;
-	size_t result = 0;
 
 	byte_t ikey[32] = {0};
 	byte_t dkey[32] = {0};
@@ -2068,18 +2069,16 @@ static pgp_error_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, 
 	aad_count = pos - count;
 
 	// Encrypt using AEAD (Store the tag at the end)
-	result = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
-							  PTR_OFFSET(buffer, count), aad_count, buffer, count, packet->encrypted, count,
-							  PTR_OFFSET(packet->encrypted, count), PGP_AEAD_TAG_SIZE);
-
-	packet->encrypted_octets = result + PGP_AEAD_TAG_SIZE;
+	status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
+							  PTR_OFFSET(buffer, count), aad_count, buffer, count, packet->encrypted, count + PGP_AEAD_TAG_SIZE);
+	packet->encrypted_octets = count + PGP_AEAD_TAG_SIZE;
 
 	free(buffer);
 
-	if (result == 0)
+	if (status != PGP_SUCCESS)
 	{
 		free(packet->encrypted);
-		return PGP_ENCRYPTION_ERROR;
+		return status;
 	}
 
 	return PGP_SUCCESS;
@@ -2087,19 +2086,17 @@ static pgp_error_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, 
 
 static pgp_error_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
+	pgp_error_t status = 0;
+
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	uint32_t aad_size = packet->public_key_data_octets + 16; // Upper bound
 	uint32_t aad_count = 0;
 
 	size_t pos = 0;
-	size_t result = 0;
 
 	byte_t ikey[32] = {0};
 	byte_t dkey[32] = {0};
 	byte_t info[4] = {0};
-
-	byte_t expected_tag[PGP_AEAD_TAG_SIZE] = {0};
-	byte_t actual_tag[PGP_AEAD_TAG_SIZE] = {0};
 
 	byte_t *key = NULL;
 	byte_t *buffer = NULL;
@@ -2166,31 +2163,23 @@ static pgp_error_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, 
 	pos = ROUND_UP(pos, 16);
 
 	// Decrypt using AEAD
-	memcpy(actual_tag, PTR_OFFSET(packet->encrypted, packet->encrypted_octets - PGP_AEAD_TAG_SIZE), PGP_AEAD_TAG_SIZE);
+	status =
+		pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size, buffer,
+						 aad_count, packet->encrypted, packet->encrypted_octets, PTR_OFFSET(buffer, pos), packet->encrypted_octets);
 
-	result = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, key, key_size, packet->iv, packet->iv_size,
-							  buffer, aad_count, packet->encrypted, packet->encrypted_octets - PGP_AEAD_TAG_SIZE, PTR_OFFSET(buffer, pos),
-							  packet->encrypted_octets - PGP_AEAD_TAG_SIZE, expected_tag, PGP_AEAD_TAG_SIZE);
-
-	if (result == 0)
+	if (status != PGP_SUCCESS)
 	{
 		free(buffer);
-		return PGP_DECRYPTION_ERROR;
-	}
-
-	if (memcmp(actual_tag, expected_tag, PGP_AEAD_TAG_SIZE) != 0)
-	{
-		free(buffer);
-		return PGP_AEAD_TAG_MISMATCH;
+		return status;
 	}
 
 	// Read the key from the buffer
-	result = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - PGP_AEAD_TAG_SIZE);
+	status = pgp_private_key_material_read(packet, buffer, packet->encrypted_octets - PGP_AEAD_TAG_SIZE);
 	free(buffer);
 
-	if (result != PGP_SUCCESS)
+	if (status != PGP_SUCCESS)
 	{
-		return result;
+		return status;
 	}
 
 	// Calculate checksum
