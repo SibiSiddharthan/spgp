@@ -2490,6 +2490,9 @@ pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_k
 		ed25519_key edkey = {0};
 		ed25519_signature edsign = {0};
 
+		byte_t r_offset = 0;
+		byte_t s_offset = 0;
+
 		// eddsa and dsa share the same structure
 		pgp_sign = pgp_dsa_signature_new(256);
 
@@ -2509,11 +2512,14 @@ pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_k
 			return PGP_EDDSA_SIGNATURE_GENERATION_FAILURE;
 		}
 
-		pgp_sign->r->bits = 256;
-		pgp_sign->s->bits = 256;
+		pgp_sign->r->bits = bitcount_bytes(edsign.sign, ED25519_KEY_OCTETS);
+		pgp_sign->s->bits = bitcount_bytes(PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS), ED25519_KEY_OCTETS);
 
-		memcpy(pgp_sign->r->bytes, edsign.sign, ED25519_KEY_OCTETS);
-		memcpy(pgp_sign->s->bytes, PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS), ED25519_KEY_OCTETS);
+		r_offset = ED25519_KEY_OCTETS - CEIL_DIV(pgp_sign->r->bits, 8);
+		s_offset = ED25519_KEY_OCTETS - CEIL_DIV(pgp_sign->s->bits, 8);
+
+		memcpy(pgp_sign->r->bytes, PTR_OFFSET(edsign.sign, r_offset), ED25519_KEY_OCTETS - r_offset);
+		memcpy(pgp_sign->s->bytes, PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS + s_offset), ED25519_KEY_OCTETS - s_offset);
 
 		*signature = pgp_sign;
 
@@ -2524,6 +2530,9 @@ pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_k
 	{
 		ed448_key edkey = {0};
 		ed448_signature edsign = {0};
+
+		byte_t r_offset = 0;
+		byte_t s_offset = 0;
 
 		// eddsa and dsa share the same structure
 		pgp_sign = pgp_dsa_signature_new(456);
@@ -2544,11 +2553,14 @@ pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_k
 			return PGP_EDDSA_SIGNATURE_GENERATION_FAILURE;
 		}
 
-		pgp_sign->r->bits = 456;
-		pgp_sign->s->bits = 456;
+		pgp_sign->r->bits = bitcount_bytes(edsign.sign, ED448_KEY_OCTETS);
+		pgp_sign->s->bits = bitcount_bytes(PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
 
-		memcpy(pgp_sign->r->bytes, edsign.sign, ED448_KEY_OCTETS);
-		memcpy(pgp_sign->s->bytes, PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS), ED448_KEY_OCTETS);
+		r_offset = ED448_KEY_OCTETS - CEIL_DIV(pgp_sign->r->bits, 8);
+		s_offset = ED448_KEY_OCTETS - CEIL_DIV(pgp_sign->s->bits, 8);
+
+		memcpy(pgp_sign->r->bytes, PTR_OFFSET(edsign.sign, r_offset), ED448_KEY_OCTETS - r_offset);
+		memcpy(pgp_sign->s->bytes, PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS + s_offset), ED448_KEY_OCTETS - s_offset);
 
 		*signature = pgp_sign;
 
@@ -2567,14 +2579,12 @@ pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_
 		ed25519_key edkey = {0};
 		ed25519_signature edsign = {0};
 
-		if (CEIL_DIV(signature->r->bits, 8) != ED25519_KEY_OCTETS || CEIL_DIV(signature->s->bits, 8) != ED25519_KEY_OCTETS)
-		{
-			return PGP_BAD_SIGNATURE;
-		}
+		byte_t r_offset = ED25519_KEY_OCTETS - CEIL_DIV(signature->r->bits, 8);
+		byte_t s_offset = ED25519_KEY_OCTETS - CEIL_DIV(signature->s->bits, 8);
 
 		// Copy signature
-		memcpy(edsign.sign, signature->r->bytes, ED25519_KEY_OCTETS);
-		memcpy(PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS), signature->s->bytes, ED25519_KEY_OCTETS);
+		memcpy(PTR_OFFSET(edsign.sign, r_offset), signature->r->bytes, ED25519_KEY_OCTETS - r_offset);
+		memcpy(PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS + s_offset), signature->s->bytes, ED25519_KEY_OCTETS - s_offset);
 
 		// Copy public key
 		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED25519_KEY_OCTETS);
@@ -2594,14 +2604,12 @@ pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_
 		ed448_key edkey = {0};
 		ed448_signature edsign = {0};
 
-		if (CEIL_DIV(signature->r->bits, 8) != ED448_KEY_OCTETS || CEIL_DIV(signature->s->bits, 8) != ED448_KEY_OCTETS)
-		{
-			return PGP_BAD_SIGNATURE;
-		}
+		byte_t r_offset = ED448_KEY_OCTETS - CEIL_DIV(signature->r->bits, 8);
+		byte_t s_offset = ED448_KEY_OCTETS - CEIL_DIV(signature->s->bits, 8);
 
 		// Copy signature
-		memcpy(edsign.sign, signature->r->bytes, ED448_KEY_OCTETS);
-		memcpy(PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS), signature->s->bytes, ED448_KEY_OCTETS);
+		memcpy(PTR_OFFSET(edsign.sign, r_offset), signature->r->bytes, ED448_KEY_OCTETS - r_offset);
+		memcpy(PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS + s_offset), signature->s->bytes, ED448_KEY_OCTETS - s_offset);
 
 		// Copy public key
 		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED448_KEY_OCTETS);
