@@ -138,12 +138,17 @@ static size_t print_timestamp(uint32_t indent, char *prefix, time_t timestamp, v
 	return pos;
 }
 
-uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size)
+size_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size)
 {
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header->tag);
 	pgp_packet_type type = pgp_packet_get_type(header->tag);
 
-	uint32_t pos = 0;
+	size_t pos = 0;
+
+	if (header->partial_continue || header->partial_end)
+	{
+		return pgp_partial_packet_print((pgp_partial_packet *)header, str, size);
+	}
 
 	switch (type)
 	{
@@ -2453,11 +2458,12 @@ size_t pgp_partial_packet_print(pgp_partial_packet *packet, void *str, size_t si
 {
 	size_t pos = 0;
 
-	if (packet->header.partial)
+	if (packet->header.partial_continue)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Partial Packet (continue) (%zu bytes)\n", packet->header.body_size);
 	}
-	else
+
+	if (packet->header.partial_end)
 	{
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Partial Packet (end) (%zu bytes)\n", packet->header.body_size);
 	}

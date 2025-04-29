@@ -274,7 +274,7 @@ pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t
 			}
 
 			header->header_size = 2;
-			header->partial = 1;
+			header->partial_begin = 1;
 			header->body_size = (uint32_t)1 << (in[1] & 0x1F);
 		}
 		// 2 octet legnth
@@ -345,6 +345,7 @@ pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t
 		{
 			// For legacy partial packets. Assume that the packet boundary is at the end of data.
 			header->header_size = 1;
+			header->partial_legacy = 1;
 			header->body_size = size - 1;
 		}
 		break;
@@ -573,7 +574,7 @@ pgp_error_t pgp_partial_header_read(pgp_partial_header *header, void *data, size
 	if (in[0] >= 224 && in[0] <= 254)
 	{
 		header->header_size = 1;
-		header->partial = 1;
+		header->partial_continue = 1;
 		header->body_size = (uint32_t)1 << (in[0] & 0x1F);
 	}
 	// Partial end
@@ -607,6 +608,8 @@ pgp_error_t pgp_partial_header_read(pgp_partial_header *header, void *data, size
 			header->header_size = 1;
 			header->body_size = in[0];
 		}
+
+		header->partial_end = 1;
 	}
 
 	return PGP_SUCCESS;
@@ -818,6 +821,11 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 	pgp_packet_header *header = packet;
 	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
 
+	if (header->partial_continue || header->partial_end)
+	{
+		return pgp_partial_packet_write(packet, ptr, size);
+	}
+
 	switch (ptype)
 	{
 	case PGP_PKESK:
@@ -871,6 +879,11 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 {
 	pgp_packet_header *header = packet;
 	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
+
+	if (header->partial_continue || header->partial_end)
+	{
+		return pgp_partial_packet_print(packet, str, size);
+	}
 
 	switch (ptype)
 	{

@@ -53,9 +53,21 @@ typedef struct _pgp_packet_header
 {
 	byte_t tag;
 	byte_t header_size;
-	byte_t partial;
 	byte_t critical;
-	uint16_t error;
+
+	union
+	{
+		struct
+		{
+			byte_t partial_begin : 1;
+			byte_t partial_continue : 1;
+			byte_t partial_end : 1;
+			byte_t partial_legacy : 1;
+		};
+
+		byte_t partial;
+	};
+
 	size_t body_size;
 } pgp_packet_header, pgp_subpacket_header, pgp_partial_header;
 
@@ -224,7 +236,7 @@ typedef struct _pgp_keyring_packet
 
 pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
-uint32_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size);
+size_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size);
 
 pgp_error_t pgp_subpacket_header_read(pgp_subpacket_header *header, void *data, size_t size);
 uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr);
