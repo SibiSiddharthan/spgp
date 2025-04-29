@@ -26,10 +26,27 @@
 #include <argon2.h>
 #include <hkdf.h>
 
+#include <bitscan.h>
+
 #include <stdlib.h>
 #include <string.h>
 
 void *pgp_drbg = NULL;
+
+static uint32_t bitcount_bytes(byte_t *bytes, uint32_t size)
+{
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		if (bytes[i] == 0)
+		{
+			continue;
+		}
+
+		return ((size - (i + 1)) * 8) + (bsr_8(bytes[i]) + 1);
+	}
+
+	return 0;
+}
 
 static bignum_t *mpi_to_bignum(mpi_t *mpi)
 {
