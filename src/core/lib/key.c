@@ -1215,8 +1215,8 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 		// A 1-octet key type.
 		// A 1-octet key capabilities.
 		// A 1-octet public key algorithm.
-		// A 4-octet number denoting the time that the key was created.
-		// A 4-octet number denoting the time that the key will expire.
+		// A 4-octet number denoting the time when the key was created.
+		// A 4-octet number denoting the time when the key will expire.
 		// A 4-octet scalar count for the public key material
 		// One or more MPIs comprising the public key.
 
@@ -1242,7 +1242,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 	if (type == PGP_PUBKEY || type == PGP_PUBSUBKEY)
 	{
 		// A 1-octet version number.
-		// A 4-octet number denoting the time that the key was created.
+		// A 4-octet number denoting the time when the key was created.
 		// (For V3) A 2-octet number denoting expiry in days.
 		// A 1-octet public key algorithm.
 		// (For V6) A 4-octet scalar count for the public key material
@@ -1258,7 +1258,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 	if (type == PGP_SECKEY || type == PGP_SECSUBKEY)
 	{
 		// A 1-octet version number.
-		// A 4-octet number denoting the time that the key was created.
+		// A 4-octet number denoting the time when the key was created.
 		// (For V3) A 2-octet number denoting expiry in days.
 		// A 1-octet public key algorithm.
 		// (For V5, V6) A 4-octet scalar count for the public key material
@@ -1314,7 +1314,7 @@ static pgp_error_t pgp_public_key_packet_read_body(pgp_key_packet *packet, buffe
 		return PGP_INVALID_KEY_VERSION;
 	}
 
-	// 4-octet number denoting the time that the key was created.
+	// 4-octet number denoting the time when the key was created.
 	CHECK_READ(read32_be(buffer, &packet->key_creation_time), PGP_MALFORMED_PUBLIC_KEY_PACKET);
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
@@ -1441,7 +1441,7 @@ size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	LOAD_8(out + pos, &packet->version);
 	pos += 1;
 
-	// 4-octet number denoting the time that the key was created
+	// 4-octet number denoting the time when the key was created
 	LOAD_32BE(out + pos, &packet->key_creation_time);
 	pos += 4;
 
@@ -2252,7 +2252,7 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 		return PGP_INVALID_KEY_VERSION;
 	}
 
-	// 4-octet number denoting the time that the key was created.
+	// 4-octet number denoting the time when the key was created.
 	CHECK_READ(read32_be(buffer, &packet->key_creation_time), PGP_MALFORMED_SECRET_KEY_PACKET);
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
@@ -2506,7 +2506,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	LOAD_8(out + pos, &packet->version);
 	pos += 1;
 
-	// 4-octet number denoting the time that the key was created
+	// 4-octet number denoting the time when the key was created
 	LOAD_32BE(out + pos, &packet->key_creation_time);
 	pos += 4;
 
@@ -3146,7 +3146,7 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 	pgp_error_t error = 0;
 	uint32_t public_key_data_octets = 0;
 
-	// 1 octet version
+	// 1-octet version
 	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_KEYDEF_PACKET);
 
 	if (packet->version != PGP_KEY_V2 && packet->version != PGP_KEY_V3 && packet->version != PGP_KEY_V4 && packet->version != PGP_KEY_V5 &&
@@ -3163,13 +3163,19 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 		return PGP_INVALID_KEY_TYPE;
 	}
 
-	// 1 octet key capabilitie
+	// 1-octet key capabilities
 	CHECK_READ(read8(buffer, &packet->capabilities), PGP_MALFORMED_KEYDEF_PACKET);
 
-	// 4-octet number denoting the time that the key was created.
+	// 1-octet key flags
+	CHECK_READ(read8(buffer, &packet->flags), PGP_MALFORMED_KEYDEF_PACKET);
+
+	// 4-octet number denoting the time when the key was created.
 	CHECK_READ(read32_be(buffer, &packet->key_creation_time), PGP_MALFORMED_KEYDEF_PACKET);
 
-	// 4-octet number denoting the time that the key will expire.
+	// 4-octet number denoting the time when the key was revoked.
+	CHECK_READ(read32_be(buffer, &packet->key_revocation_time), PGP_MALFORMED_KEYDEF_PACKET);
+
+	// 4-octet number denoting the time when the key will expire.
 	CHECK_READ(read32_be(buffer, &packet->key_expiry_seconds), PGP_MALFORMED_KEYDEF_PACKET);
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
@@ -3387,23 +3393,31 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	// Header
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
-	// 1 octet key version
+	// 1-octet key version
 	LOAD_8(out + pos, &packet->version);
 	pos += 1;
 
-	// 1 octet key type
+	// 1-octet key type
 	LOAD_8(out + pos, &packet->type);
 	pos += 1;
 
-	// 1 octet key capabilities
+	// 1-octet key capabilities
 	LOAD_8(out + pos, &packet->capabilities);
 	pos += 1;
 
-	// 4-octet number denoting the time that the key was created.
+	// 1-octet key flags
+	LOAD_8(out + pos, &packet->flags);
+	pos += 1;
+
+	// 4-octet number denoting the time when the key was created.
 	LOAD_32BE(out + pos, &packet->key_creation_time);
 	pos += 4;
 
-	// 4-octet number denoting the time that the key will expire.
+	// 4-octet number denoting the time when the key was revoked.
+	LOAD_32BE(out + pos, &packet->key_revocation_time);
+	pos += 4;
+
+	// 4-octet number denoting the time when the key will expire.
 	uint32_t key_expiry_seconds = 0;
 
 	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V2)

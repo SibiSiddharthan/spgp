@@ -2332,36 +2332,110 @@ size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t si
 	return pos;
 }
 
+static size_t print_capabilities(byte_t capabilities, void *str, size_t size, uint32_t indent)
+{
+	byte_t comma_insert = 0;
+	char buffer[128] = {0};
+
+	if (capabilities & PGP_KEY_FLAG_CERTIFY)
+	{
+		strncat(buffer, "Certify", 7);
+		comma_insert = 1;
+	}
+	if (capabilities & PGP_KEY_FLAG_SIGN)
+	{
+		if (comma_insert)
+		{
+			strncat(buffer, ", ", 2);
+		}
+
+		strncat(buffer, "Sign", 4);
+		comma_insert = 1;
+	}
+	if (capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
+	{
+		if (comma_insert)
+		{
+			strncat(buffer, ", ", 2);
+		}
+
+		strncat(buffer, "Encrypt", 7);
+		comma_insert = 1;
+	}
+	if (capabilities & PGP_KEY_FLAG_AUTHENTICATION)
+	{
+		if (comma_insert)
+		{
+			strncat(buffer, ", ", 2);
+		}
+
+		strncat(buffer, "Authenticate", 12);
+	}
+
+	return print_format(indent, str, size, "Capabilities: %s\n", buffer);
+}
+
+static size_t print_flags(byte_t flags, void *str, size_t size, uint32_t indent)
+{
+	byte_t comma_insert = 0;
+	char buffer[128] = {0};
+
+	if (flags & PGP_KEY_FLAG_PRIVATE_SPLIT)
+	{
+		strncat(buffer, "Split", 5);
+		comma_insert = 1;
+	}
+	if (flags & PGP_KEY_FLAG_PRIVATE_SHARED)
+	{
+		if (comma_insert)
+		{
+			strncat(buffer, ", ", 2);
+		}
+
+		strncat(buffer, "Shared", 7);
+		comma_insert = 1;
+	}
+	if (flags & PGP_KEY_FLAG_TIMESTAMP)
+	{
+		if (comma_insert)
+		{
+			strncat(buffer, ", ", 2);
+		}
+
+		strncat(buffer, "Timestamp", 9);
+		comma_insert = 1;
+	}
+	if (flags & PGP_KEY_FLAG_RESTRICTED_ENCRYPT)
+	{
+		if (comma_insert)
+		{
+			strncat(buffer, ", ", 2);
+		}
+
+		strncat(buffer, "Restricted", 10);
+	}
+
+	return print_format(indent, str, size, "Flags: %s\n", buffer);
+}
+
 size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options)
 {
 	size_t pos = 0;
-	char buffer[128] = {0};
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
 	pos +=
 		print_format(1, PTR_OFFSET(str, pos), size - pos, "Type: %s\n", packet->type == PGP_KEY_TYPE_PUBLIC ? "Public Key" : "Secret Key");
+	pos += print_capabilities(packet->capabilities, PTR_OFFSET(str, pos), size - pos, 1);
+	pos += print_flags(packet->flags, PTR_OFFSET(str, pos), size - pos, 1);
 
-	if (packet->capabilities & PGP_KEY_FLAG_CERTIFY)
-	{
-		strncat(buffer, "Certify ", 8);
-	}
-	if (packet->capabilities & PGP_KEY_FLAG_SIGN)
-	{
-		strncat(buffer, "Sign ", 5);
-	}
-	if (packet->capabilities & (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE))
-	{
-		strncat(buffer, "Encrypt ", 8);
-	}
-	if (packet->capabilities & PGP_KEY_FLAG_AUTHENTICATION)
-	{
-		strncat(buffer, "Authenticate ", 13);
-	}
-
-	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Capabilities: %s\n", buffer);
 	pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
+
+	if (packet->key_revocation_time != 0)
+	{
+		pos += print_timestamp(1, "Key Revocation Time", packet->key_revocation_time, PTR_OFFSET(str, pos), size - pos);
+	}
 
 	if (packet->key_expiry_seconds != 0)
 	{
@@ -2374,6 +2448,14 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 	}
 
 	pos += pgp_public_key_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
+
+	if (packet->type == PGP_KEY_TYPE_PUBLIC)
+	{
+		pos += pgp_public_key_print(packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets, PTR_OFFSET(str, pos),
+									size - pos, 1, options);
+
+		return pos;
+	}
 
 	if (packet->s2k_usage != 0)
 	{
