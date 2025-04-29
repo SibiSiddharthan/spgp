@@ -3496,7 +3496,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
-void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
+static void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
 {
 	switch (key->public_key_algorithm_id)
 	{

@@ -424,6 +424,8 @@ void pgp_preferred_encryption_modes_subpacket_delete(pgp_preferred_encryption_mo
 pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2]);
 void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket);
 
+void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
+
 pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 
