@@ -1381,6 +1381,10 @@ pgp_error_t pgp_rsa_kex_encrypt(pgp_rsa_kex **kex, pgp_rsa_key *pgp_key, byte_t 
 		return PGP_RSA_ENCRYPTION_FAILURE;
 	}
 
+	// Count the bits
+	rsa_kex->c->bits = bitcount_bytes(rsa_kex->c->bytes, result);
+
+	// Set the kex
 	*kex = rsa_kex;
 
 	return PGP_SUCCESS;
@@ -1417,6 +1421,11 @@ pgp_error_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *
 	result = rsa_decrypt_pkcs(key, kex->c->bytes, CEIL_DIV(kex->c->bits, 8), buffer, 64);
 
 	rsa_key_delete(key);
+
+	if (result == 0)
+	{
+		return PGP_RSA_DECRYPTION_FAILURE;
+	}
 
 	// V6 PKESK
 	if (symmetric_key_algorithm_id == NULL)
