@@ -1304,7 +1304,7 @@ static uint16_t session_key_checksum(byte_t *session_key, byte_t session_key_siz
 	return checksum;
 }
 
-static byte_t encode_session_key(byte_t padding, byte_t symmetric_algorithm_id, byte_t *session_key, byte_t session_key_size, byte_t *out)
+static byte_t session_key_encode(byte_t padding, byte_t symmetric_algorithm_id, byte_t *session_key, byte_t session_key_size, byte_t *out)
 {
 	byte_t pos = 0;
 	uint16_t checksum = session_key_checksum(session_key, session_key_size);
@@ -1327,18 +1327,19 @@ static byte_t encode_session_key(byte_t padding, byte_t symmetric_algorithm_id, 
 	// Pad to multiple of 8 bytes
 	if (padding && (pos % 8) != 0)
 	{
-		padding = 8 - (pos % 8);
+		byte_t padding_byte = 8 - (pos % 8);
 
-		memset(out + pos, padding, padding);
-		pos += padding;
+		memset(out + pos, padding_byte, padding_byte);
+		pos += padding_byte;
 	}
 
 	return pos;
 }
 
-static pgp_error_t decode_session_key(byte_t padding, byte_t *symmetric_algorithm_id, byte_t *encoded_session_key,
+static pgp_error_t session_key_decode(byte_t padding, byte_t *symmetric_algorithm_id, byte_t *encoded_session_key,
 									  byte_t encoded_session_key_size, byte_t *decoded_session_key, byte_t *decoded_session_key_size)
 {
+	byte_t session_key_size = 0;
 	byte_t offset = 0;
 	uint16_t checksum = 0;
 
@@ -1352,9 +1353,17 @@ static pgp_error_t decode_session_key(byte_t padding, byte_t *symmetric_algorith
 	// Check padding
 	if (padding)
 	{
-		*decoded_session_key_size = encoded_session_key_size - 8;
+		byte_t padding_byte = 0;
 
-		for (byte_t i = *decoded_session_key_size + offset + 2; i < encoded_session_key_size; ++i)
+		padding_byte = (8 - (offset + 2));
+		session_key_size = encoded_session_key_size - 8;
+
+		if (encoded_session_key_size - (session_key_size + offset + 2) != padding_byte)
+		{
+			return PGP_SESSION_KEY_MALFORMED_PADDING;
+		}
+
+		for (byte_t i = session_key_size + offset + 2; i < encoded_session_key_size; ++i)
 		{
 			if (encoded_session_key[i] != (8 - (offset + 2)))
 			{
@@ -1364,20 +1373,26 @@ static pgp_error_t decode_session_key(byte_t padding, byte_t *symmetric_algorith
 	}
 	else
 	{
-		*decoded_session_key_size = encoded_session_key_size - (offset + 2);
+		session_key_size = encoded_session_key_size - (offset + 2);
 	}
 
 	// Check checksum
-	checksum = session_key_checksum(PTR_OFFSET(encoded_session_key, offset), *decoded_session_key_size);
+	checksum = session_key_checksum(PTR_OFFSET(encoded_session_key, offset), session_key_size);
 
-	if (((checksum >> 8) & 0xFF) != encoded_session_key[offset + *decoded_session_key_size] ||
-		(checksum & 0xFF) != encoded_session_key[offset + *decoded_session_key_size + 1])
+	if (((checksum >> 8) & 0xFF) != encoded_session_key[offset + session_key_size] ||
+		(checksum & 0xFF) != encoded_session_key[offset + session_key_size + 1])
 	{
 		return PGP_SESSION_KEY_CHECKSUM_MISMATCH;
 	}
 
 	// Copy the session key
-	memcpy(decoded_session_key, encoded_session_key + offset, *decoded_session_key_size);
+	if (*decoded_session_key_size < session_key_size)
+	{
+		return PGP_BUFFER_TOO_SMALL;
+	}
+
+	memcpy(decoded_session_key, encoded_session_key + offset, session_key_size);
+	*decoded_session_key_size = session_key_size;
 
 	return PGP_SUCCESS;
 }
@@ -1413,11 +1428,9 @@ pgp_error_t pgp_rsa_kex_encrypt(pgp_rsa_kex **kex, pgp_rsa_key *pgp_key, byte_t 
 
 	rsa_key *key = NULL;
 	pgp_rsa_kex *rsa_kex = NULL;
-	byte_t *ps = session_key;
 
-	byte_t buffer[64] = {0};
-	uint16_t pos = 0;
-	uint16_t checksum = 0;
+	byte_t encoded_session_key[64] = {0};
+	uint16_t encoded_session_key_size = 0;
 
 	key = rsa_key_new(pgp_key->n->bits);
 
@@ -1435,24 +1448,6 @@ pgp_error_t pgp_rsa_kex_encrypt(pgp_rsa_kex **kex, pgp_rsa_key *pgp_key, byte_t 
 		return PGP_NO_MEMORY;
 	}
 
-	// V3 PKESK
-	if (symmetric_key_algorithm_id != 0)
-	{
-		buffer[pos] = symmetric_key_algorithm_id;
-		pos += 1;
-	}
-
-	memcpy(buffer + pos, session_key, session_key_size);
-	pos += session_key_size;
-
-	for (uint16_t i = 0; i < session_key_size; ++i)
-	{
-		checksum += ps[i];
-	}
-
-	buffer[pos++] = (checksum >> 8) & 0xFF;
-	buffer[pos++] = checksum & 0xFF;
-
 	rsa_kex = pgp_rsa_kex_new(pgp_key->n->bits);
 
 	if (rsa_kex == NULL)
@@ -1461,7 +1456,8 @@ pgp_error_t pgp_rsa_kex_encrypt(pgp_rsa_kex **kex, pgp_rsa_key *pgp_key, byte_t 
 		return PGP_NO_MEMORY;
 	}
 
-	result = rsa_encrypt_pkcs(key, buffer, pos, rsa_kex->c->bytes, CEIL_DIV(pgp_key->n->bits, 8), NULL);
+	encoded_session_key_size = session_key_encode(0, symmetric_key_algorithm_id, session_key, session_key_size, encoded_session_key);
+	result = rsa_encrypt_pkcs(key, encoded_session_key, encoded_session_key_size, rsa_kex->c->bytes, CEIL_DIV(pgp_key->n->bits, 8), NULL);
 
 	rsa_key_delete(key);
 
@@ -1484,8 +1480,6 @@ pgp_error_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *
 								byte_t *session_key_size)
 {
 	uint32_t result = 0;
-	uint16_t checksum = 0;
-	uint16_t offset = 0;
 
 	rsa_key *key = NULL;
 	byte_t buffer[64] = {0};
@@ -1517,45 +1511,7 @@ pgp_error_t pgp_rsa_kex_decrypt(pgp_rsa_kex *kex, pgp_rsa_key *pgp_key, byte_t *
 		return PGP_RSA_DECRYPTION_FAILURE;
 	}
 
-	// V6 PKESK
-	if (symmetric_key_algorithm_id == NULL)
-	{
-		for (uint32_t i = 0; i < (result - 2); ++i)
-		{
-			checksum += buffer[i];
-		}
-	}
-	else // V3 PKESK
-	{
-		offset = 1;
-		*symmetric_key_algorithm_id = buffer[0];
-
-		for (uint32_t i = 1; i < (result - 2); ++i)
-		{
-			checksum += buffer[i];
-		}
-	}
-
-	if (checksum == ((buffer[result - 2] << 8) + buffer[result - 1]))
-	{
-		result -= (2 + offset);
-
-		if (*session_key_size >= result)
-		{
-			memcpy(session_key, buffer + offset, result);
-			*session_key_size = result;
-		}
-		else
-		{
-			return PGP_BUFFER_TOO_SMALL;
-		}
-	}
-	else
-	{
-		return PGP_SESSION_KEY_CHECKSUM_MISMATCH;
-	}
-
-	return PGP_SUCCESS;
+	return session_key_decode(0, symmetric_key_algorithm_id, buffer, result, session_key, session_key_size);
 }
 
 static uint32_t pgp_ecdh_kdf(pgp_hash_algorithms algorithm, void *key, uint32_t key_size, void *input, size_t input_size, void *derived_key,
@@ -1723,14 +1679,10 @@ pgp_error_t pgp_ecdh_kex_encrypt(pgp_ecdh_kex **kex, pgp_ecdh_key *pgp_key, byte
 	ec_point *shared_point = NULL;
 	ec_point *public_point = NULL;
 
-	byte_t pos = 0;
-	byte_t *ps = session_key;
-	uint16_t session_key_checksum = 0;
-
 	byte_t encoded_session_key[64] = {0};
 	byte_t wrapped_session_key[64] = {0};
-	byte_t encoded_session_key_size = ROUND_UP(session_key_size + 2, 8);
-	byte_t wrapped_session_key_size = encoded_session_key_size + 8;
+	byte_t encoded_session_key_size = 0;
+	byte_t wrapped_session_key_size = 0;
 
 	byte_t key_wrap_key[32] = {0};
 	byte_t key_wrap_key_size = 0;
@@ -1775,30 +1727,14 @@ pgp_error_t pgp_ecdh_kex_encrypt(pgp_ecdh_kex **kex, pgp_ecdh_key *pgp_key, byte
 	shared_point = ec_point_multiply(group, shared_point, public_point, ephemeral_key->d);
 
 	// Encode the session key
-	if (symmetric_key_algorithm_id != 0)
-	{
-		encoded_session_key[pos++] = symmetric_key_algorithm_id;
-	}
-
-	memcpy(encoded_session_key + pos, session_key, session_key_size);
-	pos += session_key_size;
-
-	for (byte_t i = 0; i < session_key_size; ++i)
-	{
-		session_key_checksum += ps[i];
-	}
-
-	encoded_session_key[pos++] = (session_key_checksum >> 8) & 0xFF;
-	encoded_session_key[pos++] = session_key_checksum & 0xFF;
-
-	memset(encoded_session_key + pos, encoded_session_key_size - pos, encoded_session_key_size - pos);
+	encoded_session_key_size = session_key_encode(1, symmetric_key_algorithm_id, session_key, session_key_size, encoded_session_key);
 
 	// Derive key wrap key
 	key_wrap_key_size = pgp_ecdh_derive_kw_key(pgp_key, shared_point->x, fingerprint, fingerprint_size, key_wrap_key);
 
 	// Key wrap
-	wrapped_session_key_size = pgp_ecdh_kw_encrypt(key_wrap_key, key_wrap_key_size, encoded_session_key, encoded_session_key_size,
-												   wrapped_session_key, wrapped_session_key_size);
+	wrapped_session_key_size =
+		pgp_ecdh_kw_encrypt(key_wrap_key, key_wrap_key_size, encoded_session_key, encoded_session_key_size, wrapped_session_key, 64);
 
 	ec_kex = malloc(sizeof(pgp_ecdh_kex));
 
@@ -1833,12 +1769,8 @@ pgp_error_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_
 	ec_point *public_point = NULL;
 	bignum_t *d = NULL;
 
-	uint16_t session_key_checksum = 0;
-
 	byte_t encoded_session_key[64] = {0};
 	byte_t encoded_session_key_size = kex->encoded_session_key_size;
-	byte_t decoded_session_key_size = 0;
-	byte_t offset = 0;
 
 	byte_t key_wrap_key[32] = {0};
 	byte_t key_wrap_key_size = 0;
@@ -1897,40 +1829,7 @@ pgp_error_t pgp_ecdh_kex_decrypt(pgp_ecdh_kex *kex, pgp_ecdh_key *pgp_key, byte_
 		return PGP_ECDH_DECRYPTION_FAILURE;
 	}
 
-	// V3 packet
-	if (symmetric_key_algorithm_id != NULL)
-	{
-		*symmetric_key_algorithm_id = encoded_session_key[0];
-		offset = 1;
-	}
-
-	decoded_session_key_size = encoded_session_key_size - 8;
-
-	// Check padding
-	for (byte_t i = decoded_session_key_size + offset + 2; i < encoded_session_key_size; ++i)
-	{
-		if (encoded_session_key[i] != (8 - offset - 2))
-		{
-			return PGP_SESSION_KEY_MALFORMED_PADDING;
-		}
-	}
-
-	// Check checksum
-	for (byte_t i = 0; i < decoded_session_key_size; ++i)
-	{
-		session_key_checksum += encoded_session_key[offset + i];
-	}
-
-	if (((session_key_checksum >> 8) & 0xFF) != encoded_session_key[offset + decoded_session_key_size] ||
-		(session_key_checksum & 0xFF) != encoded_session_key[offset + decoded_session_key_size + 1])
-	{
-		return PGP_SESSION_KEY_CHECKSUM_MISMATCH;
-	}
-
-	memcpy(session_key, encoded_session_key + offset, decoded_session_key_size);
-
-	*session_key_size = decoded_session_key_size;
-	return PGP_SUCCESS;
+	return session_key_decode(1, symmetric_key_algorithm_id, encoded_session_key, encoded_session_key_size, session_key, session_key_size);
 }
 
 pgp_error_t pgp_x25519_kex_encrypt(pgp_x25519_kex **kex, pgp_x25519_key *pgp_key, byte_t symmetric_key_algorithm_id, void *session_key,
