@@ -2558,12 +2558,15 @@ static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_k
 
 	pgp_key_hash(hctx, key);
 
-	if (pgp_packet_get_type(header->tag) == PGP_UAT)
+	if (user != NULL)
 	{
-		pgp_compute_uat_hash(hctx, version, user);
-	}
+		if (pgp_packet_get_type(header->tag) == PGP_UAT)
+		{
+			pgp_compute_uat_hash(hctx, version, user);
+		}
 
-	pgp_compute_uid_hash(hctx, version, user);
+		pgp_compute_uid_hash(hctx, version, user);
+	}
 }
 
 static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *key, byte_t hash[64], void *data)
@@ -2634,6 +2637,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 		pgp_compute_literal_hash(hctx, data);
 		break;
 	case PGP_STANDALONE_SIGNATURE:
+	case PGP_TIMESTAMP_SIGNATURE:
 		// Nothing to hash here.
 		break;
 
@@ -2641,6 +2645,8 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+	case PGP_ATTESTED_KEY_SIGNATURE:
+	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
 		pgp_compute_certification_hash(hctx, packet->version, key, data);
 		break;
 
@@ -2655,11 +2661,8 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 		pgp_key_hash(hctx, key);  // Subkey
 
 	case PGP_KEY_REVOCATION_SIGNATURE:
+	case PGP_DIRECT_KEY_SIGNATURE:
 		pgp_key_hash(hctx, key); // Primary key
-		break;
-
-	case PGP_TIMESTAMP_SIGNATURE:
-		// hash_update(hctx, data, data_size); TODO
 		break;
 	}
 
