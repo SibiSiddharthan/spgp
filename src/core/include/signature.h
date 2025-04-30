@@ -242,8 +242,8 @@ typedef struct _pgp_string_subpacket
 		void *uid;    // pgp_signer_user_id_subpacket
 		void *alias;  // pgp_trust_alias_subpacket
 	};
-} pgp_regular_expression_subpacket, pgp_preferred_key_server_subpacket, pgp_policy_uri_subpacket, pgp_signer_user_id_subpacket,
-	pgp_trust_alias_subpacket;
+} pgp_string_subpacket, pgp_regular_expression_subpacket, pgp_preferred_key_server_subpacket, pgp_policy_uri_subpacket,
+	pgp_signer_user_id_subpacket, pgp_trust_alias_subpacket;
 
 typedef struct _pgp_key_fingerprint_subpacket
 {
@@ -423,6 +423,21 @@ void pgp_preferred_encryption_modes_subpacket_delete(pgp_preferred_encryption_mo
 
 pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpacket_new(byte_t count, byte_t prefs[][2]);
 void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket);
+
+pgp_regular_expression_subpacket *pgp_regular_expression_subpacket_new(void *regex, byte_t size);
+void pgp_regular_expression_subpacket_delete(pgp_regular_expression_subpacket *subpacket);
+
+pgp_preferred_key_server_subpacket *pgp_preferred_key_server_subpacket_new(void *server, byte_t size);
+void pgp_preferred_key_server_subpacket_delete(pgp_preferred_key_server_subpacket *subpacket);
+
+pgp_policy_uri_subpacket *pgp_policy_uri_subpacket_new(void *policy, byte_t size);
+void pgp_policy_uri_subpacket_delete(pgp_policy_uri_subpacket *subpacket);
+
+pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacke_newt(void *uid, byte_t size);
+void pgp_signer_user_id_subpacket_delete(pgp_signer_user_id_subpacket *subpacket);
+
+pgp_trust_alias_subpacket *pgp_trust_alias_subpacket_new(void *alias, byte_t size);
+void pgp_trust_alias_subpacket_delete(pgp_trust_alias_subpacket *subpacket);
 
 void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
 

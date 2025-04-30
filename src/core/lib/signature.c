@@ -2413,6 +2413,8 @@ pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpa
 		return NULL;
 	}
 
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + size);
+
 	memcpy(subpacket->preferred_algorithms, prefs, size);
 	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, 0, size);
 
@@ -2420,6 +2422,144 @@ pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpa
 }
 
 void pgp_preferred_aead_ciphersuites_subpacket_delete(pgp_preferred_aead_ciphersuites_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_regular_expression_subpacket *pgp_regular_expression_subpacket_new(void *regex, byte_t size)
+{
+	pgp_string_subpacket *subpacket = NULL;
+	byte_t *in = regex;
+	byte_t count = size;
+
+	// Always null terminate the regex
+	if (in[size - 1] != '\0')
+	{
+		count += 1;
+	}
+
+	subpacket = malloc(sizeof(pgp_string_subpacket) + count);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_string_subpacket) + count);
+
+	subpacket->regex = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
+	memcpy(subpacket->regex, regex, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_REGULAR_EXPRESSION_SUBPACKET, 1, count); // Critical
+
+	return subpacket;
+}
+
+void pgp_regular_expression_subpacket_delete(pgp_regular_expression_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_preferred_key_server_subpacket *pgp_preferred_key_server_subpacket_new(void *server, byte_t size)
+{
+	pgp_string_subpacket *subpacket = NULL;
+
+	subpacket = malloc(size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_string_subpacket) + size);
+
+	subpacket->server = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
+	memcpy(subpacket->server, server, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_KEY_SERVER_SUBPACKET, 0, size);
+
+	return subpacket;
+}
+
+void pgp_preferred_key_server_subpacket_delete(pgp_preferred_key_server_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_policy_uri_subpacket *pgp_policy_uri_subpacket_new(void *policy, byte_t size)
+{
+	pgp_string_subpacket *subpacket = NULL;
+
+	subpacket = malloc(size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_string_subpacket) + size);
+
+	subpacket->policy = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
+	memcpy(subpacket->policy, policy, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_POLICY_URI_SUBPACKET, 0, size);
+
+	return subpacket;
+}
+
+void pgp_policy_uri_subpacket_delete(pgp_policy_uri_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacke_newt(void *uid, byte_t size)
+{
+	pgp_string_subpacket *subpacket = NULL;
+
+	subpacket = malloc(size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_string_subpacket) + size);
+
+	subpacket->uid = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
+	memcpy(subpacket->uid, uid, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNER_USER_ID_SUBPACKET, 0, size);
+
+	return subpacket;
+}
+
+void pgp_signer_user_id_subpacket_delete(pgp_signer_user_id_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_trust_alias_subpacket *pgp_trust_alias_subpacket_new(void *alias, byte_t size)
+{
+	pgp_string_subpacket *subpacket = NULL;
+
+	subpacket = malloc(size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_string_subpacket) + size);
+
+	subpacket->alias = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
+	memcpy(subpacket->alias, alias, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_TRUST_ALIAS_SUBPACKET, 0, size);
+
+	return subpacket;
+}
+
+void pgp_trust_alias_subpacket_delete(pgp_trust_alias_subpacket *subpacket)
 {
 	free(subpacket);
 }
