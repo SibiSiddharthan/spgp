@@ -1040,15 +1040,16 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_SIGNATURE_TARGET_SUBPACKET:
 	{
 		pgp_signature_target_subpacket *target_subpacket = NULL;
+		byte_t hash_size = header.body_size - 2;
 
-		target_subpacket = malloc(sizeof(pgp_subpacket_header) + header.body_size);
+		target_subpacket = malloc(sizeof(pgp_subpacket_header));
 
 		if (target_subpacket == NULL)
 		{
 			return PGP_NO_MEMORY;
 		}
 
-		memset(target_subpacket, 0, sizeof(pgp_subpacket_header) + header.body_size);
+		memset(target_subpacket, 0, sizeof(pgp_subpacket_header));
 
 		// Copy the header
 		target_subpacket->header = header;
@@ -1060,7 +1061,13 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		CHECK_READ(read8(buffer, &target_subpacket->hash_algorithm_id), PGP_MALFORMED_SIGNATURE_TARGET_SUBPACKET);
 
 		// N octets of hash
-		CHECK_READ(readn(buffer, target_subpacket->hash, header.body_size - 2), PGP_MALFORMED_SIGNATURE_TARGET_SUBPACKET);
+		CHECK_READ(readn(buffer, target_subpacket->hash, hash_size), PGP_MALFORMED_SIGNATURE_TARGET_SUBPACKET);
+
+		if (hash_size != pgp_hash_size(target_subpacket->hash_algorithm_id))
+		{
+			free(target_subpacket);
+			return PGP_INCORRECT_HASH_SIZE;
+		}
 
 		*subpacket = target_subpacket;
 
@@ -2628,6 +2635,39 @@ pgp_reason_for_revocation_subpacket *pgp_reason_for_revocation_subpacket_new(byt
 }
 
 void pgp_reason_for_revocation_subpacket_delete(pgp_reason_for_revocation_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_signature_target_subpacket *pgp_signature_target_subpacket_new(byte_t public_key_algorithm_id, byte_t hash_algorithm_id, byte_t *hash,
+																   byte_t size)
+{
+	pgp_signature_target_subpacket *subpacket = NULL;
+
+	if (size != pgp_hash_size(hash_algorithm_id))
+	{
+		return NULL;
+	}
+
+	subpacket = malloc(sizeof(pgp_signature_target_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_signature_target_subpacket));
+
+	subpacket->public_key_algorithm_id = public_key_algorithm_id;
+	subpacket->hash_algorithm_id = hash_algorithm_id;
+	memcpy(subpacket->hash, hash, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_TARGET_SUBPACKET, 0, 2 + size);
+
+	return subpacket;
+}
+
+void pgp_signature_target_subpacket_delete(pgp_signature_target_subpacket *subpacket)
 {
 	free(subpacket);
 }

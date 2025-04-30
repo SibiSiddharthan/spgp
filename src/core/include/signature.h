@@ -294,7 +294,7 @@ typedef struct _pgp_signature_target_subpacket
 	pgp_subpacket_header header;
 	byte_t public_key_algorithm_id;
 	byte_t hash_algorithm_id;
-	byte_t hash[1];
+	byte_t hash[64];
 } pgp_signature_target_subpacket;
 
 typedef pgp_signature_packet pgp_embedded_signature_subpacket;
@@ -445,6 +445,10 @@ void pgp_revocation_key_subpacket_delete(pgp_revocation_key_subpacket *subpacket
 
 pgp_reason_for_revocation_subpacket *pgp_reason_for_revocation_subpacket_new(byte_t code, void *reason, uint32_t size);
 void pgp_reason_for_revocation_subpacket_delete(pgp_reason_for_revocation_subpacket *subpacket);
+
+pgp_signature_target_subpacket *pgp_signature_target_subpacket_new(byte_t public_key_algorithm_id, byte_t hash_algorithm_id, byte_t *hash,
+																   byte_t size);
+void pgp_signature_target_subpacket_delete(pgp_signature_target_subpacket *subpacket);
 
 void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
 
