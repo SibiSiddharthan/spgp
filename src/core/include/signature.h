@@ -110,6 +110,7 @@ typedef enum _pgp_revocation_code
 #define PGP_NOTATION_DATA_UTF8   0x80000000 // Notation value is UTF-8 text
 
 #define PGP_KEY_SERVER_FLAGS_MASK 0x80
+#define PGP_NOTATION_FLAG_MASK    0x80000000
 
 // Key Flags
 // First Octet
@@ -408,6 +409,10 @@ void pgp_primary_user_id_subpacket_delete(pgp_primary_user_id_subpacket *subpack
 
 pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_level, byte_t trust_amount);
 void pgp_trust_signature_subpacket_delete(pgp_trust_signature_subpacket *subpacket);
+
+pgp_notation_data_subpacket *pgp_notation_data_subpacket_new(uint32_t flags, void *name, uint16_t name_size, void *value,
+															 uint16_t value_size);
+void pgp_notation_data_subpacket_delete(pgp_notation_data_subpacket *subpacket);
 
 pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpacket_new(byte_t count, byte_t prefs[]);
 void pgp_preferred_symmetric_ciphers_subpacket_delete(pgp_preferred_symmetric_ciphers_subpacket *subpacket);

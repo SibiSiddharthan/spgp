@@ -983,7 +983,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		}
 
 		memset(notation_subpacket, 0, sizeof(pgp_notation_data_subpacket) + (header.body_size - 8));
-		notation_subpacket->data = PTR_OFFSET(notation_subpacket, sizeof(pgp_notation_data_subpacket));
 
 		// Copy the header
 		notation_subpacket->header = header;
@@ -998,8 +997,12 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		CHECK_READ(read16_be(buffer, &notation_subpacket->value_size), PGP_MALFORMED_NOTATION_DATA_SUBPACKET);
 
 		// (N + M) octets of data
-		CHECK_READ(readn(buffer, notation_subpacket->data, notation_subpacket->name_size + notation_subpacket->value_size),
-				   PGP_MALFORMED_NOTATION_DATA_SUBPACKET);
+		if (notation_subpacket->name_size + notation_subpacket->value_size > 0)
+		{
+			notation_subpacket->data = PTR_OFFSET(notation_subpacket, sizeof(pgp_notation_data_subpacket));
+			CHECK_READ(readn(buffer, notation_subpacket->data, notation_subpacket->name_size + notation_subpacket->value_size),
+					   PGP_MALFORMED_NOTATION_DATA_SUBPACKET);
+		}
 
 		*subpacket = notation_subpacket;
 
@@ -1336,8 +1339,11 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		pos += 2;
 
 		// (N + M) octets of data
-		memcpy(out + pos, notation_subpacket->data, notation_subpacket->name_size + notation_subpacket->value_size);
-		pos += notation_subpacket->name_size + notation_subpacket->value_size;
+		if (notation_subpacket->name_size + notation_subpacket->value_size > 0)
+		{
+			memcpy(out + pos, notation_subpacket->data, notation_subpacket->name_size + notation_subpacket->value_size);
+			pos += notation_subpacket->name_size + notation_subpacket->value_size;
+		}
 	}
 	break;
 	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
@@ -2312,6 +2318,41 @@ pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_le
 }
 
 void pgp_trust_signature_subpacket_delete(pgp_trust_signature_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_notation_data_subpacket *pgp_notation_data_subpacket_new(uint32_t flags, void *name, uint16_t name_size, void *value,
+															 uint16_t value_size)
+{
+	pgp_notation_data_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_notation_data_subpacket) + name_size + value_size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_notation_data_subpacket) + name_size + value_size);
+
+	subpacket->flags = flags & PGP_NOTATION_FLAG_MASK;
+	subpacket->name_size = name_size;
+	subpacket->value_size = value_size;
+
+	if (name_size + value_size > 0)
+	{
+		subpacket->data = PTR_OFFSET(subpacket, sizeof(pgp_notation_data_subpacket));
+		memcpy(subpacket->data, name, name_size);
+		memcpy(PTR_OFFSET(subpacket->data, name_size), value, value_size);
+	}
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_NOTATION_DATA_SUBPACKET, 0, 4 + 2 + 2 + name_size + value_size);
+
+	return subpacket;
+}
+
+void pgp_notation_data_subpacket_delete(pgp_notation_data_subpacket *subpacket)
 {
 	free(subpacket);
 }
