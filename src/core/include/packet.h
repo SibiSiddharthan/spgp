@@ -221,6 +221,22 @@ typedef struct _pgp_keyring_packet
 
 } pgp_keyring_packet;
 
+typedef struct _user_info
+{
+	byte_t trust;
+	byte_t features;
+
+	uint16_t uid_octets;
+	byte_t hash_algorithm_preferences_octets;
+	byte_t cipher_algorithm_preferences_octets;
+	byte_t compression_algorithm_preferences_octets;
+	byte_t cipher_modes_preferences_octets;
+	byte_t aead_algorithm_preferences_octets;
+
+	byte_t data[1];
+
+} user_info;
+
 #define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : (((T) & 0x80) == 0x80) ? PGP_LEGACY_HEADER : PGP_UNKNOWN_HEADER)
 #define PGP_ERROR(H)                ((H).error != PGP_NO_ERROR)
 
