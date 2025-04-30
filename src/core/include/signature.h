@@ -286,7 +286,7 @@ typedef struct _reason_for_revocation_subpacket
 {
 	pgp_subpacket_header header;
 	byte_t code;
-	byte_t *reason;
+	void *reason;
 } pgp_reason_for_revocation_subpacket;
 
 typedef struct _pgp_signature_target_subpacket
@@ -442,6 +442,9 @@ void pgp_trust_alias_subpacket_delete(pgp_trust_alias_subpacket *subpacket);
 pgp_revocation_key_subpacket *pgp_revocation_key_subpacket_new(byte_t revocation_class, byte_t algorithm_id,
 															   byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size);
 void pgp_revocation_key_subpacket_delete(pgp_revocation_key_subpacket *subpacket);
+
+pgp_reason_for_revocation_subpacket *pgp_reason_for_revocation_subpacket_new(byte_t code, void *reason, uint32_t size);
+void pgp_reason_for_revocation_subpacket_delete(pgp_reason_for_revocation_subpacket *subpacket);
 
 void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
 

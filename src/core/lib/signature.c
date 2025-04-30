@@ -1336,14 +1336,18 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
 	{
 		pgp_reason_for_revocation_subpacket *revocation_reason_subpacket = subpacket;
+		uint32_t reason_size = revocation_reason_subpacket->header.body_size - 1;
 
 		// 1 octet of revocation code
 		LOAD_8(out + pos, &revocation_reason_subpacket->code);
 		pos += 1;
 
 		// N octets of reason
-		memcpy(out + pos, revocation_reason_subpacket->reason, revocation_reason_subpacket->header.body_size - 1);
-		pos += (revocation_reason_subpacket->header.body_size - 1);
+		if (reason_size > 0)
+		{
+			memcpy(out + pos, revocation_reason_subpacket->reason, reason_size);
+			pos += reason_size;
+		}
 	}
 	break;
 	case PGP_SIGNATURE_TARGET_SUBPACKET:
@@ -2593,6 +2597,37 @@ pgp_revocation_key_subpacket *pgp_revocation_key_subpacket_new(byte_t revocation
 }
 
 void pgp_revocation_key_subpacket_delete(pgp_revocation_key_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
+pgp_reason_for_revocation_subpacket *pgp_reason_for_revocation_subpacket_new(byte_t code, void *reason, uint32_t size)
+{
+	pgp_reason_for_revocation_subpacket *subpacket = NULL;
+
+	subpacket = malloc(sizeof(pgp_reason_for_revocation_subpacket) + size);
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_reason_for_revocation_subpacket) + size);
+
+	subpacket->code = code;
+
+	if (size > 0)
+	{
+		subpacket->reason = PTR_OFFSET(subpacket, sizeof(pgp_reason_for_revocation_subpacket));
+		memcpy(subpacket->reason, reason, size);
+	}
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_REASON_FOR_REVOCATION_SUBPACKET, 0, 1 + size);
+
+	return subpacket;
+}
+
+void pgp_reason_for_revocation_subpacket_delete(pgp_reason_for_revocation_subpacket *subpacket)
 {
 	free(subpacket);
 }
