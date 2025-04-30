@@ -1781,6 +1781,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size, 
 			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
 			pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
 			break;
+		case PGP_KEY_V5:
 		case PGP_KEY_V6:
 			pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
 			pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
@@ -1816,9 +1817,9 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
-	if (packet->version == PGP_SKESK_V6)
+	if (packet->version == PGP_SKESK_V6 || packet->version == PGP_SKESK_V5)
 	{
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 6\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
 		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 1);
@@ -1851,7 +1852,7 @@ static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_pac
 {
 	size_t pos = 0;
 
-	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V4)
+	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
 	{
 		pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Version: %hhu\n", packet->version);
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, indent);
@@ -1965,7 +1966,7 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
-	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5 || packet->version == PGP_KEY_V4)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
 		pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
@@ -1996,7 +1997,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
-	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V4)
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5 || packet->version == PGP_KEY_V4)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: %hhu\n", packet->version);
 		pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);

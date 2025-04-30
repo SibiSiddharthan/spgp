@@ -1251,7 +1251,7 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		LOAD_8(out + pos, &key_fingerprint_subpacket->version);
 		pos += 1;
 
-		if (key_fingerprint_subpacket->version == PGP_KEY_V6)
+		if (key_fingerprint_subpacket->version == PGP_KEY_V6 || key_fingerprint_subpacket->version == PGP_KEY_V5)
 		{
 			// 32 octets of V6 key fingerprint
 			memcpy(out + pos, key_fingerprint_subpacket->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
