@@ -2564,6 +2564,39 @@ void pgp_trust_alias_subpacket_delete(pgp_trust_alias_subpacket *subpacket)
 	free(subpacket);
 }
 
+pgp_revocation_key_subpacket *pgp_revocation_key_subpacket_new(byte_t revocation_class, byte_t algorithm_id,
+															   byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+{
+	pgp_revocation_key_subpacket *subpacket = NULL;
+
+	if (size != PGP_KEY_V4_FINGERPRINT_SIZE && size != PGP_KEY_V6_FINGERPRINT_SIZE)
+	{
+		return NULL;
+	}
+
+	subpacket = malloc(sizeof(pgp_revocation_key_subpacket));
+
+	if (subpacket == NULL)
+	{
+		return NULL;
+	}
+
+	memset(subpacket, 0, sizeof(pgp_revocation_key_subpacket));
+
+	subpacket->revocation_class = revocation_class;
+	subpacket->algorithm_id = algorithm_id;
+	memcpy(subpacket->fingerprint, fingerprint, size);
+
+	subpacket->header = pgp_encode_subpacket_header(PGP_REVOCATION_KEY_SUBPACKET, 0, 2 + size);
+
+	return subpacket;
+}
+
+void pgp_revocation_key_subpacket_delete(pgp_revocation_key_subpacket *subpacket)
+{
+	free(subpacket);
+}
+
 pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
 {
 	void *result = NULL;

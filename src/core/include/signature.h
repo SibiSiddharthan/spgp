@@ -439,6 +439,10 @@ void pgp_signer_user_id_subpacket_delete(pgp_signer_user_id_subpacket *subpacket
 pgp_trust_alias_subpacket *pgp_trust_alias_subpacket_new(void *alias, byte_t size);
 void pgp_trust_alias_subpacket_delete(pgp_trust_alias_subpacket *subpacket);
 
+pgp_revocation_key_subpacket *pgp_revocation_key_subpacket_new(byte_t revocation_class, byte_t algorithm_id,
+															   byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size);
+void pgp_revocation_key_subpacket_delete(pgp_revocation_key_subpacket *subpacket);
+
 void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
 
 pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
