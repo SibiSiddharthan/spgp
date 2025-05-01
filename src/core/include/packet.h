@@ -224,8 +224,8 @@ typedef struct _pgp_user_info
 	uint32_t info_octets;
 
 	byte_t trust;
-	byte_t supported_features;
-	byte_t server_flags;
+	byte_t features;
+	byte_t flags;
 
 	uint32_t uid_octets;
 	uint32_t server_octets;
@@ -377,7 +377,7 @@ void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uin
 pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 
-byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size, byte_t fingerprint[32]);
+byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32_t size, byte_t fingerprint[32]);
 
 pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, size_t size);
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);
@@ -387,5 +387,16 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 pgp_error_t pgp_unknown_packet_read(pgp_unknown_packet **packet, void *data, size_t size);
 size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size);
 size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t size);
+
+// User Info
+pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size, void *server, uint32_t server_size, byte_t trust,
+							  byte_t features, byte_t flags);
+void pgp_user_info_delete(pgp_user_info *info);
+
+pgp_error_t pgp_user_info_set_hash_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);
+pgp_error_t pgp_user_info_set_cipher_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);
+pgp_error_t pgp_user_info_set_compression_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);
+pgp_error_t pgp_user_info_set_mode_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);
+pgp_error_t pgp_user_info_set_aead_preferences(pgp_user_info *user, byte_t count, byte_t preferences[][2]);
 
 #endif

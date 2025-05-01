@@ -2374,3 +2374,155 @@ size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t si
 
 	return pos;
 }
+
+pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size, void *server, uint32_t server_size, byte_t trust,
+							  byte_t features, byte_t flags)
+{
+	pgp_user_info *user = NULL;
+
+	if (uid == NULL || uid_size == 0)
+	{
+		return PGP_EMPTY_USER_ID;
+	}
+
+	if (trust != PGP_TRUST_NEVER && trust != PGP_TRUST_MARGINAL && trust != PGP_TRUST_FULL && trust != PGP_TRUST_ULTIMATE)
+	{
+		return PGP_INVALID_TRUST_LEVEL;
+	}
+
+	user = malloc(sizeof(pgp_user_info) + uid_size + server_size);
+
+	if (user == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(user, 0, sizeof(pgp_user_info) + uid_size + server_size);
+
+	user->trust = trust;
+	user->features = features & PGP_FEATURE_FLAG_MASK;
+	user->flags = flags & PGP_KEY_SERVER_FLAGS_MASK;
+
+	user->uid_octets = uid_size;
+	user->uid = PTR_OFFSET(user, sizeof(pgp_user_info));
+	memcpy(user->uid, uid, uid_size);
+
+	if (server != NULL && server_size != 0)
+	{
+		user->server_octets = server_size;
+		user->server = PTR_OFFSET(user->uid, uid_size);
+		memcpy(user->server, server, server_size);
+	}
+
+	user->info_octets = 16 + user->uid_octets + user->server_octets;
+
+	*info = user;
+
+	return PGP_SUCCESS;
+}
+
+void pgp_user_info_delete(pgp_user_info *info)
+{
+	free(info);
+}
+
+pgp_error_t pgp_user_info_set_hash_preferences(pgp_user_info *user, byte_t count, byte_t preferences[])
+{
+	for (byte_t i = 0; i < count; ++i)
+	{
+		if (pgp_hash_algorithm_validate(preferences[i]) == 0)
+		{
+			return PGP_INVALID_HASH_ALGORITHM;
+		}
+	}
+
+	user->hash_algorithm_preferences_octets = count;
+	memcpy(user->hash_algorithm_preferences, preferences, user->hash_algorithm_preferences_octets);
+
+	user->info_octets += user->hash_algorithm_preferences_octets;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_user_info_set_cipher_preferences(pgp_user_info *user, byte_t count, byte_t preferences[])
+{
+	for (byte_t i = 0; i < count; ++i)
+	{
+		if (pgp_symmetric_cipher_algorithm_validate(preferences[i]) == 0)
+		{
+			return PGP_INVALID_CIPHER_ALGORITHM;
+		}
+	}
+
+	user->cipher_algorithm_preferences_octets = count;
+	memcpy(user->cipher_algorithm_preferences, preferences, user->cipher_algorithm_preferences_octets);
+
+	user->info_octets += user->cipher_algorithm_preferences_octets;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_user_info_set_compression_preferences(pgp_user_info *user, byte_t count, byte_t preferences[])
+{
+	for (byte_t i = 0; i < count; ++i)
+	{
+		if (preferences[i] != PGP_UNCOMPRESSED && preferences[i] != PGP_DEFALTE && preferences[i] != PGP_ZLIB &&
+			preferences[i] != PGP_BZIP2)
+		{
+			return PGP_UNKNOWN_COMPRESSION_ALGORITHM;
+		}
+	}
+
+	user->compression_algorithm_preferences_octets = count;
+	memcpy(user->compression_algorithm_preferences, preferences, user->compression_algorithm_preferences_octets);
+
+	user->info_octets += user->compression_algorithm_preferences_octets;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_user_info_set_mode_preferences(pgp_user_info *user, byte_t count, byte_t preferences[])
+{
+	for (byte_t i = 0; i < count; ++i)
+	{
+		if (pgp_aead_algorithm_validate(preferences[i]) == 0)
+		{
+			return PGP_INVALID_AEAD_ALGORITHM;
+		}
+	}
+
+	user->cipher_modes_preferences_octets = count;
+	memcpy(user->cipher_modes_preferences, preferences, user->cipher_modes_preferences_octets);
+
+	user->info_octets += user->cipher_modes_preferences_octets;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_user_info_set_aead_preferences(pgp_user_info *user, byte_t count, byte_t preferences[][2])
+{
+	for (byte_t i = 0; i < count; ++i)
+	{
+		if (pgp_aead_algorithm_validate(preferences[i][1]) == 0)
+		{
+			return PGP_INVALID_AEAD_ALGORITHM;
+		}
+
+		if (pgp_symmetric_cipher_algorithm_validate(preferences[i][0]) == 0)
+		{
+			return PGP_INVALID_CIPHER_ALGORITHM;
+		}
+
+		if (pgp_symmetric_cipher_block_size(preferences[i][0]) != 16)
+		{
+			return PGP_INVALID_AEAD_CIPHER_PAIR;
+		}
+	}
+
+	user->aead_algorithm_preferences_octets = count * 2;
+	memcpy(user->cipher_modes_preferences, preferences, user->aead_algorithm_preferences_octets);
+
+	user->info_octets += user->aead_algorithm_preferences_octets;
+
+	return PGP_SUCCESS;
+}
