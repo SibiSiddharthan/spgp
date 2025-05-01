@@ -2503,13 +2503,73 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 	return pos;
 }
 
+static size_t pgp_user_info_print(pgp_user_info *user, void *str, size_t size, uint32_t indent)
+{
+	size_t pos = 0;
+
+	pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "User ID: %.*s\n", user->uid_octets, user->uid);
+	pos += pgp_trust_print(user->trust, PTR_OFFSET(str, pos), size - pos, indent);
+
+	if (user->flags & PGP_KEY_SERVER_NO_MODIFY)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Server Preferences: No Modify (0x80)\n");
+	}
+
+	if (user->server_octets > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Preferred Key Server: %.*s\n", user->server_octets, user->server);
+	}
+
+	if (user->hash_algorithm_preferences_octets > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Hash Alogrithm Preferences:\n");
+
+		for (byte_t i = 0; i < user->hash_algorithm_preferences_octets; ++i)
+		{
+			pos += pgp_hash_algorithm_print(user->hash_algorithm_preferences[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+
+	if (user->cipher_algorithm_preferences_octets > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Cipher Alogrithm Preferences:\n");
+
+		for (byte_t i = 0; i < user->cipher_algorithm_preferences_octets; ++i)
+		{
+			pos += pgp_symmetric_key_algorithm_print(user->cipher_algorithm_preferences[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+
+	if (user->compression_algorithm_preferences_octets > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Compression Alogrithm Preferences:\n");
+
+		for (byte_t i = 0; i < user->compression_algorithm_preferences_octets; ++i)
+		{
+			pos +=
+				pgp_compression_algorithm_print(user->compression_algorithm_preferences[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+
+	if (user->cipher_modes_preferences_octets > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Encryption Mode Preferences:\n");
+
+		for (byte_t i = 0; i < user->cipher_modes_preferences_octets; ++i)
+		{
+			pos += pgp_aead_algorithm_print(user->cipher_modes_preferences[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+
+	return pos;
+}
+
 size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size)
 {
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Key Version: %hhu\n", packet->key_version);
-	pos += pgp_trust_print(packet->trust_level, PTR_OFFSET(str, pos), size - pos, 1);
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Primary Key: ");
 	pos += print_hex(hex_upper_table, PTR_OFFSET(str, pos), packet->primary_fingerprint, packet->fingerprint_size);
@@ -2526,16 +2586,13 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 		}
 	}
 
-	if (packet->user_count > 0)
+	if (packet->users->count > 0)
 	{
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User IDs:\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User Information:\n");
 
-		for (byte_t i = 0; i < packet->user_count; ++i)
+		for (uint32_t i = 0; i < packet->users->count; ++i)
 		{
-			size_t offset = 0;
-
-			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "%s\n", PTR_OFFSET(packet->users, offset));
-			offset = (uintptr_t)memchr(PTR_OFFSET(packet->users, offset), 0, packet->uid_size - offset) - (uintptr_t)packet->users + 1;
+			pos += pgp_user_info_print(packet->users->packets[i], PTR_OFFSET(str, pos), size - pos, 2);
 		}
 	}
 
