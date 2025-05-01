@@ -519,62 +519,62 @@ static uint32_t parse_spec(byte_t *in, key_specfication **out)
 	return count;
 }
 
-static void make_default_preferences(user_preferences *preferences)
+static void make_default_preferences(pgp_user_info *info)
 {
 	// Set cipher, hash and compression preferences
-	preferences->cipher_algorithm_preferences_count = 3;
-	preferences->cipher_algorithm_preferences[0] = PGP_AES_256;
-	preferences->cipher_algorithm_preferences[1] = PGP_AES_192;
-	preferences->cipher_algorithm_preferences[2] = PGP_AES_128;
+	info->cipher_algorithm_preferences_octets = 3;
+	info->cipher_algorithm_preferences[0] = PGP_AES_256;
+	info->cipher_algorithm_preferences[1] = PGP_AES_192;
+	info->cipher_algorithm_preferences[2] = PGP_AES_128;
 
 	if (command.mode == SPGP_MODE_OPENPGP || command.mode == SPGP_MODE_LIBREPGP)
 	{
-		preferences->hash_algorithm_preferences_count = 4;
-		preferences->hash_algorithm_preferences[0] = PGP_SHA3_512;
-		preferences->hash_algorithm_preferences[1] = PGP_SHA3_256;
-		preferences->hash_algorithm_preferences[2] = PGP_SHA2_512;
-		preferences->hash_algorithm_preferences[3] = PGP_SHA2_256;
+		info->hash_algorithm_preferences_octets = 4;
+		info->hash_algorithm_preferences[0] = PGP_SHA3_512;
+		info->hash_algorithm_preferences[1] = PGP_SHA3_256;
+		info->hash_algorithm_preferences[2] = PGP_SHA2_512;
+		info->hash_algorithm_preferences[3] = PGP_SHA2_256;
 	}
 	else
 	{
-		preferences->hash_algorithm_preferences_count = 3;
-		preferences->hash_algorithm_preferences[1] = PGP_SHA2_512;
-		preferences->hash_algorithm_preferences[2] = PGP_SHA2_256;
-		preferences->hash_algorithm_preferences[3] = PGP_SHA1;
+		info->hash_algorithm_preferences_octets = 3;
+		info->hash_algorithm_preferences[1] = PGP_SHA2_512;
+		info->hash_algorithm_preferences[2] = PGP_SHA2_256;
+		info->hash_algorithm_preferences[3] = PGP_SHA1;
 	}
 
-	preferences->compression_algorithm_preferences_count = 1;
-	preferences->compression_algorithm_preferences[0] = PGP_UNCOMPRESSED;
+	info->compression_algorithm_preferences_octets = 1;
+	info->compression_algorithm_preferences[0] = PGP_UNCOMPRESSED;
 
 	if (command.mode == SPGP_MODE_OPENPGP)
 	{
-		preferences->aead_algorithm_preferences_count = 3;
+		info->aead_algorithm_preferences_octets = 3;
 
-		preferences->aead_algorithm_preferences[0][0] = PGP_AES_256;
-		preferences->aead_algorithm_preferences[0][1] = PGP_AEAD_GCM;
+		info->aead_algorithm_preferences[0][0] = PGP_AES_256;
+		info->aead_algorithm_preferences[0][1] = PGP_AEAD_GCM;
 
-		preferences->aead_algorithm_preferences[1][0] = PGP_AES_192;
-		preferences->aead_algorithm_preferences[1][1] = PGP_AEAD_GCM;
+		info->aead_algorithm_preferences[1][0] = PGP_AES_192;
+		info->aead_algorithm_preferences[1][1] = PGP_AEAD_GCM;
 
-		preferences->aead_algorithm_preferences[2][0] = PGP_AES_128;
-		preferences->aead_algorithm_preferences[2][1] = PGP_AEAD_GCM;
+		info->aead_algorithm_preferences[2][0] = PGP_AES_128;
+		info->aead_algorithm_preferences[2][1] = PGP_AEAD_GCM;
 	}
 
 	// Set the features
 	switch (command.mode)
 	{
 	case SPGP_MODE_RFC4880:
-		preferences->features = PGP_FEATURE_MDC;
+		info->features = PGP_FEATURE_MDC;
 		break;
 	case SPGP_MODE_LIBREPGP:
-		preferences->features = PGP_FEATURE_MDC | PGP_FEATURE_AEAD | PGP_FEATURE_KEY_V5;
+		info->features = PGP_FEATURE_MDC | PGP_FEATURE_AEAD | PGP_FEATURE_KEY_V5;
 		break;
 	case SPGP_MODE_OPENPGP:
-		preferences->features = PGP_FEATURE_SEIPD_V1 | PGP_FEATURE_SEIPD_V2;
+		info->features = PGP_FEATURE_SEIPD_V1 | PGP_FEATURE_SEIPD_V2;
 		break;
 	}
 
-	preferences->key_server = PGP_KEY_SERVER_NO_MODIFY;
+	info->flags = PGP_KEY_SERVER_NO_MODIFY;
 }
 
 uint32_t spgp_generate_key(void)
@@ -591,7 +591,7 @@ uint32_t spgp_generate_key(void)
 
 	pgp_stream_t *certificate = NULL;
 	pgp_signature_packet *signature = NULL;
-	user_preferences preferences = {0};
+	pgp_user_info preferences = {0};
 
 	if (command.files == NULL || command.files->count != 2)
 	{

@@ -3572,15 +3572,15 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 	return pgp_signature_packet_verify(sign, key, literal);
 }
 
-static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_preferences *preferences)
+static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, pgp_user_info *info)
 {
 	// Add preferences
-	if (preferences->cipher_algorithm_preferences_count > 0)
+	if (info->cipher_algorithm_preferences_octets > 0)
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_symmetric_ciphers_subpacket_new(preferences->cipher_algorithm_preferences_count,
-																  preferences->cipher_algorithm_preferences);
+		subpacket =
+			pgp_preferred_symmetric_ciphers_subpacket_new(info->cipher_algorithm_preferences_octets, info->cipher_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -3590,12 +3590,11 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_pref
 		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
 	}
 
-	if (preferences->hash_algorithm_preferences_count > 0)
+	if (info->hash_algorithm_preferences_octets > 0)
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_hash_algorithms_subpacket_new(preferences->hash_algorithm_preferences_count,
-																preferences->hash_algorithm_preferences);
+		subpacket = pgp_preferred_hash_algorithms_subpacket_new(info->hash_algorithm_preferences_octets, info->hash_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -3605,12 +3604,12 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_pref
 		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
 	}
 
-	if (preferences->compression_algorithm_preferences_count > 0)
+	if (info->compression_algorithm_preferences_octets > 0)
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_compression_algorithms_subpacket_new(preferences->compression_algorithm_preferences_count,
-																	   preferences->compression_algorithm_preferences);
+		subpacket = pgp_preferred_compression_algorithms_subpacket_new(info->compression_algorithm_preferences_octets,
+																	   info->compression_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -3620,12 +3619,11 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_pref
 		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
 	}
 
-	if (preferences->cipher_modes_preferences_count > 0)
+	if (info->cipher_modes_preferences_octets > 0)
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_encryption_modes_subpacket_new(preferences->cipher_modes_preferences_count,
-																 preferences->cipher_modes_preferences);
+		subpacket = pgp_preferred_encryption_modes_subpacket_new(info->cipher_modes_preferences_octets, info->cipher_modes_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -3635,12 +3633,12 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_pref
 		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
 	}
 
-	if (preferences->aead_algorithm_preferences_count > 0)
+	if (info->aead_algorithm_preferences_octets > 0)
 	{
 		pgp_preferred_algorithms_subpacket *subpacket = NULL;
 
-		subpacket = pgp_preferred_aead_ciphersuites_subpacket_new(preferences->aead_algorithm_preferences_count,
-																  preferences->aead_algorithm_preferences);
+		subpacket =
+			pgp_preferred_aead_ciphersuites_subpacket_new(info->aead_algorithm_preferences_octets, info->aead_algorithm_preferences);
 
 		if (subpacket == NULL)
 		{
@@ -3651,25 +3649,12 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_pref
 	}
 
 	// Add flags and features
-	pgp_key_flags_subpacket *flags_subpacket = NULL;
 	pgp_features_subpacket *features_subpacket = NULL;
 	pgp_key_server_preferences_subpacket *server_subpacket = NULL;
 
-	if (preferences->key_flags != 0)
+	if (info->features != 0)
 	{
-		flags_subpacket = pgp_key_flags_subpacket_new(preferences->key_flags, 0);
-
-		if (flags_subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, flags_subpacket);
-	}
-
-	if (preferences->features != 0)
-	{
-		features_subpacket = pgp_features_subpacket_new(preferences->features);
+		features_subpacket = pgp_features_subpacket_new(info->features);
 
 		if (features_subpacket == NULL)
 		{
@@ -3679,9 +3664,9 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_pref
 		pgp_signature_packet_hashed_subpacket_add(packet, features_subpacket);
 	}
 
-	if (preferences->key_server != 0)
+	if (info->flags != 0)
 	{
-		server_subpacket = pgp_key_server_preferences_subpacket_new(preferences->key_server);
+		server_subpacket = pgp_key_server_preferences_subpacket_new(info->flags);
 
 		if (server_subpacket == NULL)
 		{
@@ -3695,12 +3680,12 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, user_pref
 }
 
 pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, user_preferences *preferences,
-											   void *user)
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_user_info *info, void *user)
 {
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
 	pgp_key_expiration_time_subpacket *expiry_subpacket = NULL;
+	pgp_key_flags_subpacket *flags_subpacket = NULL;
 	pgp_packet_header *header = user;
 
 	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
@@ -3748,7 +3733,18 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 		pgp_signature_packet_hashed_subpacket_add(sign, expiry_subpacket);
 	}
 
-	error = pgp_setup_preferences(sign, preferences);
+	// Add key flags
+	flags_subpacket =
+		pgp_key_flags_subpacket_new(key->capabilities, key->flags & (PGP_KEY_FLAG_TIMESTAMP | PGP_KEY_FLAG_RESTRICTED_ENCRYPT));
+
+	if (flags_subpacket == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	pgp_signature_packet_hashed_subpacket_add(packet, flags_subpacket);
+
+	error = pgp_setup_preferences(sign, info);
 
 	if (error != PGP_SUCCESS)
 	{
