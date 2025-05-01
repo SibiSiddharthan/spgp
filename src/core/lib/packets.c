@@ -1688,6 +1688,7 @@ static void pgp_keyring_packet_encode_header(pgp_keyring_packet *packet)
 
 pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t primary_key[32], pgp_user_info *user)
 {
+	pgp_error_t status = 0;
 	pgp_keyring_packet *keyring = NULL;
 
 	if (key_version < PGP_KEY_V2 || key_version > PGP_KEY_V6)
@@ -1709,27 +1710,20 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 
 	memset(keyring, 0, sizeof(pgp_keyring_packet));
 
+	// Copy the key information
 	keyring->key_version = key_version;
 
 	keyring->fingerprint_size = pgp_key_fingerprint_size(key_version);
 	memcpy(keyring->primary_fingerprint, primary_key, keyring->fingerprint_size);
 
-	keyring->user_capacity = 2;
-	keyring->users = malloc(sizeof(void *) * keyring->user_capacity);
+	// Add the user information (will also encode the header)
+	status = pgp_keyring_packet_add_user(keyring, user);
 
-	if (keyring->users == NULL)
+	if (status != PGP_SUCCESS)
 	{
 		pgp_keyring_packet_delete(keyring);
-		return PGP_NO_MEMORY;
+		return status;
 	}
-
-	memset(keyring->users, 0, sizeof(void *) * keyring->user_capacity);
-
-	keyring->users[keyring->user_count - 1] = user;
-	keyring->user_count += 1;
-	keyring->user_size = user->info_octets + 4;
-
-	pgp_keyring_packet_encode_header(keyring);
 
 	*packet = keyring;
 
@@ -1738,44 +1732,29 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet)
 {
+	if (packet == NULL)
+	{
+		return;
+	}
+
+	pgp_stream_delete(packet->users, (void (*)(void *))pgp_user_info_delete);
 	free(packet->subkey_fingerprints);
-	free(packet->users);
 
 	free(packet);
 }
 
 pgp_error_t pgp_keyring_packet_add_user(pgp_keyring_packet *packet, pgp_user_info *user)
 {
-	if (packet->user_count == packet->user_capacity)
+	void *result = NULL;
+
+	result = pgp_stream_push_packet(packet->users, user);
+
+	if (result == NULL)
 	{
-		void *temp = NULL;
-
-		if (packet->user_capacity == 0)
-		{
-			packet->user_capacity = 2;
-			packet->users = malloc(sizeof(void *) * packet->user_capacity);
-
-			if (packet->users == NULL)
-			{
-				return PGP_NO_MEMORY;
-			}
-		}
-		else
-		{
-			packet->user_capacity *= 2;
-			temp = realloc(packet->users, packet->user_capacity);
-
-			if (temp == NULL)
-			{
-				return PGP_NO_MEMORY;
-			}
-
-			packet->users = temp;
-		}
+		return PGP_NO_MEMORY;
 	}
 
-	packet->users[packet->user_count - 1] = user;
-	packet->user_count += 1;
+	packet->users = result;
 	packet->user_size = user->info_octets + 4;
 
 	pgp_keyring_packet_encode_header(packet);
@@ -1787,22 +1766,22 @@ void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uin
 {
 	pgp_user_info *user = NULL;
 
-	for (uint16_t i = 0; i < packet->user_count; ++i)
+	for (uint16_t i = 0; i < packet->users->count; ++i)
 	{
-		user = packet->users[i];
+		user = packet->users->packets[i];
 
 		if (user->uid != NULL)
 		{
 			if ((user->uid_octets == uid_size) && (memcmp(user->uid, uid, uid_size) == 0))
 			{
 				// Shift the pointers
-				for (uint16_t j = i; j < packet->user_count - 1; ++j)
+				for (uint16_t j = i; j < packet->users->count - 1; ++j)
 				{
 					packet->users[j] = packet->users[j + 1];
 				}
 
-				packet->users[packet->user_count - 1] = NULL;
-				packet->user_count -= 1;
+				packet->users->packets[packet->users->count - 1] = NULL;
+				packet->users->count -= 1;
 				packet->user_size -= user->info_octets + 4;
 
 				// Delete the user info.
@@ -2042,9 +2021,9 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32
 		size -= 1;
 	}
 
-	for (uint16_t i = 0; i < packet->user_count; ++i)
+	for (uint16_t i = 0; i < packet->users->count; ++i)
 	{
-		user = packet->users[i];
+		user = packet->users->packets[i];
 		uid_size = user->uid_octets;
 
 		// Absolute full uid match
@@ -2109,6 +2088,120 @@ byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32
 	return result;
 }
 
+static pgp_error_t pgp_user_info_read(pgp_user_info **info, buffer_t *buffer)
+{
+	pgp_user_info *user = NULL;
+
+	uint32_t start = buffer->pos + 4;
+	uint32_t info_octets = 0;
+	uint32_t uid_octets = 0;
+	uint32_t server_octets = 0;
+
+	// A 4-octet info octets
+	CHECK_READ(read32_be(buffer, &info_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 4-octet uid octets
+	CHECK_READ(read32_be(buffer, &uid_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 4-octet server octets
+	CHECK_READ(read32_be(buffer, &server_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	user = malloc(sizeof(pgp_user_info) + uid_octets + server_octets);
+
+	if (user == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(user, 0, sizeof(pgp_user_info) + uid_octets + server_octets);
+
+	*info = user;
+
+	user->info_octets = info_octets;
+	user->uid_octets = uid_octets;
+	user->server_octets = server_octets;
+
+	// A 1-octet trust
+	CHECK_READ(read8(buffer, &user->trust), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 1-octet features
+	CHECK_READ(read8(buffer, &user->features), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 1-octet flags
+	CHECK_READ(read8(buffer, &user->flags), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 1-octet hash algorithm preferences count
+	CHECK_READ(read8(buffer, &user->hash_algorithm_preferences_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 1-octet cipher algorithm preferences count
+	CHECK_READ(read8(buffer, &user->cipher_algorithm_preferences_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 1-octet compression algorithm preferences count
+	CHECK_READ(read8(buffer, &user->compression_algorithm_preferences_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 1-octet cipher mode preferences count
+	CHECK_READ(read8(buffer, &user->cipher_modes_preferences_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// A 1-octet aead algorithm preferences count (octets)
+	CHECK_READ(read8(buffer, &user->aead_algorithm_preferences_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+
+	// N-octets of uid
+	if (user->uid_octets > 0)
+	{
+		user->uid = PTR_OFFSET(user, sizeof(pgp_user_info));
+		CHECK_READ(readn(buffer, user->uid, user->uid_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+	}
+
+	// N-octets of server
+	if (user->server_octets > 0)
+	{
+		user->server = PTR_OFFSET(user->uid, user->uid_octets);
+		CHECK_READ(readn(buffer, user->server, user->server_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+	}
+
+	// N-octet hash algorithm preferences
+	if (user->hash_algorithm_preferences_octets > 0)
+	{
+		CHECK_READ(readn(buffer, user->hash_algorithm_preferences, user->hash_algorithm_preferences_octets),
+				   PGP_MALFORMED_KEYRING_USER_INFO);
+	}
+
+	// N-octet cipher algorithm preferences
+	if (user->cipher_algorithm_preferences_octets > 0)
+	{
+		CHECK_READ(readn(buffer, user->cipher_algorithm_preferences, user->cipher_algorithm_preferences_octets),
+				   PGP_MALFORMED_KEYRING_USER_INFO);
+	}
+
+	// N-octet compression algorithm preferences
+	if (user->compression_algorithm_preferences_octets > 0)
+	{
+		CHECK_READ(readn(buffer, user->compression_algorithm_preferences, user->compression_algorithm_preferences_octets),
+				   PGP_MALFORMED_KEYRING_PACKET);
+	}
+
+	// N-octet cipher mode preferences
+	if (user->cipher_modes_preferences_octets > 0)
+	{
+		CHECK_READ(readn(buffer, user->cipher_modes_preferences, user->cipher_modes_preferences_octets), PGP_MALFORMED_KEYRING_USER_INFO);
+	}
+
+	// N-octet aead algorithm preferences
+	if (user->aead_algorithm_preferences_octets > 0)
+	{
+		CHECK_READ(readn(buffer, user->aead_algorithm_preferences, user->aead_algorithm_preferences_octets),
+				   PGP_MALFORMED_KEYRING_USER_INFO);
+	}
+
+	// Check validity of the total octet count
+	if (info_octets != buffer->pos - start)
+	{
+		return PGP_MALFORMED_KEYRING_USER_INFO;
+	}
+
+	return PGP_SUCCESS;
+}
+
 static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buffer_t *buffer)
 {
 	//  A 1-octet key version
@@ -2118,15 +2211,6 @@ static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buff
 	if (packet->key_version < PGP_KEY_V2 || packet->key_version > PGP_KEY_V6)
 	{
 		return PGP_INVALID_KEY_VERSION;
-	}
-
-	//  A 1-octet trust level
-	CHECK_READ(read8(buffer, &packet->trust_level), PGP_MALFORMED_KEYRING_PACKET);
-
-	if (packet->trust_level != PGP_TRUST_NEVER && packet->trust_level != PGP_TRUST_MARGINAL && packet->trust_level != PGP_TRUST_FULL &&
-		packet->trust_level != PGP_TRUST_ULTIMATE)
-	{
-		return PGP_INVALID_TRUST_LEVEL;
 	}
 
 	packet->fingerprint_size = pgp_key_fingerprint_size(packet->key_version);
@@ -2159,42 +2243,39 @@ static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buff
 	}
 
 	// A 4-octet uid size
-	CHECK_READ(read32_be(buffer, &packet->uid_size), PGP_MALFORMED_KEYRING_PACKET);
+	CHECK_READ(read32_be(buffer, &packet->user_size), PGP_MALFORMED_KEYRING_PACKET);
 
-	if (packet->uid_size == 0)
+	if (packet->user_size == 0)
 	{
 		return PGP_EMPTY_USER_ID;
 	}
 
-	packet->users = malloc(packet->uid_size);
-
-	if (packet->users == NULL)
+	while (buffer->pos < buffer->size)
 	{
-		return PGP_NO_MEMORY;
-	}
+		pgp_error_t status = 0;
+		pgp_user_info *user = NULL;
+		void *result = NULL;
 
-	packet->user_capacity = packet->uid_size;
+		status = pgp_user_info_read(&user, buffer);
 
-	CHECK_READ(readn(buffer, packet->users, packet->uid_size), PGP_KEYRING_PACKET_INVALID_UID_SIZE);
-
-	// Count the UIDs
-	// Each UID is delimited by a NULL (including the last one).
-	void *start = packet->users;
-	void *end = PTR_OFFSET(packet->users, packet->uid_size);
-	void *ptr = start;
-
-	while (ptr != end)
-	{
-		ptr = memchr(ptr, 0, packet->uid_size - (uint32_t)((uintptr_t)end - (uintptr_t)ptr));
-
-		if (ptr == NULL)
+		if (status != PGP_SUCCESS)
 		{
-			packet->user_count += 1;
-			break;
+			if (user != NULL)
+			{
+				pgp_user_info_delete(user);
+			}
+
+			return status;
 		}
 
-		ptr = PTR_OFFSET(ptr, 1);
-		packet->user_count += 1;
+		result = pgp_stream_push_packet(packet->users, user);
+
+		if (result == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		packet->users = result;
 	}
 
 	return PGP_SUCCESS;
@@ -2266,6 +2347,86 @@ pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, siz
 	return pgp_keyring_packet_read_with_header(packet, &header, data);
 }
 
+static size_t pgp_user_info_write(pgp_user_info *user, void *ptr)
+{
+	byte_t *out = ptr;
+	size_t pos = 0;
+
+	// A 4-octet info octets
+	LOAD_32BE(out + pos, &user->info_octets);
+	pos += 4;
+
+	// A 4-octet uid octets
+	LOAD_32BE(out + pos, &user->uid_octets);
+	pos += 4;
+
+	// A 4-octet server octets
+	LOAD_32BE(out + pos, &user->server_octets);
+	pos += 4;
+
+	// A 1-octet trust
+	LOAD_8(out + pos, &user->trust);
+	pos += 1;
+
+	// A 1-octet features
+	LOAD_8(out + pos, &user->features);
+	pos += 1;
+
+	// A 1-octet flags
+	LOAD_8(out + pos, &user->flags);
+	pos += 1;
+
+	// A 1-octet hash algorithm preferences count
+	LOAD_8(out + pos, &user->hash_algorithm_preferences_octets);
+	pos += 1;
+
+	// A 1-octet cipher algorithm preferences count
+	LOAD_8(out + pos, &user->cipher_algorithm_preferences_octets);
+	pos += 1;
+
+	// A 1-octet compression algorithm preferences count
+	LOAD_8(out + pos, &user->compression_algorithm_preferences_octets);
+	pos += 1;
+
+	// A 1-octet cipher mode preferences count
+	LOAD_8(out + pos, &user->cipher_modes_preferences_octets);
+	pos += 1;
+
+	// A 1-octet aead algorithm preferences count (octets)
+	LOAD_8(out + pos, &user->aead_algorithm_preferences_octets);
+	pos += 1;
+
+	// N-octets of uid
+	memcpy(out + pos, user->uid, user->uid_octets);
+	pos += user->uid_octets;
+
+	// N-octets of server
+	memcpy(out + pos, user->server, user->server_octets);
+	pos += user->server_octets;
+
+	// N-octet hash algorithm preferences
+	memcpy(out + pos, user->hash_algorithm_preferences, user->hash_algorithm_preferences_octets);
+	pos += user->hash_algorithm_preferences_octets;
+
+	// N-octet cipher algorithm preferences
+	memcpy(out + pos, user->cipher_algorithm_preferences, user->cipher_algorithm_preferences_octets);
+	pos += user->cipher_algorithm_preferences_octets;
+
+	// N-octet compression algorithm preferences
+	memcpy(out + pos, user->compression_algorithm_preferences, user->compression_algorithm_preferences_octets);
+	pos += user->compression_algorithm_preferences_octets;
+
+	// N-octet cipher mode preferences
+	memcpy(out + pos, user->cipher_modes_preferences, user->cipher_modes_preferences_octets);
+	pos += user->cipher_modes_preferences_octets;
+
+	// N-octet aead algorithm preferences
+	memcpy(out + pos, user->aead_algorithm_preferences, user->aead_algorithm_preferences_octets);
+	pos += user->aead_algorithm_preferences_octets;
+
+	return pos;
+}
+
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
@@ -2283,10 +2444,6 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	LOAD_8(out + pos, &packet->key_version);
 	pos += 1;
 
-	//  A 1-octet trust level
-	LOAD_8(out + pos, &packet->trust_level);
-	pos += 1;
-
 	// N octets of primary key fingerprint
 	memcpy(out + pos, packet->primary_fingerprint, packet->fingerprint_size);
 	pos += packet->fingerprint_size;
@@ -2300,11 +2457,13 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	pos += packet->subkey_size;
 
 	// A 4-octet uid size
-	LOAD_32BE(out + pos, &packet->uid_size);
+	LOAD_32BE(out + pos, &packet->user_size);
 	pos += 4;
 
-	memcpy(out + pos, packet->users, packet->uid_size);
-	pos += packet->uid_size;
+	for (uint32_t i = 0; i < packet->users->count; ++i)
+	{
+		pos += pgp_user_info_write(packet->users->packets[i], out + pos);
+	}
 
 	return pos;
 }
@@ -2421,9 +2580,9 @@ pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size
 	return PGP_SUCCESS;
 }
 
-void pgp_user_info_delete(pgp_user_info *info)
+void pgp_user_info_delete(pgp_user_info *user)
 {
-	free(info);
+	free(user);
 }
 
 pgp_error_t pgp_user_info_set_hash_preferences(pgp_user_info *user, byte_t count, byte_t preferences[])

@@ -212,10 +212,8 @@ typedef struct _pgp_keyring_packet
 	uint32_t subkey_capacity;
 	void *subkey_fingerprints;
 
-	uint16_t user_count;
-	uint16_t user_capacity;
 	uint32_t user_size;
-	void **users;
+	pgp_stream_t *users;
 
 } pgp_keyring_packet;
 
@@ -223,21 +221,21 @@ typedef struct _pgp_user_info
 {
 	uint32_t info_octets;
 
-	byte_t trust;
-	byte_t features;
-	byte_t flags;
-
 	uint32_t uid_octets;
 	uint32_t server_octets;
 
-	void *uid;
-	void *server;
+	byte_t trust;
+	byte_t features;
+	byte_t flags;
 
 	byte_t hash_algorithm_preferences_octets;
 	byte_t cipher_algorithm_preferences_octets;
 	byte_t compression_algorithm_preferences_octets;
 	byte_t cipher_modes_preferences_octets;
 	byte_t aead_algorithm_preferences_octets;
+
+	void *uid;
+	void *server;
 
 	byte_t hash_algorithm_preferences[16];
 	byte_t cipher_algorithm_preferences[16];
@@ -391,7 +389,7 @@ size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t si
 // User Info
 pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size, void *server, uint32_t server_size, byte_t trust,
 							  byte_t features, byte_t flags);
-void pgp_user_info_delete(pgp_user_info *info);
+void pgp_user_info_delete(pgp_user_info *user);
 
 pgp_error_t pgp_user_info_set_hash_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);
 pgp_error_t pgp_user_info_set_cipher_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);
