@@ -114,7 +114,7 @@ uint32_t spgp_verify(spgp_command *command)
 
 	if (sign->hashed_subpackets != NULL)
 	{
-		for (uint16_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
 		{
 			pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
 			pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;

@@ -1891,7 +1891,7 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	// Hashed subpackets
 	if (packet->hashed_subpackets != NULL)
 	{
-		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
 			pos += pgp_signature_subpacket_write(packet->hashed_subpackets->packets[i], out + pos, size - pos);
 		}
@@ -1913,7 +1913,7 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	// Unhashed subpackets
 	if (packet->unhashed_subpackets != NULL)
 	{
-		for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < packet->unhashed_subpackets->count; ++i)
 		{
 			pos += pgp_signature_subpacket_write(packet->unhashed_subpackets->packets[i], out + pos, size - pos);
 		}
@@ -2856,7 +2856,7 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 		}
 
 		// Hash the subpackets
-		for (uint16_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
 		{
 			pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
 
@@ -2871,7 +2871,7 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 			return;
 		}
 
-		for (uint16_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
 		{
 			uint32_t subpacket_size = 0;
 
@@ -2941,7 +2941,7 @@ static void pgp_compute_literal_hash(hash_ctx *hctx, pgp_literal_packet *literal
 	{
 		pgp_partial_packet *packet = NULL;
 
-		for (uint16_t i = 0; i < literal->partials->count; ++i)
+		for (uint32_t i = 0; i < literal->partials->count; ++i)
 		{
 			packet = literal->partials->packets[i];
 			hash_update(hctx, packet->data, packet->header.body_size);
@@ -2988,7 +2988,7 @@ static void pgp_compute_uat_hash(hash_ctx *hctx, byte_t version, pgp_user_attrib
 		byte_t buffer[8] = {0};
 		uint32_t size = 0;
 
-		for (uint16_t i = 0; i < uat->subpackets->count; ++i)
+		for (uint32_t i = 0; i < uat->subpackets->count; ++i)
 		{
 			header = uat->subpackets->packets[i];
 
@@ -3178,7 +3178,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 		}
 
 		// Hash the subpackets
-		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
 			pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
 
@@ -3193,7 +3193,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 			return 0;
 		}
 
-		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
 			uint32_t subpacket_size = 0;
 

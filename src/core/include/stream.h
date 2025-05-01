@@ -13,13 +13,13 @@
 
 typedef struct _pgp_stream_t
 {
-	uint16_t count;
-	uint16_t capacity;
+	uint32_t count;
+	uint32_t capacity;
 
 	void **packets;
 } pgp_stream_t;
 
-pgp_stream_t *pgp_stream_new(uint16_t capacity);
+pgp_stream_t *pgp_stream_new(uint32_t capacity);
 void pgp_stream_delete(pgp_stream_t *stream, void (*deleter)(void *));
 
 size_t pgp_stream_octets(pgp_stream_t *stream);

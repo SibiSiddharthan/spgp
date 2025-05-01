@@ -228,7 +228,7 @@ uint32_t pgp_subpacket_stream_octets(pgp_stream_t *stream)
 		return 0;
 	}
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
 		count += header->body_size + header->header_size;

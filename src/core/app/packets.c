@@ -31,7 +31,7 @@ uint32_t spgp_list_packets(spgp_command *command)
 
 	if (command->files != NULL)
 	{
-		for (uint16_t i = 0; i < command->files->count; ++i)
+		for (uint32_t i = 0; i < command->files->count; ++i)
 		{
 			stream = spgp_read_pgp_packets(command->files->packets[i], SPGP_STD_INPUT);
 

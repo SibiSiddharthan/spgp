@@ -2916,7 +2916,7 @@ pgp_key_packet *pgp_key_packet_make_definition(pgp_key_packet *key, pgp_signatur
 	// Process hashed subpackets then process the unhashed subpackets.
 	if (sign->hashed_subpackets != NULL)
 	{
-		for (uint16_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
 		{
 			pgp_key_packet_process_signature_subpacket(key, sign->hashed_subpackets->packets[i]);
 		}
@@ -2924,7 +2924,7 @@ pgp_key_packet *pgp_key_packet_make_definition(pgp_key_packet *key, pgp_signatur
 
 	if (sign->unhashed_subpackets != NULL)
 	{
-		for (uint16_t i = 0; i < sign->unhashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
 		{
 			pgp_key_packet_process_signature_subpacket(key, sign->unhashed_subpackets->packets[i]);
 		}

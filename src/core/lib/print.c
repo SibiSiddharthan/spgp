@@ -1864,7 +1864,7 @@ static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_pac
 			pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Hashed Subpackets:\n");
 		}
 
-		for (uint16_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
 			pos +=
 				pgp_signature_subpacket_print(packet->hashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1, options);
@@ -1875,7 +1875,7 @@ static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_pac
 			pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Unhashed Subpackets:\n");
 		}
 
-		for (uint16_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+		for (uint32_t i = 0; i < packet->unhashed_subpackets->count; ++i)
 		{
 			pos += pgp_signature_subpacket_print(packet->unhashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1,
 												 options);
@@ -2205,7 +2205,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
-	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
+	for (uint32_t i = 0; i < packet->subpackets->count; ++i)
 	{
 		pgp_subpacket_header *subpacket_header = packet->subpackets->packets[i];
 
@@ -2526,16 +2526,16 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 		}
 	}
 
-	if (packet->uid_count > 0)
+	if (packet->user_count > 0)
 	{
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "User IDs:\n");
 
-		for (byte_t i = 0; i < packet->uid_count; ++i)
+		for (byte_t i = 0; i < packet->user_count; ++i)
 		{
 			size_t offset = 0;
 
-			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "%s\n", PTR_OFFSET(packet->uids, offset));
-			offset = (uintptr_t)memchr(PTR_OFFSET(packet->uids, offset), 0, packet->uid_size - offset) - (uintptr_t)packet->uids + 1;
+			pos += print_format(2, PTR_OFFSET(str, pos), size - pos, "%s\n", PTR_OFFSET(packet->users, offset));
+			offset = (uintptr_t)memchr(PTR_OFFSET(packet->users, offset), 0, packet->uid_size - offset) - (uintptr_t)packet->users + 1;
 		}
 	}
 

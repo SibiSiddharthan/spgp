@@ -130,7 +130,7 @@ pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_s
 	}
 
 	// Check for recursive compression
-	for (uint16_t i = 0; i < (*stream)->count; ++i)
+	for (uint32_t i = 0; i < (*stream)->count; ++i)
 	{
 		header = (*stream)->packets[i];
 
@@ -1077,7 +1077,7 @@ pgp_error_t pgp_user_attribute_packet_get_image(pgp_user_attribute_packet *packe
 		return PGP_IMAGE_NOT_PRESENT_IN_USER_ATTRIBUTE;
 	}
 
-	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
+	for (uint32_t i = 0; i < packet->subpackets->count; ++i)
 	{
 		subpacket_header = packet->subpackets->packets[i];
 
@@ -1156,7 +1156,7 @@ pgp_error_t pgp_user_attribute_packet_get_uid(pgp_user_attribute_packet *packet,
 		return PGP_ID_NOT_PRESENT_IN_USER_ATTRIBUTE;
 	}
 
-	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
+	for (uint32_t i = 0; i < packet->subpackets->count; ++i)
 	{
 		subpacket_header = packet->subpackets->packets[i];
 
@@ -1333,7 +1333,7 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
 	// Subpackets
-	for (uint16_t i = 0; i < packet->subpackets->count; ++i)
+	for (uint32_t i = 0; i < packet->subpackets->count; ++i)
 	{
 		pos += pgp_user_attribute_subpacket_write(packet->subpackets->packets[i], out + pos, size - pos);
 	}
@@ -1766,7 +1766,7 @@ void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uin
 {
 	pgp_user_info *user = NULL;
 
-	for (uint16_t i = 0; i < packet->users->count; ++i)
+	for (uint32_t i = 0; i < packet->users->count; ++i)
 	{
 		user = packet->users->packets[i];
 
@@ -1775,7 +1775,7 @@ void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uin
 			if ((user->uid_octets == uid_size) && (memcmp(user->uid, uid, uid_size) == 0))
 			{
 				// Shift the pointers
-				for (uint16_t j = i; j < packet->users->count - 1; ++j)
+				for (uint32_t j = i; j < packet->users->count - 1; ++j)
 				{
 					packet->users[j] = packet->users[j + 1];
 				}
@@ -2021,7 +2021,7 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32
 		size -= 1;
 	}
 
-	for (uint16_t i = 0; i < packet->users->count; ++i)
+	for (uint32_t i = 0; i < packet->users->count; ++i)
 	{
 		user = packet->users->packets[i];
 		uid_size = user->uid_octets;

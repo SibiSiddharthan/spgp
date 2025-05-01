@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-pgp_stream_t *pgp_stream_new(uint16_t capacity)
+pgp_stream_t *pgp_stream_new(uint32_t capacity)
 {
 	pgp_stream_t *stream = NULL;
 	void *packets = NULL;
@@ -53,7 +53,7 @@ void pgp_stream_delete(pgp_stream_t *stream, void (*deleter)(void *))
 		goto end;
 	}
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		deleter(stream->packets[i]);
 		stream->packets[i] = NULL;
@@ -69,7 +69,7 @@ size_t pgp_stream_octets(pgp_stream_t *stream)
 	pgp_packet_header *header = NULL;
 	size_t size = 0;
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
 		size += header->body_size + header->header_size;
@@ -191,7 +191,7 @@ static size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, size_t 
 		return 0;
 	}
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
 		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(temp, pos), size - pos);
@@ -214,7 +214,7 @@ static size_t pgp_stream_write_binary(pgp_stream_t *stream, void *buffer, size_t
 	pgp_packet_header *header = NULL;
 	size_t pos = 0;
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
 
@@ -368,7 +368,7 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 {
 	size_t pos = 0;
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		if (options & PGP_PRINT_HEADER_ONLY)
 		{

@@ -21,7 +21,7 @@ static byte_t check_recursive_encryption_container(pgp_stream_t *stream)
 	pgp_packet_header *header = NULL;
 	pgp_packet_type type = 0;
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
 		type = pgp_packet_get_type(header->tag);

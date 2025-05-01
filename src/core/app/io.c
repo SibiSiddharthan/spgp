@@ -353,7 +353,7 @@ size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *
 	size_t size = 0;
 	size_t result = 0;
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		pgp_packet_header *header = stream->packets[i];
 
@@ -368,7 +368,7 @@ size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *
 		exit(1);
 	}
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		result += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, result), size - result);
 	}
@@ -412,7 +412,7 @@ size_t spgp_write_pgp_packets_to_handle(handle_t handle, pgp_stream_t *stream)
 	size_t size = 0;
 	size_t result = 0;
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		pgp_packet_header *header = stream->packets[i];
 
@@ -427,7 +427,7 @@ size_t spgp_write_pgp_packets_to_handle(handle_t handle, pgp_stream_t *stream)
 		exit(1);
 	}
 
-	for (uint16_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		result += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, result), size - result);
 	}
