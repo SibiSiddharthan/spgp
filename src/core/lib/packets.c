@@ -1676,19 +1676,17 @@ static void pgp_keyring_packet_encode_header(pgp_keyring_packet *packet)
 	uint32_t body_size = 0;
 
 	// A 1-octet key version.
-	// A 1-octet trust level.
 	// N octets of primary key fingerprint.
 	// A 4-octet subkey fingerprint size.
 	// N octets of subkey fingerprints.
-	// A 4-octet uid size.
-	// N octets of uid data.
+	// A 4-octet user size.
+	// N octets of user data.
 
-	body_size = 1 + 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->uid_size;
+	body_size = 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->user_size;
 	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING, body_size);
 }
 
-pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t trust_level, byte_t primary_key[32], byte_t *uid,
-								   uint32_t uid_size)
+pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t primary_key[32], pgp_user_info *user)
 {
 	pgp_keyring_packet *keyring = NULL;
 
@@ -1697,15 +1695,9 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 		return PGP_INVALID_KEY_VERSION;
 	}
 
-	if (uid == NULL || uid_size == 0)
+	if (user == NULL)
 	{
 		return PGP_EMPTY_USER_ID;
-	}
-
-	if (trust_level != PGP_TRUST_NEVER && trust_level != PGP_TRUST_MARGINAL && trust_level != PGP_TRUST_FULL &&
-		trust_level != PGP_TRUST_ULTIMATE)
-	{
-		return PGP_INVALID_TRUST_LEVEL;
 	}
 
 	keyring = malloc(sizeof(pgp_keyring_packet));
@@ -1718,24 +1710,24 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 	memset(keyring, 0, sizeof(pgp_keyring_packet));
 
 	keyring->key_version = key_version;
-	keyring->trust_level = trust_level;
 
 	keyring->fingerprint_size = pgp_key_fingerprint_size(key_version);
 	memcpy(keyring->primary_fingerprint, primary_key, keyring->fingerprint_size);
 
-	keyring->uids = malloc(uid_size + 1);
+	keyring->user_capacity = 2;
+	keyring->users = malloc(sizeof(void *) * keyring->user_capacity);
 
-	if (keyring == NULL)
+	if (keyring->users == NULL)
 	{
 		pgp_keyring_packet_delete(keyring);
 		return PGP_NO_MEMORY;
 	}
 
-	memset(keyring->uids, 0, uid_size + 1);
+	memset(keyring->users, 0, sizeof(void *) * keyring->user_capacity);
 
-	memcpy(keyring->uids, uid, uid_size);
-	keyring->uid_count = 1;
-	keyring->uid_size = keyring->uid_capacity = uid_size + 1;
+	keyring->users[keyring->user_count - 1] = user;
+	keyring->user_count += 1;
+	keyring->user_size = user->info_octets + 4;
 
 	pgp_keyring_packet_encode_header(keyring);
 
@@ -1747,69 +1739,78 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet)
 {
 	free(packet->subkey_fingerprints);
-	free(packet->uids);
+	free(packet->users);
 
 	free(packet);
 }
 
-pgp_error_t pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size)
+pgp_error_t pgp_keyring_packet_add_user(pgp_keyring_packet *packet, pgp_user_info *user)
 {
-	if ((packet->uid_capacity - packet->uid_size) < (uid_size + 1))
+	if (packet->user_count == packet->user_capacity)
 	{
 		void *temp = NULL;
 
-		packet->uid_capacity = MAX(packet->uid_capacity * 2, packet->uid_size + uid_size + 1);
-		temp = realloc(packet->uids, packet->uid_capacity);
-
-		if (temp == NULL)
+		if (packet->user_capacity == 0)
 		{
-			return PGP_NO_MEMORY;
+			packet->user_capacity = 2;
+			packet->users = malloc(sizeof(void *) * packet->user_capacity);
+
+			if (packet->users == NULL)
+			{
+				return PGP_NO_MEMORY;
+			}
 		}
+		else
+		{
+			packet->user_capacity *= 2;
+			temp = realloc(packet->users, packet->user_capacity);
 
-		packet->uids = temp;
+			if (temp == NULL)
+			{
+				return PGP_NO_MEMORY;
+			}
 
-		memset(PTR_OFFSET(packet->uids, packet->uid_size), 0, packet->uid_capacity - packet->uid_size);
+			packet->users = temp;
+		}
 	}
 
-	memcpy(PTR_OFFSET(packet->uids, packet->uid_size), uid, uid_size);
-	packet->uid_size += uid_size + 1;
-	packet->uid_count += 1;
+	packet->users[packet->user_count - 1] = user;
+	packet->user_count += 1;
+	packet->user_size = user->info_octets + 4;
 
 	pgp_keyring_packet_encode_header(packet);
 
 	return PGP_SUCCESS;
 }
 
-void pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size)
+void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size)
 {
-	void *start = packet->uids;
-	void *end = PTR_OFFSET(packet->uids, packet->uid_size);
-	void *ptr = start;
+	pgp_user_info *user = NULL;
 
-	while (ptr != end)
+	for (uint16_t i = 0; i < packet->user_count; ++i)
 	{
-		ptr = memchr(ptr, 0, packet->uid_size - (uint32_t)((uintptr_t)end - (uintptr_t)ptr));
+		user = packet->users[i];
 
-		if (ptr == NULL)
+		if (user->uid != NULL)
 		{
-			ptr = PTR_OFFSET(end, -1);
+			if ((user->uid_octets == uid_size) && (memcmp(user->uid, uid, uid_size) == 0))
+			{
+				// Shift the pointers
+				for (uint16_t j = i; j < packet->user_count - 1; ++j)
+				{
+					packet->users[j] = packet->users[j + 1];
+				}
+
+				packet->users[packet->user_count - 1] = NULL;
+				packet->user_count -= 1;
+				packet->user_size -= user->info_octets + 4;
+
+				// Delete the user info.
+				free(user);
+
+				break;
+			}
 		}
-
-		if (memcmp(start, uid, uid_size) == 0)
-		{
-			ptr = PTR_OFFSET(ptr, 1);
-
-			memmove(start, ptr, (uintptr_t)end - (uintptr_t)ptr);
-
-			packet->uid_size -= uid_size + 1;
-			packet->uid_count -= 1;
-
-			memset(PTR_OFFSET(packet->uids, packet->uid_size), 0, packet->uid_capacity - packet->uid_size);
-
-			break;
-		}
-
-		start = ptr;
 	}
 
 	pgp_keyring_packet_encode_header(packet);
@@ -1914,7 +1915,7 @@ static void hex_to_data(void *input, byte_t input_size, byte_t output[PGP_KEY_MA
 	}
 }
 
-static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, void *input, byte_t size,
+static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, void *input, uint32_t size,
 												   byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 	byte_t *in = input;
@@ -2025,14 +2026,14 @@ static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, v
 	return 0;
 }
 
-static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t size, byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
+static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32_t size, byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 
 	byte_t *in = input;
 	byte_t match = 0;
 
-	uint32_t pos = 0;
 	uint32_t uid_size = 0;
+	pgp_user_info *user = NULL;
 
 	if (in[0] == '<' || in[0] == '=' || in[0] == '@')
 	{
@@ -2041,16 +2042,17 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t
 		size -= 1;
 	}
 
-	for (byte_t i = 0; i < packet->uid_count; ++i)
+	for (uint16_t i = 0; i < packet->user_count; ++i)
 	{
-		uid_size = strnlen(PTR_OFFSET(packet->uids, pos), packet->uid_size - pos);
+		user = packet->users[i];
+		uid_size = user->uid_octets;
 
 		// Absolute full uid match
 		if (match == '=')
 		{
 			if (size == uid_size)
 			{
-				if (strncmp((void *)in, PTR_OFFSET(packet->uids, pos), uid_size) == 0)
+				if (strncmp((void *)in, user->uid, uid_size) == 0)
 				{
 					goto copy_primary_fingerprint;
 				}
@@ -2070,14 +2072,9 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, size_t
 		}
 
 		// Partial case insensitive match (TODO case)
-		if (strstr(PTR_OFFSET(packet->uids, pos), (void *)in) != NULL)
+		if (strstr(user->uid, (void *)in) != NULL)
 		{
 			goto copy_primary_fingerprint;
-		}
-
-		if (uid_size < (packet->uid_size - pos))
-		{
-			pos += 1;
 		}
 	}
 
@@ -2088,7 +2085,7 @@ copy_primary_fingerprint:
 	return packet->fingerprint_size;
 }
 
-byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, size_t size, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE])
+byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32_t size, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 	byte_t result = 0;
 	byte_t *in = input;
@@ -2169,21 +2166,21 @@ static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buff
 		return PGP_EMPTY_USER_ID;
 	}
 
-	packet->uids = malloc(packet->uid_size);
+	packet->users = malloc(packet->uid_size);
 
-	if (packet->uids == NULL)
+	if (packet->users == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	packet->uid_capacity = packet->uid_size;
+	packet->user_capacity = packet->uid_size;
 
-	CHECK_READ(readn(buffer, packet->uids, packet->uid_size), PGP_KEYRING_PACKET_INVALID_UID_SIZE);
+	CHECK_READ(readn(buffer, packet->users, packet->uid_size), PGP_KEYRING_PACKET_INVALID_UID_SIZE);
 
 	// Count the UIDs
 	// Each UID is delimited by a NULL (including the last one).
-	void *start = packet->uids;
-	void *end = PTR_OFFSET(packet->uids, packet->uid_size);
+	void *start = packet->users;
+	void *end = PTR_OFFSET(packet->users, packet->uid_size);
 	void *ptr = start;
 
 	while (ptr != end)
@@ -2192,12 +2189,12 @@ static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buff
 
 		if (ptr == NULL)
 		{
-			packet->uid_count += 1;
+			packet->user_count += 1;
 			break;
 		}
 
 		ptr = PTR_OFFSET(ptr, 1);
-		packet->uid_count += 1;
+		packet->user_count += 1;
 	}
 
 	return PGP_SUCCESS;
@@ -2306,7 +2303,7 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	LOAD_32BE(out + pos, &packet->uid_size);
 	pos += 4;
 
-	memcpy(out + pos, packet->uids, packet->uid_size);
+	memcpy(out + pos, packet->users, packet->uid_size);
 	pos += packet->uid_size;
 
 	return pos;

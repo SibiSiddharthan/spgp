@@ -204,38 +204,48 @@ typedef struct _pgp_keyring_packet
 	pgp_packet_header header;
 
 	byte_t key_version;
-	byte_t trust_level;
-
 	byte_t fingerprint_size;
 	byte_t primary_fingerprint[32];
 
-	byte_t subkey_count;
+	uint16_t subkey_count;
 	uint32_t subkey_size;
 	uint32_t subkey_capacity;
 	void *subkey_fingerprints;
 
-	byte_t uid_count;
-	uint32_t uid_size;
-	uint32_t uid_capacity;
-	void *uids;
+	uint16_t user_count;
+	uint16_t user_capacity;
+	uint32_t user_size;
+	void **users;
 
 } pgp_keyring_packet;
 
-typedef struct _user_info
+typedef struct _pgp_user_info
 {
-	byte_t trust;
-	byte_t features;
+	uint32_t info_octets;
 
-	uint16_t uid_octets;
+	byte_t trust;
+	byte_t supported_features;
+	byte_t server_flags;
+
+	uint32_t uid_octets;
+	uint32_t server_octets;
+
+	void *uid;
+	void *server;
+
 	byte_t hash_algorithm_preferences_octets;
 	byte_t cipher_algorithm_preferences_octets;
 	byte_t compression_algorithm_preferences_octets;
 	byte_t cipher_modes_preferences_octets;
 	byte_t aead_algorithm_preferences_octets;
 
-	byte_t data[1];
+	byte_t hash_algorithm_preferences[16];
+	byte_t cipher_algorithm_preferences[16];
+	byte_t compression_algorithm_preferences[4];
+	byte_t cipher_modes_preferences[4];
+	byte_t aead_algorithm_preferences[32][2];
 
-} user_info;
+} pgp_user_info;
 
 #define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : (((T) & 0x80) == 0x80) ? PGP_LEGACY_HEADER : PGP_UNKNOWN_HEADER)
 #define PGP_ERROR(H)                ((H).error != PGP_NO_ERROR)
@@ -358,12 +368,11 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
 
 // Keyring Packet
-pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t trust_level, byte_t primary_key[32], byte_t *uid,
-								   uint32_t uid_size);
+pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t primary_key[32], pgp_user_info *user);
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet);
 
-pgp_error_t pgp_keyring_packet_add_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
-void pgp_keyring_packet_remove_uid(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
+pgp_error_t pgp_keyring_packet_add_user(pgp_keyring_packet *packet, pgp_user_info *user);
+void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
 
 pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
