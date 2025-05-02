@@ -439,6 +439,77 @@ static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, void *str,
 	return pos;
 }
 
+static size_t pgp_cipher_aead_algorithm_pair_print(pgp_symmetric_key_algorithms symmetric_algorithm, pgp_aead_algorithms aead_algorithm,
+												   void *str, size_t size, uint32_t indent)
+{
+	size_t pos = 0;
+
+	pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "AEAD Ciphersuite: ");
+
+	switch (symmetric_algorithm)
+	{
+	case PGP_PLAINTEXT:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Plaintext ");
+		break;
+	case PGP_IDEA:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "IDEA ");
+		break;
+	case PGP_TDES:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "TDES ");
+		break;
+	case PGP_CAST5_128:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "CAST5 ");
+		break;
+	case PGP_BLOWFISH:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Blowfish ");
+		break;
+	case PGP_AES_128:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-128 ");
+		break;
+	case PGP_AES_192:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-192 ");
+		break;
+	case PGP_AES_256:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-256 ");
+		break;
+	case PGP_TWOFISH:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Twofish-256 ");
+		break;
+	case PGP_CAMELLIA_128:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-128 ");
+		break;
+	case PGP_CAMELLIA_192:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-192 ");
+		break;
+	case PGP_CAMELLIA_256:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-256 ");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown ");
+		break;
+	}
+
+	switch (aead_algorithm)
+	{
+	case PGP_AEAD_EAX:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EAX ");
+		break;
+	case PGP_AEAD_OCB:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "OCB ");
+		break;
+	case PGP_AEAD_GCM:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "GCM ");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown ");
+		break;
+	}
+
+	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "(%02hhx %02hhx)\n", symmetric_algorithm, aead_algorithm);
+
+	return pos;
+}
+
 static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, void *str, size_t size, uint32_t indent)
 {
 	size_t pos = 0;
@@ -1569,19 +1640,20 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 			switch (features_subpacket->flags[i])
 			{
 			case PGP_FEATURE_SEIPD_V1:
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: SEIPD-V1 (MDC) Supported (0x01)\n");
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: SEIPD-V1 (MDC) Supported (0x01)\n");
 				break;
 			case PGP_FEATURE_AEAD:
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: AEAD Supported (0x02)\n");
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: AEAD Supported (0x02)\n");
 				break;
 			case PGP_FEATURE_KEY_V5:
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: V5 Keys Supported (0x04)\n");
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: V5 Keys Supported (0x04)\n");
 				break;
 			case PGP_FEATURE_SEIPD_V2:
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: SEIPD-V2 Supported (0x08)\n");
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: SEIPD-V2 Supported (0x08)\n");
 				break;
 			default:
-				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Flag: Unknown (0x%hhx)\n", features_subpacket->flags[i]);
+				pos +=
+					print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: Unknown (0x%hhx)\n", features_subpacket->flags[i]);
 				break;
 			}
 		}
@@ -1652,6 +1724,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 		if (hash_count != 0)
 		{
 			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Attestations:\n");
+
 			for (uint16_t i = 0; i < hash_count; ++i)
 			{
 				pos += print_bytes(indent + 2, "", PTR_OFFSET(str, pos), size - pos, PTR_OFFSET(attestation_subpacket->hash, hash_size * i),
@@ -1674,68 +1747,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 			pgp_symmetric_key_algorithms symmetric_algorithm = preferred_subpacket->preferred_algorithms[i];
 			pgp_aead_algorithms aead_algorithm = preferred_subpacket->preferred_algorithms[i + 1];
 
-			pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "AEAD Ciphersuite: ");
-
-			switch (symmetric_algorithm)
-			{
-			case PGP_PLAINTEXT:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Plaintext ");
-				break;
-			case PGP_IDEA:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "IDEA ");
-				break;
-			case PGP_TDES:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "TDES ");
-				break;
-			case PGP_CAST5_128:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "CAST5 ");
-				break;
-			case PGP_BLOWFISH:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Blowfish ");
-				break;
-			case PGP_AES_128:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-128 ");
-				break;
-			case PGP_AES_192:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-192 ");
-				break;
-			case PGP_AES_256:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "AES-256 ");
-				break;
-			case PGP_TWOFISH:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Twofish-256 ");
-				break;
-			case PGP_CAMELLIA_128:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-128 ");
-				break;
-			case PGP_CAMELLIA_192:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-192 ");
-				break;
-			case PGP_CAMELLIA_256:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Camellia-256 ");
-				break;
-			default:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown ");
-				break;
-			}
-
-			switch (aead_algorithm)
-			{
-			case PGP_AEAD_EAX:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "EAX ");
-				break;
-			case PGP_AEAD_OCB:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "OCB ");
-				break;
-			case PGP_AEAD_GCM:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "GCM ");
-				break;
-			default:
-				pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown ");
-				break;
-			}
-
-			pos += snprintf(PTR_OFFSET(str, pos), size - pos, "(%02hhx %02hhx)\n", symmetric_algorithm, aead_algorithm);
+			pos += pgp_cipher_aead_algorithm_pair_print(symmetric_algorithm, aead_algorithm, PTR_OFFSET(str, pos), size - pos, indent + 1);
 		}
 	}
 	break;
@@ -2510,6 +2522,28 @@ static size_t pgp_user_info_print(pgp_user_info *user, void *str, size_t size, u
 	pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "User ID: %.*s\n", user->uid_octets, user->uid);
 	pos += pgp_trust_print(user->trust, PTR_OFFSET(str, pos), size - pos, indent);
 
+	if (user->features != 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Supported Features:\n");
+
+		if (user->features & PGP_FEATURE_MDC)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: SEIPD-V1 (MDC) Supported (0x01)\n");
+		}
+		if (user->features & PGP_FEATURE_AEAD)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: AEAD Supported (0x02)\n");
+		}
+		if (user->features & PGP_FEATURE_KEY_V5)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: V5 Keys Supported (0x04)\n");
+		}
+		if (user->features & PGP_FEATURE_SEIPD_V2)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: SEIPD-V2 Supported (0x08)\n");
+		}
+	}
+
 	if (user->flags & PGP_KEY_SERVER_NO_MODIFY)
 	{
 		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "Key Server Preferences: No Modify (0x80)\n");
@@ -2558,6 +2592,18 @@ static size_t pgp_user_info_print(pgp_user_info *user, void *str, size_t size, u
 		for (byte_t i = 0; i < user->cipher_modes_preferences_octets; ++i)
 		{
 			pos += pgp_aead_algorithm_print(user->cipher_modes_preferences[i], PTR_OFFSET(str, pos), size - pos, indent + 1);
+		}
+	}
+
+	if (user->aead_algorithm_preferences_octets > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(str, pos), size - pos, "AEAD Preferences:\n");
+
+		for (byte_t i = 0; i < user->aead_algorithm_preferences_octets; i += 2)
+		{
+			pos +=
+				pgp_cipher_aead_algorithm_pair_print(user->aead_algorithm_preferences[i / 2][0], user->aead_algorithm_preferences[i / 2][1],
+													 PTR_OFFSET(str, pos), size - pos, indent + 1);
 		}
 	}
 
