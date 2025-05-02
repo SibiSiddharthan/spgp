@@ -2178,19 +2178,39 @@ void pgp_key_flags_subpacket_delete(pgp_key_flags_subpacket *subpacket)
 pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags)
 {
 	pgp_flags_subpacket *subpacket = NULL;
+	byte_t flag[16] = {0};
+	byte_t count = 0;
 
-	// Allocate for 1 byte of flags
-	subpacket = malloc(sizeof(pgp_subpacket_header) + 1);
+	// Each flag octet contains only one set bit
+	if (flags & PGP_FEATURE_MDC)
+	{
+		flag[count++] = PGP_FEATURE_MDC;
+	}
+	if (flags & PGP_FEATURE_AEAD)
+	{
+		flag[count++] = PGP_FEATURE_AEAD;
+	}
+	if (flags & PGP_FEATURE_KEY_V5)
+	{
+		flag[count++] = PGP_FEATURE_KEY_V5;
+	}
+	if (flags & PGP_FEATURE_SEIPD_V2)
+	{
+		flag[count++] = PGP_FEATURE_SEIPD_V2;
+	}
+
+	// Allocate for N bytes of flags
+	subpacket = malloc(sizeof(pgp_subpacket_header) + count);
 
 	if (subpacket == NULL)
 	{
 		return NULL;
 	}
 
-	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
+	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
 
-	subpacket->flags[0] = flags & PGP_FEATURE_FLAG_MASK;
-	subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, 1);
+	memcpy(subpacket->flags, flag, count);
+	subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, count);
 
 	return subpacket;
 }
@@ -3742,7 +3762,7 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 		return PGP_NO_MEMORY;
 	}
 
-	pgp_signature_packet_hashed_subpacket_add(packet, flags_subpacket);
+	pgp_signature_packet_hashed_subpacket_add(sign, flags_subpacket);
 
 	error = pgp_setup_preferences(sign, info);
 
