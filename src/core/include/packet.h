@@ -245,6 +245,8 @@ typedef struct _pgp_user_info
 
 } pgp_user_info;
 
+typedef struct _pgp_signature_packet pgp_signature_packet;
+
 #define PGP_PACKET_HEADER_FORMAT(T) (((T) & 0xC0) == 0xC0 ? PGP_HEADER : (((T) & 0x80) == 0x80) ? PGP_LEGACY_HEADER : PGP_UNKNOWN_HEADER)
 #define PGP_ERROR(H)                ((H).error != PGP_NO_ERROR)
 
@@ -390,6 +392,8 @@ size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t si
 pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size, void *server, uint32_t server_size, byte_t trust,
 							  byte_t features, byte_t flags);
 void pgp_user_info_delete(pgp_user_info *user);
+
+pgp_error_t pgp_user_info_from_certificate(pgp_user_info **info, pgp_user_id_packet *user, pgp_signature_packet *sign);
 
 pgp_error_t pgp_user_info_set_hash_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);
 pgp_error_t pgp_user_info_set_cipher_preferences(pgp_user_info *user, byte_t count, byte_t preferences[]);

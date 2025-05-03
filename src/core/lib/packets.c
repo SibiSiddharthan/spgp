@@ -2630,6 +2630,191 @@ void pgp_user_info_delete(pgp_user_info *user)
 	free(user);
 }
 
+static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
+{
+	pgp_error_t status = 0;
+	pgp_subpacket_header *header = NULL;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		switch (header->tag & PGP_SUBPACKET_TAG_MASK)
+		{
+		case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+		{
+			pgp_preferred_key_server_subpacket *subpacket = stream->packets[i];
+
+			if (user->server != NULL)
+			{
+				if (subpacket->header.body_size > 0)
+				{
+					user->server_octets = subpacket->header.body_size;
+					user->server = malloc(user->server_octets);
+
+					if (user->server == NULL)
+					{
+						return PGP_NO_MEMORY;
+					}
+
+					memcpy(user->server, subpacket->server, user->server_octets);
+				}
+			}
+		}
+		break;
+		case PGP_FEATURES_SUBPACKET:
+		{
+			pgp_features_subpacket *subpacket = stream->packets[i];
+
+			if (user->features != 0)
+			{
+				for (uint32_t i = 0; i < subpacket->header.body_size; ++i)
+				{
+					user->features |= subpacket->flags[i];
+				}
+			}
+		}
+		break;
+		case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+		{
+			pgp_features_subpacket *subpacket = stream->packets[i];
+
+			if (user->flags != 0)
+			{
+				for (uint32_t i = 0; i < subpacket->header.body_size; ++i)
+				{
+					user->flags |= subpacket->flags[i];
+				}
+			}
+		}
+		break;
+		case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+		{
+			pgp_preferred_symmetric_ciphers_subpacket *subpacket = stream->packets[i];
+
+			if (user->cipher_algorithm_preferences_octets != 0)
+			{
+				status = pgp_user_info_set_cipher_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
+
+				if (status != PGP_SUCCESS)
+				{
+					return status;
+				}
+			}
+		}
+		break;
+		case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+		{
+			pgp_preferred_hash_algorithms_subpacket *subpacket = stream->packets[i];
+
+			if (user->cipher_algorithm_preferences_octets != 0)
+			{
+				status = pgp_user_info_set_hash_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
+
+				if (status != PGP_SUCCESS)
+				{
+					return status;
+				}
+			}
+		}
+		break;
+		case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+		{
+			pgp_preferred_compression_algorithms_subpacket *subpacket = stream->packets[i];
+
+			if (user->cipher_algorithm_preferences_octets != 0)
+			{
+				status = pgp_user_info_set_compression_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
+
+				if (status != PGP_SUCCESS)
+				{
+					return status;
+				}
+			}
+		}
+		break;
+		case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
+		{
+			pgp_preferred_encryption_modes_subpacket *subpacket = stream->packets[i];
+
+			if (user->cipher_algorithm_preferences_octets != 0)
+			{
+				status = pgp_user_info_set_mode_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
+
+				if (status != PGP_SUCCESS)
+				{
+					return status;
+				}
+			}
+		}
+		break;
+		case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+		{
+			pgp_preferred_aead_ciphersuites_subpacket *subpacket = stream->packets[i];
+
+			if (user->cipher_algorithm_preferences_octets != 0)
+			{
+				status = pgp_user_info_set_aead_preferences(user, subpacket->header.body_size / 2, (void *)subpacket->preferred_algorithms);
+
+				if (status != PGP_SUCCESS)
+				{
+					return status;
+				}
+			}
+		}
+		break;
+		}
+	}
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_user_info_from_certificate(pgp_user_info **info, pgp_user_id_packet *user, pgp_signature_packet *sign)
+{
+	pgp_error_t status = 0;
+	pgp_user_info *uinfo = NULL;
+
+	void *uid = NULL;
+	uint32_t uid_octets = 0;
+
+	// Set uid fields first
+	uid = &user->user_data;
+	uid_octets = (uint32_t)user->header.body_size;
+
+	if (uid_octets == 0)
+	{
+		return PGP_EMPTY_USER_ID;
+	}
+
+	status = pgp_user_info_new(&uinfo, uid, uid_octets, NULL, 0, 0, 0, 0);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Prefer data in hashed subpackets to unhashed ones
+	status = pgp_user_info_fill(uinfo, sign->hashed_subpackets);
+
+	if (status != PGP_SUCCESS)
+	{
+		pgp_user_info_delete(uinfo);
+		return status;
+	}
+
+	status = pgp_user_info_fill(uinfo, sign->unhashed_subpackets);
+
+	if (status != PGP_SUCCESS)
+	{
+		pgp_user_info_delete(uinfo);
+		return status;
+	}
+
+	*info = uinfo;
+
+	return PGP_SUCCESS;
+}
+
 pgp_error_t pgp_user_info_set_hash_preferences(pgp_user_info *user, byte_t count, byte_t preferences[])
 {
 	for (byte_t i = 0; i < count; ++i)
