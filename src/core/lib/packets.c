@@ -2106,20 +2106,46 @@ static pgp_error_t pgp_user_info_read(pgp_user_info **info, buffer_t *buffer)
 	// A 4-octet server octets
 	CHECK_READ(read32_be(buffer, &server_octets), PGP_MALFORMED_KEYRING_USER_INFO);
 
-	user = malloc(sizeof(pgp_user_info) + uid_octets + server_octets);
+	user = malloc(sizeof(pgp_user_info));
 
 	if (user == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	memset(user, 0, sizeof(pgp_user_info) + uid_octets + server_octets);
-
-	*info = user;
+	memset(user, 0, sizeof(pgp_user_info));
 
 	user->info_octets = info_octets;
 	user->uid_octets = uid_octets;
 	user->server_octets = server_octets;
+
+	if (user->uid_octets > 0)
+	{
+		user->uid = malloc(user->uid_octets);
+
+		if (user->uid == NULL)
+		{
+			pgp_user_info_delete(user);
+			return PGP_NO_MEMORY;
+		}
+
+		memset(user->uid, 0, user->uid_octets);
+	}
+
+	if (user->server_octets > 0)
+	{
+		user->server = malloc(user->server_octets);
+
+		if (user->server == NULL)
+		{
+			pgp_user_info_delete(user);
+			return PGP_NO_MEMORY;
+		}
+
+		memset(user->server, 0, user->server_octets);
+	}
+
+	*info = user;
 
 	// A 1-octet trust
 	CHECK_READ(read8(buffer, &user->trust), PGP_MALFORMED_KEYRING_USER_INFO);
@@ -2148,14 +2174,12 @@ static pgp_error_t pgp_user_info_read(pgp_user_info **info, buffer_t *buffer)
 	// N-octets of uid
 	if (user->uid_octets > 0)
 	{
-		user->uid = PTR_OFFSET(user, sizeof(pgp_user_info));
 		CHECK_READ(readn(buffer, user->uid, user->uid_octets), PGP_MALFORMED_KEYRING_USER_INFO);
 	}
 
 	// N-octets of server
 	if (user->server_octets > 0)
 	{
-		user->server = PTR_OFFSET(user->uid, user->uid_octets);
 		CHECK_READ(readn(buffer, user->server, user->server_octets), PGP_MALFORMED_KEYRING_USER_INFO);
 	}
 
@@ -2549,27 +2573,41 @@ pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size
 		return PGP_INVALID_TRUST_LEVEL;
 	}
 
-	user = malloc(sizeof(pgp_user_info) + uid_size + server_size);
+	user = malloc(sizeof(pgp_user_info));
 
 	if (user == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	memset(user, 0, sizeof(pgp_user_info) + uid_size + server_size);
+	memset(user, 0, sizeof(pgp_user_info));
 
 	user->trust = trust;
 	user->features = features & PGP_FEATURE_FLAG_MASK;
 	user->flags = flags & PGP_KEY_SERVER_FLAGS_MASK;
 
 	user->uid_octets = uid_size;
-	user->uid = PTR_OFFSET(user, sizeof(pgp_user_info));
+	user->uid = malloc(user->uid_octets);
+
+	if (user->uid == NULL)
+	{
+		pgp_user_info_delete(user);
+		return PGP_NO_MEMORY;
+	}
+
 	memcpy(user->uid, uid, uid_size);
 
 	if (server != NULL && server_size != 0)
 	{
 		user->server_octets = server_size;
-		user->server = PTR_OFFSET(user->uid, uid_size);
+		user->server = malloc(user->server_octets);
+
+		if (user->server == NULL)
+		{
+			pgp_user_info_delete(user);
+			return PGP_NO_MEMORY;
+		}
+
 		memcpy(user->server, server, server_size);
 	}
 
@@ -2582,6 +2620,13 @@ pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size
 
 void pgp_user_info_delete(pgp_user_info *user)
 {
+	if (user == NULL)
+	{
+		return;
+	}
+
+	free(user->uid);
+	free(user->server);
 	free(user);
 }
 
