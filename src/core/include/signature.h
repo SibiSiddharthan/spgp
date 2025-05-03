@@ -333,6 +333,24 @@ typedef struct _pgp_ed448_signature
 	byte_t sig[114];
 } pgp_ed448_signature;
 
+typedef struct _pgp_sign_info
+{
+	uint32_t creation_time;
+	uint32_t expiry_seconds;
+
+	byte_t non_exportable;
+	byte_t non_revocable;
+
+	uint32_t signer_size;
+	uint32_t policy_size;
+	void *signer;
+	void *policy;
+
+	pgp_stream_t *recipients;
+	pgp_stream_t *notation;
+
+} pgp_sign_info;
+
 #define PGP_SIGNATURE_FLAG_DETACHED  0x1
 #define PGP_SIGNATURE_FLAG_CLEARTEXT 0x2
 
@@ -441,6 +459,17 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
 pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 
+pgp_error_t pgp_sign_info_new(pgp_sign_info **info, uint32_t creation_time, uint32_t expiry_seconds, byte_t non_exportable,
+							  byte_t non_revocable);
+void pgp_sign_info_delete(pgp_sign_info *sign);
+
+void pgp_sign_info_set_policy_url(pgp_sign_info *sign, byte_t *policy, uint32_t size);
+void pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t size);
+
+pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size);
+pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void *name, uint16_t name_size, void *value,
+									   uint16_t value_size);
+
 pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm, void *salt,
 									  byte_t size, void *data);
 pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
@@ -450,8 +479,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
 
 pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_user_info *info,
-											   void *user);
+											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_user_info *info, void *user);
 pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
 
 pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t type,

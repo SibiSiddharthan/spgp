@@ -2769,6 +2769,104 @@ pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_
 	return packet;
 }
 
+pgp_error_t pgp_sign_info_new(pgp_sign_info **info, uint32_t creation_time, uint32_t expiry_seconds, byte_t non_exportable,
+							  byte_t non_revocable)
+{
+	pgp_sign_info *sign = NULL;
+
+	sign = malloc(sizeof(pgp_sign_info));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_sign_info));
+
+	sign->creation_time = creation_time;
+	sign->expiry_seconds = expiry_seconds;
+	sign->non_exportable = non_exportable;
+	sign->non_revocable = non_revocable;
+
+	*info = sign;
+
+	return PGP_SUCCESS;
+}
+
+void pgp_sign_info_delete(pgp_sign_info *sign)
+{
+	if (sign == NULL)
+	{
+		return;
+	}
+
+	pgp_stream_delete(sign->recipients, (void (*)(void *))pgp_recipient_fingerprint_subpacket_delete);
+	pgp_stream_delete(sign->notation, (void (*)(void *))pgp_notation_data_subpacket_delete);
+
+	free(sign);
+}
+
+void pgp_sign_info_set_policy_url(pgp_sign_info *sign, byte_t *policy, uint32_t size)
+{
+	sign->policy = policy;
+	sign->policy_size = size;
+}
+
+void pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t size)
+{
+	sign->signer = signer;
+	sign->signer_size = size;
+}
+
+pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size)
+{
+	void *result = NULL;
+	pgp_recipient_fingerprint_subpacket *subpacket = NULL;
+
+	subpacket = pgp_recipient_fingerprint_subpacket_new(key_version, fingerprint, size);
+
+	if (subpacket == NULL)
+	{
+		return PGP_INVALID_PARAMETER;
+	}
+
+	result = pgp_stream_push_packet(sign->recipients, subpacket);
+
+	if (result == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	sign->recipients = result;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void *name, uint16_t name_size, void *value,
+									   uint16_t value_size)
+{
+	void *result = NULL;
+	pgp_notation_data_subpacket *subpacket = NULL;
+
+	subpacket = pgp_notation_data_subpacket_new(flags, name, name_size, value, value_size);
+
+	if (subpacket == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = pgp_stream_push_packet(sign->notation, subpacket);
+
+	if (result == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	sign->notation = result;
+
+	return PGP_SUCCESS;
+}
+
 static void pgp_hash_signature_material(hash_ctx *hctx, pgp_signature_packet *sign)
 {
 	switch (sign->public_key_algorithm_id)
