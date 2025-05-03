@@ -485,8 +485,8 @@ pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **pa
 													   pgp_user_info *uinfo, void *user);
 pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
 
-pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp);
-pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
+pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey,
+												  pgp_sign_info *sinfo);
+pgp_error_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
 
 #endif
