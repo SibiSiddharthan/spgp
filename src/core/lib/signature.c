@@ -2584,7 +2584,7 @@ void pgp_policy_uri_subpacket_delete(pgp_policy_uri_subpacket *subpacket)
 	free(subpacket);
 }
 
-pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacke_newt(void *uid, byte_t size)
+pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacket_new(void *uid, byte_t size)
 {
 	pgp_string_subpacket *subpacket = NULL;
 
@@ -2733,41 +2733,59 @@ void pgp_signature_target_subpacket_delete(pgp_signature_target_subpacket *subpa
 	free(subpacket);
 }
 
-pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
+pgp_error_t pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
 {
 	void *result = NULL;
 	pgp_subpacket_header *header = subpacket;
+
+	if (subpacket == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
 
 	result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
 
 	if (result == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	packet->hashed_subpackets = result;
 	packet->hashed_octets += header->header_size + header->body_size;
 
-	return packet;
+	return PGP_SUCCESS;
 }
 
-pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
+pgp_error_t pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket)
 {
 	void *result = NULL;
 	pgp_subpacket_header *header = subpacket;
+
+	if (subpacket == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
 
 	result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
 
 	if (result == NULL)
 	{
-		return NULL;
+		return PGP_NO_MEMORY;
 	}
 
 	packet->unhashed_subpackets = result;
 	packet->unhashed_octets += header->header_size + header->body_size;
 
-	return packet;
+	return PGP_SUCCESS;
 }
+
+#define CHECK_SUBPACKET_ADD(EXPR)  \
+	{                              \
+		if ((EXPR) != PGP_SUCCESS) \
+		{                          \
+			return PGP_NO_MEMORY;  \
+		}                          \
+	}
 
 pgp_error_t pgp_sign_info_new(pgp_sign_info **info, uint32_t creation_time, uint32_t expiry_seconds, byte_t non_exportable,
 							  byte_t non_revocable)
@@ -3384,43 +3402,91 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 	return hctx->hash_size;
 }
 
-static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_key_packet *key, uint32_t timestamp)
+static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *info)
 {
-	pgp_timestamp_subpacket *timestamp_subpacket = NULL;
-	pgp_key_fingerprint_subpacket *fingerprint_subpacket = NULL;
-	pgp_issuer_key_id_subpacket *key_id_subpacket = NULL;
-
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
 
 	// Calculate issuer key fingerprint
 	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-	fingerprint_subpacket = pgp_issuer_fingerprint_subpacket_new(key->version, fingerprint, fingerprint_size);
 
-	timestamp_subpacket = pgp_signature_creation_time_subpacket_new(timestamp);
-
-	if (timestamp_subpacket == NULL || fingerprint_subpacket == NULL)
+	// Add only the signature_creation_time and issuer_fingerprint subpackets
+	if (info == NULL)
 	{
-		free(timestamp_subpacket);
-		free(fingerprint_subpacket);
-
-		return PGP_NO_MEMORY;
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_signature_creation_time_subpacket_new(time(NULL))));
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+			packet, pgp_issuer_fingerprint_subpacket_new(key->version, fingerprint, fingerprint_size)));
 	}
+	else
+	{
+		uint32_t creation_time = info->creation_time != 0 ? info->creation_time : time(NULL);
 
-	pgp_signature_packet_hashed_subpacket_add(packet, timestamp_subpacket);
-	pgp_signature_packet_hashed_subpacket_add(packet, fingerprint_subpacket);
+		// Signature Creation Time
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_signature_creation_time_subpacket_new(creation_time)));
+
+		// Signature Expiry Time
+		if (info->expiry_seconds > 0)
+		{
+			CHECK_SUBPACKET_ADD(
+				pgp_signature_packet_hashed_subpacket_add(packet, pgp_signature_expiry_time_subpacket_new(info->expiry_seconds)));
+		}
+
+		// Signature Exportable Flag
+		if (info->non_exportable)
+		{
+			CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_exportable_subpacket_new(0)));
+		}
+
+		// Signature Revocable Flag
+		if (info->non_revocable)
+		{
+			CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_revocable_subpacket_new(0)));
+		}
+
+		// Signature Issuer Fingerprint
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+			packet, pgp_issuer_fingerprint_subpacket_new(key->version, fingerprint, fingerprint_size)));
+
+		// Signature Issuer UID
+		if (info->signer != NULL && info->signer_size != 0)
+		{
+			CHECK_SUBPACKET_ADD(
+				pgp_signature_packet_hashed_subpacket_add(packet, pgp_signer_user_id_subpacket_new(info->signer, info->signer_size)));
+		}
+
+		// Signature Policy
+		if (info->policy != NULL && info->policy_size != 0)
+		{
+			CHECK_SUBPACKET_ADD(
+				pgp_signature_packet_hashed_subpacket_add(packet, pgp_policy_uri_subpacket_new(info->policy, info->policy_size)));
+		}
+
+		// Add Intended Recipients
+		if (info->recipients != NULL && info->recipients->count > 0)
+		{
+			for (uint32_t i = 0; i < info->recipients->count; ++i)
+			{
+				CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, info->recipients->packets[i]));
+			}
+		}
+
+		// Add Notation Data
+		if (info->notation != NULL && info->notation->count > 0)
+		{
+			for (uint32_t i = 0; i < info->notation->count; ++i)
+			{
+				CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, info->notation->packets[i]));
+			}
+		}
+	}
 
 	// Only for V4 signatures append the key id as an unhashed subpacket
 	if (packet->version == PGP_SIGNATURE_V4)
 	{
-		key_id_subpacket = pgp_issuer_key_id_subpacket_new(PTR_OFFSET(fingerprint, fingerprint_size - PGP_KEY_ID_SIZE));
+		byte_t key_id[PGP_KEY_ID_SIZE] = {0};
 
-		if (key_id_subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_unhashed_subpacket_add(packet, key_id_subpacket);
+		pgp_key_id_from_fingerprint(key->version, key_id, fingerprint, fingerprint_size);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_unhashed_subpacket_add(packet, pgp_issuer_key_id_subpacket_new(key_id)));
 	}
 
 	return PGP_SUCCESS;
@@ -3479,17 +3545,6 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 		{
 			memcpy(packet->salt, salt, size);
 			packet->salt_size = size;
-		}
-	}
-
-	if (packet->hashed_subpackets == NULL)
-	{
-		error = pgp_signature_packet_sign_setup(packet, key, time(NULL));
-
-		if (error != PGP_SUCCESS)
-		{
-			pgp_signature_packet_delete(packet);
-			return error;
 		}
 	}
 
@@ -3622,7 +3677,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 	sign->version = key->version;
 	sign->type = type;
 
-	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
+	error = pgp_signature_packet_sign_setup(sign, key, NULL);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -3695,103 +3750,47 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, pgp_user_
 	// Add preferences
 	if (info->cipher_algorithm_preferences_octets > 0)
 	{
-		pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-		subpacket =
-			pgp_preferred_symmetric_ciphers_subpacket_new(info->cipher_algorithm_preferences_octets, info->cipher_algorithm_preferences);
-
-		if (subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+			packet,
+			pgp_preferred_symmetric_ciphers_subpacket_new(info->cipher_algorithm_preferences_octets, info->cipher_algorithm_preferences)));
 	}
 
 	if (info->hash_algorithm_preferences_octets > 0)
 	{
-		pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-		subpacket = pgp_preferred_hash_algorithms_subpacket_new(info->hash_algorithm_preferences_octets, info->hash_algorithm_preferences);
-
-		if (subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+			packet,
+			pgp_preferred_hash_algorithms_subpacket_new(info->hash_algorithm_preferences_octets, info->hash_algorithm_preferences)));
 	}
 
 	if (info->compression_algorithm_preferences_octets > 0)
 	{
-		pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-		subpacket = pgp_preferred_compression_algorithms_subpacket_new(info->compression_algorithm_preferences_octets,
-																	   info->compression_algorithm_preferences);
-
-		if (subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+			packet, pgp_preferred_compression_algorithms_subpacket_new(info->compression_algorithm_preferences_octets,
+																	   info->compression_algorithm_preferences)));
 	}
 
 	if (info->cipher_modes_preferences_octets > 0)
 	{
-		pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-		subpacket = pgp_preferred_encryption_modes_subpacket_new(info->cipher_modes_preferences_octets, info->cipher_modes_preferences);
-
-		if (subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+			packet, pgp_preferred_encryption_modes_subpacket_new(info->cipher_modes_preferences_octets, info->cipher_modes_preferences)));
 	}
 
 	if (info->aead_algorithm_preferences_octets > 0)
 	{
-		pgp_preferred_algorithms_subpacket *subpacket = NULL;
-
-		subpacket =
-			pgp_preferred_aead_ciphersuites_subpacket_new(info->aead_algorithm_preferences_octets, info->aead_algorithm_preferences);
-
-		if (subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, subpacket);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+			packet,
+			pgp_preferred_aead_ciphersuites_subpacket_new(info->aead_algorithm_preferences_octets, info->aead_algorithm_preferences)));
 	}
 
 	// Add flags and features
-	pgp_features_subpacket *features_subpacket = NULL;
-	pgp_key_server_preferences_subpacket *server_subpacket = NULL;
-
 	if (info->features != 0)
 	{
-		features_subpacket = pgp_features_subpacket_new(info->features);
-
-		if (features_subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, features_subpacket);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_features_subpacket_new(info->features)));
 	}
 
 	if (info->flags != 0)
 	{
-		server_subpacket = pgp_key_server_preferences_subpacket_new(info->flags);
-
-		if (server_subpacket == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(packet, server_subpacket);
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_key_server_preferences_subpacket_new(info->flags)));
 	}
 
 	return PGP_SUCCESS;
@@ -3829,7 +3828,7 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 	sign->version = key->version;
 	sign->type = type;
 
-	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
+	error = pgp_signature_packet_sign_setup(sign, key, NULL);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -3924,7 +3923,7 @@ pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pg
 	sign->version = key->version;
 	sign->type = type;
 
-	error = pgp_signature_packet_sign_setup(sign, key, timestamp);
+	error = pgp_signature_packet_sign_setup(sign, key, NULL);
 
 	if (error != PGP_SUCCESS)
 	{

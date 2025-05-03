@@ -437,7 +437,7 @@ void pgp_preferred_key_server_subpacket_delete(pgp_preferred_key_server_subpacke
 pgp_policy_uri_subpacket *pgp_policy_uri_subpacket_new(void *policy, byte_t size);
 void pgp_policy_uri_subpacket_delete(pgp_policy_uri_subpacket *subpacket);
 
-pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacke_newt(void *uid, byte_t size);
+pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacket_new(void *uid, byte_t size);
 void pgp_signer_user_id_subpacket_delete(pgp_signer_user_id_subpacket *subpacket);
 
 pgp_trust_alias_subpacket *pgp_trust_alias_subpacket_new(void *alias, byte_t size);
@@ -456,8 +456,8 @@ void pgp_signature_target_subpacket_delete(pgp_signature_target_subpacket *subpa
 
 void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
 
-pgp_signature_packet *pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
-pgp_signature_packet *pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
+pgp_error_t pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
+pgp_error_t pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 
 pgp_error_t pgp_sign_info_new(pgp_sign_info **info, uint32_t creation_time, uint32_t expiry_seconds, byte_t non_exportable,
 							  byte_t non_revocable);
