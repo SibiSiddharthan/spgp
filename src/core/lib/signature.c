@@ -3757,7 +3757,23 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 	return pgp_signature_packet_verify(sign, key, literal);
 }
 
-static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, pgp_user_info *info)
+static pgp_error_t pgp_setup_key_info(pgp_signature_packet *packet, pgp_key_packet *key)
+{
+	// Add key expiration subpacket
+	if (key->key_expiry_seconds > 0)
+	{
+		CHECK_SUBPACKET_ADD(
+			pgp_signature_packet_hashed_subpacket_add(packet, pgp_key_expiration_time_subpacket_new(key->key_expiry_seconds)));
+	}
+
+	// Add key flags
+	CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(
+		packet, pgp_key_flags_subpacket_new(key->capabilities, key->flags & (PGP_KEY_FLAG_TIMESTAMP | PGP_KEY_FLAG_RESTRICTED_ENCRYPT))));
+
+	return PGP_SUCCESS;
+}
+
+static pgp_error_t pgp_setup_user_preferences(pgp_signature_packet *packet, pgp_user_info *info)
 {
 	// Add preferences
 	if (info->cipher_algorithm_preferences_octets > 0)
@@ -3808,13 +3824,11 @@ static pgp_error_t pgp_setup_preferences(pgp_signature_packet *packet, pgp_user_
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_user_info *info, void *user)
+pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo,
+													   pgp_user_info *uinfo, void *user)
 {
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
-	pgp_key_expiration_time_subpacket *expiry_subpacket = NULL;
-	pgp_key_flags_subpacket *flags_subpacket = NULL;
 	pgp_packet_header *header = user;
 
 	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
@@ -3822,8 +3836,8 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	if (type != PGP_GENERIC_CERTIFICATION_SIGNATURE && type != PGP_PERSONA_CERTIFICATION_SIGNATURE &&
-		type != PGP_CASUAL_CERTIFICATION_SIGNATURE && type != PGP_POSITIVE_CERTIFICATION_SIGNATURE)
+	if (sinfo->signature_type != PGP_GENERIC_CERTIFICATION_SIGNATURE && sinfo->signature_type != PGP_PERSONA_CERTIFICATION_SIGNATURE &&
+		sinfo->signature_type != PGP_CASUAL_CERTIFICATION_SIGNATURE && sinfo->signature_type != PGP_POSITIVE_CERTIFICATION_SIGNATURE)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -3838,42 +3852,9 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 	memset(sign, 0, sizeof(pgp_signature_packet));
 
 	sign->version = key->version;
-	sign->type = type;
+	sign->type = sinfo->signature_type;
 
-	error = pgp_signature_packet_sign_setup(sign, key, NULL);
-
-	if (error != PGP_SUCCESS)
-	{
-		pgp_signature_packet_delete(sign);
-		return error;
-	}
-
-	// Add key expiration subpacket
-	if (key->key_expiry_seconds > 0)
-	{
-		expiry_subpacket = pgp_key_expiration_time_subpacket_new(key->key_expiry_seconds);
-
-		if (expiry_subpacket == NULL)
-		{
-			pgp_signature_packet_delete(sign);
-			return PGP_NO_MEMORY;
-		}
-
-		pgp_signature_packet_hashed_subpacket_add(sign, expiry_subpacket);
-	}
-
-	// Add key flags
-	flags_subpacket =
-		pgp_key_flags_subpacket_new(key->capabilities, key->flags & (PGP_KEY_FLAG_TIMESTAMP | PGP_KEY_FLAG_RESTRICTED_ENCRYPT));
-
-	if (flags_subpacket == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	pgp_signature_packet_hashed_subpacket_add(sign, flags_subpacket);
-
-	error = pgp_setup_preferences(sign, info);
+	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -3881,7 +3862,23 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 		return error;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, hash_algorithm, NULL, 0, user);
+	error = pgp_setup_key_info(sign, key);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_setup_user_preferences(sign, uinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, user);
 
 	if (error != PGP_SUCCESS)
 	{
