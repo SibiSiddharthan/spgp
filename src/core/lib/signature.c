@@ -3653,8 +3653,8 @@ pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_pa
 	return PGP_INTERNAL_BUG;
 }
 
-pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type, byte_t flags,
-											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal)
+pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t flags, pgp_sign_info *sinfo,
+											pgp_literal_packet *literal)
 {
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
@@ -3663,12 +3663,12 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 	byte_t filename_size_copy = 0;
 	uint32_t date_copy = 0;
 
-	if (type != PGP_BINARY_SIGNATURE && type != PGP_TEXT_SIGNATURE)
+	if (sinfo->signature_type != PGP_BINARY_SIGNATURE && sinfo->signature_type != PGP_TEXT_SIGNATURE)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	if (type == PGP_TEXT_SIGNATURE)
+	if (sinfo->signature_type == PGP_TEXT_SIGNATURE)
 	{
 		if (literal->format != PGP_LITERAL_DATA_MIME && literal->format != PGP_LITERAL_DATA_TEXT &&
 			literal->format != PGP_LITERAL_DATA_UTF8)
@@ -3687,9 +3687,9 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 	memset(sign, 0, sizeof(pgp_signature_packet));
 
 	sign->version = key->version;
-	sign->type = type;
+	sign->type = sinfo->signature_type;
 
-	error = pgp_signature_packet_sign_setup(sign, key, NULL);
+	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -3720,7 +3720,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		literal->date = 0;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, hash_algorithm, NULL, 0, literal);
+	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, literal);
 
 	// Restore the fields
 	literal->format = format_copy;
