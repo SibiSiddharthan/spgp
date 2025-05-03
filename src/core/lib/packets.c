@@ -2645,7 +2645,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_preferred_key_server_subpacket *subpacket = stream->packets[i];
 
-			if (user->server != NULL)
+			if (user->server == NULL)
 			{
 				if (subpacket->header.body_size > 0)
 				{
@@ -2666,7 +2666,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_features_subpacket *subpacket = stream->packets[i];
 
-			if (user->features != 0)
+			if (user->features == 0)
 			{
 				for (uint32_t i = 0; i < subpacket->header.body_size; ++i)
 				{
@@ -2679,7 +2679,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_features_subpacket *subpacket = stream->packets[i];
 
-			if (user->flags != 0)
+			if (user->flags == 0)
 			{
 				for (uint32_t i = 0; i < subpacket->header.body_size; ++i)
 				{
@@ -2692,7 +2692,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_preferred_symmetric_ciphers_subpacket *subpacket = stream->packets[i];
 
-			if (user->cipher_algorithm_preferences_octets != 0)
+			if (user->cipher_algorithm_preferences_octets == 0)
 			{
 				status = pgp_user_info_set_cipher_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
 
@@ -2707,7 +2707,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_preferred_hash_algorithms_subpacket *subpacket = stream->packets[i];
 
-			if (user->cipher_algorithm_preferences_octets != 0)
+			if (user->cipher_algorithm_preferences_octets == 0)
 			{
 				status = pgp_user_info_set_hash_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
 
@@ -2722,7 +2722,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_preferred_compression_algorithms_subpacket *subpacket = stream->packets[i];
 
-			if (user->cipher_algorithm_preferences_octets != 0)
+			if (user->cipher_algorithm_preferences_octets == 0)
 			{
 				status = pgp_user_info_set_compression_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
 
@@ -2737,7 +2737,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_preferred_encryption_modes_subpacket *subpacket = stream->packets[i];
 
-			if (user->cipher_algorithm_preferences_octets != 0)
+			if (user->cipher_algorithm_preferences_octets == 0)
 			{
 				status = pgp_user_info_set_mode_preferences(user, subpacket->header.body_size, subpacket->preferred_algorithms);
 
@@ -2752,7 +2752,7 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 		{
 			pgp_preferred_aead_ciphersuites_subpacket *subpacket = stream->packets[i];
 
-			if (user->cipher_algorithm_preferences_octets != 0)
+			if (user->cipher_algorithm_preferences_octets == 0)
 			{
 				status = pgp_user_info_set_aead_preferences(user, subpacket->header.body_size / 2, (void *)subpacket->preferred_algorithms);
 
