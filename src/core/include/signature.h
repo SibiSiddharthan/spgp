@@ -335,6 +335,9 @@ typedef struct _pgp_ed448_signature
 
 typedef struct _pgp_sign_info
 {
+	byte_t signature_type;
+	byte_t hash_algorithm;
+
 	uint32_t creation_time;
 	uint32_t expiry_seconds;
 
@@ -459,8 +462,8 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign);
 pgp_error_t pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 pgp_error_t pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *packet, void *subpacket);
 
-pgp_error_t pgp_sign_info_new(pgp_sign_info **info, uint32_t creation_time, uint32_t expiry_seconds, byte_t non_exportable,
-							  byte_t non_revocable);
+pgp_error_t pgp_sign_info_new(pgp_sign_info **info, byte_t signature_type, byte_t hash_algorithm, uint32_t creation_time,
+							  uint32_t expiry_seconds, byte_t non_exportable, byte_t non_revocable);
 void pgp_sign_info_delete(pgp_sign_info *sign);
 
 void pgp_sign_info_set_policy_url(pgp_sign_info *sign, byte_t *policy, uint32_t size);
@@ -478,9 +481,10 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 											pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_literal_packet *literal);
 pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
 
-pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
-											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp, pgp_user_info *info, void *user);
-pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
+pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t type,
+													   pgp_hash_algorithms hash_algorithm, pgp_sign_info *sinfo, pgp_user_info *uinfo,
+													   void *user);
+pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
 
 pgp_error_t pgp_generate_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey, byte_t type,
 											   pgp_hash_algorithms hash_algorithm, uint32_t timestamp);

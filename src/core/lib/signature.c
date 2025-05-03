@@ -2787,10 +2787,20 @@ pgp_error_t pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *pa
 		}                          \
 	}
 
-pgp_error_t pgp_sign_info_new(pgp_sign_info **info, uint32_t creation_time, uint32_t expiry_seconds, byte_t non_exportable,
-							  byte_t non_revocable)
+pgp_error_t pgp_sign_info_new(pgp_sign_info **info, byte_t signature_type, byte_t hash_algorithm, uint32_t creation_time,
+							  uint32_t expiry_seconds, byte_t non_exportable, byte_t non_revocable)
 {
 	pgp_sign_info *sign = NULL;
+
+	if (pgp_signature_type_validate(signature_type) == 0)
+	{
+		return PGP_INVALID_SIGNATURE_TYPE;
+	}
+
+	if (pgp_hash_algorithm_validate(hash_algorithm) == 0)
+	{
+		return PGP_INVALID_HASH_ALGORITHM;
+	}
 
 	sign = malloc(sizeof(pgp_sign_info));
 
@@ -2801,6 +2811,8 @@ pgp_error_t pgp_sign_info_new(pgp_sign_info **info, uint32_t creation_time, uint
 
 	memset(sign, 0, sizeof(pgp_sign_info));
 
+	sign->signature_type = signature_type;
+	sign->hash_algorithm = hash_algorithm;
 	sign->creation_time = creation_time;
 	sign->expiry_seconds = expiry_seconds;
 	sign->non_exportable = non_exportable;
@@ -3882,7 +3894,7 @@ pgp_error_t pgp_generate_certificate_signature(pgp_signature_packet **packet, pg
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_verify_certificate_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user)
+pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user)
 {
 	pgp_packet_header *header = user;
 
