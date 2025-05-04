@@ -369,7 +369,8 @@ pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **p
 size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
 size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
 
-pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type);
+pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type, byte_t public_key_algorithm_id,
+									 byte_t hash_algorithm_id);
 void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
 pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size);
@@ -477,7 +478,7 @@ pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version,
 pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void *name, uint16_t name_size, void *value,
 									   uint16_t value_size);
 
-pgp_error_t pgp_generate_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data);
+pgp_error_t pgp_generate_signature(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data);
 pgp_error_t pgp_verify_signature(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
 
 pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t flags, pgp_sign_info *sinfo,

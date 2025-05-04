@@ -1502,7 +1502,8 @@ static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
 	}
 }
 
-pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type)
+pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type, byte_t public_key_algorithm_id,
+									 byte_t hash_algorithm_id)
 {
 	pgp_signature_packet *sign = NULL;
 
@@ -1516,6 +1517,16 @@ pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t versi
 		return PGP_INVALID_SIGNATURE_TYPE;
 	}
 
+	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
+	{
+		return PGP_INVALID_SIGNATURE_ALGORITHM;
+	}
+
+	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
+	{
+		return PGP_INVALID_HASH_ALGORITHM;
+	}
+
 	sign = malloc(sizeof(pgp_signature_packet));
 
 	if (sign == NULL)
@@ -1527,6 +1538,8 @@ pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t versi
 
 	sign->version = version;
 	sign->type = type;
+	sign->public_key_algorithm_id = public_key_algorithm_id;
+	sign->hash_algorithm_id = hash_algorithm_id;
 
 	*packet = sign;
 
@@ -3427,7 +3440,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 	return hctx->hash_size;
 }
 
-static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *info)
+static pgp_error_t pgp_setup_sign_info(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *info)
 {
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
@@ -3542,7 +3555,7 @@ static pgp_error_t pgp_signature_new(pgp_signature_packet **packet, pgp_key_pack
 		sign->salt_size = sinfo->salt_size;
 	}
 
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_setup_sign_info(sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -3781,27 +3794,23 @@ static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *k
 	return PGP_INTERNAL_BUG;
 }
 
-pgp_error_t pgp_generate_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data)
+pgp_error_t pgp_generate_signature(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data)
 {
 	pgp_error_t error = 0;
-	pgp_signature_packet *sign = NULL;
 
-	error = pgp_signature_new(&sign, key, sinfo);
+	error = pgp_setup_sign_info(packet, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
 		return error;
 	}
 
-	error = pgp_do_sign(sign, key, data);
+	error = pgp_do_sign(packet, key, data);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
-
-	*packet = sign;
 
 	return PGP_SUCCESS;
 }
@@ -4041,6 +4050,55 @@ pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign,
 	return pgp_do_verify(sign, key, user);
 }
 
+static pgp_error_t pgp_generate_primary_key_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey,
+															  pgp_sign_info *sinfo)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = subkey->version;
+	sign->type = PGP_PRIMARY_KEY_BINDING_SIGNATURE;
+	sign->public_key_algorithm_id = subkey->public_key_algorithm_id;
+	sign->hash_algorithm_id = sinfo->hash_algorithm;
+
+	if (sinfo->salt_size > 0)
+	{
+		memcpy(sign->salt, sinfo->salt, sinfo->salt_size);
+		sign->salt_size = sinfo->salt_size;
+	}
+
+	error = pgp_setup_sign_info(sign, key, sinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_do_sign(sign, subkey, key);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	// Change the signature packet to and embedded signature packet.
+	sign->header.tag = PGP_EMBEDDED_SIGNATURE_SUBPACKET;
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
 pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey,
 												  pgp_sign_info *sinfo)
 {
@@ -4072,34 +4130,13 @@ pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet,
 	{
 		pgp_signature_packet *embedded_sign = NULL;
 
-		error = pgp_signature_packet_new(&embedded_sign, key->version, PGP_PRIMARY_KEY_BINDING_SIGNATURE);
+		error = pgp_generate_primary_key_binding_signature(&embedded_sign, key, subkey, sinfo);
 
 		if (error != PGP_SUCCESS)
 		{
 			pgp_signature_packet_delete(sign);
 			return error;
 		}
-
-		error = pgp_signature_packet_sign_setup(embedded_sign, subkey, sinfo);
-
-		if (error != PGP_SUCCESS)
-		{
-			pgp_signature_packet_delete(sign);
-			pgp_signature_packet_delete(embedded_sign);
-			return error;
-		}
-
-		error = pgp_do_sign(sign, subkey, key);
-
-		if (error != PGP_SUCCESS)
-		{
-			pgp_signature_packet_delete(sign);
-			pgp_signature_packet_delete(embedded_sign);
-			return error;
-		}
-
-		// Change the signature packet to and embedded signature packet.
-		embedded_sign->header.tag = PGP_EMBEDDED_SIGNATURE_SUBPACKET;
 
 		// Add this to the unhashed subpackets
 		error = pgp_signature_packet_unhashed_subpacket_add(sign, embedded_sign);
