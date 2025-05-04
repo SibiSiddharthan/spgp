@@ -3825,10 +3825,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 {
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
-
-	byte_t format_copy = 0;
-	byte_t filename_size_copy = 0;
-	uint32_t date_copy = 0;
+	pgp_literal_packet literal_copy = {0};
 
 	if (sinfo->signature_type != PGP_BINARY_SIGNATURE && sinfo->signature_type != PGP_TEXT_SIGNATURE)
 	{
@@ -3844,6 +3841,32 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		}
 	}
 
+	literal_copy.data = literal->data;
+	literal_copy.data_size = literal->data_size;
+	literal_copy.partials = literal->partials;
+
+	switch (flags)
+	{
+	case PGP_SIGNATURE_FLAG_DETACHED:
+		// 6 octets of zero
+		literal_copy.format = 0;
+		literal_copy.filename_size = 0;
+		literal_copy.date = 0;
+		break;
+	case PGP_SIGNATURE_FLAG_CLEARTEXT:
+		// 1 octet of 't'
+		// 5 octets of zero
+		literal_copy.format = PGP_LITERAL_DATA_TEXT;
+		literal_copy.filename_size = 0;
+		literal_copy.date = 0;
+	default:
+		literal_copy.format = literal->format;
+		literal_copy.filename_size = literal->filename_size;
+		literal_copy.filename = literal->filename;
+		literal_copy.date = literal->date;
+		break;
+	}
+
 	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
@@ -3851,35 +3874,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		return error;
 	}
 
-	// If these flags are set modify the literal packet
-	// Make a copy of the literal fields
-	format_copy = literal->format;
-	filename_size_copy = literal->filename_size;
-	date_copy = literal->date;
-
-	if (flags == PGP_SIGNATURE_FLAG_DETACHED)
-	{
-		// 6 octets of zero
-		literal->format = 0;
-		literal->filename_size = 0;
-		literal->date = 0;
-	}
-
-	if (flags == PGP_SIGNATURE_FLAG_CLEARTEXT)
-	{
-		// 1 octet of 't'
-		// 5 octets of zero
-		literal->format = PGP_LITERAL_DATA_TEXT;
-		literal->filename_size = 0;
-		literal->date = 0;
-	}
-
-	error = pgp_do_sign(sign, key, literal);
-
-	// Restore the fields
-	literal->format = format_copy;
-	literal->filename_size = filename_size_copy;
-	literal->date = date_copy;
+	error = pgp_do_sign(sign, key, &literal_copy);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -4231,6 +4226,21 @@ pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp
 	if (sinfo->signature_type != PGP_DIRECT_KEY_SIGNATURE)
 	{
 		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (revocation_class != PGP_REVOCATION_CLASS_SENSITIVE && revocation_class != PGP_REVOCATION_CLASS_NORMAL)
+	{
+		return PGP_INVALID_REVOCATION_CLASS;
+	}
+
+	if (pgp_signature_algorithm_validate(algorithm_id) == 0)
+	{
+		return PGP_INVALID_SIGNATURE_ALGORITHM;
+	}
+
+	if (fingerprint_size != PGP_KEY_V4_FINGERPRINT_SIZE && fingerprint_size != PGP_KEY_V6_FINGERPRINT_SIZE)
+	{
+		return PGP_INVALID_KEY_FINGERPRINT_SIZE;
 	}
 
 	error = pgp_signature_new(&sign, key, sinfo);
