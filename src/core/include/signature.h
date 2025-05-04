@@ -498,4 +498,8 @@ pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_
 										 uint16_t alias_size);
 pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
 
+pgp_error_t pgp_generate_confirmation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo,
+												pgp_signature_packet *signature);
+pgp_error_t pgp_verify_confirmation_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_signature_packet *signature);
+
 #endif

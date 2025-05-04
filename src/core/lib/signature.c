@@ -4229,3 +4229,127 @@ pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packe
 
 	return pgp_signature_packet_verify(sign, key, user);
 }
+
+static pgp_error_t pgp_setup_target(pgp_signature_packet *packet, pgp_signature_packet *signature)
+{
+	pgp_error_t error = 0;
+
+	byte_t buffer[1024] = {0};
+	hash_ctx *hctx = NULL;
+
+	byte_t hash_algorithm = 0;
+	byte_t hash_size = 0;
+	byte_t hash[64] = {0};
+
+	// Compute the hash
+	switch (signature->hash_algorithm_id)
+	{
+	case PGP_MD5:
+		hash_algorithm = HASH_MD5;
+		break;
+	case PGP_SHA1:
+		hash_algorithm = HASH_SHA1;
+		break;
+	case PGP_RIPEMD_160:
+		hash_algorithm = HASH_RIPEMD160;
+		break;
+	case PGP_SHA2_256:
+		hash_algorithm = HASH_SHA256;
+		break;
+	case PGP_SHA2_384:
+		hash_algorithm = HASH_SHA384;
+		break;
+	case PGP_SHA2_512:
+		hash_algorithm = HASH_SHA512;
+		break;
+	case PGP_SHA2_224:
+		hash_algorithm = HASH_SHA224;
+		break;
+	case PGP_SHA3_256:
+		hash_algorithm = HASH_SHA3_256;
+		break;
+	case PGP_SHA3_512:
+		hash_algorithm = HASH_SHA3_512;
+		break;
+	default:
+		return PGP_INVALID_HASH_ALGORITHM;
+	}
+
+	hctx = hash_init(buffer, 1024, hash_algorithm);
+
+	if (hctx == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	pgp_signature_hash(hctx, signature);
+	hash_size = hash_final(hctx, hash, 64);
+
+	// Create a signature target
+	error = pgp_signature_packet_hashed_subpacket_add(
+		packet, pgp_signature_target_subpacket_new(signature->public_key_algorithm_id, signature->hash_algorithm_id, hash, hash_size));
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_generate_confirmation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo,
+												pgp_signature_packet *signature)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = key->version;
+	sign->type = sinfo->signature_type;
+
+	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_setup_target(sign, signature);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, signature);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_verify_confirmation_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_signature_packet *signature)
+{
+	if (sign->type != PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	return pgp_signature_packet_verify(sign, key, signature);
+}
