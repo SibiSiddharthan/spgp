@@ -4005,6 +4005,11 @@ pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key
 {
 	pgp_error_t error = 0;
 
+	if (sign->type != PGP_SUBKEY_BINDING_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
 	error = pgp_signature_packet_verify(sign, key, subkey);
 
 	if (error != PGP_SUCCESS)
@@ -4054,4 +4059,77 @@ pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key
 	}
 
 	return error;
+}
+
+pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo,
+											  byte_t revocation_class, byte_t algorithm_id, byte_t *fingerprint, byte_t fingerprint_size)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = key->version;
+	sign->type = PGP_SUBKEY_BINDING_SIGNATURE;
+
+	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	if (key->flags & (PGP_KEY_FLAG_PRIVATE_SPLIT | PGP_KEY_FLAG_PRIVATE_SHARED))
+	{
+		error = pgp_signature_packet_hashed_subpacket_add(
+			sign, pgp_key_flags_subpacket_new(key->flags & (PGP_KEY_FLAG_PRIVATE_SPLIT | PGP_KEY_FLAG_PRIVATE_SHARED), 0));
+
+		if (error != PGP_SUCCESS)
+		{
+			pgp_signature_packet_delete(sign);
+			return error;
+		}
+	}
+
+	if (fingerprint != NULL || fingerprint_size != 0)
+	{
+		error = pgp_signature_packet_hashed_subpacket_add(
+			sign, pgp_revocation_key_subpacket_new(revocation_class, algorithm_id, fingerprint, fingerprint_size));
+
+		if (error != PGP_SUCCESS)
+		{
+			pgp_signature_packet_delete(sign);
+			return error;
+		}
+	}
+
+	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, NULL);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_verify_direct_key_signature(pgp_signature_packet *sign, pgp_key_packet *key)
+{
+	if (sign->type != PGP_DIRECT_KEY_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	return pgp_signature_packet_verify(sign, key, NULL);
 }

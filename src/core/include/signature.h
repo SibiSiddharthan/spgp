@@ -489,4 +489,8 @@ pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet,
 												  pgp_sign_info *sinfo);
 pgp_error_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey);
 
+pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo,
+											  byte_t revocation_class, byte_t algorithm_id, byte_t *fingerprint, byte_t fingerprint_size);
+pgp_error_t pgp_verify_direct_key_signature(pgp_signature_packet *sign, pgp_key_packet *key);
+
 #endif
