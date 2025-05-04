@@ -4077,7 +4077,7 @@ pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp
 	memset(sign, 0, sizeof(pgp_signature_packet));
 
 	sign->version = key->version;
-	sign->type = PGP_SUBKEY_BINDING_SIGNATURE;
+	sign->type = PGP_DIRECT_KEY_SIGNATURE;
 
 	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
 
@@ -4313,7 +4313,7 @@ pgp_error_t pgp_generate_confirmation_signature(pgp_signature_packet **packet, p
 	memset(sign, 0, sizeof(pgp_signature_packet));
 
 	sign->version = key->version;
-	sign->type = sinfo->signature_type;
+	sign->type = PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE;
 
 	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
 
@@ -4352,4 +4352,73 @@ pgp_error_t pgp_verify_confirmation_signature(pgp_signature_packet *sign, pgp_ke
 	}
 
 	return pgp_signature_packet_verify(sign, key, signature);
+}
+
+pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data,
+											  byte_t code, void *reason, uint32_t size, pgp_signature_packet *signature)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	if (sinfo->signature_type != PGP_KEY_REVOCATION_SIGNATURE && sinfo->signature_type != PGP_SUBKEY_REVOCATION_SIGNATURE &&
+		sinfo->signature_type != PGP_CERTIFICATION_REVOCATION_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = key->version;
+	sign->type = sinfo->signature_type;
+
+	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_signature_packet_hashed_subpacket_add(sign, pgp_reason_for_revocation_subpacket_new(code, reason, size));
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	if (signature != NULL)
+	{
+		error = pgp_setup_target(sign, signature);
+
+		if (error != PGP_SUCCESS)
+		{
+			pgp_signature_packet_delete(sign);
+			return error;
+		}
+	}
+
+	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, data);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_verify_revocation_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *data)
+{
+	return pgp_signature_packet_verify(sign, key, data);
 }

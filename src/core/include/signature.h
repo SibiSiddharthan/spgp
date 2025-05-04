@@ -502,4 +502,8 @@ pgp_error_t pgp_generate_confirmation_signature(pgp_signature_packet **packet, p
 												pgp_signature_packet *signature);
 pgp_error_t pgp_verify_confirmation_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_signature_packet *signature);
 
+pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data,
+											  byte_t code, void *reason, uint32_t size, pgp_signature_packet *signature);
+pgp_error_t pgp_verify_revocation_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *data);
+
 #endif
