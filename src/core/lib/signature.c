@@ -3517,25 +3517,128 @@ static pgp_error_t pgp_signature_packet_sign_setup(pgp_signature_packet *packet,
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm, void *salt,
-									  byte_t size, void *data)
+static pgp_error_t pgp_signature_new(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = key->version;
+	sign->type = sinfo->signature_type;
+	sign->public_key_algorithm_id = key->public_key_algorithm_id;
+	sign->hash_algorithm_id = sinfo->hash_algorithm;
+
+	if (sinfo->salt_size > 0)
+	{
+		memcpy(sign->salt, sinfo->salt, sinfo->salt_size);
+		sign->salt_size = sinfo->salt_size;
+	}
+
+	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *data)
+{
+	pgp_packet_header *header = NULL;
+	pgp_packet_type packet_type = 0;
+
+	switch (signature_type)
+	{
+	case PGP_BINARY_SIGNATURE:
+	case PGP_TEXT_SIGNATURE:
+	{
+		header = data;
+		packet_type = pgp_packet_get_type(header->tag);
+
+		if (packet_type != PGP_LIT)
+		{
+			return PGP_INVALID_PARAMETER;
+		}
+	}
+	break;
+	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
+	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
+	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
+	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+	case PGP_ATTESTED_KEY_SIGNATURE:
+	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
+	{
+		header = data;
+		packet_type = pgp_packet_get_type(header->tag);
+
+		if (packet_type != PGP_UID && packet_type != PGP_UAT)
+		{
+			return PGP_INVALID_PARAMETER;
+		}
+	}
+	break;
+	case PGP_SUBKEY_BINDING_SIGNATURE:
+	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
+	case PGP_DIRECT_KEY_SIGNATURE:
+	case PGP_KEY_REVOCATION_SIGNATURE:
+	case PGP_SUBKEY_REVOCATION_SIGNATURE:
+	{
+		header = data;
+		packet_type = pgp_packet_get_type(header->tag);
+
+		if (packet_type != PGP_PUBKEY && packet_type != PGP_PUBSUBKEY && packet_type != PGP_SECKEY && packet_type != PGP_SECSUBKEY &&
+			packet_type != PGP_KEYDEF)
+		{
+			return PGP_INVALID_PARAMETER;
+		}
+	}
+	break;
+	case PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE:
+	{
+		header = data;
+		packet_type = pgp_packet_get_type(header->tag);
+
+		if (packet_type != PGP_SIG)
+		{
+			return PGP_INVALID_PARAMETER;
+		}
+	}
+	break;
+	case PGP_STANDALONE_SIGNATURE:
+	case PGP_TIMESTAMP_SIGNATURE:
+		break;
+	default:
+		return PGP_INVALID_SIGNATURE_TYPE;
+	}
+
+	return PGP_SUCCESS;
+}
+
+static pgp_error_t pgp_do_sign(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
 {
 	pgp_error_t error = 0;
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
-	if (pgp_hash_algorithm_validate(hash_algorithm) == 0)
-	{
-		return PGP_INVALID_HASH_ALGORITHM;
-	}
-
-	// Incompatible signature and key versions
 	if (packet->version != key->version)
 	{
 		return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_VERSION;
 	}
 
-	if ((key->capabilities & PGP_KEY_FLAG_SIGN) == 0)
+	if ((key->capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION)) == 0)
 	{
 		return PGP_UNUSABLE_KEY_FOR_SIGNING;
 	}
@@ -3545,19 +3648,20 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 		return PGP_KEY_NOT_DECRYPTED;
 	}
 
-	// Set the algorithms
-	packet->public_key_algorithm_id = key->public_key_algorithm_id;
-	packet->hash_algorithm_id = hash_algorithm;
+	if (pgp_hash_algorithm_validate(packet->hash_algorithm_id) == 0)
+	{
+		return PGP_INVALID_HASH_ALGORITHM;
+	}
+
+	if ((error = pgp_check_sign_data(packet->type, data)) != PGP_SUCCESS)
+	{
+		return error;
+	}
 
 	if (packet->version == PGP_SIGNATURE_V6)
 	{
-		if (size > 32)
-		{
-			return PGP_SIGNATURE_SALT_TOO_BIG;
-		}
-
 		// Generate 32 bytes of salt
-		if (salt == NULL || size == 0)
+		if (packet->salt_size == 0)
 		{
 			packet->salt_size = pgp_rand(packet->salt, 32);
 
@@ -3565,11 +3669,6 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 			{
 				return PGP_RAND_ERROR;
 			}
-		}
-		else
-		{
-			memcpy(packet->salt, salt, size);
-			packet->salt_size = size;
 		}
 	}
 
@@ -3620,14 +3719,30 @@ pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_pack
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
+static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
 {
+	pgp_error_t error = 0;
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
-	if ((key->capabilities & PGP_KEY_FLAG_SIGN) == 0)
+	if (packet->version != key->version)
+	{
+		return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_VERSION;
+	}
+
+	if ((key->capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION)) == 0)
 	{
 		return PGP_UNUSABLE_KEY_FOR_SIGNING;
+	}
+
+	if ((error = pgp_check_sign_data(packet->type, data)) != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	if (pgp_hash_algorithm_validate(packet->hash_algorithm_id) == 0)
+	{
+		return PGP_INVALID_HASH_ALGORITHM;
 	}
 
 	hash_size = pgp_compute_hash(packet, key, hash, data);
@@ -3666,6 +3781,36 @@ pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_pa
 	return PGP_INTERNAL_BUG;
 }
 
+pgp_error_t pgp_generate_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+
+	error = pgp_signature_new(&sign, key, sinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	error = pgp_do_sign(sign, key, data);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_verify_signature(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
+{
+	return pgp_do_verify(packet, key, data);
+}
+
 pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t flags, pgp_sign_info *sinfo,
 											pgp_literal_packet *literal)
 {
@@ -3690,23 +3835,10 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		}
 	}
 
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = key->version;
-	sign->type = sinfo->signature_type;
-
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
 
@@ -3733,7 +3865,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		literal->date = 0;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, literal);
+	error = pgp_do_sign(sign, key, literal);
 
 	// Restore the fields
 	literal->format = format_copy;
@@ -3767,7 +3899,7 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 		}
 	}
 
-	return pgp_signature_packet_verify(sign, key, literal);
+	return pgp_do_verify(sign, key, literal);
 }
 
 static pgp_error_t pgp_setup_key_info(pgp_signature_packet *packet, pgp_key_packet *key)
@@ -3855,23 +3987,10 @@ pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **pa
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = key->version;
-	sign->type = sinfo->signature_type;
-
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
 
@@ -3891,7 +4010,7 @@ pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **pa
 		return error;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, user);
+	error = pgp_do_sign(sign, key, user);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -3919,7 +4038,7 @@ pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign,
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	return pgp_signature_packet_verify(sign, key, user);
+	return pgp_do_verify(sign, key, user);
 }
 
 pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey,
@@ -3928,23 +4047,15 @@ pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet,
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
 
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
+	if (sinfo->signature_type != PGP_SUBKEY_BINDING_SIGNATURE)
 	{
-		return PGP_NO_MEMORY;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = key->version;
-	sign->type = PGP_SUBKEY_BINDING_SIGNATURE;
-
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
 
@@ -3978,7 +4089,7 @@ pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet,
 			return error;
 		}
 
-		error = pgp_signature_packet_sign(sign, subkey, sinfo->hash_algorithm, NULL, 0, key);
+		error = pgp_do_sign(sign, subkey, key);
 
 		if (error != PGP_SUCCESS)
 		{
@@ -4001,7 +4112,7 @@ pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet,
 		}
 	}
 
-	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, subkey);
+	error = pgp_do_sign(sign, key, subkey);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -4023,7 +4134,7 @@ pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	error = pgp_signature_packet_verify(sign, key, subkey);
+	error = pgp_do_verify(sign, key, subkey);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -4043,7 +4154,7 @@ pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key
 			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EMBEDDED_SIGNATURE_SUBPACKET)
 			{
 				embedded_sign = sign->unhashed_subpackets->packets[i];
-				error = pgp_signature_packet_verify(embedded_sign, subkey, key);
+				error = pgp_do_verify(embedded_sign, subkey, key);
 
 				break;
 			}
@@ -4058,7 +4169,7 @@ pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key
 				if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EMBEDDED_SIGNATURE_SUBPACKET)
 				{
 					embedded_sign = sign->hashed_subpackets->packets[i];
-					error = pgp_signature_packet_verify(embedded_sign, subkey, key);
+					error = pgp_do_verify(embedded_sign, subkey, key);
 
 					break;
 				}
@@ -4080,23 +4191,15 @@ pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
 
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
+	if (sinfo->signature_type != PGP_DIRECT_KEY_SIGNATURE)
 	{
-		return PGP_NO_MEMORY;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = key->version;
-	sign->type = PGP_DIRECT_KEY_SIGNATURE;
-
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
 
@@ -4124,7 +4227,7 @@ pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp
 		}
 	}
 
-	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, NULL);
+	error = pgp_do_sign(sign, key, NULL);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -4144,7 +4247,7 @@ pgp_error_t pgp_verify_direct_key_signature(pgp_signature_packet *sign, pgp_key_
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	return pgp_signature_packet_verify(sign, key, NULL);
+	return pgp_do_verify(sign, key, NULL);
 }
 
 static pgp_error_t pgp_setup_trust_info(pgp_signature_packet *packet, byte_t trust_level, byte_t trust_amount, void *regex,
@@ -4184,23 +4287,10 @@ pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = key->version;
-	sign->type = sinfo->signature_type;
-
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
 
@@ -4212,7 +4302,7 @@ pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_
 		return error;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, user);
+	error = pgp_do_sign(sign, key, user);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -4240,7 +4330,7 @@ pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packe
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	return pgp_signature_packet_verify(sign, key, user);
+	return pgp_do_verify(sign, key, user);
 }
 
 static pgp_error_t pgp_setup_target(pgp_signature_packet *packet, pgp_signature_packet *signature)
@@ -4316,23 +4406,15 @@ pgp_error_t pgp_generate_confirmation_signature(pgp_signature_packet **packet, p
 	pgp_error_t error = 0;
 	pgp_signature_packet *sign = NULL;
 
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
+	if (sinfo->signature_type != PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE)
 	{
-		return PGP_NO_MEMORY;
+		return PGP_INCORRECT_FUNCTION;
 	}
 
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = key->version;
-	sign->type = PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE;
-
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
 
@@ -4344,7 +4426,7 @@ pgp_error_t pgp_generate_confirmation_signature(pgp_signature_packet **packet, p
 		return error;
 	}
 
-	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, signature);
+	error = pgp_do_sign(sign, key, signature);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -4364,7 +4446,7 @@ pgp_error_t pgp_verify_confirmation_signature(pgp_signature_packet *sign, pgp_ke
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	return pgp_signature_packet_verify(sign, key, signature);
+	return pgp_do_verify(sign, key, signature);
 }
 
 pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data,
@@ -4379,23 +4461,10 @@ pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	sign = malloc(sizeof(pgp_signature_packet));
-
-	if (sign == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	memset(sign, 0, sizeof(pgp_signature_packet));
-
-	sign->version = key->version;
-	sign->type = sinfo->signature_type;
-
-	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+	error = pgp_signature_new(&sign, key, sinfo);
 
 	if (error != PGP_SUCCESS)
 	{
-		pgp_signature_packet_delete(sign);
 		return error;
 	}
 
@@ -4418,7 +4487,7 @@ pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp
 		}
 	}
 
-	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, data);
+	error = pgp_do_sign(sign, key, data);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -4433,5 +4502,11 @@ pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp
 
 pgp_error_t pgp_verify_revocation_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *data)
 {
-	return pgp_signature_packet_verify(sign, key, data);
+	if (sign->type != PGP_KEY_REVOCATION_SIGNATURE && sign->type != PGP_SUBKEY_REVOCATION_SIGNATURE &&
+		sign->type != PGP_CERTIFICATION_REVOCATION_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	return pgp_do_verify(sign, key, data);
 }

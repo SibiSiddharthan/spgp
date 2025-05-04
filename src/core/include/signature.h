@@ -477,9 +477,8 @@ pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version,
 pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void *name, uint16_t name_size, void *value,
 									   uint16_t value_size);
 
-pgp_error_t pgp_signature_packet_sign(pgp_signature_packet *packet, pgp_key_packet *key, pgp_hash_algorithms hash_algorithm, void *salt,
-									  byte_t size, void *data);
-pgp_error_t pgp_signature_packet_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
+pgp_error_t pgp_generate_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data);
+pgp_error_t pgp_verify_signature(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
 
 pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t flags, pgp_sign_info *sinfo,
 											pgp_literal_packet *literal);
