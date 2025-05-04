@@ -493,4 +493,9 @@ pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp
 											  byte_t revocation_class, byte_t algorithm_id, byte_t *fingerprint, byte_t fingerprint_size);
 pgp_error_t pgp_verify_direct_key_signature(pgp_signature_packet *sign, pgp_key_packet *key);
 
+pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *user,
+										 byte_t trust_level, byte_t trust_amount, void *regex, uint16_t regex_size, void *alias,
+										 uint16_t alias_size);
+pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
+
 #endif

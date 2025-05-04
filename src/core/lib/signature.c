@@ -4133,3 +4133,99 @@ pgp_error_t pgp_verify_direct_key_signature(pgp_signature_packet *sign, pgp_key_
 
 	return pgp_signature_packet_verify(sign, key, NULL);
 }
+
+static pgp_error_t pgp_setup_trust_info(pgp_signature_packet *packet, byte_t trust_level, byte_t trust_amount, void *regex,
+										uint16_t regex_size, void *alias, uint16_t alias_size)
+{
+	CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_trust_signature_subpacket_new(trust_level, trust_amount)));
+
+	if (regex != NULL && regex_size != 0)
+	{
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_regular_expression_subpacket_new(regex, regex_size)));
+	}
+
+	if (alias != NULL && alias_size != 0)
+	{
+		CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, pgp_trust_alias_subpacket_new(alias, alias_size)));
+	}
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *user,
+										 byte_t trust_level, byte_t trust_amount, void *regex, uint16_t regex_size, void *alias,
+										 uint16_t alias_size)
+{
+	pgp_error_t error = 0;
+	pgp_signature_packet *sign = NULL;
+	pgp_packet_header *header = user;
+
+	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (sinfo->signature_type != PGP_GENERIC_CERTIFICATION_SIGNATURE && sinfo->signature_type != PGP_PERSONA_CERTIFICATION_SIGNATURE &&
+		sinfo->signature_type != PGP_CASUAL_CERTIFICATION_SIGNATURE && sinfo->signature_type != PGP_POSITIVE_CERTIFICATION_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	sign = malloc(sizeof(pgp_signature_packet));
+
+	if (sign == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(sign, 0, sizeof(pgp_signature_packet));
+
+	sign->version = key->version;
+	sign->type = sinfo->signature_type;
+
+	error = pgp_signature_packet_sign_setup(sign, key, sinfo);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_setup_trust_info(sign, trust_level, trust_amount, regex, regex_size, alias, alias_size);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	error = pgp_signature_packet_sign(sign, key, sinfo->hash_algorithm, NULL, 0, user);
+
+	if (error != PGP_SUCCESS)
+	{
+		pgp_signature_packet_delete(sign);
+		return error;
+	}
+
+	*packet = sign;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user)
+{
+	pgp_packet_header *header = user;
+
+	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	if (sign->type != PGP_GENERIC_CERTIFICATION_SIGNATURE && sign->type != PGP_PERSONA_CERTIFICATION_SIGNATURE &&
+		sign->type != PGP_CASUAL_CERTIFICATION_SIGNATURE && sign->type != PGP_POSITIVE_CERTIFICATION_SIGNATURE)
+	{
+		return PGP_INCORRECT_FUNCTION;
+	}
+
+	return pgp_signature_packet_verify(sign, key, user);
+}
