@@ -338,6 +338,9 @@ typedef struct _pgp_sign_info
 	byte_t signature_type;
 	byte_t hash_algorithm;
 
+	byte_t salt[32];
+	byte_t salt_size;
+
 	uint32_t creation_time;
 	uint32_t expiry_seconds;
 
@@ -469,6 +472,7 @@ void pgp_sign_info_delete(pgp_sign_info *sign);
 void pgp_sign_info_set_policy_url(pgp_sign_info *sign, byte_t *policy, uint32_t size);
 void pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t size);
 
+pgp_error_t pgp_sign_info_set_salt(pgp_sign_info *sign, byte_t *salt, byte_t size);
 pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size);
 pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void *name, uint16_t name_size, void *value,
 									   uint16_t value_size);

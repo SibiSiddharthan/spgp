@@ -2848,6 +2848,19 @@ void pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t s
 	sign->signer_size = size;
 }
 
+pgp_error_t pgp_sign_info_set_salt(pgp_sign_info *sign, byte_t *salt, byte_t size)
+{
+	if (size > 32)
+	{
+		return PGP_SIGNATURE_SALT_TOO_BIG;
+	}
+
+	memcpy(sign->salt, salt, size);
+	sign->salt_size = size;
+
+	return PGP_SUCCESS;
+}
+
 pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size)
 {
 	void *result = NULL;
