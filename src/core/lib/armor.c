@@ -969,3 +969,150 @@ data:
 
 	return ARMOR_SUCCESS;
 }
+
+uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size)
+{
+	size_t required_size = 0;
+	size_t line_count = 0;
+	byte_t crlf = 0;
+
+	buffer_t out = {.pos = 0, .size = *output_size, .capacity = *output_size, .data = output};
+	byte_t *in = input;
+	uint32_t input_pos = 0;
+
+	byte_t base64_line[64] = {0};
+	uint32_t crc24 = 0;
+
+	// Armor Structure
+	// -----ARMOR HEADER-----
+	// Optional Headers
+	// Empty Line
+	// Data
+	// Optional Checksum
+	// -----ARMOR FOOTER-----
+
+	// Header and Trailer
+	required_size += 20 + options->marker->header_line_size + options->marker->trailer_line_size;
+	line_count += 2;
+
+	// Optional headers
+	if (options->headers_size > 0)
+	{
+		for (uint16_t i = 0; i < options->headers_size; ++i)
+		{
+			if (options->headers[i] == '\0')
+			{
+				line_count += 1;
+			}
+		}
+
+		required_size += options->headers_size - line_count;
+	}
+
+	// Empty Line
+	if (options->flags & ARMOR_EMPTY_LINE)
+	{
+		line_count += 1;
+	}
+
+	// Checksum
+	if (options->flags & ARMOR_CHECKSUM_CRC24)
+	{
+		required_size += 5;
+		line_count += 1;
+	}
+
+	// Data
+	required_size += BASE64_ENCODE_SIZE(input_size);
+	line_count += CEIL_DIV(input_size, 48);
+
+	if (options->flags & ARMOR_CRLF_ENDING)
+	{
+		required_size += line_count * 2;
+		crlf = 1;
+	}
+	else
+	{
+		required_size += line_count;
+	}
+
+	// Check if enough buffer is available
+	if (*output_size < required_size)
+	{
+		if (required_size > ((uint64_t)1 << 32))
+		{
+			return ARMOR_INPUT_TOO_BIG;
+		}
+
+		*output_size = (uint32_t)required_size;
+		return ARMOR_BUFFER_TOO_SMALL;
+	}
+
+	// Write the header line
+	writen(&out, "-----", 5);
+	writen(&out, options->marker->header_line, options->marker->header_line_size);
+	writen(&out, "-----", 5);
+	writeline(&out, NULL, 0, crlf);
+
+	// Headers
+	if (options->headers_size > 0)
+	{
+		uint16_t start = 0;
+
+		for (uint16_t i = 0; i < options->headers_size; ++i)
+		{
+			if (options->headers[i] == '\0')
+			{
+				writeline(&out, options->headers + start, i - start, crlf);
+				start = i + 1;
+			}
+		}
+	}
+
+	// Empty Line
+	if (options->flags & ARMOR_EMPTY_LINE)
+	{
+		writeline(&out, NULL, 0, crlf);
+	}
+
+	// Data (64 columns)
+	byte_t base64_insize = 0;
+
+	if (options->flags & ARMOR_CHECKSUM_CRC24)
+	{
+		crc24 = crc24_init();
+	}
+
+	while (input_pos < input_size)
+	{
+		base64_insize = MIN(48, input_size - input_pos);
+		base64_encode(&(buffer_range_t){.data = base64_line, .start = 0, .end = 64},
+					  &(buffer_range_t){.data = in + input_pos, .start = 0, .end = base64_insize}, BASE64_FINISH);
+		writeline(&out, base64_line, BASE64_ENCODE_SIZE(base64_insize), crlf);
+		input_pos += base64_insize;
+	}
+
+	// Checksum
+	if (options->flags & ARMOR_CHECKSUM_CRC24)
+	{
+		crc24 = crc24_init();
+		crc24 = crc24_update(crc24, input, input_size);
+		crc24 = crc24_final(crc24);
+
+		base64_line[0] = '=';
+
+		base64_encode(&(buffer_range_t){.data = base64_line + 1, .start = 0, .end = 64},
+					  &(buffer_range_t){.data = &crc24, .start = 0, .end = 3}, BASE64_FINISH);
+		writeline(&out, base64_line, BASE64_ENCODE_SIZE(3) + 1, crlf);
+	}
+
+	// Write the trailer line
+	writen(&out, "-----", 5);
+	writen(&out, options->marker->trailer_line, options->marker->trailer_line_size);
+	writen(&out, "-----", 5);
+	writeline(&out, NULL, 0, crlf);
+
+	*output_size = (uint32_t)out.pos;
+
+	return ARMOR_SUCCESS;
+}

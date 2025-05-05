@@ -9,6 +9,7 @@
 #define SPGP_ARMOR_H
 
 #include <pgp.h>
+#include <buffer.h>
 
 #define PGP_ARMOR_NO_CRC 0x1
 
@@ -42,6 +43,8 @@ typedef enum _armor_status
 	ARMOR_BAD_CRC = -7,
 	ARMOR_HEADER_MISMATCH = -8,
 	ARMOR_BASE64_LINE_TOO_BIG = -9,
+	ARMOR_BUFFER_TOO_SMALL = -10,
+	ARMOR_INPUT_TOO_BIG = -11,
 } armor_status;
 
 typedef struct _pgp_armor_ctx
@@ -74,5 +77,33 @@ armor_status armor_set_data(pgp_armor_ctx *ctx, void *data, size_t size);
 
 armor_status pgp_armor_read(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result);
 armor_status pgp_armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result);
+
+#define ARMOR_CHECKSUM_CRC24 0x1
+#define ARMOR_EMPTY_LINE     0x2
+#define ARMOR_CRLF_ENDING    0x4
+#define ARMOR_SCAN_HEADERS   0x8
+
+typedef struct _armor_marker
+{
+	byte_t *header_line;
+	byte_t *trailer_line;
+	uint16_t header_line_size;
+	uint16_t trailer_line_size;
+
+} armor_marker;
+
+typedef struct _armor_options
+{
+	armor_marker *marker;
+
+	byte_t *headers;
+	uint16_t headers_size;
+
+	byte_t flags;
+
+} armor_options;
+
+uint32_t armor_read(void *input, uint32_t input_size, void *output, uint32_t *output_size);
+uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size);
 
 #endif
