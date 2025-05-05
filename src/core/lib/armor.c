@@ -17,22 +17,22 @@
 
 size_t encode_cleartext(byte_t *output, byte_t *input, size_t size)
 {
-	size_t j = 0;
+	size_t pos = 0;
 
 	// First character
 	// Dash Escapes
 	if (input[0] == '-')
 	{
-		output[j++] = '-';
-		output[j++] = ' ';
-		output[j++] = '-';
+		output[pos++] = '-';
+		output[pos++] = ' ';
+		output[pos++] = '-';
 	}
 
 	// LF -> CRLF
 	if (input[0] == '\n')
 	{
-		output[j++] = '\r';
-		output[j++] = '\n';
+		output[pos++] = '\r';
+		output[pos++] = '\n';
 	}
 
 	for (size_t i = 1; i < size; ++i)
@@ -41,22 +41,49 @@ size_t encode_cleartext(byte_t *output, byte_t *input, size_t size)
 		if (input[i] == '-' && input[i - 1] == '\n')
 		{
 			// Every line starting with '-' is prefixed with '-' and ' '.
-			output[j++] = '-';
-			output[j++] = ' ';
-			output[j++] = '-';
+			output[pos++] = '-';
+			output[pos++] = ' ';
+			output[pos++] = '-';
 		}
 
 		// LF -> CRLF
 		if (input[i] == '\n' && input[i - 1] != '\r')
 		{
-			output[j++] = '\r';
-			output[j++] = '\n';
+			output[pos++] = '\r';
+			output[pos++] = '\n';
 		}
 
-		output[j++] = input[i];
+		output[pos++] = input[i];
 	}
 
-	return j;
+	return pos;
+}
+
+size_t decode_cleartext(byte_t *output, byte_t *input, size_t size)
+{
+	size_t input_pos = 0;
+	size_t output_pos = 0;
+
+	// First character
+	// Dash Escapes
+	if (input[0] == '-')
+	{
+		input_pos += 2;
+	}
+
+	for (size_t i = input_pos; i < size; ++i)
+	{
+		// Dash Escapes
+		if (input[i] == '-' && input[i - 1] == '\n')
+		{
+			// Every line starting with '-' is prefixed with '-' and ' '.
+			i += 2;
+		}
+
+		output[output_pos++] = input[i];
+	}
+
+	return output_pos;
 }
 
 static uint16_t trimline(byte_t *line, uint16_t line_size)
