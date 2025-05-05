@@ -132,6 +132,7 @@ size_t pgp_stream_armor_size(pgp_stream_t *stream)
 	return (CEIL_DIV(pgp_stream_octets(stream), 3) * 4) + 128; // header and footer
 }
 
+#if 0
 static size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, size_t size, uint32_t options)
 {
 	pgp_packet_header *header = NULL;
@@ -208,6 +209,7 @@ static size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, size_t 
 
 	return result;
 }
+#endif
 
 static size_t pgp_stream_write_binary(pgp_stream_t *stream, void *buffer, size_t size)
 {
@@ -230,6 +232,7 @@ static size_t pgp_stream_write_binary(pgp_stream_t *stream, void *buffer, size_t
 	return pos;
 }
 
+#if 0
 static pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *data, size_t size)
 {
 	pgp_error_t error = 0;
@@ -280,6 +283,7 @@ static pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *data, size_
 
 	return error;
 }
+#endif
 
 static pgp_error_t pgp_stream_read_binary(pgp_stream_t *stream, void *data, size_t size)
 {
@@ -348,7 +352,7 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 	// Check if data is armored
 	if (PGP_PACKET_HEADER_FORMAT(in[0]) == PGP_UNKNOWN_HEADER)
 	{
-		return pgp_stream_read_armor(stream, data, size);
+		// return pgp_stream_read_armor(stream, data, size);
 	}
 
 	return pgp_stream_read_binary(stream, data, size);
@@ -358,7 +362,7 @@ size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 {
 	if (options & PGP_WRITE_ARMOR)
 	{
-		return pgp_stream_write_armor(stream, buffer, size, options);
+		// return pgp_stream_write_armor(stream, buffer, size, options);
 	}
 
 	return pgp_stream_write_binary(stream, buffer, size);
