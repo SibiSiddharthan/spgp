@@ -78,10 +78,11 @@ armor_status armor_set_data(pgp_armor_ctx *ctx, void *data, size_t size);
 armor_status pgp_armor_read(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result);
 armor_status pgp_armor_write(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *result);
 
-#define ARMOR_CHECKSUM_CRC24 0x1
-#define ARMOR_EMPTY_LINE     0x2
-#define ARMOR_CRLF_ENDING    0x4
-#define ARMOR_SCAN_HEADERS   0x8
+#define ARMOR_CHECKSUM_CRC24         0x01
+#define ARMOR_EMPTY_LINE             0x02
+#define ARMOR_CRLF_ENDING            0x04
+#define ARMOR_SCAN_HEADERS           0x08
+#define ARMOR_IGNORE_UNKNOWN_MARKERS 0x10
 
 typedef struct _armor_marker
 {
@@ -99,11 +100,12 @@ typedef struct _armor_options
 	byte_t *headers;
 	uint16_t headers_size;
 
-	byte_t flags;
+	uint16_t flags;
 
 } armor_options;
 
-uint32_t armor_read(void *input, uint32_t input_size, void *output, uint32_t *output_size);
+uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t input_size, void *output,
+					uint32_t *output_size);
 uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size);
 
 #endif

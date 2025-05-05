@@ -645,8 +645,8 @@ armor_status pgp_armor_read(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *
 		pos += line_total_size;
 	}
 
-	base64_decode(&(buffer_range_t){.data = ctx->data.data, .start = 0, .end = BASE64_DECODE_SIZE(base64_size)},
-				  &(buffer_range_t){.data = temp, .start = 0, .end = base64_size});
+	// base64_decode(&(buffer_range_t){.data = ctx->data.data, .start = 0, .end = BASE64_DECODE_SIZE(base64_size)},
+	//			  &(buffer_range_t){.data = temp, .start = 0, .end = base64_size});
 
 	free(temp);
 
@@ -656,8 +656,8 @@ armor_status pgp_armor_read(pgp_armor_ctx *ctx, void *ptr, size_t size, size_t *
 		ctx->crc = crc24_update(ctx->crc, ctx->data.data, ctx->data.size);
 		ctx->crc = crc24_final(ctx->crc);
 
-		base64_decode(&(buffer_range_t){.data = (byte_t *)&crc_decoded, .start = 0, .end = 3},
-					  &(buffer_range_t){.data = crc, .start = 0, .end = 4});
+		// base64_decode(&(buffer_range_t){.data = (byte_t *)&crc_decoded, .start = 0, .end = 3},
+		//			  &(buffer_range_t){.data = crc, .start = 0, .end = 4});
 
 		if (ctx->crc != BSWAP_32(crc_decoded))
 		{
@@ -912,7 +912,7 @@ data:
 
 		for (size_t i = 0; i < count - 1; ++i)
 		{
-			base64_encode(&output, &input, BASE64_CONTINUE);
+			// base64_encode(&output, &input, BASE64_CONTINUE);
 
 			input.start += 48;
 			input.end += 48;
@@ -926,7 +926,7 @@ data:
 		// Last line of BASE-64 data
 		input.end = ctx->data.size;
 
-		base64_encode(&output, &input, BASE64_FINISH);
+		// base64_encode(&output, &input, BASE64_FINISH);
 
 		pos = output.start;
 		out[pos++] = '\n';
@@ -952,7 +952,7 @@ data:
 			output.start = pos;
 			output.end = required_size;
 
-			base64_encode(&output, &input, BASE64_FINISH);
+			// base64_encode(&output, &input, BASE64_FINISH);
 
 			out[pos++] = '=';
 		}
@@ -970,6 +970,248 @@ data:
 	return ARMOR_SUCCESS;
 }
 
+static uint16_t trimline(byte_t *line, uint16_t line_size)
+{
+	while (line_size > 0)
+	{
+		line_size -= 1;
+
+		if (line[line_size] == ' ' || line[line_size] == '\t')
+		{
+			continue;
+		}
+
+		return line_size + 1;
+	}
+
+	return 0;
+}
+
+static void *check_marker_begin(armor_marker *markers, uint16_t count, byte_t *line, uint16_t line_size)
+{
+	for (uint16_t i = 0; i < count; ++i)
+	{
+		if (markers[i].header_line_size == (line_size - 10) && memcmp(markers[i].header_line, line + 5, markers[i].header_line_size) == 0)
+		{
+			return &markers[i];
+		}
+	}
+
+	return NULL;
+}
+
+static void *check_marker_end(armor_marker *marker, byte_t *line, uint16_t line_size)
+{
+	if (marker->trailer_line_size == (line_size - 10) && memcmp(marker->trailer_line, line + 5, marker->trailer_line_size) == 0)
+	{
+		return marker;
+	}
+
+	return NULL;
+}
+
+uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t input_size, void *output,
+					uint32_t *output_size)
+{
+	void *result = NULL;
+	buffer_t in = {.pos = 0, .size = input_size, .capacity = input_size, .data = input};
+
+	byte_t *out = output;
+	uint32_t output_pos = 0;
+
+	byte_t line_buffer[1024] = {0};
+	uint16_t line_size = 0;
+	uint16_t trimmed_line_size = 0;
+
+	byte_t base64_buffer[64] = {0};
+	uint16_t base64_line_size = 64;
+	uint16_t base64_remaining = 0;
+	size_t base64_result = 0;
+
+	byte_t data_started = 0;
+	byte_t crc_found;
+
+	uint32_t actual_crc = crc24_init();
+	uint32_t expected_crc = 0;
+
+	options->marker = NULL;
+	options->headers = NULL;
+	options->headers_size = 0;
+
+	while (1)
+	{
+		line_size = readline(&in, line_buffer, 1024);
+
+		if (line_size == 1024)
+		{
+			return ARMOR_BASE64_LINE_TOO_BIG;
+		}
+
+		trimmed_line_size = trimline(line_buffer, line_size);
+
+		if (trimmed_line_size == 0)
+		{
+			if (data_started)
+			{
+				return ARMOR_HEADER_MISMATCH;
+			}
+
+			if (options->marker != NULL && options->flags & (ARMOR_SCAN_HEADERS | ARMOR_EMPTY_LINE))
+			{
+				data_started = 1;
+			}
+
+			continue;
+		}
+
+		// Find the block
+		if (memcmp(line_buffer, "-----", 5) == 0 && memcmp(line_buffer + (trimmed_line_size - 5), "-----", 5) == 0)
+		{
+			if (options->marker == NULL)
+			{
+				result = check_marker_begin(markers, count, line_buffer, trimmed_line_size);
+
+				if (result == NULL)
+				{
+					if ((options->flags & ARMOR_IGNORE_UNKNOWN_MARKERS) == 0)
+					{
+						// Rollback the buffer so that the caller can read the line again
+						in.pos -= line_size + 1 + (in.data[in.pos - 2] == '\r');
+						return ARMOR_HEADER_MISMATCH;
+					}
+
+					continue;
+				}
+
+				options->marker = result;
+			}
+			else
+			{
+				result = check_marker_end(options->marker, line_buffer, trimmed_line_size);
+
+				if (result == NULL)
+				{
+					return ARMOR_HEADER_MISMATCH;
+				}
+
+				// Decode last of the data
+				if (base64_remaining > 0)
+				{
+					base64_result = base64_decode(base64_buffer, base64_remaining, out + output_pos, *output_size - output_pos);
+
+					if (base64_result != BASE64_DECODE_SIZE(base64_remaining))
+					{
+						return ARMOR_BASE64_LINE_TOO_BIG;
+					}
+
+					if (options->flags & ARMOR_CHECKSUM_CRC24)
+					{
+						actual_crc = crc24_update(actual_crc, out + output_pos, BASE64_DECODE_SIZE(base64_remaining));
+						actual_crc = crc24_final(actual_crc);
+					}
+
+					base64_remaining = 0;
+					output_pos += BASE64_DECODE_SIZE(base64_remaining);
+				}
+
+				goto end;
+			}
+		}
+
+		// Properly armored texts will not enter this if condition.
+		if (crc_found)
+		{
+			return ARMOR_BAD_CRC;
+		}
+
+		// Read data
+		if (options->marker != NULL)
+		{
+			if (data_started == 0)
+			{
+				if (options->flags & ARMOR_SCAN_HEADERS)
+				{
+					result = memchr(line_buffer, ':', trimmed_line_size);
+
+					if (result != NULL)
+					{
+						uint16_t offset = options->headers_size;
+
+						options->headers_size += trimmed_line_size + 1;
+						options->headers = realloc(options->headers, options->headers_size);
+
+						if (options->headers == NULL)
+						{
+							return 0;
+						}
+
+						memcpy(options->headers + offset, line_buffer, trimmed_line_size);
+						options->headers[options->headers_size - 1] = '\0';
+
+						// Read another header
+						continue;
+					}
+				}
+			}
+
+			data_started = 1;
+
+			if (data_started)
+			{
+				if (options->flags & ARMOR_CHECKSUM_CRC24)
+				{
+					// Check CRC
+					if (line_buffer[0] == '=' && trimmed_line_size == 5)
+					{
+						base64_decode(line_buffer + 1, 4, &expected_crc, 3);
+						crc_found = 1;
+
+						continue;
+					}
+				}
+			}
+
+			// Decode the data
+			while (trimmed_line_size != 0)
+			{
+				memcpy(base64_buffer + base64_remaining, line_buffer, MIN(base64_line_size - base64_remaining, trimmed_line_size));
+				trimmed_line_size -= MIN(base64_line_size - base64_remaining, trimmed_line_size);
+
+				if (base64_remaining == base64_line_size)
+				{
+					base64_result = base64_decode(base64_buffer, base64_line_size, out + output_pos, *output_size - output_pos);
+
+					if (base64_result != BASE64_DECODE_SIZE(base64_line_size))
+					{
+						return ARMOR_BASE64_LINE_TOO_BIG;
+					}
+
+					if (options->flags & ARMOR_CHECKSUM_CRC24)
+					{
+						actual_crc = crc24_update(actual_crc, out + output_pos, BASE64_DECODE_SIZE(base64_line_size));
+					}
+
+					base64_remaining = 0;
+					output_pos += BASE64_DECODE_SIZE(base64_line_size);
+				}
+			}
+		}
+	}
+
+end:
+	*output_size = output_pos;
+
+	if (crc_found)
+	{
+		if (actual_crc != expected_crc)
+		{
+			return ARMOR_BAD_CRC;
+		}
+	}
+
+	return ARMOR_SUCCESS;
+}
+
 uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size)
 {
 	size_t required_size = 0;
@@ -981,7 +1223,7 @@ uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, v
 	uint32_t input_pos = 0;
 
 	byte_t base64_line[64] = {0};
-	uint32_t crc24 = 0;
+	uint32_t crc = 0;
 
 	// Armor Structure
 	// -----ARMOR HEADER-----
@@ -1080,14 +1322,13 @@ uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, v
 
 	if (options->flags & ARMOR_CHECKSUM_CRC24)
 	{
-		crc24 = crc24_init();
+		crc = crc24_init();
 	}
 
 	while (input_pos < input_size)
 	{
 		base64_insize = MIN(48, input_size - input_pos);
-		base64_encode(&(buffer_range_t){.data = base64_line, .start = 0, .end = 64},
-					  &(buffer_range_t){.data = in + input_pos, .start = 0, .end = base64_insize}, BASE64_FINISH);
+		base64_encode(in + input_pos, base64_insize, base64_line, BASE64_ENCODE_SIZE(base64_insize));
 		writeline(&out, base64_line, BASE64_ENCODE_SIZE(base64_insize), crlf);
 		input_pos += base64_insize;
 	}
@@ -1095,14 +1336,13 @@ uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, v
 	// Checksum
 	if (options->flags & ARMOR_CHECKSUM_CRC24)
 	{
-		crc24 = crc24_init();
-		crc24 = crc24_update(crc24, input, input_size);
-		crc24 = crc24_final(crc24);
+		crc = crc24_init();
+		crc = crc24_update(crc, input, input_size);
+		crc = crc24_final(crc);
 
 		base64_line[0] = '=';
 
-		base64_encode(&(buffer_range_t){.data = base64_line + 1, .start = 0, .end = 64},
-					  &(buffer_range_t){.data = &crc24, .start = 0, .end = 3}, BASE64_FINISH);
+		base64_encode(&crc, 3, base64_line + 1, BASE64_ENCODE_SIZE(3));
 		writeline(&out, base64_line, BASE64_ENCODE_SIZE(3) + 1, crlf);
 	}
 
