@@ -35,95 +35,94 @@ static byte_t base64_decode_table[] =
 };
 // clang-format on
 
-int32_t base64_encode(buffer_range_t *output, buffer_range_t *input, base64_op ops)
+size_t base64_encode(void *input, size_t input_size, void *output, size_t output_size)
 {
-	size_t *ip, *op;
-	byte_t v1, v2, v3;
+	byte_t *in = input;
+	byte_t *out = output;
 
-	// No input
-	if (input->start == input->end)
+	size_t input_pos = 0;
+	size_t output_pos = 0;
+
+	byte_t v1 = 0, v2 = 0, v3 = 0;
+
+	if (output_size < BASE64_ENCODE_SIZE(input_size))
 	{
-		return BASE64_SUCCESS;
+		return 0;
 	}
 
 	// Every 3 bytes from input becomes 4 bytes at output.
-	while ((input->start + 3 <= input->end) && (output->start + 4 <= output->end))
+	while (input_pos + 3 <= input_size)
 	{
-		ip = &input->start;
-		op = &output->start;
+		v1 = in[input_pos++];
+		v2 = in[input_pos++];
+		v3 = in[input_pos++];
 
-		v1 = input->data[(*ip)++];
-		v2 = input->data[(*ip)++];
-		v3 = input->data[(*ip)++];
-
-		output->data[(*op)++] = base64_encode_table[v1 >> 2];
-		output->data[(*op)++] = base64_encode_table[((v1 & 0x3) << 4) + (v2 >> 4)];
-		output->data[(*op)++] = base64_encode_table[((v2 & 0xf) << 2) + (v3 >> 6)];
-		output->data[(*op)++] = base64_encode_table[v3 & 0x3f];
+		out[output_pos++] = base64_encode_table[v1 >> 2];
+		out[output_pos++] = base64_encode_table[((v1 & 0x3) << 4) + (v2 >> 4)];
+		out[output_pos++] = base64_encode_table[((v2 & 0xf) << 2) + (v3 >> 6)];
+		out[output_pos++] = base64_encode_table[v3 & 0x3f];
 	}
 
-	// Padding at the end
-	if (ops == BASE64_FINISH)
+	if (input_pos < input_size)
 	{
-		ip = &input->start;
-		op = &output->start;
-
-		if (output->start + 4 > output->end)
-		{
-			return BASE64_INSUFFICIENT_BUFFER;
-		}
-
-		switch (input->end - input->start)
+		// Padding at the end
+		switch (input_size - input_pos)
 		{
 		case 1:
-			v1 = input->data[(*ip)++];
+		{
+			v1 = in[input_pos++];
 
-			output->data[(*op)++] = base64_encode_table[v1 >> 2];
-			output->data[(*op)++] = base64_encode_table[((v1 & 0x3) << 4)];
-			output->data[(*op)++] = '=';
-			output->data[(*op)++] = '=';
-			input->start += 2;
-			break;
-		case 2:
-			v1 = input->data[(*ip)++];
-			v2 = input->data[(*ip)++];
-
-			output->data[(*op)++] = base64_encode_table[v1 >> 2];
-			output->data[(*op)++] = base64_encode_table[((v1 & 0x3) << 4) + (v2 >> 4)];
-			output->data[(*op)++] = base64_encode_table[((v2 & 0xf) << 2)];
-			output->data[(*op)++] = '=';
-			input->start += 1;
-			break;
+			out[output_pos++] = base64_encode_table[v1 >> 2];
+			out[output_pos++] = base64_encode_table[((v1 & 0x3) << 4)];
+			out[output_pos++] = '=';
+			out[output_pos++] = '=';
 		}
+		break;
+		case 2:
+		{
+			v1 = in[input_pos++];
+			v2 = in[input_pos++];
 
-		return BASE64_STREAM_END;
+			out[output_pos++] = base64_encode_table[v1 >> 2];
+			out[output_pos++] = base64_encode_table[((v1 & 0x3) << 4) + (v2 >> 4)];
+			out[output_pos++] = base64_encode_table[((v2 & 0xf) << 2)];
+			out[output_pos++] = '=';
+		}
+		break;
+		}
 	}
 
-	return BASE64_SUCCESS;
+	return BASE64_ENCODE_SIZE(input_size);
 }
 
-int32_t base64_decode(buffer_range_t *output, buffer_range_t *input)
+size_t base64_decode(void *input, size_t input_size, void *output, size_t output_size)
 {
-	size_t *ip, *op;
-	byte_t v1, v2, v3, v4;
-	byte_t w1, w2, w3, w4;
+	byte_t *in = input;
+	byte_t *out = output;
 
-	// No input
-	if (input->start == input->end)
+	size_t input_pos = 0;
+	size_t output_pos = 0;
+
+	byte_t v1 = 0, v2 = 0, v3 = 0, v4 = 0;
+	byte_t w1 = 0, w2 = 0, w3 = 0, w4 = 0;
+
+	if (input_size % 4 != 0)
 	{
-		return BASE64_SUCCESS;
+		return 0;
+	}
+
+	if (output_size < BASE64_DECODE_SIZE(input_size))
+	{
+		return 0;
 	}
 
 	// Every 4 bytes from input becomes 3 bytes at output.
-	while ((input->start + 4 <= input->end) && (output->start + 3 <= output->end))
+	while (input_pos < input_size)
 	{
-		ip = &input->start;
-		op = &output->start;
-
-		v1 = input->data[(*ip)++];
-		v2 = input->data[(*ip)++];
-		v3 = input->data[(*ip)++];
-		v4 = input->data[(*ip)++];
+		v1 = in[input_pos++];
+		v2 = in[input_pos++];
+		v3 = in[input_pos++];
+		v4 = in[input_pos++];
 
 		w1 = base64_decode_table[v1];
 		w2 = base64_decode_table[v2];
@@ -132,40 +131,38 @@ int32_t base64_decode(buffer_range_t *output, buffer_range_t *input)
 
 		if (w1 == 255 || w2 == 255 || w3 == 255 || w4 == 255)
 		{
-			return BASE64_ILLEGAL_STREAM;
+			return 0;
 		}
 
 		if (v1 == '=' || v2 == '=')
 		{
-			return BASE64_ILLEGAL_STREAM;
+			return output_pos;
 		}
 
 		if (v3 == '=' && v4 != '=')
 		{
-			return BASE64_ILLEGAL_STREAM;
+			return output_pos;
 		}
 
 		if (v3 != '=' && v4 != '=')
 		{
-			output->data[(*op)++] = (w1 << 2) + (w2 >> 4);
-			output->data[(*op)++] = (w2 << 4) + (w3 >> 2);
-			output->data[(*op)++] = (w3 << 6) + w4;
+			out[output_pos++] = (w1 << 2) + (w2 >> 4);
+			out[output_pos++] = (w2 << 4) + (w3 >> 2);
+			out[output_pos++] = (w3 << 6) + w4;
 		}
 		else
 		{
 			if (v3 == '=') // implies v4 == '='
 			{
-				output->data[(*op)++] = (w1 << 2) + (w2 >> 4);
+				out[output_pos++] = (w1 << 2) + (w2 >> 4);
 			}
 			else // v4 == '='
 			{
-				output->data[(*op)++] = (w1 << 2) + (w2 >> 4);
-				output->data[(*op)++] = (w2 << 4) + (w3 >> 2);
+				out[output_pos++] = (w1 << 2) + (w2 >> 4);
+				out[output_pos++] = (w2 << 4) + (w3 >> 2);
 			}
-
-			return BASE64_STREAM_END;
 		}
 	}
 
-	return BASE64_SUCCESS;
+	return BASE64_DECODE_SIZE(input_size);
 }
