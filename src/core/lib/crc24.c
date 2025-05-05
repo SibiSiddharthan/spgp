@@ -6,6 +6,7 @@
 */
 
 #include <crc24.h>
+#include <byteswap.h>
 
 // clang-format off
 static uint32_t crc24_table[256] = 
@@ -48,7 +49,10 @@ uint32_t crc24_update(uint32_t crc, const void *data, size_t size)
 
 uint32_t crc24_final(uint32_t crc)
 {
-	return crc & CRC24_FINAL;
+	crc = crc & CRC24_FINAL;
+	crc = BSWAP_32(crc);
+
+	return crc;
 }
 
 #if 0
