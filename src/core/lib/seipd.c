@@ -101,7 +101,7 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	}
 
 	// Write the stream
-	pgp_stream_write(stream, PTR_OFFSET(packet->data, iv_size + 2), data_size, 0);
+	pgp_stream_write(stream, PTR_OFFSET(packet->data, iv_size + 2), data_size);
 
 	// Encrypt the data
 	status = pgp_cfb_encrypt(symmetric_key_algorithm_id, session_key, session_key_size, PTR_OFFSET(packet->data, 2), iv_size,
@@ -385,7 +385,7 @@ static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *s
 	pos += block_size + 2;
 
 	// Write the stream
-	pgp_stream_write(stream, PTR_OFFSET(packet->data, pos), data_size, 0);
+	pgp_stream_write(stream, PTR_OFFSET(packet->data, pos), data_size);
 	pos += data_size;
 
 	// Copy the trailer
@@ -524,7 +524,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 		return PGP_NO_MEMORY;
 	}
 
-	pgp_stream_write(stream, data, data_size, 0);
+	pgp_stream_write(stream, data, data_size);
 
 	in = data;
 	out = packet->data;
@@ -1044,7 +1044,7 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 		return PGP_NO_MEMORY;
 	}
 
-	pgp_stream_write(stream, data, data_size, 0);
+	pgp_stream_write(stream, data, data_size);
 
 	in = data;
 	out = packet->data;

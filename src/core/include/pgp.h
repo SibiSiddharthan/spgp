@@ -17,4 +17,6 @@
 #include <round.h>
 #include <load.h>
 
+#define PGP_ARMOR_NO_CRC 0x1
+
 #endif

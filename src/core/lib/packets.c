@@ -89,7 +89,7 @@ pgp_error_t pgp_compressed_packet_compress(pgp_compresed_packet *packet, pgp_str
 			return PGP_NO_MEMORY;
 		}
 
-		pgp_stream_write(stream, packet->data, data_size, 0);
+		pgp_stream_write(stream, packet->data, data_size);
 
 		// Set the header
 		pgp_compressed_packet_encode_header(packet, 0);
