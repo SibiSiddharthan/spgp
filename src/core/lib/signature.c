@@ -11,7 +11,6 @@
 #include <key.h>
 #include <signature.h>
 
-#include <hash.h>
 #include <crypto.h>
 
 #include <stdlib.h>
@@ -2923,7 +2922,7 @@ pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void
 	return PGP_SUCCESS;
 }
 
-static void pgp_hash_signature_material(hash_ctx *hctx, pgp_signature_packet *sign)
+static void pgp_hash_signature_material(pgp_hash_t *hctx, pgp_signature_packet *sign)
 {
 	switch (sign->public_key_algorithm_id)
 	{
@@ -2937,8 +2936,8 @@ static void pgp_hash_signature_material(hash_ctx *hctx, pgp_signature_packet *si
 
 		bits_be = BSWAP_16(sig->e->bits);
 		bytes = CEIL_DIV(sig->e->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, sig->e->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, sig->e->bytes, bytes);
 	}
 	break;
 	case PGP_DSA:
@@ -2953,28 +2952,28 @@ static void pgp_hash_signature_material(hash_ctx *hctx, pgp_signature_packet *si
 		// r
 		bits_be = BSWAP_16(sig->r->bits);
 		bytes = CEIL_DIV(sig->r->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, sig->r->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, sig->r->bytes, bytes);
 
 		// s
 		bits_be = BSWAP_16(sig->s->bits);
 		bytes = CEIL_DIV(sig->s->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, sig->s->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, sig->s->bytes, bytes);
 	}
 	break;
 	case PGP_ED25519:
 	{
 		// 64 octets of signature data
 		pgp_ed25519_signature *sig = sign->signature;
-		hash_update(hctx, sig->sig, 64);
+		pgp_hash_update(hctx, sig->sig, 64);
 	}
 	break;
 	case PGP_ED448:
 	{
 		// 114 octets of signature data
 		pgp_ed448_signature *sig = sign->signature;
-		hash_update(hctx, sig->sig, 114);
+		pgp_hash_update(hctx, sig->sig, 114);
 	}
 	break;
 	default:
@@ -2984,16 +2983,16 @@ static void pgp_hash_signature_material(hash_ctx *hctx, pgp_signature_packet *si
 
 void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 {
-	hash_ctx *hctx = ctx;
+	pgp_hash_t *hctx = ctx;
 
 	byte_t octet = 0x88;
 	uint32_t size_be = BSWAP_32((uint32_t)sign->header.body_size);
 
 	// 1 octet 0x88
-	hash_update(hctx, &octet, 1);
+	pgp_hash_update(hctx, &octet, 1);
 
 	// 4 octet body size
-	hash_update(hctx, &size_be, 4);
+	pgp_hash_update(hctx, &size_be, 4);
 
 	// Hash signature body
 	if (sign->version == PGP_SIGNATURE_V6 || sign->version == PGP_SIGNATURE_V5 || sign->version == PGP_SIGNATURE_V4)
@@ -3002,16 +3001,16 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 		uint32_t max_subpacket_size = 0;
 
 		// 1 octet signature version
-		hash_update(hctx, &sign->version, 1);
+		pgp_hash_update(hctx, &sign->version, 1);
 
 		// 1 octet signature type
-		hash_update(hctx, &sign->type, 1);
+		pgp_hash_update(hctx, &sign->type, 1);
 
 		// 1 octet public key algorithm
-		hash_update(hctx, &sign->public_key_algorithm_id, 1);
+		pgp_hash_update(hctx, &sign->public_key_algorithm_id, 1);
 
 		// 1 octet hash algorithm
-		hash_update(hctx, &sign->hash_algorithm_id, 1);
+		pgp_hash_update(hctx, &sign->hash_algorithm_id, 1);
 
 		// Hashed subpacket octets
 		if (sign->version == PGP_SIGNATURE_V6)
@@ -3019,14 +3018,14 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 			uint32_t hashed_subpacket_size_be = BSWAP_32(sign->hashed_octets);
 
 			// 4 octet hashed subpacket size
-			hash_update(hctx, &hashed_subpacket_size_be, 4);
+			pgp_hash_update(hctx, &hashed_subpacket_size_be, 4);
 		}
 		else
 		{
 			uint16_t hashed_subpacket_size_be = BSWAP_16((uint16_t)sign->hashed_octets);
 
 			// 2 octet hashed subpacket size
-			hash_update(hctx, &hashed_subpacket_size_be, 2);
+			pgp_hash_update(hctx, &hashed_subpacket_size_be, 2);
 		}
 
 		// Hash the subpackets
@@ -3053,7 +3052,7 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 			memset(subpacket_buffer, 0, max_subpacket_size);
 
 			subpacket_size = pgp_signature_subpacket_write(sign->hashed_subpackets->packets[i], subpacket_buffer, max_subpacket_size);
-			hash_update(hctx, subpacket_buffer, subpacket_size);
+			pgp_hash_update(hctx, subpacket_buffer, subpacket_size);
 		}
 
 		free(subpacket_buffer);
@@ -3062,53 +3061,53 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 		if (sign->version == PGP_SIGNATURE_V6)
 		{
 			uint32_t zero = 0;
-			hash_update(hctx, &zero, 4);
+			pgp_hash_update(hctx, &zero, 4);
 		}
 		else
 		{
 			uint16_t zero = 0;
-			hash_update(hctx, &zero, 2);
+			pgp_hash_update(hctx, &zero, 2);
 		}
 
 		// 2 octets of the left 16 bits of signed hash value
-		hash_update(hctx, &sign->quick_hash, 2);
+		pgp_hash_update(hctx, &sign->quick_hash, 2);
 	}
 	else // packet->version == PGP_SIGNATURE_V3
 	{
 		// 1 octet version
-		hash_update(hctx, &sign->version, 1);
+		pgp_hash_update(hctx, &sign->version, 1);
 
 		// 1 octet hashed length
-		hash_update(hctx, &sign->hashed_octets, 1);
+		pgp_hash_update(hctx, &sign->hashed_octets, 1);
 
 		// 1 octet signature type
-		hash_update(hctx, &sign->type, 1);
+		pgp_hash_update(hctx, &sign->type, 1);
 
 		// 4 octet timestamp
 		uint32_t timestamp_be = BSWAP_32(sign->timestamp);
-		hash_update(hctx, &timestamp_be, 4);
+		pgp_hash_update(hctx, &timestamp_be, 4);
 
 		// 8 octet key-id
-		hash_update(hctx, &sign->key_id, 8);
+		pgp_hash_update(hctx, &sign->key_id, 8);
 
 		// 1 octet public-key algorithm
-		hash_update(hctx, &sign->public_key_algorithm_id, 1);
+		pgp_hash_update(hctx, &sign->public_key_algorithm_id, 1);
 
 		// 1 octet hash algorithm
-		hash_update(hctx, &sign->hash_algorithm_id, 1);
+		pgp_hash_update(hctx, &sign->hash_algorithm_id, 1);
 
 		// 2 octets of the left 16 bits of signed hash value
-		hash_update(hctx, &sign->quick_hash, 2);
+		pgp_hash_update(hctx, &sign->quick_hash, 2);
 	}
 
 	// Hash the signature material
 	pgp_hash_signature_material(hctx, sign);
 }
 
-static void pgp_compute_literal_hash(hash_ctx *hctx, pgp_literal_packet *literal)
+static void pgp_compute_literal_hash(pgp_hash_t *hctx, pgp_literal_packet *literal)
 {
 	// Hash the data
-	hash_update(hctx, literal->data, literal->data_size);
+	pgp_hash_update(hctx, literal->data, literal->data_size);
 
 	// Hash the partials
 	if (literal->partials)
@@ -3118,12 +3117,12 @@ static void pgp_compute_literal_hash(hash_ctx *hctx, pgp_literal_packet *literal
 		for (uint32_t i = 0; i < literal->partials->count; ++i)
 		{
 			packet = literal->partials->packets[i];
-			hash_update(hctx, packet->data, packet->header.body_size);
+			pgp_hash_update(hctx, packet->data, packet->header.body_size);
 		}
 	}
 }
 
-static void pgp_compute_uid_hash(hash_ctx *hctx, byte_t version, pgp_user_id_packet *uid)
+static void pgp_compute_uid_hash(pgp_hash_t *hctx, byte_t version, pgp_user_id_packet *uid)
 {
 	byte_t octet = 0xB4;
 	uint32_t size_be = BSWAP_32(uid->header.body_size);
@@ -3131,17 +3130,17 @@ static void pgp_compute_uid_hash(hash_ctx *hctx, byte_t version, pgp_user_id_pac
 	if (version != PGP_SIGNATURE_V3)
 	{
 		// 1 octet 0xB4
-		hash_update(hctx, &octet, 1);
+		pgp_hash_update(hctx, &octet, 1);
 
 		// 4 octet data length
-		hash_update(hctx, &size_be, 4);
+		pgp_hash_update(hctx, &size_be, 4);
 	}
 
 	// Data
-	hash_update(hctx, uid->user_data, uid->header.body_size);
+	pgp_hash_update(hctx, uid->user_data, uid->header.body_size);
 }
 
-static void pgp_compute_uat_hash(hash_ctx *hctx, byte_t version, pgp_user_attribute_packet *uat)
+static void pgp_compute_uat_hash(pgp_hash_t *hctx, byte_t version, pgp_user_attribute_packet *uat)
 {
 	byte_t octet = 0xD1;
 	uint32_t size_be = BSWAP_32(uat->header.body_size);
@@ -3149,10 +3148,10 @@ static void pgp_compute_uat_hash(hash_ctx *hctx, byte_t version, pgp_user_attrib
 	if (version != PGP_SIGNATURE_V3)
 	{
 		// 1 octet 0xD1
-		hash_update(hctx, &octet, 1);
+		pgp_hash_update(hctx, &octet, 1);
 
 		// 4 octet data length
-		hash_update(hctx, &size_be, 4);
+		pgp_hash_update(hctx, &size_be, 4);
 	}
 
 	// Data
@@ -3168,7 +3167,7 @@ static void pgp_compute_uat_hash(hash_ctx *hctx, byte_t version, pgp_user_attrib
 
 			// Hash the header
 			size = pgp_subpacket_header_write(header, buffer);
-			hash_update(hctx, buffer, size);
+			pgp_hash_update(hctx, buffer, size);
 
 			switch (header->tag & PGP_SUBPACKET_TAG_MASK)
 			{
@@ -3183,13 +3182,13 @@ static void pgp_compute_uat_hash(hash_ctx *hctx, byte_t version, pgp_user_attrib
 				image_header[2] = subpacket->image_header_version;
 				image_header[3] = subpacket->image_encoding;
 
-				hash_update(hctx, image_header, 16);
-				hash_update(hctx, subpacket->image_data, header->body_size - 16);
+				pgp_hash_update(hctx, image_header, 16);
+				pgp_hash_update(hctx, subpacket->image_data, header->body_size - 16);
 			}
 			case PGP_USER_ATTRIBUTE_UID:
 			{
 				pgp_user_attribute_uid_subpacket *subpacket = uat->subpackets->packets[i];
-				hash_update(hctx, subpacket->user_data, header->body_size);
+				pgp_hash_update(hctx, subpacket->user_data, header->body_size);
 			}
 			break;
 			}
@@ -3197,7 +3196,7 @@ static void pgp_compute_uat_hash(hash_ctx *hctx, byte_t version, pgp_user_attrib
 	}
 }
 
-static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_key_packet *key, void *user)
+static void pgp_compute_certification_hash(pgp_hash_t *hctx, byte_t version, pgp_key_packet *key, void *user)
 {
 	pgp_packet_header *header = user;
 
@@ -3214,62 +3213,19 @@ static void pgp_compute_certification_hash(hash_ctx *hctx, byte_t version, pgp_k
 	}
 }
 
-static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *key, byte_t hash[64], void *data)
+static uint32_t pgp_compute_hash(void *ctx, byte_t hash[64], pgp_signature_packet *packet, pgp_key_packet *key, void *data)
 {
-	hash_ctx *hctx = NULL;
-
-	byte_t hash_buffer[1024] = {0};
-	byte_t hash_algorithm = 0;
+	pgp_hash_t *hctx = ctx;
 
 	uint64_t hashed_size = 0;
 	uint32_t max_subpacket_size = 0;
 
 	void *subpacket_buffer = NULL;
 
-	switch (packet->hash_algorithm_id)
-	{
-	case PGP_MD5:
-		hash_algorithm = HASH_MD5;
-		break;
-	case PGP_SHA1:
-		hash_algorithm = HASH_SHA1;
-		break;
-	case PGP_RIPEMD_160:
-		hash_algorithm = HASH_RIPEMD160;
-		break;
-	case PGP_SHA2_256:
-		hash_algorithm = HASH_SHA256;
-		break;
-	case PGP_SHA2_384:
-		hash_algorithm = HASH_SHA384;
-		break;
-	case PGP_SHA2_512:
-		hash_algorithm = HASH_SHA512;
-		break;
-	case PGP_SHA2_224:
-		hash_algorithm = HASH_SHA224;
-		break;
-	case PGP_SHA3_256:
-		hash_algorithm = HASH_SHA3_256;
-		break;
-	case PGP_SHA3_512:
-		hash_algorithm = HASH_SHA3_512;
-		break;
-	default:
-		return 0;
-	}
-
-	hctx = hash_init(hash_buffer, 1024, hash_algorithm);
-
-	if (hctx == NULL)
-	{
-		return 0;
-	}
-
 	// Hash the salt first
 	if (packet->version == PGP_SIGNATURE_V6)
 	{
-		hash_update(hctx, packet->salt, packet->salt_size);
+		pgp_hash_update(hctx, packet->salt, packet->salt_size);
 	}
 
 	// Hash the data first
@@ -3319,19 +3275,19 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 	if (packet->version == PGP_SIGNATURE_V6 || packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V4)
 	{
 		// 1 octet signature version
-		hash_update(hctx, &packet->version, 1);
+		pgp_hash_update(hctx, &packet->version, 1);
 		hashed_size += 1;
 
 		// 1 octet signature type
-		hash_update(hctx, &packet->type, 1);
+		pgp_hash_update(hctx, &packet->type, 1);
 		hashed_size += 1;
 
 		// 1 octet public key algorithm
-		hash_update(hctx, &packet->public_key_algorithm_id, 1);
+		pgp_hash_update(hctx, &packet->public_key_algorithm_id, 1);
 		hashed_size += 1;
 
 		// 1 octet hash algorithm
-		hash_update(hctx, &packet->hash_algorithm_id, 1);
+		pgp_hash_update(hctx, &packet->hash_algorithm_id, 1);
 		hashed_size += 1;
 
 		if (packet->version == PGP_SIGNATURE_V6)
@@ -3339,7 +3295,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 			uint32_t hashed_subpacket_size_be = BSWAP_32(packet->hashed_octets);
 
 			// 4 octet hashed subpacket size
-			hash_update(hctx, &hashed_subpacket_size_be, 4);
+			pgp_hash_update(hctx, &hashed_subpacket_size_be, 4);
 			hashed_size += 4;
 		}
 		else
@@ -3347,7 +3303,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 			uint16_t hashed_subpacket_size_be = BSWAP_16((uint16_t)packet->hashed_octets);
 
 			// 2 octet hashed subpacket size
-			hash_update(hctx, &hashed_subpacket_size_be, 2);
+			pgp_hash_update(hctx, &hashed_subpacket_size_be, 2);
 			hashed_size += 2;
 		}
 
@@ -3376,7 +3332,7 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 
 			subpacket_size = pgp_signature_subpacket_write(packet->hashed_subpackets->packets[i], subpacket_buffer, max_subpacket_size);
 
-			hash_update(hctx, subpacket_buffer, subpacket_size);
+			pgp_hash_update(hctx, subpacket_buffer, subpacket_size);
 			hashed_size += subpacket_size;
 		}
 
@@ -3387,57 +3343,55 @@ static uint32_t pgp_compute_hash(pgp_signature_packet *packet, pgp_key_packet *k
 			pgp_literal_packet *literal = data;
 
 			// 1 octet content format
-			hash_update(hctx, &literal->format, 1);
+			pgp_hash_update(hctx, &literal->format, 1);
 
 			// 1 octet file name length
-			hash_update(hctx, &literal->filename_size, 1);
+			pgp_hash_update(hctx, &literal->filename_size, 1);
 
 			// N octets of file name
 			if (literal->filename_size > 0)
 			{
-				hash_update(hctx, &literal->filename, literal->filename_size);
+				pgp_hash_update(hctx, &literal->filename, literal->filename_size);
 			}
 
 			// 4 octets of date
 			uint32_t date_be = BSWAP_32(literal->date);
-			hash_update(hctx, &date_be, 4);
+			pgp_hash_update(hctx, &date_be, 4);
 		}
 
 		// Stop counting the hashed size from here on
 
 		// 1 octet signature version (again)
-		hash_update(hctx, &packet->version, 1);
+		pgp_hash_update(hctx, &packet->version, 1);
 
 		// 1 octet 0xFF
 		byte_t byte = 0xFF;
-		hash_update(hctx, &byte, 1);
+		pgp_hash_update(hctx, &byte, 1);
 
 		if (packet->version == PGP_SIGNATURE_V5)
 		{
 			// 8 octet hashed size
 			uint64_t hashed_size_be = BSWAP_64((uint64_t)hashed_size);
-			hash_update(hctx, &hashed_size_be, 8);
+			pgp_hash_update(hctx, &hashed_size_be, 8);
 		}
 		else
 		{
 			// 4 octet hashed size
 			uint32_t hashed_size_be = BSWAP_32((uint32_t)hashed_size);
-			hash_update(hctx, &hashed_size_be, 4);
+			pgp_hash_update(hctx, &hashed_size_be, 4);
 		}
 	}
 	else // packet->version == PGP_SIGNATURE_V3
 	{
 		// 1 octet signature type
-		hash_update(hctx, &packet->type, 1);
+		pgp_hash_update(hctx, &packet->type, 1);
 
 		// 4 octet signature creation time
 		uint32_t timestamp_be = BSWAP_32(packet->timestamp);
-		hash_update(hctx, &timestamp_be, 4);
+		pgp_hash_update(hctx, &timestamp_be, 4);
 	}
 
-	hash_final(hctx, hash, 64);
-
-	return hctx->hash_size;
+	return pgp_hash_final(hctx, hash, 64);
 }
 
 static pgp_error_t pgp_setup_sign_info(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *info)
@@ -3643,6 +3597,8 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 static pgp_error_t pgp_do_sign(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
 {
 	pgp_error_t error = 0;
+	pgp_hash_t *hctx = NULL;
+
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
@@ -3685,12 +3641,21 @@ static pgp_error_t pgp_do_sign(pgp_signature_packet *packet, pgp_key_packet *key
 		}
 	}
 
-	hash_size = pgp_compute_hash(packet, key, hash, data);
+	error = pgp_hash_new(&hctx, packet->hash_algorithm_id);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	hash_size = pgp_compute_hash(hctx, hash, packet, key, data);
 
 	if (hash_size == 0)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
+
+	pgp_hash_delete(hctx);
 
 	// Store the left 2 octets
 	packet->quick_hash[0] = hash[0];
@@ -3735,6 +3700,8 @@ static pgp_error_t pgp_do_sign(pgp_signature_packet *packet, pgp_key_packet *key
 static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
 {
 	pgp_error_t error = 0;
+	pgp_hash_t *hctx = NULL;
+
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
@@ -3758,12 +3725,21 @@ static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *k
 		return PGP_INVALID_HASH_ALGORITHM;
 	}
 
-	hash_size = pgp_compute_hash(packet, key, hash, data);
+	error = pgp_hash_new(&hctx, packet->hash_algorithm_id);
+
+	if (error != PGP_SUCCESS)
+	{
+		return error;
+	}
+
+	hash_size = pgp_compute_hash(hctx, hash, packet, key, data);
 
 	if (hash_size == 0)
 	{
-		return 0;
+		return PGP_NO_MEMORY;
 	}
+
+	pgp_hash_delete(hctx);
 
 	// Check the left 2 octets first
 	if (hash[0] != packet->quick_hash[0] || hash[1] != packet->quick_hash[1])
@@ -4383,57 +4359,23 @@ pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packe
 static pgp_error_t pgp_setup_target(pgp_signature_packet *packet, pgp_signature_packet *signature)
 {
 	pgp_error_t error = 0;
+	pgp_hash_t *hctx = NULL;
 
-	byte_t buffer[1024] = {0};
-	hash_ctx *hctx = NULL;
-
-	byte_t hash_algorithm = 0;
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
 	// Compute the hash
-	switch (signature->hash_algorithm_id)
-	{
-	case PGP_MD5:
-		hash_algorithm = HASH_MD5;
-		break;
-	case PGP_SHA1:
-		hash_algorithm = HASH_SHA1;
-		break;
-	case PGP_RIPEMD_160:
-		hash_algorithm = HASH_RIPEMD160;
-		break;
-	case PGP_SHA2_256:
-		hash_algorithm = HASH_SHA256;
-		break;
-	case PGP_SHA2_384:
-		hash_algorithm = HASH_SHA384;
-		break;
-	case PGP_SHA2_512:
-		hash_algorithm = HASH_SHA512;
-		break;
-	case PGP_SHA2_224:
-		hash_algorithm = HASH_SHA224;
-		break;
-	case PGP_SHA3_256:
-		hash_algorithm = HASH_SHA3_256;
-		break;
-	case PGP_SHA3_512:
-		hash_algorithm = HASH_SHA3_512;
-		break;
-	default:
-		return PGP_INVALID_HASH_ALGORITHM;
-	}
+	error = pgp_hash_new(&hctx, signature->hash_algorithm_id);
 
-	hctx = hash_init(buffer, 1024, hash_algorithm);
-
-	if (hctx == NULL)
+	if (error != PGP_SUCCESS)
 	{
-		return PGP_NO_MEMORY;
+		return error;
 	}
 
 	pgp_signature_hash(hctx, signature);
-	hash_size = hash_final(hctx, hash, 64);
+	hash_size = pgp_hash_final(hctx, hash, 64);
+
+	pgp_hash_delete(hctx);
 
 	// Create a signature target
 	error = pgp_signature_packet_hashed_subpacket_add(

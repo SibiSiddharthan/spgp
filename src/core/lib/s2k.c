@@ -252,6 +252,8 @@ static pgp_error_t s2k_simple_hash(pgp_hash_algorithms algorithm, void *password
 		output += MIN(key_size - output, hash_size);
 	}
 
+	pgp_hash_delete(hctx);
+
 	return PGP_SUCCESS;
 }
 
@@ -287,6 +289,8 @@ static pgp_error_t s2k_salted_hash(pgp_hash_algorithms algorithm, void *password
 
 		output += MIN(key_size - output, hash_size);
 	}
+
+	pgp_hash_delete(hctx);
 
 	return PGP_SUCCESS;
 }
@@ -338,6 +342,8 @@ static pgp_error_t s2k_iterated_hash(pgp_hash_algorithms algorithm, void *passwo
 
 		output += MIN(key_size - output, hash_size);
 	}
+
+	pgp_hash_delete(hctx);
 
 	return PGP_SUCCESS;
 }

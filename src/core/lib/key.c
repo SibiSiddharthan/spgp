@@ -3888,6 +3888,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		pgp_key_v3_hash(hctx, key);
 		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
+		pgp_hash_delete(hctx);
 		key->fingerprint_size = PGP_KEY_V3_FINGERPRINT_SIZE;
 
 		goto cache_read;
@@ -3903,6 +3904,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		pgp_key_v4_hash(hctx, key);
 		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+		pgp_hash_delete(hctx);
 		key->fingerprint_size = PGP_KEY_V4_FINGERPRINT_SIZE;
 
 		goto cache_read;
@@ -3918,6 +3920,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		pgp_key_v5_hash(hctx, key);
 		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V5_FINGERPRINT_SIZE);
+		pgp_hash_delete(hctx);
 		key->fingerprint_size = PGP_KEY_V5_FINGERPRINT_SIZE;
 
 		goto cache_read;
@@ -3933,6 +3936,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		pgp_key_v6_hash(hctx, key);
 		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+		pgp_hash_delete(hctx);
 		key->fingerprint_size = PGP_KEY_V6_FINGERPRINT_SIZE;
 
 		goto cache_read;
