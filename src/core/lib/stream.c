@@ -127,60 +127,7 @@ void *pgp_stream_pop_packet(pgp_stream_t *stream)
 	return packet;
 }
 
-#if 0
-static pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *data, size_t size)
-{
-	pgp_error_t error = 0;
-	armor_status status = 0;
-
-	pgp_armor_ctx *armor = NULL;
-
-	size_t pos = 0;
-	size_t offset = 0;
-	size_t result = 0;
-
-	while (pos < size)
-	{
-		status = pgp_armor_read(armor, PTR_OFFSET(data, pos), size - pos, &result);
-
-		if (status != ARMOR_SUCCESS)
-		{
-			pgp_armor_delete(armor);
-			pgp_stream_delete(stream, pgp_packet_delete);
-			return PGP_INTERNAL_BUG;
-		}
-
-		while (offset < armor->data.size)
-		{
-			pgp_packet_header *header = NULL;
-			void *packet = NULL;
-
-			error = pgp_packet_read(&packet, PTR_OFFSET(armor->data.data, offset), armor->data.size);
-
-			if (error != PGP_SUCCESS)
-			{
-				return error;
-			}
-
-			stream = pgp_stream_push_packet(stream, packet);
-
-			if (stream == NULL)
-			{
-				return PGP_NO_MEMORY;
-			}
-
-			header = packet;
-			offset += header->body_size + header->header_size;
-		}
-
-		pos += result;
-	}
-
-	return error;
-}
-#endif
-
-static pgp_error_t pgp_stream_read_binary(pgp_stream_t *stream, void *data, size_t size)
+pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 {
 	pgp_error_t error = 0;
 	size_t pos = 0;
@@ -240,19 +187,6 @@ static pgp_error_t pgp_stream_read_binary(pgp_stream_t *stream, void *data, size
 	return error;
 }
 
-pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
-{
-	byte_t *in = data;
-
-	// Check if data is armored
-	if (PGP_PACKET_HEADER_FORMAT(in[0]) == PGP_UNKNOWN_HEADER)
-	{
-		// return pgp_stream_read_armor(stream, data, size);
-	}
-
-	return pgp_stream_read_binary(stream, data, size);
-}
-
 size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size)
 {
 	pgp_packet_header *header = NULL;
@@ -272,6 +206,120 @@ size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size)
 	}
 
 	return pos;
+}
+
+pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, uint16_t flags)
+{
+	pgp_error_t error = 0;
+	armor_status status = 0;
+
+	armor_options options = {0};
+	armor_marker markers[] = {{.header_line = (void *)PGP_ARMOR_BEGIN_MESSAGE,
+							   .header_line_size = strlen(PGP_ARMOR_BEGIN_MESSAGE),
+							   .trailer_line = (void *)PGP_ARMOR_END_MESSAGE,
+							   .trailer_line_size = strlen(PGP_ARMOR_END_MESSAGE)},
+							  {.header_line = (void *)PGP_ARMOR_BEGIN_PUBLIC_KEY,
+							   .header_line_size = strlen(PGP_ARMOR_BEGIN_PUBLIC_KEY),
+							   .trailer_line = (void *)PGP_ARMOR_END_PUBLIC_KEY,
+							   .trailer_line_size = strlen(PGP_ARMOR_END_PUBLIC_KEY)},
+							  {.header_line = (void *)PGP_ARMOR_BEGIN_PRIVATE_KEY,
+							   .header_line_size = strlen(PGP_ARMOR_BEGIN_PRIVATE_KEY),
+							   .trailer_line = (void *)PGP_ARMOR_END_PRIVATE_KEY,
+							   .trailer_line_size = strlen(PGP_ARMOR_END_PRIVATE_KEY)},
+							  {.header_line = (void *)PGP_ARMOR_BEGIN_SIGNATURE,
+							   .header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE),
+							   .trailer_line = (void *)PGP_ARMOR_END_SIGNATURE,
+							   .trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE)}};
+
+	void *temp = NULL;
+	uint32_t temp_size = buffer_size;
+
+	uint32_t pos = 0;
+
+	uint32_t input_pos = 0;
+	uint32_t input_size = 0;
+	uint32_t output_pos = 0;
+	uint32_t output_size = 0;
+
+	temp = malloc(temp_size);
+
+	if (temp == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(temp, 0, temp_size);
+
+	options.flags = (ARMOR_SCAN_HEADERS | ARMOR_EMPTY_LINE) | (flags & PGP_ARMOR_NO_CRC ? ARMOR_CHECKSUM_CRC24 : 0);
+
+	while (pos < buffer_size)
+	{
+		input_pos += input_size;
+		output_pos += output_size;
+
+		input_size = buffer_size - input_size;
+		output_size = temp_size - output_size;
+
+		status = armor_read(&options, markers, 4, PTR_OFFSET(buffer, input_pos), &input_size, PTR_OFFSET(temp, output_pos), &output_size);
+
+		if (status != ARMOR_SUCCESS)
+		{
+			pgp_stream_delete(stream, pgp_packet_delete);
+
+			switch (status)
+			{
+			case ARMOR_UNKOWN_MARKER:
+			case ARMOR_MARKER_MISMATCH:
+				return PGP_ARMOR_UNKNOWN_MARKER;
+			case ARMOR_MALFORMED_DATA:
+				return PGP_ARMOR_MALFORMED_BASE64_DATA;
+			case ARMOR_CRC_MISMATCH:
+				return PGP_ARMOR_CRC_MISMATCH;
+			case ARMOR_LINE_TOO_BIG:
+				return PGP_ARMOR_LINE_TOO_BIG;
+			case ARMOR_BUFFER_TOO_SMALL:
+				return PGP_BUFFER_TOO_SMALL;
+			case ARMOR_NO_MEMORY:
+				return PGP_NO_MEMORY;
+			default:
+				return PGP_INTERNAL_BUG;
+			}
+		}
+
+		if (options.headers != NULL)
+		{
+			free(options.headers);
+
+			options.headers = NULL;
+			options.headers_size = 0;
+		}
+
+		while (pos < output_size)
+		{
+			pgp_packet_header *header = NULL;
+			void *packet = NULL;
+
+			error = pgp_packet_read(&packet, PTR_OFFSET(temp, output_pos + pos), output_size - pos);
+
+			if (error != PGP_SUCCESS)
+			{
+				return error;
+			}
+
+			stream = pgp_stream_push_packet(stream, packet);
+
+			if (stream == NULL)
+			{
+				pgp_stream_delete(stream, pgp_packet_delete);
+				return PGP_NO_MEMORY;
+			}
+
+			header = packet;
+			pos += header->body_size + header->header_size;
+		}
+	}
+
+	return error;
 }
 
 size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, void *header, uint16_t header_size, uint16_t flags)
