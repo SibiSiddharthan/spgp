@@ -14,7 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sha.h>
+#ifndef SHA1_HASH_SIZE
+#	define SHA1_HASH_SIZE 20
+#endif
 
 static byte_t check_recursive_encryption_container(pgp_stream_t *stream)
 {
@@ -393,8 +395,14 @@ static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *s
 	pos += 2;
 
 	// Hash prefix | plaintext | trailer
-	sha1_hash(packet->data, pos, PTR_OFFSET(packet->data, pos));
+	status = pgp_hash(PGP_SHA1, packet->data, pos, PTR_OFFSET(packet->data, pos), SHA1_HASH_SIZE);
 	pos += SHA1_HASH_SIZE;
+
+	if (status != PGP_SUCCESS)
+	{
+		free(packet->data);
+		return status;
+	}
 
 	// Encrypt the plaintext and mdc
 	status = pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data,
@@ -402,6 +410,7 @@ static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *s
 
 	if (status != PGP_SUCCESS)
 	{
+		free(packet->data);
 		return status;
 	}
 
@@ -445,7 +454,13 @@ static pgp_error_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *s
 	}
 
 	// Calculate the hash
-	sha1_hash(temp, packet->data_size - SHA1_HASH_SIZE, mdc);
+	status = pgp_hash(PGP_SHA1, temp, packet->data_size - SHA1_HASH_SIZE, mdc, SHA1_HASH_SIZE);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(temp);
+		return status;
+	}
 
 	// Compare the hash
 	if (memcmp(mdc, PTR_OFFSET(temp, packet->data_size - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
@@ -542,6 +557,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 
 		if (status != PGP_SUCCESS)
 		{
+			free(packet->data);
 			free(data);
 			return status;
 		}
@@ -581,6 +597,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 
 	if (status != PGP_SUCCESS)
 	{
+		free(packet->data);
 		return status;
 	}
 

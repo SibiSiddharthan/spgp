@@ -475,6 +475,11 @@ void pgp_hash_delete(pgp_hash_t *ctx)
 	hash_delete((hash_ctx *)ctx);
 }
 
+void pgp_hash_reset(pgp_hash_t *ctx)
+{
+	hash_reset((hash_ctx *)ctx);
+}
+
 pgp_hash_t *pgp_hash_dup(pgp_hash_t *ctx)
 {
 	return (void *)hash_dup((void *)ctx);
@@ -488,6 +493,24 @@ void pgp_hash_update(pgp_hash_t *ctx, void *data, size_t size)
 uint32_t pgp_hash_final(pgp_hash_t *ctx, void *hash, size_t size)
 {
 	return hash_final((hash_ctx *)ctx, hash, size);
+}
+
+pgp_error_t pgp_hash(pgp_hash_algorithms algorithm, void *data, size_t data_size, void *hash, byte_t hash_size)
+{
+	pgp_error_t status = 0;
+	pgp_hash_t *hctx = NULL;
+
+	status = pgp_hash_new(&hctx, algorithm);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	pgp_hash_update(hctx, data, data_size);
+	pgp_hash_final(hctx, hash, hash_size);
+
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,

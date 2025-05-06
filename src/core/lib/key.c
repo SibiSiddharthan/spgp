@@ -14,12 +14,16 @@
 #include <signature.h>
 #include <crypto.h>
 
-#include <hash.h>
-#include <sha.h>
-#include <md5.h>
-
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef MD5_HASH_SIZE
+#	define MD5_HASH_SIZE 16
+#endif
+
+#ifndef SHA1_HASH_SIZE
+#	define SHA1_HASH_SIZE 20
+#endif
 
 static uint32_t get_public_key_material_octets(pgp_public_key_algorithms public_key_algorithm_id, void *key_data)
 {
@@ -1480,11 +1484,6 @@ static pgp_error_t pgp_secret_key_material_encrypt_legacy_cfb_v3(pgp_key_packet 
 	uint32_t pos = 0;
 	uint16_t bits_be = 0;
 
-	if (key_size > MD5_HASH_SIZE)
-	{
-		return PGP_ENCRYPTION_KEY_TOO_BIG;
-	}
-
 	packet->encrypted = malloc(size);
 
 	if (packet->encrypted == NULL)
@@ -1676,7 +1675,12 @@ static pgp_error_t pgp_secret_key_material_encrypt_legacy_cfb(pgp_key_packet *pa
 	uint32_t count = 0;
 
 	// Hash the passphrase
-	md5_hash(passphrase, passphrase_size, hash);
+	status = pgp_hash(PGP_MD5, passphrase, passphrase_size, hash, MD5_HASH_SIZE);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
@@ -1728,7 +1732,12 @@ static pgp_error_t pgp_secret_key_material_decrypt_legacy_cfb(pgp_key_packet *pa
 	byte_t *buffer = NULL;
 
 	// Hash the passphrase
-	md5_hash(passphrase, passphrase_size, hash);
+	status = pgp_hash(PGP_MD5, passphrase, passphrase_size, hash, MD5_HASH_SIZE);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
@@ -1930,7 +1939,15 @@ static pgp_error_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, v
 	pgp_private_key_material_write(packet, buffer, count);
 
 	// Calculate the hash and store it the end
-	sha1_hash(buffer, count, PTR_OFFSET(buffer, count));
+	status = pgp_hash(PGP_SHA1, buffer, count, PTR_OFFSET(buffer, count), SHA1_HASH_SIZE);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		free(packet->encrypted);
+
+		return status;
+	}
 
 	// Encrypt using CFB
 	status = pgp_cfb_encrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, buffer, count + SHA1_HASH_SIZE,
@@ -1987,7 +2004,13 @@ static pgp_error_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, v
 	}
 
 	// Hash the material
-	sha1_hash(buffer, packet->encrypted_octets - SHA1_HASH_SIZE, hash);
+	status = pgp_hash(PGP_SHA1, buffer, packet->encrypted_octets - SHA1_HASH_SIZE, hash, SHA1_HASH_SIZE);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		return status;
+	}
 
 	// Check the hash
 	if (memcmp(hash, PTR_OFFSET(buffer, packet->encrypted_octets - SHA1_HASH_SIZE), SHA1_HASH_SIZE) != 0)
@@ -3537,7 +3560,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
-static void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
+static void pgp_hash_key_material(pgp_hash_t *hctx, pgp_key_packet *key)
 {
 	switch (key->public_key_algorithm_id)
 	{
@@ -3552,14 +3575,14 @@ static void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
 		// n
 		bits_be = BSWAP_16(pkey->n->bits);
 		bytes = CEIL_DIV(pkey->n->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->n->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->n->bytes, bytes);
 
 		// e
 		bits_be = BSWAP_16(pkey->e->bits);
 		bytes = CEIL_DIV(pkey->e->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->e->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->e->bytes, bytes);
 	}
 	break;
 	case PGP_KYBER:
@@ -3574,20 +3597,20 @@ static void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
 		// p
 		bits_be = BSWAP_16(pkey->p->bits);
 		bytes = CEIL_DIV(pkey->p->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->p->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->p->bytes, bytes);
 
 		// g
 		bits_be = BSWAP_16(pkey->g->bits);
 		bytes = CEIL_DIV(pkey->g->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->g->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->g->bytes, bytes);
 
 		// y
 		bits_be = BSWAP_16(pkey->y->bits);
 		bytes = CEIL_DIV(pkey->y->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->y->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->y->bytes, bytes);
 	}
 	break;
 	case PGP_DSA:
@@ -3599,26 +3622,26 @@ static void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
 		// p
 		bits_be = BSWAP_16(pkey->p->bits);
 		bytes = CEIL_DIV(pkey->p->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->p->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->p->bytes, bytes);
 
 		// q
 		bits_be = BSWAP_16(pkey->q->bits);
 		bytes = CEIL_DIV(pkey->q->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->q->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->q->bytes, bytes);
 
 		// g
 		bits_be = BSWAP_16(pkey->g->bits);
 		bytes = CEIL_DIV(pkey->g->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->g->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->g->bytes, bytes);
 
 		// y
 		bits_be = BSWAP_16(pkey->y->bits);
 		bytes = CEIL_DIV(pkey->y->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->y->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->y->bytes, bytes);
 	}
 	break;
 	case PGP_ECDH:
@@ -3629,20 +3652,20 @@ static void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
 		uint32_t bytes = 0;
 
 		// OID
-		hash_update(hctx, &pkey->oid_size, 1);
-		hash_update(hctx, pkey->oid, pkey->oid_size);
+		pgp_hash_update(hctx, &pkey->oid_size, 1);
+		pgp_hash_update(hctx, pkey->oid, pkey->oid_size);
 
 		// EC point
 		bits_be = BSWAP_16(pkey->point->bits);
 		bytes = CEIL_DIV(pkey->point->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->point->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->point->bytes, bytes);
 
 		// KDF
-		hash_update(hctx, &pkey->kdf.size, 1);
-		hash_update(hctx, &pkey->kdf.extensions, 1);
-		hash_update(hctx, &pkey->kdf.hash_algorithm_id, 1);
-		hash_update(hctx, &pkey->kdf.symmetric_key_algorithm_id, 1);
+		pgp_hash_update(hctx, &pkey->kdf.size, 1);
+		pgp_hash_update(hctx, &pkey->kdf.extensions, 1);
+		pgp_hash_update(hctx, &pkey->kdf.hash_algorithm_id, 1);
+		pgp_hash_update(hctx, &pkey->kdf.symmetric_key_algorithm_id, 1);
 	}
 	break;
 	case PGP_ECDSA:
@@ -3653,45 +3676,45 @@ static void pgp_hash_key_material(hash_ctx *hctx, pgp_key_packet *key)
 		uint32_t bytes = 0;
 
 		// OID
-		hash_update(hctx, &pkey->oid_size, 1);
-		hash_update(hctx, pkey->oid, pkey->oid_size);
+		pgp_hash_update(hctx, &pkey->oid_size, 1);
+		pgp_hash_update(hctx, pkey->oid, pkey->oid_size);
 
 		// EC point
 		bits_be = BSWAP_16(pkey->point->bits);
 		bytes = CEIL_DIV(pkey->point->bits, 8);
-		hash_update(hctx, &bits_be, 2);
-		hash_update(hctx, pkey->point->bytes, bytes);
+		pgp_hash_update(hctx, &bits_be, 2);
+		pgp_hash_update(hctx, pkey->point->bytes, bytes);
 	}
 	break;
 	case PGP_X25519:
 	{
 		pgp_x25519_key *pkey = key->key;
-		hash_update(hctx, pkey->public_key, 32);
+		pgp_hash_update(hctx, pkey->public_key, 32);
 	}
 	break;
 	case PGP_X448:
 	{
 		pgp_x448_key *pkey = key->key;
-		hash_update(hctx, pkey->public_key, 56);
+		pgp_hash_update(hctx, pkey->public_key, 56);
 	}
 	break;
 	case PGP_ED25519:
 	{
 
 		pgp_ed25519_key *pkey = key->key;
-		hash_update(hctx, pkey->public_key, 32);
+		pgp_hash_update(hctx, pkey->public_key, 32);
 	}
 	break;
 	case PGP_ED448:
 	{
 		pgp_ed448_key *pkey = key->key;
-		hash_update(hctx, pkey->public_key, 57);
+		pgp_hash_update(hctx, pkey->public_key, 57);
 	}
 	break;
 	}
 }
 
-static void pgp_key_v3_hash(hash_ctx *hctx, pgp_key_packet *key)
+static void pgp_key_v3_hash(pgp_hash_t *hctx, pgp_key_packet *key)
 {
 	// V3 keys only support RSA
 	pgp_rsa_key *pkey = key->key;
@@ -3699,14 +3722,14 @@ static void pgp_key_v3_hash(hash_ctx *hctx, pgp_key_packet *key)
 
 	// n
 	bytes = CEIL_DIV(pkey->n->bits, 8);
-	hash_update(hctx, pkey->n->bytes, bytes);
+	pgp_hash_update(hctx, pkey->n->bytes, bytes);
 
 	// e
 	bytes = CEIL_DIV(pkey->e->bits, 8);
-	hash_update(hctx, pkey->e->bytes, bytes);
+	pgp_hash_update(hctx, pkey->e->bytes, bytes);
 }
 
-static void pgp_key_v4_hash(hash_ctx *hctx, pgp_key_packet *key)
+static void pgp_key_v4_hash(pgp_hash_t *hctx, pgp_key_packet *key)
 {
 	byte_t buffer[16] = {0};
 	byte_t pos = 0;
@@ -3735,11 +3758,11 @@ static void pgp_key_v4_hash(hash_ctx *hctx, pgp_key_packet *key)
 	LOAD_8(buffer + pos, &key->public_key_algorithm_id);
 	pos += 1;
 
-	hash_update(hctx, buffer, pos);
+	pgp_hash_update(hctx, buffer, pos);
 	pgp_hash_key_material(hctx, key);
 }
 
-static void pgp_key_v5_hash(hash_ctx *hctx, pgp_key_packet *key)
+static void pgp_key_v5_hash(pgp_hash_t *hctx, pgp_key_packet *key)
 {
 	byte_t buffer[16] = {0};
 	byte_t pos = 0;
@@ -3773,11 +3796,11 @@ static void pgp_key_v5_hash(hash_ctx *hctx, pgp_key_packet *key)
 	LOAD_32(buffer + pos, &material_count_be);
 	pos += 4;
 
-	hash_update(hctx, buffer, pos);
+	pgp_hash_update(hctx, buffer, pos);
 	pgp_hash_key_material(hctx, key);
 }
 
-static void pgp_key_v6_hash(hash_ctx *hctx, pgp_key_packet *key)
+static void pgp_key_v6_hash(pgp_hash_t *hctx, pgp_key_packet *key)
 {
 	byte_t buffer[16] = {0};
 	byte_t pos = 0;
@@ -3811,7 +3834,7 @@ static void pgp_key_v6_hash(hash_ctx *hctx, pgp_key_packet *key)
 	LOAD_32(buffer + pos, &material_count_be);
 	pos += 4;
 
-	hash_update(hctx, buffer, pos);
+	pgp_hash_update(hctx, buffer, pos);
 	pgp_hash_key_material(hctx, key);
 }
 
@@ -3835,13 +3858,8 @@ void pgp_key_hash(void *ctx, pgp_key_packet *key)
 
 uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size)
 {
-	hash_ctx *hctx = NULL;
-	byte_t buffer[512] = {0};
-
-	if (pgp_public_cipher_algorithm_validate(key->public_key_algorithm_id) == 0)
-	{
-		return 0;
-	}
+	pgp_error_t status = 0;
+	pgp_hash_t *hctx = NULL;
 
 	// Copy from cache
 	if (key->fingerprint_size != 0)
@@ -3861,60 +3879,60 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 	case PGP_KEY_V2:
 	case PGP_KEY_V3:
 	{
-		hctx = hash_init(buffer, 512, HASH_MD5);
+		status = pgp_hash_new(&hctx, PGP_MD5);
 
-		if (hctx == NULL)
+		if (status != PGP_SUCCESS)
 		{
 			return 0;
 		}
 
 		pgp_key_v3_hash(hctx, key);
-		hash_final(hctx, key->fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
+		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
 		key->fingerprint_size = PGP_KEY_V3_FINGERPRINT_SIZE;
 
 		goto cache_read;
 	}
 	case PGP_KEY_V4:
 	{
-		hctx = hash_init(buffer, 512, HASH_SHA1);
+		status = pgp_hash_new(&hctx, PGP_SHA1);
 
-		if (hctx == NULL)
+		if (status != PGP_SUCCESS)
 		{
 			return 0;
 		}
 
 		pgp_key_v4_hash(hctx, key);
-		hash_final(hctx, key->fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
 		key->fingerprint_size = PGP_KEY_V4_FINGERPRINT_SIZE;
 
 		goto cache_read;
 	}
 	case PGP_KEY_V5:
 	{
-		hctx = hash_init(buffer, 512, HASH_SHA256);
+		status = pgp_hash_new(&hctx, PGP_SHA2_256);
 
-		if (hctx == NULL)
+		if (status != PGP_SUCCESS)
 		{
 			return 0;
 		}
 
 		pgp_key_v5_hash(hctx, key);
-		hash_final(hctx, key->fingerprint, PGP_KEY_V5_FINGERPRINT_SIZE);
+		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V5_FINGERPRINT_SIZE);
 		key->fingerprint_size = PGP_KEY_V5_FINGERPRINT_SIZE;
 
 		goto cache_read;
 	}
 	case PGP_KEY_V6:
 	{
-		hctx = hash_init(buffer, 512, HASH_SHA256);
+		status = pgp_hash_new(&hctx, PGP_SHA2_256);
 
-		if (hctx == NULL)
+		if (status != PGP_SUCCESS)
 		{
 			return 0;
 		}
 
 		pgp_key_v6_hash(hctx, key);
-		hash_final(hctx, key->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+		pgp_hash_final(hctx, key->fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
 		key->fingerprint_size = PGP_KEY_V6_FINGERPRINT_SIZE;
 
 		goto cache_read;
