@@ -11,6 +11,7 @@ add_library(pgp STATIC
 			lib/crc24.c
 			lib/mpi.c
 			lib/crypto.c
+			lib/error.c
 			lib/packet.c
 			lib/packets.c
 			lib/print.c
