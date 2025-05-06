@@ -936,10 +936,25 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 
 void pgp_packet_delete(void *packet)
 {
-	pgp_packet_header *header = packet;
-	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
+	pgp_packet_header *header = NULL;
+	pgp_packet_type type = 0;
 
-	switch (ptype)
+	if (packet == NULL)
+	{
+		return;
+	}
+
+	header = packet;
+	type = pgp_packet_get_type(header->tag);
+
+	// Partial packets
+	if (header->partial_continue || header->partial_end)
+	{
+		pgp_partial_packet_delete(packet);
+		return;
+	}
+
+	switch (type)
 	{
 	case PGP_PKESK:
 		return pgp_pkesk_packet_delete(packet);
