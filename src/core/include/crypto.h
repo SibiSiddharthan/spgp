@@ -17,6 +17,8 @@
 
 #define PGP_AEAD_TAG_SIZE 16
 
+typedef struct _pgp_hash_t pgp_hash_t;
+
 byte_t pgp_symmetric_cipher_algorithm_validate(pgp_symmetric_key_algorithms algorithm);
 byte_t pgp_public_cipher_algorithm_validate(pgp_public_key_algorithms algorithm);
 byte_t pgp_asymmetric_cipher_algorithm_validate(pgp_public_key_algorithms algorithm);
@@ -30,6 +32,14 @@ byte_t pgp_aead_iv_size(pgp_aead_algorithms algorithm);
 byte_t pgp_hash_size(pgp_hash_algorithms algorithm);
 byte_t pgp_hash_salt_size(pgp_hash_algorithms algorithm);
 byte_t pgp_elliptic_curve(byte_t *oid, byte_t size);
+
+pgp_error_t pgp_hash_new(pgp_hash_t **ctx, pgp_hash_algorithms hash_algorithm_id);
+void pgp_hash_delete(pgp_hash_t *ctx);
+
+pgp_hash_t *pgp_hash_dup(pgp_hash_t *ctx);
+
+void pgp_hash_update(pgp_hash_t *ctx, void *data, size_t size);
+uint32_t pgp_hash_final(pgp_hash_t *ctx, void *hash, size_t size);
 
 pgp_error_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
 							void *in, size_t in_size, void *out, size_t out_size);

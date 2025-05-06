@@ -446,6 +446,50 @@ byte_t pgp_elliptic_curve(byte_t *oid, byte_t size)
 	return pgp_curve_id_to_ec_curve(id);
 }
 
+pgp_error_t pgp_hash_new(pgp_hash_t **ctx, pgp_hash_algorithms hash_algorithm_id)
+{
+	hash_ctx *hctx = NULL;
+	hash_algorithm algorithm = 0;
+
+	algorithm = pgp_algorithm_to_hash_algorithm(hash_algorithm_id);
+
+	if (algorithm == 0)
+	{
+		return PGP_UNSUPPORTED_HASH_ALGORITHM;
+	}
+
+	hctx = hash_new(algorithm);
+
+	if (hctx == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	*ctx = (void *)hctx;
+
+	return PGP_SUCCESS;
+}
+
+void pgp_hash_delete(pgp_hash_t *ctx)
+{
+	hash_delete((hash_ctx *)ctx);
+}
+
+pgp_hash_t *pgp_hash_dup(pgp_hash_t *ctx)
+{
+	return (void *)hash_dup((void *)ctx);
+}
+
+void pgp_hash_update(pgp_hash_t *ctx, void *data, size_t size)
+{
+	hash_update((hash_ctx *)ctx, data, size);
+}
+
+uint32_t pgp_hash_final(pgp_hash_t *ctx, void *hash, size_t size)
+{
+	return hash_final((hash_ctx *)ctx, hash, size);
+}
+
 pgp_error_t pgp_cfb_encrypt(pgp_symmetric_key_algorithms symmetric_key_algorithm_id, void *key, size_t key_size, void *iv, byte_t iv_size,
 							void *in, size_t in_size, void *out, size_t out_size)
 {
