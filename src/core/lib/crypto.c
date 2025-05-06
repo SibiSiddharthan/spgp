@@ -2168,7 +2168,7 @@ pgp_error_t pgp_rsa_sign(pgp_rsa_signature **signature, pgp_rsa_key *pgp_key, by
 
 	if (algorithm == 0)
 	{
-		return PGP_INVALID_HASH_ALGORITHM;
+		return PGP_UNKNOWN_HASH_ALGORITHM;
 	}
 
 	key = rsa_key_new(pgp_key->n->bits);
@@ -2226,7 +2226,7 @@ pgp_error_t pgp_rsa_verify(pgp_rsa_signature *signature, pgp_rsa_key *pgp_key, b
 
 	if (algorithm == 0)
 	{
-		return PGP_INVALID_HASH_ALGORITHM;
+		return PGP_UNKNOWN_HASH_ALGORITHM;
 	}
 
 	key = rsa_key_new(pgp_key->n->bits);

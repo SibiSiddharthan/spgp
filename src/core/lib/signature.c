@@ -51,22 +51,22 @@ pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **pa
 
 	if (version != PGP_ONE_PASS_SIGNATURE_V3 && version != PGP_ONE_PASS_SIGNATURE_V6)
 	{
-		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
+		return PGP_UNKNOWN_ONE_PASS_SIGNATURE_PACKET_VERSION;
 	}
 
 	if (pgp_signature_type_validate(type) == 0)
 	{
-		return PGP_INVALID_SIGNATURE_TYPE;
+		return PGP_UNKNOWN_SIGNATURE_TYPE;
 	}
 
 	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_SIGNATURE_ALGORITHM;
+		return PGP_UNKNOWN_SIGNATURE_ALGORITHM;
 	}
 
 	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
 	{
-		return PGP_INVALID_HASH_ALGORITHM;
+		return PGP_UNKNOWN_HASH_ALGORITHM;
 	}
 
 	if (version == PGP_ONE_PASS_SIGNATURE_V6)
@@ -172,7 +172,7 @@ static pgp_error_t pgp_one_pass_signature_packet_read_body(pgp_one_pass_signatur
 	else
 	{
 		// Unknown version.
-		return PGP_INVALID_ONE_PASS_SIGNATURE_PACKET_VERSION;
+		return PGP_UNKNOWN_ONE_PASS_SIGNATURE_PACKET_VERSION;
 	}
 
 	// A 1-octet flag for nested signatures.
@@ -569,7 +569,7 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 
 	if (header.tag == 0)
 	{
-		return PGP_INVALID_SIGNATURE_SUBPACKET_TAG;
+		return PGP_UNKNOWN_SIGNATURE_SUBPACKET_TAG;
 	}
 
 	if (buffer->size - buffer->pos < PGP_SUBPACKET_OCTETS(header))
@@ -1068,7 +1068,7 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		if (hash_size != pgp_hash_size(target_subpacket->hash_algorithm_id))
 		{
 			free(target_subpacket);
-			return PGP_INCORRECT_HASH_SIZE;
+			return PGP_INVALID_HASH_SIZE_FOR_ALGORITHM;
 		}
 
 		*subpacket = target_subpacket;
@@ -1508,22 +1508,22 @@ pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t versi
 
 	if (version < PGP_SIGNATURE_V3 || version > PGP_SIGNATURE_V6)
 	{
-		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
+		return PGP_UNKNOWN_SIGNATURE_PACKET_VERSION;
 	}
 
 	if (pgp_signature_type_validate(type) == 0)
 	{
-		return PGP_INVALID_SIGNATURE_TYPE;
+		return PGP_UNKNOWN_SIGNATURE_TYPE;
 	}
 
 	if (pgp_signature_algorithm_validate(public_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_SIGNATURE_ALGORITHM;
+		return PGP_UNKNOWN_SIGNATURE_ALGORITHM;
 	}
 
 	if (pgp_hash_algorithm_validate(hash_algorithm_id) == 0)
 	{
-		return PGP_INVALID_HASH_ALGORITHM;
+		return PGP_UNKNOWN_HASH_ALGORITHM;
 	}
 
 	sign = malloc(sizeof(pgp_signature_packet));
@@ -1743,7 +1743,7 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 	else
 	{
 		// Unknown version.
-		return PGP_INVALID_SIGNATURE_PACKET_VERSION;
+		return PGP_UNKNOWN_SIGNATURE_PACKET_VERSION;
 	}
 
 	return PGP_SUCCESS;
@@ -2806,12 +2806,12 @@ pgp_error_t pgp_sign_info_new(pgp_sign_info **info, byte_t signature_type, byte_
 
 	if (pgp_signature_type_validate(signature_type) == 0)
 	{
-		return PGP_INVALID_SIGNATURE_TYPE;
+		return PGP_UNKNOWN_SIGNATURE_TYPE;
 	}
 
 	if (pgp_hash_algorithm_validate(hash_algorithm) == 0)
 	{
-		return PGP_INVALID_HASH_ALGORITHM;
+		return PGP_UNKNOWN_HASH_ALGORITHM;
 	}
 
 	sign = malloc(sizeof(pgp_sign_info));
@@ -3588,7 +3588,7 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 	case PGP_TIMESTAMP_SIGNATURE:
 		break;
 	default:
-		return PGP_INVALID_SIGNATURE_TYPE;
+		return PGP_UNKNOWN_SIGNATURE_TYPE;
 	}
 
 	return PGP_SUCCESS;
@@ -3619,7 +3619,7 @@ static pgp_error_t pgp_do_sign(pgp_signature_packet *packet, pgp_key_packet *key
 
 	if (pgp_hash_algorithm_validate(packet->hash_algorithm_id) == 0)
 	{
-		return PGP_INVALID_HASH_ALGORITHM;
+		return PGP_UNKNOWN_HASH_ALGORITHM;
 	}
 
 	if ((error = pgp_check_sign_data(packet->type, data)) != PGP_SUCCESS)
@@ -3722,7 +3722,7 @@ static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *k
 
 	if (pgp_hash_algorithm_validate(packet->hash_algorithm_id) == 0)
 	{
-		return PGP_INVALID_HASH_ALGORITHM;
+		return PGP_UNKNOWN_HASH_ALGORITHM;
 	}
 
 	error = pgp_hash_new(&hctx, packet->hash_algorithm_id);
@@ -4206,12 +4206,12 @@ pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp
 
 	if (revocation_class != PGP_REVOCATION_CLASS_SENSITIVE && revocation_class != PGP_REVOCATION_CLASS_NORMAL)
 	{
-		return PGP_INVALID_REVOCATION_CLASS;
+		return PGP_UNKNOWN_REVOCATION_CLASS;
 	}
 
 	if (pgp_signature_algorithm_validate(algorithm_id) == 0)
 	{
-		return PGP_INVALID_SIGNATURE_ALGORITHM;
+		return PGP_UNKNOWN_SIGNATURE_ALGORITHM;
 	}
 
 	if (fingerprint_size != PGP_KEY_V4_FINGERPRINT_SIZE && fingerprint_size != PGP_KEY_V6_FINGERPRINT_SIZE)

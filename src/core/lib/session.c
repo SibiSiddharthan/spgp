@@ -454,7 +454,7 @@ pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version)
 
 	if (version != PGP_PKESK_V6 && version != PGP_PKESK_V3)
 	{
-		return PGP_INVALID_PUBLIC_SESSION_PACKET_VERSION;
+		return PGP_UNKNOWN_PUBLIC_SESSION_PACKET_VERSION;
 	}
 
 	packet = malloc(sizeof(pgp_pkesk_packet));
@@ -490,7 +490,7 @@ pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_k
 
 	if (pgp_symmetric_cipher_algorithm_validate(session_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_CIPHER_ALGORITHM;
+		return PGP_UNKNOWN_CIPHER_ALGORITHM;
 	}
 
 	if (session_key_size != key_size)
@@ -506,7 +506,7 @@ pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_k
 
 	if (fingerprint_size == 0)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	if (anonymous == 0)
@@ -670,7 +670,7 @@ static pgp_error_t pgp_pkesk_packet_read_body(pgp_pkesk_packet *packet, buffer_t
 	else
 	{
 		// Unknown version.
-		return PGP_INVALID_PUBLIC_SESSION_PACKET_VERSION;
+		return PGP_UNKNOWN_PUBLIC_SESSION_PACKET_VERSION;
 	}
 
 	// 1 octet public-key algorithm
@@ -875,12 +875,12 @@ pgp_error_t pgp_skesk_packet_new(pgp_skesk_packet **packet, byte_t version, byte
 
 	if (version != PGP_SKESK_V4 && version != PGP_SKESK_V5 && version != PGP_SKESK_V6)
 	{
-		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
+		return PGP_UNKNOWN_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
 	if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_CIPHER_ALGORITHM;
+		return PGP_UNKNOWN_CIPHER_ALGORITHM;
 	}
 
 	if (version == PGP_SKESK_V6 || version == PGP_SKESK_V5)
@@ -894,7 +894,7 @@ pgp_error_t pgp_skesk_packet_new(pgp_skesk_packet **packet, byte_t version, byte
 
 		if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
 		{
-			return PGP_INVALID_AEAD_ALGORITHM;
+			return PGP_UNKNOWN_AEAD_ALGORITHM;
 		}
 	}
 
@@ -1177,7 +1177,7 @@ pgp_error_t pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet, void 
 	case PGP_SKESK_V4:
 		return pgp_skesk_packet_session_key_v4_encrypt(packet, password, password_size, session_key, session_key_size);
 	default:
-		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
+		return PGP_UNKNOWN_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
 	// Unreachable
@@ -1202,7 +1202,7 @@ pgp_error_t pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void 
 	case PGP_SKESK_V4:
 		return pgp_skesk_packet_session_key_v4_decrypt(packet, password, password_size, session_key, session_key_size);
 	default:
-		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
+		return PGP_UNKNOWN_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
 	// Unreachable
@@ -1242,7 +1242,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 
 		if (result == 0)
 		{
-			return PGP_INVALID_S2K_SPECIFIER;
+			return PGP_UNKNOWN_S2K_SPECIFIER;
 		}
 
 		if (result != s2k_size)
@@ -1281,7 +1281,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 
 		if (result == 0)
 		{
-			return PGP_INVALID_S2K_SPECIFIER;
+			return PGP_UNKNOWN_S2K_SPECIFIER;
 		}
 
 		buffer->pos += result;
@@ -1297,7 +1297,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 	else
 	{
 		// Unknown version.
-		return PGP_INVALID_SYMMETRIC_SESSION_PACKET_VERSION;
+		return PGP_UNKNOWN_SYMMETRIC_SESSION_PACKET_VERSION;
 	}
 
 	return PGP_SUCCESS;

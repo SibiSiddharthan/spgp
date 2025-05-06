@@ -299,12 +299,12 @@ pgp_error_t pgp_seipd_packet_new(pgp_seipd_packet **packet, byte_t version, byte
 
 	if (version != PGP_SEIPD_V2 && version != PGP_SEIPD_V1)
 	{
-		return PGP_INVALID_SEIPD_PACKET_VERSION;
+		return PGP_UNKNOWN_SEIPD_PACKET_VERSION;
 	}
 
 	if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_CIPHER_ALGORITHM;
+		return PGP_UNKNOWN_CIPHER_ALGORITHM;
 	}
 
 	if (version == PGP_SEIPD_V2)
@@ -316,7 +316,7 @@ pgp_error_t pgp_seipd_packet_new(pgp_seipd_packet **packet, byte_t version, byte
 
 		if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
 		{
-			return PGP_INVALID_AEAD_ALGORITHM;
+			return PGP_UNKNOWN_AEAD_ALGORITHM;
 		}
 	}
 
@@ -735,7 +735,7 @@ pgp_error_t pgp_seipd_packet_encrypt(pgp_seipd_packet *packet, byte_t salt[32], 
 		return pgp_seipd_packet_v2_encrypt(packet, salt, session_key, session_key_size, stream);
 	}
 
-	return PGP_INVALID_SEIPD_PACKET_VERSION;
+	return PGP_UNKNOWN_SEIPD_PACKET_VERSION;
 }
 
 pgp_error_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key, size_t session_key_size, pgp_stream_t **stream)
@@ -749,7 +749,7 @@ pgp_error_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key
 		return pgp_seipd_packet_v2_decrypt(packet, session_key, session_key_size, stream);
 	}
 
-	return PGP_INVALID_SEIPD_PACKET_VERSION;
+	return PGP_UNKNOWN_SEIPD_PACKET_VERSION;
 }
 
 static pgp_error_t pgp_seipd_packet_read_body(pgp_seipd_packet *packet, buffer_t *buffer)
@@ -802,7 +802,7 @@ static pgp_error_t pgp_seipd_packet_read_body(pgp_seipd_packet *packet, buffer_t
 	else
 	{
 		// Unknown version
-		return PGP_INVALID_SEIPD_PACKET_VERSION;
+		return PGP_UNKNOWN_SEIPD_PACKET_VERSION;
 	}
 
 	return PGP_SUCCESS;
@@ -977,12 +977,12 @@ pgp_error_t pgp_aead_packet_new(pgp_aead_packet **packet, byte_t symmetric_key_a
 
 	if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_CIPHER_ALGORITHM;
+		return PGP_UNKNOWN_CIPHER_ALGORITHM;
 	}
 
 	if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
 	{
-		return PGP_INVALID_AEAD_ALGORITHM;
+		return PGP_UNKNOWN_AEAD_ALGORITHM;
 	}
 
 	if (chunk_size > PGP_MAX_CHUNK_SIZE)
@@ -1241,7 +1241,7 @@ pgp_error_t pgp_aead_packet_read_body(pgp_aead_packet *packet, buffer_t *buffer)
 	else
 	{
 		// Unknown version
-		return PGP_INVALID_AEAD_PACKET_VERSION;
+		return PGP_UNKNOWN_AEAD_PACKET_VERSION;
 	}
 
 	return PGP_SUCCESS;

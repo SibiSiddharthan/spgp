@@ -40,7 +40,7 @@ pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t head
 
 	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
 	{
-		return PGP_INVALID_HEADER_FORMAT;
+		return PGP_UNKNOWN_HEADER_FORMAT;
 	}
 
 	if (compression_algorithm_id != PGP_UNCOMPRESSED && compression_algorithm_id != PGP_DEFALTE && compression_algorithm_id != PGP_ZLIB &&
@@ -258,7 +258,7 @@ pgp_error_t pgp_marker_packet_new(pgp_marker_packet **packet, byte_t header_form
 
 	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
 	{
-		return PGP_INVALID_HEADER_FORMAT;
+		return PGP_UNKNOWN_HEADER_FORMAT;
 	}
 
 	marker = malloc(sizeof(pgp_marker_packet));
@@ -393,7 +393,7 @@ pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_fo
 
 	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
 	{
-		return PGP_INVALID_HEADER_FORMAT;
+		return PGP_UNKNOWN_HEADER_FORMAT;
 	}
 
 	literal = malloc(sizeof(pgp_literal_packet));
@@ -569,7 +569,7 @@ static pgp_error_t pgp_literal_packet_read_body(pgp_literal_packet *packet, buff
 			return PGP_NO_MEMORY;
 		}
 
-		CHECK_READ(readn(buffer, packet->filename, packet->filename_size), PGP_LITERAL_PACKET_INVALID_FILENAME_SIZE);
+		CHECK_READ(readn(buffer, packet->filename, packet->filename_size), PGP_MALFORMED_LITERAL_PACKET_FILENAME_SIZE);
 	}
 
 	// A 4-octet date
@@ -761,7 +761,7 @@ pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_fo
 
 	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
 	{
-		return PGP_INVALID_HEADER_FORMAT;
+		return PGP_UNKNOWN_HEADER_FORMAT;
 	}
 
 	if (user_size == 0)
@@ -880,7 +880,7 @@ static pgp_error_t pgp_user_attribute_subpacket_read(void **subpacket, buffer_t 
 
 	if (header.tag == 0)
 	{
-		return PGP_INVALID_USER_ATTRIBUTE_SUBPACKET_TAG;
+		return PGP_UNKNOWN_USER_ATTRIBUTE_SUBPACKET_TAG;
 	}
 
 	if (buffer->size - buffer->pos < PGP_SUBPACKET_OCTETS(header))
@@ -1568,13 +1568,13 @@ pgp_error_t pgp_trust_packet_new(pgp_trust_packet **packet, byte_t header_format
 
 	if (header_format != PGP_HEADER && header_format != PGP_LEGACY_HEADER)
 	{
-		return PGP_INVALID_HEADER_FORMAT;
+		return PGP_UNKNOWN_HEADER_FORMAT;
 	}
 
 	if (trust_level != PGP_TRUST_NEVER && trust_level != PGP_TRUST_MARGINAL && trust_level != PGP_TRUST_FULL &&
 		trust_level != PGP_TRUST_ULTIMATE)
 	{
-		return PGP_INVALID_TRUST_LEVEL;
+		return PGP_UNKNOWN_TRUST_LEVEL;
 	}
 
 	trust = malloc(sizeof(pgp_trust_packet));
@@ -1693,7 +1693,7 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 
 	if (key_version < PGP_KEY_V2 || key_version > PGP_KEY_V6)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	if (user == NULL)
@@ -2234,7 +2234,7 @@ static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buff
 	// This is a private packet, catch any invalid values here.
 	if (packet->key_version < PGP_KEY_V2 || packet->key_version > PGP_KEY_V6)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	packet->fingerprint_size = pgp_key_fingerprint_size(packet->key_version);
@@ -2570,7 +2570,7 @@ pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size
 
 	if (trust != PGP_TRUST_NEVER && trust != PGP_TRUST_MARGINAL && trust != PGP_TRUST_FULL && trust != PGP_TRUST_ULTIMATE)
 	{
-		return PGP_INVALID_TRUST_LEVEL;
+		return PGP_UNKNOWN_TRUST_LEVEL;
 	}
 
 	user = malloc(sizeof(pgp_user_info));
@@ -2821,7 +2821,7 @@ pgp_error_t pgp_user_info_set_hash_preferences(pgp_user_info *user, byte_t count
 	{
 		if (pgp_hash_algorithm_validate(preferences[i]) == 0)
 		{
-			return PGP_INVALID_HASH_ALGORITHM;
+			return PGP_UNKNOWN_HASH_ALGORITHM;
 		}
 	}
 
@@ -2839,7 +2839,7 @@ pgp_error_t pgp_user_info_set_cipher_preferences(pgp_user_info *user, byte_t cou
 	{
 		if (pgp_symmetric_cipher_algorithm_validate(preferences[i]) == 0)
 		{
-			return PGP_INVALID_CIPHER_ALGORITHM;
+			return PGP_UNKNOWN_CIPHER_ALGORITHM;
 		}
 	}
 
@@ -2876,7 +2876,7 @@ pgp_error_t pgp_user_info_set_mode_preferences(pgp_user_info *user, byte_t count
 	{
 		if (pgp_aead_algorithm_validate(preferences[i]) == 0)
 		{
-			return PGP_INVALID_AEAD_ALGORITHM;
+			return PGP_UNKNOWN_AEAD_ALGORITHM;
 		}
 	}
 
@@ -2894,12 +2894,12 @@ pgp_error_t pgp_user_info_set_aead_preferences(pgp_user_info *user, byte_t count
 	{
 		if (pgp_aead_algorithm_validate(preferences[i][1]) == 0)
 		{
-			return PGP_INVALID_AEAD_ALGORITHM;
+			return PGP_UNKNOWN_AEAD_ALGORITHM;
 		}
 
 		if (pgp_symmetric_cipher_algorithm_validate(preferences[i][0]) == 0)
 		{
-			return PGP_INVALID_CIPHER_ALGORITHM;
+			return PGP_UNKNOWN_CIPHER_ALGORITHM;
 		}
 
 		if (pgp_symmetric_cipher_block_size(preferences[i][0]) != 16)

@@ -353,7 +353,7 @@ pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t
 	}
 	else
 	{
-		return PGP_INVALID_HEADER_FORMAT;
+		return PGP_UNKNOWN_HEADER_FORMAT;
 	}
 
 	return PGP_SUCCESS;
@@ -713,7 +713,7 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 
 	if (type == PGP_RESERVED)
 	{
-		return PGP_INVALID_PACKET_TAG;
+		return PGP_UNKNOWN_PACKET_TAG;
 	}
 
 	if (header.body_size == 0)

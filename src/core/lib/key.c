@@ -1315,7 +1315,7 @@ static pgp_error_t pgp_public_key_packet_read_body(pgp_key_packet *packet, buffe
 	if (packet->version != PGP_KEY_V2 && packet->version != PGP_KEY_V3 && packet->version != PGP_KEY_V4 && packet->version != PGP_KEY_V5 &&
 		packet->version != PGP_KEY_V6)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	// 4-octet number denoting the time when the key was created.
@@ -1569,11 +1569,6 @@ static pgp_error_t pgp_secret_key_material_decrypt_legacy_cfb_v3(pgp_key_packet 
 
 	byte_t *buffer = 0;
 
-	if (key_size > MD5_HASH_SIZE)
-	{
-		return PGP_ENCRYPTION_KEY_TOO_BIG;
-	}
-
 	buffer = malloc(packet->encrypted_octets);
 
 	if (buffer == NULL)
@@ -1727,6 +1722,7 @@ static pgp_error_t pgp_secret_key_material_encrypt_legacy_cfb(pgp_key_packet *pa
 static pgp_error_t pgp_secret_key_material_decrypt_legacy_cfb(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
 	pgp_error_t status = 0;
+	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
 	byte_t hash[MD5_HASH_SIZE] = {0};
 	byte_t *buffer = NULL;
@@ -1737,6 +1733,11 @@ static pgp_error_t pgp_secret_key_material_decrypt_legacy_cfb(pgp_key_packet *pa
 	if (status != PGP_SUCCESS)
 	{
 		return status;
+	}
+
+	if (key_size != MD5_HASH_SIZE)
+	{
+		return PGP_INVALID_CIPHER_ALGORITHM_FOR_LEGACY_CFB;
 	}
 
 	if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
@@ -2314,7 +2315,7 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 	if (packet->version != PGP_KEY_V2 && packet->version != PGP_KEY_V3 && packet->version != PGP_KEY_V4 && packet->version != PGP_KEY_V5 &&
 		packet->version != PGP_KEY_V6)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	// 4-octet number denoting the time when the key was created.
@@ -2395,7 +2396,7 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 
 			if (result == 0)
 			{
-				return PGP_INVALID_S2K_SPECIFIER;
+				return PGP_UNKNOWN_S2K_SPECIFIER;
 			}
 
 			if (s2k_size != 0)
@@ -2679,12 +2680,12 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 
 	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_PUBLIC_ALGORITHM;
+		return PGP_UNKNOWN_PUBLIC_ALGORITHM;
 	}
 
 	if (capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION))
@@ -2693,7 +2694,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 			public_key_algorithm_id == PGP_ELGAMAL_ENCRYPT_ONLY || public_key_algorithm_id == PGP_X25519 ||
 			public_key_algorithm_id == PGP_X448)
 		{
-			return PGP_INVALID_SIGNATURE_ALGORITHM;
+			return PGP_UNKNOWN_SIGNATURE_ALGORITHM;
 		}
 	}
 
@@ -2702,7 +2703,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		if (public_key_algorithm_id == PGP_RSA_SIGN_ONLY || public_key_algorithm_id == PGP_DSA || public_key_algorithm_id == PGP_ECDSA ||
 			public_key_algorithm_id == PGP_EDDSA || public_key_algorithm_id == PGP_ED25519 || public_key_algorithm_id == PGP_ED448)
 		{
-			return PGP_INVALID_KEY_EXCHANGE_ALGORITHM;
+			return PGP_UNKNOWN_KEY_EXCHANGE_ALGORITHM;
 		}
 	}
 
@@ -2796,7 +2797,7 @@ pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t p
 
 	if (version < PGP_KEY_V2 || version > PGP_KEY_V6)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	if (key == NULL)
@@ -2806,7 +2807,7 @@ pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t p
 
 	if (pgp_public_cipher_algorithm_validate(public_key_algorithm_id) == 0)
 	{
-		return PGP_INVALID_PUBLIC_ALGORITHM;
+		return PGP_UNKNOWN_PUBLIC_ALGORITHM;
 	}
 
 	if (capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION))
@@ -2815,7 +2816,7 @@ pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t p
 			public_key_algorithm_id == PGP_ELGAMAL_ENCRYPT_ONLY || public_key_algorithm_id == PGP_X25519 ||
 			public_key_algorithm_id == PGP_X448)
 		{
-			return PGP_INVALID_SIGNATURE_ALGORITHM;
+			return PGP_UNKNOWN_SIGNATURE_ALGORITHM;
 		}
 	}
 
@@ -2824,7 +2825,7 @@ pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t p
 		if (public_key_algorithm_id == PGP_RSA_SIGN_ONLY || public_key_algorithm_id == PGP_DSA || public_key_algorithm_id == PGP_ECDSA ||
 			public_key_algorithm_id == PGP_EDDSA || public_key_algorithm_id == PGP_ED25519 || public_key_algorithm_id == PGP_ED448)
 		{
-			return PGP_INVALID_KEY_EXCHANGE_ALGORITHM;
+			return PGP_UNKNOWN_KEY_EXCHANGE_ALGORITHM;
 		}
 	}
 
@@ -2846,12 +2847,6 @@ pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t p
 	pgpkey->key = key;
 	pgpkey->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);
 	pgpkey->private_key_data_octets = get_private_key_material_octets(public_key_algorithm_id, key);
-
-	if (pgpkey->public_key_data_octets == 0)
-	{
-		free(pgpkey);
-		return PGP_MALFORMED_KEY;
-	}
 
 	pgpkey->key_checksum = pgp_private_key_material_checksum(pgpkey);
 	pgp_key_packet_encode_header(pgpkey, PGP_KEYDEF);
@@ -3048,7 +3043,7 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 	{
 		if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 		{
-			return PGP_INVALID_CIPHER_ALGORITHM;
+			return PGP_UNKNOWN_CIPHER_ALGORITHM;
 		}
 
 		if (s2k_usage == 253) // AEAD
@@ -3062,7 +3057,7 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 
 			if (pgp_aead_algorithm_validate(aead_algorithm_id) == 0)
 			{
-				return PGP_INVALID_AEAD_ALGORITHM;
+				return PGP_UNKNOWN_AEAD_ALGORITHM;
 			}
 
 			if (pgp_aead_iv_size(aead_algorithm_id) != iv_size)
@@ -3088,7 +3083,7 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 	}
 	else
 	{
-		return PGP_INVALID_S2K_USAGE;
+		return PGP_UNKNOWN_S2K_USAGE;
 	}
 
 	// Copy the s2k
@@ -3150,7 +3145,7 @@ pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, siz
 	{
 		if (pgp_symmetric_cipher_algorithm_validate(packet->symmetric_key_algorithm_id) == 0)
 		{
-			return PGP_INVALID_CIPHER_ALGORITHM;
+			return PGP_UNKNOWN_CIPHER_ALGORITHM;
 		}
 
 		if (packet->s2k_usage == 253) // AEAD
@@ -3163,7 +3158,7 @@ pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, siz
 
 			if (pgp_aead_algorithm_validate(packet->aead_algorithm_id) == 0)
 			{
-				return PGP_INVALID_AEAD_ALGORITHM;
+				return PGP_UNKNOWN_AEAD_ALGORITHM;
 			}
 
 			if (pgp_aead_iv_size(packet->aead_algorithm_id) != packet->iv_size)
@@ -3181,7 +3176,7 @@ pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, siz
 	}
 	else
 	{
-		return PGP_INVALID_S2K_USAGE;
+		return PGP_UNKNOWN_S2K_USAGE;
 	}
 
 	// Checksum will be updated
@@ -3216,7 +3211,7 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 	if (packet->version != PGP_KEY_V2 && packet->version != PGP_KEY_V3 && packet->version != PGP_KEY_V4 && packet->version != PGP_KEY_V5 &&
 		packet->version != PGP_KEY_V6)
 	{
-		return PGP_INVALID_KEY_VERSION;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
 	// 1 octet key type
@@ -3300,7 +3295,7 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 
 			if (result == 0)
 			{
-				return PGP_INVALID_S2K_SPECIFIER;
+				return PGP_UNKNOWN_S2K_SPECIFIER;
 			}
 
 			if (s2k_size != 0)
