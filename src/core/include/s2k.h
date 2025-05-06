@@ -86,6 +86,6 @@ pgp_s2k *pgp_s2k_salted_init(pgp_s2k *s2k, byte_t hash_id, byte_t salt[8]);
 pgp_s2k *pgp_s2k_iterated_init(pgp_s2k *s2k, byte_t hash_id, byte_t salt[8], byte_t count);
 pgp_s2k *pgp_s2k_argon2_init(pgp_s2k *s2k, byte_t salt[16], byte_t t, byte_t p, byte_t m);
 
-uint32_t pgp_s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size);
+pgp_error_t pgp_s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size);
 
 #endif

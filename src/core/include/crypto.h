@@ -36,6 +36,7 @@ byte_t pgp_elliptic_curve(byte_t *oid, byte_t size);
 pgp_error_t pgp_hash_new(pgp_hash_t **ctx, pgp_hash_algorithms hash_algorithm_id);
 void pgp_hash_delete(pgp_hash_t *ctx);
 
+void pgp_hash_reset(pgp_hash_t *ctx);
 pgp_hash_t *pgp_hash_dup(pgp_hash_t *ctx);
 
 void pgp_hash_update(pgp_hash_t *ctx, void *data, size_t size);

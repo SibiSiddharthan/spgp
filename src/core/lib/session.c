@@ -953,7 +953,12 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_encrypt(pgp_skesk_packet *pac
 	}
 	else
 	{
-		pgp_s2k_hash(&packet->s2k, password, password_size, key, session_key_size);
+		status = pgp_s2k_hash(&packet->s2k, password, password_size, key, session_key_size);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
 
 		// Encrypt symmetric algorithm id followed by session key
 		buffer[0] = packet->symmetric_key_algorithm_id;
@@ -988,7 +993,12 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *pac
 
 	if (packet->session_key_size == 0)
 	{
-		pgp_s2k_hash(&packet->s2k, password, password_size, session_key, *session_key_size);
+		status = pgp_s2k_hash(&packet->s2k, password, password_size, session_key, *session_key_size);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
 	}
 	else
 	{
@@ -997,7 +1007,12 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *pac
 			return PGP_BUFFER_TOO_SMALL;
 		}
 
-		pgp_s2k_hash(&packet->s2k, password, password_size, key, key_size);
+		status = pgp_s2k_hash(&packet->s2k, password, password_size, key, key_size);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
 
 		// Decrypt the session key
 		status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, zero_iv, iv_size, packet->session_key,
@@ -1045,7 +1060,12 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_packet *
 
 	memcpy(packet->iv, iv, iv_size);
 
-	pgp_s2k_hash(&packet->s2k, password, password_size, ik, packet->session_key_size);
+	status = pgp_s2k_hash(&packet->s2k, password, password_size, ik, packet->session_key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	if (packet->version == PGP_SKESK_V6)
 	{
@@ -1101,7 +1121,12 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *
 		return PGP_BUFFER_TOO_SMALL;
 	}
 
-	pgp_s2k_hash(&packet->s2k, password, password_size, ik, key_size);
+	status = pgp_s2k_hash(&packet->s2k, password, password_size, ik, key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	if (packet->version == PGP_SKESK_V6)
 	{

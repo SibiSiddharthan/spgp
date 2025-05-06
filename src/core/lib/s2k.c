@@ -10,8 +10,6 @@
 #include <algorithms.h>
 
 #include <crypto.h>
-#include <hash.h>
-
 #include <string.h>
 
 uint32_t pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
@@ -223,115 +221,91 @@ pgp_s2k *pgp_s2k_argon2_init(pgp_s2k *s2k, byte_t salt[16], byte_t t, byte_t p, 
 	return s2k;
 }
 
-static byte_t get_hash_id(pgp_hash_algorithms algorithm)
+static pgp_error_t s2k_simple_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, void *key, uint32_t key_size)
 {
-	switch (algorithm)
-	{
-	case PGP_MD5:
-		return HASH_MD5;
-	case PGP_SHA1:
-		return HASH_SHA1;
-	case PGP_RIPEMD_160:
-		return HASH_RIPEMD160;
-	case PGP_SHA2_256:
-		return HASH_SHA256;
-	case PGP_SHA2_384:
-		return HASH_SHA384;
-	case PGP_SHA2_512:
-		return HASH_SHA512;
-	case PGP_SHA2_224:
-		return HASH_SHA224;
-	case PGP_SHA3_256:
-		return HASH_SHA3_256;
-	case PGP_SHA3_512:
-		return HASH_SHA3_512;
-	default:
-		return 0;
-	}
-}
-
-static uint32_t s2k_simple_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, void *key, uint32_t key_size)
-{
-	byte_t hash_buffer[2048] = {0};
-	hash_ctx *hctx = NULL;
+	pgp_error_t status = 0;
+	pgp_hash_t *hctx = NULL;
+	byte_t hash_size = pgp_hash_size(algorithm);
 
 	uint32_t output = 0;
 	uint32_t iteration = 0;
 
-	hctx = hash_init(hash_buffer, 2048, get_hash_id(algorithm));
+	status = pgp_hash_new(&hctx, algorithm);
 
-	if (hctx == NULL)
+	if (status != PGP_SUCCESS)
 	{
-		return 0;
+		return status;
 	}
 
 	while (output < key_size)
 	{
 		for (uint32_t i = 0; i < iteration; ++i)
 		{
-			hash_update(hctx, "\x00", 1);
+			pgp_hash_update(hctx, "\x00", 1);
 		}
 
-		hash_update(hctx, password, password_size);
-		hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hctx->hash_size));
+		pgp_hash_update(hctx, password, password_size);
+		pgp_hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hash_size));
 
-		hash_reset(hctx);
+		pgp_hash_reset(hctx);
 
-		output += MIN(key_size - output, hctx->hash_size);
+		output += MIN(key_size - output, hash_size);
 	}
 
-	return key_size;
+	return PGP_SUCCESS;
 }
 
-static uint32_t s2k_salted_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, byte_t salt[8], void *key,
-								uint32_t key_size)
+static pgp_error_t s2k_salted_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, byte_t salt[8], void *key,
+								   uint32_t key_size)
 {
-	byte_t hash_buffer[2048] = {0};
-	hash_ctx *hctx = NULL;
+	pgp_error_t status = 0;
+	pgp_hash_t *hctx = NULL;
+	byte_t hash_size = pgp_hash_size(algorithm);
 
 	uint32_t output = 0;
 	uint32_t iteration = 0;
 
-	hctx = hash_init(hash_buffer, 2048, get_hash_id(algorithm));
+	status = pgp_hash_new(&hctx, algorithm);
 
-	if (hctx == NULL)
+	if (status != PGP_SUCCESS)
 	{
-		return 0;
+		return status;
 	}
 
 	while (output < key_size)
 	{
 		for (uint32_t i = 0; i < iteration; ++i)
 		{
-			hash_update(hctx, "\x00", 1);
+			pgp_hash_update(hctx, "\x00", 1);
 		}
 
-		hash_update(hctx, salt, 8);
-		hash_update(hctx, password, password_size);
-		hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hctx->hash_size));
+		pgp_hash_update(hctx, salt, 8);
+		pgp_hash_update(hctx, password, password_size);
+		pgp_hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hash_size));
 
-		hash_reset(hctx);
+		pgp_hash_reset(hctx);
 
-		output += MIN(key_size - output, hctx->hash_size);
+		output += MIN(key_size - output, hash_size);
 	}
 
-	return key_size;
+	return PGP_SUCCESS;
 }
 
-static uint32_t s2k_iterated_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, byte_t salt[8], uint32_t count,
-								  void *key, uint32_t key_size)
+static pgp_error_t s2k_iterated_hash(pgp_hash_algorithms algorithm, void *password, uint32_t password_size, byte_t salt[8], uint32_t count,
+									 void *key, uint32_t key_size)
 {
-	byte_t hash_buffer[2048] = {0};
-	hash_ctx *hctx = NULL;
+	pgp_error_t status = 0;
+	pgp_hash_t *hctx = NULL;
+	byte_t hash_size = pgp_hash_size(algorithm);
 
 	uint32_t output = 0;
 	uint32_t iteration = 0;
 
-	hctx = hash_init(hash_buffer, 2048, get_hash_id(algorithm));
+	status = pgp_hash_new(&hctx, algorithm);
 
-	if (hctx == NULL)
+	if (status != PGP_SUCCESS)
 	{
-		return 0;
+		return status;
 	}
 
 	// Atleast 1 full salt || password is hashed.
@@ -346,35 +320,40 @@ static uint32_t s2k_iterated_hash(pgp_hash_algorithms algorithm, void *password,
 
 		for (uint32_t i = 0; i < iteration; ++i)
 		{
-			hash_update(hctx, "\x00", 1);
+			pgp_hash_update(hctx, "\x00", 1);
 		}
 
 		while (input < count)
 		{
-			hash_update(hctx, salt, MIN(count - input, 8));
+			pgp_hash_update(hctx, salt, MIN(count - input, 8));
 			input += MIN(count - input, 8);
 
-			hash_update(hctx, password, MIN(count - input, password_size));
+			pgp_hash_update(hctx, password, MIN(count - input, password_size));
 			input += MIN(count - input, password_size);
 		}
 
-		hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hctx->hash_size));
+		pgp_hash_final(hctx, PTR_OFFSET(key, output), MIN(key_size - output, hash_size));
 
-		hash_reset(hctx);
+		pgp_hash_reset(hctx);
 
-		output += MIN(key_size - output, hctx->hash_size);
+		output += MIN(key_size - output, hash_size);
 	}
 
-	return key_size;
+	return PGP_SUCCESS;
 }
 
-static uint32_t s2k_argon2_hash(void *password, uint32_t password_size, byte_t salt[16], uint32_t parallel, uint32_t memory,
-								uint32_t iterations, void *key, uint32_t key_size)
+static pgp_error_t s2k_argon2_hash(void *password, uint32_t password_size, byte_t salt[16], uint32_t parallel, uint32_t memory,
+								   uint32_t iterations, void *key, uint32_t key_size)
 {
-	return pgp_argon2(password, password_size, salt, 16, parallel, memory, iterations, NULL, 0, NULL, 0, key, key_size);
+	if (pgp_argon2(password, password_size, salt, 16, parallel, memory, iterations, NULL, 0, NULL, 0, key, key_size) != key_size)
+	{
+		return PGP_ARGON2_HASH_ERROR;
+	}
+
+	return PGP_SUCCESS;
 }
 
-uint32_t pgp_s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size)
+pgp_error_t pgp_s2k_hash(pgp_s2k *s2k, void *password, uint32_t password_size, void *key, uint32_t key_size)
 {
 	switch (s2k->id)
 	{

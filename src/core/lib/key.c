@@ -1801,7 +1801,15 @@ static pgp_error_t pgp_secret_key_material_encrypt_malleable_cfb(pgp_key_packet 
 	memset(packet->encrypted, 0, ROUND_UP(count + 2, 16));
 
 	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+	status = pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		free(packet->encrypted);
+
+		return status;
+	}
 
 	// Write the octets to the buffer
 	pgp_private_key_material_write(packet, buffer, count);
@@ -1844,7 +1852,13 @@ static pgp_error_t pgp_secret_key_material_decrypt_malleable_cfb(pgp_key_packet 
 	memset(buffer, 0, ROUND_UP(packet->encrypted_octets, 16));
 
 	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+	status = pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		return status;
+	}
 
 	// Decrypt using CFB
 	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
@@ -1902,7 +1916,15 @@ static pgp_error_t pgp_secret_key_material_encrypt_cfb(pgp_key_packet *packet, v
 	memset(packet->encrypted, 0, ROUND_UP(count + SHA1_HASH_SIZE, 16));
 
 	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+	status = pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		free(packet->encrypted);
+
+		return status;
+	}
 
 	// Write the octets to the buffer
 	pgp_private_key_material_write(packet, buffer, count);
@@ -1946,7 +1968,13 @@ static pgp_error_t pgp_secret_key_material_decrypt_cfb(pgp_key_packet *packet, v
 	memset(buffer, 0, ROUND_UP(packet->encrypted_octets, 16));
 
 	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+	status = pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, key, key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		return status;
+	}
 
 	// Decrypt using CFB
 	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, key, key_size, packet->iv, packet->iv_size, packet->encrypted,
@@ -2017,7 +2045,15 @@ static pgp_error_t pgp_secret_key_material_encrypt_aead(pgp_key_packet *packet, 
 	memset(packet->encrypted, 0, ROUND_UP(count + PGP_AEAD_TAG_SIZE, 16));
 
 	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
+	status = pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		free(packet->encrypted);
+
+		return status;
+	}
 
 	// Generate the key
 	if (packet->version == PGP_KEY_V6)
@@ -2112,7 +2148,13 @@ static pgp_error_t pgp_secret_key_material_decrypt_aead(pgp_key_packet *packet, 
 	memset(buffer, 0, ROUND_UP(aad_size, 16) + ROUND_UP(packet->encrypted_octets, 16));
 
 	// Hash the passphrase
-	pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
+	status = pgp_s2k_hash(&packet->s2k, passphrase, passphrase_size, ikey, key_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(buffer);
+		return status;
+	}
 
 	// Generate the key
 	if (packet->version == PGP_KEY_V6)
