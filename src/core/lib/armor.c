@@ -126,7 +126,7 @@ static void *check_marker_end(armor_marker *marker, byte_t *line, uint16_t line_
 	return NULL;
 }
 
-uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t *input_size, void *output,
+armor_status armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t *input_size, void *output,
 					uint32_t *output_size)
 {
 	void *result = NULL;
@@ -334,7 +334,7 @@ end:
 	return ARMOR_SUCCESS;
 }
 
-uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size)
+armor_status armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size)
 {
 	size_t required_size = 0;
 	size_t line_count = 0;

@@ -69,8 +69,8 @@ typedef struct _armor_options
 
 } armor_options;
 
-uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t *input_size, void *output,
-					uint32_t *output_size);
-uint32_t armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size);
+armor_status armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t *input_size, void *output,
+						uint32_t *output_size);
+armor_status armor_write(armor_options *options, void *input, uint32_t input_size, void *output, uint32_t *output_size);
 
 #endif
