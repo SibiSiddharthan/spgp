@@ -126,11 +126,11 @@ static void *check_marker_end(armor_marker *marker, byte_t *line, uint16_t line_
 	return NULL;
 }
 
-uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t input_size, void *output,
+uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t *input_size, void *output,
 					uint32_t *output_size)
 {
 	void *result = NULL;
-	buffer_t in = {.pos = 0, .size = input_size, .capacity = input_size, .data = input};
+	buffer_t in = {.pos = 0, .size = *input_size, .capacity = *input_size, .data = input};
 
 	byte_t *out = output;
 	uint32_t output_pos = 0;
@@ -163,6 +163,11 @@ uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t coun
 			return ARMOR_LINE_TOO_BIG;
 		}
 
+		if (line_size == 0 && (in.pos == in.size))
+		{
+			return ARMOR_MALFORMED_DATA;
+		}
+
 		trimmed_line_size = trimline(line_buffer, line_size);
 
 		if (trimmed_line_size == 0)
@@ -191,8 +196,8 @@ uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t coun
 				{
 					if ((options->flags & ARMOR_IGNORE_UNKNOWN_MARKERS) == 0)
 					{
-						// Rollback the buffer so that the caller can read the line again
-						in.pos -= line_size + 1 + (in.data[in.pos - 2] == '\r');
+						// Unread the line so that the caller can read the line again.
+						*input_size = (in.pos - line_size) + 1 + (in.data[in.pos - 2] == '\r');
 						return ARMOR_UNKOWN_MARKER;
 					}
 
@@ -315,6 +320,7 @@ uint32_t armor_read(armor_options *options, armor_marker *markers, uint16_t coun
 	}
 
 end:
+	*input_size = in.pos;
 	*output_size = output_pos;
 
 	if (crc_found)
