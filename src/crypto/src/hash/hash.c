@@ -254,6 +254,8 @@ hash_ctx *hash_new(hash_algorithm algorithm)
 		return NULL;
 	}
 
+	memset(hctx, 0, required_size);
+
 	return hash_init(hctx, required_size, algorithm);
 }
 
@@ -262,6 +264,39 @@ void hash_delete(hash_ctx *hctx)
 	// Zero the total memory region belonging to ctx.
 	memset(hctx, 0, hctx->ctx_size);
 	free(hctx);
+}
+
+hash_ctx *hash_copy(void *ptr, size_t size, hash_ctx *src)
+{
+	size_t ctx_size = get_ctx_size(src->algorithm);
+	size_t required_size = sizeof(hash_ctx) + ctx_size;
+
+	if (size < required_size)
+	{
+		return NULL;
+	}
+
+	memcpy(ptr, src, required_size);
+
+	return ptr;
+}
+
+hash_ctx *hash_dup(hash_ctx *hctx)
+{
+	hash_ctx *copy = NULL;
+	size_t ctx_size = get_ctx_size(hctx->algorithm);
+	size_t required_size = sizeof(hash_ctx) + ctx_size;
+
+	hctx = (hash_ctx *)malloc(required_size);
+
+	if (hctx == NULL)
+	{
+		return NULL;
+	}
+
+	memcpy(copy, hctx, required_size);
+
+	return copy;
 }
 
 void hash_reset(hash_ctx *hctx)
