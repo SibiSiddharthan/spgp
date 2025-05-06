@@ -1619,7 +1619,7 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 				return error;
 			}
 
-			result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
+			result = pgp_stream_push(packet->hashed_subpackets, subpacket);
 
 			if (result == NULL)
 			{
@@ -1669,7 +1669,7 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 				return error;
 			}
 
-			result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
+			result = pgp_stream_push(packet->unhashed_subpackets, subpacket);
 
 			if (result == NULL)
 			{
@@ -2756,7 +2756,7 @@ pgp_error_t pgp_signature_packet_hashed_subpacket_add(pgp_signature_packet *pack
 		return PGP_NO_MEMORY;
 	}
 
-	result = pgp_stream_push_packet(packet->hashed_subpackets, subpacket);
+	result = pgp_stream_push(packet->hashed_subpackets, subpacket);
 
 	if (result == NULL)
 	{
@@ -2779,7 +2779,7 @@ pgp_error_t pgp_signature_packet_unhashed_subpacket_add(pgp_signature_packet *pa
 		return PGP_NO_MEMORY;
 	}
 
-	result = pgp_stream_push_packet(packet->unhashed_subpackets, subpacket);
+	result = pgp_stream_push(packet->unhashed_subpackets, subpacket);
 
 	if (result == NULL)
 	{
@@ -2886,7 +2886,7 @@ pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version,
 		return PGP_INVALID_PARAMETER;
 	}
 
-	result = pgp_stream_push_packet(sign->recipients, subpacket);
+	result = pgp_stream_push(sign->recipients, subpacket);
 
 	if (result == NULL)
 	{
@@ -2911,7 +2911,7 @@ pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void
 		return PGP_NO_MEMORY;
 	}
 
-	result = pgp_stream_push_packet(sign->notation, subpacket);
+	result = pgp_stream_push(sign->notation, subpacket);
 
 	if (result == NULL)
 	{

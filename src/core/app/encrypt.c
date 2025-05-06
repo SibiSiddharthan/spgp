@@ -108,7 +108,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 
 		session_key_size = pgp_s2k_hash(&s2k, command->passhprase, strlen(command->passhprase), session_key, 16);
 
-		pgp_stream_push_packet(stream, session);
+		pgp_stream_push(stream, session);
 	}
 	else
 	{
@@ -121,13 +121,13 @@ uint32_t spgp_encrypt(spgp_command *command)
 		session_key_size = pgp_rand(session_key, 16);
 		pgp_pkesk_packet_session_key_encrypt(session, key, 0, PGP_AES_128, session_key, session_key_size);
 
-		pgp_stream_push_packet(stream, session);
+		pgp_stream_push(stream, session);
 	}
 
 	pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_128, 0, 0);
 	pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, NULL);
 
-	pgp_stream_push_packet(stream, seipd);
+	pgp_stream_push(stream, seipd);
 
 	spgp_write_pgp_packets(command->output, SPGP_STD_OUTPUT, stream);
 

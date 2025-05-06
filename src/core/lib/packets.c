@@ -1131,7 +1131,7 @@ pgp_error_t pgp_user_attribute_packet_set_image(pgp_user_attribute_packet *packe
 
 	image_subpacket->header = pgp_encode_subpacket_header(PGP_USER_ATTRIBUTE_IMAGE, 0, 16 + size);
 
-	result = pgp_stream_push_packet(packet->subpackets, image_subpacket);
+	result = pgp_stream_push(packet->subpackets, image_subpacket);
 
 	if (result == NULL)
 	{
@@ -1200,7 +1200,7 @@ pgp_error_t pgp_user_attribute_packet_set_uid(pgp_user_attribute_packet *packet,
 	uid_subpacket = (pgp_user_attribute_uid_subpacket *)uid_packet;
 	uid_subpacket->header.tag = PGP_USER_ATTRIBUTE_UID;
 
-	result = pgp_stream_push_packet(packet->subpackets, uid_subpacket);
+	result = pgp_stream_push(packet->subpackets, uid_subpacket);
 
 	if (result == NULL)
 	{
@@ -1232,7 +1232,7 @@ static pgp_error_t pgp_user_attribute_packet_read_body(pgp_user_attribute_packet
 			return error;
 		}
 
-		result = pgp_stream_push_packet(packet->subpackets, subpacket);
+		result = pgp_stream_push(packet->subpackets, subpacket);
 
 		if (result == NULL)
 		{
@@ -1747,7 +1747,7 @@ pgp_error_t pgp_keyring_packet_add_user(pgp_keyring_packet *packet, pgp_user_inf
 {
 	void *result = NULL;
 
-	result = pgp_stream_push_packet(packet->users, user);
+	result = pgp_stream_push(packet->users, user);
 
 	if (result == NULL)
 	{
@@ -2292,7 +2292,7 @@ static pgp_error_t pgp_keyring_packet_read_body(pgp_keyring_packet *packet, buff
 			return status;
 		}
 
-		result = pgp_stream_push_packet(packet->users, user);
+		result = pgp_stream_push(packet->users, user);
 
 		if (result == NULL)
 		{

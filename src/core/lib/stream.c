@@ -78,7 +78,7 @@ size_t pgp_stream_octets(pgp_stream_t *stream)
 	return size;
 }
 
-pgp_stream_t *pgp_stream_push_packet(pgp_stream_t *stream, void *packet)
+pgp_stream_t *pgp_stream_push(pgp_stream_t *stream, void *packet)
 {
 	void *temp = NULL;
 
@@ -111,7 +111,7 @@ pgp_stream_t *pgp_stream_push_packet(pgp_stream_t *stream, void *packet)
 	return stream;
 }
 
-void *pgp_stream_pop_packet(pgp_stream_t *stream)
+void *pgp_stream_pop(pgp_stream_t *stream)
 {
 	void *packet = NULL;
 
@@ -146,7 +146,7 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 			return error;
 		}
 
-		stream = pgp_stream_push_packet(stream, packet);
+		stream = pgp_stream_push(stream, packet);
 
 		if (stream == NULL)
 		{
@@ -169,7 +169,7 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 					return error;
 				}
 
-				stream = pgp_stream_push_packet(stream, packet);
+				stream = pgp_stream_push(stream, packet);
 
 				if (stream == NULL)
 				{
@@ -362,7 +362,7 @@ pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t b
 				}
 			}
 
-			stream = pgp_stream_push_packet(stream, packet);
+			stream = pgp_stream_push(stream, packet);
 
 			if (stream == NULL)
 			{

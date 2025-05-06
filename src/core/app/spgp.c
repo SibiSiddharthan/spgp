@@ -509,7 +509,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		// Key Selection
 		case SPGP_OPTION_USER_ID:
 		{
-			command->users = pgp_stream_push_packet(command->users, result->data);
+			command->users = pgp_stream_push(command->users, result->data);
 
 			if (command->users == NULL)
 			{
@@ -520,7 +520,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		break;
 		case SPGP_OPTION_RECIPIENT:
 		{
-			command->recipients = pgp_stream_push_packet(command->recipients, result->data);
+			command->recipients = pgp_stream_push(command->recipients, result->data);
 
 			if (command->recipients == NULL)
 			{
@@ -571,7 +571,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		case ARGPARSE_RETURN_NON_OPTION:
 		{
-			command->files = pgp_stream_push_packet(command->files, result->data);
+			command->files = pgp_stream_push(command->files, result->data);
 
 			if (command->files == NULL)
 			{
