@@ -2061,17 +2061,6 @@ pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t ve
 {
 	pgp_key_fingerprint_subpacket *subpacket = NULL;
 
-	// Check key version
-	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
-	{
-		return NULL;
-	}
-
-	if (size != pgp_key_fingerprint_size(version))
-	{
-		return NULL;
-	}
-
 	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
 
 	if (subpacket == NULL)
@@ -2097,17 +2086,6 @@ void pgp_issuer_fingerprint_subpacket_delete(pgp_issuer_fingerprint_subpacket *s
 pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byte_t version, byte_t *fingerprint, byte_t size)
 {
 	pgp_key_fingerprint_subpacket *subpacket = NULL;
-
-	// Check key version
-	if (version != PGP_KEY_V4 && version != PGP_KEY_V5 && version != PGP_KEY_V6)
-	{
-		return NULL;
-	}
-
-	if (size != pgp_key_fingerprint_size(version))
-	{
-		return NULL;
-	}
 
 	subpacket = malloc(sizeof(pgp_key_fingerprint_subpacket));
 
@@ -2652,11 +2630,6 @@ pgp_revocation_key_subpacket *pgp_revocation_key_subpacket_new(byte_t revocation
 															   byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
 {
 	pgp_revocation_key_subpacket *subpacket = NULL;
-
-	if (size != PGP_KEY_V4_FINGERPRINT_SIZE && size != PGP_KEY_V6_FINGERPRINT_SIZE)
-	{
-		return NULL;
-	}
 
 	subpacket = malloc(sizeof(pgp_revocation_key_subpacket));
 
