@@ -142,6 +142,7 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 
 		if (error != PGP_SUCCESS)
 		{
+			pgp_stream_delete(stream, pgp_packet_delete);
 			return error;
 		}
 
@@ -149,6 +150,7 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 
 		if (stream == NULL)
 		{
+			pgp_stream_delete(stream, pgp_packet_delete);
 			return PGP_NO_MEMORY;
 		}
 
@@ -163,6 +165,7 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 
 				if (error != PGP_SUCCESS)
 				{
+					pgp_stream_delete(stream, pgp_packet_delete);
 					return error;
 				}
 
@@ -170,6 +173,7 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 
 				if (stream == NULL)
 				{
+					pgp_stream_delete(stream, pgp_packet_delete);
 					return PGP_NO_MEMORY;
 				}
 
@@ -235,6 +239,7 @@ pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t b
 	uint32_t temp_size = buffer_size;
 
 	uint32_t pos = 0;
+	byte_t first_packet = 0;
 
 	uint32_t input_pos = 0;
 	uint32_t input_size = 0;
@@ -264,28 +269,38 @@ pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t b
 
 		if (status != ARMOR_SUCCESS)
 		{
-			pgp_stream_delete(stream, pgp_packet_delete);
-
 			switch (status)
 			{
 			case ARMOR_UNKOWN_MARKER:
+				error = PGP_ARMOR_UNKNOWN_MARKER;
+				break;
 			case ARMOR_MARKER_MISMATCH:
-				return PGP_ARMOR_UNKNOWN_MARKER;
+				error = PGP_ARMOR_MARKER_MISMATCH;
+				break;
 			case ARMOR_MALFORMED_DATA:
-				return PGP_ARMOR_MALFORMED_BASE64_DATA;
+				error = PGP_ARMOR_MALFORMED_BASE64_DATA;
+				break;
 			case ARMOR_CRC_MISMATCH:
-				return PGP_ARMOR_CRC_MISMATCH;
+				error = PGP_ARMOR_CRC_MISMATCH;
+				break;
 			case ARMOR_LINE_TOO_BIG:
-				return PGP_ARMOR_LINE_TOO_BIG;
+				error = PGP_ARMOR_LINE_TOO_BIG;
+				break;
 			case ARMOR_BUFFER_TOO_SMALL:
-				return PGP_BUFFER_TOO_SMALL;
+				error = PGP_BUFFER_TOO_SMALL;
+				break;
 			case ARMOR_NO_MEMORY:
-				return PGP_NO_MEMORY;
+				error = PGP_NO_MEMORY;
+				break;
 			default:
-				return PGP_INTERNAL_BUG;
+				error = PGP_INTERNAL_BUG;
+				break;
 			}
+
+			goto error_cleanup;
 		}
 
+		// Ignore the headers
 		if (options.headers != NULL)
 		{
 			free(options.headers);
@@ -294,32 +309,80 @@ pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t b
 			options.headers_size = 0;
 		}
 
+		first_packet = 0;
+
 		while (pos < output_size)
 		{
 			pgp_packet_header *header = NULL;
+			pgp_packet_type type = 0;
 			void *packet = NULL;
 
 			error = pgp_packet_read(&packet, PTR_OFFSET(temp, output_pos + pos), output_size - pos);
 
 			if (error != PGP_SUCCESS)
 			{
-				return error;
+				goto error_cleanup;
+			}
+
+			header = packet;
+			type = pgp_packet_get_type(header->tag);
+			pos += header->body_size + header->header_size;
+
+			// Check whether the armor content is valid for the corresponding marker
+			if (first_packet)
+			{
+				// PGP PUBLIC KEY BLOCK
+				if (options.marker == &markers[1])
+				{
+					if (type != PGP_PUBKEY)
+					{
+						error = PGP_ARMOR_INVALID_MARKER_FOR_TRANSFERABLE_PUBLIC_KEY;
+						goto error_cleanup;
+					}
+				}
+
+				// PGP PRIVATE KEY BLOCK
+				if (options.marker == &markers[2])
+				{
+					if (type != PGP_SECKEY)
+					{
+						error = PGP_ARMOR_INVALID_MARKER_FOR_TRANSFERABLE_SECRET_KEY;
+						goto error_cleanup;
+					}
+				}
+
+				// PGP SIGNATURE
+				if (options.marker == &markers[3])
+				{
+					if (type != PGP_SIG && type != PGP_OPS)
+					{
+						error = PGP_ARMOR_INVALID_MARKER_FOR_SIGNATURE;
+						goto error_cleanup;
+					}
+				}
 			}
 
 			stream = pgp_stream_push_packet(stream, packet);
 
 			if (stream == NULL)
 			{
-				pgp_stream_delete(stream, pgp_packet_delete);
-				return PGP_NO_MEMORY;
+				error = PGP_NO_MEMORY;
+				goto error_cleanup;
 			}
 
-			header = packet;
-			pos += header->body_size + header->header_size;
+			first_packet += 1;
 		}
 	}
 
+	free(temp);
+
+end:
 	return error;
+
+error_cleanup:
+	free(temp);
+	pgp_stream_delete(stream, pgp_packet_delete);
+	goto end;
 }
 
 size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, void *header, uint16_t header_size, uint16_t flags)
@@ -348,21 +411,21 @@ size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, uint32_t buffe
 	packet_header = stream->packets[0];
 	packet_type = pgp_packet_get_type(packet_header->tag);
 
-	if (packet_type == PGP_SIG)
+	if (packet_type == PGP_SIG || packet_type == PGP_OPS)
 	{
 		marker.header_line = (void *)PGP_ARMOR_BEGIN_SIGNATURE;
 		marker.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE);
 		marker.trailer_line = (void *)PGP_ARMOR_END_SIGNATURE;
 		marker.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE);
 	}
-	else if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
+	else if (packet_type == PGP_PUBKEY)
 	{
 		marker.header_line = (void *)PGP_ARMOR_BEGIN_PUBLIC_KEY;
 		marker.header_line_size = strlen(PGP_ARMOR_BEGIN_PUBLIC_KEY);
 		marker.trailer_line = (void *)PGP_ARMOR_END_PUBLIC_KEY;
 		marker.trailer_line_size = strlen(PGP_ARMOR_END_PUBLIC_KEY);
 	}
-	else if (packet_type == PGP_SECKEY || packet_type == PGP_SECSUBKEY)
+	else if (packet_type == PGP_SECKEY)
 	{
 		marker.header_line = (void *)PGP_ARMOR_BEGIN_PRIVATE_KEY;
 		marker.header_line_size = strlen(PGP_ARMOR_BEGIN_PRIVATE_KEY);
