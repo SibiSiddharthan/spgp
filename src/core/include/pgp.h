@@ -17,6 +17,11 @@
 #include <round.h>
 #include <load.h>
 
+// Armor Flags
 #define PGP_ARMOR_NO_CRC 0x1
+
+// Key Constants
+#define PGP_KEY_ID_SIZE              8
+#define PGP_KEY_MAX_FINGERPRINT_SIZE 32
 
 #endif

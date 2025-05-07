@@ -31,14 +31,31 @@ typedef enum _pgp_key_type
 	PGP_KEY_TYPE_SECRET = 2
 } pgp_key_type;
 
-#define PGP_KEY_ID_SIZE 8
-
 // Key Fingerprint Sizes
-#define PGP_KEY_V3_FINGERPRINT_SIZE  16
-#define PGP_KEY_V4_FINGERPRINT_SIZE  20
-#define PGP_KEY_V5_FINGERPRINT_SIZE  32
-#define PGP_KEY_V6_FINGERPRINT_SIZE  32
-#define PGP_KEY_MAX_FINGERPRINT_SIZE 32
+#define PGP_KEY_V3_FINGERPRINT_SIZE 16
+#define PGP_KEY_V4_FINGERPRINT_SIZE 20
+#define PGP_KEY_V5_FINGERPRINT_SIZE 32
+#define PGP_KEY_V6_FINGERPRINT_SIZE 32
+
+// Key Flags
+// First Octet
+#define PGP_KEY_FLAG_CERTIFY         0x01 // This key may be used to make User ID certifications or Direct Key signatures over other keys
+#define PGP_KEY_FLAG_SIGN            0x02 // This key may be used to sign data
+#define PGP_KEY_FLAG_ENCRYPT_COM     0x04 // This key may be used to encrypt communications
+#define PGP_KEY_FLAG_ENCRYPT_STORAGE 0x08 // This key may be used to encrypt storage
+#define PGP_KEY_FLAG_PRIVATE_SPLIT   0x10 // The private component of this key may have been split by a secret-sharing mechanism
+#define PGP_KEY_FLAG_AUTHENTICATION  0x20 // This key may be used for authentication
+#define PGP_KEY_FLAG_PRIVATE_SHARED  0x80 // The private component of this key may be in the possession of more than one person
+
+// Second Octet
+#define PGP_KEY_FLAG_RESTRICTED_ENCRYPT 0x04 // This key may be used to encrypt communications or storage
+#define PGP_KEY_FLAG_TIMESTAMP          0x08 // This key may be used for timestamping
+
+#define PGP_KEY_CAPABILITIES_MASK \
+	(PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION | PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE)
+
+#define PGP_KEY_FLAGS_MASK \
+	(PGP_KEY_FLAG_PRIVATE_SPLIT | PGP_KEY_FLAG_PRIVATE_SHARED | PGP_KEY_FLAG_RESTRICTED_ENCRYPT | PGP_KEY_FLAG_TIMESTAMP)
 
 typedef struct _pgp_key_packet
 {

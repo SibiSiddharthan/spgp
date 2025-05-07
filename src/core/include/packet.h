@@ -205,7 +205,7 @@ typedef struct _pgp_keyring_packet
 
 	byte_t key_version;
 	byte_t fingerprint_size;
-	byte_t primary_fingerprint[32];
+	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE];
 
 	uint16_t subkey_count;
 	uint32_t subkey_size;
@@ -229,7 +229,7 @@ typedef struct _pgp_user_info
 	byte_t flags;
 
 	byte_t fingerprint_size;
-	byte_t fingerprint[32];
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE];
 
 	byte_t hash_algorithm_preferences_octets;
 	byte_t cipher_algorithm_preferences_octets;

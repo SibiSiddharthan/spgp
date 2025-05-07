@@ -2147,13 +2147,13 @@ pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second
 
 	if (second == 0)
 	{
-		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
+		subpacket->flags[0] = first;
 		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 1); // Critical
 	}
 	else
 	{
-		subpacket->flags[0] = first & PGP_KEY_FLAG_FIRST_OCTET_MASK;
-		subpacket->flags[1] = second & PGP_KEY_FLAG_SECOND_OCTET_MASK;
+		subpacket->flags[0] = first;
+		subpacket->flags[1] = second;
 		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 2); // Critical
 	}
 

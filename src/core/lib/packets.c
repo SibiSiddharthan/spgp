@@ -2074,14 +2074,14 @@ pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input
 
 	if (size < 65)
 	{
-		byte_t result = keyring_search_key_fingerprint_or_id(packet, input, size, fingerprint);
+		fingerprint_size = keyring_search_key_fingerprint_or_id(packet, input, size, fingerprint);
 		pgp_user_info *uinfo = packet->users->packets[0];
 
-		if (result != 0)
+		if (fingerprint_size != 0)
 		{
 			// Use the primary user info and copy the fingerprint to it.
-			memcpy(uinfo->fingerprint, fingerprint, result);
-			uinfo->fingerprint_size = result;
+			memcpy(uinfo->fingerprint, fingerprint, fingerprint_size);
+			uinfo->fingerprint_size = fingerprint_size;
 
 			return uinfo;
 		}

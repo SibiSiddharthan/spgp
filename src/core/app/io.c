@@ -167,7 +167,7 @@ pgp_literal_packet *spgp_read_file_as_literal(const char *file, pgp_literal_data
 		os_status = spgp_read_pipe_file(handle, &buffer, &size);
 	}
 
-	pgp_status = pgp_literal_packet_new(&literal, PGP_HEADER, stat.st_mtim.tv_sec, file, strlen(file));
+	pgp_status = pgp_literal_packet_new(&literal, PGP_HEADER, stat.st_mtim.tv_sec, (void *)file, strlen(file));
 
 	if (pgp_status != PGP_SUCCESS)
 	{

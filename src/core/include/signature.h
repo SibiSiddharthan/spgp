@@ -12,7 +12,6 @@
 #include <error.h>
 #include <packet.h>
 #include <stream.h>
-#include <key.h>
 #include <mpi.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5.2 Signature Packet
@@ -111,29 +110,6 @@ typedef enum _pgp_revocation_code
 
 #define PGP_KEY_SERVER_FLAGS_MASK 0x80
 #define PGP_NOTATION_FLAG_MASK    0x80000000
-
-// Key Flags
-// First Octet
-#define PGP_KEY_FLAG_CERTIFY         0x01 // This key may be used to make User ID certifications or Direct Key signatures over other keys
-#define PGP_KEY_FLAG_SIGN            0x02 // This key may be used to sign data
-#define PGP_KEY_FLAG_ENCRYPT_COM     0x04 // This key may be used to encrypt communications
-#define PGP_KEY_FLAG_ENCRYPT_STORAGE 0x08 // This key may be used to encrypt storage
-#define PGP_KEY_FLAG_PRIVATE_SPLIT   0x10 // The private component of this key may have been split by a secret-sharing mechanism
-#define PGP_KEY_FLAG_AUTHENTICATION  0x20 // This key may be used for authentication
-#define PGP_KEY_FLAG_PRIVATE_SHARED  0x80 // The private component of this key may be in the possession of more than one person
-
-// Second Octet
-#define PGP_KEY_FLAG_RESTRICTED_ENCRYPT 0x04 // This key may be used to encrypt communications or storage
-#define PGP_KEY_FLAG_TIMESTAMP          0x08 // This key may be used for timestamping
-
-#define PGP_KEY_FLAG_FIRST_OCTET_MASK  0xBF
-#define PGP_KEY_FLAG_SECOND_OCTET_MASK 0x0C
-
-#define PGP_KEY_CAPABILITIES_MASK \
-	(PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION | PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE)
-
-#define PGP_KEY_FLAGS_MASK \
-	(PGP_KEY_FLAG_PRIVATE_SPLIT | PGP_KEY_FLAG_PRIVATE_SHARED | PGP_KEY_FLAG_RESTRICTED_ENCRYPT | PGP_KEY_FLAG_TIMESTAMP)
 
 // Feature Flags
 // LibrePGP
