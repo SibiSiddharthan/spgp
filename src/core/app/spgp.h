@@ -38,6 +38,29 @@
 #define SPGP_KEY_EXT  ".key"
 #define SPGP_CERT_EXT ".cert"
 
+#define OS_CALL(EXPR, LOG)                            \
+	{                                                 \
+		status_t __os_status = 0;                     \
+		__os_status = (EXPR);                         \
+		if (__os_status != OS_STATUS_SUCCESS)         \
+		{                                             \
+			(LOG);                                    \
+			printf("(%s)\n", os_status(__os_status)); \
+			exit(2);                                  \
+		}                                             \
+	}
+
+#define PGP_CALL(EXPR)                               \
+	{                                                \
+		pgp_error_t __pgp_status = 0;                \
+		__pgp_status = (EXPR);                       \
+		if (_pgp_status != PGP_SUCCESS)              \
+		{                                            \
+			printf("%s\n", pgp_error(__pgp_status)); \
+			exit(1);                                 \
+		}                                            \
+	}
+
 typedef enum _spgp_mode
 {
 	SPGP_MODE_RFC4880 = 1,
