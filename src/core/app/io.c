@@ -116,6 +116,78 @@ status_t spgp_read_handle(handle_t handle, void **buffer, size_t *size)
 	return status;
 }
 
+pgp_literal_packet *spgp_read_file_as_literal(const char *file, pgp_literal_data_format format)
+{
+	status_t os_status = 0;
+	handle_t handle = 0;
+	stat_t stat = {0};
+
+	void *buffer = NULL;
+	size_t size = 0;
+
+	pgp_error_t pgp_status = 0;
+	pgp_literal_packet *literal = NULL;
+
+	if (file != NULL)
+	{
+		os_status = os_open(&handle, HANDLE_CWD, file, strlen(file), FILE_ACCESS_READ, 0, 0);
+
+		if (os_status != OS_STATUS_SUCCESS)
+		{
+			printf("Unable to open file %s.\n", file);
+			exit(2);
+		}
+
+		os_status = os_stat(handle, NULL, 0, STAT_NO_ACLS, &stat, sizeof(stat_t));
+
+		if (os_status != OS_STATUS_SUCCESS)
+		{
+			printf("Unable to stat file %s.\n", file);
+			exit(2);
+		}
+	}
+	else
+	{
+		handle = STDIN_HANDLE;
+		os_status = os_stat(handle, NULL, 0, STAT_NO_ACLS, &stat, sizeof(stat_t));
+
+		if (os_status != OS_STATUS_SUCCESS)
+		{
+			printf("Unable to stat file %s.\n", file);
+			exit(2);
+		}
+	}
+
+	if (STAT_IS_REG(stat.st_mode))
+	{
+		os_status = spgp_read_disk_file(handle, stat.st_size, &buffer, &size);
+	}
+	else
+	{
+		os_status = spgp_read_pipe_file(handle, &buffer, &size);
+	}
+
+	pgp_status = pgp_literal_packet_new(&literal, PGP_HEADER, stat.st_mtim.tv_sec, file, strlen(file));
+
+	if (pgp_status != PGP_SUCCESS)
+	{
+		printf("%s\n", pgp_error(pgp_status));
+		exit(2);
+	}
+
+	pgp_status = pgp_literal_packet_store(literal, format, buffer, size);
+
+	if (pgp_status != PGP_SUCCESS)
+	{
+		printf("%s\n", pgp_error(pgp_status));
+		exit(2);
+	}
+
+	free(buffer);
+
+	return literal;
+}
+
 void *spgp_read_file(const char *file, uint32_t options, size_t *size)
 {
 	status_t status = 0;

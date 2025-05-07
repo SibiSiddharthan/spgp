@@ -136,6 +136,8 @@ uint32_t spgp_delete_keys(spgp_command *command);
 #define SPGP_STD_INPUT  0x1
 #define SPGP_STD_OUTPUT 0x2
 
+pgp_literal_packet *spgp_read_file_as_literal(const char *file, pgp_literal_data_format format);
+
 void *spgp_read_file(const char *file, uint32_t options, size_t *size);
 size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size);
 
@@ -162,7 +164,7 @@ size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], 
 #define SPGP_KEYRING_REPLACE 0x1
 
 pgp_stream_t *spgp_read_keyring();
-pgp_keyring_packet *spgp_search_keyring();
+pgp_keyring_packet *spgp_search_keyring(void *input, uint32_t size, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE]);
 uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options);
 
 #endif
