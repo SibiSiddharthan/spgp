@@ -2005,7 +2005,7 @@ static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, v
 	return 0;
 }
 
-static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32_t size, byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
+static pgp_user_info *keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32_t size)
 {
 
 	byte_t *in = input;
@@ -2033,7 +2033,7 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32
 			{
 				if (strncmp((void *)in, user->uid, uid_size) == 0)
 				{
-					goto copy_primary_fingerprint;
+					return user;
 				}
 			}
 		}
@@ -2053,39 +2053,42 @@ static byte_t keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32
 		// Partial case insensitive match (TODO case)
 		if (strstr(user->uid, (void *)in) != NULL)
 		{
-			goto copy_primary_fingerprint;
+			return user;
 		}
 	}
 
-	return 0;
-
-copy_primary_fingerprint:
-	memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
-	return packet->fingerprint_size;
+	return NULL;
 }
 
-byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32_t size, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE])
+pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32_t size)
 {
-	byte_t result = 0;
 	byte_t *in = input;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
 
 	if (in[0] == '<' || in[0] == '=' || in[0] == '@')
 	{
-		return keyring_search_uid(packet, input, size, fingerprint);
+		return keyring_search_uid(packet, input, size);
 	}
 
 	if (size < 65)
 	{
-		result = keyring_search_key_fingerprint_or_id(packet, input, size, fingerprint);
+		byte_t result = keyring_search_key_fingerprint_or_id(packet, input, size, fingerprint);
+		pgp_user_info *uinfo = packet->users->packets[0];
+
+		if (result != 0)
+		{
+			// Use the primary user info and copy the fingerprint to it.
+			memcpy(uinfo->fingerprint, fingerprint, result);
+			uinfo->fingerprint_size = result;
+
+			return uinfo;
+		}
 	}
 
-	if (result == 0)
-	{
-		// Assume uid
-		result = keyring_search_uid(packet, input, size, fingerprint);
-	}
-
-	return result;
+	// Assume uid
+	return keyring_search_uid(packet, input, size);
 }
 
 static pgp_error_t pgp_user_info_read(pgp_user_info **info, buffer_t *buffer)

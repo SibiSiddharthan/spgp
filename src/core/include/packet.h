@@ -228,6 +228,9 @@ typedef struct _pgp_user_info
 	byte_t features;
 	byte_t flags;
 
+	byte_t fingerprint_size;
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE];
+
 	byte_t hash_algorithm_preferences_octets;
 	byte_t cipher_algorithm_preferences_octets;
 	byte_t compression_algorithm_preferences_octets;
@@ -377,7 +380,7 @@ void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uin
 pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
 
-byte_t pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32_t size, byte_t fingerprint[32]);
+pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32_t size);
 
 pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, size_t size);
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);
