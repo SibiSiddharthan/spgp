@@ -39,4 +39,6 @@ status_t os_unlock(handle_t handle, size_t offset, size_t length);
 
 status_t os_isatty(handle_t handle, uint32_t *result);
 
+char *os_status(status_t status);
+
 #endif
