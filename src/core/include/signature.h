@@ -352,8 +352,8 @@ typedef struct _pgp_sign_info
 	void *signer;
 	void *policy;
 
-	pgp_stream_t *recipients;
-	pgp_stream_t *notation;
+	// Notation, Recipients, Policies.
+	pgp_stream_t *misc;
 
 } pgp_sign_info;
 
@@ -470,10 +470,10 @@ pgp_error_t pgp_sign_info_new(pgp_sign_info **info, byte_t signature_type, byte_
 							  uint32_t expiry_seconds, byte_t non_exportable, byte_t non_revocable);
 void pgp_sign_info_delete(pgp_sign_info *sign);
 
-void pgp_sign_info_set_policy_url(pgp_sign_info *sign, byte_t *policy, uint32_t size);
-void pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t size);
-
+pgp_error_t pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t size);
 pgp_error_t pgp_sign_info_set_salt(pgp_sign_info *sign, byte_t *salt, byte_t size);
+
+pgp_error_t pgp_sign_info_add_policy_uri(pgp_sign_info *sign, byte_t *policy, uint32_t size);
 pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size);
 pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void *name, uint16_t name_size, void *value,
 									   uint16_t value_size);

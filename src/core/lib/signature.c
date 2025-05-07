@@ -2815,22 +2815,24 @@ void pgp_sign_info_delete(pgp_sign_info *sign)
 		return;
 	}
 
-	pgp_stream_delete(sign->recipients, (void (*)(void *))pgp_recipient_fingerprint_subpacket_delete);
-	pgp_stream_delete(sign->notation, (void (*)(void *))pgp_notation_data_subpacket_delete);
-
+	pgp_stream_delete(sign->misc, free);
+	free(sign->signer);
 	free(sign);
 }
 
-void pgp_sign_info_set_policy_url(pgp_sign_info *sign, byte_t *policy, uint32_t size)
+pgp_error_t pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t size)
 {
-	sign->policy = policy;
-	sign->policy_size = size;
-}
+	sign->signer = malloc(size);
 
-void pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uint32_t size)
-{
-	sign->signer = signer;
+	if (sign->signer != NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memcpy(sign->signer, signer, size);
 	sign->signer_size = size;
+
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_sign_info_set_salt(pgp_sign_info *sign, byte_t *salt, byte_t size)
@@ -2846,26 +2848,60 @@ pgp_error_t pgp_sign_info_set_salt(pgp_sign_info *sign, byte_t *salt, byte_t siz
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size)
+pgp_error_t pgp_sign_info_add_policy_uri(pgp_sign_info *sign, byte_t *policy, uint32_t size)
 {
 	void *result = NULL;
-	pgp_recipient_fingerprint_subpacket *subpacket = NULL;
+	pgp_policy_uri_subpacket *subpacket = NULL;
 
-	subpacket = pgp_recipient_fingerprint_subpacket_new(key_version, fingerprint, size);
+	subpacket = pgp_policy_uri_subpacket_new(policy, size);
 
 	if (subpacket == NULL)
 	{
-		return PGP_INVALID_PARAMETER;
+		return PGP_NO_MEMORY;
 	}
 
-	result = pgp_stream_push(sign->recipients, subpacket);
+	result = pgp_stream_push(sign->misc, subpacket);
 
 	if (result == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	sign->recipients = result;
+	sign->misc = result;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size)
+{
+	void *result = NULL;
+	pgp_recipient_fingerprint_subpacket *subpacket = NULL;
+
+	if (key_version < PGP_KEY_V2 || key_version > PGP_KEY_V6)
+	{
+		return PGP_UNKNOWN_KEY_VERSION;
+	}
+
+	if (size != pgp_key_fingerprint_size(key_version))
+	{
+		return PGP_INVALID_KEY_FINGERPRINT_SIZE;
+	}
+
+	subpacket = pgp_recipient_fingerprint_subpacket_new(key_version, fingerprint, size);
+
+	if (subpacket == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = pgp_stream_push(sign->misc, subpacket);
+
+	if (result == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	sign->misc = result;
 
 	return PGP_SUCCESS;
 }
@@ -2883,14 +2919,14 @@ pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void
 		return PGP_NO_MEMORY;
 	}
 
-	result = pgp_stream_push(sign->notation, subpacket);
+	result = pgp_stream_push(sign->misc, subpacket);
 
 	if (result == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	sign->notation = result;
+	sign->misc = result;
 
 	return PGP_SUCCESS;
 }
@@ -3419,28 +3455,12 @@ static pgp_error_t pgp_setup_sign_info(pgp_signature_packet *packet, pgp_key_pac
 				pgp_signature_packet_hashed_subpacket_add(packet, pgp_signer_user_id_subpacket_new(info->signer, info->signer_size)));
 		}
 
-		// Signature Policy
-		if (info->policy != NULL && info->policy_size != 0)
+		// Miscellaneous Signature Subpackets (Notation Data, Intended Recipients, Policy URIs.)
+		if (info->misc != NULL && info->misc->count > 0)
 		{
-			CHECK_SUBPACKET_ADD(
-				pgp_signature_packet_hashed_subpacket_add(packet, pgp_policy_uri_subpacket_new(info->policy, info->policy_size)));
-		}
-
-		// Add Intended Recipients
-		if (info->recipients != NULL && info->recipients->count > 0)
-		{
-			for (uint32_t i = 0; i < info->recipients->count; ++i)
+			for (uint32_t i = 0; i < info->misc->count; ++i)
 			{
-				CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, info->recipients->packets[i]));
-			}
-		}
-
-		// Add Notation Data
-		if (info->notation != NULL && info->notation->count > 0)
-		{
-			for (uint32_t i = 0; i < info->notation->count; ++i)
-			{
-				CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, info->notation->packets[i]));
+				CHECK_SUBPACKET_ADD(pgp_signature_packet_hashed_subpacket_add(packet, info->misc->packets[i]));
 			}
 		}
 	}
