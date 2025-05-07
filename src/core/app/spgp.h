@@ -45,7 +45,7 @@
 		if (__os_status != OS_STATUS_SUCCESS)         \
 		{                                             \
 			(LOG);                                    \
-			printf("(%s)\n", os_status(__os_status)); \
+			printf(" (%s)\n", os_status(__os_status)); \
 			exit(2);                                  \
 		}                                             \
 	}
@@ -54,7 +54,7 @@
 	{                                                \
 		pgp_error_t __pgp_status = 0;                \
 		__pgp_status = (EXPR);                       \
-		if (_pgp_status != PGP_SUCCESS)              \
+		if (__pgp_status != PGP_SUCCESS)              \
 		{                                            \
 			printf("%s\n", pgp_error(__pgp_status)); \
 			exit(1);                                 \

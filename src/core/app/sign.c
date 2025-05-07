@@ -85,7 +85,7 @@ uint32_t spgp_sign(spgp_command *command)
 
 	pgp_signature_packet *sign = NULL;
 
-	pgp_signature_packet_new(&sign, PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE);
+	// pgp_signature_packet_new(&sign, PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE);
 
 	// pgp_signature_packet_sign(sign, key, PGP_SHA2_256, time(NULL), buffer, size);
 	spgp_write_pgp_packet(command->output, SPGP_STD_OUTPUT, sign);

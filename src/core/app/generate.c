@@ -648,21 +648,21 @@ uint32_t spgp_generate_key(void)
 		exit(1);
 	}
 
-	pgp_stream_push_packet(certificate, key_packets[0]);
-	pgp_stream_push_packet(certificate, user);
+	pgp_stream_push(certificate, key_packets[0]);
+	pgp_stream_push(certificate, user);
 
-	pgp_generate_certificate_signature(&signature, key_packets[0], PGP_POSITIVE_CERTIFICATION_SIGNATURE,
-									   preferences.hash_algorithm_preferences[0], time(NULL), &preferences, user);
-	pgp_stream_push_packet(certificate, signature);
+	// pgp_generate_certificate_signature(&signature, key_packets[0], PGP_POSITIVE_CERTIFICATION_SIGNATURE,
+	//								   preferences.hash_algorithm_preferences[0], time(NULL), &preferences, user);
+	pgp_stream_push(certificate, signature);
 
 	for (uint32_t i = 1; i < count; ++i)
 	{
 		signature = NULL;
 
-		pgp_stream_push_packet(certificate, key_packets[i]);
-		pgp_generate_key_binding_signature(&signature, key_packets[0], key_packets[i], PGP_SUBKEY_BINDING_SIGNATURE,
-										   preferences.hash_algorithm_preferences[0], time(NULL));
-		pgp_stream_push_packet(certificate, signature);
+		pgp_stream_push(certificate, key_packets[i]);
+		// pgp_generate_key_binding_signature(&signature, key_packets[0], key_packets[i], PGP_SUBKEY_BINDING_SIGNATURE,
+		//								   preferences.hash_algorithm_preferences[0], time(NULL));
+		pgp_stream_push(certificate, signature);
 	}
 
 	// Write the keys and certificate
