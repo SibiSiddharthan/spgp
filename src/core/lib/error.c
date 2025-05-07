@@ -7,7 +7,7 @@
 
 #include <error.h>
 
-void *pgp_error(pgp_error_t status)
+char *pgp_error(pgp_error_t status)
 {
 	switch (status)
 	{

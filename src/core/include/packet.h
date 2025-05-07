@@ -229,7 +229,7 @@ typedef struct _pgp_user_info
 	byte_t flags;
 
 	byte_t fingerprint_size;
-	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE];
+	byte_t fingerprint[32];
 
 	byte_t hash_algorithm_preferences_octets;
 	byte_t cipher_algorithm_preferences_octets;

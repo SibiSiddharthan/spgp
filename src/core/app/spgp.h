@@ -164,7 +164,7 @@ size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], 
 #define SPGP_KEYRING_REPLACE 0x1
 
 pgp_stream_t *spgp_read_keyring();
-pgp_keyring_packet *spgp_search_keyring(void *input, uint32_t size, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE]);
+pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **user, void *input, uint32_t size, byte_t capabilities);
 uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options);
 
 #endif

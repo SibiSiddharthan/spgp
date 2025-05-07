@@ -290,6 +290,6 @@ typedef enum _pgp_error_t
 
 } pgp_error_t;
 
-void *pgp_error(pgp_error_t status);
+char *pgp_error(pgp_error_t status);
 
 #endif
