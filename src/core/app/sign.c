@@ -89,6 +89,35 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	return stream;
 }
 
+static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
+{
+	pgp_stream_t *stream = pgp_stream_new(count + 1);
+	pgp_literal_packet *literal = NULL;
+	pgp_signature_packet *sign = NULL;
+	pgp_one_pass_signature_packet *ops = NULL;
+
+	if (stream == NULL)
+	{
+		printf("No memory");
+		exit(1);
+	}
+
+	// Generate the signatures (first to last)
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		sign = NULL;
+
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], 0, NULL, literal));
+		pgp_stream_push(stream, sign);
+	}
+
+	// Push the literal packet
+	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_BINARY);
+	pgp_stream_push(stream, literal);
+
+	return stream;
+}
+
 void spgp_sign(void)
 {
 	void *buffer = NULL;
