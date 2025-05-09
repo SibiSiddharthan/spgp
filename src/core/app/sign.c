@@ -14,6 +14,77 @@
 #include <stdlib.h>
 #include <string.h>
 
+static size_t encode_cleartext(byte_t *output, byte_t *input, size_t size)
+{
+	size_t pos = 0;
+
+	// First character
+	// Dash Escapes
+	if (input[0] == '-')
+	{
+		output[pos++] = '-';
+		output[pos++] = ' ';
+		output[pos++] = '-';
+	}
+
+	// LF -> CRLF
+	if (input[0] == '\n')
+	{
+		output[pos++] = '\r';
+		output[pos++] = '\n';
+	}
+
+	for (size_t i = 1; i < size; ++i)
+	{
+		// Dash Escapes
+		if (input[i] == '-' && input[i - 1] == '\n')
+		{
+			// Every line starting with '-' is prefixed with '-' and ' '.
+			output[pos++] = '-';
+			output[pos++] = ' ';
+			output[pos++] = '-';
+		}
+
+		// LF -> CRLF
+		if (input[i] == '\n' && input[i - 1] != '\r')
+		{
+			output[pos++] = '\r';
+			output[pos++] = '\n';
+		}
+
+		output[pos++] = input[i];
+	}
+
+	return pos;
+}
+
+static size_t decode_cleartext(byte_t *output, byte_t *input, size_t size)
+{
+	size_t input_pos = 0;
+	size_t output_pos = 0;
+
+	// First character
+	// Dash Escapes
+	if (input[0] == '-')
+	{
+		input_pos += 2;
+	}
+
+	for (size_t i = input_pos; i < size; ++i)
+	{
+		// Dash Escapes
+		if (input[i] == '-' && input[i - 1] == '\n')
+		{
+			// Every line starting with '-' is prefixed with '-' and ' '.
+			i += 2;
+		}
+
+		output[output_pos++] = input[i];
+	}
+
+	return output_pos;
+}
+
 static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
 	pgp_stream_t *stream = pgp_stream_new(count);
@@ -33,6 +104,35 @@ static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info 
 		sign = NULL;
 
 		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_DETACHED, NULL, literal));
+		pgp_stream_push(stream, sign);
+	}
+
+	pgp_literal_packet_delete(literal);
+
+	return stream;
+}
+
+static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
+{
+	pgp_stream_t *stream = pgp_stream_new(count);
+	pgp_literal_packet *literal = NULL;
+	pgp_signature_packet *sign = NULL;
+
+	if (stream == NULL)
+	{
+		printf("No memory");
+		exit(1);
+	}
+
+	// TODO (Write the data as cleartext)
+
+	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_TEXT);
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		sign = NULL;
+
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_CLEARTEXT, NULL, literal));
 		pgp_stream_push(stream, sign);
 	}
 
