@@ -84,6 +84,10 @@ Output Options:\n\
  -o, --output FILE              write output to FILE\n\
  -z  --compress-level N         compression level to N (0 disables)\n\
 \n\
+Processing Options:\n\
+ -t  --textmode                 use canonical textmode\n\
+     --multifile                process multiple files for encrypt and sign\n\
+\n\
 Key Selection:\n\
  -r, --recipient USER-ID        encrypt for USER-ID\n\
  -u, --local-user USER-ID       use USER-ID to sign or decrypt\n\
@@ -91,7 +95,14 @@ Key Selection:\n\
 Algorithm Options:\n\
      --digest-algo ALGO         hash using ALGO\n\
      --cipher-algo ALGO         encrypt using ALGO\n\
+     --aead-algo ALGO           encrypt using ALGO\n\
      --compress-algo ALGO       compress using ALGO\n\
+\n\
+Signature Options:\n\
+     --sig-expire EXP           set expiration time to EXP\n\
+     --sig-notation             set {name=value}\n\
+     --sig-policy URL           set policy URL\n\
+     --sig-keyserver URL        set keyserver URL\n\
 \n\
 Operation Modes:\n\
      --rfc4880                  conform to rfc 4880 specification\n\
@@ -160,7 +171,14 @@ typedef enum _spgp_option
 	// Algorithm Options
 	SPGP_OPTION_DIGEST_ALGORITHM,
 	SPGP_OPTION_CIPHER_ALGORITHM,
+	SPGP_OPTION_AEAD_ALGORITHM,
 	SPGP_OPTION_COMPRESS_ALGORITHM,
+
+	// Signature Options
+	SPGP_OPTION_SIG_EXPIRE,
+	SPGP_OPTION_SIG_NOTATION,
+	SPGP_OPTION_SIG_POLICY,
+	SPGP_OPTION_SIG_KEYSERVER,
 
 	// Operation Modes
 	SPGP_OPTION_RFC4880,
@@ -228,7 +246,14 @@ static arg_option_t spgp_options[] = {
 	// Algorithm Options
 	{"digest-algo", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_DIGEST_ALGORITHM},
 	{"cipher-algo", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_CIPHER_ALGORITHM},
+	{"aead-algo", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_AEAD_ALGORITHM},
 	{"compress-algo", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_COMPRESS_ALGORITHM},
+
+	// Signature Options
+	{"sig-expire", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_SIG_EXPIRE},
+	{"sig-notation", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_SIG_NOTATION},
+	{"sig-policy-url", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_SIG_POLICY},
+	{"sig-keyserver-url", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_SIG_KEYSERVER},
 
 	// Operation Modes
 	{"rfc4880", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_RFC4880},
@@ -570,6 +595,46 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		case SPGP_OPTION_LIBREPGP:
 		{
 			command->mode = SPGP_MODE_LIBREPGP;
+		}
+		break;
+
+		// Signature Option
+		case SPGP_OPTION_SIG_EXPIRE:
+		{
+			command->expiration = result->data;
+		}
+		break;
+		case SPGP_OPTION_SIG_NOTATION:
+		{
+			command->notation = pgp_stream_push(command->notation, result->data);
+
+			if (command->notation == NULL)
+			{
+				printf("No memory");
+				exit(1);
+			}
+		}
+		break;
+		case SPGP_OPTION_SIG_POLICY:
+		{
+			command->policy = pgp_stream_push(command->policy, result->data);
+
+			if (command->policy == NULL)
+			{
+				printf("No memory");
+				exit(1);
+			}
+		}
+		break;
+		case SPGP_OPTION_SIG_KEYSERVER:
+		{
+			command->keyserver = pgp_stream_push(command->keyserver, result->data);
+
+			if (command->keyserver == NULL)
+			{
+				printf("No memory");
+				exit(1);
+			}
 		}
 		break;
 

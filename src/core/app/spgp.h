@@ -95,9 +95,17 @@ typedef struct _spgp_command
 	byte_t textmode;
 	byte_t multifile;
 
+	// Algorithm preferences
 	byte_t cipher_algorithm;
+	byte_t aead_algorithm;
 	byte_t hash_algorithm;
 	byte_t compression_algorithm;
+
+	// Signature options
+	void *expiration;
+	pgp_stream_t *policy;
+	pgp_stream_t *notation;
+	pgp_stream_t *keyserver;
 
 	union
 	{
