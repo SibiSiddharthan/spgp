@@ -9,6 +9,7 @@
 #include <packet.h>
 #include <key.h>
 #include <signature.h>
+#include <crypto.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,11 +86,115 @@ static size_t decode_cleartext(byte_t *output, byte_t *input, size_t size)
 	return output_pos;
 }
 
+static pgp_hash_algorithms get_hash_algorithm(pgp_key_packet *packet)
+{
+	switch (packet->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		return PGP_SHA2_256;
+	}
+	break;
+	case PGP_DSA:
+	{
+		pgp_dsa_key *key = packet->key;
+
+		if (ROUND_UP(key->p->bits, 1024) == 1024)
+		{
+			return PGP_SHA1;
+		}
+
+		if (ROUND_UP(key->p->bits, 1024) == 2048)
+		{
+			return PGP_SHA2_224;
+		}
+
+		if (ROUND_UP(key->p->bits, 1024) == 3072)
+		{
+			return PGP_SHA2_256;
+		}
+	}
+	break;
+	case PGP_ECDSA:
+	{
+		pgp_ecdsa_key *key = packet->key;
+
+		switch (key->curve)
+		{
+		case PGP_EC_NIST_P256:
+			return PGP_SHA2_256;
+		case PGP_EC_NIST_P384:
+			return PGP_SHA2_384;
+		case PGP_EC_NIST_P521:
+			return PGP_SHA2_512;
+		case PGP_EC_BRAINPOOL_256R1:
+			return PGP_SHA2_256;
+		case PGP_EC_BRAINPOOL_384R1:
+			return PGP_SHA2_384;
+		case PGP_EC_BRAINPOOL_512R1:
+			return PGP_SHA2_512;
+		}
+	}
+	break;
+	case PGP_EDDSA:
+	{
+		pgp_eddsa_key *key = packet->key;
+
+		if (key->curve == PGP_EC_ED25519)
+		{
+			return PGP_SHA2_256;
+		}
+
+		if (key->curve == PGP_EC_ED25519)
+		{
+			return PGP_SHA2_512;
+		}
+	}
+	break;
+	case PGP_ED25519:
+	{
+		return PGP_SHA2_256;
+	}
+	break;
+	case PGP_ED448:
+	{
+		return PGP_SHA2_512;
+	}
+	break;
+	default:
+		return PGP_SHA2_512;
+	}
+
+	return PGP_SHA2_512;
+}
+
+static pgp_sign_info *spgp_create_sign_info(pgp_key_packet *key, pgp_user_info *uinfo, pgp_signature_type type)
+{
+	pgp_sign_info *sinfo = NULL;
+	pgp_hash_algorithms algorithm = get_hash_algorithm(key);
+
+	// Create the structure
+	PGP_CALL(pgp_sign_info_new(&sinfo, type, algorithm, 0, 0, 0, 0));
+
+	// Set the signer
+	PGP_CALL(pgp_sign_info_set_signer_id(sinfo, uinfo->uid, uinfo->uid_octets));
+
+	// Generate salt
+	if (key->version == PGP_KEY_V6)
+	{
+		sinfo->salt_size = pgp_rand(sinfo->salt, 32);
+	}
+
+	return sinfo;
+}
+
 static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
 	pgp_stream_t *stream = pgp_stream_new(count);
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
+	pgp_sign_info *sinfo = NULL;
 
 	if (stream == NULL)
 	{
@@ -102,9 +207,14 @@ static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info 
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		sign = NULL;
+		sinfo = NULL;
 
-		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_DETACHED, NULL, literal));
+		// Detached signatures are always binary
+		sinfo = spgp_create_sign_info(keys[i], uinfos[i], PGP_BINARY_SIGNATURE);
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_DETACHED, sinfo, literal));
+
 		pgp_stream_push(stream, sign);
+		pgp_sign_info_delete(sinfo);
 	}
 
 	pgp_literal_packet_delete(literal);
@@ -117,6 +227,7 @@ static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info *
 	pgp_stream_t *stream = pgp_stream_new(count);
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
+	pgp_sign_info *sinfo = NULL;
 
 	if (stream == NULL)
 	{
@@ -131,9 +242,14 @@ static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info *
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		sign = NULL;
+		sinfo = NULL;
 
-		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_CLEARTEXT, NULL, literal));
+		// Cleartext signatures are always text
+		sinfo = spgp_create_sign_info(keys[i], uinfos[i], PGP_TEXT_SIGNATURE);
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_CLEARTEXT, sinfo, literal));
+
 		pgp_stream_push(stream, sign);
+		pgp_sign_info_delete(sinfo);
 	}
 
 	pgp_literal_packet_delete(literal);
@@ -147,9 +263,10 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_one_pass_signature_packet *ops = NULL;
+	pgp_sign_info *sinfo[16] = {0};
 
-	pgp_one_pass_signature_version ops_version = PGP_ONE_PASS_SIGNATURE_V3;
-	pgp_signature_type sig_type = PGP_BINARY_SIGNATURE;
+	pgp_one_pass_signature_version ops_version = (keys[0]->version == PGP_KEY_V6) ? PGP_ONE_PASS_SIGNATURE_V6 : PGP_ONE_PASS_SIGNATURE_V3;
+	pgp_signature_type sig_type = command.textmode ? PGP_TEXT_SIGNATURE : PGP_BINARY_SIGNATURE;
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
@@ -166,15 +283,20 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 		byte_t j = count - (i + 1);
 
 		ops = NULL;
-		fingerprint_size = pgp_key_fingerprint(keys[j], fingerprint, fingerprint_size);
 
-		PGP_CALL(pgp_one_pass_signature_packet_new(&ops, ops_version, sig_type, 0, keys[j]->public_key_algorithm_id, 0, NULL, 0,
-												   fingerprint, fingerprint_size));
+		fingerprint_size = pgp_key_fingerprint(keys[j], fingerprint, fingerprint_size);
+		sinfo[j] = spgp_create_sign_info(keys[j], uinfos[j], sig_type);
+
+		// Only the last one pass packet will have the nested flag set.
+		PGP_CALL(pgp_one_pass_signature_packet_new(&ops, ops_version, sig_type, (j == 0) ? 1 : 0, keys[j]->public_key_algorithm_id,
+												   sinfo[j]->hash_algorithm, sinfo[j]->salt, sinfo[j]->salt_size, fingerprint,
+												   fingerprint_size));
+
 		pgp_stream_push(stream, ops);
 	}
 
 	// Push the literal packet
-	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_BINARY);
+	literal = spgp_read_file_as_literal(file, command.textmode ? PGP_LITERAL_DATA_TEXT : PGP_LITERAL_DATA_BINARY);
 	pgp_stream_push(stream, literal);
 
 	// Generate the signatures (first to last)
@@ -182,8 +304,14 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	{
 		sign = NULL;
 
-		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], 0, NULL, literal));
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], 0, sinfo[i], literal));
 		pgp_stream_push(stream, sign);
+	}
+
+	// Free sign_infos
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		pgp_sign_info_delete(sinfo[i]);
 	}
 
 	return stream;
@@ -195,6 +323,9 @@ static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info 
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_one_pass_signature_packet *ops = NULL;
+	pgp_sign_info *sinfo = NULL;
+
+	pgp_signature_type sig_type = command.textmode ? PGP_TEXT_SIGNATURE : PGP_BINARY_SIGNATURE;
 
 	if (stream == NULL)
 	{
@@ -206,13 +337,17 @@ static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info 
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		sign = NULL;
+		sinfo = NULL;
 
-		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], 0, NULL, literal));
+		sinfo = spgp_create_sign_info(keys[i], uinfos[i], sig_type);
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], 0, sinfo, literal));
+
 		pgp_stream_push(stream, sign);
+		pgp_sign_info_delete(sinfo);
 	}
 
 	// Push the literal packet
-	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_BINARY);
+	literal = spgp_read_file_as_literal(file, command.textmode ? PGP_LITERAL_DATA_TEXT : PGP_LITERAL_DATA_BINARY);
 	pgp_stream_push(stream, literal);
 
 	return stream;
