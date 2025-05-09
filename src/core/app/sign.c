@@ -32,11 +32,59 @@ static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info 
 	{
 		sign = NULL;
 
-		PGP_CALL(pgp_generate_document_signature(&sign, &keys[i], PGP_SIGNATURE_FLAG_DETACHED, NULL, literal));
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_DETACHED, NULL, literal));
 		pgp_stream_push(stream, sign);
 	}
 
 	pgp_literal_packet_delete(literal);
+
+	return stream;
+}
+
+static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
+{
+	pgp_stream_t *stream = pgp_stream_new((count * 2) + 1);
+	pgp_literal_packet *literal = NULL;
+	pgp_signature_packet *sign = NULL;
+	pgp_one_pass_signature_packet *ops = NULL;
+
+	pgp_one_pass_signature_version ops_version = PGP_ONE_PASS_SIGNATURE_V3;
+	pgp_signature_type sig_type = PGP_BINARY_SIGNATURE;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
+	if (stream == NULL)
+	{
+		printf("No memory");
+		exit(1);
+	}
+
+	// Generate one pass signatures (last to first)
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		byte_t j = count - (i + 1);
+
+		ops = NULL;
+		fingerprint_size = pgp_key_fingerprint(keys[j], fingerprint, fingerprint_size);
+
+		PGP_CALL(pgp_one_pass_signature_packet_new(&ops, ops_version, sig_type, 0, keys[j]->public_key_algorithm_id, 0, NULL, 0,
+												   fingerprint, fingerprint_size));
+		pgp_stream_push(stream, ops);
+	}
+
+	// Push the literal packet
+	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_BINARY);
+	pgp_stream_push(stream, literal);
+
+	// Generate the signatures (first to last)
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		sign = NULL;
+
+		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], 0, NULL, literal));
+		pgp_stream_push(stream, sign);
+	}
 
 	return stream;
 }
