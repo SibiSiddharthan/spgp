@@ -2848,30 +2848,6 @@ pgp_error_t pgp_sign_info_set_salt(pgp_sign_info *sign, byte_t *salt, byte_t siz
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_sign_info_add_policy_uri(pgp_sign_info *sign, byte_t *policy, uint32_t size)
-{
-	void *result = NULL;
-	pgp_policy_uri_subpacket *subpacket = NULL;
-
-	subpacket = pgp_policy_uri_subpacket_new(policy, size);
-
-	if (subpacket == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	result = pgp_stream_push(sign->misc, subpacket);
-
-	if (result == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
-
-	sign->misc = result;
-
-	return PGP_SUCCESS;
-}
-
 pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version, byte_t *fingerprint, byte_t size)
 {
 	void *result = NULL;
@@ -2906,13 +2882,61 @@ pgp_error_t pgp_sign_info_add_recipient(pgp_sign_info *sign, byte_t key_version,
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, uint32_t flags, void *name, uint16_t name_size, void *value,
+pgp_error_t pgp_sign_info_add_policy_uri(pgp_sign_info *sign, byte_t critical, byte_t *policy, uint32_t size)
+{
+	void *result = NULL;
+	pgp_policy_uri_subpacket *subpacket = NULL;
+
+	subpacket = pgp_policy_uri_subpacket_new(critical, policy, size);
+
+	if (subpacket == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = pgp_stream_push(sign->misc, subpacket);
+
+	if (result == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	sign->misc = result;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_sign_info_add_keyserver_url(pgp_sign_info *sign, byte_t critical, byte_t *keyserver, uint32_t size)
+{
+	void *result = NULL;
+	pgp_preferred_key_server_subpacket *subpacket = NULL;
+
+	subpacket = pgp_preferred_key_server_subpacket_new(critical, keyserver, size);
+
+	if (subpacket == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	result = pgp_stream_push(sign->misc, subpacket);
+
+	if (result == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	sign->misc = result;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, byte_t critical, uint32_t flags, void *name, uint16_t name_size, void *value,
 									   uint16_t value_size)
 {
 	void *result = NULL;
 	pgp_notation_data_subpacket *subpacket = NULL;
 
-	subpacket = pgp_notation_data_subpacket_new(flags, name, name_size, value, value_size);
+	subpacket = pgp_notation_data_subpacket_new(critical, flags, name, name_size, value, value_size);
 
 	if (subpacket == NULL)
 	{
