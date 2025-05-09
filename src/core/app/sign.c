@@ -169,6 +169,10 @@ static pgp_hash_algorithms get_hash_algorithm(pgp_key_packet *packet)
 	return PGP_SHA2_512;
 }
 
+#define IS_NUM(c)   ((c) >= 48 && (c) <= 57)
+#define TO_NUM(c)   ((c) - 48)
+#define TO_UPPER(c) ((c) & ~0x20)
+
 static uint32_t parse_expiry(byte_t *in, byte_t length)
 {
 	uint32_t value = 0;
@@ -441,16 +445,11 @@ static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info 
 
 void spgp_sign(void)
 {
-	void *buffer = NULL;
-	void *file = NULL;
-	size_t size = 0;
-
 	pgp_key_packet *key[16] = {0};
 	pgp_user_info *uinfo[16] = {0};
 	pgp_keyring_packet *keyring[16] = {0};
 
 	pgp_stream_t *signatures = NULL;
-
 	uint32_t count = 0;
 
 	if (command.users == NULL)
@@ -488,13 +487,43 @@ void spgp_sign(void)
 
 	if (command.files == NULL)
 	{
-		signatures = spgp_detach_sign_file(key, uinfo, count, NULL);
+		if (command.detach_sign)
+		{
+			signatures = spgp_detach_sign_file(key, uinfo, count, NULL);
+		}
+		if (command.clear_sign)
+		{
+			signatures = spgp_clear_sign_file(key, uinfo, count, NULL);
+		}
+		if (command.sign)
+		{
+			signatures = spgp_sign_file(key, uinfo, count, NULL);
+		}
+		if (command.legacy_sign)
+		{
+			signatures = spgp_sign_file_legacy(key, uinfo, count, NULL);
+		}
 	}
 	else
 	{
 		for (uint32_t i = 0; i < count; ++i)
 		{
-			signatures = spgp_detach_sign_file(key, uinfo, count, command.files->packets[i]);
+			if (command.detach_sign)
+			{
+				signatures = spgp_detach_sign_file(key, uinfo, count, command.files->packets[i]);
+			}
+			if (command.clear_sign)
+			{
+				signatures = spgp_clear_sign_file(key, uinfo, count, command.files->packets[i]);
+			}
+			if (command.sign)
+			{
+				signatures = spgp_sign_file(key, uinfo, count, command.files->packets[i]);
+			}
+			if (command.legacy_sign)
+			{
+				signatures = spgp_sign_file_legacy(key, uinfo, count, command.files->packets[i]);
+			}
 		}
 	}
 
