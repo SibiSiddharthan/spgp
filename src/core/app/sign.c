@@ -14,85 +14,93 @@
 #include <stdlib.h>
 #include <string.h>
 
-// clang-format off
-static const byte_t hex_to_nibble_table[256] = 
+static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255, 255, 255, 255, 255,                       // 0 - 9
-	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // A - F
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // a - f
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
-};
-// clang-format on
+	pgp_stream_t *stream = pgp_stream_new(count);
+	pgp_literal_packet *literal = NULL;
+	pgp_signature_packet *sign = NULL;
 
-static pgp_key_packet *spgp_search_key_from_user(char *user)
-{
-	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t pos = 0;
-
-	for (byte_t i = 0; user[i] != '\0';)
+	if (stream == NULL)
 	{
-		fingerprint[pos++] = (hex_to_nibble_table[(byte_t)user[i]] * 16) + hex_to_nibble_table[(byte_t)user[i + 1]];
-		i += 2;
+		printf("No memory");
+		exit(1);
 	}
 
-	return spgp_read_key(fingerprint, pos);
+	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_BINARY);
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		sign = NULL;
+
+		PGP_CALL(pgp_generate_document_signature(&sign, &keys[i], PGP_SIGNATURE_FLAG_DETACHED, NULL, literal));
+		pgp_stream_push(stream, sign);
+	}
+
+	pgp_literal_packet_delete(literal);
+
+	return stream;
 }
 
-uint32_t spgp_sign(spgp_command *command)
+void spgp_sign(void)
 {
 	void *buffer = NULL;
 	void *file = NULL;
 	size_t size = 0;
 
-	pgp_key_packet *key = NULL;
+	pgp_key_packet *key[16] = {0};
+	pgp_user_info *uinfo[16] = {0};
+	pgp_keyring_packet *keyring[16] = {0};
 
-	key = spgp_search_key_from_user(command->user);
+	pgp_stream_t *signatures = NULL;
 
-	if (key == NULL)
+	uint32_t count = 0;
+
+	if (command.users == NULL)
 	{
-		printf("No key found.\n");
+		printf("No user specified\n.");
 		exit(1);
 	}
 
-	if (command->files != NULL)
+	count = command.users->count;
+
+	// Search the keyring to find the keys
+	for (uint32_t i = 0; i < count; ++i)
 	{
-		file = command->files->packets[0];
+		keyring[i] =
+			spgp_search_keyring(&key[i], &uinfo[i], command.users->packets[i], strlen(command.users->packets[i]), PGP_KEY_FLAG_SIGN);
+
+		if (keyring[i] == NULL)
+		{
+			printf("Unable to find user %s\n.", (char *)command.users->packets[i]);
+			exit(1);
+		}
+
+		if (key[i] == NULL)
+		{
+			printf("No Signing key for user %s\n.", (char *)command.users->packets[i]);
+			exit(1);
+		}
 	}
 
-	buffer = spgp_read_file(file, 0, &size);
-
-	if (command->passhprase != NULL)
+	// Decrypt the keys
+	for (uint32_t i = 0; i < count; ++i)
 	{
-		pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
+		key[i] = spgp_decrypt_key(keyring[i], key[i]);
+	}
+
+	if (command.files == NULL)
+	{
+		signatures = spgp_detach_sign_file(key, uinfo, count, NULL);
 	}
 	else
 	{
-		printf("No passphrase given.\n");
-		exit(1);
+		for (uint32_t i = 0; i < count; ++i)
+		{
+			signatures = spgp_detach_sign_file(key, uinfo, count, command.files->packets[i]);
+		}
 	}
 
-	pgp_signature_packet *sign = NULL;
-
-	// pgp_signature_packet_new(&sign, PGP_SIGNATURE_V4, PGP_BINARY_SIGNATURE);
-
-	// pgp_signature_packet_sign(sign, key, PGP_SHA2_256, time(NULL), buffer, size);
-	spgp_write_pgp_packet(command->output, SPGP_STD_OUTPUT, sign);
-
-	free(buffer);
-
-	return 0;
+	exit(0);
 }
 
 uint32_t spgp_verify(spgp_command *command)
