@@ -58,12 +58,44 @@ static byte_t get_cert_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FIN
 		buffer[pos++] = hex_table[b];
 	}
 
-	// Append .key
+	// Append .cert
 	buffer[pos++] = '.';
 	buffer[pos++] = 'c';
 	buffer[pos++] = 'e';
 	buffer[pos++] = 'r';
 	buffer[pos++] = 't';
+	buffer[pos] = '\0';
+
+	return pos;
+}
+
+static byte_t get_key_passphrase_env(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+{
+	byte_t pos = 0;
+
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		byte_t a, b;
+
+		a = fingerprint[i] / 16;
+		b = fingerprint[i] % 16;
+
+		buffer[pos++] = hex_table[a];
+		buffer[pos++] = hex_table[b];
+	}
+
+	// Append .passphrase
+	buffer[pos++] = '.';
+	buffer[pos++] = 'p';
+	buffer[pos++] = 'a';
+	buffer[pos++] = 's';
+	buffer[pos++] = 's';
+	buffer[pos++] = 'p';
+	buffer[pos++] = 'h';
+	buffer[pos++] = 'r';
+	buffer[pos++] = 'a';
+	buffer[pos++] = 's';
+	buffer[pos++] = 'e';
 	buffer[pos] = '\0';
 
 	return pos;
@@ -716,4 +748,52 @@ uint32_t spgp_list_keys(void)
 	printf("%s", buffer);
 
 	return 0;
+}
+
+pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *key)
+{
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
+	char passphrase_env[128] = {0};
+	byte_t passphrase_env_size = 0;
+
+	void *passphrase = NULL;
+
+	// Check if key needs decryption
+	if (key->encrypted == NULL && key->encrypted_octets == 0)
+	{
+		return key;
+	}
+
+	fingerprint_size = pgp_key_fingerprint(key, fingerprint, fingerprint_size);
+	passphrase_env_size = get_key_passphrase_env(passphrase_env, fingerprint, fingerprint_size);
+
+	passphrase = getenv(passphrase_env);
+
+	if (passphrase == NULL)
+	{
+		// Try the primary key fingerprint
+		if (memcmp(fingerprint, keyring->primary_fingerprint, fingerprint_size) != 0)
+		{
+			passphrase_env_size = get_key_passphrase_env(passphrase_env, keyring->primary_fingerprint, fingerprint_size);
+			passphrase = getenv(passphrase_env);
+		}
+
+		// Prompt the user for password
+		if (passphrase == NULL)
+		{
+			passphrase = spgp_prompt_passphrase();
+		}
+	}
+
+	if (passphrase == NULL)
+	{
+		printf("Key passphrase not provided.\n");
+		exit(1);
+	}
+
+	PGP_CALL(pgp_key_packet_decrypt(key, passphrase, strlen(passphrase)));
+
+	return key;
 }

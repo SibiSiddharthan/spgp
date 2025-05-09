@@ -5,8 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#define _CRT_SECURE_NO_WARNINGS
-
 #include <spgp.h>
 #include <argparse.h>
 #include <algorithms.h>
@@ -365,6 +363,12 @@ void spgp_initialize_home(spgp_command *spgp)
 	}
 }
 
+byte_t *spgp_prompt_passphrase(void)
+{
+	// TODO
+	return NULL;
+}
+
 static uint32_t spgp_execute_operation(spgp_command *command)
 {
 	if (command->list_packets || command->dump_packets)
@@ -374,7 +378,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->sign || command->detach_sign || command->clear_sign)
 	{
-		return spgp_sign(command);
+		spgp_sign();
 	}
 
 	if (command->verify)

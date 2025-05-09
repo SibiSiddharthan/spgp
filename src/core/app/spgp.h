@@ -8,6 +8,8 @@
 #ifndef SPGP_H
 #define SPGP_H
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <types.h>
 #include <buffer.h>
 
@@ -38,23 +40,23 @@
 #define SPGP_KEY_EXT  ".key"
 #define SPGP_CERT_EXT ".cert"
 
-#define OS_CALL(EXPR, LOG)                            \
-	{                                                 \
-		status_t __os_status = 0;                     \
-		__os_status = (EXPR);                         \
-		if (__os_status != OS_STATUS_SUCCESS)         \
-		{                                             \
-			(LOG);                                    \
+#define OS_CALL(EXPR, LOG)                             \
+	{                                                  \
+		status_t __os_status = 0;                      \
+		__os_status = (EXPR);                          \
+		if (__os_status != OS_STATUS_SUCCESS)          \
+		{                                              \
+			(LOG);                                     \
 			printf(" (%s)\n", os_status(__os_status)); \
-			exit(2);                                  \
-		}                                             \
+			exit(2);                                   \
+		}                                              \
 	}
 
 #define PGP_CALL(EXPR)                               \
 	{                                                \
 		pgp_error_t __pgp_status = 0;                \
 		__pgp_status = (EXPR);                       \
-		if (__pgp_status != PGP_SUCCESS)              \
+		if (__pgp_status != PGP_SUCCESS)             \
 		{                                            \
 			printf("%s\n", pgp_error(__pgp_status)); \
 			exit(1);                                 \
@@ -82,6 +84,7 @@ typedef struct _spgp_command
 
 	void *output;
 	void *user;
+
 	pgp_stream_t *files;
 	pgp_stream_t *users;
 	pgp_stream_t *recipients;
@@ -141,9 +144,7 @@ uint32_t spgp_delete_key(const char *key_id, uint16_t key_id_size, uint32_t opti
 uint32_t spgp_export_key(const char *key_id, uint16_t key_id_size, void *buffer, size_t buffer_size);
 uint32_t spgp_import_key(void *buffer, size_t buffer_size);
 
-uint32_t spgp_search_key(const char *key_id, uint16_t key_id_size, void *buffer, size_t buffer_size, uint32_t options);
-
-uint32_t spgp_sign(spgp_command *command);
+void spgp_sign(void);
 uint32_t spgp_verify(spgp_command *command);
 
 uint32_t spgp_encrypt(spgp_command *command);
@@ -189,5 +190,9 @@ size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], 
 pgp_stream_t *spgp_read_keyring();
 pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **user, void *input, uint32_t size, byte_t capabilities);
 uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options);
+
+pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *key);
+
+byte_t *spgp_prompt_passphrase(void);
 
 #endif
