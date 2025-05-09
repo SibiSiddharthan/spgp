@@ -18,7 +18,7 @@
 
 static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-static byte_t get_key_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+static byte_t hexify(char *buffer, byte_t *fingerprint, byte_t size)
 {
 	byte_t pos = 0;
 
@@ -32,6 +32,17 @@ static byte_t get_key_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FING
 		buffer[pos++] = hex_table[a];
 		buffer[pos++] = hex_table[b];
 	}
+
+	buffer[pos] = '\0';
+
+	return pos;
+}
+
+static byte_t get_key_filename(char *buffer, byte_t *fingerprint, byte_t size)
+{
+	byte_t pos = 0;
+
+	pos = hexify(buffer, fingerprint, size);
 
 	// Append .key
 	buffer[pos++] = '.';
@@ -43,20 +54,11 @@ static byte_t get_key_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FING
 	return pos;
 }
 
-static byte_t get_cert_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+static byte_t get_cert_filename(char *buffer, byte_t *fingerprint, byte_t size)
 {
 	byte_t pos = 0;
 
-	for (uint32_t i = 0; i < size; ++i)
-	{
-		byte_t a, b;
-
-		a = fingerprint[i] / 16;
-		b = fingerprint[i] % 16;
-
-		buffer[pos++] = hex_table[a];
-		buffer[pos++] = hex_table[b];
-	}
+	pos = hexify(buffer, fingerprint, size);
 
 	// Append .cert
 	buffer[pos++] = '.';
@@ -69,20 +71,11 @@ static byte_t get_cert_filename(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FIN
 	return pos;
 }
 
-static byte_t get_key_passphrase_env(char *buffer, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+static byte_t get_key_passphrase_env(char *buffer, byte_t *fingerprint, byte_t size)
 {
 	byte_t pos = 0;
 
-	for (uint32_t i = 0; i < size; ++i)
-	{
-		byte_t a, b;
-
-		a = fingerprint[i] / 16;
-		b = fingerprint[i] % 16;
-
-		buffer[pos++] = hex_table[a];
-		buffer[pos++] = hex_table[b];
-	}
+	pos = hexify(buffer, fingerprint, size);
 
 	// Append .passphrase
 	buffer[pos++] = '.';
@@ -756,8 +749,6 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	byte_t fingerprint_size = 0;
 
 	char passphrase_env[128] = {0};
-	byte_t passphrase_env_size = 0;
-
 	void *passphrase = NULL;
 
 	// Check if key needs decryption
@@ -767,7 +758,7 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	}
 
 	fingerprint_size = pgp_key_fingerprint(key, fingerprint, fingerprint_size);
-	passphrase_env_size = get_key_passphrase_env(passphrase_env, fingerprint, fingerprint_size);
+	get_key_passphrase_env(passphrase_env, fingerprint, fingerprint_size);
 
 	passphrase = getenv(passphrase_env);
 
@@ -776,7 +767,7 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 		// Try the primary key fingerprint
 		if (memcmp(fingerprint, keyring->primary_fingerprint, fingerprint_size) != 0)
 		{
-			passphrase_env_size = get_key_passphrase_env(passphrase_env, keyring->primary_fingerprint, fingerprint_size);
+			get_key_passphrase_env(passphrase_env, keyring->primary_fingerprint, fingerprint_size);
 			passphrase = getenv(passphrase_env);
 		}
 
