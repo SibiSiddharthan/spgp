@@ -169,6 +169,44 @@ static pgp_hash_algorithms get_hash_algorithm(pgp_key_packet *packet)
 	return PGP_SHA2_512;
 }
 
+static uint32_t parse_expiry(byte_t *in, byte_t length)
+{
+	uint32_t value = 0;
+
+	for (byte_t i = 0; i < length; ++i)
+	{
+		if (IS_NUM(in[i]))
+		{
+			value = (value * 10) + TO_NUM(in[i]);
+		}
+		else
+		{
+			if (i != length - 1)
+			{
+				printf("Bad expiry");
+				exit(1);
+			}
+
+			if (TO_UPPER(in[i]) == 'Y')
+			{
+				value = value * 31536000;
+			}
+			else if (TO_UPPER(in[i]) == 'D')
+			{
+				value = value * 86400;
+			}
+			else
+			{
+				printf("Bad expiry");
+				exit(1);
+			}
+		}
+	}
+
+	// Seconds
+	return value;
+}
+
 static pgp_sign_info *spgp_create_sign_info(pgp_key_packet *key, pgp_user_info *uinfo, pgp_signature_type type)
 {
 	pgp_sign_info *sinfo = NULL;
@@ -184,6 +222,55 @@ static pgp_sign_info *spgp_create_sign_info(pgp_key_packet *key, pgp_user_info *
 	if (key->version == PGP_KEY_V6)
 	{
 		sinfo->salt_size = pgp_rand(sinfo->salt, 32);
+	}
+
+	// Set expiration time
+	if (command.expiration != NULL)
+	{
+		sinfo->expiry_seconds = parse_expiry(command.expiration, strlen(command.expiration));
+	}
+
+	// Set policies
+	if (command.policy != NULL)
+	{
+		for (uint32_t i = 0; i < command.policy->count; ++i)
+		{
+			uint32_t size = strlen(command.policy->packets[i]);
+			byte_t critical = ((byte_t *)command.policy->packets[i])[size - 1] == '!';
+
+			PGP_CALL(pgp_sign_info_add_policy_uri(sinfo, critical, command.policy->packets[i], size - critical));
+		}
+	}
+
+	// Set Keyservers
+	if (command.keyserver != NULL)
+	{
+		for (uint32_t i = 0; i < command.keyserver->count; ++i)
+		{
+			uint32_t size = strlen(command.keyserver->packets[i]);
+			byte_t critical = ((byte_t *)command.keyserver->packets[i])[size - 1] == '!';
+
+			PGP_CALL(pgp_sign_info_add_keyserver_url(sinfo, critical, command.keyserver->packets[i], size - critical));
+		}
+	}
+
+	// Set Notation
+	if (command.notation != NULL)
+	{
+		for (uint32_t i = 0; i < command.notation->count; ++i)
+		{
+			uint32_t size = strlen(command.notation->packets[i]);
+			byte_t critical = ((byte_t *)command.notation->packets[i])[size - 1] == '!';
+
+			void *name = command.notation->packets[i];
+			void *equal = memchr(name, '=', size);
+			void *value = PTR_OFFSET(equal, 1);
+
+			uint32_t name_size = (uint32_t)((uintptr_t)equal - (uintptr_t)name);
+			uint32_t value_size = size - name_size - 1 - critical;
+
+			PGP_CALL(pgp_sign_info_add_notation(sinfo, critical, PGP_NOTATION_DATA_UTF8, name, name_size, value, value_size));
+		}
 	}
 
 	return sinfo;
@@ -322,7 +409,6 @@ static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info 
 	pgp_stream_t *stream = pgp_stream_new(count + 1);
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
-	pgp_one_pass_signature_packet *ops = NULL;
 	pgp_sign_info *sinfo = NULL;
 
 	pgp_signature_type sig_type = command.textmode ? PGP_TEXT_SIGNATURE : PGP_BINARY_SIGNATURE;

@@ -285,11 +285,11 @@ static void parse_expiry(key_specfication *spec, byte_t *in, byte_t length)
 
 			if (TO_UPPER(in[i]) == 'Y')
 			{
-				spec->expiry = value * 31536000;
+				value = value * 31536000;
 			}
 			else if (TO_UPPER(in[i]) == 'D')
 			{
-				spec->expiry = value * 86400;
+				value = value * 86400;
 			}
 			else
 			{
