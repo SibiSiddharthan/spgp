@@ -149,6 +149,10 @@ typedef enum _spgp_option
 	SPGP_OPTION_OUTPUT,
 	SPGP_OPTION_COMPRESS_LEVEL,
 
+	// Processing Options
+	SPGP_OPTION_TEXTMODE,
+	SPGP_OPTION_MULTIFILE,
+
 	// Key Selection
 	SPGP_OPTION_RECIPIENT,
 	SPGP_OPTION_USER_ID,
@@ -212,6 +216,10 @@ static arg_option_t spgp_options[] = {
 	{"quiet", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_QUIET},
 	{"output", 'o', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_OUTPUT},
 	{"compress-level", 'z', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_COMPRESS_LEVEL},
+
+	// Processing Options
+	{"textmode", 't', ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_TEXTMODE},
+	{"multifile", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_MULTIFILE},
 
 	// Key Selection
 	{"recipient", 'r', ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_RECIPIENT},
@@ -537,6 +545,15 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		// Output Options
 		case SPGP_OPTION_OUTPUT:
 			command->output = result->data;
+			break;
+
+		// Processing Options
+		case SPGP_OPTION_TEXTMODE:
+			command->textmode = 1;
+			break;
+
+		case SPGP_OPTION_MULTIFILE:
+			command->multifile = 1;
 			break;
 
 		// Operation Modes

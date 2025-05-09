@@ -92,6 +92,8 @@ typedef struct _spgp_command
 	time_t timestamp;
 	byte_t need_home;
 	byte_t stateless;
+	byte_t textmode;
+	byte_t multifile;
 
 	byte_t cipher_algorithm;
 	byte_t hash_algorithm;
