@@ -679,7 +679,7 @@ uint32_t spgp_generate_key(void)
 	// Write the keys and certificate
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		spgp_write_key(NULL, 0, key_packets[i]);
+		spgp_write_key(key_packets[i]);
 	}
 
 	spgp_write_certificate(NULL, 0, certificate);

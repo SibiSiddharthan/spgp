@@ -128,9 +128,8 @@ size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], 
 	return result;
 }
 
-pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
 {
-	status_t status = 0;
 	handle_t handle = 0;
 
 	char filename[256] = {0};
@@ -138,42 +137,35 @@ pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], 
 
 	pgp_key_packet *key = NULL;
 
-	length = get_key_filename(filename, fingerprint, size);
-	status = os_open(&handle, command.keys, filename, length, FILE_ACCESS_READ, 0, 0);
-
-	if (status != OS_STATUS_SUCCESS)
-	{
-		printf("Unable to open key file %s.\n", filename);
-		exit(1);
-	}
+	length = get_key_filename(filename, fingerprint, fingerprint_size);
+	OS_CALL(os_open(&handle, command.keys, filename, length, FILE_ACCESS_READ, 0, 0), printf("Unable to open key file %s.\n", filename));
 
 	key = spgp_read_pgp_packet_from_handle(handle);
 
-	os_close(handle);
+	OS_CALL(os_close(handle), printf("Unable to close handle %u.\n", (uint32_t)(uintptr_t)handle));
 
 	return key;
 }
 
-void spgp_write_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_key_packet *key)
+void spgp_write_key(pgp_key_packet *key)
 {
-	status_t status = 0;
 	handle_t handle = 0;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
 
 	char filename[256] = {0};
 	uint32_t length = 0;
 
-	length = get_key_filename(filename, fingerprint, size);
-	status = os_open(&handle, command.keys, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700);
+	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	length = get_key_filename(filename, fingerprint, fingerprint_size);
 
-	if (status != OS_STATUS_SUCCESS)
-	{
-		printf("Unable to open key file %s.\n", filename);
-		exit(1);
-	}
+	OS_CALL(os_open(&handle, command.keys, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+			printf("Unable to open key file %s.\n", filename));
 
 	spgp_write_pgp_packet_to_handle(handle, key);
 
-	os_close(handle);
+	OS_CALL(os_close(handle), printf("Unable to close handle %u.\n", (uint32_t)(uintptr_t)handle));
 }
 
 static void spgp_import_certificates(pgp_stream_t *stream)
@@ -369,7 +361,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 	primary_fingerprint_size = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 	pgp_key_packet_make_definition(key, sign);
-	spgp_write_key(primary_fingerprint, primary_fingerprint_size, key);
+	spgp_write_key(key);
 
 	uint32_t result = pgp_verify_signature(sign, key, uid);
 	if (result == 1)
@@ -418,7 +410,7 @@ uint32_t spgp_import_keys(spgp_command *command)
 				}
 			}
 
-			spgp_write_key(subkey_fingerprint, subkey_fingerprint_size, subkey);
+			spgp_write_key(subkey);
 
 			uint32_t result = pgp_verify_signature(subsign, key, subkey);
 			if (result == 1)
