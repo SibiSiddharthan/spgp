@@ -345,7 +345,7 @@ size_t spgp_write_handle(handle_t handle, void *buffer, size_t size)
 	return status;
 }
 
-size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size)
+size_t spgp_write_file(const char *file, void *buffer, size_t size)
 {
 	status_t status = 0;
 	handle_t handle = 0;
@@ -364,10 +364,7 @@ size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t 
 	}
 	else
 	{
-		if (options & SPGP_STD_OUTPUT)
-		{
-			handle = STDOUT_HANDLE;
-		}
+		handle = STDOUT_HANDLE;
 	}
 
 	if (handle == 0)
@@ -391,18 +388,11 @@ size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t 
 	return write;
 }
 
-size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *stream)
+size_t spgp_write_pgp_packets(pgp_stream_t *stream, armor_options *options, const char *file)
 {
 	void *buffer = NULL;
-	size_t size = 0;
+	size_t size = 65536;
 	size_t result = 0;
-
-	for (uint32_t i = 0; i < stream->count; ++i)
-	{
-		pgp_packet_header *header = stream->packets[i];
-
-		size += PGP_PACKET_OCTETS(*header);
-	}
 
 	buffer = malloc(size);
 
@@ -412,39 +402,20 @@ size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *
 		exit(1);
 	}
 
-	for (uint32_t i = 0; i < stream->count; ++i)
+	if (options == NULL)
 	{
-		result += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, result), size - result);
+		result = pgp_stream_write(stream, buffer, size);
+	}
+	else
+	{
+		result = pgp_stream_write_armor(stream, options, buffer, size);
 	}
 
-	result = spgp_write_file(file, options, buffer, size);
+	result = spgp_write_file(file, buffer, result);
 
 	free(buffer);
 
 	return result;
-}
-
-size_t spgp_write_pgp_packet(const char *file, uint32_t options, void *packet)
-{
-	void *buffer = NULL;
-
-	pgp_packet_header *header = packet;
-	size_t size = PGP_PACKET_OCTETS(*header);
-
-	buffer = malloc(size);
-
-	if (buffer == NULL)
-	{
-		printf("No memory.\n");
-		exit(1);
-	}
-
-	pgp_packet_write(packet, buffer, size);
-	spgp_write_file(file, options, buffer, size);
-
-	free(buffer);
-
-	return size;
 }
 
 size_t spgp_write_pgp_packets_to_handle(handle_t handle, pgp_stream_t *stream)

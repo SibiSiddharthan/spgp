@@ -107,6 +107,9 @@ typedef struct _spgp_command
 	pgp_stream_t *notation;
 	pgp_stream_t *keyserver;
 
+	// Compression
+	byte_t compression_level;
+
 	union
 	{
 		struct
@@ -174,7 +177,7 @@ uint32_t spgp_delete_keys(spgp_command *command);
 pgp_literal_packet *spgp_read_file_as_literal(const char *file, pgp_literal_data_format format);
 
 void *spgp_read_file(const char *file, uint32_t options, size_t *size);
-size_t spgp_write_file(const char *file, uint32_t options, void *buffer, size_t size);
+size_t spgp_write_file(const char *file, void *buffer, size_t size);
 
 status_t spgp_read_handle(handle_t handle, void **buffer, size_t *size);
 size_t spgp_write_handle(handle_t handle, void *buffer, size_t size);
@@ -187,7 +190,7 @@ void *spgp_read_pgp_packet_from_handle(handle_t handle);
 size_t spgp_write_pgp_packets_to_handle(handle_t handle, pgp_stream_t *stream);
 size_t spgp_write_pgp_packet_to_handle(handle_t handle, void *packet);
 
-size_t spgp_write_pgp_packets(const char *file, uint32_t options, pgp_stream_t *stream);
+size_t spgp_write_pgp_packets(pgp_stream_t *stream, armor_options *options, const char *file);
 size_t spgp_write_pgp_packet(const char *file, uint32_t options, void *packet);
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size);

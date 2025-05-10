@@ -129,7 +129,7 @@ uint32_t spgp_encrypt(spgp_command *command)
 
 	pgp_stream_push(stream, seipd);
 
-	spgp_write_pgp_packets(command->output, SPGP_STD_OUTPUT, stream);
+	spgp_write_pgp_packets(stream, NULL, command->output);
 
 	free(buffer);
 	pgp_literal_packet_delete(literal);
@@ -224,7 +224,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 	}
 
 	literal = decrypted_stream->packets[0];
-	spgp_write_file(command->output, SPGP_STD_OUTPUT, literal->data, literal->data_size);
+	spgp_write_file(command->output, literal->data, literal->data_size);
 
 	free(buffer);
 
