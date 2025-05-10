@@ -51,8 +51,8 @@ typedef enum _armor_status
 
 typedef struct _armor_marker
 {
-	byte_t *header_line;
-	byte_t *trailer_line;
+	void *header_line;
+	void *trailer_line;
 	uint16_t header_line_size;
 	uint16_t trailer_line_size;
 

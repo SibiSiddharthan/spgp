@@ -9,6 +9,7 @@
 #define SPGP_STREAM_H
 
 #include <pgp.h>
+#include <armor.h>
 #include <error.h>
 
 typedef struct _pgp_stream_t
@@ -27,7 +28,7 @@ size_t pgp_stream_octets(pgp_stream_t *stream);
 pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size);
 size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size);
 pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, uint16_t flags);
-size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, void *header, uint16_t header_size, uint16_t flags);
+size_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options, void *buffer, uint32_t buffer_size);
 size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options);
 
 pgp_stream_t *pgp_stream_push(pgp_stream_t *stream, void *packet);

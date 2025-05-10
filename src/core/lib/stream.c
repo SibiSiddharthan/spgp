@@ -385,18 +385,13 @@ error_cleanup:
 	goto end;
 }
 
-size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, void *header, uint16_t header_size, uint16_t flags)
+size_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options, void *buffer, uint32_t buffer_size)
 {
 	armor_status status = 0;
-	pgp_packet_header *packet_header = NULL;
 	size_t pos = 0;
 
 	void *temp = NULL;
 	size_t temp_size = pgp_stream_octets(stream);
-
-	pgp_packet_type packet_type = 0;
-	armor_marker marker = {0};
-	armor_options options = {0};
 
 	temp = malloc(temp_size);
 
@@ -407,51 +402,15 @@ size_t pgp_stream_write_armor(pgp_stream_t *stream, void *buffer, uint32_t buffe
 
 	memset(temp, 0, temp_size);
 
-	// Determine armor type
-	packet_header = stream->packets[0];
-	packet_type = pgp_packet_get_type(packet_header->tag);
-
-	if (packet_type == PGP_SIG || packet_type == PGP_OPS)
-	{
-		marker.header_line = (void *)PGP_ARMOR_BEGIN_SIGNATURE;
-		marker.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE);
-		marker.trailer_line = (void *)PGP_ARMOR_END_SIGNATURE;
-		marker.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE);
-	}
-	else if (packet_type == PGP_PUBKEY)
-	{
-		marker.header_line = (void *)PGP_ARMOR_BEGIN_PUBLIC_KEY;
-		marker.header_line_size = strlen(PGP_ARMOR_BEGIN_PUBLIC_KEY);
-		marker.trailer_line = (void *)PGP_ARMOR_END_PUBLIC_KEY;
-		marker.trailer_line_size = strlen(PGP_ARMOR_END_PUBLIC_KEY);
-	}
-	else if (packet_type == PGP_SECKEY)
-	{
-		marker.header_line = (void *)PGP_ARMOR_BEGIN_PRIVATE_KEY;
-		marker.header_line_size = strlen(PGP_ARMOR_BEGIN_PRIVATE_KEY);
-		marker.trailer_line = (void *)PGP_ARMOR_END_PRIVATE_KEY;
-		marker.trailer_line_size = strlen(PGP_ARMOR_END_PRIVATE_KEY);
-	}
-	else
-	{
-		marker.header_line = (void *)PGP_ARMOR_BEGIN_MESSAGE;
-		marker.header_line_size = strlen(PGP_ARMOR_BEGIN_MESSAGE);
-		marker.trailer_line = (void *)PGP_ARMOR_END_MESSAGE;
-		marker.trailer_line_size = strlen(PGP_ARMOR_END_MESSAGE);
-	}
-
-	options.marker = &marker;
-	options.flags = ARMOR_EMPTY_LINE | (flags & PGP_ARMOR_NO_CRC ? ARMOR_CHECKSUM_CRC24 : 0);
-	options.headers = header;
-	options.headers_size = header_size;
+	// Always add empty line after begin marker
+	options->flags |= ARMOR_EMPTY_LINE;
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
-		packet_header = stream->packets[i];
 		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(temp, pos), temp_size - pos);
 	}
 
-	status = armor_write(&options, temp, pos, buffer, &buffer_size);
+	status = armor_write(options, temp, pos, buffer, &buffer_size);
 
 	free(temp);
 
