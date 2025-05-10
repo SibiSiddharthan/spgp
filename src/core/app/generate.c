@@ -682,7 +682,7 @@ uint32_t spgp_generate_key(void)
 		spgp_write_key(key_packets[i]);
 	}
 
-	spgp_write_certificate(NULL, 0, certificate);
+	spgp_write_certificate(certificate);
 
 	return 0;
 }

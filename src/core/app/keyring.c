@@ -94,38 +94,34 @@ static byte_t get_key_passphrase_env(char *buffer, byte_t *fingerprint, byte_t s
 	return pos;
 }
 
-pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size)
+pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
 {
 	char filename[256] = {0};
 
-	get_cert_filename(filename, fingerprint, size);
+	get_cert_filename(filename, fingerprint, fingerprint_size);
 
-	return spgp_read_pgp_packet(filename, 0);
+	return spgp_read_pgp_packets(filename, 0);
 }
 
-size_t spgp_write_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t size, pgp_stream_t *stream)
+void spgp_write_certificate(pgp_stream_t *stream)
 {
-	status_t status = 0;
 	handle_t handle = 0;
-	size_t result = 0;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
 
 	char filename[256] = {0};
 	uint32_t length = 0;
 
-	length = get_cert_filename(filename, fingerprint, size);
-	status = os_open(&handle, command.certs, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700);
+	fingerprint_size = pgp_key_fingerprint(stream->packets[0], fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	length = get_cert_filename(filename, fingerprint, fingerprint_size);
 
-	if (status != OS_STATUS_SUCCESS)
-	{
-		printf("Unable to open key file %s.\n", filename);
-		exit(1);
-	}
+	OS_CALL(os_open(&handle, command.certs, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+			printf("Unable to open certificate file %s.\n", filename));
 
-	result = spgp_write_pgp_packets_to_handle(handle, stream);
+	spgp_write_pgp_packets_to_handle(handle, stream);
 
-	os_close(handle);
-
-	return result;
+	OS_CALL(os_close(handle), printf("Unable to close handle %u.\n", (uint32_t)(uintptr_t)handle));
 }
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
@@ -206,7 +202,7 @@ static void spgp_import_certificates(pgp_stream_t *stream)
 		}
 	}
 
-	spgp_write_certificate(fingerprint, fingerprint_size, stream);
+	spgp_write_certificate(stream);
 }
 
 pgp_stream_t *spgp_read_keyring()
