@@ -219,15 +219,19 @@ static void spgp_import_certificates(pgp_stream_t *stream)
 
 pgp_stream_t *spgp_read_keyring()
 {
-	return spgp_read_pgp_packets_from_handle(command.keyring);
+	// Read the entire keyring only once
+	if (command.keyring_stream == NULL)
+	{
+		command.keyring_stream = spgp_read_pgp_packets_from_handle(command.keyring);
+	}
+
+	return command.keyring_stream;
 }
 
 pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **user, void *input, uint32_t size, byte_t capabilities)
 {
-	pgp_stream_t *stream = NULL;
+	pgp_stream_t *stream = spgp_read_keyring();
 	pgp_keyring_packet *keyring = NULL;
-
-	stream = spgp_read_pgp_packets_from_handle(command.keyring);
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
@@ -676,9 +680,9 @@ static char *get_trust_value(byte_t trust)
 	}
 }
 
-static size_t print_uid(byte_t *uid, byte_t trust, void *str, size_t size)
+static size_t print_uid(byte_t *uid, uint32_t uid_size, byte_t trust, void *str, size_t size)
 {
-	return snprintf(str, size, "uid         [%s] %s\n", get_trust_value(trust), uid); // 9 spaces
+	return snprintf(str, size, "uid         [%s] %.*s\n", get_trust_value(trust), uid_size, uid); // 9 spaces
 }
 
 uint32_t spgp_list_keys(void)
@@ -686,6 +690,7 @@ uint32_t spgp_list_keys(void)
 	pgp_stream_t *stream = NULL;
 	pgp_keyring_packet *keyring = NULL;
 	pgp_key_packet *key = NULL;
+	pgp_user_info *uinfo = NULL;
 
 	char buffer[65536] = {0};
 	size_t size = 65536;
@@ -695,9 +700,6 @@ uint32_t spgp_list_keys(void)
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
-		uint32_t uid_size = 0;
-		uint32_t uid_offset = 0;
-
 		keyring = stream->packets[i];
 
 		key = spgp_read_key(keyring->primary_fingerprint, keyring->fingerprint_size);
@@ -716,16 +718,11 @@ uint32_t spgp_list_keys(void)
 						 size - pos);
 
 		// Add uids
-		// for (byte_t j = 0; j < keyring->user_count; ++j)
-		//{
-		//	uid_size = strnlen(PTR_OFFSET(keyring->users, uid_offset), keyring->uid_size - uid_offset);
-		//	pos += print_uid(PTR_OFFSET(keyring->users, uid_offset), keyring->trust_level, PTR_OFFSET(buffer, pos), size - pos);
-		//
-		//	if (uid_size < (keyring->uid_size - uid_offset))
-		//	{
-		//		uid_offset += 1;
-		//	}
-		//}
+		for (byte_t j = 0; j < keyring->users->count; ++j)
+		{
+			uinfo = keyring->users->packets[j];
+			pos += print_uid(uinfo->uid, uinfo->uid_octets, uinfo->trust, PTR_OFFSET(buffer, pos), size - pos);
+		}
 
 		// Add subkeys
 		for (uint16_t j = 0; j < keyring->subkey_count; ++j)
