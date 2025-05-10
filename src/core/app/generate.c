@@ -587,11 +587,13 @@ uint32_t spgp_generate_key(void)
 	uint32_t count = 0;
 
 	pgp_user_id_packet *user = NULL;
+	pgp_user_info *uinfo = NULL;
+
 	pgp_key_version version = 0;
 
 	pgp_stream_t *certificate = NULL;
 	pgp_signature_packet *signature = NULL;
-	pgp_user_info preferences = {0};
+	pgp_sign_info *sinfo = NULL;
 
 	if (command.files == NULL || command.files->count != 2)
 	{
@@ -618,7 +620,6 @@ uint32_t spgp_generate_key(void)
 
 	// Set user id and preferences
 	pgp_user_id_packet_new(&user, PGP_HEADER, uid, strlen(uid));
-	make_default_preferences(&preferences);
 
 	// Create the keys
 	count = parse_spec(spec, &key_specs);
@@ -635,8 +636,8 @@ uint32_t spgp_generate_key(void)
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		pgp_key_generate(&key_packets[i], version, key_specs->algorithm, key_specs->capabilities, key_specs->flags, time(NULL),
-						 key_specs->expiry, &key_specs->parameters);
+		PGP_CALL(pgp_key_generate(&key_packets[i], version, key_specs->algorithm, key_specs->capabilities, key_specs->flags, time(NULL),
+								  key_specs->expiry, &key_specs->parameters));
 	}
 
 	// Create the certificate
@@ -651,18 +652,28 @@ uint32_t spgp_generate_key(void)
 	pgp_stream_push(certificate, key_packets[0]);
 	pgp_stream_push(certificate, user);
 
-	// pgp_generate_certificate_signature(&signature, key_packets[0], PGP_POSITIVE_CERTIFICATION_SIGNATURE,
-	//								   preferences.hash_algorithm_preferences[0], time(NULL), &preferences, user);
+	PGP_CALL(pgp_user_info_new(&uinfo, uid, strlen(uid), NULL, 0, PGP_TRUST_ULTIMATE, 0, 0));
+	make_default_preferences(uinfo);
+
+	PGP_CALL(pgp_sign_info_new(&sinfo, PGP_POSITIVE_CERTIFICATION_SIGNATURE, PGP_SHA2_256, 0, 0, 0, 0));
+	PGP_CALL(pgp_generate_certificate_binding_signature(&signature, key_packets[0], sinfo, uinfo, user));
+
+	pgp_sign_info_delete(sinfo);
+
 	pgp_stream_push(certificate, signature);
 
 	for (uint32_t i = 1; i < count; ++i)
 	{
 		signature = NULL;
+		sinfo = NULL;
 
 		pgp_stream_push(certificate, key_packets[i]);
-		// pgp_generate_key_binding_signature(&signature, key_packets[0], key_packets[i], PGP_SUBKEY_BINDING_SIGNATURE,
-		//								   preferences.hash_algorithm_preferences[0], time(NULL));
+
+		PGP_CALL(pgp_sign_info_new(&sinfo, PGP_SUBKEY_BINDING_SIGNATURE, PGP_SHA2_256, 0, 0, 0, 0));
+		PGP_CALL(pgp_generate_subkey_binding_signature(&signature, key_packets[0], key_packets[i], sinfo));
+
 		pgp_stream_push(certificate, signature);
+		pgp_sign_info_delete(sinfo);
 	}
 
 	// Write the keys and certificate

@@ -155,10 +155,6 @@ typedef struct _spgp_command
 extern spgp_command command;
 
 uint32_t spgp_generate_key(void);
-uint32_t spgp_delete_key(const char *key_id, uint16_t key_id_size, uint32_t options);
-
-uint32_t spgp_export_key(const char *key_id, uint16_t key_id_size, void *buffer, size_t buffer_size);
-uint32_t spgp_import_key(void *buffer, size_t buffer_size);
 
 void spgp_sign(void);
 uint32_t spgp_verify(spgp_command *command);
