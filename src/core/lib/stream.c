@@ -64,6 +64,24 @@ end:
 	free(stream);
 }
 
+pgp_stream_t *pgp_stream_clear(pgp_stream_t *stream, void (*deleter)(void *))
+{
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		if (deleter != NULL)
+		{
+			deleter(stream->packets[i]);
+		}
+
+		stream->packets[i] = NULL;
+	}
+
+	stream->count = 0;
+
+	return stream;
+}
+
 size_t pgp_stream_octets(pgp_stream_t *stream)
 {
 	pgp_packet_header *header = NULL;

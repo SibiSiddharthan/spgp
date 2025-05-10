@@ -449,8 +449,13 @@ void spgp_sign(void)
 	pgp_user_info *uinfo[16] = {0};
 	pgp_keyring_packet *keyring[16] = {0};
 
+	pgp_compresed_packet *compressed = NULL;
 	pgp_stream_t *signatures = NULL;
 	uint32_t count = 0;
+
+	armor_options options = {0};
+	armor_marker marker = {0};
+	armor_options *opts = NULL;
 
 	if (command.users == NULL)
 	{
@@ -485,6 +490,7 @@ void spgp_sign(void)
 		key[i] = spgp_decrypt_key(keyring[i], key[i]);
 	}
 
+	// Create the signature
 	if (command.files == NULL)
 	{
 		if (command.detach_sign)
@@ -526,6 +532,32 @@ void spgp_sign(void)
 			}
 		}
 	}
+
+	// Compress the stream
+	if (command.compression_level != 0)
+	{
+		PGP_CALL(pgp_compressed_packet_new(&compressed, PGP_HEADER, PGP_ZLIB));
+		PGP_CALL(pgp_compressed_packet_compress(compressed, signatures));
+
+		signatures = pgp_stream_clear(signatures, pgp_packet_delete);
+		signatures = pgp_stream_push(signatures, compressed);
+	}
+
+	// Write output
+	if (command.armor)
+	{
+		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_SIGNATURE,
+								.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE),
+								.trailer_line = PGP_ARMOR_END_SIGNATURE,
+								.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE)};
+
+		options.marker = &marker;
+		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
+
+		opts = &options;
+	}
+
+	spgp_write_pgp_packets(signatures, opts, command.output);
 
 	exit(0);
 }
