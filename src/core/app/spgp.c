@@ -406,7 +406,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 {
 	if (command->list_packets || command->dump_packets)
 	{
-		return spgp_list_packets(command);
+		return spgp_list_packets();
 	}
 
 	if (command->sign || command->detach_sign || command->clear_sign)
