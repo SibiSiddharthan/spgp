@@ -175,10 +175,10 @@ pgp_literal_packet *spgp_literal_read_file(const char *file, pgp_literal_data_fo
 void spgp_literal_write_file(const char *file, pgp_literal_packet *literal);
 
 pgp_stream_t *spgp_read_pgp_packets(const char *file);
-size_t spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options);
+void spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options);
 
 pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle);
-size_t spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_options *options);
+void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_options *options);
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 void spgp_write_key(pgp_key_packet *key);

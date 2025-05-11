@@ -90,7 +90,7 @@ size_t pgp_stream_octets(pgp_stream_t *stream)
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
-		size += header->body_size + header->header_size;
+		size += PGP_PACKET_OCTETS(*header);
 	}
 
 	return size;
@@ -209,25 +209,24 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 	return error;
 }
 
-size_t pgp_stream_write(pgp_stream_t *stream, void *buffer, size_t size)
+pgp_error_t pgp_stream_write(pgp_stream_t *stream, void **buffer, size_t *size)
 {
-	pgp_packet_header *header = NULL;
 	size_t pos = 0;
+
+	*size = pgp_stream_octets(stream);
+	*buffer = malloc(*size);
+
+	if (*buffer == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
-		header = stream->packets[i];
-
-		// Write complete packets only
-		if ((header->body_size + header->header_size) < (size - pos))
-		{
-			break;
-		}
-
-		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(*buffer, pos), *size - pos);
 	}
 
-	return pos;
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, uint16_t flags)
@@ -403,41 +402,56 @@ error_cleanup:
 	goto end;
 }
 
-size_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options, void *buffer, uint32_t buffer_size)
+pgp_error_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options, void **buffer, size_t *size)
 {
+	pgp_error_t error = 0;
 	armor_status status = 0;
-	size_t pos = 0;
 
 	void *temp = NULL;
-	size_t temp_size = pgp_stream_octets(stream);
+	size_t temp_size = 0;
 
-	temp = malloc(temp_size);
+	error = pgp_stream_write(stream, &temp, &temp_size);
 
-	if (temp == NULL)
+	if (error != PGP_SUCCESS)
 	{
-		return 0;
+		return error;
 	}
 
-	memset(temp, 0, temp_size);
+	*size = ((temp_size * 4) / 3) + 128; // Rough estimate
+
+	if (*size > ((uint64_t)1 << 32))
+	{
+		return PGP_ARMOR_TOO_BIG;
+	}
 
 	// Always add empty line after begin marker
 	options->flags |= ARMOR_EMPTY_LINE;
 
-	for (uint32_t i = 0; i < stream->count; ++i)
+	if (status != ARMOR_SUCCESS)
 	{
-		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(temp, pos), temp_size - pos);
-	}
+		if (status == ARMOR_BUFFER_TOO_SMALL)
+		{
+			*buffer = realloc(*buffer, *size);
 
-	status = armor_write(options, temp, pos, buffer, &buffer_size);
+			if (*buffer == NULL)
+			{
+				return PGP_NO_MEMORY;
+			}
+
+			status = armor_write(options, temp, (uint32_t)temp_size, *buffer, (uint32_t *)size);
+		}
+
+		if (status != ARMOR_SUCCESS)
+		{
+			// This is the only error that can occur
+			error = PGP_BUFFER_TOO_SMALL;
+			free(*buffer);
+		}
+	}
 
 	free(temp);
 
-	if (status != ARMOR_SUCCESS)
-	{
-		return 0;
-	}
-
-	return buffer_size;
+	return PGP_SUCCESS;
 }
 
 size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options)
