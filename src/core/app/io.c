@@ -255,110 +255,6 @@ pgp_stream_t *spgp_read_pgp_packets(const char *file)
 	return stream;
 }
 
-void *spgp_read_pgp_packet_from_handle(handle_t handle)
-{
-	status_t status = 0;
-
-	void *buffer = NULL;
-	void *packet = NULL;
-	size_t size = 0;
-
-	pgp_error_t error = 0;
-
-	status = spgp_read_handle(handle, &buffer, &size);
-
-	if (status != OS_STATUS_SUCCESS)
-	{
-		printf("Unable to read file.\n");
-		exit(2);
-	}
-
-	error = pgp_packet_read(&packet, buffer, size);
-
-	free(buffer);
-
-	if (error != PGP_SUCCESS)
-	{
-		printf("Bad packet.\n");
-		exit(1);
-	}
-
-	return packet;
-}
-
-size_t spgp_write_file(const char *file, void *buffer, size_t size)
-{
-	status_t status = 0;
-	handle_t handle = 0;
-
-	size_t write = 0;
-
-	if (file != NULL)
-	{
-		status = os_open(&handle, HANDLE_CWD, file, strlen(file), FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700);
-
-		if (status != OS_STATUS_SUCCESS)
-		{
-			printf("Unable to open file %s.\n", file);
-			exit(2);
-		}
-	}
-	else
-	{
-		handle = STDOUT_HANDLE;
-	}
-
-	if (handle == 0)
-	{
-		exit(2);
-	}
-
-	status = os_write(handle, buffer, size, &write);
-
-	if (file != NULL)
-	{
-		os_close(handle);
-	}
-
-	if (status != OS_STATUS_SUCCESS)
-	{
-		printf("Unable to write file %s.\n", file);
-		exit(2);
-	}
-
-	return write;
-}
-
-size_t spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options)
-{
-	void *buffer = NULL;
-	size_t size = 65536;
-	size_t result = 0;
-
-	buffer = malloc(size);
-
-	if (buffer == NULL)
-	{
-		printf("No memory.\n");
-		exit(1);
-	}
-
-	if (options == NULL)
-	{
-		result = pgp_stream_write(stream, buffer, size);
-	}
-	else
-	{
-		result = pgp_stream_write_armor(stream, options, buffer, size);
-	}
-
-	result = spgp_write_file(file, buffer, result);
-
-	free(buffer);
-
-	return result;
-}
-
 size_t spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_options *options)
 {
 	size_t write = 0;
@@ -391,27 +287,27 @@ size_t spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armo
 	return result;
 }
 
-size_t spgp_write_pgp_packet_handle(handle_t handle, void *packet)
+size_t spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options)
 {
-	size_t write = 0;
+	handle_t handle = 0;
+	size_t result = 0;
 
-	void *buffer = NULL;
-
-	pgp_packet_header *header = packet;
-	size_t size = PGP_PACKET_OCTETS(*header);
-
-	buffer = malloc(size);
-
-	if (buffer == NULL)
+	if (file != NULL)
 	{
-		printf("No memory.\n");
-		exit(1);
+		OS_CALL(os_open(&handle, HANDLE_CWD, file, strlen(file), FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+				printf("Unable to open file %s", file));
+	}
+	else
+	{
+		handle = STDOUT_HANDLE;
 	}
 
-	pgp_packet_write(packet, buffer, size);
+	result = spgp_write_pgp_packets_handle(handle, stream, options);
 
-	OS_CALL(os_write(handle, buffer, size, &write), printf("Unable to write to file"));
-	free(buffer);
+	if (file != NULL)
+	{
+		OS_CALL(os_close(handle), printf("Unable to close handle %u", OS_HANDLE_AS_UINT(handle)));
+	}
 
-	return write;
+	return result;
 }

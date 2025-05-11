@@ -174,9 +174,6 @@ uint32_t spgp_delete_keys(spgp_command *command);
 pgp_literal_packet *spgp_literal_read_file(const char *file, pgp_literal_data_format format);
 void spgp_literal_write_file(const char *file, pgp_literal_packet *literal);
 
-void *spgp_read_pgp_packet_from_handle(handle_t handle);
-size_t spgp_write_pgp_packet_handle(handle_t handle, void *packet);
-
 pgp_stream_t *spgp_read_pgp_packets(const char *file);
 size_t spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options);
 
