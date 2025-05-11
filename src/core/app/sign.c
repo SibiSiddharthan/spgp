@@ -565,7 +565,6 @@ void spgp_sign(void)
 uint32_t spgp_verify(spgp_command *command)
 {
 	void *buffer = NULL;
-	size_t size = 0;
 
 	pgp_key_packet *key = NULL;
 	pgp_signature_packet *sign = NULL;
@@ -576,8 +575,8 @@ uint32_t spgp_verify(spgp_command *command)
 		exit(1);
 	}
 
-	sign = spgp_read_pgp_packet(command->files->packets[0], SPGP_STD_INPUT);
-	buffer = spgp_read_file(command->files->packets[1], 0, &size);
+	// sign = spgp_read_pgp_packet(command->files->packets[0], SPGP_STD_INPUT);
+	// buffer = spgp_read_file(command->files->packets[1], 0, &size);
 
 	if (sign->hashed_subpackets != NULL)
 	{

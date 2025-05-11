@@ -63,6 +63,8 @@
 		}                                            \
 	}
 
+#define OS_HANDLE_AS_UINT(HANDLE) ((uint32_t)(uintptr_t)(HANDLE))
+
 typedef enum _spgp_mode
 {
 	SPGP_MODE_RFC4880 = 1,
@@ -169,26 +171,18 @@ uint32_t spgp_import_keys(spgp_command *command);
 uint32_t spgp_export_keys(spgp_command *command);
 uint32_t spgp_delete_keys(spgp_command *command);
 
-#define SPGP_STD_INPUT  0x1
-#define SPGP_STD_OUTPUT 0x2
-
 pgp_literal_packet *spgp_read_file_as_literal(const char *file, pgp_literal_data_format format);
 
-void *spgp_read_file(const char *file, uint32_t options, size_t *size);
 size_t spgp_write_file(const char *file, void *buffer, size_t size);
 
-status_t spgp_read_handle(handle_t handle, void **buffer, size_t *size);
-size_t spgp_write_handle(handle_t handle, void *buffer, size_t size);
+void *spgp_read_pgp_packet_from_handle(handle_t handle);
+size_t spgp_write_pgp_packet_handle(handle_t handle, void *packet);
 
-pgp_stream_t *spgp_read_pgp_packets(const char *file, uint32_t options);
-void *spgp_read_pgp_packet(const char *file, uint32_t options);
+pgp_stream_t *spgp_read_pgp_packets(const char *file);
+size_t spgp_write_pgp_packets(pgp_stream_t *stream, armor_options *options, const char *file);
 
 pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle);
-void *spgp_read_pgp_packet_from_handle(handle_t handle);
-size_t spgp_write_pgp_packets_to_handle(handle_t handle, pgp_stream_t *stream);
-size_t spgp_write_pgp_packet_to_handle(handle_t handle, void *packet);
-
-size_t spgp_write_pgp_packets(pgp_stream_t *stream, armor_options *options, const char *file);
+size_t spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_options *options);
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 void spgp_write_key(pgp_key_packet *key);
