@@ -293,7 +293,7 @@ static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info 
 		exit(1);
 	}
 
-	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_BINARY);
+	literal = spgp_literal_read_file(file, PGP_LITERAL_DATA_BINARY);
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
@@ -328,7 +328,7 @@ static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info *
 
 	// TODO (Write the data as cleartext)
 
-	literal = spgp_read_file_as_literal(file, PGP_LITERAL_DATA_TEXT);
+	literal = spgp_literal_read_file(file, PGP_LITERAL_DATA_TEXT);
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
@@ -387,7 +387,7 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	}
 
 	// Push the literal packet
-	literal = spgp_read_file_as_literal(file, command.textmode ? PGP_LITERAL_DATA_TEXT : PGP_LITERAL_DATA_BINARY);
+	literal = spgp_literal_read_file(file, command.textmode ? PGP_LITERAL_DATA_TEXT : PGP_LITERAL_DATA_BINARY);
 	pgp_stream_push(stream, literal);
 
 	// Generate the signatures (first to last)
@@ -437,7 +437,7 @@ static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info 
 	}
 
 	// Push the literal packet
-	literal = spgp_read_file_as_literal(file, command.textmode ? PGP_LITERAL_DATA_TEXT : PGP_LITERAL_DATA_BINARY);
+	literal = spgp_literal_read_file(file, command.textmode ? PGP_LITERAL_DATA_TEXT : PGP_LITERAL_DATA_BINARY);
 	pgp_stream_push(stream, literal);
 
 	return stream;
@@ -557,7 +557,7 @@ void spgp_sign(void)
 		opts = &options;
 	}
 
-	spgp_write_pgp_packets(signatures, opts, command.output);
+	spgp_write_pgp_packets(command.output, signatures, opts);
 
 	exit(0);
 }

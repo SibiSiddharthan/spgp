@@ -116,7 +116,7 @@ static status_t spgp_read_handle(handle_t handle, void **buffer, size_t *size)
 	return status;
 }
 
-pgp_literal_packet *spgp_read_file_as_literal(const char *file, pgp_literal_data_format format)
+pgp_literal_packet *spgp_literal_read_file(const char *file, pgp_literal_data_format format)
 {
 	handle_t handle = 0;
 	stat_t stat = {0};
@@ -152,7 +152,48 @@ pgp_literal_packet *spgp_read_file_as_literal(const char *file, pgp_literal_data
 
 	free(buffer);
 
+	if (file != NULL)
+	{
+		OS_CALL(os_close(handle), printf("Unable to close handle %u", OS_HANDLE_AS_UINT(handle)));
+	}
+
 	return literal;
+}
+
+void spgp_literal_write_file(const char *file, pgp_literal_packet *literal)
+{
+	handle_t handle = 0;
+	size_t result = 0;
+
+	if (file != NULL)
+	{
+		OS_CALL(os_open(&handle, HANDLE_CWD, file, strlen(file), FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+				printf("Unable to open file %s", file));
+	}
+	else
+	{
+		handle = STDOUT_HANDLE;
+	}
+
+	// Write the literal data
+	OS_CALL(os_write(handle, literal->data, literal->data_size, &result),
+			printf("Unable to write to handle %u", OS_HANDLE_AS_UINT(handle)));
+
+	if (literal->partials != NULL)
+	{
+		for (uint32_t i = 0; i < literal->partials->count; ++i)
+		{
+			pgp_partial_packet *partial = literal->partials->packets[i];
+
+			OS_CALL(os_write(handle, partial->data, partial->header.body_size, &result),
+					printf("Unable to write to handle %u", OS_HANDLE_AS_UINT(handle)));
+		}
+	}
+
+	if (file != NULL)
+	{
+		OS_CALL(os_close(handle), printf("Unable to close handle %u", OS_HANDLE_AS_UINT(handle)));
+	}
 }
 
 pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
@@ -288,7 +329,7 @@ size_t spgp_write_file(const char *file, void *buffer, size_t size)
 	return write;
 }
 
-size_t spgp_write_pgp_packets(pgp_stream_t *stream, armor_options *options, const char *file)
+size_t spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options)
 {
 	void *buffer = NULL;
 	size_t size = 65536;
