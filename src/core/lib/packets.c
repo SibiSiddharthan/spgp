@@ -18,6 +18,18 @@
 #include <string.h>
 #include <stdlib.h>
 
+static size_t pgp_stream_write_internal(pgp_stream_t *stream, void *buffer, size_t size)
+{
+	size_t pos = 0;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+	}
+
+	return pos;
+}
+
 static void pgp_compressed_packet_encode_header(pgp_compresed_packet *packet, pgp_packet_header_format header_format)
 {
 	uint32_t body_size = 0;
@@ -89,7 +101,7 @@ pgp_error_t pgp_compressed_packet_compress(pgp_compresed_packet *packet, pgp_str
 			return PGP_NO_MEMORY;
 		}
 
-		pgp_stream_write(stream, packet->data, data_size);
+		pgp_stream_write_internal(stream, packet->data, data_size);
 
 		// Set the header
 		pgp_compressed_packet_encode_header(packet, 0);
