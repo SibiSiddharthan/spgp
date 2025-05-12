@@ -146,6 +146,24 @@ void *pgp_stream_pop(pgp_stream_t *stream)
 	return packet;
 }
 
+void *pgp_stream_remove(pgp_stream_t *stream, uint32_t index)
+{
+	void *packet = NULL;
+
+	if (stream->count <= index)
+	{
+		return NULL;
+	}
+
+	packet = stream->packets[index];
+
+	memmove(&stream->packets[index], &stream->packets[index + 1], (stream->count - (index + 1)) * sizeof(void *));
+	stream->packets[stream->count - 1] = NULL;
+	stream->count -= 1;
+
+	return packet;
+}
+
 pgp_stream_t *pgp_stream_filter_padding_packets(pgp_stream_t *stream)
 {
 	pgp_packet_header *header = NULL;
@@ -213,6 +231,74 @@ pgp_stream_t *pgp_stream_filter_padding_packets(pgp_stream_t *stream)
 	memcpy(stream->packets, temp, stream->count * sizeof(void *));
 
 	free(temp);
+
+	return stream;
+}
+
+pgp_stream_t *pgp_stream_filter_non_exportable_signatures(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	pgp_signature_packet *sign = NULL;
+	pgp_exportable_subpacket *exportable = NULL;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_SIG)
+		{
+			pgp_subpacket_header *subheader = NULL;
+
+			sign = stream->packets[i];
+
+			// Search hashed first
+			if (sign->hashed_subpackets != NULL)
+			{
+				for (uint32_t j = 0; j < sign->hashed_subpackets->count; ++j)
+				{
+					subheader = sign->hashed_subpackets->packets[i];
+
+					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
+					{
+						exportable = sign->hashed_subpackets->packets[i];
+
+						if (exportable->state == 0)
+						{
+							goto remove_signature;
+						}
+					}
+				}
+			}
+
+			if (sign->unhashed_subpackets != NULL)
+			{
+				for (uint32_t j = 0; j < sign->unhashed_subpackets->count; ++j)
+				{
+					subheader = sign->unhashed_subpackets->packets[i];
+
+					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
+					{
+						exportable = sign->unhashed_subpackets->packets[i];
+
+						if (exportable->state == 0)
+						{
+							goto remove_signature;
+						}
+					}
+				}
+			}
+
+			continue;
+
+		remove_signature:
+			pgp_stream_remove(stream, i);
+			pgp_signature_packet_delete(sign);
+
+			--i;
+
+			continue;
+		}
+	}
 
 	return stream;
 }
