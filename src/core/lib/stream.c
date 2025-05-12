@@ -9,6 +9,7 @@
 #include <armor.h>
 #include <packet.h>
 #include <stream.h>
+#include <seipd.h>
 #include <signature.h>
 
 #include <stdlib.h>
@@ -639,6 +640,69 @@ pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *s
 			--i;
 
 			continue;
+		}
+	}
+
+	return stream;
+}
+
+pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	pgp_stream_t *partials = NULL;
+	void *result = NULL;
+	uint32_t index = 0;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (header->partial_begin)
+		{
+			index = i + 1;
+			partials = NULL;
+
+			do
+			{
+				header = stream->packets[index];
+				result = pgp_stream_push(partials, stream->packets[index]);
+
+				if (result == NULL)
+				{
+					pgp_stream_delete(partials, (void (*)(void *))pgp_partial_packet_delete);
+					return NULL;
+				}
+
+				partials = result;
+
+				pgp_stream_remove(stream, index);
+
+			} while (header->partial_end == 0);
+
+			header = stream->packets[i];
+
+			switch (pgp_packet_get_type(header->tag))
+			{
+			case PGP_COMP:
+				((pgp_compresed_packet *)stream->packets[i])->partials = partials;
+				break;
+			case PGP_SED:
+				((pgp_sed_packet *)stream->packets[i])->partials = partials;
+				break;
+			case PGP_LIT:
+				((pgp_literal_packet *)stream->packets[i])->partials = partials;
+				break;
+			case PGP_SEIPD:
+				((pgp_seipd_packet *)stream->packets[i])->partials = partials;
+				break;
+			case PGP_AEAD:
+				((pgp_aead_packet *)stream->packets[i])->partials = partials;
+				break;
+
+			default:
+				// This should never happen.
+				pgp_stream_delete(partials, (void (*)(void *))pgp_partial_packet_delete);
+			}
 		}
 	}
 
