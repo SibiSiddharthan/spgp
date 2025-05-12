@@ -48,8 +48,12 @@ char *pgp_error(pgp_error_t status)
 		return "Invalid Partial Packet Type";
 	case PGP_INVALID_PARTIAL_PACKET_START_SIZE:
 		return "Invalid Partial Packet Start Size";
+	case PGP_INVALID_PARTIAL_PACKET_CONTINUE_SIZE:
+		return "Invalid Partial Packet Continue Size";
 	case PGP_UNKNOWN_CRITICAL_SUBPACKET:
 		return "Unknown Critical Subpacket";
+	case PGP_PACKET_TOO_BIG:
+		return "Packet Too Big";
 	case PGP_EMPTY_PACKET:
 		return "Empty Packet";
 

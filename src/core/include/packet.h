@@ -14,6 +14,9 @@
 
 // Refer RFC 9580 - OpenPGP, Section 5 Packet Types
 
+#define PGP_MAX_SPLIT_SIZE   30
+#define PGP_SPLIT_SIZE(size) ((uint32_t)1 << (size))
+
 typedef enum _pgp_packet_type
 {
 	PGP_RESERVED = 0,   // Reserved Packet
@@ -275,6 +278,7 @@ uint32_t pgp_partial_header_write(pgp_partial_header *header, void *ptr);
 
 pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size);
 pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critical, uint32_t body_size);
+pgp_partial_header pgp_encode_partial_header(uint32_t body_size);
 
 pgp_packet_type pgp_packet_get_type(byte_t tag);
 
@@ -299,6 +303,9 @@ void pgp_compressed_packet_delete(pgp_compresed_packet *packet);
 
 pgp_error_t pgp_compressed_packet_compress(pgp_compresed_packet *packet, pgp_stream_t *stream);
 pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_stream_t **stream);
+
+pgp_error_t pgp_compressed_packet_collate(pgp_compresed_packet *packet);
+pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t split);
 
 pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);

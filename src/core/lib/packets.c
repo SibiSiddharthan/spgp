@@ -155,6 +155,107 @@ pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_s
 	return PGP_SUCCESS;
 }
 
+pgp_error_t pgp_compressed_packet_collate(pgp_compresed_packet *packet)
+{
+	void *result = NULL;
+	size_t size = 0;
+
+	pgp_partial_packet *partial = NULL;
+
+	if (packet->partials == NULL)
+	{
+		// Nothing to collate
+		return PGP_SUCCESS;
+	}
+
+	// Check whether the collated size will be greater than the maximum packet size
+	size += PGP_PACKET_OCTETS(packet->header);
+	size += pgp_packet_stream_octets(packet->partials);
+
+	if (size > ((uint64_t)1 << 32))
+	{
+		return PGP_PACKET_TOO_BIG;
+	}
+
+	result = realloc(packet->data, size);
+
+	if (result == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	packet->data = result;
+
+	// Copy the partial data
+	for (uint32_t i = 0; i < packet->partials->count; ++i)
+	{
+		partial = packet->partials->packets[i];
+
+		memcpy(PTR_OFFSET(packet->data, packet->data_size), partial->data, packet->header.body_size);
+		packet->data_size += packet->header.body_size;
+
+		// Delete the partial packets
+		pgp_partial_packet_delete(partial);
+		packet->partials->packets[i] = NULL;
+	}
+
+	// Delete the partial stream
+	pgp_stream_delete(packet->partials, NULL);
+	packet->partials = NULL;
+
+	// Update the header
+	pgp_compressed_packet_encode_header(packet, 0);
+	packet->header.partial = 0;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t split)
+{
+	pgp_error_t status = 0;
+	pgp_partial_packet *partial = NULL;
+
+	uint32_t split_size = PGP_SPLIT_SIZE(split);
+	uint32_t start_size = MIN(512, split_size);
+	size_t pos = 0;
+
+	if (split > 30)
+	{
+		return PGP_INVALID_PARTIAL_PACKET_CONTINUE_SIZE;
+	}
+
+	if (PGP_PACKET_OCTETS(packet->header) < start_size)
+	{
+		// Nothing to split
+		return PGP_SUCCESS;
+	}
+
+	pos = start_size - (PGP_PACKET_OCTETS(packet->header) - packet->data_size);
+
+	while (pos < packet->data_size)
+	{
+		partial = NULL;
+
+		status = pgp_partial_packet_new(&partial, PTR_OFFSET(packet->data, pos), MIN(split_size, packet->data_size - pos));
+
+		if (status != PGP_SUCCESS)
+		{
+			pgp_stream_delete(packet->partials, (void (*)(void *))pgp_partial_packet_delete);
+			return status;
+		}
+
+		pos += MIN(split_size, packet->data_size - pos);
+	}
+
+	// Just set the bounds for the start data, no need to free the memory.
+	packet->data_size = start_size - (PGP_PACKET_OCTETS(packet->header) - packet->data_size);
+
+	// Update the header
+	pgp_compressed_packet_encode_header(packet, PGP_HEADER);
+
+	return PGP_SUCCESS;
+}
+
 static pgp_error_t pgp_compressed_packet_read_body(pgp_compresed_packet *packet, buffer_t *buffer)
 {
 	packet->data_size = packet->header.body_size - 1;
