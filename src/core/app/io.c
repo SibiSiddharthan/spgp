@@ -223,7 +223,7 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 	}
 	else
 	{
-		PGP_CALL(pgp_stream_read_armor(stream, buffer, size, 0));
+		PGP_CALL(pgp_stream_read_armor(&stream, buffer, size));
 	}
 
 	free(buffer);

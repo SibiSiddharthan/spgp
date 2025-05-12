@@ -26,9 +26,9 @@ void pgp_stream_delete(pgp_stream_t *stream, void (*deleter)(void *));
 
 size_t pgp_stream_octets(pgp_stream_t *stream);
 
-pgp_error_t pgp_stream_read(pgp_stream_t **out, void *data, size_t size);
+pgp_error_t pgp_stream_read(pgp_stream_t **stream, void *data, size_t size);
 pgp_error_t pgp_stream_write(pgp_stream_t *stream, void **buffer, size_t *size);
-pgp_error_t pgp_stream_read_armor(pgp_stream_t *stream, void *buffer, uint32_t buffer_size, uint16_t flags);
+pgp_error_t pgp_stream_read_armor(pgp_stream_t **stream, void *buffer, uint32_t buffer_size);
 pgp_error_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options, void **buffer, size_t *size);
 
 size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options);
