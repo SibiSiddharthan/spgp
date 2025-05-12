@@ -172,6 +172,12 @@ pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critica
 	return header;
 }
 
+pgp_partial_header pgp_encode_partial_header(uint32_t body_size)
+{
+	// TODO
+	return (pgp_partial_header){0};
+}
+
 pgp_packet_type pgp_packet_get_type(byte_t tag)
 {
 	pgp_packet_type ptype = 0;
@@ -1001,6 +1007,43 @@ void pgp_packet_delete(void *packet)
 	default:
 		return free(packet);
 	}
+}
+
+pgp_error_t pgp_partial_packet_new(pgp_partial_packet **packet, void *data, uint32_t size)
+{
+	pgp_partial_packet *partial = NULL;
+
+	if (size == 0)
+	{
+		return PGP_EMPTY_PACKET;
+	}
+
+	partial = malloc(sizeof(pgp_partial_packet));
+
+	if (partial == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(partial, 0, sizeof(pgp_partial_packet));
+
+	partial->data = malloc(size);
+
+	if (partial->data == NULL)
+	{
+		free(partial);
+		return PGP_NO_MEMORY;
+	}
+
+	// Copy the data
+	memcpy(partial->data, data, size);
+
+	// Set the header
+	partial->header = pgp_encode_partial_header(size);
+
+	*packet = partial;
+
+	return PGP_SUCCESS;
 }
 
 void pgp_partial_packet_delete(pgp_partial_packet *packet)
