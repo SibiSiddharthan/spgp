@@ -126,7 +126,7 @@ pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_s
 	{
 	case PGP_UNCOMPRESSED:
 	{
-		status = pgp_stream_read(*stream, packet->data, packet->data_size);
+		status = pgp_stream_read(stream, packet->data, packet->data_size);
 
 		if (status != PGP_SUCCESS)
 		{

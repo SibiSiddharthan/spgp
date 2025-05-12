@@ -205,7 +205,7 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 	void *buffer = NULL;
 	size_t size = 0;
 
-	pgp_stream_t *stream = pgp_stream_new(4);
+	pgp_stream_t *stream = NULL;
 
 	status = spgp_read_handle(handle, &buffer, &size);
 
@@ -219,7 +219,7 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 
 	if (in[0] > 128)
 	{
-		PGP_CALL(pgp_stream_read(stream, buffer, size));
+		PGP_CALL(pgp_stream_read(&stream, buffer, size));
 	}
 	else
 	{

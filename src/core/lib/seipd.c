@@ -173,7 +173,7 @@ pgp_error_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 		return status;
 	}
 
-	status = pgp_stream_read(*stream, data, plaintext_size);
+	status = pgp_stream_read(stream, data, plaintext_size);
 
 	free(data);
 
@@ -482,7 +482,7 @@ static pgp_error_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *s
 	}
 
 	// Read the decrypted text
-	status = pgp_stream_read(*stream, PTR_OFFSET(temp, block_size + 2), plaintext_size);
+	status = pgp_stream_read(stream, PTR_OFFSET(temp, block_size + 2), plaintext_size);
 	free(temp);
 
 	if (status != PGP_SUCCESS)
@@ -717,7 +717,7 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 	}
 
 	// Read the decrypted text
-	status = pgp_stream_read(*stream, temp, out_pos);
+	status = pgp_stream_read(stream, temp, out_pos);
 	free(temp);
 
 	if (status != PGP_SUCCESS)
@@ -1197,7 +1197,7 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 	}
 
 	// Read the decrypted text
-	status = pgp_stream_read(*stream, temp, out_pos);
+	status = pgp_stream_read(stream, temp, out_pos);
 	free(temp);
 
 	if (status != PGP_SUCCESS)

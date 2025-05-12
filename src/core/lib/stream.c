@@ -145,12 +145,14 @@ void *pgp_stream_pop(pgp_stream_t *stream)
 	return packet;
 }
 
-pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
+pgp_error_t pgp_stream_read(pgp_stream_t **out, void *data, size_t size)
 {
 	pgp_error_t error = 0;
 	size_t pos = 0;
 
-	// Check packet header validity and count the packets.
+	pgp_stream_t *stream = NULL;
+	void *result = NULL;
+
 	while (pos < size)
 	{
 		pgp_packet_header *header = NULL;
@@ -164,13 +166,15 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 			return error;
 		}
 
-		stream = pgp_stream_push(stream, packet);
+		result = pgp_stream_push(stream, packet);
 
-		if (stream == NULL)
+		if (result == NULL)
 		{
 			pgp_stream_delete(stream, pgp_packet_delete);
 			return PGP_NO_MEMORY;
 		}
+
+		stream = result;
 
 		header = packet;
 		pos += header->body_size + header->header_size;
@@ -187,13 +191,15 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 					return error;
 				}
 
-				stream = pgp_stream_push(stream, packet);
+				result = pgp_stream_push(stream, packet);
 
-				if (stream == NULL)
+				if (result == NULL)
 				{
 					pgp_stream_delete(stream, pgp_packet_delete);
 					return PGP_NO_MEMORY;
 				}
+
+				stream = result;
 
 				header = packet;
 				pos += header->body_size + header->header_size;
@@ -205,6 +211,8 @@ pgp_error_t pgp_stream_read(pgp_stream_t *stream, void *data, size_t size)
 			}
 		}
 	}
+
+	*out = stream;
 
 	return error;
 }
