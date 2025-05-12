@@ -505,7 +505,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 {
 	pgp_error_t status = 0;
 
-	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
+	uint32_t chunk_size = PGP_CHUNK_SIZE(packet->chunk_size);
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
 
@@ -623,7 +623,7 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 {
 	pgp_error_t status = 0;
 
-	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
+	uint32_t chunk_size = PGP_CHUNK_SIZE(packet->chunk_size);
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
 
@@ -1033,7 +1033,7 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 									pgp_stream_t *stream)
 {
 	pgp_error_t status = 0;
-	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
+	uint32_t chunk_size = PGP_CHUNK_SIZE(packet->chunk_size);
 
 	size_t in_pos = 0;
 	size_t out_pos = 0;
@@ -1128,7 +1128,7 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 {
 	pgp_error_t status = 0;
 
-	uint32_t chunk_size = CHUNK_SIZE(packet->chunk_size);
+	uint32_t chunk_size = PGP_CHUNK_SIZE(packet->chunk_size);
 	byte_t iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
 
 	size_t in_pos = 0;
