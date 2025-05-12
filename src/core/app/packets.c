@@ -35,7 +35,7 @@ uint32_t spgp_list_packets(void)
 		{
 			stream = spgp_read_pgp_packets(command.files->packets[i]);
 
-			pgp_stream_print(stream, str, 65536, options);
+			pgp_packet_stream_print(stream, str, 65536, options);
 			printf("%s\n", str);
 		}
 	}
@@ -43,7 +43,7 @@ uint32_t spgp_list_packets(void)
 	{
 		stream = spgp_read_pgp_packets(NULL);
 
-		pgp_stream_print(stream, str, 65536, options);
+		pgp_packet_stream_print(stream, str, 65536, options);
 		printf("%s\n", str);
 	}
 

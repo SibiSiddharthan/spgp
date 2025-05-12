@@ -83,20 +83,6 @@ pgp_stream_t *pgp_stream_clear(pgp_stream_t *stream, void (*deleter)(void *))
 	return stream;
 }
 
-size_t pgp_stream_octets(pgp_stream_t *stream)
-{
-	pgp_packet_header *header = NULL;
-	size_t size = 0;
-
-	for (uint32_t i = 0; i < stream->count; ++i)
-	{
-		header = stream->packets[i];
-		size += PGP_PACKET_OCTETS(*header);
-	}
-
-	return size;
-}
-
 pgp_stream_t *pgp_stream_push(pgp_stream_t *stream, void *packet)
 {
 	void *temp = NULL;
@@ -164,146 +150,7 @@ void *pgp_stream_remove(pgp_stream_t *stream, uint32_t index)
 	return packet;
 }
 
-pgp_stream_t *pgp_stream_filter_padding_packets(pgp_stream_t *stream)
-{
-	pgp_packet_header *header = NULL;
-	uint32_t count = 0;
-	uint32_t pos = 0;
-
-	void **temp = NULL;
-	size_t size = 0;
-
-	for (uint32_t i = 0; i < stream->count; ++i)
-	{
-		header = stream->packets[i];
-
-		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
-		{
-			count += 1;
-		}
-	}
-
-	if (count == 0)
-	{
-		// Nothing to remove
-		return stream;
-	}
-
-	size = (stream->count - count) * sizeof(void *);
-
-	if (size == 0)
-	{
-		for (uint32_t i = 0; i < stream->count; ++i)
-		{
-			pgp_packet_delete(stream->packets[i]);
-			stream->packets[i] = NULL;
-		}
-
-		stream->count = 0;
-
-		return stream;
-	}
-
-	temp = malloc(size);
-
-	if (temp == NULL)
-	{
-		return NULL;
-	}
-
-	for (uint32_t i = 0; i < stream->count; ++i)
-	{
-		header = stream->packets[i];
-
-		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
-		{
-			pgp_packet_delete(stream->packets[i]);
-			stream->packets[i] = NULL;
-
-			continue;
-		}
-
-		temp[pos++] = stream->packets[i];
-	}
-
-	stream->count -= count;
-	memset(stream->packets, 0, stream->capacity * sizeof(void *));
-	memcpy(stream->packets, temp, stream->count * sizeof(void *));
-
-	free(temp);
-
-	return stream;
-}
-
-pgp_stream_t *pgp_stream_filter_non_exportable_signatures(pgp_stream_t *stream)
-{
-	pgp_packet_header *header = NULL;
-	pgp_signature_packet *sign = NULL;
-	pgp_exportable_subpacket *exportable = NULL;
-
-	for (uint32_t i = 0; i < stream->count; ++i)
-	{
-		header = stream->packets[i];
-
-		if (pgp_packet_get_type(header->tag) == PGP_SIG)
-		{
-			pgp_subpacket_header *subheader = NULL;
-
-			sign = stream->packets[i];
-
-			// Search hashed first
-			if (sign->hashed_subpackets != NULL)
-			{
-				for (uint32_t j = 0; j < sign->hashed_subpackets->count; ++j)
-				{
-					subheader = sign->hashed_subpackets->packets[i];
-
-					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
-					{
-						exportable = sign->hashed_subpackets->packets[i];
-
-						if (exportable->state == 0)
-						{
-							goto remove_signature;
-						}
-					}
-				}
-			}
-
-			if (sign->unhashed_subpackets != NULL)
-			{
-				for (uint32_t j = 0; j < sign->unhashed_subpackets->count; ++j)
-				{
-					subheader = sign->unhashed_subpackets->packets[i];
-
-					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
-					{
-						exportable = sign->unhashed_subpackets->packets[i];
-
-						if (exportable->state == 0)
-						{
-							goto remove_signature;
-						}
-					}
-				}
-			}
-
-			continue;
-
-		remove_signature:
-			pgp_stream_remove(stream, i);
-			pgp_signature_packet_delete(sign);
-
-			--i;
-
-			continue;
-		}
-	}
-
-	return stream;
-}
-
-pgp_error_t pgp_stream_read(pgp_stream_t **stream, void *data, size_t size)
+pgp_error_t pgp_packet_stream_read(pgp_stream_t **stream, void *data, size_t size)
 {
 	pgp_error_t error = 0;
 	size_t pos = 0;
@@ -375,11 +222,11 @@ pgp_error_t pgp_stream_read(pgp_stream_t **stream, void *data, size_t size)
 	return error;
 }
 
-pgp_error_t pgp_stream_write(pgp_stream_t *stream, void **buffer, size_t *size)
+pgp_error_t pgp_packet_stream_write(pgp_stream_t *stream, void **buffer, size_t *size)
 {
 	size_t pos = 0;
 
-	*size = pgp_stream_octets(stream);
+	*size = pgp_packet_stream_octets(stream);
 	*buffer = malloc(*size);
 
 	if (*buffer == NULL)
@@ -395,7 +242,7 @@ pgp_error_t pgp_stream_write(pgp_stream_t *stream, void **buffer, size_t *size)
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_stream_read_armor(pgp_stream_t **stream, void *buffer, uint32_t buffer_size)
+pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, uint32_t buffer_size)
 {
 	pgp_error_t error = 0;
 	armor_status status = 0;
@@ -575,7 +422,7 @@ error_cleanup:
 	goto end;
 }
 
-pgp_error_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options, void **buffer, size_t *size)
+pgp_error_t pgp_packet_stream_write_armor(pgp_stream_t *stream, armor_options *options, void **buffer, size_t *size)
 {
 	pgp_error_t error = 0;
 	armor_status status = 0;
@@ -583,7 +430,7 @@ pgp_error_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options,
 	void *temp = NULL;
 	size_t temp_size = 0;
 
-	error = pgp_stream_write(stream, &temp, &temp_size);
+	error = pgp_packet_stream_write(stream, &temp, &temp_size);
 
 	if (error != PGP_SUCCESS)
 	{
@@ -627,7 +474,21 @@ pgp_error_t pgp_stream_write_armor(pgp_stream_t *stream, armor_options *options,
 	return PGP_SUCCESS;
 }
 
-size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options)
+size_t pgp_packet_stream_octets(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	size_t size = 0;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		size += PGP_PACKET_OCTETS(*header);
+	}
+
+	return size;
+}
+
+size_t pgp_packet_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options)
 {
 	size_t pos = 0;
 
@@ -643,4 +504,143 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 	}
 
 	return pos;
+}
+
+pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	uint32_t count = 0;
+	uint32_t pos = 0;
+
+	void **temp = NULL;
+	size_t size = 0;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
+		{
+			count += 1;
+		}
+	}
+
+	if (count == 0)
+	{
+		// Nothing to remove
+		return stream;
+	}
+
+	size = (stream->count - count) * sizeof(void *);
+
+	if (size == 0)
+	{
+		for (uint32_t i = 0; i < stream->count; ++i)
+		{
+			pgp_packet_delete(stream->packets[i]);
+			stream->packets[i] = NULL;
+		}
+
+		stream->count = 0;
+
+		return stream;
+	}
+
+	temp = malloc(size);
+
+	if (temp == NULL)
+	{
+		return NULL;
+	}
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
+		{
+			pgp_packet_delete(stream->packets[i]);
+			stream->packets[i] = NULL;
+
+			continue;
+		}
+
+		temp[pos++] = stream->packets[i];
+	}
+
+	stream->count -= count;
+	memset(stream->packets, 0, stream->capacity * sizeof(void *));
+	memcpy(stream->packets, temp, stream->count * sizeof(void *));
+
+	free(temp);
+
+	return stream;
+}
+
+pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	pgp_signature_packet *sign = NULL;
+	pgp_exportable_subpacket *exportable = NULL;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_SIG)
+		{
+			pgp_subpacket_header *subheader = NULL;
+
+			sign = stream->packets[i];
+
+			// Search hashed first
+			if (sign->hashed_subpackets != NULL)
+			{
+				for (uint32_t j = 0; j < sign->hashed_subpackets->count; ++j)
+				{
+					subheader = sign->hashed_subpackets->packets[i];
+
+					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
+					{
+						exportable = sign->hashed_subpackets->packets[i];
+
+						if (exportable->state == 0)
+						{
+							goto remove_signature;
+						}
+					}
+				}
+			}
+
+			if (sign->unhashed_subpackets != NULL)
+			{
+				for (uint32_t j = 0; j < sign->unhashed_subpackets->count; ++j)
+				{
+					subheader = sign->unhashed_subpackets->packets[i];
+
+					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
+					{
+						exportable = sign->unhashed_subpackets->packets[i];
+
+						if (exportable->state == 0)
+						{
+							goto remove_signature;
+						}
+					}
+				}
+			}
+
+			continue;
+
+		remove_signature:
+			pgp_stream_remove(stream, i);
+			pgp_signature_packet_delete(sign);
+
+			--i;
+
+			continue;
+		}
+	}
+
+	return stream;
 }

@@ -91,7 +91,7 @@ pgp_error_t pgp_compressed_packet_compress(pgp_compresed_packet *packet, pgp_str
 	{
 	case PGP_UNCOMPRESSED:
 	{
-		size_t data_size = pgp_stream_octets(stream);
+		size_t data_size = pgp_packet_stream_octets(stream);
 
 		packet->data_size = data_size;
 		packet->data = malloc(data_size);
@@ -126,7 +126,7 @@ pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_s
 	{
 	case PGP_UNCOMPRESSED:
 	{
-		status = pgp_stream_read(stream, packet->data, packet->data_size);
+		status = pgp_packet_stream_read(stream, packet->data, packet->data_size);
 
 		if (status != PGP_SUCCESS)
 		{

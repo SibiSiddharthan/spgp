@@ -219,11 +219,11 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 
 	if (in[0] > 128)
 	{
-		PGP_CALL(pgp_stream_read(&stream, buffer, size));
+		PGP_CALL(pgp_packet_stream_read(&stream, buffer, size));
 	}
 	else
 	{
-		PGP_CALL(pgp_stream_read_armor(&stream, buffer, size));
+		PGP_CALL(pgp_packet_stream_read_armor(&stream, buffer, size));
 	}
 
 	free(buffer);
@@ -263,11 +263,11 @@ void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_
 
 	if (options == NULL)
 	{
-		PGP_CALL(pgp_stream_write(stream, &buffer, &size));
+		PGP_CALL(pgp_packet_stream_write(stream, &buffer, &size));
 	}
 	else
 	{
-		PGP_CALL(pgp_stream_write_armor(stream, options, &buffer, &size));
+		PGP_CALL(pgp_packet_stream_write_armor(stream, options, &buffer, &size));
 	}
 
 	OS_CALL(os_write(handle, buffer, size, &write), printf("Unable to write to file"));
