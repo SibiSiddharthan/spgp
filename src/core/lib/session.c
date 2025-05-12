@@ -486,7 +486,7 @@ pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_k
 	byte_t symmetric_key_algorithm_id = packet->version == PGP_PKESK_V6 ? 0 : session_key_algorithm_id;
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	if (pgp_symmetric_cipher_algorithm_validate(session_key_algorithm_id) == 0)
 	{
@@ -502,11 +502,11 @@ pgp_error_t pgp_pkesk_packet_session_key_encrypt(pgp_pkesk_packet *packet, pgp_k
 	packet->public_key_algorithm_id = key->public_key_algorithm_id;
 	packet->symmetric_key_algorithm_id = session_key_algorithm_id;
 
-	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	status = pgp_key_fingerprint(key, fingerprint, &fingerprint_size);
 
-	if (fingerprint_size == 0)
+	if (status != PGP_SUCCESS)
 	{
-		return PGP_UNKNOWN_KEY_VERSION;
+		return status;
 	}
 
 	if (anonymous == 0)
@@ -579,9 +579,14 @@ pgp_error_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_k
 	byte_t *symmetric_key_algorithm_id = NULL;
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
-	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	status = pgp_key_fingerprint(key, fingerprint, &fingerprint_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Check whether key is corret
 	if (packet->version == PGP_PKESK_V6)

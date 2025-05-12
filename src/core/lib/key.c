@@ -3851,7 +3851,7 @@ void pgp_key_hash(void *ctx, pgp_key_packet *key)
 	}
 }
 
-uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size)
+pgp_error_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, byte_t *size)
 {
 	pgp_error_t status = 0;
 	pgp_hash_t *hctx = NULL;
@@ -3860,13 +3860,15 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 	if (key->fingerprint_size != 0)
 	{
 	cache_read:
-		if (size < key->fingerprint_size)
+		if (*size < key->fingerprint_size)
 		{
-			return 0;
+			return PGP_BUFFER_TOO_SMALL;
 		}
 
 		memcpy(fingerprint, key->fingerprint, key->fingerprint_size);
-		return key->fingerprint_size;
+		*size = key->fingerprint_size;
+
+		return PGP_SUCCESS;
 	}
 
 	switch (key->version)
@@ -3878,7 +3880,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		if (status != PGP_SUCCESS)
 		{
-			return 0;
+			return status;
 		}
 
 		pgp_key_v3_hash(hctx, key);
@@ -3894,7 +3896,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		if (status != PGP_SUCCESS)
 		{
-			return 0;
+			return status;
 		}
 
 		pgp_key_v4_hash(hctx, key);
@@ -3910,7 +3912,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		if (status != PGP_SUCCESS)
 		{
-			return 0;
+			return status;
 		}
 
 		pgp_key_v5_hash(hctx, key);
@@ -3926,7 +3928,7 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 
 		if (status != PGP_SUCCESS)
 		{
-			return 0;
+			return status;
 		}
 
 		pgp_key_v6_hash(hctx, key);
@@ -3937,30 +3939,33 @@ uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t si
 		goto cache_read;
 	}
 	default:
-		return 0;
+		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
-	return 0;
+	// Unreachable
+	return PGP_INTERNAL_BUG;
 }
 
-uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE])
+pgp_error_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE])
 {
+	pgp_error_t status = 0;
+
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	if (key->version > 3)
 	{
-		size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+		status = pgp_key_fingerprint(key, fingerprint, &fingerprint_size);
 
-		if (size == 0)
+		if (status != PGP_SUCCESS)
 		{
-			return 0;
+			return status;
 		}
 
 		if (key->version == PGP_KEY_V4 || key->version == PGP_KEY_V6)
 		{
 			// Low 64 bits of fingerprint
-			LOAD_64(id, PTR_OFFSET(fingerprint, size - 8));
+			LOAD_64(id, PTR_OFFSET(fingerprint, fingerprint_size - 8));
 			return 8;
 		}
 

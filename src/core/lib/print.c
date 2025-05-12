@@ -2435,7 +2435,7 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 {
 	size_t pos = 0;
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
 
@@ -2445,8 +2445,10 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 	pos += print_capabilities(packet->capabilities, PTR_OFFSET(str, pos), size - pos, 1);
 	pos += print_flags(packet->flags, PTR_OFFSET(str, pos), size - pos, 1);
 
-	fingerprint_size = pgp_key_fingerprint(packet, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-	pos += print_key(1, PTR_OFFSET(str, pos), size - pos, fingerprint, fingerprint_size);
+	if (pgp_key_fingerprint(packet, fingerprint, &fingerprint_size) == PGP_SUCCESS)
+	{
+		pos += print_key(1, PTR_OFFSET(str, pos), size - pos, fingerprint, fingerprint_size);
+	}
 
 	pos += print_timestamp(1, "Key Creation Time", packet->key_creation_time, PTR_OFFSET(str, pos), size - pos);
 

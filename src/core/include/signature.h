@@ -13,6 +13,7 @@
 #include <packet.h>
 #include <stream.h>
 #include <mpi.h>
+#include <key.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5.2 Signature Packet
 

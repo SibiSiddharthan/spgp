@@ -3429,11 +3429,18 @@ static uint32_t pgp_compute_hash(void *ctx, byte_t hash[64], pgp_signature_packe
 
 static pgp_error_t pgp_setup_sign_info(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *info)
 {
+	pgp_error_t status = 0;
+
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	// Calculate issuer key fingerprint
-	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	status = pgp_key_fingerprint(key, fingerprint, &fingerprint_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Add only the signature_creation_time and issuer_fingerprint subpackets
 	if (info == NULL)

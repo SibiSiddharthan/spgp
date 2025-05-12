@@ -230,8 +230,8 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 byte_t pgp_key_fingerprint_size(byte_t version);
 
 void pgp_key_hash(void *ctx, pgp_key_packet *key);
-uint32_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, uint32_t size);
-uint32_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE]);
+pgp_error_t pgp_key_fingerprint(pgp_key_packet *key, void *fingerprint, byte_t *size);
+pgp_error_t pgp_key_id(pgp_key_packet *key, byte_t id[PGP_KEY_ID_SIZE]);
 uint32_t pgp_key_id_from_fingerprint(pgp_key_version version, byte_t id[PGP_KEY_ID_SIZE], void *fingerprint, uint32_t size);
 
 pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, byte_t capabilities, byte_t flags,

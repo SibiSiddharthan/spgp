@@ -106,11 +106,11 @@ pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_S
 void spgp_write_certificate(pgp_stream_t *stream)
 {
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	char filename[256] = {0};
 
-	fingerprint_size = pgp_key_fingerprint(stream->packets[0], fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	PGP_CALL(pgp_key_fingerprint(stream->packets[0], fingerprint, &fingerprint_size));
 	get_cert_filename(filename, fingerprint, fingerprint_size);
 
 	spgp_write_pgp_packets(filename, stream, NULL);
@@ -145,13 +145,13 @@ void spgp_write_key(pgp_key_packet *key)
 	size_t result = 0;
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	char buffer[16384] = {0};
 	char filename[256] = {0};
 	uint32_t length = 0;
 
-	fingerprint_size = pgp_key_fingerprint(key, fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	PGP_CALL(pgp_key_fingerprint(key, fingerprint, &fingerprint_size));
 	length = get_key_filename(filename, fingerprint, fingerprint_size);
 
 	pgp_key_packet_write(key, buffer, 16384);
@@ -330,6 +330,7 @@ void spgp_import_keys(void)
 	pgp_user_info *uinfo = NULL;
 
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t primary_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	void *file = NULL;
 
@@ -344,8 +345,9 @@ void spgp_import_keys(void)
 	uid = key_stream->packets[1];
 	sign = key_stream->packets[2];
 
-	pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-	pgp_key_packet_make_definition(key, sign);
+	PGP_CALL(pgp_key_fingerprint(key, primary_fingerprint, &primary_fingerprint_size));
+	PGP_CALL(pgp_key_packet_make_definition(key, sign));
+
 	spgp_write_key(key);
 
 	status = pgp_verify_certificate_binding_signature(sign, key, uid);
@@ -384,9 +386,10 @@ void spgp_import_keys(void)
 			pgp_signature_packet *subsign = NULL;
 
 			byte_t subkey_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+			byte_t subkey_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
-			pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-			pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
+			PGP_CALL(pgp_key_fingerprint(subkey, subkey_fingerprint, &subkey_fingerprint_size));
+			PGP_CALL(pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint));
 
 			if ((i + 1) < key_stream->count)
 			{
@@ -723,7 +726,7 @@ uint32_t spgp_list_keys(void)
 pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *key)
 {
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	char passphrase_env[128] = {0};
 	void *passphrase = NULL;
@@ -734,7 +737,7 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 		return key;
 	}
 
-	fingerprint_size = pgp_key_fingerprint(key, fingerprint, fingerprint_size);
+	PGP_CALL(pgp_key_fingerprint(key, fingerprint, &fingerprint_size));
 	get_key_passphrase_env(passphrase_env, fingerprint, fingerprint_size);
 
 	passphrase = getenv(passphrase_env);

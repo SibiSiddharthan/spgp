@@ -350,7 +350,7 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	pgp_signature_type sig_type = command.textmode ? PGP_TEXT_SIGNATURE : PGP_BINARY_SIGNATURE;
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	STREAM_CALL(stream = pgp_stream_new((count * 2) + 1));
 
@@ -361,7 +361,7 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 
 		ops = NULL;
 
-		fingerprint_size = pgp_key_fingerprint(keys[j], fingerprint, fingerprint_size);
+		PGP_CALL(pgp_key_fingerprint(keys[j], fingerprint, &fingerprint_size));
 		sinfo[j] = spgp_create_sign_info(keys[j], uinfos[j], sig_type);
 
 		// Only the last one pass packet will have the nested flag set.
