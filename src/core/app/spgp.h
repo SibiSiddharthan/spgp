@@ -63,6 +63,15 @@
 		}                                            \
 	}
 
+#define STREAM_CALL(EXPR)              \
+	{                                  \
+		if ((EXPR) == NULL)            \
+		{                              \
+			printf("Out of Memory\n"); \
+			exit(1);                   \
+		}                              \
+	}
+
 #define OS_HANDLE_AS_UINT(HANDLE) ((uint32_t)(uintptr_t)(HANDLE))
 
 typedef enum _spgp_mode

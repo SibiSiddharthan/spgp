@@ -282,17 +282,12 @@ static pgp_sign_info *spgp_create_sign_info(pgp_key_packet *key, pgp_user_info *
 
 static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
-	pgp_stream_t *stream = pgp_stream_new(count);
+	pgp_stream_t *stream = NULL;
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_sign_info *sinfo = NULL;
 
-	if (stream == NULL)
-	{
-		printf("No memory");
-		exit(1);
-	}
-
+	STREAM_CALL(stream = pgp_stream_new(count));
 	literal = spgp_literal_read_file(file, PGP_LITERAL_DATA_BINARY);
 
 	for (uint32_t i = 0; i < count; ++i)
@@ -315,19 +310,14 @@ static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info 
 
 static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
-	pgp_stream_t *stream = pgp_stream_new(count);
+	pgp_stream_t *stream = NULL;
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_sign_info *sinfo = NULL;
 
-	if (stream == NULL)
-	{
-		printf("No memory");
-		exit(1);
-	}
+	STREAM_CALL(stream = pgp_stream_new(count));
 
 	// TODO (Write the data as cleartext)
-
 	literal = spgp_literal_read_file(file, PGP_LITERAL_DATA_TEXT);
 
 	for (uint32_t i = 0; i < count; ++i)
@@ -350,7 +340,7 @@ static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info *
 
 static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
-	pgp_stream_t *stream = pgp_stream_new((count * 2) + 1);
+	pgp_stream_t *stream = NULL;
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_one_pass_signature_packet *ops = NULL;
@@ -362,11 +352,7 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
 
-	if (stream == NULL)
-	{
-		printf("No memory");
-		exit(1);
-	}
+	STREAM_CALL(stream = pgp_stream_new((count * 2) + 1));
 
 	// Generate one pass signatures (last to first)
 	for (uint32_t i = 0; i < count; ++i)
@@ -410,18 +396,14 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 
 static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
-	pgp_stream_t *stream = pgp_stream_new(count + 1);
+	pgp_stream_t *stream = NULL;
 	pgp_literal_packet *literal = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_sign_info *sinfo = NULL;
 
 	pgp_signature_type sig_type = command.textmode ? PGP_TEXT_SIGNATURE : PGP_BINARY_SIGNATURE;
 
-	if (stream == NULL)
-	{
-		printf("No memory");
-		exit(1);
-	}
+	STREAM_CALL(stream = pgp_stream_new(count + 1));
 
 	// Generate the signatures (first to last)
 	for (uint32_t i = 0; i < count; ++i)

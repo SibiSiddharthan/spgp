@@ -641,13 +641,8 @@ uint32_t spgp_generate_key(void)
 	}
 
 	// Create the certificate
-	certificate = pgp_stream_new(3 + (count * 2));
+	STREAM_CALL(certificate = pgp_stream_new(3 + ((count - 1) * 2)));
 
-	if (certificate == NULL)
-	{
-		printf("No memory");
-		exit(1);
-	}
 
 	pgp_stream_push(certificate, key_packets[0]);
 	pgp_stream_push(certificate, user);
