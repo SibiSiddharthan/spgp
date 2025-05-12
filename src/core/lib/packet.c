@@ -14,6 +14,7 @@
 #include <signature.h>
 
 #include <bitscan.h>
+#include <popcount.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -133,11 +134,6 @@ pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_forma
 	header.header_size = get_packet_header_size(header_format, 0, body_size);
 	header.body_size = body_size;
 
-	if (body_size > 4294967295)
-	{
-		header.partial = 1;
-	}
-
 	return header;
 }
 
@@ -174,8 +170,46 @@ pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critica
 
 pgp_partial_header pgp_encode_partial_header(uint32_t body_size)
 {
-	// TODO
-	return (pgp_partial_header){0};
+	pgp_partial_header header = {0};
+
+	if (body_size > PGP_SPLIT_SIZE(PGP_MAX_SPLIT_SIZE))
+	{
+		header.header_size = 5;
+		header.body_size = body_size;
+		header.partial_end = 1;
+	}
+	else
+	{
+		if (POPCOUNT_32(body_size) == 1)
+		{
+			header.header_size = 1;
+			header.body_size = body_size;
+			header.partial_continue = 1;
+		}
+		else
+		{
+			// 1 octed length
+			if (body_size < 192)
+			{
+				header.header_size = 1;
+			}
+			// 2 octet legnth
+			else if (body_size < 8384)
+			{
+				header.header_size = 2;
+			}
+			// 5 octet length
+			else
+			{
+				header.header_size = 5;
+			}
+
+			header.body_size = body_size;
+			header.partial_end = 1;
+		}
+	}
+
+	return header;
 }
 
 pgp_packet_type pgp_packet_get_type(byte_t tag)
@@ -627,15 +661,16 @@ uint32_t pgp_partial_header_write(pgp_partial_header *header, void *ptr)
 	uint32_t pos = 0;
 
 	// Partial continue
-	if (header->partial)
+	if (header->partial_continue)
 	{
 		uint8_t size = BSR_32(header->body_size) + 224;
 
 		LOAD_8(out + pos, &size);
 		pos += 1;
 	}
+
 	// Partial end
-	else
+	if (header->partial_end)
 	{
 		// 1 octed length
 		if (header->body_size < 192)
