@@ -30,7 +30,7 @@ static size_t pgp_stream_write_internal(pgp_stream_t *stream, void *buffer, size
 	return pos;
 }
 
-static void pgp_compressed_packet_encode_header(pgp_compresed_packet *packet, pgp_packet_header_format header_format)
+static void pgp_compressed_packet_encode_header(pgp_compresed_packet *packet, pgp_packet_header_format header_format, byte_t partial)
 {
 	uint32_t body_size = 0;
 
@@ -43,7 +43,7 @@ static void pgp_compressed_packet_encode_header(pgp_compresed_packet *packet, pg
 	// N bytes of compressed data
 
 	body_size = 1 + packet->data_size;
-	packet->header = pgp_encode_packet_header(header_format, PGP_COMP, body_size);
+	packet->header = pgp_encode_packet_header(header_format, PGP_COMP, partial, body_size);
 }
 
 pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t header_format, byte_t compression_algorithm_id)
@@ -71,7 +71,7 @@ pgp_error_t pgp_compressed_packet_new(pgp_compresed_packet **packet, byte_t head
 	memset(compressed, 0, sizeof(pgp_compresed_packet));
 
 	compressed->compression_algorithm_id = compression_algorithm_id;
-	pgp_compressed_packet_encode_header(compressed, header_format);
+	pgp_compressed_packet_encode_header(compressed, header_format, 0);
 
 	*packet = compressed;
 
@@ -104,7 +104,7 @@ pgp_error_t pgp_compressed_packet_compress(pgp_compresed_packet *packet, pgp_str
 		pgp_stream_write_internal(stream, packet->data, data_size);
 
 		// Set the header
-		pgp_compressed_packet_encode_header(packet, 0);
+		pgp_compressed_packet_encode_header(packet, 0, 0);
 
 		return PGP_SUCCESS;
 	}
@@ -204,8 +204,7 @@ pgp_error_t pgp_compressed_packet_collate(pgp_compresed_packet *packet)
 	packet->partials = NULL;
 
 	// Update the header
-	pgp_compressed_packet_encode_header(packet, 0);
-	packet->header.partial = 0;
+	pgp_compressed_packet_encode_header(packet, 0, 0);
 
 	return PGP_SUCCESS;
 }
@@ -251,7 +250,7 @@ pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t spl
 	packet->data_size = start_size - (PGP_PACKET_OCTETS(packet->header) - packet->data_size);
 
 	// Update the header
-	pgp_compressed_packet_encode_header(packet, PGP_HEADER);
+	pgp_compressed_packet_encode_header(packet, PGP_HEADER, 1);
 
 	return PGP_SUCCESS;
 }
@@ -384,7 +383,7 @@ pgp_error_t pgp_marker_packet_new(pgp_marker_packet **packet, byte_t header_form
 	memset(packet, 0, sizeof(pgp_marker_packet));
 
 	// 3 octets of marker
-	marker->header = pgp_encode_packet_header(header_format, PGP_MARKER, 3);
+	marker->header = pgp_encode_packet_header(header_format, PGP_MARKER, 0, 3);
 
 	// Set the marker
 	marker->marker[0] = 0x50; // P
@@ -497,7 +496,7 @@ static void pgp_literal_packet_encode_header(pgp_literal_packet *packet, pgp_pac
 	// Literal data
 
 	body_size = 1 + 1 + 4 + packet->filename_size + packet->data_size;
-	packet->header = pgp_encode_packet_header(header_format, PGP_LIT, body_size);
+	packet->header = pgp_encode_packet_header(header_format, PGP_LIT, 0, body_size);
 }
 
 pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_format, uint32_t date, void *filename, byte_t filename_size)
@@ -893,7 +892,7 @@ pgp_error_t pgp_user_id_packet_new(pgp_user_id_packet **packet, byte_t header_fo
 
 	// N octets of user data
 	memcpy(uid->user_data, user, user_size);
-	uid->header = pgp_encode_packet_header(header_format, PGP_UID, user_size);
+	uid->header = pgp_encode_packet_header(header_format, PGP_UID, 0, user_size);
 
 	*packet = uid;
 
@@ -1153,7 +1152,7 @@ static void pgp_user_attribute_subpacket_delete(void *subpacket)
 static void pgp_user_attribute_encode_header(pgp_user_attribute_packet *packet)
 {
 	// N octets of subpackets
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_UAT, packet->subpacket_octets);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_UAT, 0, packet->subpacket_octets);
 }
 
 pgp_error_t pgp_user_attribute_packet_new(pgp_user_attribute_packet **packet)
@@ -1491,7 +1490,7 @@ pgp_error_t pgp_padding_packet_new(pgp_padding_packet **packet, void *data, uint
 	}
 
 	// N octets of padding data
-	padding->header = pgp_encode_packet_header(PGP_HEADER, PGP_PADDING, size);
+	padding->header = pgp_encode_packet_header(PGP_HEADER, PGP_PADDING, 0, size);
 
 	*packet = padding;
 
@@ -1588,7 +1587,7 @@ pgp_error_t pgp_mdc_packet_new(pgp_mdc_packet **packet, byte_t hash[20])
 	memset(mdc, 0, sizeof(pgp_mdc_packet));
 	memcpy(mdc->sha1_hash, hash, 20);
 
-	mdc->header = pgp_encode_packet_header(PGP_HEADER, PGP_MDC, 20);
+	mdc->header = pgp_encode_packet_header(PGP_HEADER, PGP_MDC, 0, 20);
 
 	*packet = mdc;
 
@@ -1698,7 +1697,7 @@ pgp_error_t pgp_trust_packet_new(pgp_trust_packet **packet, byte_t header_format
 	}
 
 	memset(trust, 0, sizeof(pgp_trust_packet));
-	trust->header = pgp_encode_packet_header(header_format, PGP_TRUST, 1);
+	trust->header = pgp_encode_packet_header(header_format, PGP_TRUST, 0, 1);
 	trust->level = trust_level;
 
 	*packet = trust;
@@ -1796,7 +1795,7 @@ static void pgp_keyring_packet_encode_header(pgp_keyring_packet *packet)
 	// N octets of user data.
 
 	body_size = 1 + 4 + 4 + packet->fingerprint_size + packet->subkey_size + packet->user_size;
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING, body_size);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING, 0, body_size);
 }
 
 pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version,

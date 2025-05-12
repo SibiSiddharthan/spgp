@@ -91,7 +91,7 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	}
 
 	// N bytes of symmetrically encryrpted data
-	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, total_data_size);
+	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, 0, total_data_size);
 
 	// Generate the IV
 	result = pgp_rand(message_iv, iv_size);
@@ -290,7 +290,7 @@ static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
 		// Authentication tag
 
 		body_size = 1 + 1 + 1 + 1 + 32 + packet->data_size + packet->tag_size;
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, body_size);
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, 0, body_size);
 	}
 
 	if (packet->version == PGP_SEIPD_V1)
@@ -300,7 +300,7 @@ static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
 		// N octets of symmetrically encryrpted data
 
 		body_size = 1 + packet->data_size;
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, body_size);
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, 0, body_size);
 	}
 }
 
@@ -980,7 +980,7 @@ static void pgp_aead_packet_encode_header(pgp_aead_packet *packet)
 	// Authentication tag
 
 	body_size = 1 + 1 + 1 + 1 + packet->iv_size + packet->data_size + packet->tag_size;
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_AEAD, body_size);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_AEAD, 0, body_size);
 }
 
 pgp_error_t pgp_aead_packet_new(pgp_aead_packet **packet, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size)

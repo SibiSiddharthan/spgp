@@ -276,7 +276,7 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr);
 pgp_error_t pgp_partial_header_read(pgp_partial_header *header, void *data, size_t size);
 uint32_t pgp_partial_header_write(pgp_partial_header *header, void *ptr);
 
-pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size);
+pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, byte_t partial, size_t body_size);
 pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critical, uint32_t body_size);
 pgp_partial_header pgp_encode_partial_header(uint32_t body_size);
 

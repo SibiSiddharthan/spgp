@@ -126,13 +126,23 @@ static byte_t get_packet_tag(pgp_packet_header_format header_type, pgp_packet_ty
 	return tag;
 }
 
-pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, size_t body_size)
+pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, byte_t partial,
+										   size_t body_size)
 {
 	pgp_packet_header header = {0};
 
-	header.tag = get_packet_tag(header_format, packet_type, 0, body_size);
-	header.header_size = get_packet_header_size(header_format, 0, body_size);
+	header.tag = get_packet_tag(header_format, packet_type, partial, body_size);
+	header.header_size = get_packet_header_size(header_format, partial, body_size);
 	header.body_size = body_size;
+
+	if (header_format == PGP_HEADER)
+	{
+		header.partial_begin = 1;
+	}
+	else
+	{
+		header.partial_legacy = 1;
+	}
 
 	return header;
 }
@@ -417,6 +427,8 @@ uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr)
 
 			LOAD_8(out + pos, &size);
 			pos += 1;
+
+			return pos;
 		}
 
 		// 1 octed length

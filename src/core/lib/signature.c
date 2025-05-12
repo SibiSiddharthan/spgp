@@ -121,12 +121,12 @@ pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **pa
 
 		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
 
-		ops->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
+		ops->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 0, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
 	}
 	else // packet->version == PGP_ONE_PASS_SIGNATURE_V3
 	{
 		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
-		ops->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 5 + PGP_KEY_ID_SIZE);
+		ops->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 0, 5 + PGP_KEY_ID_SIZE);
 	}
 
 	*packet = ops;
@@ -1482,7 +1482,7 @@ static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
 
 		body_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets;
 		body_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, body_size);
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, 0, body_size);
 	}
 	else
 	{
@@ -1497,7 +1497,7 @@ static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
 		// One or more MPIs comprising the signature
 
 		body_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + packet->signature_octets;
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, body_size);
+		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, 0, body_size);
 	}
 }
 
