@@ -36,4 +36,8 @@ size_t pgp_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_
 pgp_stream_t *pgp_stream_push(pgp_stream_t *stream, void *packet);
 void *pgp_stream_pop(pgp_stream_t *stream);
 
+pgp_stream_t *pgp_stream_filter_padding_packets(pgp_stream_t *stream);
+pgp_stream_t *pgp_stream_filter_non_exportable_signatures(pgp_stream_t *stream);
+
+
 #endif

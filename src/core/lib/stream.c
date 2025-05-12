@@ -9,6 +9,7 @@
 #include <armor.h>
 #include <packet.h>
 #include <stream.h>
+#include <signature.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -143,6 +144,77 @@ void *pgp_stream_pop(pgp_stream_t *stream)
 	stream->count -= 1;
 
 	return packet;
+}
+
+pgp_stream_t *pgp_stream_filter_padding_packets(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+	uint32_t count = 0;
+	uint32_t pos = 0;
+
+	void **temp = NULL;
+	size_t size = 0;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
+		{
+			count += 1;
+		}
+	}
+
+	if (count == 0)
+	{
+		// Nothing to remove
+		return stream;
+	}
+
+	size = (stream->count - count) * sizeof(void *);
+
+	if (size == 0)
+	{
+		for (uint32_t i = 0; i < stream->count; ++i)
+		{
+			pgp_packet_delete(stream->packets[i]);
+			stream->packets[i] = NULL;
+		}
+
+		stream->count = 0;
+
+		return stream;
+	}
+
+	temp = malloc(size);
+
+	if (temp == NULL)
+	{
+		return NULL;
+	}
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
+		{
+			pgp_packet_delete(stream->packets[i]);
+			stream->packets[i] = NULL;
+
+			continue;
+		}
+
+		temp[pos++] = stream->packets[i];
+	}
+
+	stream->count -= count;
+	memset(stream->packets, 0, stream->capacity * sizeof(void *));
+	memcpy(stream->packets, temp, stream->count * sizeof(void *));
+
+	free(temp);
+
+	return stream;
 }
 
 pgp_error_t pgp_stream_read(pgp_stream_t **stream, void *data, size_t size)
