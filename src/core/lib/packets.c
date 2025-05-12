@@ -1698,7 +1698,8 @@ static void pgp_keyring_packet_encode_header(pgp_keyring_packet *packet)
 	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_KEYRING, body_size);
 }
 
-pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t primary_key[32], pgp_user_info *user)
+pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version,
+								   byte_t primary_key_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], pgp_user_info *user)
 {
 	pgp_error_t status = 0;
 	pgp_keyring_packet *keyring = NULL;
@@ -1726,7 +1727,7 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 	keyring->key_version = key_version;
 
 	keyring->fingerprint_size = pgp_key_fingerprint_size(key_version);
-	memcpy(keyring->primary_fingerprint, primary_key, keyring->fingerprint_size);
+	memcpy(keyring->primary_fingerprint, primary_key_fingerprint, keyring->fingerprint_size);
 
 	// Add the user information (will also encode the header)
 	status = pgp_keyring_packet_add_user(keyring, user);
@@ -1807,7 +1808,7 @@ void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uin
 	pgp_keyring_packet_encode_header(packet);
 }
 
-pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32])
+pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 	if ((packet->subkey_capacity - packet->subkey_size) < packet->fingerprint_size)
 	{
@@ -1847,7 +1848,7 @@ pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t sub
 	return PGP_SUCCESS;
 }
 
-void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32])
+void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 	// Find the subkey
 	for (byte_t i = 0; i < packet->subkey_count; ++i)

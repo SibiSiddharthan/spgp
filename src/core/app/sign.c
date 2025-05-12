@@ -540,8 +540,6 @@ void spgp_sign(void)
 	}
 
 	spgp_write_pgp_packets(command.output, signatures, opts);
-
-	exit(0);
 }
 
 uint32_t spgp_verify(spgp_command *command)

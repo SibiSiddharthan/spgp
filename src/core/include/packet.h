@@ -371,14 +371,15 @@ size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
 size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
 
 // Keyring Packet
-pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version, byte_t primary_key[32], pgp_user_info *user);
+pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version,
+								   byte_t primary_key_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], pgp_user_info *user);
 void pgp_keyring_packet_delete(pgp_keyring_packet *packet);
 
 pgp_error_t pgp_keyring_packet_add_user(pgp_keyring_packet *packet, pgp_user_info *user);
 void pgp_keyring_packet_remove_user(pgp_keyring_packet *packet, byte_t *uid, uint32_t uid_size);
 
-pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
-void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[32]);
+pgp_error_t pgp_keyring_packet_add_subkey(pgp_keyring_packet *packet, byte_t subkey[PGP_KEY_MAX_FINGERPRINT_SIZE]);
+void pgp_keyring_packet_remove_subkey(pgp_keyring_packet *packet, byte_t subkey[PGP_KEY_MAX_FINGERPRINT_SIZE]);
 
 pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input, uint32_t size);
 

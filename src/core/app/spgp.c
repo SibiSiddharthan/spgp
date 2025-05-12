@@ -396,12 +396,6 @@ void spgp_initialize_home(spgp_command *spgp)
 	}
 }
 
-byte_t *spgp_prompt_passphrase(void)
-{
-	// TODO
-	return NULL;
-}
-
 static uint32_t spgp_execute_operation(spgp_command *command)
 {
 	if (command->list_packets || command->dump_packets)
@@ -431,7 +425,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->import_keys)
 	{
-		return spgp_import_keys(command);
+		spgp_import_keys();
 	}
 
 	if (command->generate_key)

@@ -4150,7 +4150,7 @@ pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet,
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_verify_key_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey)
+pgp_error_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *subkey)
 {
 	pgp_error_t error = 0;
 

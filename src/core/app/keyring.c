@@ -167,11 +167,6 @@ static void spgp_import_certificates(pgp_stream_t *stream)
 	pgp_packet_header *header = NULL;
 	pgp_packet_type type = 0;
 
-	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = 0;
-
-	fingerprint_size = pgp_key_fingerprint(stream->packets[0], fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
-
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
@@ -181,22 +176,22 @@ static void spgp_import_certificates(pgp_stream_t *stream)
 		{
 			if (i == 0)
 			{
-				pgp_key_packet_transform(stream->packets[i], PGP_PUBKEY);
+				PGP_CALL(pgp_key_packet_transform(stream->packets[i], PGP_PUBKEY));
 			}
 			else
 			{
-				pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY);
+				PGP_CALL(pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY));
 			}
 		}
 
 		if (type == PGP_SECKEY)
 		{
-			pgp_key_packet_transform(stream->packets[i], PGP_PUBKEY);
+			PGP_CALL(pgp_key_packet_transform(stream->packets[i], PGP_PUBKEY));
 		}
 
 		if (type == PGP_SECSUBKEY)
 		{
-			pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY);
+			PGP_CALL(pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY));
 		}
 	}
 
@@ -307,44 +302,40 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
 		}
 		else
 		{
-			// free(stream);
 			return 1;
 		}
 	}
 	else
 	{
-		stream = pgp_stream_push(stream, key);
-
-		if (stream == NULL)
-		{
-			printf("Unable to add keyring.\n");
-			exit(1);
-		}
+		STREAM_CALL(stream = pgp_stream_push(stream, key));
 	}
 
-	os_seek(command.keyring, 0, SEEK_SET);
-	os_truncate(command.keyring, NULL, 0, 0);
+	OS_CALL(os_seek(command.keyring, 0, SEEK_SET), printf("Unable to seek keyring"));
+	OS_CALL(os_truncate(command.keyring, NULL, 0, 0), printf("Unable to trucate keyring"));
+
 	spgp_write_pgp_packets_handle(command.keyring, stream, NULL);
 
 	return 0;
 }
 
-uint32_t spgp_import_keys(spgp_command *command)
+void spgp_import_keys(void)
 {
+	pgp_error_t status = 0;
+
 	pgp_stream_t *key_stream = NULL;
 	pgp_key_packet *key = NULL;
 	pgp_user_id_packet *uid = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_keyring_packet *keyring_packet = NULL;
+	pgp_user_info *uinfo = NULL;
 
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t primary_fingerprint_size = 0;
 
 	void *file = NULL;
 
-	if (command->files != NULL)
+	if (command.files != NULL)
 	{
-		file = command->files->packets[0];
+		file = command.files->packets[0];
 	}
 
 	key_stream = spgp_read_pgp_packets(file);
@@ -353,12 +344,13 @@ uint32_t spgp_import_keys(spgp_command *command)
 	uid = key_stream->packets[1];
 	sign = key_stream->packets[2];
 
-	primary_fingerprint_size = pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+	pgp_key_fingerprint(key, primary_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 	pgp_key_packet_make_definition(key, sign);
 	spgp_write_key(key);
 
-	uint32_t result = pgp_verify_signature(sign, key, uid);
-	if (result == 1)
+	status = pgp_verify_certificate_binding_signature(sign, key, uid);
+
+	if (status == 1)
 	{
 		printf("Good Certification Signature.\n");
 	}
@@ -368,7 +360,10 @@ uint32_t spgp_import_keys(spgp_command *command)
 		exit(1);
 	}
 
-	// pgp_keyring_packet_new(&keyring_packet, key->version, PGP_TRUST_FULL, primary_fingerprint, uid->user_data, uid->header.body_size);
+	PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
+	PGP_CALL(pgp_keyring_packet_new(&keyring_packet, key->version, primary_fingerprint, uinfo));
+
+	uinfo = NULL;
 
 	for (uint32_t i = 3; i < key_stream->count; ++i)
 	{
@@ -379,7 +374,8 @@ uint32_t spgp_import_keys(spgp_command *command)
 		{
 			pgp_user_id_packet *other_uid = key_stream->packets[i];
 
-			// pgp_keyring_packet_add_user(keyring_packet, other_uid->user_data, other_uid->header.body_size);
+			PGP_CALL(pgp_user_info_from_certificate(&uinfo, other_uid, sign));
+			PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
 		}
 
 		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
@@ -388,9 +384,8 @@ uint32_t spgp_import_keys(spgp_command *command)
 			pgp_signature_packet *subsign = NULL;
 
 			byte_t subkey_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-			byte_t subkey_fingerprint_size = 0;
 
-			subkey_fingerprint_size = pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
+			pgp_key_fingerprint(subkey, subkey_fingerprint, PGP_KEY_MAX_FINGERPRINT_SIZE);
 			pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint);
 
 			if ((i + 1) < key_stream->count)
@@ -406,7 +401,8 @@ uint32_t spgp_import_keys(spgp_command *command)
 
 			spgp_write_key(subkey);
 
-			uint32_t result = pgp_verify_signature(subsign, key, subkey);
+			uint32_t result = pgp_verify_subkey_binding_signature(subsign, key, subkey);
+
 			if (result == 1)
 			{
 				printf("Good Subkey Binding Signature.\n");
@@ -422,8 +418,6 @@ uint32_t spgp_import_keys(spgp_command *command)
 	spgp_import_certificates(key_stream);
 
 	pgp_keyring_packet_delete(keyring_packet);
-
-	return 0;
 }
 
 static size_t print_prefix(byte_t primary, byte_t secret, void *str, size_t size)
@@ -770,4 +764,10 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	PGP_CALL(pgp_key_packet_decrypt(key, passphrase, strlen(passphrase)));
 
 	return key;
+}
+
+byte_t *spgp_prompt_passphrase(void)
+{
+	// TODO
+	return NULL;
 }
