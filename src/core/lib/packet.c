@@ -268,25 +268,6 @@ pgp_packet_type pgp_packet_get_type(byte_t tag)
 	return ptype;
 }
 
-uint32_t pgp_subpacket_stream_octets(pgp_stream_t *stream)
-{
-	pgp_subpacket_header *header = NULL;
-	uint32_t count = 0;
-
-	if (stream == NULL)
-	{
-		return 0;
-	}
-
-	for (uint32_t i = 0; i < stream->count; ++i)
-	{
-		header = stream->packets[i];
-		count += header->body_size + header->header_size;
-	}
-
-	return count;
-}
-
 pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t size)
 {
 	byte_t *in = data;

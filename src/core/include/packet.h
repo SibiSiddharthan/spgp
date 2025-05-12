@@ -282,8 +282,6 @@ pgp_partial_header pgp_encode_partial_header(uint32_t body_size);
 
 pgp_packet_type pgp_packet_get_type(byte_t tag);
 
-uint32_t pgp_subpacket_stream_octets(pgp_stream_t *stream);
-
 pgp_error_t pgp_packet_read(void **packet, void *data, size_t size);
 size_t pgp_packet_write(void *packet, void *ptr, size_t size);
 size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options);
