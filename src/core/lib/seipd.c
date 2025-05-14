@@ -295,7 +295,16 @@ size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
 	byte_t *out = ptr;
 	size_t pos = 0;
 
-	if (size < PGP_PACKET_OCTETS(packet->header))
+	size_t required_size = 0;
+
+	required_size = PGP_PACKET_OCTETS(packet->header);
+
+	if (packet->partials != NULL)
+	{
+		required_size += pgp_packet_stream_octets(packet->partials);
+	}
+
+	if (size < required_size)
 	{
 		return 0;
 	}
@@ -306,6 +315,14 @@ size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
 	// Data
 	memcpy(out + pos, packet->data, packet->data_size);
 	pos += packet->data_size;
+
+	if (packet->partials != NULL)
+	{
+		for (uint32_t i = 0; i < packet->partials->count; ++i)
+		{
+			pos += pgp_partial_packet_write(packet->partials->packets[i], out + pos, size - pos);
+		}
+	}
 
 	return pos;
 }
@@ -961,11 +978,6 @@ static size_t pgp_seipd_packet_v1_write(pgp_seipd_packet *packet, void *ptr, siz
 	byte_t *out = ptr;
 	size_t pos = 0;
 
-	if (size < PGP_PACKET_OCTETS(packet->header))
-	{
-		return 0;
-	}
-
 	// Header
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
@@ -977,6 +989,15 @@ static size_t pgp_seipd_packet_v1_write(pgp_seipd_packet *packet, void *ptr, siz
 	memcpy(out + pos, packet->data, packet->data_size);
 	pos += packet->data_size;
 
+	// Write the partials
+	if (packet->partials != NULL)
+	{
+		for (uint32_t i = 0; i < packet->partials->count; ++i)
+		{
+			pos += pgp_partial_packet_write(packet->partials->packets[i], out + pos, size - pos);
+		}
+	}
+
 	return pos;
 }
 
@@ -984,11 +1005,6 @@ static size_t pgp_seipd_packet_v2_write(pgp_seipd_packet *packet, void *ptr, siz
 {
 	byte_t *out = ptr;
 	size_t pos = 0;
-
-	if (size < PGP_PACKET_OCTETS(packet->header))
-	{
-		return 0;
-	}
 
 	// Header
 	pos += pgp_packet_header_write(&packet->header, out + pos);
@@ -1017,15 +1033,40 @@ static size_t pgp_seipd_packet_v2_write(pgp_seipd_packet *packet, void *ptr, siz
 	memcpy(out + pos, packet->data, packet->data_size);
 	pos += packet->data_size;
 
-	// Tag
-	memcpy(out + pos, packet->tag, packet->tag_size);
-	pos += packet->tag_size;
+	if (packet->partials != NULL)
+	{
+		// The last partial packet will contain the tag
+		for (uint32_t i = 0; i < packet->partials->count; ++i)
+		{
+			pos += pgp_partial_packet_write(packet->partials->packets[i], out + pos, size - pos);
+		}
+	}
+	else
+	{
+		// Tag
+		memcpy(out + pos, packet->tag, packet->tag_size);
+		pos += packet->tag_size;
+	}
 
 	return pos;
 }
 
 size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size)
 {
+	size_t required_size = 0;
+
+	required_size = PGP_PACKET_OCTETS(packet->header);
+
+	if (packet->partials != NULL)
+	{
+		required_size += pgp_packet_stream_octets(packet->partials);
+	}
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
 	switch (packet->version)
 	{
 	case PGP_SEIPD_V1:
@@ -1434,7 +1475,16 @@ size_t pgp_aead_packet_write(pgp_aead_packet *packet, void *ptr, size_t size)
 	byte_t *out = ptr;
 	size_t pos = 0;
 
-	if (size < PGP_PACKET_OCTETS(packet->header))
+	size_t required_size = 0;
+
+	required_size = PGP_PACKET_OCTETS(packet->header);
+
+	if (packet->partials != NULL)
+	{
+		required_size += pgp_packet_stream_octets(packet->partials);
+	}
+
+	if (size < required_size)
 	{
 		return 0;
 	}
@@ -1466,9 +1516,20 @@ size_t pgp_aead_packet_write(pgp_aead_packet *packet, void *ptr, size_t size)
 	memcpy(out + pos, packet->data, packet->data_size);
 	pos += packet->data_size;
 
-	// Tag
-	memcpy(out + pos, packet->tag, packet->tag_size);
-	pos += packet->tag_size;
+	if (packet->partials != NULL)
+	{
+		// The last partial packet will contain the tag
+		for (uint32_t i = 0; i < packet->partials->count; ++i)
+		{
+			pos += pgp_partial_packet_write(packet->partials->packets[i], out + pos, size - pos);
+		}
+	}
+	else
+	{
+		// Tag
+		memcpy(out + pos, packet->tag, packet->tag_size);
+		pos += packet->tag_size;
+	}
 
 	return pos;
 }
