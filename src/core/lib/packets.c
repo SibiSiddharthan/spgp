@@ -32,7 +32,7 @@ static size_t pgp_stream_write_internal(pgp_stream_t *stream, void *buffer, size
 
 static void pgp_compressed_packet_encode_header(pgp_compresed_packet *packet, pgp_packet_header_format header_format, byte_t partial)
 {
-	uint32_t body_size = 0;
+	size_t body_size = 0;
 
 	if (header_format == 0)
 	{
@@ -286,7 +286,16 @@ size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size
 	byte_t *out = ptr;
 	size_t pos = 0;
 
-	if (size < PGP_PACKET_OCTETS(packet->header))
+	size_t required_size = 0;
+
+	required_size = PGP_PACKET_OCTETS(packet->header);
+
+	if (packet->partials != NULL)
+	{
+		required_size += pgp_packet_stream_octets(packet->partials);
+	}
+
+	if (size < required_size)
 	{
 		return 0;
 	}
@@ -299,8 +308,17 @@ size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size
 	pos += 1;
 
 	// Compressed data
-	memcpy(out + pos, packet->data, packet->header.body_size - 1);
-	pos += packet->header.body_size;
+	memcpy(out + pos, packet->data, packet->data_size);
+	pos += packet->data_size;
+
+	if (packet->partials != NULL)
+	{
+		// The last partial packet will contain the tag
+		for (uint32_t i = 0; i < packet->partials->count; ++i)
+		{
+			pos += pgp_partial_packet_write(packet->partials->packets[i], out + pos, size - pos);
+		}
+	}
 
 	return pos;
 }
@@ -423,7 +441,7 @@ size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size
 
 static void pgp_literal_packet_encode_header(pgp_literal_packet *packet, pgp_packet_header_format header_format, byte_t partial)
 {
-	uint32_t body_size = 0;
+	size_t body_size = 0;
 
 	if (header_format == 0)
 	{
@@ -758,7 +776,16 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 	byte_t *out = ptr;
 	size_t pos = 0;
 
-	if (size < PGP_PACKET_OCTETS(packet->header))
+	size_t required_size = 0;
+
+	required_size = PGP_PACKET_OCTETS(packet->header);
+
+	if (packet->partials != NULL)
+	{
+		required_size += pgp_packet_stream_octets(packet->partials);
+	}
+
+	if (size < required_size)
 	{
 		return 0;
 	}
@@ -788,6 +815,15 @@ size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t si
 	// Literal data
 	memcpy(out + pos, packet->data, packet->data_size);
 	pos += packet->data_size;
+
+	if (packet->partials != NULL)
+	{
+		// The last partial packet will contain the tag
+		for (uint32_t i = 0; i < packet->partials->count; ++i)
+		{
+			pos += pgp_partial_packet_write(packet->partials->packets[i], out + pos, size - pos);
+		}
+	}
 
 	return pos;
 }
