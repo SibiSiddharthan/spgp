@@ -1177,11 +1177,6 @@ pgp_error_t pgp_data_packet_collate(pgp_data_packet *packet)
 	size += PGP_PACKET_OCTETS(packet->header);
 	size += pgp_packet_stream_octets(packet->partials);
 
-	if (size > ((uint64_t)1 << 32))
-	{
-		return PGP_PACKET_TOO_BIG;
-	}
-
 	result = realloc(packet->data, size);
 
 	if (result == NULL)

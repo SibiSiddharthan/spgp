@@ -78,6 +78,7 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	size_t data_size = pgp_packet_stream_octets(stream);
 	size_t total_data_size = iv_size + 2 + data_size;
 
+	byte_t partial = 0;
 	uint32_t result = 0;
 
 	byte_t zero_iv[16] = {0};
@@ -91,7 +92,8 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	}
 
 	// N bytes of symmetrically encryrpted data
-	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, 0, total_data_size);
+	partial = total_data_size > ((uint64_t)1 << 32);
+	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, partial, total_data_size);
 	packet->data_size = total_data_size;
 
 	// Generate the IV
@@ -205,7 +207,7 @@ pgp_error_t pgp_sed_packet_collate(pgp_sed_packet *packet)
 	}
 
 	// Update the header
-	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, 0, packet->data_size);
+	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, packet->data_size > ((uint64_t)1 << 32), packet->data_size);
 
 	return PGP_SUCCESS;
 }

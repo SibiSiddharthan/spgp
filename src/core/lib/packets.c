@@ -43,6 +43,13 @@ static void pgp_compressed_packet_encode_header(pgp_compresed_packet *packet, pg
 	// N bytes of compressed data
 
 	body_size = 1 + packet->data_size;
+
+	if (body_size > ((uint64_t)1 << 32))
+	{
+		partial = 1;
+		header_format = PGP_LEGACY_HEADER;
+	}
+
 	packet->header = pgp_encode_packet_header(header_format, PGP_COMP, partial, body_size);
 }
 
@@ -430,6 +437,13 @@ static void pgp_literal_packet_encode_header(pgp_literal_packet *packet, pgp_pac
 	// Literal data
 
 	body_size = 1 + 1 + 4 + packet->filename_size + packet->data_size;
+
+	if (body_size > ((uint64_t)1 << 32))
+	{
+		partial = 1;
+		header_format = PGP_LEGACY_HEADER;
+	}
+
 	packet->header = pgp_encode_packet_header(header_format, PGP_LIT, partial, body_size);
 }
 
