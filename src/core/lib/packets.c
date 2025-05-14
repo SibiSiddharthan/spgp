@@ -212,6 +212,8 @@ pgp_error_t pgp_compressed_packet_collate(pgp_compresed_packet *packet)
 pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t split)
 {
 	pgp_error_t status = 0;
+	void *result = NULL;
+
 	pgp_partial_packet *partial = NULL;
 
 	uint32_t split_size = PGP_SPLIT_SIZE(split);
@@ -233,6 +235,7 @@ pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t spl
 
 	while (pos < packet->data_size)
 	{
+		result = NULL;
 		partial = NULL;
 
 		status = pgp_partial_packet_new(&partial, PTR_OFFSET(packet->data, pos), MIN(split_size, packet->data_size - pos));
@@ -242,6 +245,16 @@ pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t spl
 			pgp_stream_delete(packet->partials, (void (*)(void *))pgp_partial_packet_delete);
 			return status;
 		}
+
+		result = pgp_stream_push(packet->partials, partial);
+
+		if (result == NULL)
+		{
+			pgp_stream_delete(packet->partials, (void (*)(void *))pgp_partial_packet_delete);
+			return PGP_NO_MEMORY;
+		}
+
+		packet->partials = result;
 
 		pos += MIN(split_size, packet->data_size - pos);
 	}
