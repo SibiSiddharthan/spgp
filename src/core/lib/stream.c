@@ -478,12 +478,26 @@ pgp_error_t pgp_packet_stream_write_armor(pgp_stream_t *stream, armor_options *o
 size_t pgp_packet_stream_octets(pgp_stream_t *stream)
 {
 	pgp_packet_header *header = NULL;
+	pgp_packet_type type = 0;
 	size_t size = 0;
+
+	if (stream == NULL)
+	{
+		return 0;
+	}
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
+		type = pgp_packet_get_type(header->tag);
+
 		size += PGP_PACKET_OCTETS(*header);
+
+		if (type == PGP_COMP || type == PGP_LIT || type == PGP_SED || type == PGP_SEIPD || type == PGP_AEAD)
+		{
+			// Count the partials
+			size += pgp_packet_stream_octets(((pgp_data_packet *)stream->packets[i])->partials);
+		}
 	}
 
 	return size;
