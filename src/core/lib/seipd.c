@@ -92,6 +92,7 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 
 	// N bytes of symmetrically encryrpted data
 	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, 0, total_data_size);
+	packet->data_size = total_data_size;
 
 	// Generate the IV
 	result = pgp_rand(message_iv, iv_size);
@@ -135,7 +136,7 @@ pgp_error_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	pgp_error_t status = 0;
 
 	size_t iv_size = pgp_symmetric_cipher_block_size(symmetric_key_algorithm_id);
-	size_t plaintext_size = packet->header.body_size - (iv_size + 2);
+	size_t plaintext_size = packet->data_size - (iv_size + 2);
 
 	void *data = NULL;
 
@@ -218,6 +219,7 @@ pgp_error_t pgp_sed_packet_read_with_header(pgp_sed_packet **packet, pgp_packet_
 
 	// Copy the packet data.
 	memcpy(sed->data, PTR_OFFSET(data, header->header_size), header->body_size);
+	sed->data_size = header->body_size;
 
 	*packet = sed;
 
@@ -268,8 +270,8 @@ size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
 	pos += pgp_packet_header_write(&packet->header, out + pos);
 
 	// Data
-	memcpy(out + pos, packet->data, packet->header.body_size);
-	pos += packet->header.body_size;
+	memcpy(out + pos, packet->data, packet->data_size);
+	pos += packet->data_size;
 
 	return pos;
 }

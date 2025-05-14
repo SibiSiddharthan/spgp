@@ -89,13 +89,12 @@ typedef struct _pgp_unknown_packet
 typedef struct _pgp_compressed_packet
 {
 	pgp_packet_header header;
-
-	byte_t compression_algorithm_id;
+	pgp_stream_t *partials;
 
 	size_t data_size;
 	void *data;
 
-	pgp_stream_t *partials;
+	byte_t compression_algorithm_id;
 
 } pgp_compresed_packet;
 
@@ -118,17 +117,16 @@ typedef enum _pgp_literal_data_format
 typedef struct _pgp_literal_packet
 {
 	pgp_packet_header header;
+	pgp_stream_t *partials;
+
+	size_t data_size;
+	void *data;
 
 	byte_t format;
 	uint32_t date;
 
 	byte_t filename_size;
 	void *filename;
-
-	size_t data_size;
-	void *data;
-
-	pgp_stream_t *partials;
 
 } pgp_literal_packet;
 
@@ -276,7 +274,8 @@ uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr);
 pgp_error_t pgp_partial_header_read(pgp_partial_header *header, void *data, size_t size);
 uint32_t pgp_partial_header_write(pgp_partial_header *header, void *ptr);
 
-pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, byte_t partial, size_t body_size);
+pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, byte_t partial,
+										   size_t body_size);
 pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critical, uint32_t body_size);
 pgp_partial_header pgp_encode_partial_header(uint32_t body_size);
 

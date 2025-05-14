@@ -12,8 +12,8 @@
 #include <packet.h>
 #include <stream.h>
 
-#define PGP_MAX_CHUNK_SIZE 16
-#define PGP_CHUNK_SIZE(size)   ((uint32_t)1 << ((size) + 6))
+#define PGP_MAX_CHUNK_SIZE   16
+#define PGP_CHUNK_SIZE(size) ((uint32_t)1 << ((size) + 6))
 
 typedef enum _pgp_seipd_version
 {
@@ -30,18 +30,27 @@ typedef struct _pgp_sed_packet
 {
 	pgp_packet_header header;
 	pgp_stream_t *partials;
-	byte_t *data;
+
+	size_t data_size;
+	void *data;
 
 } pgp_sed_packet;
 
 typedef struct _pgp_seipd_packet
 {
 	pgp_packet_header header;
+	pgp_stream_t *partials;
+
+	size_t data_size;
+	void *data;
 
 	byte_t version; // 1 or 2
 	byte_t symmetric_key_algorithm_id;
 	byte_t aead_algorithm_id;
 	byte_t chunk_size;
+
+	byte_t tag_size;
+	byte_t iv_size;
 
 	union
 	{
@@ -51,13 +60,6 @@ typedef struct _pgp_seipd_packet
 	};
 
 	byte_t tag[16];
-
-	byte_t tag_size;
-	byte_t iv_size;
-	size_t data_size;
-
-	void *data;
-	pgp_stream_t *partials;
 
 } pgp_seipd_packet, pgp_aead_packet;
 
