@@ -414,7 +414,7 @@ size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size
 	return pos;
 }
 
-static void pgp_literal_packet_encode_header(pgp_literal_packet *packet, pgp_packet_header_format header_format)
+static void pgp_literal_packet_encode_header(pgp_literal_packet *packet, pgp_packet_header_format header_format, byte_t partial)
 {
 	uint32_t body_size = 0;
 
@@ -430,7 +430,7 @@ static void pgp_literal_packet_encode_header(pgp_literal_packet *packet, pgp_pac
 	// Literal data
 
 	body_size = 1 + 1 + 4 + packet->filename_size + packet->data_size;
-	packet->header = pgp_encode_packet_header(header_format, PGP_LIT, 0, body_size);
+	packet->header = pgp_encode_packet_header(header_format, PGP_LIT, partial, body_size);
 }
 
 pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_format, uint32_t date, void *filename, byte_t filename_size)
@@ -469,7 +469,7 @@ pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_fo
 		literal->filename_size = filename_size;
 	}
 
-	pgp_literal_packet_encode_header(literal, header_format);
+	pgp_literal_packet_encode_header(literal, header_format, 0);
 
 	*packet = literal;
 
@@ -592,7 +592,41 @@ pgp_error_t pgp_literal_packet_store(pgp_literal_packet *packet, pgp_literal_dat
 	packet->format = format;
 	packet->data_size = required_size;
 
-	pgp_literal_packet_encode_header(packet, 0);
+	pgp_literal_packet_encode_header(packet, 0, 0);
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_literal_packet_collate(pgp_literal_packet *packet)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_collate((pgp_data_packet *)packet);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	pgp_literal_packet_encode_header(packet, 0, 0);
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_literal_packet_split(pgp_literal_packet *packet, byte_t split)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_split((pgp_data_packet *)packet, split);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	pgp_literal_packet_encode_header(packet, PGP_HEADER, 1);
 
 	return PGP_SUCCESS;
 }

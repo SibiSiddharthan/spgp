@@ -193,6 +193,40 @@ pgp_error_t pgp_sed_packet_decrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	return PGP_SUCCESS;
 }
 
+pgp_error_t pgp_sed_packet_collate(pgp_sed_packet *packet)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_collate((pgp_data_packet *)packet);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SED, 0, packet->data_size);
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_sed_packet_split(pgp_sed_packet *packet, byte_t split)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_split((pgp_data_packet *)packet, split);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SED, 1, packet->data_size);
+
+	return PGP_SUCCESS;
+}
+
 pgp_error_t pgp_sed_packet_read_with_header(pgp_sed_packet **packet, pgp_packet_header *header, void *data)
 {
 	pgp_sed_packet *sed = NULL;
@@ -276,7 +310,7 @@ size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size)
 	return pos;
 }
 
-static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
+static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet, byte_t partial)
 {
 	uint32_t body_size = 0;
 
@@ -292,7 +326,7 @@ static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
 		// Authentication tag
 
 		body_size = 1 + 1 + 1 + 1 + 32 + packet->data_size + packet->tag_size;
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, 0, body_size);
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, partial, body_size);
 	}
 
 	if (packet->version == PGP_SEIPD_V1)
@@ -302,7 +336,7 @@ static void pgp_seipd_packet_encode_header(pgp_seipd_packet *packet)
 		// N octets of symmetrically encryrpted data
 
 		body_size = 1 + packet->data_size;
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, 0, body_size);
+		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SEIPD, partial, body_size);
 	}
 }
 
@@ -356,7 +390,7 @@ pgp_error_t pgp_seipd_packet_new(pgp_seipd_packet **packet, byte_t version, byte
 		seipd->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
 	}
 
-	pgp_seipd_packet_encode_header(seipd);
+	pgp_seipd_packet_encode_header(seipd, 0);
 
 	*packet = seipd;
 
@@ -429,7 +463,7 @@ static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *s
 	}
 
 	// Update header
-	pgp_seipd_packet_encode_header(packet);
+	pgp_seipd_packet_encode_header(packet, 0);
 
 	return PGP_SUCCESS;
 }
@@ -616,7 +650,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 	}
 
 	// Update header
-	pgp_seipd_packet_encode_header(packet);
+	pgp_seipd_packet_encode_header(packet, 0);
 
 	return PGP_SUCCESS;
 }
@@ -764,6 +798,40 @@ pgp_error_t pgp_seipd_packet_decrypt(pgp_seipd_packet *packet, void *session_key
 	}
 
 	return PGP_UNKNOWN_SEIPD_PACKET_VERSION;
+}
+
+pgp_error_t pgp_seipd_packet_collate(pgp_seipd_packet *packet)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_collate((pgp_data_packet *)packet);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	pgp_seipd_packet_encode_header(packet, 0);
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_seipd_packet_split(pgp_seipd_packet *packet, byte_t split)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_split((pgp_data_packet *)packet, split);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	pgp_seipd_packet_encode_header(packet, 1);
+
+	return PGP_SUCCESS;
 }
 
 static pgp_error_t pgp_seipd_packet_read_body(pgp_seipd_packet *packet, buffer_t *buffer)
@@ -969,7 +1037,7 @@ size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size)
 	}
 }
 
-static void pgp_aead_packet_encode_header(pgp_aead_packet *packet)
+static void pgp_aead_packet_encode_header(pgp_aead_packet *packet, byte_t partial)
 {
 	uint32_t body_size = 0;
 
@@ -982,7 +1050,7 @@ static void pgp_aead_packet_encode_header(pgp_aead_packet *packet)
 	// Authentication tag
 
 	body_size = 1 + 1 + 1 + 1 + packet->iv_size + packet->data_size + packet->tag_size;
-	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_AEAD, 0, body_size);
+	packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_AEAD, partial, body_size);
 }
 
 pgp_error_t pgp_aead_packet_new(pgp_aead_packet **packet, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size)
@@ -1018,7 +1086,7 @@ pgp_error_t pgp_aead_packet_new(pgp_aead_packet **packet, byte_t symmetric_key_a
 	aead->aead_algorithm_id = aead_algorithm_id;
 	aead->chunk_size = chunk_size;
 
-	pgp_aead_packet_encode_header(aead);
+	pgp_aead_packet_encode_header(aead, 0);
 
 	*packet = aead;
 
@@ -1121,7 +1189,7 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 		return status;
 	}
 
-	pgp_aead_packet_encode_header(packet);
+	pgp_aead_packet_encode_header(packet, 0);
 
 	return PGP_SUCCESS;
 }
@@ -1213,6 +1281,40 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 		// Don't delete the stream in this case.
 		return PGP_RECURSIVE_ENCRYPTION_CONTAINER;
 	}
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_aead_packet_collate(pgp_aead_packet *packet)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_collate((pgp_data_packet *)packet);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	pgp_aead_packet_encode_header(packet, 0);
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_aead_packet_split(pgp_aead_packet *packet, byte_t split)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_data_packet_split((pgp_data_packet *)packet, split);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	// Update the header
+	pgp_aead_packet_encode_header(packet, 1);
 
 	return PGP_SUCCESS;
 }
