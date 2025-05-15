@@ -543,24 +543,12 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		// Key Selection
 		case SPGP_OPTION_USER_ID:
 		{
-			command->users = pgp_stream_push(command->users, result->data);
-
-			if (command->users == NULL)
-			{
-				printf("No memory");
-				exit(1);
-			}
+			STREAM_CALL(command->users = pgp_stream_push(command->users, result->data));
 		}
 		break;
 		case SPGP_OPTION_RECIPIENT:
 		{
-			command->recipients = pgp_stream_push(command->recipients, result->data);
-
-			if (command->recipients == NULL)
-			{
-				printf("No memory");
-				exit(1);
-			}
+			STREAM_CALL(command->recipients = pgp_stream_push(command->recipients, result->data));
 		}
 		break;
 
@@ -608,35 +596,17 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		break;
 		case SPGP_OPTION_SIG_NOTATION:
 		{
-			command->notation = pgp_stream_push(command->notation, result->data);
-
-			if (command->notation == NULL)
-			{
-				printf("No memory");
-				exit(1);
-			}
+			STREAM_CALL(command->notation = pgp_stream_push(command->notation, result->data));
 		}
 		break;
 		case SPGP_OPTION_SIG_POLICY:
 		{
-			command->policy = pgp_stream_push(command->policy, result->data);
-
-			if (command->policy == NULL)
-			{
-				printf("No memory");
-				exit(1);
-			}
+			STREAM_CALL(command->policy = pgp_stream_push(command->policy, result->data));
 		}
 		break;
 		case SPGP_OPTION_SIG_KEYSERVER:
 		{
-			command->keyserver = pgp_stream_push(command->keyserver, result->data);
-
-			if (command->keyserver == NULL)
-			{
-				printf("No memory");
-				exit(1);
-			}
+			STREAM_CALL(command->keyserver = pgp_stream_push(command->keyserver, result->data));
 		}
 		break;
 
@@ -648,7 +618,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		break;
 		case SPGP_OPTION_PASSPHRASE:
 		{
-			command->passhprase = result->data;
+			STREAM_CALL(command->passhprases = pgp_stream_push(command->passhprases, result->data));
 		}
 		break;
 		case SPGP_OPTION_NO_MPIS:
@@ -659,13 +629,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		case ARGPARSE_RETURN_NON_OPTION:
 		{
-			command->files = pgp_stream_push(command->files, result->data);
-
-			if (command->files == NULL)
-			{
-				printf("No memory");
-				exit(1);
-			}
+			STREAM_CALL(command->files = pgp_stream_push(command->files, result->data));
 		}
 		break;
 

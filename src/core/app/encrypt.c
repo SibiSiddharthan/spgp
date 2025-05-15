@@ -50,7 +50,7 @@ void spgp_encrypt()
 
 	if (command.symmetric)
 	{
-		if (command.passhprase == NULL)
+		if (command.passhprases == NULL)
 		{
 			passphrase = spgp_prompt_passphrase();
 
@@ -221,13 +221,13 @@ uint32_t spgp_decrypt(spgp_command *command)
 		pgp_pkesk_packet *session = stream->packets[0];
 		pgp_key_packet *key = spgp_search_key_from_user(command->user);
 
-		if (command->passhprase == NULL)
+		if (command->passhprases == NULL)
 		{
 			printf("Passphrase required.\n");
 			exit(1);
 		}
 
-		pgp_key_packet_decrypt(key, command->passhprase, strlen(command->passhprase));
+		pgp_key_packet_decrypt(key, command->passhprases, strlen(command->passhprases));
 
 		pgp_pkesk_packet_session_key_decrypt(session, key, session_key, &session_key_size);
 		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
@@ -237,13 +237,13 @@ uint32_t spgp_decrypt(spgp_command *command)
 	{
 		pgp_skesk_packet *session = stream->packets[0];
 
-		if (command->passhprase == NULL)
+		if (command->passhprases == NULL)
 		{
 			printf("Passphrase required.\n");
 			exit(1);
 		}
 
-		pgp_skesk_packet_session_key_decrypt(session, command->passhprase, strlen(command->passhprase), session_key, &session_key_size);
+		pgp_skesk_packet_session_key_decrypt(session, command->passhprases, strlen(command->passhprases), session_key, &session_key_size);
 		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 	}
 
