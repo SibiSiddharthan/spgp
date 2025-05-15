@@ -418,7 +418,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->encrypt || command->symmetric)
 	{
-		spgp_encrypt(command);
+		spgp_encrypt();
 	}
 
 	if (command->decrypt)
@@ -577,14 +577,14 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 			command->mode = SPGP_MODE_RFC4880;
 		}
 		break;
-		case SPGP_OPTION_OPENPGP:
-		{
-			command->mode = SPGP_MODE_OPENPGP;
-		}
-		break;
 		case SPGP_OPTION_LIBREPGP:
 		{
 			command->mode = SPGP_MODE_LIBREPGP;
+		}
+		break;
+		case SPGP_OPTION_OPENPGP:
+		{
+			command->mode = SPGP_MODE_OPENPGP;
 		}
 		break;
 

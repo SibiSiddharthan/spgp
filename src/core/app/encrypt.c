@@ -17,32 +17,76 @@
 #include <stdlib.h>
 #include <string.h>
 
-static pgp_stream_t *spgp_sign_mdc(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
-								   void *file)
+static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
+									  pgp_stream_t *stream)
 {
+	pgp_stream_t *message = NULL;
+	pgp_seipd_packet *seipd = NULL;
+	pgp_pkesk_packet *pkesk = NULL;
+	pgp_skesk_packet *skesk = NULL;
+
+	byte_t session_key[32] = {0};
+	byte_t session_key_size = 0;
+
+	pgp_s2k s2k = {0};
+
+	STREAM_CALL(message = pgp_stream_new(recipient_count + passphrase_count + 1));
+
+	if (recipient_count == 0 && passphrase_count == 1)
+	{
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
+
+		pgp_stream_push(message, skesk);
+	}
+
+	// Process PKESKs first
+	for (uint32_t i = 0; i < recipient_count; ++i)
+	{
+		pkesk = NULL;
+
+		PGP_CALL(pgp_pkesk_packet_new(&pkesk, PGP_PKESK_V3));
+		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, PGP_AES_256, session_key, session_key_size));
+
+		pgp_stream_push(message, pkesk);
+	}
+
+	for (uint32_t i = 0; i < passphrase_count; ++i)
+	{
+		skesk = NULL;
+
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		PGP_CALL(
+			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, session_key, session_key_size));
+
+		pgp_stream_push(message, skesk);
+	}
+
+	PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_256, 0, 0));
+	PGP_CALL(pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, stream));
+
+	pgp_stream_push(message, seipd);
+
+	return message;
 }
 
-void spgp_encrypt()
+void spgp_encrypt(void)
 {
 	pgp_key_packet *key[16] = {0};
 	pgp_user_info *uinfo[16] = {0};
 	pgp_keyring_packet *keyring[16] = {0};
 
-	pgp_compresed_packet *compressed = NULL;
+	pgp_literal_packet *literal = NULL;
+	pgp_stream_t *stream = NULL;
 	pgp_stream_t *message = NULL;
 
 	uint32_t count = 0;
 
-	pgp_stream_t *stream = NULL;
-	pgp_seipd_packet *seipd = NULL;
-	pgp_literal_packet *literal = NULL;
+	armor_options options = {0};
+	armor_marker marker = {0};
+	armor_options *opts = NULL;
 
-	byte_t session_key[64] = {0};
-	byte_t session_key_size = 0;
-
-	void *passphrase = NULL;
-
-	if (command.recipients == NULL && command.symmetric == 0)
+	if (command.encrypt && command.recipients == NULL)
 	{
 		printf("No recipient specified\n.");
 		exit(1);
@@ -52,13 +96,15 @@ void spgp_encrypt()
 	{
 		if (command.passhprases == NULL)
 		{
-			passphrase = spgp_prompt_passphrase();
+			void *passphrase = spgp_prompt_passphrase();
 
 			if (passphrase == NULL)
 			{
 				printf("No passphrase provided\n.");
 				exit(1);
 			}
+
+			STREAM_CALL(command.passhprases = pgp_stream_push(command.passhprases, passphrase));
 		}
 	}
 
@@ -83,105 +129,61 @@ void spgp_encrypt()
 		}
 	}
 
+	// Literal or compressed packet
+	STREAM_CALL(stream = pgp_stream_new(1));
+
 	// Create the encrypted message
 	if (command.files == NULL)
 	{
-		if (command.detach_sign)
+		literal = spgp_literal_read_file(NULL, PGP_LITERAL_DATA_BINARY);
+		stream = pgp_stream_push(stream, literal);
+
+		switch (command.mode)
 		{
-			message = spgp_detach_sign_file(key, uinfo, count, NULL);
+		case SPGP_MODE_RFC2440:
+		case SPGP_MODE_RFC4880:
+		case SPGP_MODE_LIBREPGP:
+		case SPGP_MODE_OPENPGP:
+			message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, stream);
 		}
-		if (command.clear_sign)
-		{
-			message = spgp_clear_sign_file(key, uinfo, count, NULL);
-		}
-		if (command.sign)
-		{
-			if (command.mode != SPGP_MODE_RFC2440)
-			{
-				message = spgp_sign_file(key, uinfo, count, NULL);
-			}
-			else
-			{
-				message = spgp_sign_file_legacy(key, uinfo, count, NULL);
-			}
-		}
+
+		stream = pgp_stream_clear(stream, pgp_packet_delete);
 	}
 	else
 	{
 		for (uint32_t i = 0; i < count; ++i)
 		{
-			if (command.detach_sign)
+			literal = spgp_literal_read_file(NULL, PGP_LITERAL_DATA_BINARY);
+			stream = pgp_stream_push(stream, literal);
+
+			switch (command.mode)
 			{
-				message = spgp_detach_sign_file(key, uinfo, count, command.files->packets[i]);
+			case SPGP_MODE_RFC2440:
+			case SPGP_MODE_RFC4880:
+			case SPGP_MODE_LIBREPGP:
+			case SPGP_MODE_OPENPGP:
+				message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, stream);
 			}
-			if (command.clear_sign)
-			{
-				message = spgp_clear_sign_file(key, uinfo, count, command.files->packets[i]);
-			}
-			if (command.sign)
-			{
-				if (command.mode != SPGP_MODE_RFC2440)
-				{
-					message = spgp_sign_file(key, uinfo, count, command.files->packets[i]);
-				}
-				else
-				{
-					message = spgp_sign_file_legacy(key, uinfo, count, command.files->packets[i]);
-				}
-			}
+
+			stream = pgp_stream_clear(stream, pgp_packet_delete);
 		}
 	}
 
-	literal = spgp_literal_read_file(file, PGP_LITERAL_DATA_BINARY);
-	lit_buffer = malloc(PGP_PACKET_OCTETS(literal->header));
-	pgp_literal_packet_write(literal, lit_buffer, PGP_PACKET_OCTETS(literal->header));
-
-	stream = pgp_stream_new(2);
-
-	if (command->symmetric)
+	// Write output
+	if (command.armor)
 	{
-		pgp_skesk_packet *session = NULL;
-		pgp_s2k s2k = {.id = PGP_S2K_ITERATED,
-					   .iterated = {.hash_id = PGP_SHA1, .count = 200, .salt = {0x06, 0xa1, 0x02, 0x2a, 0x22, 0x51, 0xc1, 0x6a}}};
+		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_SIGNATURE,
+								.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE),
+								.trailer_line = PGP_ARMOR_END_SIGNATURE,
+								.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE)};
 
-		if (command->passhprase == NULL)
-		{
-			printf("Passphrase required.\n");
-			exit(1);
-		}
+		options.marker = &marker;
+		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
 
-		pgp_skesk_packet_new(&session, PGP_SKESK_V4, PGP_AES_128, 0, &s2k);
-		pgp_skesk_packet_session_key_encrypt(session, command->passhprase, strlen(command->passhprase), NULL, 0, NULL, 0);
-
-		session_key_size = pgp_s2k_hash(&s2k, command->passhprase, strlen(command->passhprase), session_key, 16);
-
-		pgp_stream_push(stream, session);
-	}
-	else
-	{
-		pgp_pkesk_packet *session = NULL;
-		pgp_key_packet *key = NULL;
-
-		key = spgp_search_key_from_user(command->user);
-		pgp_pkesk_packet_new(&session, PGP_PKESK_V3);
-
-		session_key_size = pgp_rand(session_key, 16);
-		pgp_pkesk_packet_session_key_encrypt(session, key, 0, PGP_AES_128, session_key, session_key_size);
-
-		pgp_stream_push(stream, session);
+		opts = &options;
 	}
 
-	pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_128, 0, 0);
-	pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, NULL);
-
-	pgp_stream_push(stream, seipd);
-
-	spgp_write_pgp_packets(command->output, stream, NULL);
-
-	free(buffer);
-	pgp_literal_packet_delete(literal);
-
-	return 0;
+	spgp_write_pgp_packets(command.output, message, opts);
 }
 
 uint32_t spgp_decrypt(spgp_command *command)
@@ -219,7 +221,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 	if (pgp_packet_get_type(header->tag) == PGP_PKESK)
 	{
 		pgp_pkesk_packet *session = stream->packets[0];
-		pgp_key_packet *key = spgp_search_key_from_user(command->user);
+		pgp_key_packet *key = NULL;
 
 		if (command->passhprases == NULL)
 		{
@@ -227,7 +229,7 @@ uint32_t spgp_decrypt(spgp_command *command)
 			exit(1);
 		}
 
-		pgp_key_packet_decrypt(key, command->passhprases, strlen(command->passhprases));
+		// pgp_key_packet_decrypt(key, command->passhprases, strlen(command->passhprases));
 
 		pgp_pkesk_packet_session_key_decrypt(session, key, session_key, &session_key_size);
 		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
@@ -243,7 +245,8 @@ uint32_t spgp_decrypt(spgp_command *command)
 			exit(1);
 		}
 
-		pgp_skesk_packet_session_key_decrypt(session, command->passhprases, strlen(command->passhprases), session_key, &session_key_size);
+		// pgp_skesk_packet_session_key_decrypt(session, command->passhprases, strlen(command->passhprases), session_key,
+		// &session_key_size);
 		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 	}
 

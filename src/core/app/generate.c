@@ -680,6 +680,4 @@ void spgp_generate_key(void)
 	}
 
 	spgp_write_certificate(certificate);
-
-	return 0;
 }

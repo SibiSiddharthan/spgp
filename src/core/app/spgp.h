@@ -78,8 +78,8 @@ typedef enum _spgp_mode
 {
 	SPGP_MODE_RFC2440 = 1,
 	SPGP_MODE_RFC4880,
-	SPGP_MODE_OPENPGP,
 	SPGP_MODE_LIBREPGP,
+	SPGP_MODE_OPENPGP
 } spgp_mode;
 
 typedef struct _spgp_command
