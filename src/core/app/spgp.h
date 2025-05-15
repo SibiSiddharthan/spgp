@@ -168,8 +168,8 @@ void spgp_generate_key(void);
 void spgp_sign(void);
 uint32_t spgp_verify(spgp_command *command);
 
-void spgp_encrypt();
-uint32_t spgp_decrypt(spgp_command *command);
+void spgp_encrypt(void);
+void spgp_decrypt(void);
 
 void spgp_list_keys(void);
 void spgp_list_packets(void);

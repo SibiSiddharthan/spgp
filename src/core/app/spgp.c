@@ -423,7 +423,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->decrypt)
 	{
-		return spgp_decrypt(command);
+		spgp_decrypt();
 	}
 
 	if (command->import_keys)

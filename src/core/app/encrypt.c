@@ -343,97 +343,142 @@ void spgp_encrypt(void)
 	spgp_write_pgp_packets(command.output, message, opts);
 }
 
-uint32_t spgp_decrypt(spgp_command *command)
+static pgp_stream_t *spgp_decrypt_file(void *file)
 {
+	pgp_error_t status = 0;
+
 	pgp_stream_t *stream = NULL;
-	pgp_stream_t *decrypted_stream = NULL;
+	pgp_stream_t *message = NULL;
 	pgp_packet_header *header = NULL;
 
-	pgp_seipd_packet *seipd = NULL;
-	pgp_literal_packet *literal = NULL;
+	void *passphrase = NULL;
+	byte_t passphrase_size = 0;
 
-	byte_t session_key[64] = {0};
-	byte_t session_key_size = 64;
-
-	void *file = NULL;
-	void *buffer = NULL;
-	uint32_t data_size = 0;
-
-	if (command->files != NULL)
-	{
-		file = command->files->packets[0];
-	}
+	byte_t session_key[32] = {0};
+	byte_t session_key_size = 32;
+	byte_t session_key_found = 0;
 
 	stream = spgp_read_pgp_packets(file);
 
-	if (stream == NULL)
+	// Search PKESKs first
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
-		printf("Invalid pgp stream.\n");
-		exit(1);
-	}
+		header = stream->packets[i];
 
-	header = stream->packets[0];
-	seipd = stream->packets[1];
-
-	if (pgp_packet_get_type(header->tag) == PGP_PKESK)
-	{
-		pgp_pkesk_packet *session = stream->packets[0];
-		pgp_key_packet *key = NULL;
-
-		if (command->passhprases == NULL)
+		if (pgp_packet_get_type(header->tag) == PGP_PKESK)
 		{
-			printf("Passphrase required.\n");
-			exit(1);
+			pgp_pkesk_packet *pkesk = stream->packets[i];
+
+			pgp_key_packet *key = NULL;
+			pgp_user_info *uinfo = NULL;
+			pgp_keyring_packet *keyring = NULL;
+
+			byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+			byte_t fingerprint_size = 0;
+
+			if (pkesk->version == PGP_PKESK_V3)
+			{
+				fingerprint_size = PGP_KEY_ID_SIZE;
+				memcpy(fingerprint, pkesk->key_id, fingerprint_size);
+			}
+			else
+			{
+				fingerprint_size = pgp_key_fingerprint_size(pkesk->key_version);
+				memcpy(fingerprint, pkesk->key_fingerprint, fingerprint_size);
+			}
+
+			keyring =
+				spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE));
+
+			if (key != NULL)
+			{
+				key = spgp_decrypt_key(keyring, key);
+				status = pgp_pkesk_packet_session_key_decrypt(pkesk, key, session_key, &session_key_size);
+
+				if (status == PGP_SUCCESS)
+				{
+					session_key_found = 1;
+					goto decrypt;
+				}
+			}
 		}
-
-		// pgp_key_packet_decrypt(key, command->passhprases, strlen(command->passhprases));
-
-		pgp_pkesk_packet_session_key_decrypt(session, key, session_key, &session_key_size);
-		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 	}
 
-	if (pgp_packet_get_type(header->tag) == PGP_SKESK)
-	{
-		pgp_skesk_packet *session = stream->packets[0];
+	// Search SKESKs
+	passphrase = spgp_prompt_passphrase();
+	passphrase_size = strlen(passphrase);
 
-		if (command->passhprases == NULL)
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_get_type(header->tag) == PGP_SKESK)
 		{
-			printf("Passphrase required.\n");
-			exit(1);
+			pgp_skesk_packet *skesk = stream->packets[i];
+
+			status = pgp_skesk_packet_session_key_decrypt(skesk, passphrase, passphrase_size, session_key, &session_key_size);
+
+			if (status == PGP_SUCCESS)
+			{
+				session_key_found = 1;
+				goto decrypt;
+			}
 		}
-
-		// pgp_skesk_packet_session_key_decrypt(session, command->passhprases, strlen(command->passhprases), session_key,
-		// &session_key_size);
-		seipd->symmetric_key_algorithm_id = session->symmetric_key_algorithm_id;
 	}
 
-	if (session_key_size == 0)
+	if (session_key_found == 0)
 	{
-		printf("Invalid encrypted message.\n");
+		printf("Unable to process\n");
 		exit(1);
 	}
 
-	data_size = seipd->data_size;
-	buffer = malloc(data_size);
+decrypt:
+	header = stream->packets[stream->count - 1];
 
-	if (buffer == NULL)
+	switch (pgp_packet_get_type(header->tag))
 	{
-		printf("No memory.\n");
-		exit(2);
-	}
-
-	data_size = pgp_seipd_packet_decrypt(seipd, session_key, session_key_size, &decrypted_stream);
-
-	if (data_size == 0)
-	{
-		printf("Decryption failure.\n");
+	case PGP_SED:
+		PGP_CALL(pgp_sed_packet_decrypt(stream->packets[stream->count - 1], PGP_AES_256, session_key, session_key_size, &message));
+	case PGP_SEIPD:
+		PGP_CALL(pgp_seipd_packet_decrypt(stream->packets[stream->count - 1], session_key, session_key_size, &message));
+	case PGP_AEAD:
+		PGP_CALL(pgp_aead_packet_decrypt(stream->packets[stream->count - 1], session_key, session_key_size, &message));
+	default:
+		printf("Bad PGP Message\n");
 		exit(1);
 	}
 
-	literal = decrypted_stream->packets[0];
-	spgp_literal_write_file(command->output, literal);
+	pgp_stream_delete(stream, pgp_packet_delete);
 
-	free(buffer);
+	return message;
+}
 
-	return 0;
+void spgp_decrypt(void)
+{
+	pgp_stream_t *stream = NULL;
+	pgp_packet_header *header = NULL;
+
+	if (command.files == NULL)
+	{
+		stream = spgp_decrypt_file(NULL);
+		header = stream->packets[0];
+
+		if (pgp_packet_get_type(header->tag) == PGP_LIT)
+		{
+			spgp_literal_write_file(command.output, stream->packets[0]);
+		}
+	}
+	else
+	{
+		for (uint32_t i = 0; i < command.files->count; ++i)
+		{
+			stream = spgp_decrypt_file(command.files->packets[i]);
+			header = stream->packets[0];
+
+			if (pgp_packet_get_type(header->tag) == PGP_LIT)
+			{
+				spgp_literal_write_file(command.output, stream->packets[0]);
+			}
+		}
+	}
 }
