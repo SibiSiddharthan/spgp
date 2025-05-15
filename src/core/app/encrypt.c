@@ -17,6 +17,59 @@
 #include <stdlib.h>
 #include <string.h>
 
+static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
+									  pgp_stream_t *stream)
+{
+	pgp_stream_t *message = NULL;
+	pgp_sed_packet *sed = NULL;
+	pgp_pkesk_packet *pkesk = NULL;
+	pgp_skesk_packet *skesk = NULL;
+
+	byte_t session_key[32] = {0};
+	byte_t session_key_size = 0;
+
+	pgp_s2k s2k = {0};
+
+	STREAM_CALL(message = pgp_stream_new(recipient_count + passphrase_count + 1));
+
+	if (recipient_count == 0 && passphrase_count == 1)
+	{
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
+
+		pgp_stream_push(message, skesk);
+	}
+
+	// Process PKESKs first
+	for (uint32_t i = 0; i < recipient_count; ++i)
+	{
+		pkesk = NULL;
+
+		PGP_CALL(pgp_pkesk_packet_new(&pkesk, PGP_PKESK_V3));
+		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, PGP_AES_256, session_key, session_key_size));
+
+		pgp_stream_push(message, pkesk);
+	}
+
+	for (uint32_t i = 0; i < passphrase_count; ++i)
+	{
+		skesk = NULL;
+
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		PGP_CALL(
+			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, session_key, session_key_size));
+
+		pgp_stream_push(message, skesk);
+	}
+
+	PGP_CALL(pgp_sed_packet_new(&sed));
+	PGP_CALL(pgp_sed_packet_encrypt(sed, PGP_AES_256, session_key, session_key_size, stream));
+
+	pgp_stream_push(message, sed);
+
+	return message;
+}
+
 static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
 									  pgp_stream_t *stream)
 {
@@ -239,6 +292,7 @@ void spgp_encrypt(void)
 		switch (command.mode)
 		{
 		case SPGP_MODE_RFC2440:
+			message = spgp_encrypt_sed(key, count, command.passhprases->packets, command.passhprases->count, stream);
 		case SPGP_MODE_RFC4880:
 			message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, stream);
 		case SPGP_MODE_LIBREPGP:
@@ -259,6 +313,7 @@ void spgp_encrypt(void)
 			switch (command.mode)
 			{
 			case SPGP_MODE_RFC2440:
+				message = spgp_encrypt_sed(key, count, command.passhprases->packets, command.passhprases->count, stream);
 			case SPGP_MODE_RFC4880:
 				message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, stream);
 			case SPGP_MODE_LIBREPGP:
