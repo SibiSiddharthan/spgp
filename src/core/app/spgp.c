@@ -105,6 +105,7 @@ Signature Options:\n\
      --sig-keyserver URL        set keyserver URL\n\
 \n\
 Operation Modes:\n\
+     --rfc2440                  conform to rfc 2440 specification\n\
      --rfc4880                  conform to rfc 4880 specification\n\
      --openpgp                  conform to openpgp specification\n\
      --librepgp                 conform to librepgp specification\n\
@@ -181,6 +182,7 @@ typedef enum _spgp_option
 	SPGP_OPTION_SIG_KEYSERVER,
 
 	// Operation Modes
+	SPGP_OPTION_RFC2440,
 	SPGP_OPTION_RFC4880,
 	SPGP_OPTION_OPENPGP,
 	SPGP_OPTION_LIBREPGP,
@@ -256,6 +258,7 @@ static arg_option_t spgp_options[] = {
 	{"sig-keyserver-url", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_SIG_KEYSERVER},
 
 	// Operation Modes
+	{"rfc2440", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_RFC2440},
 	{"rfc4880", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_RFC4880},
 	{"openpgp", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_OPENPGP},
 	{"librepgp", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_LIBREPGP},
@@ -576,6 +579,11 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 			break;
 
 		// Operation Modes
+		case SPGP_OPTION_RFC2440:
+		{
+			command->mode = SPGP_MODE_RFC2440;
+		}
+		break;
 		case SPGP_OPTION_RFC4880:
 		{
 			command->mode = SPGP_MODE_RFC4880;
