@@ -237,7 +237,7 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 		{
 			*key = spgp_read_key((*user)->fingerprint, (*user)->fingerprint_size);
 
-			if (((*key)->capabilities & capabilities) != capabilities)
+			if ((*key)->capabilities & capabilities)
 			{
 
 				// Check if the fingerprint given was the primary key's one.
@@ -668,7 +668,7 @@ static size_t print_uid(byte_t *uid, uint32_t uid_size, byte_t trust, void *str,
 	return snprintf(str, size, "uid         [%s] %.*s\n", get_trust_value(trust), uid_size, uid); // 9 spaces
 }
 
-uint32_t spgp_list_keys(void)
+void spgp_list_keys(void)
 {
 	pgp_stream_t *stream = NULL;
 	pgp_keyring_packet *keyring = NULL;
@@ -719,8 +719,6 @@ uint32_t spgp_list_keys(void)
 	}
 
 	printf("%s", buffer);
-
-	return 0;
 }
 
 pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *key)

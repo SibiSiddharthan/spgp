@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-uint32_t spgp_list_packets(void)
+void spgp_list_packets(void)
 {
 	pgp_stream_t *stream = NULL;
 
@@ -46,6 +46,4 @@ uint32_t spgp_list_packets(void)
 		pgp_packet_stream_print(stream, str, 65536, options);
 		printf("%s\n", str);
 	}
-
-	return 0;
 }

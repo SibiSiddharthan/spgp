@@ -17,44 +17,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-// clang-format off
-static const byte_t hex_to_nibble_table[256] = 
+static pgp_stream_t *spgp_sign_mdc(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
+								   void *file)
 {
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255, 255, 255, 255, 255,                       // 0 - 9
-	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // A - F
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,         // a - f
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
-};
-// clang-format on
-
-static pgp_key_packet *spgp_search_key_from_user(char *user)
-{
-	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t pos = 0;
-
-	for (byte_t i = 0; user[i] != '\0';)
-	{
-		fingerprint[pos++] = (hex_to_nibble_table[(byte_t)user[i]] * 16) + hex_to_nibble_table[(byte_t)user[i + 1]];
-		i += 2;
-	}
-
-	return spgp_read_key(fingerprint, pos);
 }
 
-uint32_t spgp_encrypt(spgp_command *command)
+void spgp_encrypt()
 {
+	pgp_key_packet *key[16] = {0};
+	pgp_user_info *uinfo[16] = {0};
+	pgp_keyring_packet *keyring[16] = {0};
+
+	pgp_compresed_packet *compressed = NULL;
+	pgp_stream_t *message = NULL;
+
+	uint32_t count = 0;
+
 	pgp_stream_t *stream = NULL;
 	pgp_seipd_packet *seipd = NULL;
 	pgp_literal_packet *literal = NULL;
@@ -62,14 +40,96 @@ uint32_t spgp_encrypt(spgp_command *command)
 	byte_t session_key[64] = {0};
 	byte_t session_key_size = 0;
 
-	void *file = NULL;
-	void *buffer = NULL;
+	void *passphrase = NULL;
 
-	void *lit_buffer = NULL;
-
-	if (command->files != NULL)
+	if (command.recipients == NULL && command.symmetric == 0)
 	{
-		file = command->files->packets[0];
+		printf("No recipient specified\n.");
+		exit(1);
+	}
+
+	if (command.symmetric)
+	{
+		if (command.passhprase == NULL)
+		{
+			passphrase = spgp_prompt_passphrase();
+
+			if (passphrase == NULL)
+			{
+				printf("No passphrase provided\n.");
+				exit(1);
+			}
+		}
+	}
+
+	count = command.recipients->count;
+
+	// Search the keyring to find the keys
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		keyring[i] = spgp_search_keyring(&key[i], &uinfo[i], command.recipients->packets[i], strlen(command.recipients->packets[i]),
+										 (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE));
+
+		if (keyring[i] == NULL)
+		{
+			printf("Unable to find recipient %s\n.", (char *)command.recipients->packets[i]);
+			exit(1);
+		}
+
+		if (key[i] == NULL)
+		{
+			printf("No Encryption key for recipient %s\n.", (char *)command.recipients->packets[i]);
+			exit(1);
+		}
+	}
+
+	// Create the encrypted message
+	if (command.files == NULL)
+	{
+		if (command.detach_sign)
+		{
+			message = spgp_detach_sign_file(key, uinfo, count, NULL);
+		}
+		if (command.clear_sign)
+		{
+			message = spgp_clear_sign_file(key, uinfo, count, NULL);
+		}
+		if (command.sign)
+		{
+			if (command.mode != SPGP_MODE_RFC2440)
+			{
+				message = spgp_sign_file(key, uinfo, count, NULL);
+			}
+			else
+			{
+				message = spgp_sign_file_legacy(key, uinfo, count, NULL);
+			}
+		}
+	}
+	else
+	{
+		for (uint32_t i = 0; i < count; ++i)
+		{
+			if (command.detach_sign)
+			{
+				message = spgp_detach_sign_file(key, uinfo, count, command.files->packets[i]);
+			}
+			if (command.clear_sign)
+			{
+				message = spgp_clear_sign_file(key, uinfo, count, command.files->packets[i]);
+			}
+			if (command.sign)
+			{
+				if (command.mode != SPGP_MODE_RFC2440)
+				{
+					message = spgp_sign_file(key, uinfo, count, command.files->packets[i]);
+				}
+				else
+				{
+					message = spgp_sign_file_legacy(key, uinfo, count, command.files->packets[i]);
+				}
+			}
+		}
 	}
 
 	literal = spgp_literal_read_file(file, PGP_LITERAL_DATA_BINARY);

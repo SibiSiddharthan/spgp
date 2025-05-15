@@ -579,7 +579,7 @@ static void make_default_preferences(pgp_user_info *info)
 	info->flags = PGP_KEY_SERVER_NO_MODIFY;
 }
 
-uint32_t spgp_generate_key(void)
+void spgp_generate_key(void)
 {
 	void *uid = NULL;
 	void *spec = NULL;

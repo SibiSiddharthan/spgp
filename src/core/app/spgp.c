@@ -403,7 +403,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 {
 	if (command->list_packets || command->dump_packets)
 	{
-		return spgp_list_packets();
+		spgp_list_packets();
 	}
 
 	if (command->sign || command->detach_sign || command->clear_sign)
@@ -418,7 +418,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->encrypt || command->symmetric)
 	{
-		return spgp_encrypt(command);
+		spgp_encrypt(command);
 	}
 
 	if (command->decrypt)
@@ -433,12 +433,12 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->generate_key)
 	{
-		return spgp_generate_key();
+		void spgp_generate_key();
 	}
 
 	if (command->list_keys || command->list_secret_keys)
 	{
-		return spgp_list_keys();
+		spgp_list_keys();
 	}
 
 	spgp_print_help();

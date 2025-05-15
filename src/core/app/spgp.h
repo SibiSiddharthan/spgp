@@ -165,16 +165,16 @@ typedef struct _spgp_command
 
 extern spgp_command command;
 
-uint32_t spgp_generate_key(void);
+void spgp_generate_key(void);
 
 void spgp_sign(void);
 uint32_t spgp_verify(spgp_command *command);
 
-uint32_t spgp_encrypt(spgp_command *command);
+void spgp_encrypt();
 uint32_t spgp_decrypt(spgp_command *command);
 
-uint32_t spgp_list_keys(void);
-uint32_t spgp_list_packets(void);
+void spgp_list_keys(void);
+void spgp_list_packets(void);
 
 void spgp_import_keys(void);
 uint32_t spgp_export_keys(spgp_command *command);
