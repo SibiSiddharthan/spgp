@@ -485,11 +485,14 @@ void spgp_sign(void)
 		}
 		if (command.sign)
 		{
-			signatures = spgp_sign_file(key, uinfo, count, NULL);
-		}
-		if (command.legacy_sign)
-		{
-			signatures = spgp_sign_file_legacy(key, uinfo, count, NULL);
+			if (command.mode != SPGP_MODE_RFC2440)
+			{
+				signatures = spgp_sign_file(key, uinfo, count, NULL);
+			}
+			else
+			{
+				signatures = spgp_sign_file_legacy(key, uinfo, count, NULL);
+			}
 		}
 	}
 	else
@@ -506,11 +509,14 @@ void spgp_sign(void)
 			}
 			if (command.sign)
 			{
-				signatures = spgp_sign_file(key, uinfo, count, command.files->packets[i]);
-			}
-			if (command.legacy_sign)
-			{
-				signatures = spgp_sign_file_legacy(key, uinfo, count, command.files->packets[i]);
+				if (command.mode != SPGP_MODE_RFC2440)
+				{
+					signatures = spgp_sign_file(key, uinfo, count, command.files->packets[i]);
+				}
+				else
+				{
+					signatures = spgp_sign_file_legacy(key, uinfo, count, command.files->packets[i]);
+				}
 			}
 		}
 	}

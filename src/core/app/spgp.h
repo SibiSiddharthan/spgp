@@ -132,7 +132,6 @@ typedef struct _spgp_command
 			byte_t dearmor : 1;
 
 			byte_t sign : 1;
-			byte_t legacy_sign : 1;
 			byte_t detach_sign : 1;
 			byte_t clear_sign : 1;
 			byte_t verify : 1;
