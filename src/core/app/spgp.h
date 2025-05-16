@@ -205,5 +205,6 @@ byte_t *spgp_prompt_passphrase(void);
 
 pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packet);
 pgp_compression_algorithms preferred_compression_algorithm(pgp_user_info **users, uint32_t count);
+pgp_symmetric_key_algorithms preferred_cipher_algorithm(pgp_user_info **users, uint32_t count);
 
 #endif

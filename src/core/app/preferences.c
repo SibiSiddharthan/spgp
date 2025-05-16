@@ -6,6 +6,7 @@
 */
 
 #include <spgp.h>
+#include <crypto.h>
 
 pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packet)
 {
@@ -110,6 +111,47 @@ pgp_compression_algorithms preferred_compression_algorithm(pgp_user_info **users
 			algorithm = preferences[i];
 			break;
 		}
+	}
+
+	return algorithm;
+}
+
+pgp_symmetric_key_algorithms preferred_cipher_algorithm(pgp_user_info **users, uint32_t count)
+{
+	pgp_symmetric_key_algorithms algorithm = 0;
+	byte_t preferences[16] = {0};
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		for (byte_t j = 0; j < users[i]->cipher_algorithm_preferences_octets; ++j)
+		{
+			preferences[users[i]->cipher_algorithm_preferences[j]] += 1;
+		}
+	}
+
+	for (uint32_t i = 0; i < 16; ++i)
+	{
+		if (preferences[i] == count)
+		{
+			if (algorithm == 0)
+			{
+				algorithm = preferences[i];
+			}
+			else
+			{
+				// Choose the stronger encryption algorithm
+				if (pgp_symmetric_cipher_key_size(preferences[i]) > pgp_symmetric_cipher_key_size(algorithm))
+				{
+					algorithm = preferences[i];
+				}
+			}
+		}
+	}
+
+	if (algorithm == 0)
+	{
+		// Default Algorithm
+		algorithm = PGP_AES_128;
 	}
 
 	return algorithm;
