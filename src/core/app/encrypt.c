@@ -18,7 +18,7 @@
 #include <string.h>
 
 static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
-									  pgp_stream_t *stream)
+									  pgp_symmetric_key_algorithms algorithm, pgp_stream_t *stream)
 {
 	pgp_stream_t *message = NULL;
 	pgp_sed_packet *sed = NULL;
@@ -26,7 +26,7 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 	pgp_skesk_packet *skesk = NULL;
 
 	byte_t session_key[32] = {0};
-	byte_t session_key_size = 0;
+	byte_t session_key_size = pgp_symmetric_cipher_key_size(algorithm);
 
 	pgp_s2k s2k = {0};
 
@@ -43,7 +43,7 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 		PGP_CALL(pgp_s2k_hash(&s2k, passphrases[0], strlen(passphrases[0]), session_key, session_key_size));
 
 		PGP_CALL(pgp_sed_packet_new(&sed));
-		PGP_CALL(pgp_sed_packet_encrypt(sed, PGP_AES_256, session_key, session_key_size, stream));
+		PGP_CALL(pgp_sed_packet_encrypt(sed, algorithm, session_key, session_key_size, stream));
 
 		pgp_stream_push(message, sed);
 
@@ -59,7 +59,7 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 		pkesk = NULL;
 
 		PGP_CALL(pgp_pkesk_packet_new(&pkesk, PGP_PKESK_V3));
-		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, PGP_AES_256, session_key, session_key_size));
+		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, algorithm, session_key, session_key_size));
 
 		pgp_stream_push(message, pkesk);
 	}
@@ -71,7 +71,7 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 		memset(&s2k, 0, sizeof(pgp_s2k));
 		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
 
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_128, 0, &s2k));
 		PGP_CALL(
 			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[i], strlen(passphrases[i]), NULL, 0, session_key, session_key_size));
 
@@ -79,7 +79,7 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 	}
 
 	PGP_CALL(pgp_sed_packet_new(&sed));
-	PGP_CALL(pgp_sed_packet_encrypt(sed, PGP_AES_256, session_key, session_key_size, stream));
+	PGP_CALL(pgp_sed_packet_encrypt(sed, algorithm, session_key, session_key_size, stream));
 
 	pgp_stream_push(message, sed);
 
@@ -87,7 +87,7 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 }
 
 static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
-									  pgp_stream_t *stream)
+									  pgp_symmetric_key_algorithms algorithm, pgp_stream_t *stream)
 {
 	pgp_stream_t *message = NULL;
 	pgp_seipd_packet *seipd = NULL;
@@ -95,7 +95,7 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 	pgp_skesk_packet *skesk = NULL;
 
 	byte_t session_key[32] = {0};
-	byte_t session_key_size = 0;
+	byte_t session_key_size = pgp_symmetric_cipher_key_size(algorithm);
 
 	pgp_s2k s2k = {0};
 
@@ -111,7 +111,7 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 
 		PGP_CALL(pgp_s2k_hash(&s2k, passphrases[0], strlen(passphrases[0]), session_key, session_key_size));
 
-		PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_256, 0, 0));
+		PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, algorithm, 0, 0));
 		PGP_CALL(pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, stream));
 
 		pgp_stream_push(message, seipd);
@@ -128,7 +128,7 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 		pkesk = NULL;
 
 		PGP_CALL(pgp_pkesk_packet_new(&pkesk, PGP_PKESK_V3));
-		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, PGP_AES_256, session_key, session_key_size));
+		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, algorithm, session_key, session_key_size));
 
 		pgp_stream_push(message, pkesk);
 	}
@@ -140,14 +140,14 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 		memset(&s2k, 0, sizeof(pgp_s2k));
 		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
 
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_128, 0, &s2k));
 		PGP_CALL(
 			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[i], strlen(passphrases[i]), NULL, 0, session_key, session_key_size));
 
 		pgp_stream_push(message, skesk);
 	}
 
-	PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_256, 0, 0));
+	PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, algorithm, 0, 0));
 	PGP_CALL(pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, stream));
 
 	pgp_stream_push(message, seipd);
@@ -156,6 +156,7 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 }
 
 static pgp_stream_t *spgp_encrypt_aead(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
+									   pgp_symmetric_key_algorithms cipher_algorithm, pgp_aead_algorithms aead_algorithm,
 									   pgp_stream_t *stream)
 {
 	pgp_stream_t *message = NULL;
@@ -164,10 +165,11 @@ static pgp_stream_t *spgp_encrypt_aead(pgp_key_packet **keys, uint32_t recipient
 	pgp_skesk_packet *skesk = NULL;
 
 	byte_t session_key[32] = {0};
-	byte_t session_key_size = 0;
+	byte_t session_key_size = pgp_symmetric_cipher_key_size(cipher_algorithm);
 
 	byte_t iv[16] = {0};
-	byte_t iv_size = pgp_aead_iv_size(PGP_AEAD_OCB);
+	byte_t iv_size = pgp_aead_iv_size(aead_algorithm);
+	byte_t ocb_iv_size = pgp_aead_iv_size(PGP_AEAD_OCB);
 
 	pgp_s2k s2k = {0};
 
@@ -182,23 +184,24 @@ static pgp_stream_t *spgp_encrypt_aead(pgp_key_packet **keys, uint32_t recipient
 		pkesk = NULL;
 
 		PGP_CALL(pgp_pkesk_packet_new(&pkesk, PGP_PKESK_V3));
-		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, PGP_AES_256, session_key, session_key_size));
+		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, cipher_algorithm, session_key, session_key_size));
 
 		pgp_stream_push(message, pkesk);
 	}
 
 	for (uint32_t i = 0; i < passphrase_count; ++i)
 	{
+
 		skesk = NULL;
 
 		memset(&s2k, 0, sizeof(pgp_s2k));
 		preferred_s2k_algorithm(PGP_KEY_V5, &s2k);
 
 		// Generate IV for S2K
-		PGP_CALL(pgp_rand(iv, iv_size));
+		PGP_CALL(pgp_rand(iv, ocb_iv_size));
 
 		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V5, PGP_AES_128, PGP_AEAD_OCB, &s2k));
-		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[i], strlen(passphrases[i]), iv, iv_size, session_key,
+		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[i], strlen(passphrases[i]), iv, ocb_iv_size, session_key,
 													  session_key_size));
 
 		pgp_stream_push(message, skesk);
@@ -207,7 +210,7 @@ static pgp_stream_t *spgp_encrypt_aead(pgp_key_packet **keys, uint32_t recipient
 	// Generate IV for encryption
 	PGP_CALL(pgp_rand(iv, iv_size));
 
-	PGP_CALL(pgp_aead_packet_new(&aead, PGP_AES_256, PGP_AEAD_OCB, PGP_MAX_CHUNK_SIZE));
+	PGP_CALL(pgp_aead_packet_new(&aead, cipher_algorithm, aead_algorithm, PGP_MAX_CHUNK_SIZE));
 	PGP_CALL(pgp_aead_packet_encrypt(aead, iv, iv_size, session_key, session_key_size, stream));
 
 	pgp_stream_push(message, aead);
@@ -216,6 +219,7 @@ static pgp_stream_t *spgp_encrypt_aead(pgp_key_packet **keys, uint32_t recipient
 }
 
 static pgp_stream_t *spgp_encrypt_seipd(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
+										pgp_symmetric_key_algorithms cipher_algorithm, pgp_aead_algorithms aead_algorithm,
 										pgp_stream_t *stream)
 {
 	pgp_stream_t *message = NULL;
@@ -224,7 +228,7 @@ static pgp_stream_t *spgp_encrypt_seipd(pgp_key_packet **keys, uint32_t recipien
 	pgp_skesk_packet *skesk = NULL;
 
 	byte_t session_key[32] = {0};
-	byte_t session_key_size = 0;
+	byte_t session_key_size = pgp_symmetric_cipher_key_size(cipher_algorithm);
 
 	byte_t iv[16] = {0};
 	byte_t iv_size = pgp_aead_iv_size(PGP_AEAD_OCB);
@@ -245,7 +249,7 @@ static pgp_stream_t *spgp_encrypt_seipd(pgp_key_packet **keys, uint32_t recipien
 		pkesk = NULL;
 
 		PGP_CALL(pgp_pkesk_packet_new(&pkesk, PGP_PKESK_V6));
-		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, PGP_AES_256, session_key, session_key_size));
+		PGP_CALL(pgp_pkesk_packet_session_key_encrypt(pkesk, keys[i], 0, cipher_algorithm, session_key, session_key_size));
 
 		pgp_stream_push(message, pkesk);
 	}
@@ -271,7 +275,7 @@ static pgp_stream_t *spgp_encrypt_seipd(pgp_key_packet **keys, uint32_t recipien
 	PGP_CALL(pgp_rand(salt, salt_size));
 
 	// Encrypt
-	PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V2, PGP_AES_256, PGP_AEAD_OCB, PGP_MAX_CHUNK_SIZE));
+	PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V2, cipher_algorithm, aead_algorithm, PGP_MAX_CHUNK_SIZE));
 	PGP_CALL(pgp_seipd_packet_encrypt(seipd, salt, session_key, session_key_size, stream));
 
 	pgp_stream_push(message, seipd);
@@ -294,6 +298,12 @@ void spgp_encrypt(void)
 	armor_options options = {0};
 	armor_marker marker = {0};
 	armor_options *opts = NULL;
+
+	byte_t cipher_algorithm = 0;
+	byte_t aead_algorithm = 0;
+	uint16_t aead_pair = 0;
+
+	byte_t features = 0xFF;
 
 	if (command.encrypt && command.recipients == NULL)
 	{
@@ -336,6 +346,19 @@ void spgp_encrypt(void)
 			printf("No Encryption key for recipient %s\n.", (char *)command.recipients->packets[i]);
 			exit(1);
 		}
+
+		features &= uinfo[i]->features;
+	}
+
+	if (features & (PGP_SEIPD_V2 | PGP_AEAD))
+	{
+		aead_pair = preferred_aead_algorithm(uinfo, count);
+		cipher_algorithm = aead_pair << 8;
+		aead_algorithm = aead_algorithm & 0xFF;
+	}
+	else
+	{
+		cipher_algorithm = preferred_cipher_algorithm(uinfo, count);
 	}
 
 	// Literal or compressed packet
@@ -347,16 +370,23 @@ void spgp_encrypt(void)
 		literal = spgp_literal_read_file(NULL, PGP_LITERAL_DATA_BINARY);
 		stream = pgp_stream_push(stream, literal);
 
-		switch (command.mode)
+		if (features & PGP_SEIPD_V2)
 		{
-		case SPGP_MODE_RFC2440:
-			message = spgp_encrypt_sed(key, count, command.passhprases->packets, command.passhprases->count, stream);
-		case SPGP_MODE_RFC4880:
-			message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, stream);
-		case SPGP_MODE_LIBREPGP:
-			message = spgp_encrypt_aead(key, count, command.passhprases->packets, command.passhprases->count, stream);
-		case SPGP_MODE_OPENPGP:
-			message = spgp_encrypt_seipd(key, count, command.passhprases->packets, command.passhprases->count, stream);
+			message = spgp_encrypt_seipd(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm,
+										 aead_algorithm, stream);
+		}
+		else if (features & PGP_AEAD)
+		{
+			message = spgp_encrypt_aead(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm,
+										aead_algorithm, stream);
+		}
+		else if (features & PGP_MDC)
+		{
+			message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm, stream);
+		}
+		else
+		{
+			message = spgp_encrypt_sed(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm, stream);
 		}
 
 		stream = pgp_stream_clear(stream, pgp_packet_delete);
@@ -368,16 +398,23 @@ void spgp_encrypt(void)
 			literal = spgp_literal_read_file(NULL, PGP_LITERAL_DATA_BINARY);
 			stream = pgp_stream_push(stream, literal);
 
-			switch (command.mode)
+			if (features & PGP_SEIPD_V2)
 			{
-			case SPGP_MODE_RFC2440:
-				message = spgp_encrypt_sed(key, count, command.passhprases->packets, command.passhprases->count, stream);
-			case SPGP_MODE_RFC4880:
-				message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, stream);
-			case SPGP_MODE_LIBREPGP:
-				message = spgp_encrypt_aead(key, count, command.passhprases->packets, command.passhprases->count, stream);
-			case SPGP_MODE_OPENPGP:
-				message = spgp_encrypt_seipd(key, count, command.passhprases->packets, command.passhprases->count, stream);
+				message = spgp_encrypt_seipd(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm,
+											 aead_algorithm, stream);
+			}
+			else if (features & PGP_AEAD)
+			{
+				message = spgp_encrypt_aead(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm,
+											aead_algorithm, stream);
+			}
+			else if (features & PGP_MDC)
+			{
+				message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm, stream);
+			}
+			else
+			{
+				message = spgp_encrypt_sed(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm, stream);
 			}
 
 			stream = pgp_stream_clear(stream, pgp_packet_delete);
