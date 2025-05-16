@@ -89,3 +89,28 @@ pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packe
 
 	return PGP_SHA2_256;
 }
+
+pgp_compression_algorithms preferred_compression_algorithm(pgp_user_info **users, uint32_t count)
+{
+	pgp_compression_algorithms algorithm = PGP_UNCOMPRESSED;
+	byte_t preferences[4] = {0};
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		for (byte_t j = 0; j < users[i]->compression_algorithm_preferences_octets; ++j)
+		{
+			preferences[users[i]->compression_algorithm_preferences[j]] += 1;
+		}
+	}
+
+	for (uint32_t i = 0; i < 4; ++i)
+	{
+		if (preferences[i] == count)
+		{
+			algorithm = preferences[i];
+			break;
+		}
+	}
+
+	return algorithm;
+}
