@@ -86,89 +86,6 @@ static size_t decode_cleartext(byte_t *output, byte_t *input, size_t size)
 	return output_pos;
 }
 
-static pgp_hash_algorithms get_hash_algorithm(pgp_key_packet *packet)
-{
-	switch (packet->public_key_algorithm_id)
-	{
-	case PGP_RSA_ENCRYPT_OR_SIGN:
-	case PGP_RSA_SIGN_ONLY:
-	{
-		return PGP_SHA2_256;
-	}
-	break;
-	case PGP_DSA:
-	{
-		pgp_dsa_key *key = packet->key;
-
-		if (ROUND_UP(key->p->bits, 1024) == 1024)
-		{
-			return PGP_SHA1;
-		}
-
-		if (ROUND_UP(key->p->bits, 1024) == 2048)
-		{
-			return PGP_SHA2_224;
-		}
-
-		if (ROUND_UP(key->p->bits, 1024) == 3072)
-		{
-			return PGP_SHA2_256;
-		}
-	}
-	break;
-	case PGP_ECDSA:
-	{
-		pgp_ecdsa_key *key = packet->key;
-
-		switch (key->curve)
-		{
-		case PGP_EC_NIST_P256:
-			return PGP_SHA2_256;
-		case PGP_EC_NIST_P384:
-			return PGP_SHA2_384;
-		case PGP_EC_NIST_P521:
-			return PGP_SHA2_512;
-		case PGP_EC_BRAINPOOL_256R1:
-			return PGP_SHA2_256;
-		case PGP_EC_BRAINPOOL_384R1:
-			return PGP_SHA2_384;
-		case PGP_EC_BRAINPOOL_512R1:
-			return PGP_SHA2_512;
-		}
-	}
-	break;
-	case PGP_EDDSA:
-	{
-		pgp_eddsa_key *key = packet->key;
-
-		if (key->curve == PGP_EC_ED25519)
-		{
-			return PGP_SHA2_256;
-		}
-
-		if (key->curve == PGP_EC_ED25519)
-		{
-			return PGP_SHA2_512;
-		}
-	}
-	break;
-	case PGP_ED25519:
-	{
-		return PGP_SHA2_256;
-	}
-	break;
-	case PGP_ED448:
-	{
-		return PGP_SHA2_512;
-	}
-	break;
-	default:
-		return PGP_SHA2_512;
-	}
-
-	return PGP_SHA2_512;
-}
-
 #define IS_NUM(c)   ((c) >= 48 && (c) <= 57)
 #define TO_NUM(c)   ((c) - 48)
 #define TO_UPPER(c) ((c) & ~0x20)
@@ -214,7 +131,7 @@ static uint32_t parse_expiry(byte_t *in, byte_t length)
 static pgp_sign_info *spgp_create_sign_info(pgp_key_packet *key, pgp_user_info *uinfo, pgp_signature_type type)
 {
 	pgp_sign_info *sinfo = NULL;
-	pgp_hash_algorithms algorithm = get_hash_algorithm(key);
+	pgp_hash_algorithms algorithm = preferred_hash_algorithm_for_signature(key);
 
 	// Create the structure
 	PGP_CALL(pgp_sign_info_new(&sinfo, type, algorithm, 0, 0, 0, 0));

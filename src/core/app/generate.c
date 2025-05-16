@@ -597,6 +597,8 @@ void spgp_generate_key(void)
 	pgp_signature_packet *signature = NULL;
 	pgp_sign_info *sinfo = NULL;
 
+	time_t creation_time = time(NULL);
+
 	if (command.files == NULL || command.files->count != 2)
 	{
 		printf("Bad usage");
@@ -639,7 +641,7 @@ void spgp_generate_key(void)
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		PGP_CALL(pgp_key_generate(&key_packets[i], version, key_specs->algorithm, key_specs->capabilities, key_specs->flags, time(NULL),
+		PGP_CALL(pgp_key_generate(&key_packets[i], version, key_specs->algorithm, key_specs->capabilities, key_specs->flags, creation_time,
 								  key_specs->expiry, &key_specs->parameters));
 	}
 
@@ -652,7 +654,8 @@ void spgp_generate_key(void)
 	PGP_CALL(pgp_user_info_new(&uinfo, uid, strlen(uid), NULL, 0, PGP_TRUST_ULTIMATE, 0, 0));
 	make_default_preferences(uinfo);
 
-	PGP_CALL(pgp_sign_info_new(&sinfo, PGP_POSITIVE_CERTIFICATION_SIGNATURE, PGP_SHA2_256, 0, 0, 0, 0));
+	PGP_CALL(pgp_sign_info_new(&sinfo, PGP_POSITIVE_CERTIFICATION_SIGNATURE, preferred_hash_algorithm_for_signature(key_packets[0]),
+							   creation_time, 0, 0, 0));
 	PGP_CALL(pgp_generate_certificate_binding_signature(&signature, key_packets[0], sinfo, uinfo, user));
 
 	pgp_sign_info_delete(sinfo);
@@ -666,7 +669,8 @@ void spgp_generate_key(void)
 
 		pgp_stream_push(certificate, key_packets[i]);
 
-		PGP_CALL(pgp_sign_info_new(&sinfo, PGP_SUBKEY_BINDING_SIGNATURE, PGP_SHA2_256, 0, 0, 0, 0));
+		PGP_CALL(pgp_sign_info_new(&sinfo, PGP_SUBKEY_BINDING_SIGNATURE, preferred_hash_algorithm_for_signature(key_packets[0]),
+								   creation_time, 0, 0, 0));
 		PGP_CALL(pgp_generate_subkey_binding_signature(&signature, key_packets[0], key_packets[i], sinfo));
 
 		pgp_stream_push(certificate, signature);
