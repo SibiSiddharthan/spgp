@@ -27,6 +27,9 @@
 #include <os.h>
 #include <io.h>
 
+#include <stdlib.h>
+#include <stdio.h>
+
 // Configuration
 #define SPGP_DEFAULT_HOME ".spgp"
 #define SPGP_CONFIG       "spgp.conf"
@@ -207,5 +210,7 @@ pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packe
 pgp_compression_algorithms preferred_compression_algorithm(pgp_user_info **users, uint32_t count);
 pgp_symmetric_key_algorithms preferred_cipher_algorithm(pgp_user_info **users, uint32_t count);
 uint16_t preferred_aead_algorithm(pgp_user_info **users, uint32_t count);
+
+void preferred_s2k_algorithm(pgp_key_version version, pgp_s2k *s2k);
 
 #endif

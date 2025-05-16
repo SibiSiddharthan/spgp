@@ -214,3 +214,26 @@ uint16_t preferred_aead_algorithm(pgp_user_info **users, uint32_t count)
 
 	return ((cipher_algorithm << 8) + aead_algorithm);
 }
+
+void preferred_s2k_algorithm(pgp_key_version version, pgp_s2k *s2k)
+{
+	if (version == PGP_KEY_V6)
+	{
+		s2k->id = PGP_S2K_ARGON2;
+		s2k->argon2.t = 1;
+		s2k->argon2.p = 4;
+		s2k->argon2.m = 21;
+
+		PGP_CALL(pgp_rand(s2k->argon2.salt, 16));
+
+		return;
+	}
+
+	s2k->id = PGP_S2K_ITERATED;
+	PGP_CALL(pgp_rand(s2k->iterated.salt, 8));
+
+	s2k->iterated.hash_id = (version <= PGP_KEY_V3) ? PGP_SHA1 : PGP_SHA2_256;
+	s2k->iterated.count = 224 + (s2k->iterated.salt[0] % 32);
+
+	return;
+}

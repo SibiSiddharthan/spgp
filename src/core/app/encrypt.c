@@ -38,6 +38,13 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
 
 		pgp_stream_push(message, skesk);
+
+		PGP_CALL(pgp_sed_packet_new(&sed));
+		PGP_CALL(pgp_sed_packet_encrypt(sed, PGP_AES_256, session_key, session_key_size, stream));
+
+		pgp_stream_push(message, sed);
+
+		return message;
 	}
 
 	// Process PKESKs first
@@ -91,6 +98,13 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
 
 		pgp_stream_push(message, skesk);
+
+		PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_256, 0, 0));
+		PGP_CALL(pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, stream));
+
+		pgp_stream_push(message, seipd);
+
+		return message;
 	}
 
 	// Process PKESKs first

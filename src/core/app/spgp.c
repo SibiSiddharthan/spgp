@@ -441,8 +441,6 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 		spgp_list_keys();
 	}
 
-	spgp_print_help();
-
 	return 0;
 }
 
