@@ -79,7 +79,6 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	size_t total_data_size = iv_size + 2 + data_size;
 
 	byte_t partial = 0;
-	uint32_t result = 0;
 
 	byte_t zero_iv[16] = {0};
 	byte_t message_iv[32] = {0};
@@ -97,11 +96,11 @@ pgp_error_t pgp_sed_packet_encrypt(pgp_sed_packet *packet, byte_t symmetric_key_
 	packet->data_size = total_data_size;
 
 	// Generate the IV
-	result = pgp_rand(message_iv, iv_size);
+	status = pgp_rand(message_iv, iv_size);
 
-	if (result != iv_size)
+	if (status != PGP_SUCCESS)
 	{
-		return PGP_RAND_ERROR;
+		return status;
 	}
 
 	// Last 2 octets
@@ -443,7 +442,12 @@ static pgp_error_t pgp_seipd_packet_v1_encrypt(pgp_seipd_packet *packet, void *s
 	}
 
 	// Generate random prefix of block size
-	pgp_rand(prefix, block_size);
+	status = pgp_rand(prefix, block_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Copy last 2 octets
 	prefix[block_size] = prefix[block_size - 2];

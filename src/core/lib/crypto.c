@@ -771,7 +771,7 @@ pgp_error_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorith
 	return PGP_SUCCESS;
 }
 
-uint32_t pgp_rand(void *buffer, uint32_t size)
+pgp_error_t pgp_rand(void *buffer, uint32_t size)
 {
 	if (pgp_drbg == NULL)
 	{
@@ -779,11 +779,16 @@ uint32_t pgp_rand(void *buffer, uint32_t size)
 
 		if (pgp_drbg == NULL)
 		{
-			return 0;
+			return PGP_RAND_ERROR;
 		}
 	}
 
-	return hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size);
+	if (hmac_drbg_generate(pgp_drbg, 0, NULL, 0, buffer, size) != size)
+	{
+		return PGP_RAND_ERROR;
+	}
+
+	return PGP_SUCCESS;
 }
 
 pgp_error_t pgp_rsa_generate_key(pgp_rsa_key **key, uint32_t bits)

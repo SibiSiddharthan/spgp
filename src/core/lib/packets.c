@@ -1473,6 +1473,8 @@ size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *
 
 pgp_error_t pgp_padding_packet_new(pgp_padding_packet **packet, void *data, uint32_t size)
 {
+	pgp_error_t status = 0;
+
 	pgp_padding_packet *padding = NULL;
 	uint32_t required_size = sizeof(pgp_packet_header) + size;
 
@@ -1497,13 +1499,11 @@ pgp_error_t pgp_padding_packet_new(pgp_padding_packet **packet, void *data, uint
 	else
 	{
 		// Generate random data
-		// Only consider the error case if we output no padding data.
-		size = pgp_rand(padding->data, size);
+		status = pgp_rand(padding->data, size);
 
-		if (size == 0)
+		if (status != PGP_SUCCESS)
 		{
-			pgp_padding_packet_delete(padding);
-			return PGP_RAND_ERROR;
+			return status;
 		}
 	}
 

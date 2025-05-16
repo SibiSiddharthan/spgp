@@ -101,7 +101,7 @@ pgp_error_t pgp_ed448_sign(pgp_ed448_signature **signature, pgp_ed448_key *pgp_k
 pgp_error_t pgp_ed448_verify(pgp_ed448_signature *signature, pgp_ed448_key *pgp_key, void *hash, uint32_t hash_size);
 
 // RAND
-uint32_t pgp_rand(void *buffer, uint32_t size);
+pgp_error_t pgp_rand(void *buffer, uint32_t size);
 
 // KDFs
 uint32_t pgp_argon2(void *password, uint32_t password_size, void *salt, uint32_t salt_size, uint32_t parallel, uint32_t memory,

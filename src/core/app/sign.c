@@ -142,7 +142,7 @@ static pgp_sign_info *spgp_create_sign_info(pgp_key_packet *key, pgp_user_info *
 	// Generate salt
 	if (key->version == PGP_KEY_V6)
 	{
-		sinfo->salt_size = pgp_rand(sinfo->salt, 32);
+		PGP_CALL(pgp_rand(sinfo->salt, (sinfo->salt_size = 32)));
 	}
 
 	// Set expiration time

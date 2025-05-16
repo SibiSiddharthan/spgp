@@ -3656,11 +3656,9 @@ static pgp_error_t pgp_do_sign(pgp_signature_packet *packet, pgp_key_packet *key
 		// Generate 32 bytes of salt
 		if (packet->salt_size == 0)
 		{
-			packet->salt_size = pgp_rand(packet->salt, 32);
-
-			if (packet->salt_size == 0)
+			if ((error = pgp_rand(packet->salt, 32) != PGP_SUCCESS))
 			{
-				return PGP_RAND_ERROR;
+				return error;
 			}
 		}
 	}
