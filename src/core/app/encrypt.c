@@ -34,10 +34,13 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 
 	if (recipient_count == 0 && passphrase_count == 1)
 	{
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, 0, 0, &s2k));
 		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
 
 		pgp_stream_push(message, skesk);
+
+		PGP_CALL(pgp_s2k_hash(&s2k, passphrases[0], strlen(passphrases[0]), session_key, session_key_size));
 
 		PGP_CALL(pgp_sed_packet_new(&sed));
 		PGP_CALL(pgp_sed_packet_encrypt(sed, PGP_AES_256, session_key, session_key_size, stream));
@@ -46,6 +49,9 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 
 		return message;
 	}
+
+	// Generate the session key
+	PGP_CALL(pgp_rand(session_key, session_key_size));
 
 	// Process PKESKs first
 	for (uint32_t i = 0; i < recipient_count; ++i)
@@ -62,9 +68,12 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 	{
 		skesk = NULL;
 
+		memset(&s2k, 0, sizeof(pgp_s2k));
+		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
+
 		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
 		PGP_CALL(
-			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, session_key, session_key_size));
+			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[i], strlen(passphrases[i]), NULL, 0, session_key, session_key_size));
 
 		pgp_stream_push(message, skesk);
 	}
@@ -94,10 +103,13 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 
 	if (recipient_count == 0 && passphrase_count == 1)
 	{
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
+		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, 0, 0, &s2k));
 		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
 
 		pgp_stream_push(message, skesk);
+
+		PGP_CALL(pgp_s2k_hash(&s2k, passphrases[0], strlen(passphrases[0]), session_key, session_key_size));
 
 		PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V1, PGP_AES_256, 0, 0));
 		PGP_CALL(pgp_seipd_packet_encrypt(seipd, NULL, session_key, session_key_size, stream));
@@ -106,6 +118,9 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 
 		return message;
 	}
+
+	// Generate the session key
+	PGP_CALL(pgp_rand(session_key, session_key_size));
 
 	// Process PKESKs first
 	for (uint32_t i = 0; i < recipient_count; ++i)
@@ -122,9 +137,12 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 	{
 		skesk = NULL;
 
+		memset(&s2k, 0, sizeof(pgp_s2k));
+		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
+
 		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, PGP_AES_256, 0, &s2k));
 		PGP_CALL(
-			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, session_key, session_key_size));
+			pgp_skesk_packet_session_key_encrypt(skesk, passphrases[i], strlen(passphrases[i]), NULL, 0, session_key, session_key_size));
 
 		pgp_stream_push(message, skesk);
 	}
@@ -155,6 +173,9 @@ static pgp_stream_t *spgp_encrypt_aead(pgp_key_packet **keys, uint32_t recipient
 
 	STREAM_CALL(message = pgp_stream_new(recipient_count + passphrase_count + 1));
 
+	// Generate the session key
+	PGP_CALL(pgp_rand(session_key, session_key_size));
+
 	// Process PKESKs first
 	for (uint32_t i = 0; i < recipient_count; ++i)
 	{
@@ -170,12 +191,21 @@ static pgp_stream_t *spgp_encrypt_aead(pgp_key_packet **keys, uint32_t recipient
 	{
 		skesk = NULL;
 
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V5, PGP_AES_256, PGP_AEAD_OCB, &s2k));
-		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), iv, iv_size, session_key,
+		memset(&s2k, 0, sizeof(pgp_s2k));
+		preferred_s2k_algorithm(PGP_KEY_V5, &s2k);
+
+		// Generate IV for S2K
+		PGP_CALL(pgp_rand(iv, iv_size));
+
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V5, PGP_AES_128, PGP_AEAD_OCB, &s2k));
+		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[i], strlen(passphrases[i]), iv, iv_size, session_key,
 													  session_key_size));
 
 		pgp_stream_push(message, skesk);
 	}
+
+	// Generate IV for encryption
+	PGP_CALL(pgp_rand(iv, iv_size));
 
 	PGP_CALL(pgp_aead_packet_new(&aead, PGP_AES_256, PGP_AEAD_OCB, PGP_MAX_CHUNK_SIZE));
 	PGP_CALL(pgp_aead_packet_encrypt(aead, iv, iv_size, session_key, session_key_size, stream));
@@ -197,13 +227,17 @@ static pgp_stream_t *spgp_encrypt_seipd(pgp_key_packet **keys, uint32_t recipien
 	byte_t session_key_size = 0;
 
 	byte_t iv[16] = {0};
-	byte_t iv_size = 0;
+	byte_t iv_size = pgp_aead_iv_size(PGP_AEAD_OCB);
 
 	byte_t salt[32] = {0};
+	byte_t salt_size = 32;
 
 	pgp_s2k s2k = {0};
 
 	STREAM_CALL(message = pgp_stream_new(recipient_count + passphrase_count + 1));
+
+	// Generate the session key
+	PGP_CALL(pgp_rand(session_key, session_key_size));
 
 	// Process PKESKs first
 	for (uint32_t i = 0; i < recipient_count; ++i)
@@ -220,13 +254,23 @@ static pgp_stream_t *spgp_encrypt_seipd(pgp_key_packet **keys, uint32_t recipien
 	{
 		skesk = NULL;
 
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V6, PGP_AES_256, PGP_AEAD_OCB, &s2k));
+		memset(&s2k, 0, sizeof(pgp_s2k));
+		preferred_s2k_algorithm(PGP_KEY_V6, &s2k);
+
+		// Generate IV for S2K
+		PGP_CALL(pgp_rand(iv, iv_size));
+
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V6, PGP_AES_128, PGP_AEAD_OCB, &s2k));
 		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), iv, iv_size, session_key,
 													  session_key_size));
 
 		pgp_stream_push(message, skesk);
 	}
 
+	// Generate the salt
+	PGP_CALL(pgp_rand(salt, salt_size));
+
+	// Encrypt
 	PGP_CALL(pgp_seipd_packet_new(&seipd, PGP_SEIPD_V2, PGP_AES_256, PGP_AEAD_OCB, PGP_MAX_CHUNK_SIZE));
 	PGP_CALL(pgp_seipd_packet_encrypt(seipd, salt, session_key, session_key_size, stream));
 
