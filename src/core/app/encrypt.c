@@ -290,6 +290,7 @@ void spgp_encrypt(void)
 	pgp_keyring_packet *keyring[16] = {0};
 
 	pgp_literal_packet *literal = NULL;
+	pgp_compresed_packet *compressed = NULL;
 	pgp_stream_t *stream = NULL;
 	pgp_stream_t *message = NULL;
 
@@ -299,6 +300,7 @@ void spgp_encrypt(void)
 	armor_marker marker = {0};
 	armor_options *opts = NULL;
 
+	byte_t compression_algorithm = 0;
 	byte_t cipher_algorithm = 0;
 	byte_t aead_algorithm = 0;
 	uint16_t aead_pair = 0;
@@ -350,6 +352,8 @@ void spgp_encrypt(void)
 		features &= uinfo[i]->features;
 	}
 
+	compression_algorithm = preferred_compression_algorithm(uinfo, count);
+
 	if (features & (PGP_SEIPD_V2 | PGP_AEAD))
 	{
 		aead_pair = preferred_aead_algorithm(uinfo, count);
@@ -369,6 +373,15 @@ void spgp_encrypt(void)
 	{
 		literal = spgp_literal_read_file(NULL, PGP_LITERAL_DATA_BINARY);
 		stream = pgp_stream_push(stream, literal);
+
+		if (command.compression_level > 0 && compression_algorithm != PGP_UNCOMPRESSED)
+		{
+			PGP_CALL(pgp_compressed_packet_new(&compressed, PGP_HEADER, compression_algorithm));
+			PGP_CALL(pgp_compressed_packet_compress(compressed, stream));
+
+			stream = pgp_stream_clear(stream, pgp_packet_delete);
+			stream = pgp_stream_push(stream, compressed);
+		}
 
 		if (features & PGP_SEIPD_V2)
 		{
@@ -395,8 +408,17 @@ void spgp_encrypt(void)
 	{
 		for (uint32_t i = 0; i < count; ++i)
 		{
-			literal = spgp_literal_read_file(NULL, PGP_LITERAL_DATA_BINARY);
+			literal = spgp_literal_read_file(command.files->packets[i], PGP_LITERAL_DATA_BINARY);
 			stream = pgp_stream_push(stream, literal);
+
+			if (command.compression_level > 0 && compression_algorithm != PGP_UNCOMPRESSED)
+			{
+				PGP_CALL(pgp_compressed_packet_new(&compressed, PGP_HEADER, compression_algorithm));
+				PGP_CALL(pgp_compressed_packet_compress(compressed, stream));
+
+				stream = pgp_stream_clear(stream, pgp_packet_delete);
+				stream = pgp_stream_push(stream, compressed);
+			}
 
 			if (features & PGP_SEIPD_V2)
 			{
