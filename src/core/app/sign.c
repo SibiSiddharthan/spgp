@@ -428,6 +428,94 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	return stream;
 }
 
+static uint32_t spgp_verify_file(pgp_stream_t *stream)
+{
+	pgp_error_t status = 0;
+
+	pgp_literal_packet *literal = NULL;
+	pgp_signature_packet *sign = NULL;
+	pgp_one_pass_signature_packet *ops = NULL;
+
+	pgp_key_packet *key = NULL;
+	pgp_user_info *uinfo = NULL;
+
+	uint32_t count = (stream->count - 1) / 2;
+
+	literal = stream->packets[count];
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		ops = stream->packets[i];
+		sign = stream->packets[stream->count - 1 - i];
+
+		if (ops->type != sign->type)
+		{
+			printf("Signature type mismatch.\n");
+			exit(1);
+		}
+
+		if (sign->hashed_subpackets != NULL)
+		{
+			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+			{
+				pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
+				pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+				if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+				{
+					pgp_issuer_fingerprint_subpacket *subpacket = sign->hashed_subpackets->packets[i];
+
+					spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
+					break;
+				}
+
+				if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
+				{
+					pgp_issuer_key_id_subpacket *subpacket = sign->hashed_subpackets->packets[i];
+
+					spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
+					break;
+				}
+			}
+		}
+
+		if (key == NULL)
+		{
+			if (sign->unhashed_subpackets != NULL)
+			{
+				for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
+				{
+					pgp_subpacket_header *header = sign->unhashed_subpackets->packets[i];
+					pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+					if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+					{
+						pgp_issuer_fingerprint_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
+
+						spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
+						break;
+					}
+
+					if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
+					{
+						pgp_issuer_key_id_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
+
+						spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
+						break;
+					}
+				}
+			}
+		}
+
+		if (key != NULL)
+		{
+			status = pgp_verify_document_signature(sign, key, literal);
+		}
+	}
+
+	return stream;
+}
+
 static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
 	pgp_stream_t *stream = NULL;
@@ -596,7 +684,7 @@ static uint32_t spgp_verify_file(void *file)
 
 	if (type == PGP_OPS)
 	{
-		// return spgp_sign_file();
+		return spgp_verify_file(stream);
 	}
 
 	if (type == PGP_SIG)
