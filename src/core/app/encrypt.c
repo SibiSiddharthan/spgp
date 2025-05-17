@@ -466,7 +466,12 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 
 	pgp_stream_t *stream = NULL;
 	pgp_stream_t *message = NULL;
+
 	pgp_packet_header *header = NULL;
+	pgp_seipd_packet *seipd = NULL;
+
+	void *encrypted_packet = NULL;
+	byte_t algorithm = 0;
 
 	void *passphrase = NULL;
 	byte_t passphrase_size = 0;
@@ -476,6 +481,7 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	byte_t session_key_found = 0;
 
 	stream = spgp_read_pgp_packets(file);
+	stream = pgp_packet_stream_filter_padding_packets(stream);
 
 	// Search PKESKs first
 	for (uint32_t i = 0; i < stream->count; ++i)
@@ -515,6 +521,12 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 				if (status == PGP_SUCCESS)
 				{
 					session_key_found = 1;
+
+					if (pkesk->version == PGP_PKESK_V3)
+					{
+						algorithm = pkesk->symmetric_key_algorithm_id;
+					}
+
 					goto decrypt;
 				}
 			}
@@ -538,6 +550,12 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 			if (status == PGP_SUCCESS)
 			{
 				session_key_found = 1;
+
+				if (skesk->version == PGP_SKESK_V4)
+				{
+					algorithm = skesk->symmetric_key_algorithm_id;
+				}
+
 				goto decrypt;
 			}
 		}
@@ -551,15 +569,45 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 
 decrypt:
 	header = stream->packets[stream->count - 1];
+	encrypted_packet = stream->packets[stream->count - 1];
 
 	switch (pgp_packet_get_type(header->tag))
 	{
 	case PGP_SED:
-		PGP_CALL(pgp_sed_packet_decrypt(stream->packets[stream->count - 1], PGP_AES_256, session_key, session_key_size, &message));
+	{
+		PGP_CALL(pgp_sed_packet_decrypt(encrypted_packet, algorithm, session_key, session_key_size, &message));
+	}
+	break;
 	case PGP_SEIPD:
-		PGP_CALL(pgp_seipd_packet_decrypt(stream->packets[stream->count - 1], session_key, session_key_size, &message));
+	{
+		// Set the algorithm for V1 packets
+		seipd = encrypted_packet;
+
+		if (seipd->version == PGP_SEIPD_V1)
+		{
+			seipd->symmetric_key_algorithm_id = algorithm;
+		}
+
+		PGP_CALL(pgp_seipd_packet_decrypt(encrypted_packet, session_key, session_key_size, &message));
+	}
+	break;
 	case PGP_AEAD:
-		PGP_CALL(pgp_aead_packet_decrypt(stream->packets[stream->count - 1], session_key, session_key_size, &message));
+	{
+		// Check whether the algorith is correct
+		seipd = encrypted_packet;
+
+		if (algorithm != 0)
+		{
+			if (algorithm != seipd->symmetric_key_algorithm_id)
+			{
+				printf("Algorithm mismatch in AEAD packet.\n");
+				exit(1);
+			}
+		}
+
+		PGP_CALL(pgp_aead_packet_decrypt(encrypted_packet, session_key, session_key_size, &message));
+	}
+	break;
 	default:
 		printf("Bad PGP Message\n");
 		exit(1);
@@ -578,6 +626,8 @@ void spgp_decrypt(void)
 	if (command.files == NULL)
 	{
 		stream = spgp_decrypt_file(NULL);
+		stream = pgp_packet_stream_filter_padding_packets(stream);
+
 		header = stream->packets[0];
 
 		if (pgp_packet_get_type(header->tag) == PGP_LIT)
@@ -590,6 +640,8 @@ void spgp_decrypt(void)
 		for (uint32_t i = 0; i < command.files->count; ++i)
 		{
 			stream = spgp_decrypt_file(command.files->packets[i]);
+			stream = pgp_packet_stream_filter_padding_packets(stream);
+
 			header = stream->packets[0];
 
 			if (pgp_packet_get_type(header->tag) == PGP_LIT)
