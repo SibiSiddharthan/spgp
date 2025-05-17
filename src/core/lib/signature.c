@@ -121,12 +121,12 @@ pgp_error_t pgp_one_pass_signature_packet_new(pgp_one_pass_signature_packet **pa
 
 		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
 
-		ops->header = pgp_encode_packet_header(PGP_HEADER, PGP_OPS, 0, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
+		ops->header = pgp_packet_header_encode(PGP_HEADER, PGP_OPS, 0, 6 + PGP_KEY_V6_FINGERPRINT_SIZE + salt_size);
 	}
 	else // packet->version == PGP_ONE_PASS_SIGNATURE_V3
 	{
 		memcpy(ops->key_fingerprint, key_fingerprint, key_fingerprint_size);
-		ops->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_OPS, 0, 5 + PGP_KEY_ID_SIZE);
+		ops->header = pgp_packet_header_encode(PGP_LEGACY_HEADER, PGP_OPS, 0, 5 + PGP_KEY_ID_SIZE);
 	}
 
 	*packet = ops;
@@ -1482,7 +1482,7 @@ static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
 
 		body_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets;
 		body_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, 0, body_size);
+		packet->header = pgp_packet_header_encode(PGP_LEGACY_HEADER, PGP_SIG, 0, body_size);
 	}
 	else
 	{
@@ -1497,7 +1497,7 @@ static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
 		// One or more MPIs comprising the signature
 
 		body_size = 1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + packet->signature_octets;
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SIG, 0, body_size);
+		packet->header = pgp_packet_header_encode(PGP_LEGACY_HEADER, PGP_SIG, 0, body_size);
 	}
 }
 
@@ -1999,7 +1999,7 @@ pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
 	subpacket->timestamp = timestamp;
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, 1, 4); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_SIGNATURE_CREATION_TIME_SUBPACKET, 1, 4); // Critical
 
 	return subpacket;
 }
@@ -2023,7 +2023,7 @@ pgp_signature_expiry_time_subpacket *pgp_signature_expiry_time_subpacket_new(uin
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
 	subpacket->duration = duration;
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET, 1, 4); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET, 1, 4); // Critical
 
 	return subpacket;
 }
@@ -2047,7 +2047,7 @@ pgp_key_expiration_time_subpacket *pgp_key_expiration_time_subpacket_new(uint32_
 	memset(subpacket, 0, sizeof(pgp_timestamp_subpacket));
 
 	subpacket->duration = duration;
-	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_KEY_EXPIRATION_TIME_SUBPACKET, 1, 4); // Critical
 
 	return subpacket;
 }
@@ -2073,7 +2073,7 @@ pgp_issuer_fingerprint_subpacket *pgp_issuer_fingerprint_subpacket_new(byte_t ve
 	subpacket->version = version;
 	memcpy(subpacket->fingerprint, fingerprint, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_ISSUER_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
 
 	return subpacket;
 }
@@ -2099,7 +2099,7 @@ pgp_recipient_fingerprint_subpacket *pgp_recipient_fingerprint_subpacket_new(byt
 	subpacket->version = version;
 	memcpy(subpacket->fingerprint, fingerprint, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_RECIPIENT_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_RECIPIENT_FINGERPRINT_SUBPACKET, 1, size + 1); // Critical
 
 	return subpacket;
 }
@@ -2121,7 +2121,7 @@ pgp_issuer_key_id_subpacket *pgp_issuer_key_id_subpacket_new(byte_t key_id[PGP_K
 	memset(subpacket, 0, sizeof(pgp_issuer_key_id_subpacket));
 	memcpy(subpacket->key_id, key_id, PGP_KEY_ID_SIZE);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_ISSUER_KEY_ID_SUBPACKET, 0, PGP_KEY_ID_SIZE);
+	subpacket->header = pgp_subpacket_header_encode(PGP_ISSUER_KEY_ID_SUBPACKET, 0, PGP_KEY_ID_SIZE);
 
 	return subpacket;
 }
@@ -2148,13 +2148,13 @@ pgp_key_flags_subpacket *pgp_key_flags_subpacket_new(byte_t first, byte_t second
 	if (second == 0)
 	{
 		subpacket->flags[0] = first;
-		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 1); // Critical
+		subpacket->header = pgp_subpacket_header_encode(PGP_KEY_FLAGS_SUBPACKET, 1, 1); // Critical
 	}
 	else
 	{
 		subpacket->flags[0] = first;
 		subpacket->flags[1] = second;
-		subpacket->header = pgp_encode_subpacket_header(PGP_KEY_FLAGS_SUBPACKET, 1, 2); // Critical
+		subpacket->header = pgp_subpacket_header_encode(PGP_KEY_FLAGS_SUBPACKET, 1, 2); // Critical
 	}
 
 	return subpacket;
@@ -2200,7 +2200,7 @@ pgp_features_subpacket *pgp_features_subpacket_new(byte_t flags)
 	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
 
 	memcpy(subpacket->flags, flag, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_FEATURES_SUBPACKET, 0, count);
+	subpacket->header = pgp_subpacket_header_encode(PGP_FEATURES_SUBPACKET, 0, count);
 
 	return subpacket;
 }
@@ -2225,7 +2225,7 @@ pgp_key_server_preferences_subpacket *pgp_key_server_preferences_subpacket_new(b
 	memset(subpacket, 0, sizeof(pgp_subpacket_header) + 1);
 
 	subpacket->flags[0] = flags & PGP_KEY_SERVER_FLAGS_MASK;
-	subpacket->header = pgp_encode_subpacket_header(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
+	subpacket->header = pgp_subpacket_header_encode(PGP_KEY_SERVER_PREFERENCES_SUBPACKET, 0, 1);
 
 	return subpacket;
 }
@@ -2249,7 +2249,7 @@ pgp_exportable_subpacket *pgp_exportable_subpacket_new(byte_t state)
 	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
 
 	subpacket->state = state & 0x1;
-	subpacket->header = pgp_encode_subpacket_header(PGP_EXPORTABLE_SUBPACKET, 1, 1); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_EXPORTABLE_SUBPACKET, 1, 1); // Critical
 
 	return subpacket;
 }
@@ -2273,7 +2273,7 @@ pgp_revocable_subpacket *pgp_revocable_subpacket_new(byte_t state)
 	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
 
 	subpacket->state = state & 0x1;
-	subpacket->header = pgp_encode_subpacket_header(PGP_REVOCABLE_SUBPACKET, 1, 1); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_REVOCABLE_SUBPACKET, 1, 1); // Critical
 
 	return subpacket;
 }
@@ -2297,7 +2297,7 @@ pgp_primary_user_id_subpacket *pgp_primary_user_id_subpacket_new(byte_t state)
 	memset(subpacket, 0, sizeof(pgp_boolean_subpacket));
 
 	subpacket->state = state & 0x1;
-	subpacket->header = pgp_encode_subpacket_header(PGP_PRIMARY_USER_ID_SUBPACKET, 0, 1);
+	subpacket->header = pgp_subpacket_header_encode(PGP_PRIMARY_USER_ID_SUBPACKET, 0, 1);
 
 	return subpacket;
 }
@@ -2322,7 +2322,7 @@ pgp_trust_signature_subpacket *pgp_trust_signature_subpacket_new(byte_t trust_le
 
 	subpacket->trust_level = trust_level;
 	subpacket->trust_amount = trust_amount;
-	subpacket->header = pgp_encode_subpacket_header(PGP_TRUST_SIGNATURE_SUBPACKET, 0, 2);
+	subpacket->header = pgp_subpacket_header_encode(PGP_TRUST_SIGNATURE_SUBPACKET, 0, 2);
 
 	return subpacket;
 }
@@ -2357,7 +2357,7 @@ pgp_notation_data_subpacket *pgp_notation_data_subpacket_new(byte_t critical, ui
 		memcpy(PTR_OFFSET(subpacket->data, name_size), value, value_size);
 	}
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_NOTATION_DATA_SUBPACKET, critical, 4 + 2 + 2 + name_size + value_size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_NOTATION_DATA_SUBPACKET, critical, 4 + 2 + 2 + name_size + value_size);
 
 	return subpacket;
 }
@@ -2381,7 +2381,7 @@ pgp_preferred_symmetric_ciphers_subpacket *pgp_preferred_symmetric_ciphers_subpa
 	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
 
 	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET, 0, count);
+	subpacket->header = pgp_subpacket_header_encode(PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET, 0, count);
 
 	return subpacket;
 }
@@ -2405,7 +2405,7 @@ pgp_preferred_hash_algorithms_subpacket *pgp_preferred_hash_algorithms_subpacket
 	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
 
 	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, 0, count);
+	subpacket->header = pgp_subpacket_header_encode(PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET, 0, count);
 
 	return subpacket;
 }
@@ -2429,7 +2429,7 @@ pgp_preferred_compression_algorithms_subpacket *pgp_preferred_compression_algori
 	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
 
 	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET, 0, count);
+	subpacket->header = pgp_subpacket_header_encode(PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET, 0, count);
 
 	return subpacket;
 }
@@ -2453,7 +2453,7 @@ pgp_preferred_encryption_modes_subpacket *pgp_preferred_encryption_modes_subpack
 	memset(subpacket, 0, sizeof(pgp_subpacket_header) + count);
 
 	memcpy(subpacket->preferred_algorithms, prefs, count);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET, 0, count);
+	subpacket->header = pgp_subpacket_header_encode(PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET, 0, count);
 
 	return subpacket;
 }
@@ -2478,7 +2478,7 @@ pgp_preferred_aead_ciphersuites_subpacket *pgp_preferred_aead_ciphersuites_subpa
 	memset(subpacket, 0, sizeof(pgp_subpacket_header) + size);
 
 	memcpy(subpacket->preferred_algorithms, prefs, size);
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, 0, size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET, 0, size);
 
 	return subpacket;
 }
@@ -2512,7 +2512,7 @@ pgp_regular_expression_subpacket *pgp_regular_expression_subpacket_new(void *reg
 	subpacket->regex = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
 	memcpy(subpacket->regex, regex, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_REGULAR_EXPRESSION_SUBPACKET, 1, count); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_REGULAR_EXPRESSION_SUBPACKET, 1, count); // Critical
 
 	return subpacket;
 }
@@ -2538,7 +2538,7 @@ pgp_preferred_key_server_subpacket *pgp_preferred_key_server_subpacket_new(byte_
 	subpacket->server = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
 	memcpy(subpacket->server, server, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_PREFERRED_KEY_SERVER_SUBPACKET, critical, size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_PREFERRED_KEY_SERVER_SUBPACKET, critical, size);
 
 	return subpacket;
 }
@@ -2564,7 +2564,7 @@ pgp_policy_uri_subpacket *pgp_policy_uri_subpacket_new(byte_t critical, void *po
 	subpacket->policy = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
 	memcpy(subpacket->policy, policy, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_POLICY_URI_SUBPACKET, critical, size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_POLICY_URI_SUBPACKET, critical, size);
 
 	return subpacket;
 }
@@ -2590,7 +2590,7 @@ pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacket_new(void *uid, byte_t
 	subpacket->uid = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
 	memcpy(subpacket->uid, uid, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNER_USER_ID_SUBPACKET, 1, size); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_SIGNER_USER_ID_SUBPACKET, 1, size); // Critical
 
 	return subpacket;
 }
@@ -2616,7 +2616,7 @@ pgp_trust_alias_subpacket *pgp_trust_alias_subpacket_new(void *alias, byte_t siz
 	subpacket->alias = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
 	memcpy(subpacket->alias, alias, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_TRUST_ALIAS_SUBPACKET, 0, size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_TRUST_ALIAS_SUBPACKET, 0, size);
 
 	return subpacket;
 }
@@ -2644,7 +2644,7 @@ pgp_revocation_key_subpacket *pgp_revocation_key_subpacket_new(byte_t revocation
 	subpacket->algorithm_id = algorithm_id;
 	memcpy(subpacket->fingerprint, fingerprint, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_REVOCATION_KEY_SUBPACKET, 0, 2 + size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_REVOCATION_KEY_SUBPACKET, 0, 2 + size);
 
 	return subpacket;
 }
@@ -2675,7 +2675,7 @@ pgp_reason_for_revocation_subpacket *pgp_reason_for_revocation_subpacket_new(byt
 		memcpy(subpacket->reason, reason, size);
 	}
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_REASON_FOR_REVOCATION_SUBPACKET, 0, 1 + size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_REASON_FOR_REVOCATION_SUBPACKET, 0, 1 + size);
 
 	return subpacket;
 }
@@ -2708,7 +2708,7 @@ pgp_signature_target_subpacket *pgp_signature_target_subpacket_new(byte_t public
 	subpacket->hash_algorithm_id = hash_algorithm_id;
 	memcpy(subpacket->hash, hash, size);
 
-	subpacket->header = pgp_encode_subpacket_header(PGP_SIGNATURE_TARGET_SUBPACKET, 0, 2 + size);
+	subpacket->header = pgp_subpacket_header_encode(PGP_SIGNATURE_TARGET_SUBPACKET, 0, 2 + size);
 
 	return subpacket;
 }

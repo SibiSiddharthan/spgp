@@ -126,7 +126,7 @@ static byte_t get_packet_tag(pgp_packet_header_format header_type, pgp_packet_ty
 	return tag;
 }
 
-pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_format, pgp_packet_type packet_type, byte_t partial,
+pgp_packet_header pgp_packet_header_encode(pgp_packet_header_format header_format, pgp_packet_type packet_type, byte_t partial,
 										   size_t body_size)
 {
 	pgp_packet_header header = {0};
@@ -147,7 +147,7 @@ pgp_packet_header pgp_encode_packet_header(pgp_packet_header_format header_forma
 	return header;
 }
 
-pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critical, uint32_t body_size)
+pgp_subpacket_header pgp_subpacket_header_encode(byte_t type, byte_t set_critical, uint32_t body_size)
 {
 	pgp_subpacket_header header = {0};
 	uint32_t total_size = 0;
@@ -178,7 +178,7 @@ pgp_subpacket_header pgp_encode_subpacket_header(byte_t type, byte_t set_critica
 	return header;
 }
 
-pgp_partial_header pgp_encode_partial_header(uint32_t body_size)
+pgp_partial_header pgp_partial_header_encode(uint32_t body_size)
 {
 	pgp_partial_header header = {0};
 
@@ -1067,7 +1067,7 @@ pgp_error_t pgp_partial_packet_new(pgp_partial_packet **packet, void *data, uint
 	memcpy(partial->data, data, size);
 
 	// Set the header
-	partial->header = pgp_encode_partial_header(size);
+	partial->header = pgp_partial_header_encode(size);
 
 	*packet = partial;
 

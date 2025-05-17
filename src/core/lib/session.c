@@ -433,7 +433,7 @@ static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 		// Session key
 
 		body_size = 1 + 1 + 1 + packet->key_octet_count + packet->encrypted_session_key_octets;
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_PKESK, 0, body_size);
+		packet->header = pgp_packet_header_encode(PGP_HEADER, PGP_PKESK, 0, body_size);
 	}
 
 	if (packet->version == PGP_PKESK_V3)
@@ -444,7 +444,7 @@ static void pgp_pkesk_packet_encode_header(pgp_pkesk_packet *packet)
 		// Session key
 
 		body_size = 1 + 8 + 1 + packet->encrypted_session_key_octets;
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_PKESK, 0, body_size);
+		packet->header = pgp_packet_header_encode(PGP_LEGACY_HEADER, PGP_PKESK, 0, body_size);
 	}
 }
 
@@ -859,7 +859,7 @@ static void pgp_skesk_packet_encode_header(pgp_skesk_packet *packet)
 		// Authetication key tag.
 
 		body_size = 1 + 1 + 1 + 1 + 1 + pgp_s2k_octets(&packet->s2k) + packet->iv_size + packet->session_key_size + packet->tag_size;
-		packet->header = pgp_encode_packet_header(PGP_HEADER, PGP_SKESK, 0, body_size);
+		packet->header = pgp_packet_header_encode(PGP_HEADER, PGP_SKESK, 0, body_size);
 	}
 	else
 	{
@@ -869,7 +869,7 @@ static void pgp_skesk_packet_encode_header(pgp_skesk_packet *packet)
 		// (Optional) Encrypted Session key
 
 		body_size = 1 + 1 + pgp_s2k_octets(&packet->s2k) + packet->session_key_size;
-		packet->header = pgp_encode_packet_header(PGP_LEGACY_HEADER, PGP_SKESK, 0, body_size);
+		packet->header = pgp_packet_header_encode(PGP_LEGACY_HEADER, PGP_SKESK, 0, body_size);
 	}
 }
 

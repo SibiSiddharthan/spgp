@@ -1240,7 +1240,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 			body_size += (packet->s2k_usage != 0) ? (1 + pgp_key_packet_get_s2k_size(packet)) : 0;
 		}
 
-		packet->header = pgp_encode_packet_header(format, type, 0, body_size);
+		packet->header = pgp_packet_header_encode(format, type, 0, body_size);
 	}
 
 	if (type == PGP_PUBKEY || type == PGP_PUBSUBKEY)
@@ -1256,7 +1256,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 		body_size += (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3) ? 2 : 0;
 		body_size += (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5) ? 4 : 0;
 
-		packet->header = pgp_encode_packet_header(format, type, 0, body_size);
+		packet->header = pgp_packet_header_encode(format, type, 0, body_size);
 	}
 
 	if (type == PGP_SECKEY || type == PGP_SECSUBKEY)
@@ -1300,7 +1300,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 
 		body_size += (packet->s2k_usage != 0) ? (1 + pgp_key_packet_get_s2k_size(packet)) : 0;
 
-		packet->header = pgp_encode_packet_header(format, type, 0, body_size);
+		packet->header = pgp_packet_header_encode(format, type, 0, body_size);
 	}
 }
 
