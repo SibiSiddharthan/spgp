@@ -228,8 +228,6 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 		}
 	}
 
-	pgp_stream_delete(stream, pgp_packet_delete);
-
 	if (keyring != NULL)
 	{
 		// Find a key with necessary capabilities
@@ -237,16 +235,17 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 		{
 			*key = spgp_read_key((*user)->fingerprint, (*user)->fingerprint_size);
 
-			if ((*key)->capabilities & capabilities)
+			if (((*key)->capabilities & capabilities) == 0)
 			{
+				pgp_key_packet_delete(*key);
+				*key = NULL;
 
 				// Check if the fingerprint given was the primary key's one.
-				if (memcmp(keyring->primary_fingerprint, (*user)->fingerprint, (*user)->fingerprint_size) != 0)
+				if (memcmp(keyring->primary_fingerprint, (*user)->fingerprint, (*user)->fingerprint_size) == 0)
 				{
 					// Search the subkeys for a suitable key
 					for (byte_t i = 0; i < keyring->subkey_count; ++i)
 					{
-						pgp_key_packet_delete(*key);
 						*key = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, i * keyring->fingerprint_size),
 											 keyring->fingerprint_size);
 
@@ -254,12 +253,11 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 						{
 							break;
 						}
+
+						// Free memory for unusable keys
+						pgp_key_packet_delete(*key);
+						*key = NULL;
 					}
-				}
-				else
-				{
-					printf("Unusable key\n");
-					exit(1);
 				}
 			}
 		}
