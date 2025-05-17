@@ -413,7 +413,7 @@ static uint32_t spgp_execute_operation(spgp_command *command)
 
 	if (command->verify)
 	{
-		return spgp_verify(command);
+		spgp_verify();
 	}
 
 	if (command->encrypt || command->symmetric)

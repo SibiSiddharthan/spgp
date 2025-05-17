@@ -465,17 +465,22 @@ void spgp_sign(void)
 	spgp_write_pgp_packets(command.output, signatures, opts);
 }
 
-uint32_t spgp_verify(spgp_command *command)
+static uint32_t spgp_verify_file(void *file)
 {
-	void *buffer = NULL;
+	pgp_stream_t *stream = NULL;
+	pgp_packet_header *header = NULL;
 
-	pgp_key_packet *key = NULL;
-	pgp_signature_packet *sign = NULL;
+	stream = spgp_read_pgp_packets(file);
+	stream = pgp_packet_stream_filter_padding_packets(stream);
+}
 
-	if (command->files == NULL || command->files->count != 2)
+void spgp_verify(void)
+{
+	uint32_t status = 0;
+
+	for (uint32_t i = 0; i < command.files->count; ++i)
 	{
-		printf("Bad usage.\n");
-		exit(1);
+		status += spgp_verify_file(command.files->packets[i]);
 	}
 
 	// sign = spgp_read_pgp_packet(command->files->packets[0], SPGP_STD_INPUT);
@@ -508,7 +513,8 @@ uint32_t spgp_verify(spgp_command *command)
 
 	// printf("%s\n", result == 1 ? "Good Signature" : "Bad Signature");
 
-	free(buffer);
-
-	return 0;
+	if (status != 0)
+	{
+		exit(1);
+	}
 }
