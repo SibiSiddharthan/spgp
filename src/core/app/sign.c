@@ -225,7 +225,7 @@ static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info 
 	return stream;
 }
 
-static uint32_t spgp_detach_verify_file(pgp_stream_t *stream, void *file)
+static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 {
 	pgp_error_t status = 0;
 
@@ -428,7 +428,7 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	return stream;
 }
 
-static uint32_t spgp_verify_file(pgp_stream_t *stream)
+static uint32_t spgp_verify_stream(pgp_stream_t *stream)
 {
 	pgp_error_t status = 0;
 
@@ -513,7 +513,7 @@ static uint32_t spgp_verify_file(pgp_stream_t *stream)
 		}
 	}
 
-	return stream;
+	return 0;
 }
 
 static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
@@ -545,6 +545,86 @@ static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info 
 	pgp_stream_push(stream, literal);
 
 	return stream;
+}
+
+static uint32_t spgp_verify_stream_legacy(pgp_stream_t *stream)
+{
+	pgp_error_t status = 0;
+
+	pgp_literal_packet *literal = NULL;
+	pgp_signature_packet *sign = NULL;
+
+	pgp_key_packet *key = NULL;
+	pgp_user_info *uinfo = NULL;
+
+	uint32_t count = (stream->count - 1);
+
+	literal = stream->packets[count];
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		sign = stream->packets[i];
+
+		if (sign->hashed_subpackets != NULL)
+		{
+			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+			{
+				pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
+				pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+				if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+				{
+					pgp_issuer_fingerprint_subpacket *subpacket = sign->hashed_subpackets->packets[i];
+
+					spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
+					break;
+				}
+
+				if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
+				{
+					pgp_issuer_key_id_subpacket *subpacket = sign->hashed_subpackets->packets[i];
+
+					spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
+					break;
+				}
+			}
+		}
+
+		if (key == NULL)
+		{
+			if (sign->unhashed_subpackets != NULL)
+			{
+				for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
+				{
+					pgp_subpacket_header *header = sign->unhashed_subpackets->packets[i];
+					pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+					if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+					{
+						pgp_issuer_fingerprint_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
+
+						spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
+						break;
+					}
+
+					if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
+					{
+						pgp_issuer_key_id_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
+
+						spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
+						break;
+					}
+				}
+			}
+		}
+
+		if (key != NULL)
+		{
+			status = pgp_verify_document_signature(sign, key, literal);
+		}
+	}
+
+	return 0;
 }
 
 void spgp_sign(void)
@@ -684,7 +764,7 @@ static uint32_t spgp_verify_file(void *file)
 
 	if (type == PGP_OPS)
 	{
-		return spgp_verify_file(stream);
+		return spgp_verify_stream(stream);
 	}
 
 	if (type == PGP_SIG)
@@ -694,11 +774,14 @@ static uint32_t spgp_verify_file(void *file)
 
 		if (type == PGP_LIT || type == PGP_COMP)
 		{
-			//			return spgp_sign_file_legacy();
+			return spgp_verify_stream_legacy(stream);
 		}
 
-		return spgp_detach_verify_file(stream, command.files->packets[1]);
+		return spgp_detach_verify_stream(stream, command.files->packets[1]);
 	}
+
+	printf("Bad Signature Sequence.\n");
+	exit(1);
 }
 
 void spgp_verify(void)
