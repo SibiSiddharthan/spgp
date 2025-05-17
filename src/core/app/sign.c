@@ -128,6 +128,61 @@ static uint32_t parse_expiry(byte_t *in, byte_t length)
 	return value;
 }
 
+static uint32_t spgp_get_sign_fingerprint(pgp_signature_packet *sign, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE])
+{
+	if (sign->hashed_subpackets != NULL)
+	{
+		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		{
+			pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
+			pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+			if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+			{
+				pgp_issuer_fingerprint_subpacket *subpacket = sign->hashed_subpackets->packets[i];
+
+				memcpy(fingerprint, subpacket->fingerprint, subpacket->header.body_size - 1);
+				return subpacket->header.body_size - 1;
+			}
+
+			if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
+			{
+				pgp_issuer_key_id_subpacket *subpacket = sign->hashed_subpackets->packets[i];
+
+				memcpy(fingerprint, subpacket->key_id, PGP_KEY_ID_SIZE);
+				return PGP_KEY_ID_SIZE;
+			}
+		}
+	}
+
+	if (sign->unhashed_subpackets != NULL)
+	{
+		for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
+		{
+			pgp_subpacket_header *header = sign->unhashed_subpackets->packets[i];
+			pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
+
+			if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+			{
+				pgp_issuer_fingerprint_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
+
+				memcpy(fingerprint, subpacket->fingerprint, subpacket->header.body_size - 1);
+				return subpacket->header.body_size - 1;
+			}
+
+			if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
+			{
+				pgp_issuer_key_id_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
+
+				memcpy(fingerprint, subpacket->key_id, PGP_KEY_ID_SIZE);
+				return PGP_KEY_ID_SIZE;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static pgp_sign_info *spgp_create_sign_info(pgp_key_packet *key, pgp_user_info *uinfo, pgp_signature_type type)
 {
 	pgp_sign_info *sinfo = NULL;
@@ -237,8 +292,10 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 	pgp_literal_packet *literal_binary = NULL;
 	pgp_literal_packet *literal_text = NULL;
 
-	pgp_literal_data_format format = 0;
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
 
+	pgp_literal_data_format format = 0;
 	byte_t changing_format = 0;
 
 	sign = stream->packets[0];
@@ -270,57 +327,11 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 		key = NULL;
 		uinfo = NULL;
 
-		if (sign->hashed_subpackets != NULL)
+		fingerprint_size = spgp_get_sign_fingerprint(sign, fingerprint);
+
+		if (fingerprint_size != 0)
 		{
-			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
-			{
-				pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
-				pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
-
-				if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
-				{
-					pgp_issuer_fingerprint_subpacket *subpacket = sign->hashed_subpackets->packets[i];
-
-					spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
-					break;
-				}
-
-				if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
-				{
-					pgp_issuer_key_id_subpacket *subpacket = sign->hashed_subpackets->packets[i];
-
-					spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
-					break;
-				}
-			}
-		}
-
-		if (key == NULL)
-		{
-			if (sign->unhashed_subpackets != NULL)
-			{
-				for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
-				{
-					pgp_subpacket_header *header = sign->unhashed_subpackets->packets[i];
-					pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
-
-					if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
-					{
-						pgp_issuer_fingerprint_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
-
-						spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
-						break;
-					}
-
-					if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
-					{
-						pgp_issuer_key_id_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
-
-						spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
-						break;
-					}
-				}
-			}
+			spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, PGP_KEY_FLAG_SIGN);
 		}
 
 		if (key != NULL)
@@ -439,6 +450,9 @@ static uint32_t spgp_verify_stream(pgp_stream_t *stream)
 	pgp_key_packet *key = NULL;
 	pgp_user_info *uinfo = NULL;
 
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
 	uint32_t count = (stream->count - 1) / 2;
 
 	literal = stream->packets[count];
@@ -454,57 +468,11 @@ static uint32_t spgp_verify_stream(pgp_stream_t *stream)
 			exit(1);
 		}
 
-		if (sign->hashed_subpackets != NULL)
+		fingerprint_size = spgp_get_sign_fingerprint(sign, fingerprint);
+
+		if (fingerprint_size != 0)
 		{
-			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
-			{
-				pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
-				pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
-
-				if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
-				{
-					pgp_issuer_fingerprint_subpacket *subpacket = sign->hashed_subpackets->packets[i];
-
-					spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
-					break;
-				}
-
-				if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
-				{
-					pgp_issuer_key_id_subpacket *subpacket = sign->hashed_subpackets->packets[i];
-
-					spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
-					break;
-				}
-			}
-		}
-
-		if (key == NULL)
-		{
-			if (sign->unhashed_subpackets != NULL)
-			{
-				for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
-				{
-					pgp_subpacket_header *header = sign->unhashed_subpackets->packets[i];
-					pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
-
-					if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
-					{
-						pgp_issuer_fingerprint_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
-
-						spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
-						break;
-					}
-
-					if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
-					{
-						pgp_issuer_key_id_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
-
-						spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
-						break;
-					}
-				}
-			}
+			spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, PGP_KEY_FLAG_SIGN);
 		}
 
 		if (key != NULL)
@@ -557,6 +525,9 @@ static uint32_t spgp_verify_stream_legacy(pgp_stream_t *stream)
 	pgp_key_packet *key = NULL;
 	pgp_user_info *uinfo = NULL;
 
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
 	uint32_t count = (stream->count - 1);
 
 	literal = stream->packets[count];
@@ -565,57 +536,11 @@ static uint32_t spgp_verify_stream_legacy(pgp_stream_t *stream)
 	{
 		sign = stream->packets[i];
 
-		if (sign->hashed_subpackets != NULL)
+		fingerprint_size = spgp_get_sign_fingerprint(sign, fingerprint);
+
+		if (fingerprint_size != 0)
 		{
-			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
-			{
-				pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
-				pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
-
-				if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
-				{
-					pgp_issuer_fingerprint_subpacket *subpacket = sign->hashed_subpackets->packets[i];
-
-					spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
-					break;
-				}
-
-				if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
-				{
-					pgp_issuer_key_id_subpacket *subpacket = sign->hashed_subpackets->packets[i];
-
-					spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
-					break;
-				}
-			}
-		}
-
-		if (key == NULL)
-		{
-			if (sign->unhashed_subpackets != NULL)
-			{
-				for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
-				{
-					pgp_subpacket_header *header = sign->unhashed_subpackets->packets[i];
-					pgp_signature_subpacket_type type = header->tag & PGP_SUBPACKET_TAG_MASK;
-
-					if (type == PGP_ISSUER_FINGERPRINT_SUBPACKET)
-					{
-						pgp_issuer_fingerprint_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
-
-						spgp_search_keyring(&key, &uinfo, subpacket->fingerprint, header->body_size - 1, PGP_KEY_FLAG_SIGN);
-						break;
-					}
-
-					if (type == PGP_ISSUER_KEY_ID_SUBPACKET)
-					{
-						pgp_issuer_key_id_subpacket *subpacket = sign->unhashed_subpackets->packets[i];
-
-						spgp_search_keyring(&key, &uinfo, subpacket->key_id, PGP_KEY_ID_SIZE, PGP_KEY_FLAG_SIGN);
-						break;
-					}
-				}
-			}
+			spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, PGP_KEY_FLAG_SIGN);
 		}
 
 		if (key != NULL)
