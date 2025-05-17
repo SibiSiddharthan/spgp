@@ -26,7 +26,7 @@ static byte_t check_recursive_encryption_container(pgp_stream_t *stream)
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
-		type = pgp_packet_get_type(header->tag);
+		type = pgp_packet_type_from_tag(header->tag);
 
 		if (type == PGP_SED || type == PGP_SEIPD || type == PGP_AEAD)
 		{
@@ -273,7 +273,7 @@ pgp_error_t pgp_sed_packet_read(pgp_sed_packet **packet, void *data, size_t size
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_SED)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_SED)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -961,7 +961,7 @@ pgp_error_t pgp_seipd_packet_read(pgp_seipd_packet **packet, void *data, size_t 
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_SEIPD)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_SEIPD)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -1458,7 +1458,7 @@ pgp_error_t pgp_aead_packet_read(pgp_aead_packet **packet, void *data, size_t si
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_AEAD)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_AEAD)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}

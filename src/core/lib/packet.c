@@ -222,7 +222,7 @@ pgp_partial_header pgp_partial_header_encode(uint32_t body_size)
 	return header;
 }
 
-pgp_packet_type pgp_packet_get_type(byte_t tag)
+pgp_packet_type pgp_packet_type_from_tag(byte_t tag)
 {
 	pgp_packet_type ptype = 0;
 
@@ -743,7 +743,7 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 		return error;
 	}
 
-	type = pgp_packet_get_type(header.tag);
+	type = pgp_packet_type_from_tag(header.tag);
 
 	if (type == PGP_RESERVED)
 	{
@@ -853,7 +853,7 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 {
 	pgp_packet_header *header = packet;
-	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
+	pgp_packet_type ptype = pgp_packet_type_from_tag(header->tag);
 
 	if (header->partial_continue || header->partial_end)
 	{
@@ -912,7 +912,7 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 {
 	pgp_packet_header *header = packet;
-	pgp_packet_type ptype = pgp_packet_get_type(header->tag);
+	pgp_packet_type ptype = pgp_packet_type_from_tag(header->tag);
 
 	if (header->partial_continue || header->partial_end)
 	{
@@ -979,7 +979,7 @@ void pgp_packet_delete(void *packet)
 	}
 
 	header = packet;
-	type = pgp_packet_get_type(header->tag);
+	type = pgp_packet_type_from_tag(header->tag);
 
 	// Partial packets
 	if (header->partial_continue || header->partial_end)

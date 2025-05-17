@@ -153,7 +153,7 @@ pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_s
 	{
 		header = (*stream)->packets[i];
 
-		if (pgp_packet_get_type(header->tag) == PGP_COMP)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_COMP)
 		{
 			return PGP_RECURSIVE_COMPRESSION_CONTAINER;
 		}
@@ -263,7 +263,7 @@ pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_COMP)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_COMP)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -406,7 +406,7 @@ pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_MARKER)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_MARKER)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -753,7 +753,7 @@ pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, siz
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_LIT)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_LIT)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -958,7 +958,7 @@ pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, siz
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_UID)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_UID)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -1431,7 +1431,7 @@ pgp_error_t pgp_user_attribute_packet_read(pgp_user_attribute_packet **packet, v
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_UAT)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_UAT)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -1554,7 +1554,7 @@ pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, siz
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_PADDING)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_PADDING)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -1659,7 +1659,7 @@ pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_MDC)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_MDC)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -1768,7 +1768,7 @@ pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t 
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_TRUST)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_TRUST)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -2487,7 +2487,7 @@ pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, siz
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_KEYRING)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_KEYRING)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}

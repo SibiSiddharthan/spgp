@@ -488,7 +488,7 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	{
 		header = stream->packets[i];
 
-		if (pgp_packet_get_type(header->tag) == PGP_PKESK)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_PKESK)
 		{
 			pgp_pkesk_packet *pkesk = stream->packets[i];
 
@@ -541,7 +541,7 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	{
 		header = stream->packets[i];
 
-		if (pgp_packet_get_type(header->tag) == PGP_SKESK)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_SKESK)
 		{
 			pgp_skesk_packet *skesk = stream->packets[i];
 
@@ -571,7 +571,7 @@ decrypt:
 	header = stream->packets[stream->count - 1];
 	encrypted_packet = stream->packets[stream->count - 1];
 
-	switch (pgp_packet_get_type(header->tag))
+	switch (pgp_packet_type_from_tag(header->tag))
 	{
 	case PGP_SED:
 	{
@@ -630,7 +630,7 @@ void spgp_decrypt(void)
 
 		header = stream->packets[0];
 
-		if (pgp_packet_get_type(header->tag) == PGP_LIT)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_LIT)
 		{
 			spgp_literal_write_file(command.output, stream->packets[0]);
 		}
@@ -644,7 +644,7 @@ void spgp_decrypt(void)
 
 			header = stream->packets[0];
 
-			if (pgp_packet_get_type(header->tag) == PGP_LIT)
+			if (pgp_packet_type_from_tag(header->tag) == PGP_LIT)
 			{
 				spgp_literal_write_file(command.output, stream->packets[0]);
 			}

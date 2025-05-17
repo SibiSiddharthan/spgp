@@ -359,7 +359,7 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 			}
 
 			header = packet;
-			type = pgp_packet_get_type(header->tag);
+			type = pgp_packet_type_from_tag(header->tag);
 			pos += header->body_size + header->header_size;
 
 			// Check whether the armor content is valid for the corresponding marker
@@ -489,7 +489,7 @@ size_t pgp_packet_stream_octets(pgp_stream_t *stream)
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
-		type = pgp_packet_get_type(header->tag);
+		type = pgp_packet_type_from_tag(header->tag);
 
 		size += PGP_PACKET_OCTETS(*header);
 
@@ -534,7 +534,7 @@ pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream)
 	{
 		header = stream->packets[i];
 
-		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_MARKER || pgp_packet_type_from_tag(header->tag) == PGP_PADDING)
 		{
 			count += 1;
 		}
@@ -572,7 +572,7 @@ pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream)
 	{
 		header = stream->packets[i];
 
-		if (pgp_packet_get_type(header->tag) == PGP_MARKER || pgp_packet_get_type(header->tag) == PGP_PADDING)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_MARKER || pgp_packet_type_from_tag(header->tag) == PGP_PADDING)
 		{
 			pgp_packet_delete(stream->packets[i]);
 			stream->packets[i] = NULL;
@@ -602,7 +602,7 @@ pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *s
 	{
 		header = stream->packets[i];
 
-		if (pgp_packet_get_type(header->tag) == PGP_SIG)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_SIG)
 		{
 			pgp_subpacket_header *subheader = NULL;
 
@@ -695,7 +695,7 @@ pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream)
 
 			header = stream->packets[i];
 
-			switch (pgp_packet_get_type(header->tag))
+			switch (pgp_packet_type_from_tag(header->tag))
 			{
 			case PGP_COMP:
 				((pgp_compresed_packet *)stream->packets[i])->partials = partials;

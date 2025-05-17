@@ -1410,7 +1410,7 @@ pgp_error_t pgp_public_key_packet_read(pgp_key_packet **packet, void *data, size
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_PUBKEY && pgp_packet_get_type(header.tag) != PGP_PUBSUBKEY)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_PUBKEY && pgp_packet_type_from_tag(header.tag) != PGP_PUBSUBKEY)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -2531,7 +2531,7 @@ pgp_error_t pgp_secret_key_packet_read(pgp_key_packet **packet, void *data, size
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_SECKEY && pgp_packet_get_type(header.tag) != PGP_SECSUBKEY)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_SECKEY && pgp_packet_type_from_tag(header.tag) != PGP_SECSUBKEY)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -2900,7 +2900,7 @@ void pgp_key_packet_delete(pgp_key_packet *packet)
 
 pgp_error_t pgp_key_packet_transform(pgp_key_packet *packet, pgp_packet_type type)
 {
-	pgp_packet_type packet_type = pgp_packet_get_type(packet->header.tag);
+	pgp_packet_type packet_type = pgp_packet_type_from_tag(packet->header.tag);
 
 	// We cannot convert a public key to a secret key
 	if (packet_type == PGP_PUBKEY || packet_type == PGP_PUBSUBKEY)
@@ -2999,7 +2999,7 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 								   void *iv, byte_t iv_size, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id)
 {
 	pgp_error_t result = 0;
-	byte_t tag = pgp_packet_get_type(packet->header.tag);
+	byte_t tag = pgp_packet_type_from_tag(packet->header.tag);
 
 	if (tag != PGP_KEYDEF && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
 	{
@@ -3106,7 +3106,7 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
 	pgp_error_t result = 0;
-	byte_t tag = pgp_packet_get_type(packet->header.tag);
+	byte_t tag = pgp_packet_type_from_tag(packet->header.tag);
 
 	if (tag != PGP_KEYDEF && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
 	{
@@ -3415,7 +3415,7 @@ pgp_error_t pgp_key_packet_read(pgp_key_packet **packet, void *data, size_t size
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_KEYDEF)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_KEYDEF)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}

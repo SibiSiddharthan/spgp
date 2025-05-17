@@ -733,7 +733,7 @@ pgp_error_t pgp_pkesk_packet_read(pgp_pkesk_packet **packet, void *data, size_t 
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_PKESK)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_PKESK)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -1356,7 +1356,7 @@ pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t 
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_SKESK)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_SKESK)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}

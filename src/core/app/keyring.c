@@ -170,7 +170,7 @@ static void spgp_import_certificates(pgp_stream_t *stream)
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
-		type = pgp_packet_get_type(header->tag);
+		type = pgp_packet_type_from_tag(header->tag);
 
 		if (type == PGP_KEYDEF)
 		{
@@ -370,7 +370,7 @@ void spgp_import_keys(void)
 	for (uint32_t i = 3; i < key_stream->count; ++i)
 	{
 		pgp_packet_header *header = key_stream->packets[i];
-		pgp_packet_type type = pgp_packet_get_type(header->tag);
+		pgp_packet_type type = pgp_packet_type_from_tag(header->tag);
 
 		if (type == PGP_UID)
 		{
@@ -395,7 +395,7 @@ void spgp_import_keys(void)
 			{
 				subsign = key_stream->packets[i + 1];
 
-				if (pgp_packet_get_type(subsign->header.tag) == PGP_SIG)
+				if (pgp_packet_type_from_tag(subsign->header.tag) == PGP_SIG)
 				{
 					pgp_key_packet_make_definition(subkey, subsign);
 					i += 1;

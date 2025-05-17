@@ -141,7 +141,7 @@ static size_t print_timestamp(uint32_t indent, char *prefix, time_t timestamp, v
 size_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size)
 {
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header->tag);
-	pgp_packet_type type = pgp_packet_get_type(header->tag);
+	pgp_packet_type type = pgp_packet_type_from_tag(header->tag);
 
 	size_t pos = 0;
 

@@ -688,7 +688,7 @@ static uint32_t spgp_verify_file(void *file)
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
-		type = pgp_packet_get_type(header->tag);
+		type = pgp_packet_type_from_tag(header->tag);
 
 		if (type == PGP_SIG)
 		{
@@ -714,7 +714,7 @@ static uint32_t spgp_verify_file(void *file)
 	}
 
 	header = stream->packets[0];
-	type = pgp_packet_get_type(header->tag);
+	type = pgp_packet_type_from_tag(header->tag);
 
 	// Check packet sequence
 	if (type == PGP_OPS)
@@ -728,7 +728,7 @@ static uint32_t spgp_verify_file(void *file)
 		for (uint32_t i = 1; i < stream->count; ++i)
 		{
 			header = stream->packets[i];
-			type = pgp_packet_get_type(header->tag);
+			type = pgp_packet_type_from_tag(header->tag);
 
 			if (i < (stream->count - 1) / 2)
 			{
@@ -764,7 +764,7 @@ static uint32_t spgp_verify_file(void *file)
 		for (uint32_t i = 1; i < stream->count; ++i)
 		{
 			header = stream->packets[i];
-			type = pgp_packet_get_type(header->tag);
+			type = pgp_packet_type_from_tag(header->tag);
 
 			if (i != stream->count - 1)
 			{

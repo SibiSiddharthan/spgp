@@ -229,7 +229,7 @@ pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **p
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_OPS)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_OPS)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -1797,7 +1797,7 @@ pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data,
 		return error;
 	}
 
-	if (pgp_packet_get_type(header.tag) != PGP_LIT)
+	if (pgp_packet_type_from_tag(header.tag) != PGP_LIT)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -3237,7 +3237,7 @@ static void pgp_compute_certification_hash(pgp_hash_t *hctx, byte_t version, pgp
 
 	if (user != NULL)
 	{
-		if (pgp_packet_get_type(header->tag) == PGP_UAT)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_UAT)
 		{
 			pgp_compute_uat_hash(hctx, version, user);
 		}
@@ -3557,7 +3557,7 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 	case PGP_TEXT_SIGNATURE:
 	{
 		header = data;
-		packet_type = pgp_packet_get_type(header->tag);
+		packet_type = pgp_packet_type_from_tag(header->tag);
 
 		if (packet_type != PGP_LIT)
 		{
@@ -3573,7 +3573,7 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
 	{
 		header = data;
-		packet_type = pgp_packet_get_type(header->tag);
+		packet_type = pgp_packet_type_from_tag(header->tag);
 
 		if (packet_type != PGP_UID && packet_type != PGP_UAT)
 		{
@@ -3588,7 +3588,7 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
 	{
 		header = data;
-		packet_type = pgp_packet_get_type(header->tag);
+		packet_type = pgp_packet_type_from_tag(header->tag);
 
 		if (packet_type != PGP_PUBKEY && packet_type != PGP_PUBSUBKEY && packet_type != PGP_SECKEY && packet_type != PGP_SECSUBKEY &&
 			packet_type != PGP_KEYDEF)
@@ -3600,7 +3600,7 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 	case PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE:
 	{
 		header = data;
-		packet_type = pgp_packet_get_type(header->tag);
+		packet_type = pgp_packet_type_from_tag(header->tag);
 
 		if (packet_type != PGP_SIG)
 		{
@@ -3978,7 +3978,7 @@ pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **pa
 	pgp_signature_packet *sign = NULL;
 	pgp_packet_header *header = user;
 
-	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
+	if (pgp_packet_type_from_tag(header->tag) != PGP_UID && pgp_packet_type_from_tag(header->tag) != PGP_UAT)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -4029,7 +4029,7 @@ pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign,
 {
 	pgp_packet_header *header = user;
 
-	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
+	if (pgp_packet_type_from_tag(header->tag) != PGP_UID && pgp_packet_type_from_tag(header->tag) != PGP_UAT)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -4321,7 +4321,7 @@ pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_
 	pgp_signature_packet *sign = NULL;
 	pgp_packet_header *header = user;
 
-	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
+	if (pgp_packet_type_from_tag(header->tag) != PGP_UID && pgp_packet_type_from_tag(header->tag) != PGP_UAT)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
@@ -4364,7 +4364,7 @@ pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packe
 {
 	pgp_packet_header *header = user;
 
-	if (pgp_packet_get_type(header->tag) != PGP_UID && pgp_packet_get_type(header->tag) != PGP_UAT)
+	if (pgp_packet_type_from_tag(header->tag) != PGP_UID && pgp_packet_type_from_tag(header->tag) != PGP_UAT)
 	{
 		return PGP_INCORRECT_FUNCTION;
 	}
