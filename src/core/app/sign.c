@@ -350,7 +350,7 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 	pgp_literal_packet_delete(literal_binary);
 	pgp_literal_packet_delete(literal_text);
 
-	return 0;
+	return status;
 }
 
 static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
@@ -481,7 +481,7 @@ static uint32_t spgp_verify_stream(pgp_stream_t *stream)
 		}
 	}
 
-	return 0;
+	return status;
 }
 
 static pgp_stream_t *spgp_sign_file_legacy(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
@@ -549,7 +549,7 @@ static uint32_t spgp_verify_stream_legacy(pgp_stream_t *stream)
 		}
 	}
 
-	return 0;
+	return status;
 }
 
 void spgp_sign(void)
