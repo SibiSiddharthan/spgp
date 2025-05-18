@@ -60,12 +60,6 @@ ec_point *ec_point_copy(ec_point *dst, ec_point *src)
 	return dst;
 }
 
-void ec_point_infinity(ec_group *g, ec_point *r)
-{
-	bignum_zero(r->x);
-	bignum_zero(r->y);
-}
-
 void ec_point_identity(ec_group *g, ec_point *r)
 {
 	bignum_zero(r->x);

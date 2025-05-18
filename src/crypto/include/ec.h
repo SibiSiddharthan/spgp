@@ -220,7 +220,6 @@ ec_point *ec_point_new(ec_group *eg);
 ec_point *ec_point_copy(ec_point *dst, ec_point *src);
 void ec_point_delete(ec_point *ep);
 
-void ec_point_infinity(ec_group *g, ec_point *r);
 void ec_point_identity(ec_group *g, ec_point *r);
 
 ec_point *ec_point_add(ec_group *g, ec_point *r, ec_point *a, ec_point *b);

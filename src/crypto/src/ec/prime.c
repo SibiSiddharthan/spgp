@@ -24,6 +24,8 @@ uint32_t ec_prime_point_at_infinity(ec_group *eg, ec_point *a)
 	return 0;
 }
 
+
+
 ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 {
 	bignum_t *lambda = NULL;
@@ -42,14 +44,14 @@ ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 	// If the point is at infinity O + O = O
 	if (ec_prime_point_at_infinity(eg, a))
 	{
-		ec_point_infinity(eg, r);
+		ec_point_identity(eg, r);
 		return r;
 	}
 
 	// If the point is on the x-axis
 	if (a->y->bits == 0)
 	{
-		ec_point_infinity(eg, r);
+		ec_point_identity(eg, r);
 		return r;
 	}
 
@@ -112,7 +114,7 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 	// If the point is at infinity O + O = O
 	if (ec_prime_point_at_infinity(eg, a) && ec_prime_point_at_infinity(eg, b))
 	{
-		ec_point_infinity(eg, r);
+		ec_point_identity(eg, r);
 		return r;
 	}
 
@@ -139,7 +141,7 @@ ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b
 		// If the points lie on the same ordinate line
 		else
 		{
-			ec_point_infinity(eg, r);
+			ec_point_identity(eg, r);
 			return r;
 		}
 	}
@@ -213,7 +215,7 @@ ec_point *ec_prime_point_multiply(ec_group *eg, ec_point *r, ec_point *a, bignum
 
 	if ((n->words[0] & 0x1) != 0x1)
 	{
-		ec_point_infinity(eg, r0);
+		ec_point_identity(eg, r0);
 	}
 	else
 	{
@@ -374,7 +376,7 @@ ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void
 	{
 	case 0x00:
 	{
-		ec_point_infinity(eg, ep);
+		ec_point_identity(eg, ep);
 		return ep;
 	}
 	case 0x02:
