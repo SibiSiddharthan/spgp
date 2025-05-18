@@ -24,6 +24,12 @@ uint32_t ec_edwards_point_is_identity(ec_group *eg, ec_point *a)
 	return 0;
 }
 
+void ec_edwards_point_identity(ec_group *eg, ec_point *a)
+{
+	bignum_zero(a->x);
+	bignum_one(a->y);
+}
+
 uint32_t ec_edwards_point_on_curve(ec_group *eg, ec_point *a)
 {
 	uint32_t result = 0;

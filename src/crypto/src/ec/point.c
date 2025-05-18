@@ -62,8 +62,7 @@ ec_point *ec_point_copy(ec_point *dst, ec_point *src)
 
 void ec_point_identity(ec_group *g, ec_point *r)
 {
-	bignum_zero(r->x);
-	bignum_one(r->y);
+	g->_make_identity(g, r);
 }
 
 void ec_point_delete(ec_point *ep)

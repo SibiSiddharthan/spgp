@@ -33,6 +33,7 @@ const bn_word_t ed448_gy_words[7] = {0x9808795BF230FA14, 0xFDBD132C4ED7C8AD, 0x3
 
 uint32_t ec_edwards_point_is_identity(ec_group *eg, ec_point *a);
 uint32_t ec_edwards_point_on_curve(ec_group *eg, ec_point *a);
+void ec_edwards_point_identity(ec_group *eg, ec_point *a);
 
 ec_point *ec_edwards_point_double(ec_group *eg, ec_point *r, ec_point *a);
 ec_point *ec_edwards_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b);

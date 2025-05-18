@@ -2691,6 +2691,7 @@ prime_init:
 	group->_multiply = ec_prime_point_multiply;
 	group->_on_curve = ec_prime_point_on_curve;
 	group->_is_identity = ec_prime_point_at_infinity;
+	group->_make_identity = ec_prime_point_infinity;
 	group->_encode = ec_prime_point_encode;
 	group->_decode = ec_prime_point_decode;
 	goto end;
@@ -2701,6 +2702,7 @@ edwards_init:
 	group->_multiply = ec_edwards_point_multiply;
 	group->_on_curve = ec_edwards_point_on_curve;
 	group->_is_identity = ec_edwards_point_is_identity;
+	group->_make_identity = ec_edwards_point_identity;
 	goto end;
 binary_init:
 	goto end;

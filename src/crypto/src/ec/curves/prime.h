@@ -109,6 +109,7 @@ ec_point *ec_prime_point_decode(struct _ec_group *eg, struct _ec_point *ep, void
 
 uint32_t ec_prime_point_at_infinity(ec_group *eg, ec_point *a);
 uint32_t ec_prime_point_on_curve(ec_group *eg, ec_point *a);
+void ec_prime_point_infinity(ec_group *eg, ec_point *a);
 
 ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a);
 ec_point *ec_prime_point_add(ec_group *eg, ec_point *r, ec_point *a, ec_point *b);

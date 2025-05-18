@@ -24,7 +24,11 @@ uint32_t ec_prime_point_at_infinity(ec_group *eg, ec_point *a)
 	return 0;
 }
 
-
+void ec_prime_point_infinity(ec_group *eg, ec_point *a)
+{
+	bignum_zero(a->x);
+	bignum_zero(a->y);
+}
 
 ec_point *ec_prime_point_double(ec_group *eg, ec_point *r, ec_point *a)
 {
