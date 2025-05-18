@@ -16,6 +16,8 @@
 
 uint32_t ec_prime_point_at_infinity(ec_group *eg, ec_point *a)
 {
+	UNUSED(eg);
+
 	if (a->x->bits == 0 && a->y->bits == 0)
 	{
 		return 1;
@@ -26,6 +28,8 @@ uint32_t ec_prime_point_at_infinity(ec_group *eg, ec_point *a)
 
 void ec_prime_point_infinity(ec_group *eg, ec_point *a)
 {
+	UNUSED(eg);
+
 	bignum_zero(a->x);
 	bignum_zero(a->y);
 }

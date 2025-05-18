@@ -26,6 +26,8 @@ uint32_t ec_edwards_point_is_identity(ec_group *eg, ec_point *a)
 
 void ec_edwards_point_identity(ec_group *eg, ec_point *a)
 {
+	UNUSED(eg);
+
 	bignum_zero(a->x);
 	bignum_one(a->y);
 }
