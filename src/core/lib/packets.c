@@ -1827,11 +1827,6 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 		return PGP_UNKNOWN_KEY_VERSION;
 	}
 
-	if (user == NULL)
-	{
-		return PGP_EMPTY_USER_ID;
-	}
-
 	keyring = malloc(sizeof(pgp_keyring_packet));
 
 	if (keyring == NULL)
@@ -1848,12 +1843,15 @@ pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_versi
 	memcpy(keyring->primary_fingerprint, primary_key_fingerprint, keyring->fingerprint_size);
 
 	// Add the user information (will also encode the header)
-	status = pgp_keyring_packet_add_user(keyring, user);
-
-	if (status != PGP_SUCCESS)
+	if (user != NULL)
 	{
-		pgp_keyring_packet_delete(keyring);
-		return status;
+		status = pgp_keyring_packet_add_user(keyring, user);
+
+		if (status != PGP_SUCCESS)
+		{
+			pgp_keyring_packet_delete(keyring);
+			return status;
+		}
 	}
 
 	*packet = keyring;
