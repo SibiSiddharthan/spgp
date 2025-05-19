@@ -316,12 +316,17 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
 	return 0;
 }
 
-void spgp_import_keys(void)
+static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t offset)
 {
 	pgp_error_t status = 0;
+	uint32_t end = 0;
 
-	pgp_stream_t *key_stream = NULL;
-	pgp_key_packet *key = NULL;
+	pgp_packet_header *header = NULL;
+	pgp_packet_type type = 0;
+
+	pgp_key_packet *primary_key = NULL;
+	pgp_key_type key_type = 0;
+
 	pgp_user_id_packet *uid = NULL;
 	pgp_signature_packet *sign = NULL;
 	pgp_keyring_packet *keyring_packet = NULL;
@@ -330,25 +335,61 @@ void spgp_import_keys(void)
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t primary_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
-	void *file = NULL;
+	// The first packet must be public key or secret key packet
+	header = stream->packets[offset];
+	type = pgp_packet_type_from_tag(header->tag);
 
-	if (command.files != NULL)
+	if (type != PGP_PUBKEY && type != PGP_SECKEY)
 	{
-		file = command.files->packets[0];
+		printf("Bad PGP Key certificate.\n");
+		exit(1);
 	}
 
-	key_stream = spgp_read_pgp_packets(file);
+	primary_key = stream->packets[offset];
+	key_type = (type == PGP_PUBKEY) ? PGP_KEY_TYPE_PUBLIC : PGP_KEY_TYPE_SECRET;
 
-	key = key_stream->packets[0];
-	uid = key_stream->packets[1];
-	sign = key_stream->packets[2];
+	for (uint32_t i = offset + 1; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		type = pgp_packet_type_from_tag(header->tag);
 
-	PGP_CALL(pgp_key_fingerprint(key, primary_fingerprint, &primary_fingerprint_size));
-	PGP_CALL(pgp_key_packet_make_definition(key, sign));
+		if (type == PGP_PUBKEY || type == PGP_SECKEY)
+		{
+			end = i - 1;
+			break;
+		}
 
-	spgp_write_key(key);
+		if (key_type == PGP_PUBKEY)
+		{
+			if (type == PGP_SECSUBKEY)
+			{
+				printf("Bad PGP Key certificate.\n");
+				exit(1);
+			}
+		}
+		else
+		{
+			if (type == PGP_PUBSUBKEY)
+			{
+				printf("Bad PGP Key certificate.\n");
+				exit(1);
+			}
+		}
+	}
 
-	status = pgp_verify_certificate_binding_signature(sign, key, uid);
+	// Calculate the primary key fingerprint
+	PGP_CALL(pgp_key_fingerprint(primary_key, primary_fingerprint, &primary_fingerprint_size));
+
+	//
+
+	uid = stream->packets[1];
+	sign = stream->packets[2];
+
+	PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
+
+	spgp_write_key(primary_key);
+
+	status = pgp_verify_certificate_binding_signature(sign, primary_key, uid);
 
 	if (status == 1)
 	{
@@ -361,18 +402,18 @@ void spgp_import_keys(void)
 	}
 
 	PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
-	PGP_CALL(pgp_keyring_packet_new(&keyring_packet, key->version, primary_fingerprint, uinfo));
+	PGP_CALL(pgp_keyring_packet_new(&keyring_packet, primary_key->version, primary_fingerprint, uinfo));
 
 	uinfo = NULL;
 
-	for (uint32_t i = 3; i < key_stream->count; ++i)
+	for (uint32_t i = 3; i < stream->count; ++i)
 	{
-		pgp_packet_header *header = key_stream->packets[i];
+		pgp_packet_header *header = stream->packets[i];
 		pgp_packet_type type = pgp_packet_type_from_tag(header->tag);
 
 		if (type == PGP_UID)
 		{
-			pgp_user_id_packet *other_uid = key_stream->packets[i];
+			pgp_user_id_packet *other_uid = stream->packets[i];
 
 			PGP_CALL(pgp_user_info_from_certificate(&uinfo, other_uid, sign));
 			PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
@@ -380,7 +421,7 @@ void spgp_import_keys(void)
 
 		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
 		{
-			pgp_key_packet *subkey = key_stream->packets[i];
+			pgp_key_packet *subkey = stream->packets[i];
 			pgp_signature_packet *subsign = NULL;
 
 			byte_t subkey_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
@@ -389,9 +430,9 @@ void spgp_import_keys(void)
 			PGP_CALL(pgp_key_fingerprint(subkey, subkey_fingerprint, &subkey_fingerprint_size));
 			PGP_CALL(pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint));
 
-			if ((i + 1) < key_stream->count)
+			if ((i + 1) < stream->count)
 			{
-				subsign = key_stream->packets[i + 1];
+				subsign = stream->packets[i + 1];
 
 				if (pgp_packet_type_from_tag(subsign->header.tag) == PGP_SIG)
 				{
@@ -402,7 +443,7 @@ void spgp_import_keys(void)
 
 			spgp_write_key(subkey);
 
-			uint32_t result = pgp_verify_subkey_binding_signature(subsign, key, subkey);
+			uint32_t result = pgp_verify_subkey_binding_signature(subsign, primary_key, subkey);
 
 			if (result == 1)
 			{
@@ -416,9 +457,40 @@ void spgp_import_keys(void)
 	}
 
 	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
-	spgp_import_certificates(key_stream);
+	spgp_import_certificates(stream);
 
 	pgp_keyring_packet_delete(keyring_packet);
+
+	return end;
+}
+
+static uint32_t spgp_import_key_file(void *file)
+{
+	pgp_stream_t *stream = NULL;
+	uint32_t offset = 0;
+	uint32_t count = 0;
+
+	stream = spgp_read_pgp_packets(file);
+
+	while (offset < stream->count)
+	{
+		offset = spgp_process_transferable_key(stream, offset);
+		count += 1;
+	}
+
+	return count;
+}
+
+void spgp_import_keys(void)
+{
+	uint32_t count = 0;
+
+	for (uint32_t i = 0; i < command.files->count; ++i)
+	{
+		count += spgp_import_key_file(command.files->packets[i]);
+	}
+
+	printf("Processed %u keys.\n", count);
 }
 
 static size_t print_prefix(byte_t primary, byte_t secret, void *str, size_t size)
