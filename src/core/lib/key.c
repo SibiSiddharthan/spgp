@@ -2991,6 +2991,22 @@ pgp_error_t pgp_key_packet_make_definition(pgp_key_packet *key, pgp_signature_pa
 	pgp_key_packet_fill(key, sign->hashed_subpackets);
 	pgp_key_packet_fill(key, sign->unhashed_subpackets);
 
+	// Set revocation time
+	if (sign->type == PGP_KEY_REVOCATION_SIGNATURE || sign->type == PGP_SUBKEY_REVOCATION_SIGNATURE)
+	{
+		// Only check the hashed subpackets
+		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		{
+			pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
+
+			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_CREATION_TIME_SUBPACKET)
+			{
+				pgp_signature_creation_time_subpacket *subpacket = sign->hashed_subpackets->packets[i];
+				key->key_revocation_time = subpacket->timestamp;
+			}
+		}
+	}
+
 	// Transform it to key definition packet.
 	return pgp_key_packet_transform(key, PGP_KEYDEF);
 }
