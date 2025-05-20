@@ -391,6 +391,9 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	// Calculate the primary key fingerprint
 	PGP_CALL(pgp_key_fingerprint(primary_key, primary_fingerprint, &primary_fingerprint_size));
 
+	// Initialize the keyring packet
+	PGP_CALL(pgp_keyring_packet_new(&keyring_packet, primary_key->version, primary_fingerprint, uinfo));
+
 	// Next should be direct key signatures
 	while ((offset + pos) < end)
 	{
@@ -432,20 +435,37 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		if (type == PGP_UID || type == PGP_UAT)
 		{
-			uid = stream->packets[offset + pos];
+			if (type == PGP_UID)
+			{
+				uid = stream->packets[offset + pos];
+			}
+			else
+			{
+				uid = NULL;
+			}
 		}
 
 		if (type == PGP_SIG)
 		{
 			sign = stream->packets[offset + pos];
 
-			PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
-			PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
-			PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
+			if (uid != NULL)
+			{
+				if (sign->type == PGP_GENERIC_CERTIFICATION_SIGNATURE || sign->type == PGP_PERSONA_CERTIFICATION_SIGNATURE ||
+					sign->type == PGP_CASUAL_CERTIFICATION_SIGNATURE || sign->type == PGP_POSITIVE_CERTIFICATION_SIGNATURE)
+				{
+					PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
+				}
+
+				uinfo = NULL;
+
+				PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
+				PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
+			}
 		}
 
 		// Check the signature
-		status = pgp_verify_certificate_binding_signature(sign, primary_key, uid);
+		status = pgp_verify_signature(sign, primary_key, uid);
 
 		if (status == 1)
 		{
@@ -474,7 +494,11 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		if (type == PGP_SIG)
 		{
 			sign = stream->packets[offset + pos];
-			PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
+
+			if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
+			{
+				PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
+			}
 		}
 
 		status = pgp_verify_subkey_binding_signature(sign, primary_key, subkey);
@@ -494,12 +518,8 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		pos += 1;
 	}
 
+	// Write the keys and certificate
 	spgp_write_key(primary_key);
-
-	// Initialize the keyring packet
-	PGP_CALL(pgp_keyring_packet_new(&keyring_packet, primary_key->version, primary_fingerprint, uinfo));
-
-	uinfo = NULL;
 
 	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
 	spgp_import_certificates(stream);
