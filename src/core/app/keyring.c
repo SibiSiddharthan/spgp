@@ -334,6 +334,8 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	pgp_keyring_packet *keyring_packet = NULL;
 	pgp_user_info *uinfo = NULL;
 
+	pgp_stream_t certificate = {0};
+
 	byte_t primary_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t primary_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
@@ -518,12 +520,29 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		pos += 1;
 	}
 
-	// Write the keys and certificate
+	// Write the keys
 	spgp_write_key(primary_key);
 
-	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
-	spgp_import_certificates(stream);
+	for (uint32_t i = offset + 1; i < end; ++i)
+	{
+		header = stream->packets[i];
+		type = pgp_packet_type_from_tag(header->tag);
 
+		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
+		{
+			subkey = stream->packets[i];
+			spgp_write_key(subkey);
+		}
+	}
+
+	// Write the certificate
+	certificate.packets = &stream->packets[offset];
+	certificate.count = end - offset;
+
+	spgp_import_certificates(&certificate);
+
+	// Update the keyring
+	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
 	pgp_keyring_packet_delete(keyring_packet);
 
 	return end;
