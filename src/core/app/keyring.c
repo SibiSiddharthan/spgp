@@ -8,6 +8,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <spgp.h>
+#include <crypto.h>
 #include <packet.h>
 #include <key.h>
 #include <signature.h>
@@ -356,6 +357,12 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	key_type = (type == PGP_PUBKEY) ? PGP_KEY_TYPE_PUBLIC : PGP_KEY_TYPE_SECRET;
 	pos += 1;
 
+	if (pgp_signature_algorithm_validate(primary_key->public_key_algorithm_id) == 0)
+	{
+		printf("Invalid top level key algorithm.\n");
+		exit(1);
+	}
+
 	for (uint32_t i = offset + 1; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
@@ -394,7 +401,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	PGP_CALL(pgp_key_fingerprint(primary_key, primary_fingerprint, &primary_fingerprint_size));
 
 	// Initialize the keyring packet
-	PGP_CALL(pgp_keyring_packet_new(&keyring_packet, primary_key->version, primary_fingerprint, uinfo));
+	PGP_CALL(pgp_keyring_packet_new(&keyring_packet, primary_key->version, primary_fingerprint, NULL));
 
 	// Next should be direct key signatures
 	while ((offset + pos) < end)
@@ -414,7 +421,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			// Only allowed signature types
 			if (sign->type != PGP_DIRECT_KEY_SIGNATURE && sign->type != PGP_KEY_REVOCATION_SIGNATURE)
 			{
-				printf("Bad PGP Key certificate.\n");
+				printf("Invalid signature type on keys.\n");
 				exit(1);
 			}
 
@@ -469,11 +476,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		// Check the signature
 		status = pgp_verify_signature(sign, primary_key, uid);
 
-		if (status == 1)
-		{
-			printf("Good Certification Signature.\n");
-		}
-		else
+		if (status != PGP_SUCCESS)
 		{
 			printf("Bad Certification Signature.\n");
 			exit(1);
@@ -505,13 +508,10 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		status = pgp_verify_subkey_binding_signature(sign, primary_key, subkey);
 
-		if (status == 1)
-		{
-			printf("Good Subkey Binding Signature.\n");
-		}
-		else
+		if (status != PGP_SUCCESS)
 		{
 			printf("Bad Subkey Binding Signature.\n");
+			exit(1);
 		}
 
 		PGP_CALL(pgp_key_fingerprint(subkey, subkey_fingerprint, &subkey_fingerprint_size));
