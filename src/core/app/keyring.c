@@ -426,6 +426,28 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			}
 
 			PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
+
+			if (sign->type == PGP_DIRECT_KEY_SIGNATURE)
+			{
+				status = pgp_verify_direct_key_signature(sign, primary_key);
+
+				if (status != PGP_SUCCESS)
+				{
+					printf("Bad Direct Key Signature.\n");
+					exit(1);
+				}
+			}
+
+			if (sign->type == PGP_KEY_REVOCATION_SIGNATURE)
+			{
+				status = pgp_verify_revocation_signature(sign, primary_key, primary_key);
+
+				if (status != PGP_SUCCESS)
+				{
+					printf("Bad Key Revocation Signature.\n");
+					exit(1);
+				}
+			}
 		}
 
 		pos += 1;
@@ -474,12 +496,27 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		}
 
 		// Check the signature
-		status = pgp_verify_signature(sign, primary_key, uid);
-
-		if (status != PGP_SUCCESS)
+		if (sign->type == PGP_GENERIC_CERTIFICATION_SIGNATURE || sign->type == PGP_PERSONA_CERTIFICATION_SIGNATURE ||
+			sign->type == PGP_CASUAL_CERTIFICATION_SIGNATURE || sign->type == PGP_POSITIVE_CERTIFICATION_SIGNATURE)
 		{
-			printf("Bad Certification Signature.\n");
-			exit(1);
+			status = pgp_verify_certificate_binding_signature(sign, primary_key, uid);
+
+			if (status != PGP_SUCCESS)
+			{
+				printf("Bad Certificate Binding Signature.\n");
+				exit(1);
+			}
+		}
+
+		if (sign->type == PGP_CERTIFICATION_REVOCATION_SIGNATURE)
+		{
+			status = pgp_verify_revocation_signature(sign, primary_key, uid);
+
+			if (status != PGP_SUCCESS)
+			{
+				printf("Bad Certificate Revocation Signature.\n");
+				exit(1);
+			}
 		}
 
 		pos += 1;
@@ -506,12 +543,26 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			}
 		}
 
-		status = pgp_verify_subkey_binding_signature(sign, primary_key, subkey);
-
-		if (status != PGP_SUCCESS)
+		if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
 		{
-			printf("Bad Subkey Binding Signature.\n");
-			exit(1);
+			status = pgp_verify_subkey_binding_signature(sign, primary_key, subkey);
+
+			if (status != PGP_SUCCESS)
+			{
+				printf("Bad Subkey Binding Signature.\n");
+				exit(1);
+			}
+		}
+
+		if (sign->type == PGP_SUBKEY_REVOCATION_SIGNATURE)
+		{
+			status = pgp_verify_revocation_signature(sign, primary_key, subkey);
+
+			if (status != PGP_SUCCESS)
+			{
+				printf("Bad Subkey Revocation Signature.\n");
+				exit(1);
+			}
 		}
 
 		PGP_CALL(pgp_key_fingerprint(subkey, subkey_fingerprint, &subkey_fingerprint_size));
