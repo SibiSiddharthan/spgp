@@ -600,50 +600,25 @@ void spgp_sign(void)
 	}
 
 	// Create the signature
-	if (command.args == NULL)
+	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
 		if (command.detach_sign)
 		{
-			signatures = spgp_detach_sign_file(key, uinfo, count, NULL);
+			signatures = spgp_detach_sign_file(key, uinfo, count, command.args->packets[i]);
 		}
 		if (command.clear_sign)
 		{
-			signatures = spgp_clear_sign_file(key, uinfo, count, NULL);
+			signatures = spgp_clear_sign_file(key, uinfo, count, command.args->packets[i]);
 		}
 		if (command.sign)
 		{
 			if (command.mode != SPGP_MODE_RFC2440)
 			{
-				signatures = spgp_sign_file(key, uinfo, count, NULL);
+				signatures = spgp_sign_file(key, uinfo, count, command.args->packets[i]);
 			}
 			else
 			{
-				signatures = spgp_sign_file_legacy(key, uinfo, count, NULL);
-			}
-		}
-	}
-	else
-	{
-		for (uint32_t i = 0; i < count; ++i)
-		{
-			if (command.detach_sign)
-			{
-				signatures = spgp_detach_sign_file(key, uinfo, count, command.args->packets[i]);
-			}
-			if (command.clear_sign)
-			{
-				signatures = spgp_clear_sign_file(key, uinfo, count, command.args->packets[i]);
-			}
-			if (command.sign)
-			{
-				if (command.mode != SPGP_MODE_RFC2440)
-				{
-					signatures = spgp_sign_file(key, uinfo, count, command.args->packets[i]);
-				}
-				else
-				{
-					signatures = spgp_sign_file_legacy(key, uinfo, count, command.args->packets[i]);
-				}
+				signatures = spgp_sign_file_legacy(key, uinfo, count, command.args->packets[i]);
 			}
 		}
 	}

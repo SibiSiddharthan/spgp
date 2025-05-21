@@ -652,6 +652,12 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 	}
 
 	argparse_delete(actx);
+
+	// Add an empty option to make life easier
+	if (command->args == NULL)
+	{
+		STREAM_CALL(command->args = pgp_stream_push(command->args, NULL));
+	}
 }
 
 int main(int argc, char **argv)
