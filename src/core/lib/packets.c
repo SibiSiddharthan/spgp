@@ -2700,7 +2700,8 @@ pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size
 		return PGP_EMPTY_USER_ID;
 	}
 
-	if (trust != PGP_TRUST_NEVER && trust != PGP_TRUST_REVOKED && trust != PGP_TRUST_MARGINAL && trust != PGP_TRUST_FULL && trust != PGP_TRUST_ULTIMATE)
+	if (trust != PGP_TRUST_NEVER && trust != PGP_TRUST_REVOKED && trust != PGP_TRUST_MARGINAL && trust != PGP_TRUST_FULL &&
+		trust != PGP_TRUST_ULTIMATE)
 	{
 		return PGP_UNKNOWN_TRUST_LEVEL;
 	}
@@ -2918,11 +2919,18 @@ pgp_error_t pgp_user_info_from_certificate(pgp_user_info **info, pgp_user_id_pac
 		return PGP_EMPTY_USER_ID;
 	}
 
-	status = pgp_user_info_new(&uinfo, uid, uid_octets, NULL, 0, 0, 0, 0);
-
-	if (status != PGP_SUCCESS)
+	if (*info == NULL)
 	{
-		return status;
+		status = pgp_user_info_new(&uinfo, uid, uid_octets, NULL, 0, 0, 0, 0);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
+	}
+	else
+	{
+		uinfo = *info;
 	}
 
 	// Prefer data in hashed subpackets to unhashed ones
