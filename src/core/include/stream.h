@@ -17,7 +17,12 @@ typedef struct _pgp_stream_t
 	uint32_t count;
 	uint32_t capacity;
 
-	void **packets;
+	union
+	{
+		void **packets;
+		void **data;
+	};
+
 } pgp_stream_t;
 
 pgp_stream_t *pgp_stream_new(uint32_t capacity);
