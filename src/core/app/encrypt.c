@@ -387,7 +387,7 @@ void spgp_encrypt(void)
 	// Create the encrypted message
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		literal = spgp_literal_read_file(command.args->packets[i], PGP_LITERAL_DATA_BINARY);
+		literal = spgp_literal_read_file(command.args->data[i], PGP_LITERAL_DATA_BINARY);
 		stream = pgp_stream_push(stream, literal);
 
 		if (command.compression_level > 0 && compression_algorithm != PGP_UNCOMPRESSED)
@@ -401,21 +401,21 @@ void spgp_encrypt(void)
 
 		if (features & PGP_SEIPD_V2)
 		{
-			message = spgp_encrypt_seipd(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm,
+			message = spgp_encrypt_seipd(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm,
 										 aead_algorithm, stream);
 		}
 		else if (features & PGP_AEAD)
 		{
-			message = spgp_encrypt_aead(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm,
+			message = spgp_encrypt_aead(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm,
 										aead_algorithm, stream);
 		}
 		else if (features & PGP_MDC)
 		{
-			message = spgp_encrypt_mdc(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm, stream);
+			message = spgp_encrypt_mdc(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm, stream);
 		}
 		else
 		{
-			message = spgp_encrypt_sed(key, count, command.passhprases->packets, command.passhprases->count, cipher_algorithm, stream);
+			message = spgp_encrypt_sed(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm, stream);
 		}
 
 		stream = pgp_stream_clear(stream, pgp_packet_delete);
@@ -602,7 +602,7 @@ void spgp_decrypt(void)
 
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		stream = spgp_decrypt_file(command.args->packets[i]);
+		stream = spgp_decrypt_file(command.args->data[i]);
 		stream = pgp_packet_stream_filter_padding_packets(stream);
 
 		header = stream->packets[0];
