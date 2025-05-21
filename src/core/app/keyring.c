@@ -1027,6 +1027,9 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	char passphrase_env[128] = {0};
 	void *passphrase = NULL;
 
+	byte_t passphrase_buffer[128] = {0};
+	uint32_t passphrase_size = 0;
+
 	// Check if key needs decryption
 	if (key->encrypted == NULL && key->encrypted_octets == 0)
 	{
@@ -1038,6 +1041,11 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 
 	passphrase = getenv(passphrase_env);
 
+	if (passphrase != NULL)
+	{
+		passphrase_size = strlen(passphrase);
+	}
+
 	if (passphrase == NULL)
 	{
 		// Try the primary key fingerprint
@@ -1045,16 +1053,22 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 		{
 			get_key_passphrase_env(passphrase_env, keyring->primary_fingerprint, fingerprint_size);
 			passphrase = getenv(passphrase_env);
-		}
 
-		// Prompt the user for password
-		if (passphrase == NULL)
-		{
-			passphrase = spgp_prompt_passphrase();
+			if (passphrase != NULL)
+			{
+				passphrase_size = strlen(passphrase);
+			}
 		}
 	}
 
+	// Prompt the user for password
 	if (passphrase == NULL)
+	{
+		passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passhrase for decrypting key.");
+		passphrase = passphrase_buffer;
+	}
+
+	if (passphrase_size == 0)
 	{
 		printf("Key passphrase not provided.\n");
 		exit(1);
@@ -1065,8 +1079,37 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	return key;
 }
 
-byte_t *spgp_prompt_passphrase(void)
+uint32_t spgp_prompt_passphrase(byte_t passphrase[128], char *message)
 {
-	// TODO
-	return NULL;
+	uint32_t is_input_tty = 0;
+	uint32_t is_output_tty = 0;
+
+	char buffer[256] = {0};
+	size_t result = 0;
+
+	// TODO: Change terminal settings
+	OS_CALL(os_isatty(STDIN_HANDLE, &is_input_tty), printf("Unable to check terminal"));
+	OS_CALL(os_isatty(STDOUT_HANDLE, &is_output_tty), printf("Unable to check terminal"));
+
+	if (is_input_tty == 0 || is_output_tty == 0)
+	{
+		return 0;
+	}
+
+	result = snprintf(buffer, 256, "%s\r\nPassword: ", message);
+
+	// Write the message
+	OS_CALL(os_write(STDOUT_HANDLE, buffer, result, &result), NULL);
+
+	// Read the input
+	result = 0;
+
+	OS_CALL(os_read(STDIN_HANDLE, passphrase, 128, &result), NULL);
+
+	if (result == 0)
+	{
+		return 0;
+	}
+
+	return (uint32_t)result;
 }
