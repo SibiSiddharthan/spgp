@@ -214,54 +214,59 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 {
 	pgp_stream_t *stream = spgp_read_keyring();
 	pgp_keyring_packet *keyring = NULL;
+	pgp_user_info *uinfo = NULL;
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
-		*user = pgp_keyring_packet_search(stream->packets[i], input, size);
+		uinfo = pgp_keyring_packet_search(stream->packets[i], input, size);
 
-		if (*user != NULL)
+		if (uinfo != NULL)
 		{
-			// Prevent the packet from being free'd.
 			keyring = stream->packets[i];
-			stream->packets[i] = NULL;
-
 			break;
 		}
 	}
 
-	if (keyring != NULL)
+	if (keyring == NULL)
 	{
-		// Find a key with necessary capabilities
-		if ((*user)->fingerprint_size != 0)
+		return NULL;
+	}
+
+	// Find a key with necessary capabilities
+	if (key != NULL)
+	{
+		*key = spgp_read_key(uinfo->fingerprint, uinfo->fingerprint_size);
+
+		if (((*key)->capabilities & capabilities) == 0)
 		{
-			*key = spgp_read_key((*user)->fingerprint, (*user)->fingerprint_size);
+			pgp_key_packet_delete(*key);
+			*key = NULL;
 
-			if (((*key)->capabilities & capabilities) == 0)
+			// Check if the fingerprint given was the primary key's one.
+			if (memcmp(keyring->primary_fingerprint, uinfo->fingerprint, uinfo->fingerprint_size) == 0)
 			{
-				pgp_key_packet_delete(*key);
-				*key = NULL;
-
-				// Check if the fingerprint given was the primary key's one.
-				if (memcmp(keyring->primary_fingerprint, (*user)->fingerprint, (*user)->fingerprint_size) == 0)
+				// Search the subkeys for a suitable key
+				for (byte_t i = 0; i < keyring->subkey_count; ++i)
 				{
-					// Search the subkeys for a suitable key
-					for (byte_t i = 0; i < keyring->subkey_count; ++i)
+					*key =
+						spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, i * keyring->fingerprint_size), keyring->fingerprint_size);
+
+					if (((*key)->capabilities & capabilities) == capabilities)
 					{
-						*key = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, i * keyring->fingerprint_size),
-											 keyring->fingerprint_size);
-
-						if (((*key)->capabilities & capabilities) == capabilities)
-						{
-							break;
-						}
-
-						// Free memory for unusable keys
-						pgp_key_packet_delete(*key);
-						*key = NULL;
+						break;
 					}
+
+					// Free memory for unusable keys
+					pgp_key_packet_delete(*key);
+					*key = NULL;
 				}
 			}
 		}
+	}
+
+	if (user != NULL)
+	{
+		*user = uinfo;
 	}
 
 	return keyring;
