@@ -629,9 +629,86 @@ void spgp_import_keys(void)
 	printf("Processed %u keys.\n", count);
 }
 
+static void spgp_export_keyring(void *input, byte_t secret)
+{
+	pgp_keyring_packet *keyring = NULL;
+	pgp_stream_t *certificate = NULL;
+
+	uint16_t subkey_index = 0;
+
+	armor_options options = {0};
+	armor_marker marker = {0};
+	armor_options *opts = NULL;
+
+	keyring = spgp_search_keyring(NULL, NULL, input, strlen(input), 0);
+
+	if (keyring == NULL)
+	{
+		printf("User not found.\n");
+		exit(1);
+	}
+
+	// Export the certificate
+	certificate = spgp_read_certificate(keyring->primary_fingerprint, keyring->fingerprint_size);
+	certificate = pgp_packet_stream_filter_non_exportable_signatures(certificate);
+
+	// Replace the public keys with secret keys
+	if (secret)
+	{
+		// First key packet is the primary key
+		pgp_packet_delete(certificate->packets[0]);
+		certificate->packets[0] = spgp_read_key(keyring->primary_fingerprint, keyring->fingerprint_size);
+
+		for (uint32_t i = 1; i < certificate->count; ++i)
+		{
+			pgp_packet_header *header = certificate->packets[i];
+			pgp_packet_type type = pgp_packet_type_from_tag(header->tag);
+
+			// The order of subkeys in the keyring and in the certificate will be the same.
+			if (type == PGP_PUBSUBKEY)
+			{
+				pgp_packet_delete(certificate->packets[i]);
+				certificate->packets[0] = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, subkey_index * keyring->fingerprint_size),
+														keyring->fingerprint_size);
+
+				subkey_index += 1;
+			}
+		}
+	}
+
+	if (command.armor)
+	{
+		if (secret)
+		{
+			marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_PRIVATE_KEY,
+									.header_line_size = strlen(PGP_ARMOR_BEGIN_PRIVATE_KEY),
+									.trailer_line = PGP_ARMOR_END_PRIVATE_KEY,
+									.trailer_line_size = strlen(PGP_ARMOR_END_PRIVATE_KEY)};
+		}
+		else
+		{
+			marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_PUBLIC_KEY,
+									.header_line_size = strlen(PGP_ARMOR_BEGIN_PUBLIC_KEY),
+									.trailer_line = PGP_ARMOR_END_PUBLIC_KEY,
+									.trailer_line_size = strlen(PGP_ARMOR_END_PUBLIC_KEY)};
+		}
+
+		options.marker = &marker;
+		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((keyring->key_version == PGP_KEY_V6) ? 0 : ARMOR_CHECKSUM_CRC24);
+
+		opts = &options;
+	}
+
+	spgp_write_pgp_packets(command.output, certificate, opts);
+	pgp_stream_delete(certificate, pgp_packet_delete);
+}
+
 void spgp_export_keys(void)
 {
-	
+	for (uint32_t i = 0; i < command.files->count; ++i)
+	{
+		spgp_export_keyring(command.files->packets[i], command.export_secret_keys);
+	}
 }
 
 static size_t print_prefix(byte_t primary, byte_t secret, void *str, size_t size)
