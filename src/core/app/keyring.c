@@ -629,9 +629,9 @@ void spgp_import_keys(void)
 {
 	uint32_t count = 0;
 
-	for (uint32_t i = 0; i < command.files->count; ++i)
+	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		count += spgp_import_key_file(command.files->packets[i]);
+		count += spgp_import_key_file(command.args->packets[i]);
 	}
 
 	printf("Processed %u keys.\n", count);
@@ -713,9 +713,9 @@ static void spgp_export_keyring(void *input, byte_t secret)
 
 void spgp_export_keys(void)
 {
-	for (uint32_t i = 0; i < command.files->count; ++i)
+	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		spgp_export_keyring(command.files->packets[i], command.export_secret_keys);
+		spgp_export_keyring(command.args->packets[i], command.export_secret_keys);
 	}
 }
 

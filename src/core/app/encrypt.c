@@ -385,7 +385,7 @@ void spgp_encrypt(void)
 	STREAM_CALL(stream = pgp_stream_new(1));
 
 	// Create the encrypted message
-	if (command.files == NULL)
+	if (command.args == NULL)
 	{
 		literal = spgp_literal_read_file(NULL, PGP_LITERAL_DATA_BINARY);
 		stream = pgp_stream_push(stream, literal);
@@ -424,7 +424,7 @@ void spgp_encrypt(void)
 	{
 		for (uint32_t i = 0; i < count; ++i)
 		{
-			literal = spgp_literal_read_file(command.files->packets[i], PGP_LITERAL_DATA_BINARY);
+			literal = spgp_literal_read_file(command.args->packets[i], PGP_LITERAL_DATA_BINARY);
 			stream = pgp_stream_push(stream, literal);
 
 			if (command.compression_level > 0 && compression_algorithm != PGP_UNCOMPRESSED)
@@ -638,7 +638,7 @@ void spgp_decrypt(void)
 	pgp_stream_t *stream = NULL;
 	pgp_packet_header *header = NULL;
 
-	if (command.files == NULL)
+	if (command.args == NULL)
 	{
 		stream = spgp_decrypt_file(NULL);
 		stream = pgp_packet_stream_filter_padding_packets(stream);
@@ -652,9 +652,9 @@ void spgp_decrypt(void)
 	}
 	else
 	{
-		for (uint32_t i = 0; i < command.files->count; ++i)
+		for (uint32_t i = 0; i < command.args->count; ++i)
 		{
-			stream = spgp_decrypt_file(command.files->packets[i]);
+			stream = spgp_decrypt_file(command.args->packets[i]);
 			stream = pgp_packet_stream_filter_padding_packets(stream);
 
 			header = stream->packets[0];

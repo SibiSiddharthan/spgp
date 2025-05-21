@@ -642,7 +642,7 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		case ARGPARSE_RETURN_NON_OPTION:
 		{
-			STREAM_CALL(command->files = pgp_stream_push(command->files, result->data));
+			STREAM_CALL(command->args = pgp_stream_push(command->args, result->data));
 		}
 		break;
 

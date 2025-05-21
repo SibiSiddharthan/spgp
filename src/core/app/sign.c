@@ -600,7 +600,7 @@ void spgp_sign(void)
 	}
 
 	// Create the signature
-	if (command.files == NULL)
+	if (command.args == NULL)
 	{
 		if (command.detach_sign)
 		{
@@ -628,21 +628,21 @@ void spgp_sign(void)
 		{
 			if (command.detach_sign)
 			{
-				signatures = spgp_detach_sign_file(key, uinfo, count, command.files->packets[i]);
+				signatures = spgp_detach_sign_file(key, uinfo, count, command.args->packets[i]);
 			}
 			if (command.clear_sign)
 			{
-				signatures = spgp_clear_sign_file(key, uinfo, count, command.files->packets[i]);
+				signatures = spgp_clear_sign_file(key, uinfo, count, command.args->packets[i]);
 			}
 			if (command.sign)
 			{
 				if (command.mode != SPGP_MODE_RFC2440)
 				{
-					signatures = spgp_sign_file(key, uinfo, count, command.files->packets[i]);
+					signatures = spgp_sign_file(key, uinfo, count, command.args->packets[i]);
 				}
 				else
 				{
-					signatures = spgp_sign_file_legacy(key, uinfo, count, command.files->packets[i]);
+					signatures = spgp_sign_file_legacy(key, uinfo, count, command.args->packets[i]);
 				}
 			}
 		}
@@ -778,7 +778,7 @@ static uint32_t spgp_verify_file(void *file)
 			{
 				if (type == PGP_SIG)
 				{
-					return spgp_detach_verify_stream(stream, command.files->packets[1]);
+					return spgp_detach_verify_stream(stream, command.args->packets[1]);
 				}
 
 				if (type == PGP_LIT)
@@ -800,9 +800,9 @@ void spgp_verify(void)
 {
 	uint32_t status = 0;
 
-	for (uint32_t i = 0; i < command.files->count; ++i)
+	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		status += spgp_verify_file(command.files->packets[i]);
+		status += spgp_verify_file(command.args->packets[i]);
 	}
 
 	if (status != 0)

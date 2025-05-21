@@ -99,7 +99,7 @@ typedef struct _spgp_command
 	void *homedir;
 	void *output;
 
-	pgp_stream_t *files;
+	pgp_stream_t *args;
 	pgp_stream_t *users;
 	pgp_stream_t *recipients;
 	pgp_stream_t *passhprases;

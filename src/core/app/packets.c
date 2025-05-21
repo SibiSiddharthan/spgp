@@ -29,11 +29,11 @@ void spgp_list_packets(void)
 		options |= PGP_PRINT_MPI_MINIMAL;
 	}
 
-	if (command.files != NULL)
+	if (command.args != NULL)
 	{
-		for (uint32_t i = 0; i < command.files->count; ++i)
+		for (uint32_t i = 0; i < command.args->count; ++i)
 		{
-			stream = spgp_read_pgp_packets(command.files->packets[i]);
+			stream = spgp_read_pgp_packets(command.args->packets[i]);
 
 			pgp_packet_stream_print(stream, str, 65536, options);
 			printf("%s\n", str);

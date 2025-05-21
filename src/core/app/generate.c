@@ -599,14 +599,14 @@ void spgp_generate_key(void)
 
 	time_t creation_time = time(NULL);
 
-	if (command.files == NULL || command.files->count != 2)
+	if (command.args == NULL || command.args->count != 2)
 	{
 		printf("Bad usage");
 		exit(1);
 	}
 
-	uid = command.files->packets[0];
-	spec = command.files->packets[1];
+	uid = command.args->packets[0];
+	spec = command.args->packets[1];
 
 	// Set the version
 	switch (command.mode)
