@@ -629,6 +629,11 @@ void spgp_import_keys(void)
 	printf("Processed %u keys.\n", count);
 }
 
+void spgp_export_keys(void)
+{
+	
+}
+
 static size_t print_prefix(byte_t primary, byte_t secret, void *str, size_t size)
 {
 	if (primary && secret)

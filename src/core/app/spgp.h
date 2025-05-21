@@ -178,7 +178,7 @@ void spgp_list_keys(void);
 void spgp_list_packets(void);
 
 void spgp_import_keys(void);
-uint32_t spgp_export_keys(spgp_command *command);
+void spgp_export_keys(void);
 uint32_t spgp_delete_keys(spgp_command *command);
 
 pgp_literal_packet *spgp_literal_read_file(const char *file, pgp_literal_data_format format);
