@@ -710,6 +710,8 @@ static size_t pgp_trust_print(pgp_trust_level trust, void *str, size_t size, uin
 	{
 	case PGP_TRUST_NEVER:
 		return print_format(indent, str, size, "Trust Level: Never\n");
+	case PGP_TRUST_REVOKED:
+		return print_format(indent, str, size, "Trust Level: Revoked\n");
 	case PGP_TRUST_MARGINAL:
 		return print_format(indent, str, size, "Trust Level: Marginal\n");
 	case PGP_TRUST_FULL:

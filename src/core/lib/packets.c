@@ -1701,8 +1701,8 @@ pgp_error_t pgp_trust_packet_new(pgp_trust_packet **packet, byte_t header_format
 		return PGP_UNKNOWN_HEADER_FORMAT;
 	}
 
-	if (trust_level != PGP_TRUST_NEVER && trust_level != PGP_TRUST_MARGINAL && trust_level != PGP_TRUST_FULL &&
-		trust_level != PGP_TRUST_ULTIMATE)
+	if (trust_level != PGP_TRUST_NEVER && trust_level != PGP_TRUST_REVOKED && trust_level != PGP_TRUST_MARGINAL &&
+		trust_level != PGP_TRUST_FULL && trust_level != PGP_TRUST_ULTIMATE)
 	{
 		return PGP_UNKNOWN_TRUST_LEVEL;
 	}
@@ -2700,7 +2700,7 @@ pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size
 		return PGP_EMPTY_USER_ID;
 	}
 
-	if (trust != PGP_TRUST_NEVER && trust != PGP_TRUST_MARGINAL && trust != PGP_TRUST_FULL && trust != PGP_TRUST_ULTIMATE)
+	if (trust != PGP_TRUST_NEVER && trust != PGP_TRUST_REVOKED && trust != PGP_TRUST_MARGINAL && trust != PGP_TRUST_FULL && trust != PGP_TRUST_ULTIMATE)
 	{
 		return PGP_UNKNOWN_TRUST_LEVEL;
 	}

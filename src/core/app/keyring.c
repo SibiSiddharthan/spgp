@@ -858,6 +858,8 @@ static char *get_trust_value(byte_t trust)
 	{
 	case PGP_TRUST_NEVER:
 		return "never";
+	case PGP_TRUST_REVOKED:
+		return "revoked";
 	case PGP_TRUST_MARGINAL:
 		return "marginal";
 	case PGP_TRUST_FULL:
