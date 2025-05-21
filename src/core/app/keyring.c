@@ -466,18 +466,23 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
 		{
+			if (uinfo != NULL)
+			{
+				PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
+				uinfo = NULL;
+			}
+
 			break;
 		}
 
 		if (type == PGP_UID || type == PGP_UAT)
 		{
-			if (type == PGP_UID)
+			uid = stream->packets[offset + pos];
+
+			if (uinfo != NULL)
 			{
-				uid = stream->packets[offset + pos];
-			}
-			else
-			{
-				uid = NULL;
+				PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
+				uinfo = NULL;
 			}
 		}
 
@@ -485,7 +490,8 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		{
 			sign = stream->packets[offset + pos];
 
-			if (uid != NULL)
+			// Only use User ID packets for information
+			if (pgp_packet_type_from_tag(uid->header.tag) == PGP_UID)
 			{
 				if (sign->type == PGP_GENERIC_CERTIFICATION_SIGNATURE || sign->type == PGP_PERSONA_CERTIFICATION_SIGNATURE ||
 					sign->type == PGP_CASUAL_CERTIFICATION_SIGNATURE || sign->type == PGP_POSITIVE_CERTIFICATION_SIGNATURE)
@@ -493,10 +499,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 					PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
 				}
 
-				uinfo = NULL;
-
 				PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
-				PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
 			}
 		}
 
