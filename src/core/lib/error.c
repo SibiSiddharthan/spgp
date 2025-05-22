@@ -252,6 +252,8 @@ char *pgp_error(pgp_error_t status)
 	case PGP_ED448_KEY_GENERATION_FAILURE:
 		return "ED448 Key Generation Failure";
 
+	case PGP_INCORRECT_KEY_SELECTION:
+		return "Incorrect Key Selection";
 	case PGP_INVALID_KEY_TRANSFORMATION:
 		return "Invalid Key Transformation";
 	case PGP_KEY_NOT_DECRYPTED:
@@ -287,8 +289,6 @@ char *pgp_error(pgp_error_t status)
 		return "Session Key Checksum Mismatch";
 	case PGP_SESSION_KEY_MALFORMED_PADDING:
 		return "Malformed Session Key Padding";
-	case PGP_INCORRECT_DECRYPTION_KEY:
-		return "Incorrect Decryption Key";
 
 	case PGP_RSA_ENCRYPTION_FAILURE:
 		return "RSA Encryption Failure";

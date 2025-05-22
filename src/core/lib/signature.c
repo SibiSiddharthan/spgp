@@ -3737,6 +3737,12 @@ static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *k
 		return PGP_UNUSABLE_KEY_FOR_SIGNING;
 	}
 
+	// Check the algorithm id
+	if (packet->public_key_algorithm_id != key->public_key_algorithm_id)
+	{
+		return PGP_INCORRECT_KEY_SELECTION;
+	}
+
 	if ((error = pgp_check_sign_data(packet->type, data)) != PGP_SUCCESS)
 	{
 		return error;

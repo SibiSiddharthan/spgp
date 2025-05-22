@@ -588,25 +588,10 @@ pgp_error_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_k
 		return status;
 	}
 
-	// Check whether key is corret
-	if (packet->version == PGP_PKESK_V6)
+	// Check the algorithm id
+	if (packet->public_key_algorithm_id != key->public_key_algorithm_id)
 	{
-		if (memcmp(packet->key_fingerprint, fingerprint, fingerprint_size) != 0)
-		{
-			return PGP_INCORRECT_DECRYPTION_KEY;
-		}
-	}
-
-	if (packet->version == PGP_PKESK_V3)
-	{
-		byte_t key_id[PGP_KEY_ID_SIZE] = {0};
-
-		pgp_key_id_from_fingerprint(key->version, key_id, fingerprint, fingerprint_size);
-
-		if (memcmp(packet->key_id, key_id, PGP_KEY_ID_SIZE) != 0)
-		{
-			return PGP_INCORRECT_DECRYPTION_KEY;
-		}
+		return PGP_INCORRECT_KEY_SELECTION;
 	}
 
 	if (packet->version == PGP_PKESK_V3)
