@@ -348,6 +348,9 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	byte_t subkey_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t subkey_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
+	byte_t signature_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
 	// The first packet must be public key or secret key packet
 	header = stream->packets[offset + pos];
 	type = pgp_packet_type_from_tag(header->tag);
@@ -422,6 +425,9 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		if (type == PGP_SIG)
 		{
 			sign = stream->packets[offset + pos];
+			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+			PGP_CALL(pgp_signature_get_key_fingerprint(sign, signature_fingerprint, &signature_fingerprint_size));
 
 			// Only allowed signature types
 			if (sign->type != PGP_DIRECT_KEY_SIGNATURE && sign->type != PGP_KEY_REVOCATION_SIGNATURE)
@@ -430,7 +436,11 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 				exit(1);
 			}
 
-			PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
+			if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
+											signature_fingerprint_size) == 0)
+			{
+				PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
+			}
 
 			if (sign->type == PGP_DIRECT_KEY_SIGNATURE)
 			{
@@ -489,17 +499,24 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		if (type == PGP_SIG)
 		{
 			sign = stream->packets[offset + pos];
+			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+			PGP_CALL(pgp_signature_get_key_fingerprint(sign, signature_fingerprint, &signature_fingerprint_size));
 
 			// Only use User ID packets for information
 			if (pgp_packet_type_from_tag(uid->header.tag) == PGP_UID)
 			{
-				if (sign->type == PGP_GENERIC_CERTIFICATION_SIGNATURE || sign->type == PGP_PERSONA_CERTIFICATION_SIGNATURE ||
-					sign->type == PGP_CASUAL_CERTIFICATION_SIGNATURE || sign->type == PGP_POSITIVE_CERTIFICATION_SIGNATURE)
+				if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
+												signature_fingerprint_size) == 0)
 				{
-					PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
-				}
+					if (sign->type == PGP_GENERIC_CERTIFICATION_SIGNATURE || sign->type == PGP_PERSONA_CERTIFICATION_SIGNATURE ||
+						sign->type == PGP_CASUAL_CERTIFICATION_SIGNATURE || sign->type == PGP_POSITIVE_CERTIFICATION_SIGNATURE)
+					{
+						PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
+					}
 
-				PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
+					PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
+				}
 			}
 		}
 
@@ -544,10 +561,17 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		if (type == PGP_SIG)
 		{
 			sign = stream->packets[offset + pos];
+			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
-			if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
+			PGP_CALL(pgp_signature_get_key_fingerprint(sign, signature_fingerprint, &signature_fingerprint_size));
+
+			if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
+											signature_fingerprint_size) == 0)
 			{
-				PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
+				if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
+				{
+					PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
+				}
 			}
 		}
 
