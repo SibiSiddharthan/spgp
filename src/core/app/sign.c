@@ -914,6 +914,43 @@ static char *get_trust_value(byte_t trust)
 	}
 }
 
+static void get_signature_times(pgp_signature_packet *sign, time_t *creation_time, time_t *expiry_time)
+{
+	pgp_subpacket_header *header = NULL;
+	pgp_timestamp_subpacket *subpacket = NULL;
+
+	// Search hashed subpackets only
+	if (sign->hashed_subpackets == NULL)
+	{
+		// V3 signatures
+		*creation_time = sign->timestamp;
+		return;
+	}
+
+	for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+	{
+		header = sign->hashed_subpackets->packets[i];
+
+		if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_CREATION_TIME_SUBPACKET)
+		{
+			subpacket = sign->hashed_subpackets->packets[i];
+			*creation_time = subpacket->timestamp;
+		}
+
+		if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET)
+		{
+			subpacket = sign->hashed_subpackets->packets[i];
+			*expiry_time = subpacket->duration;
+		}
+	}
+
+	// The expiry time is given in seconds since creation time
+	if (*expiry_time > 0)
+	{
+		*expiry_time = *expiry_time + *creation_time;
+	}
+}
+
 pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_user_info *uinfo, void *data, byte_t print)
 {
 	pgp_error_t status = 0;
@@ -929,6 +966,7 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 
 	time_t creation_time = 0;
 	time_t expiry_time = 0;
+	time_t current_time = time(NULL);
 
 	// Verify the signature first
 	switch (sign->type)
@@ -984,6 +1022,31 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 		sign_type = "Timestamp Signature";
 		status = pgp_verify_signature(sign, key, NULL);
 		break;
+	}
+
+	// Deduce the correct status
+	// Get the signature creation time and expiry time
+	get_signature_times(sign, &creation_time, &expiry_time);
+
+	if (status == PGP_SUCCESS)
+	{
+		// Check key revocation status
+		if (key->key_revocation_time > (uint32_t)creation_time)
+		{
+			status_type = "Good Signature (Revoked Key)";
+		}
+		else if (expiry_time > current_time)
+		{
+			status_type = "Good Signature (Expired)";
+		}
+		else
+		{
+			status_type = "Good Signature";
+		}
+	}
+	else
+	{
+		status_type = "Bad Signature";
 	}
 
 	if (print == 0)
