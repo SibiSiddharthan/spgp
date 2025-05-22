@@ -334,18 +334,18 @@ void spgp_encrypt(void)
 	// Search the keyring to find the keys
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		keyring[i] = spgp_search_keyring(&key[i], &uinfo[i], command.recipients->packets[i], strlen(command.recipients->packets[i]),
+		keyring[i] = spgp_search_keyring(&key[i], &uinfo[i], command.recipients->data[i], strlen(command.recipients->data[i]),
 										 (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE));
 
 		if (keyring[i] == NULL)
 		{
-			printf("Unable to find recipient %s\n.", (char *)command.recipients->packets[i]);
+			printf("Unable to find recipient %s\n.", (char *)command.recipients->data[i]);
 			exit(1);
 		}
 
 		if (key[i] == NULL)
 		{
-			printf("No Encryption key for recipient %s\n.", (char *)command.recipients->packets[i]);
+			printf("No Encryption key for recipient %s\n.", (char *)command.recipients->data[i]);
 			exit(1);
 		}
 
