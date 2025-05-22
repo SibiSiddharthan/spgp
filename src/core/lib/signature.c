@@ -3815,6 +3815,12 @@ pgp_error_t pgp_generate_signature(pgp_signature_packet *packet, pgp_key_packet 
 
 pgp_error_t pgp_verify_signature(pgp_signature_packet *packet, pgp_key_packet *key, void *data)
 {
+	// Special case for subkeys
+	if (packet->type == PGP_SUBKEY_BINDING_SIGNATURE)
+	{
+		return pgp_verify_subkey_binding_signature(packet, key, data);
+	}
+
 	return pgp_do_verify(packet, key, data);
 }
 
