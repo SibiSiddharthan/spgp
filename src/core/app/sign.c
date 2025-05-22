@@ -338,11 +338,11 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 		{
 			if (changing_format == 0)
 			{
-				status = pgp_verify_document_signature(sign, key, literal);
+				status = spgp_verify_signature(sign, key, uinfo, literal, 1);
 			}
 			else
 			{
-				status = pgp_verify_document_signature(sign, key, (sign->type == PGP_BINARY_SIGNATURE) ? literal_binary : literal_text);
+				status = spgp_verify_signature(sign, key, uinfo, (sign->type == PGP_BINARY_SIGNATURE) ? literal_binary : literal_text, 1);
 			}
 		}
 	}
@@ -477,7 +477,7 @@ static uint32_t spgp_verify_stream(pgp_stream_t *stream)
 
 		if (key != NULL)
 		{
-			status = pgp_verify_document_signature(sign, key, literal);
+			status = spgp_verify_signature(sign, key, uinfo, literal, 1);
 		}
 	}
 
@@ -545,7 +545,7 @@ static uint32_t spgp_verify_stream_legacy(pgp_stream_t *stream)
 
 		if (key != NULL)
 		{
-			status = pgp_verify_document_signature(sign, key, literal);
+			status = spgp_verify_signature(sign, key, uinfo, literal, 1);
 		}
 	}
 
