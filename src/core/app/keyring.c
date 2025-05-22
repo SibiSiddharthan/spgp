@@ -1079,7 +1079,7 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	return key;
 }
 
-uint32_t spgp_prompt_passphrase(byte_t passphrase[128], char *message)
+uint32_t spgp_prompt_passphrase(byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE], char *message)
 {
 	uint32_t is_input_tty = 0;
 	uint32_t is_output_tty = 0;
@@ -1104,7 +1104,7 @@ uint32_t spgp_prompt_passphrase(byte_t passphrase[128], char *message)
 	// Read the input
 	result = 0;
 
-	OS_CALL(os_read(STDIN_HANDLE, passphrase, 128, &result), NULL);
+	OS_CALL(os_read(STDIN_HANDLE, passphrase, SPGP_MAX_PASSPHRASE_SIZE, &result), NULL);
 
 	if (result == 0)
 	{

@@ -307,9 +307,6 @@ void spgp_encrypt(void)
 
 	byte_t features = 0xFF;
 
-	byte_t passphrase_buffer[128] = {0};
-	byte_t passphrase_size = 0;
-
 	if (command.encrypt && command.recipients == NULL)
 	{
 		printf("No recipient specified\n.");
@@ -320,28 +317,15 @@ void spgp_encrypt(void)
 	{
 		if (command.passhprases == NULL)
 		{
-			void *passphrase = NULL;
+			command.passphrase_size = spgp_prompt_passphrase(command.passphrase_buffer, "Enter passphrase to encrypt message.");
 
-			passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passphrase to encrypt message.");
-
-			if (passphrase_size == 0)
+			if (command.passphrase_size == 0)
 			{
 				printf("No passphrase provided\n.");
 				exit(1);
 			}
 
-			passphrase = malloc(128);
-
-			if (passphrase == NULL)
-			{
-				printf("No memory\n.");
-				exit(1);
-			}
-
-			memset(passphrase, 0, 128);
-			memcpy(passphrase, passphrase_buffer, passphrase_size);
-
-			STREAM_CALL(command.passhprases = pgp_stream_push(command.passhprases, passphrase));
+			STREAM_CALL(command.passhprases = pgp_stream_push(command.passhprases, command.passphrase_buffer));
 		}
 	}
 
@@ -406,8 +390,8 @@ void spgp_encrypt(void)
 		}
 		else if (features & PGP_AEAD)
 		{
-			message = spgp_encrypt_aead(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm,
-										aead_algorithm, stream);
+			message = spgp_encrypt_aead(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm, aead_algorithm,
+										stream);
 		}
 		else if (features & PGP_MDC)
 		{
@@ -450,9 +434,6 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 
 	void *encrypted_packet = NULL;
 	byte_t algorithm = 0;
-
-	byte_t passphrase_buffer[128] = {0};
-	byte_t passphrase_size = 0;
 
 	byte_t session_key[32] = {0};
 	byte_t session_key_size = 32;
@@ -512,28 +493,46 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	}
 
 	// Search SKESKs
-	passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passphrase to decrypt message.");
-
-	for (uint32_t i = 0; i < stream->count; ++i)
+	if (command.passhprases == NULL)
 	{
-		header = stream->packets[i];
+		command.passphrase_size = spgp_prompt_passphrase(command.passphrase_buffer, "Enter passphrase to decrypt message.");
 
-		if (pgp_packet_type_from_tag(header->tag) == PGP_SKESK)
+		if (command.passphrase_size == 0)
 		{
-			pgp_skesk_packet *skesk = stream->packets[i];
+			printf("No passphrase provided\n.");
+			exit(1);
+		}
 
-			status = pgp_skesk_packet_session_key_decrypt(skesk, passphrase_buffer, passphrase_size, session_key, &session_key_size);
+		STREAM_CALL(command.passhprases = pgp_stream_push(command.passhprases, command.passphrase_buffer));
+	}
 
-			if (status == PGP_SUCCESS)
+	// Try all passphrases for all SKESKs
+	for (uint32_t p = 0; p < command.passhprases->count; ++p)
+	{
+		void *passphrase = command.passhprases->data[p];
+		uint32_t passphrase_size = strnlen(passphrase, SPGP_MAX_PASSPHRASE_SIZE);
+
+		for (uint32_t i = 0; i < stream->count; ++i)
+		{
+			header = stream->packets[i];
+
+			if (pgp_packet_type_from_tag(header->tag) == PGP_SKESK)
 			{
-				session_key_found = 1;
+				pgp_skesk_packet *skesk = stream->packets[i];
 
-				if (skesk->version == PGP_SKESK_V4)
+				status = pgp_skesk_packet_session_key_decrypt(skesk, passphrase, passphrase_size, session_key, &session_key_size);
+
+				if (status == PGP_SUCCESS)
 				{
-					algorithm = skesk->symmetric_key_algorithm_id;
-				}
+					session_key_found = 1;
 
-				goto decrypt;
+					if (skesk->version == PGP_SKESK_V4)
+					{
+						algorithm = skesk->symmetric_key_algorithm_id;
+					}
+
+					goto decrypt;
+				}
 			}
 		}
 	}

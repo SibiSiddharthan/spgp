@@ -43,6 +43,8 @@
 #define SPGP_KEY_EXT  ".key"
 #define SPGP_CERT_EXT ".cert"
 
+#define SPGP_MAX_PASSPHRASE_SIZE 128
+
 #define OS_CALL(EXPR, LOG)                             \
 	{                                                  \
 		status_t __os_status = 0;                      \
@@ -125,6 +127,10 @@ typedef struct _spgp_command
 	// Compression
 	byte_t compression_level;
 
+	// Passphrase
+	byte_t passphrase_buffer[SPGP_MAX_PASSPHRASE_SIZE];
+	byte_t passphrase_size;
+
 	union
 	{
 		struct
@@ -203,8 +209,7 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options);
 
 pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *key);
-
-uint32_t spgp_prompt_passphrase(byte_t passphrase[128], char *message);
+uint32_t spgp_prompt_passphrase(byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE], char *message);
 
 pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packet);
 pgp_compression_algorithms preferred_compression_algorithm(pgp_user_info **users, uint32_t count);
