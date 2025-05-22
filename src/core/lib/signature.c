@@ -4527,3 +4527,51 @@ pgp_error_t pgp_verify_revocation_signature(pgp_signature_packet *sign, pgp_key_
 
 	return pgp_do_verify(sign, key, data);
 }
+
+pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE],
+											  byte_t *fingerprint_size)
+{
+	pgp_subpacket_header *header = NULL;
+	pgp_issuer_fingerprint_subpacket *subpacket = NULL;
+
+	byte_t required_size = 0;
+
+	if (packet->version == PGP_SIGNATURE_V3)
+	{
+		memcpy(fingerprint, packet->key_id, PGP_KEY_ID_SIZE);
+		return PGP_KEY_ID_SIZE;
+	}
+
+	// Search hashed only
+	if (packet->hashed_subpackets != NULL)
+	{
+		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		{
+			header = packet->hashed_subpackets->packets[i];
+
+			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+			{
+				subpacket = packet->hashed_subpackets->packets[i];
+				required_size = pgp_key_fingerprint_size(subpacket->version);
+
+				if (required_size == 0)
+				{
+					return PGP_UNKNOWN_KEY_VERSION;
+				}
+
+				if (*fingerprint_size < required_size)
+				{
+					*fingerprint_size = required_size;
+					return PGP_BUFFER_TOO_SMALL;
+				}
+
+				*fingerprint_size = required_size;
+				memcpy(fingerprint, subpacket->fingerprint, required_size);
+
+				return PGP_SUCCESS;
+			}
+		}
+	}
+
+	return PGP_MALFORMED_SIGNATURE_PACKET;
+}
