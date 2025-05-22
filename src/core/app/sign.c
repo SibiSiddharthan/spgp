@@ -577,8 +577,7 @@ void spgp_sign(void)
 	// Search the keyring to find the keys
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		keyring[i] =
-			spgp_search_keyring(&key[i], &uinfo[i], command.users->data[i], strlen(command.users->data[i]), PGP_KEY_FLAG_SIGN);
+		keyring[i] = spgp_search_keyring(&key[i], &uinfo[i], command.users->data[i], strlen(command.users->data[i]), PGP_KEY_FLAG_SIGN);
 
 		if (keyring[i] == NULL)
 		{
@@ -784,4 +783,67 @@ void spgp_verify(void)
 	{
 		exit(1);
 	}
+}
+
+pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_user_info *uinfo, void *data, byte_t print)
+{
+	pgp_error_t status = 0;
+	char *sign_type = NULL;
+
+	switch (sign->type)
+	{
+	case PGP_BINARY_SIGNATURE:
+	case PGP_TEXT_SIGNATURE:
+		status = pgp_verify_document_signature(sign, key, data);
+		sign_type = "document signature";
+		break;
+
+	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
+	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
+	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
+	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
+		status = pgp_verify_certificate_binding_signature(sign, key, data);
+		sign_type = "certification signature";
+		break;
+	case PGP_ATTESTED_KEY_SIGNATURE:
+		status = pgp_verify_certificate_binding_signature(sign, key, data);
+		sign_type = "attestation signature";
+		break;
+	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
+		status = pgp_verify_revocation_signature(sign, key, data);
+		sign_type = "certficate revocation signature";
+		break;
+
+	case PGP_SUBKEY_BINDING_SIGNATURE:
+	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
+		status = pgp_verify_subkey_binding_signature(sign, key, data);
+		sign_type = "subkey binding signature";
+		break;
+	case PGP_SUBKEY_REVOCATION_SIGNATURE:
+	case PGP_KEY_REVOCATION_SIGNATURE:
+		status = pgp_verify_revocation_signature(sign, key, data);
+		sign_type = "key revocation signature";
+		break;
+
+	case PGP_DIRECT_KEY_SIGNATURE:
+		status = pgp_verify_direct_key_signature(sign, key);
+		sign_type = "direct key signature";
+		break;
+
+	case PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE:
+		status = pgp_verify_confirmation_signature(sign, key, data);
+		sign_type = "third party confirmation signature";
+		break;
+
+	case PGP_STANDALONE_SIGNATURE:
+		sign_type = "standalone signature";
+		status = pgp_verify_signature(sign, key, NULL);
+		break;
+	case PGP_TIMESTAMP_SIGNATURE:
+		sign_type = "timestamp signature";
+		status = pgp_verify_signature(sign, key, NULL);
+		break;
+	}
+
+	return status;
 }
