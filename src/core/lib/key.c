@@ -4025,6 +4025,16 @@ uint32_t pgp_key_id_from_fingerprint(pgp_key_version version, byte_t id[PGP_KEY_
 	return 0;
 }
 
+uint32_t pgp_key_fingerprint_compare(byte_t *a, byte_t a_size, byte_t *b, byte_t b_size)
+{
+	if (a_size == b_size)
+	{
+		return memcmp(a, b, a_size);
+	}
+
+	return a_size > b_size;
+}
+
 byte_t pgp_key_fingerprint_size(byte_t version)
 {
 	switch (version)
