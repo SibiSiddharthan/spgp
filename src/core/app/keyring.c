@@ -780,7 +780,7 @@ static size_t print_algorithm(pgp_key_packet *key, void *str, size_t size)
 			break;
 
 		default:
-			curve = "unkown";
+			curve = "unknown";
 			break;
 		}
 

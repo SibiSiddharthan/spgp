@@ -785,17 +785,158 @@ void spgp_verify(void)
 	}
 }
 
+static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+static size_t print_fingerprint(byte_t *fingerprint, byte_t size, char *out)
+{
+	byte_t pos = 0;
+
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		byte_t a, b;
+
+		a = fingerprint[i] / 16;
+		b = fingerprint[i] % 16;
+
+		out[pos++] = hex_table[a];
+		out[pos++] = hex_table[b];
+	}
+
+	return pos;
+}
+
+static void print_key(pgp_key_packet *key, char key_buffer[128])
+{
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+	char fingerprint_buffer[64] = {0};
+
+	switch (key->public_key_algorithm_id)
+	{
+	case PGP_RSA_ENCRYPT_OR_SIGN:
+	case PGP_RSA_ENCRYPT_ONLY:
+	case PGP_RSA_SIGN_ONLY:
+	{
+		pgp_rsa_key *rsa_key = key->key;
+		snprintf(key_buffer, 128, "rsa%u key", ROUND_UP(rsa_key->n->bits, 1024));
+		break;
+	}
+	case PGP_ELGAMAL_ENCRYPT_ONLY:
+	{
+		pgp_elgamal_key *elgmal_key = key->key;
+		snprintf(key_buffer, 128, "elg%u key", ROUND_UP(elgmal_key->p->bits, 1024));
+		break;
+	}
+	case PGP_DSA:
+	{
+		pgp_dsa_key *dsa_key = key->key;
+		snprintf(key_buffer, 128, "dsa%u key", ROUND_UP(dsa_key->p->bits, 1024));
+		break;
+	}
+	case PGP_ECDH:
+	case PGP_ECDSA:
+	case PGP_EDDSA:
+	{
+		byte_t *curve_id = key->key;
+		char *curve = NULL;
+
+		// Only need first byte.
+		switch (*curve_id)
+		{
+		case PGP_EC_NIST_P256:
+			curve = "nistp256";
+			break;
+		case PGP_EC_NIST_P384:
+			curve = "nistp384";
+			break;
+		case PGP_EC_NIST_P521:
+			curve = "nistp521";
+			break;
+		case PGP_EC_BRAINPOOL_256R1:
+			curve = "brainpoolP256r1";
+			break;
+		case PGP_EC_BRAINPOOL_384R1:
+			curve = "brainpoolP384r1";
+			break;
+		case PGP_EC_BRAINPOOL_512R1:
+			curve = "brainpoolP512r1";
+			break;
+		case PGP_EC_ED25519:
+			curve = "ed25519";
+			break;
+		case PGP_EC_ED448:
+			curve = "ed448";
+			break;
+
+		default:
+			curve = "unknown";
+			break;
+		}
+
+		snprintf(key_buffer, 128, "%s", curve);
+		break;
+	}
+	case PGP_ED25519:
+		snprintf(key_buffer, 128, "ed25519");
+		break;
+	case PGP_ED448:
+		snprintf(key_buffer, 128, "ed448");
+		break;
+	default:
+		snprintf(key_buffer, 128, "unknown");
+	}
+
+	PGP_CALL(pgp_key_fingerprint(key, fingerprint, &fingerprint_size));
+	print_fingerprint(fingerprint, fingerprint_size, fingerprint_buffer);
+
+	strncat(key_buffer, " (", 2);
+	strncat(key_buffer, fingerprint_buffer, fingerprint_size * 2);
+	strncat(key_buffer, " )", 1);
+}
+
+static char *get_trust_value(byte_t trust)
+{
+	switch (trust)
+	{
+	case PGP_TRUST_NEVER:
+		return "never";
+	case PGP_TRUST_REVOKED:
+		return "revoked";
+	case PGP_TRUST_MARGINAL:
+		return "marginal";
+	case PGP_TRUST_FULL:
+		return "full";
+	case PGP_TRUST_ULTIMATE:
+		return "ultimate";
+	default:
+		return "unknown";
+	}
+}
+
 pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_user_info *uinfo, void *data, byte_t print)
 {
 	pgp_error_t status = 0;
-	char *sign_type = NULL;
 
+	char time_buffer[128] = {0};
+	char key_buffer[128] = {0};
+	char *sign_type = NULL;
+	char *status_type = NULL;
+
+	char buffer[1024] = {0};
+	uint32_t size = 1024;
+	uint32_t pos = 0;
+
+	time_t creation_time = 0;
+	time_t expiry_time = 0;
+
+	// Verify the signature first
 	switch (sign->type)
 	{
 	case PGP_BINARY_SIGNATURE:
 	case PGP_TEXT_SIGNATURE:
 		status = pgp_verify_document_signature(sign, key, data);
-		sign_type = "document signature";
+		sign_type = "Document Signature";
 		break;
 
 	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
@@ -803,46 +944,80 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
 		status = pgp_verify_certificate_binding_signature(sign, key, data);
-		sign_type = "certification signature";
+		sign_type = "Certification Signature";
 		break;
 	case PGP_ATTESTED_KEY_SIGNATURE:
 		status = pgp_verify_certificate_binding_signature(sign, key, data);
-		sign_type = "attestation signature";
+		sign_type = "Attestation Signature";
 		break;
 	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
 		status = pgp_verify_revocation_signature(sign, key, data);
-		sign_type = "certficate revocation signature";
+		sign_type = "Certficate Revocation Signature";
 		break;
 
 	case PGP_SUBKEY_BINDING_SIGNATURE:
 	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
 		status = pgp_verify_subkey_binding_signature(sign, key, data);
-		sign_type = "subkey binding signature";
+		sign_type = "Subkey Binding Signature";
 		break;
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
 	case PGP_KEY_REVOCATION_SIGNATURE:
 		status = pgp_verify_revocation_signature(sign, key, data);
-		sign_type = "key revocation signature";
+		sign_type = "Key Revocation Signature";
 		break;
 
 	case PGP_DIRECT_KEY_SIGNATURE:
 		status = pgp_verify_direct_key_signature(sign, key);
-		sign_type = "direct key signature";
+		sign_type = "Direct Key Signature";
 		break;
 
 	case PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE:
 		status = pgp_verify_confirmation_signature(sign, key, data);
-		sign_type = "third party confirmation signature";
+		sign_type = "Third Party Confirmation Signature";
 		break;
 
 	case PGP_STANDALONE_SIGNATURE:
-		sign_type = "standalone signature";
+		sign_type = "Standalone Signature";
 		status = pgp_verify_signature(sign, key, NULL);
 		break;
 	case PGP_TIMESTAMP_SIGNATURE:
-		sign_type = "timestamp signature";
+		sign_type = "Timestamp Signature";
 		status = pgp_verify_signature(sign, key, NULL);
 		break;
+	}
+
+	if (print == 0)
+	{
+		return status;
+	}
+
+	// For the print message
+	// [Signature Type] Made On [Time] Using [Key]
+	// [Optional Attributes]
+	// [Status] [UID]
+
+	// Signature type
+	pos += snprintf(buffer, size - pos, "%s ", sign_type);
+
+	// Time
+	strftime(time_buffer, 128, "%Y-%m-%d %H:%M:%S", gmtime(&creation_time));
+	pos += snprintf(buffer, size - pos, "Made On %s ", time_buffer);
+
+	// Key
+	print_key(key, key_buffer);
+	pos += snprintf(buffer, size - pos, "Using %s\n", key_buffer);
+
+	// Status
+	pos += snprintf(buffer, size - pos, "%s", status_type);
+
+	if (uinfo != NULL)
+	{
+		pos += snprintf(buffer, size - pos, "From %.*s ", uinfo->uid_octets, (char *)uinfo->uid);
+		pos += snprintf(buffer, size - pos, "[%s]\n", get_trust_value(uinfo->trust));
+	}
+	else
+	{
+		pos += snprintf(buffer, size - pos, "\n");
 	}
 
 	return status;
