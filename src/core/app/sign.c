@@ -951,6 +951,61 @@ static void get_signature_times(pgp_signature_packet *sign, time_t *creation_tim
 	}
 }
 
+static uint32_t get_signature_strings(pgp_signature_packet *sign, pgp_signature_subpacket_type type, char *str, uint32_t size)
+{
+	pgp_subpacket_header *header = NULL;
+	pgp_string_subpacket *subpacket = NULL;
+
+	uint32_t pos = 0;
+
+	// Search hashed first
+	if (sign->hashed_subpackets != NULL)
+	{
+		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		{
+			header = sign->hashed_subpackets->packets[i];
+			subpacket = sign->hashed_subpackets->packets[i];
+
+			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == type)
+			{
+				switch ((header->tag & PGP_SUBPACKET_TAG_MASK))
+				{
+				case PGP_SIGNER_USER_ID_SUBPACKET:
+					pos += snprintf(str, size - pos, "Issuer: %.*s\n", subpacket->header.body_size, subpacket->data);
+					break;
+				case PGP_POLICY_URI_SUBPACKET:
+					pos += snprintf(str, size - pos, "Policy: %.*s\n", subpacket->header.body_size, subpacket->data);
+					break;
+				}
+			}
+		}
+	}
+
+	if (sign->unhashed_subpackets != NULL)
+	{
+		for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
+		{
+			header = sign->unhashed_subpackets->packets[i];
+			subpacket = sign->unhashed_subpackets->packets[i];
+
+			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == type)
+			{
+				switch ((header->tag & PGP_SUBPACKET_TAG_MASK))
+				{
+				case PGP_SIGNER_USER_ID_SUBPACKET:
+					pos += snprintf(str, size - pos, "Issuer: %.*s\n", subpacket->header.body_size, subpacket->data);
+					break;
+				case PGP_POLICY_URI_SUBPACKET:
+					pos += snprintf(str, size - pos, "Policy: %.*s\n", subpacket->header.body_size, subpacket->data);
+					break;
+				}
+			}
+		}
+	}
+
+	return pos;
+}
+
 pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_user_info *uinfo, void *data, byte_t print)
 {
 	pgp_error_t status = 0;
@@ -1034,10 +1089,12 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 		if (key->key_revocation_time > (uint32_t)creation_time)
 		{
 			status_type = "Good Signature (Revoked Key)";
+			status = PGP_BAD_SIGNATURE;
 		}
 		else if (expiry_time > current_time)
 		{
 			status_type = "Good Signature (Expired)";
+			status = PGP_BAD_SIGNATURE;
 		}
 		else
 		{
@@ -1069,6 +1126,21 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	// Key
 	print_key(key, key_buffer);
 	pos += snprintf(buffer, size - pos, "Using %s\n", key_buffer);
+
+	// Attuributes
+	// Expiry time
+	if (expiry_time > 0)
+	{
+		memset(time_buffer, 0, 128);
+		strftime(time_buffer, 128, "%Y-%m-%d %H:%M:%S", gmtime(&creation_time));
+		pos += snprintf(buffer, size - pos, "Expiry :%s\n", time_buffer);
+	}
+
+	// Issuer
+	pos += get_signature_strings(sign, PGP_SIGNER_USER_ID_SUBPACKET, buffer + pos, size - pos);
+
+	// Policy
+	pos += get_signature_strings(sign, PGP_POLICY_URI_SUBPACKET, buffer + pos, size - pos);
 
 	// Status
 	pos += snprintf(buffer, size - pos, "%s", status_type);
