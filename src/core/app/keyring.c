@@ -503,14 +503,14 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 					PGP_CALL(pgp_user_info_from_certificate(&uinfo, uid, sign));
 				}
 			}
-		}
 
-		// Check the signature
-		status = spgp_verify_signature(sign, primary_key, NULL, uid, 0);
+			// Check the signature
+			status = spgp_verify_signature(sign, primary_key, NULL, uid, 0);
 
-		if (status != PGP_SUCCESS)
-		{
-			exit(1);
+			if (status != PGP_SUCCESS)
+			{
+				exit(1);
+			}
 		}
 
 		pos += 1;
@@ -542,13 +542,13 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 					PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
 				}
 			}
-		}
 
-		status = spgp_verify_signature(sign, primary_key, NULL, subkey, 0);
+			status = spgp_verify_signature(sign, primary_key, NULL, subkey, 0);
 
-		if (status != PGP_SUCCESS)
-		{
-			exit(1);
+			if (status != PGP_SUCCESS)
+			{
+				exit(1);
+			}
 		}
 
 		PGP_CALL(pgp_key_fingerprint(subkey, subkey_fingerprint, &subkey_fingerprint_size));
