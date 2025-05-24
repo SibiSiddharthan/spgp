@@ -353,6 +353,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	byte_t signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	byte_t signature_by_primary_key = 0;
+	byte_t certificate_version = 0;
 
 	// The first packet must be public key or secret key packet
 	header = stream->packets[offset + pos];
@@ -366,6 +367,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 	primary_key = stream->packets[offset + pos];
 	key_type = (type == PGP_PUBKEY) ? PGP_KEY_TYPE_PUBLIC : PGP_KEY_TYPE_SECRET;
+	certificate_version = primary_key->version;
 	pos += 1;
 
 	if (pgp_signature_algorithm_validate(primary_key->public_key_algorithm_id) == 0)
@@ -430,6 +432,12 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			signature_by_primary_key = 0;
 			sign = stream->packets[offset + pos];
 			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+			if (certificate_version != sign->version)
+			{
+				printf("Version of primary key and signature packet should be the same.\n");
+				exit(1);
+			}
 
 			PGP_CALL(pgp_signature_get_key_fingerprint(sign, signature_fingerprint, &signature_fingerprint_size));
 
@@ -525,6 +533,12 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			sign = stream->packets[offset + pos];
 			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
+			if (certificate_version != sign->version)
+			{
+				printf("Version of primary key and signature packet should be the same.\n");
+				exit(1);
+			}
+
 			PGP_CALL(pgp_signature_get_key_fingerprint(sign, signature_fingerprint, &signature_fingerprint_size));
 
 			// Only use User ID packets for information
@@ -595,6 +609,12 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
 		{
 			subkey = stream->packets[offset + pos];
+
+			if (certificate_version != subkey->version)
+			{
+				printf("Version of primary key and subkeys should be the same.\n");
+				exit(1);
+			}
 		}
 
 		if (type == PGP_SIG)
@@ -602,6 +622,12 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			signature_by_primary_key = 0;
 			sign = stream->packets[offset + pos];
 			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+			if (certificate_version != sign->version)
+			{
+				printf("Version of primary key and signature packet should be the same.\n");
+				exit(1);
+			}
 
 			PGP_CALL(pgp_signature_get_key_fingerprint(sign, signature_fingerprint, &signature_fingerprint_size));
 
