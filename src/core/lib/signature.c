@@ -3727,16 +3727,6 @@ static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *k
 	byte_t hash_size = 0;
 	byte_t hash[64] = {0};
 
-	if (packet->version != key->version)
-	{
-		return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_VERSION;
-	}
-
-	if ((key->capabilities & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_AUTHENTICATION)) == 0)
-	{
-		return PGP_UNUSABLE_KEY_FOR_SIGNING;
-	}
-
 	// Check the algorithm id
 	if (packet->public_key_algorithm_id != key->public_key_algorithm_id)
 	{
