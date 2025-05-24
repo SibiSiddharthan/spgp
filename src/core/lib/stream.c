@@ -524,11 +524,6 @@ size_t pgp_packet_stream_print(pgp_stream_t *stream, void *buffer, size_t size, 
 pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream)
 {
 	pgp_packet_header *header = NULL;
-	uint32_t count = 0;
-	uint32_t pos = 0;
-
-	void **temp = NULL;
-	size_t size = 0;
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
@@ -536,58 +531,12 @@ pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream)
 
 		if (pgp_packet_type_from_tag(header->tag) == PGP_MARKER || pgp_packet_type_from_tag(header->tag) == PGP_PADDING)
 		{
-			count += 1;
+			pgp_stream_remove(stream, i);
+			pgp_packet_delete(header);
+
+			--i;
 		}
 	}
-
-	if (count == 0)
-	{
-		// Nothing to remove
-		return stream;
-	}
-
-	size = (stream->count - count) * sizeof(void *);
-
-	if (size == 0)
-	{
-		for (uint32_t i = 0; i < stream->count; ++i)
-		{
-			pgp_packet_delete(stream->packets[i]);
-			stream->packets[i] = NULL;
-		}
-
-		stream->count = 0;
-
-		return stream;
-	}
-
-	temp = malloc(size);
-
-	if (temp == NULL)
-	{
-		return NULL;
-	}
-
-	for (uint32_t i = 0; i < stream->count; ++i)
-	{
-		header = stream->packets[i];
-
-		if (pgp_packet_type_from_tag(header->tag) == PGP_MARKER || pgp_packet_type_from_tag(header->tag) == PGP_PADDING)
-		{
-			pgp_packet_delete(stream->packets[i]);
-			stream->packets[i] = NULL;
-
-			continue;
-		}
-
-		temp[pos++] = stream->packets[i];
-	}
-
-	stream->count -= count;
-	memset(stream->packets, 0, stream->capacity * sizeof(void *));
-	memcpy(stream->packets, temp, stream->count * sizeof(void *));
-
-	free(temp);
 
 	return stream;
 }
