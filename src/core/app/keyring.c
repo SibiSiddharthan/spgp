@@ -516,6 +516,13 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		pos += 1;
 	}
 
+	// Check whether the primary key has certification capability
+	if ((primary_key->capabilities & PGP_KEY_FLAG_CERTIFY) == 0)
+	{
+		printf("Primary key cannot certify.\n");
+		exit(1);
+	}
+
 	// Subkeys and signatures
 	while ((offset + pos) < end)
 	{
