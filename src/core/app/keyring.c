@@ -444,8 +444,18 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 											signature_fingerprint_size) == 0)
 			{
 				signature_by_primary_key = 1;
-				PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
 			}
+
+			if (sign->type == PGP_DIRECT_KEY_SIGNATURE)
+			{
+				if (signature_by_primary_key == 0)
+				{
+					printf("Direct key signatures should be issued by primary keys.\n");
+					exit(1);
+				}
+			}
+
+			PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
 
 			// Check the signature
 			if (signature_by_primary_key)
@@ -599,12 +609,18 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 											signature_fingerprint_size) == 0)
 			{
 				signature_by_primary_key = 1;
+			}
 
-				if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
+			if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
+			{
+				if (signature_by_primary_key == 0)
 				{
-					PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
+					printf("Subkey binding signatures should be issued by primary keys.\n");
+					exit(1);
 				}
 			}
+
+			PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
 
 			// Check the signature
 			if (signature_by_primary_key)
