@@ -971,10 +971,10 @@ static uint32_t get_signature_strings(pgp_signature_packet *sign, pgp_signature_
 				switch ((header->tag & PGP_SUBPACKET_TAG_MASK))
 				{
 				case PGP_SIGNER_USER_ID_SUBPACKET:
-					pos += snprintf(str, size - pos, "Issuer: %.*s\n", subpacket->header.body_size, subpacket->data);
+					pos += snprintf(str, size - pos, "Issuer: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
 					break;
 				case PGP_POLICY_URI_SUBPACKET:
-					pos += snprintf(str, size - pos, "Policy: %.*s\n", subpacket->header.body_size, subpacket->data);
+					pos += snprintf(str, size - pos, "Policy: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
 					break;
 				}
 			}
@@ -993,10 +993,10 @@ static uint32_t get_signature_strings(pgp_signature_packet *sign, pgp_signature_
 				switch ((header->tag & PGP_SUBPACKET_TAG_MASK))
 				{
 				case PGP_SIGNER_USER_ID_SUBPACKET:
-					pos += snprintf(str, size - pos, "Issuer: %.*s\n", subpacket->header.body_size, subpacket->data);
+					pos += snprintf(str, size - pos, "Issuer: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
 					break;
 				case PGP_POLICY_URI_SUBPACKET:
-					pos += snprintf(str, size - pos, "Policy: %.*s\n", subpacket->header.body_size, subpacket->data);
+					pos += snprintf(str, size - pos, "Policy: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
 					break;
 				}
 			}
@@ -1022,6 +1022,14 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	time_t creation_time = 0;
 	time_t expiry_time = 0;
 	time_t current_time = time(NULL);
+
+	// Validate the signature
+	status = pgp_signature_validate(sign);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
 
 	// Verify the signature first
 	switch (sign->type)
