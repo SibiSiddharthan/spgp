@@ -486,6 +486,8 @@ pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp
 											  byte_t code, void *reason, uint32_t size, pgp_signature_packet *signature);
 pgp_error_t pgp_verify_revocation_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *data);
 
-pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t *fingerprint_size);
+pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE],
+											  byte_t *fingerprint_size);
+pgp_error_t pgp_signature_validate(pgp_signature_packet *packet);
 
 #endif

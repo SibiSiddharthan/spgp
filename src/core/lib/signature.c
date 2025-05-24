@@ -4581,3 +4581,47 @@ pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte
 
 	return PGP_MALFORMED_SIGNATURE_PACKET;
 }
+
+pgp_error_t pgp_signature_validate(pgp_signature_packet *packet)
+{
+	pgp_subpacket_header *header = NULL;
+
+	uint32_t issuer_fingerprint_found = 0;
+	uint32_t creation_time_found = 0;
+
+	// Check whether the creation time and issuer fingerprint are present in hashed subpackets
+	if (packet->version == PGP_SIGNATURE_V3)
+	{
+		return PGP_SUCCESS;
+	}
+
+	if (packet->hashed_subpackets == NULL)
+	{
+		return PGP_MALFORMED_SIGNATURE_PACKET;
+	}
+
+	for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+	{
+		header = packet->hashed_subpackets->packets[i];
+
+		if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_CREATION_TIME_SUBPACKET)
+		{
+			creation_time_found += 1;
+		}
+
+		if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+		{
+			issuer_fingerprint_found += 1;
+		}
+	}
+
+	if (creation_time_found == 0)
+	{
+	}
+
+	if (issuer_fingerprint_found == 0)
+	{
+	}
+
+	return PGP_SUCCESS;
+}
