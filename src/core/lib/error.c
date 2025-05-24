@@ -423,6 +423,10 @@ char *pgp_error(pgp_error_t status)
 		return "Incompatible Signature And Key Version";
 	case PGP_MISSING_EMBEDDED_SIGNATURE_PACKET:
 		return "Missing Embedded Signature Packet For Signing Capable Subkey";
+	case PGP_MISSING_CREATION_TIME_SUBPACKET:
+		return "Missing Creation Time In Signature";
+	case PGP_MISSING_ISSUER_FINGERPRINT_SUBPACKET:
+		return "Missing Issuer Fingerprint In Signature";
 	case PGP_BAD_SIGNATURE:
 		return "Bad Signature";
 

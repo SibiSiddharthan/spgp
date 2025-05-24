@@ -4617,10 +4617,12 @@ pgp_error_t pgp_signature_validate(pgp_signature_packet *packet)
 
 	if (creation_time_found == 0)
 	{
+		return PGP_MISSING_CREATION_TIME_SUBPACKET;
 	}
 
 	if (issuer_fingerprint_found == 0)
 	{
+		return PGP_MISSING_ISSUER_FINGERPRINT_SUBPACKET;
 	}
 
 	return PGP_SUCCESS;
