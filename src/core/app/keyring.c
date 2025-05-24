@@ -333,6 +333,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 	pgp_key_packet *primary_key = NULL;
 	pgp_key_packet *subkey = NULL;
+	pgp_key_packet *other_key = NULL;
 	pgp_key_type key_type = 0;
 
 	pgp_user_id_packet *uid = NULL;
@@ -350,6 +351,8 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 	byte_t signature_fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+	byte_t signature_by_primary_key = 0;
 
 	// The first packet must be public key or secret key packet
 	header = stream->packets[offset + pos];
@@ -424,6 +427,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		if (type == PGP_SIG)
 		{
+			signature_by_primary_key = 0;
 			sign = stream->packets[offset + pos];
 			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
@@ -439,14 +443,38 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
 											signature_fingerprint_size) == 0)
 			{
+				signature_by_primary_key = 1;
 				PGP_CALL(pgp_key_packet_make_definition(primary_key, sign));
 			}
 
-			status = spgp_verify_signature(sign, primary_key, NULL, NULL, 0);
-
-			if (status != PGP_SUCCESS)
+			// Check the signature
+			if (signature_by_primary_key)
 			{
-				exit(1);
+				status = spgp_verify_signature(sign, primary_key, NULL, primary_key, 0);
+
+				if (status != PGP_SUCCESS)
+				{
+					exit(1);
+				}
+			}
+			else
+			{
+				// Search for the key
+				other_key = NULL;
+
+				spgp_search_keyring(&other_key, NULL, signature_fingerprint, signature_fingerprint_size,
+									PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN);
+
+				if (other_key != NULL)
+				{
+					status = spgp_verify_signature(sign, other_key, NULL, primary_key, 0);
+
+					if (status != PGP_SUCCESS)
+					{
+						// Don't exit in this case
+						printf("Bad signature.\n");
+					}
+				}
 			}
 		}
 
@@ -483,6 +511,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		if (type == PGP_SIG)
 		{
+			signature_by_primary_key = 0;
 			sign = stream->packets[offset + pos];
 			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
@@ -494,6 +523,8 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 				if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
 												signature_fingerprint_size) == 0)
 				{
+					signature_by_primary_key = 1;
+
 					if (sign->type == PGP_GENERIC_CERTIFICATION_SIGNATURE || sign->type == PGP_PERSONA_CERTIFICATION_SIGNATURE ||
 						sign->type == PGP_CASUAL_CERTIFICATION_SIGNATURE || sign->type == PGP_POSITIVE_CERTIFICATION_SIGNATURE)
 					{
@@ -505,11 +536,33 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			}
 
 			// Check the signature
-			status = spgp_verify_signature(sign, primary_key, NULL, uid, 0);
-
-			if (status != PGP_SUCCESS)
+			if (signature_by_primary_key)
 			{
-				exit(1);
+				status = spgp_verify_signature(sign, primary_key, NULL, uid, 0);
+
+				if (status != PGP_SUCCESS)
+				{
+					exit(1);
+				}
+			}
+			else
+			{
+				// Search for the key
+				other_key = NULL;
+
+				spgp_search_keyring(&other_key, NULL, signature_fingerprint, signature_fingerprint_size,
+									PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN);
+
+				if (other_key != NULL)
+				{
+					status = spgp_verify_signature(sign, other_key, NULL, uid, 0);
+
+					if (status != PGP_SUCCESS)
+					{
+						// Don't exit in this case
+						printf("Bad signature.\n");
+					}
+				}
 			}
 		}
 
@@ -536,6 +589,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		if (type == PGP_SIG)
 		{
+			signature_by_primary_key = 0;
 			sign = stream->packets[offset + pos];
 			signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
@@ -544,17 +598,42 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
 											signature_fingerprint_size) == 0)
 			{
+				signature_by_primary_key = 1;
+
 				if (sign->type == PGP_SUBKEY_BINDING_SIGNATURE)
 				{
 					PGP_CALL(pgp_key_packet_make_definition(subkey, sign));
 				}
 			}
 
-			status = spgp_verify_signature(sign, primary_key, NULL, subkey, 0);
-
-			if (status != PGP_SUCCESS)
+			// Check the signature
+			if (signature_by_primary_key)
 			{
-				exit(1);
+				status = spgp_verify_signature(sign, primary_key, NULL, subkey, 0);
+
+				if (status != PGP_SUCCESS)
+				{
+					exit(1);
+				}
+			}
+			else
+			{
+				// Search for the key
+				other_key = NULL;
+
+				spgp_search_keyring(&other_key, NULL, signature_fingerprint, signature_fingerprint_size,
+									PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN);
+
+				if (other_key != NULL)
+				{
+					status = spgp_verify_signature(sign, other_key, NULL, subkey, 0);
+
+					if (status != PGP_SUCCESS)
+					{
+						// Don't exit in this case
+						printf("Bad signature.\n");
+					}
+				}
 			}
 		}
 
