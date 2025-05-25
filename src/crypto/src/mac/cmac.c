@@ -83,9 +83,9 @@ static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
 		int32_t status = 0;
 		byte_t k1[DES_KEY_SIZE], k2[DES_KEY_SIZE], k3[DES_KEY_SIZE];
 
-		status = tdes_decode_key(key, key_size, k1, k2, k3);
+		status = tdes_key_decode(key, key_size, k1, k2, k3);
 
-		if (status == -1)
+		if (status == 0)
 		{
 			return NULL;
 		}
