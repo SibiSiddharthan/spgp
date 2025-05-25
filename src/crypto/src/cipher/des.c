@@ -5,13 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <des.h>
+
 #include <byteswap.h>
 #include <ptr.h>
+
+#include <string.h>
 
 // See NIST FIPS 46-3 Data Encryption Standard (DES)
 
@@ -388,7 +387,7 @@ static void des_decrypt_block(des_round_key key[DES_ROUNDS], byte_t ciphertext[D
 	*(uint64_t *)plaintext = t;
 }
 
-static bool check_des_key(byte_t k[DES_KEY_SIZE])
+static byte_t check_des_key(byte_t k[DES_KEY_SIZE])
 {
 	for (uint8_t i = 0; i < DES_KEY_SIZE; ++i)
 	{
@@ -402,11 +401,11 @@ static bool check_des_key(byte_t k[DES_KEY_SIZE])
 		// 8-bit is parity
 		if ((sum & 0x1) != (k[i] >> 7))
 		{
-			return false;
+			return 0;
 		}
 	}
 
-	return true;
+	return 1;
 }
 
 static void des_key_expansion(des_round_key rk[DES_ROUNDS], byte_t k[DES_KEY_SIZE])
@@ -462,74 +461,23 @@ int32_t tdes_decode_key(void *key, size_t key_size, byte_t k1[DES_KEY_SIZE], byt
 	return 0;
 }
 
-static inline tdes_key *tdes_key_init_checked(void *ptr, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
+void tdes_key_init(tdes_key *key, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
 {
-	tdes_key *key = (tdes_key *)ptr;
-
 	memset(key, 0, sizeof(tdes_key));
 
 	des_key_expansion(key->rk1, k1);
 	des_key_expansion(key->rk2, k2);
 	des_key_expansion(key->rk3, k3);
-
-	return key;
 }
 
-tdes_key *tdes_key_init(void *ptr, size_t size, byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE], bool check)
+byte_t tdes_key_check(byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE])
 {
-	if (size < sizeof(tdes_key))
+	if (!check_des_key(k1) || !check_des_key(k2) || !check_des_key(k3))
 	{
-		return NULL;
+		return 0;
 	}
 
-	if (k1 == NULL || k2 == NULL || k3 == NULL)
-	{
-		return NULL;
-	}
-
-	if (check)
-	{
-		if (!check_des_key(k1) || !check_des_key(k2) || !check_des_key(k3))
-		{
-			return NULL;
-		}
-	}
-
-	return tdes_key_init_checked(ptr, k1, k2, k3);
-}
-
-tdes_key *tdes_key_new(byte_t k1[DES_KEY_SIZE], byte_t k2[DES_KEY_SIZE], byte_t k3[DES_KEY_SIZE], bool check)
-{
-	tdes_key *key = NULL;
-
-	if (k1 == NULL || k2 == NULL || k3 == NULL)
-	{
-		return NULL;
-	}
-
-	if (check)
-	{
-		if (!check_des_key(k1) || !check_des_key(k2) || !check_des_key(k3))
-		{
-			return NULL;
-		}
-	}
-
-	key = (tdes_key *)malloc(sizeof(tdes_key));
-
-	if (key == NULL)
-	{
-		return NULL;
-	}
-
-	return tdes_key_init_checked(key, k1, k2, k3);
-}
-
-void tdes_key_delete(tdes_key *key)
-{
-	// Zero the key for security reasons.
-	memset(key, 0, sizeof(tdes_key));
-	free(key);
+	return 1;
 }
 
 void tdes_encrypt_block(tdes_key *key, byte_t plaintext[DES_BLOCK_SIZE], byte_t ciphertext[DES_BLOCK_SIZE])
