@@ -22,23 +22,15 @@
 
 typedef uint32_t twofish_round_key;
 
-typedef enum _twofish_type
-{
-	TWOFISH128,
-	TWOFISH192,
-	TWOFISH256
-} twofish_type;
-
 typedef struct _twofish_key
 {
-	twofish_type type;
 	twofish_round_key round_key[TWOFISH_ROUND_KEYS];
 	byte_t sbox0[256], sbox1[256], sbox2[256], sbox3[256];
 } twofish_key;
 
-twofish_key *twofish_key_init(void *ptr, size_t size, twofish_type type, void *key, size_t key_size);
-twofish_key *twofish_key_new(twofish_type type, void *key, size_t key_size);
-void twofish_key_delete(twofish_key *key);
+void twofish128_key_init(twofish_key *expanded_key, byte_t key[TWOFISH128_KEY_SIZE]);
+void twofish192_key_init(twofish_key *expanded_key, byte_t key[TWOFISH192_KEY_SIZE]);
+void twofish256_key_init(twofish_key *expanded_key, byte_t key[TWOFISH256_KEY_SIZE]);
 
 void twofish_encrypt_block(twofish_key *key, byte_t plaintext[TWOFISH_BLOCK_SIZE], byte_t ciphertext[TWOFISH_BLOCK_SIZE]);
 void twofish_decrypt_block(twofish_key *key, byte_t ciphertext[TWOFISH_BLOCK_SIZE], byte_t plaintext[TWOFISH_BLOCK_SIZE]);

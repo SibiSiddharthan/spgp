@@ -150,27 +150,27 @@ static inline uint32_t MDS(uint32_t k)
 
 // NOTE: In the paper H(...) = MDS(H(...))
 // This is more simple.
-static uint32_t H(twofish_type type, uint32_t x, uint32_t s[4])
+static uint32_t H(byte_t t, uint32_t x, uint32_t s[4])
 {
 	byte_t *in = (byte_t *)&x;
 
-	switch (type)
+	switch (t)
 	{
-	case TWOFISH256:
+	case TWOFISH256_KEY_SIZE:
 		in[0] = Q1[in[0]];
 		in[1] = Q0[in[1]];
 		in[2] = Q0[in[2]];
 		in[3] = Q1[in[3]];
 		x ^= s[3];
 		// Fallthrough
-	case TWOFISH192:
+	case TWOFISH192_KEY_SIZE:
 		in[0] = Q1[in[0]];
 		in[1] = Q1[in[1]];
 		in[2] = Q0[in[2]];
 		in[3] = Q0[in[3]];
 		x ^= s[2];
 		// Fallthrough
-	case TWOFISH128:
+	case TWOFISH128_KEY_SIZE:
 		in[0] = Q0[in[0]];
 		in[1] = Q1[in[1]];
 		in[2] = Q0[in[2]];
@@ -252,15 +252,15 @@ static inline uint32_t SBOX(twofish_key *key, uint32_t k)
 		P[3] = T[3];                         \
 	}
 
-static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
+static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key, byte_t size)
 {
 	uint32_t me[4], mo[4], ms[4];
 	uint32_t *dword = (uint32_t *)actual_key;
 	uint64_t *qword = (uint64_t *)actual_key;
 
-	switch (expanded_key->type)
+	switch (size)
 	{
-	case TWOFISH128:
+	case TWOFISH128_KEY_SIZE:
 		me[0] = dword[0];
 		me[1] = dword[2];
 
@@ -271,7 +271,7 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 		ms[0] = RS(qword[1]);
 
 		break;
-	case TWOFISH192:
+	case TWOFISH192_KEY_SIZE:
 		me[0] = dword[0];
 		me[1] = dword[2];
 		me[2] = dword[4];
@@ -285,7 +285,7 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 		ms[0] = RS(qword[2]);
 
 		break;
-	case TWOFISH256:
+	case TWOFISH256_KEY_SIZE:
 		me[0] = dword[0];
 		me[1] = dword[2];
 		me[2] = dword[4];
@@ -309,7 +309,7 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 	{
 		uint32_t x = (i << 24) + (i << 16) + (i << 8) + i;
 
-		x = H(expanded_key->type, x, ms);
+		x = H(size, x, ms);
 
 		expanded_key->sbox0[i] = x & 0xFF;
 		expanded_key->sbox1[i] = (x >> 8) & 0xFF;
@@ -322,8 +322,8 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 	{
 		uint32_t x = 2 * i;
 		uint32_t y = 2 * i + 1;
-		uint32_t a = MDS(H(expanded_key->type, (x << 24) + (x << 16) + (x << 8) + x, me));
-		uint32_t b = MDS(H(expanded_key->type, (y << 24) + (y << 16) + (y << 8) + y, mo));
+		uint32_t a = MDS(H(size, (x << 24) + (x << 16) + (x << 8) + x, me));
+		uint32_t b = MDS(H(size, (y << 24) + (y << 16) + (y << 8) + y, mo));
 
 		b = ROTL_32(b, 8);
 		expanded_key->round_key[2 * i] = a + b;
@@ -331,89 +331,28 @@ static void twofish_key_expansion(twofish_key *expanded_key, byte_t *actual_key)
 	}
 }
 
-static inline twofish_key *twofish_key_init_checked(void *ptr, twofish_type type, void *key)
+static inline void twofish_key_init_common(twofish_key *expanded_key, byte_t *key, byte_t size)
 {
-	twofish_key *expanded_key = (twofish_key *)ptr;
 
 	memset(expanded_key, 0, sizeof(twofish_key));
-	expanded_key->type = type;
-	twofish_key_expansion(expanded_key, key);
+	twofish_key_expansion(expanded_key, key, size);
 
 	return expanded_key;
 }
 
-twofish_key *twofish_key_init(void *ptr, size_t size, twofish_type type, void *key, size_t key_size)
+void twofish128_key_init(twofish_key *expanded_key, byte_t key[TWOFISH128_KEY_SIZE])
 {
-	size_t required_key_size = 0;
-
-	if (size < sizeof(twofish_key))
-	{
-		return NULL;
-	}
-
-	switch (type)
-	{
-	case TWOFISH128:
-		required_key_size = TWOFISH128_KEY_SIZE;
-		break;
-	case TWOFISH192:
-		required_key_size = TWOFISH192_KEY_SIZE;
-		break;
-	case TWOFISH256:
-		required_key_size = TWOFISH256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	return twofish_key_init_checked(ptr, type, key);
+	twofish_key_init_common(expanded_key, key, TWOFISH128_KEY_SIZE);
 }
 
-twofish_key *twofish_key_new(twofish_type type, void *key, size_t key_size)
+void twofish192_key_init(twofish_key *expanded_key, byte_t key[TWOFISH192_KEY_SIZE])
 {
-	twofish_key *expanded_key = NULL;
-	size_t required_key_size = 0;
-
-	switch (type)
-	{
-	case TWOFISH128:
-		required_key_size = TWOFISH128_KEY_SIZE;
-		break;
-	case TWOFISH192:
-		required_key_size = TWOFISH192_KEY_SIZE;
-		break;
-	case TWOFISH256:
-		required_key_size = TWOFISH256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	expanded_key = (twofish_key *)malloc(sizeof(twofish_key));
-
-	if (expanded_key == NULL)
-	{
-		return NULL;
-	}
-
-	return twofish_key_init_checked(expanded_key, type, key);
+	twofish_key_init_common(expanded_key, key, TWOFISH192_KEY_SIZE);
 }
 
-void twofish_key_delete(twofish_key *key)
+void twofish256_key_init(twofish_key *expanded_key, byte_t key[TWOFISH256_KEY_SIZE])
 {
-	// Zero the key for security reasons.
-	memset(key, 0, sizeof(twofish_key));
-	free(key);
+	twofish_key_init_common(expanded_key, key, TWOFISH256_KEY_SIZE);
 }
 
 void twofish_encrypt_block(twofish_key *key, byte_t plaintext[TWOFISH_BLOCK_SIZE], byte_t ciphertext[TWOFISH_BLOCK_SIZE])
