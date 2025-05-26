@@ -20,20 +20,20 @@ int32_t aes128_test_suite(void)
 	byte_t plaintext[AES_BLOCK_SIZE];
 	byte_t ciphertext[AES_BLOCK_SIZE];
 
+	aes_key key = {0};
+
 	hex_to_block(secret, AES128_KEY_SIZE, "000102030405060708090a0b0c0d0e0f");
 	hex_to_block(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aes_key *key = aes_key_new(AES128, secret, AES128_KEY_SIZE);
+	aes128_key_init(&key, secret);
 
 	memset(ciphertext, 0, AES_BLOCK_SIZE);
-	aes_encrypt_block(key, plaintext, ciphertext);
+	aes128_encrypt_block(&key, plaintext, ciphertext);
 	status += CHECK_BLOCK(ciphertext, AES_BLOCK_SIZE, "69c4e0d86a7b0430d8cdb78070b4c55a");
 
 	memset(plaintext, 0, AES_BLOCK_SIZE);
-	aes_decrypt_block(key, ciphertext, plaintext);
+	aes128_decrypt_block(&key, ciphertext, plaintext);
 	status += CHECK_BLOCK(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
-
-	aes_key_delete(key);
 
 	return status;
 }
@@ -45,20 +45,20 @@ int32_t aes192_test_suite(void)
 	byte_t plaintext[AES_BLOCK_SIZE];
 	byte_t ciphertext[AES_BLOCK_SIZE];
 
+	aes_key key = {0};
+
 	hex_to_block(secret, AES192_KEY_SIZE, "000102030405060708090a0b0c0d0e0f1011121314151617");
 	hex_to_block(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aes_key *key = aes_key_new(AES192, secret, AES192_KEY_SIZE);
+	aes192_key_init(&key, secret);
 
 	memset(ciphertext, 0, AES_BLOCK_SIZE);
-	aes_encrypt_block(key, plaintext, ciphertext);
+	aes192_encrypt_block(&key, plaintext, ciphertext);
 	status += CHECK_BLOCK(ciphertext, AES_BLOCK_SIZE, "dda97ca4864cdfe06eaf70a0ec0d7191");
 
 	memset(plaintext, 0, AES_BLOCK_SIZE);
-	aes_decrypt_block(key, ciphertext, plaintext);
+	aes192_decrypt_block(&key, ciphertext, plaintext);
 	status += CHECK_BLOCK(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
-
-	aes_key_delete(key);
 
 	return status;
 }
@@ -70,20 +70,20 @@ int32_t aes256_test_suite(void)
 	byte_t plaintext[AES_BLOCK_SIZE];
 	byte_t ciphertext[AES_BLOCK_SIZE];
 
+	aes_key key = {0};
+
 	hex_to_block(secret, AES256_KEY_SIZE, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
 	hex_to_block(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
 
-	aes_key *key = aes_key_new(AES256, secret, AES256_KEY_SIZE);
+	aes256_key_init(&key, secret);
 
 	memset(ciphertext, 0, AES_BLOCK_SIZE);
-	aes_encrypt_block(key, plaintext, ciphertext);
+	aes256_encrypt_block(&key, plaintext, ciphertext);
 	status += CHECK_BLOCK(ciphertext, AES_BLOCK_SIZE, "8ea2b7ca516745bfeafc49904b496089");
 
 	memset(plaintext, 0, AES_BLOCK_SIZE);
-	aes_decrypt_block(key, ciphertext, plaintext);
+	aes256_decrypt_block(&key, ciphertext, plaintext);
 	status += CHECK_BLOCK(plaintext, AES_BLOCK_SIZE, "00112233445566778899aabbccddeeff");
-
-	aes_key_delete(key);
 
 	return status;
 }
