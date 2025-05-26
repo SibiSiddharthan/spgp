@@ -83,9 +83,10 @@ static inline void chacha20_block(uint32_t block[CHACHA20_BLOCK_WORDS])
 	block[15] += temp[15];
 }
 
-static inline chacha20_key *chacha20_key_init_checked(void *ptr, byte_t key[CHACHA20_KEY_SIZE], byte_t nonce[CHACHA20_NONCE_SIZE])
+void chacha20_key_init(chacha20_key *chacha_key, byte_t key[CHACHA20_KEY_SIZE], byte_t nonce[CHACHA20_NONCE_SIZE])
 {
-	chacha20_key *chacha_key = (chacha20_key *)ptr;
+	// Zero the key
+	memset(chacha_key, 0, sizeof(chacha20_key));
 
 	// First 4 32-bit words are the constants
 	memcpy(chacha_key->constants, CHACHA20_CONSTANTS, sizeof(uint32_t) * 4);
@@ -98,37 +99,6 @@ static inline chacha20_key *chacha20_key_init_checked(void *ptr, byte_t key[CHAC
 
 	// Last 3 32-bit words are the nonce
 	memcpy(chacha_key->nonce, nonce, CHACHA20_NONCE_SIZE);
-
-	return chacha_key;
-}
-
-chacha20_key *chacha20_key_init(void *ptr, size_t size, byte_t key[CHACHA20_KEY_SIZE], byte_t nonce[CHACHA20_NONCE_SIZE])
-{
-	if (size < sizeof(chacha20_key))
-	{
-		return NULL;
-	}
-
-	return chacha20_key_init_checked(ptr, key, nonce);
-}
-
-chacha20_key *chacha20_key_new(byte_t key[CHACHA20_KEY_SIZE], byte_t nonce[CHACHA20_NONCE_SIZE])
-{
-	chacha20_key *chacha_key = (chacha20_key *)malloc(sizeof(chacha20_key));
-
-	if (chacha_key == NULL)
-	{
-		return NULL;
-	}
-
-	return chacha20_key_init_checked(chacha_key, key, nonce);
-}
-
-void chacha20_key_delete(chacha20_key *key)
-{
-	// Zero the key for security reasons.
-	memset(key, 0, sizeof(chacha20_key));
-	free(key);
 }
 
 static void chacha20_common(chacha20_key *key, uint32_t *in, uint32_t *out, size_t size)
