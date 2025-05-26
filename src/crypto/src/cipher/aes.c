@@ -429,24 +429,24 @@ void aes256_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_
 	block_transpose(plaintext, state);
 }
 
-static void rijndael_key_expansion(aes_key *expanded_key, void *actual_key)
+static void rijndael_key_expansion(aes_key *expanded_key, byte_t *actual_key, byte_t size)
 {
 	const uint8_t nb = 4;
 	uint8_t nk = 0, nr = 0;
 	uint32_t temp = 0;
 	uint32_t word[60];
 
-	switch (expanded_key->type)
+	switch (size)
 	{
-	case AES128:
+	case AES128_KEY_SIZE:
 		nk = AES128_KEY_WORDS;
 		nr = AES128_ROUNDS;
 		break;
-	case AES192:
+	case AES192_KEY_SIZE:
 		nk = AES192_KEY_WORDS;
 		nr = AES192_ROUNDS;
 		break;
-	case AES256:
+	case AES256_KEY_SIZE:
 		nk = AES256_KEY_WORDS;
 		nr = AES256_ROUNDS;
 		break;
@@ -479,113 +479,23 @@ static void rijndael_key_expansion(aes_key *expanded_key, void *actual_key)
 	}
 }
 
-static inline aes_key *aes_key_init_checked(void *ptr, aes_type type, void *key)
+static inline void aes_key_init_common(aes_key *expanded_key, byte_t *key, byte_t size)
 {
-	aes_key *expanded_key = (aes_key *)ptr;
-
 	memset(expanded_key, 0, sizeof(aes_key));
-	expanded_key->type = type;
-	rijndael_key_expansion(expanded_key, key);
-
-	return expanded_key;
+	rijndael_key_expansion(expanded_key, key, size);
 }
 
-aes_key *aes_key_init(void *ptr, size_t size, aes_type type, void *key, size_t key_size)
+void aes128_key_init(aes_key *expanded_key, byte_t key[AES128_KEY_SIZE])
 {
-	size_t required_key_size = 0;
-
-	if (size < sizeof(aes_key))
-	{
-		return NULL;
-	}
-
-	switch (type)
-	{
-	case AES128:
-		required_key_size = AES128_KEY_SIZE;
-		break;
-	case AES192:
-		required_key_size = AES192_KEY_SIZE;
-		break;
-	case AES256:
-		required_key_size = AES256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	return aes_key_init_checked(ptr, type, key);
+	aes_key_init_common(expanded_key, key, AES128_KEY_SIZE);
 }
 
-aes_key *aes_key_new(aes_type type, void *key, size_t key_size)
+void aes192_key_init(aes_key *expanded_key, byte_t key[AES192_KEY_SIZE])
 {
-	aes_key *expanded_key = NULL;
-	size_t required_key_size = 0;
-
-	switch (type)
-	{
-	case AES128:
-		required_key_size = AES128_KEY_SIZE;
-		break;
-	case AES192:
-		required_key_size = AES192_KEY_SIZE;
-		break;
-	case AES256:
-		required_key_size = AES256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	expanded_key = (aes_key *)malloc(sizeof(aes_key));
-
-	if (expanded_key == NULL)
-	{
-		return NULL;
-	}
-
-	return aes_key_init_checked(expanded_key, type, key);
+	aes_key_init_common(expanded_key, key, AES192_KEY_SIZE);
 }
 
-void aes_key_delete(aes_key *key)
+void aes256_key_init(aes_key *expanded_key, byte_t key[AES256_KEY_SIZE])
 {
-	// Zero the key for security reasons.
-	memset(key, 0, sizeof(aes_key));
-	free(key);
-}
-
-void aes_encrypt_block(aes_key *key, byte_t plaintext[AES_BLOCK_SIZE], byte_t ciphertext[AES_BLOCK_SIZE])
-{
-	switch (key->type)
-	{
-	case AES128:
-		return aes128_encrypt_block(key, plaintext, ciphertext);
-	case AES192:
-		return aes192_encrypt_block(key, plaintext, ciphertext);
-	case AES256:
-		return aes256_encrypt_block(key, plaintext, ciphertext);
-	}
-}
-
-void aes_decrypt_block(aes_key *key, byte_t ciphertext[AES_BLOCK_SIZE], byte_t plaintext[AES_BLOCK_SIZE])
-{
-	switch (key->type)
-	{
-	case AES128:
-		return aes128_decrypt_block(key, ciphertext, plaintext);
-	case AES192:
-		return aes192_decrypt_block(key, ciphertext, plaintext);
-	case AES256:
-		return aes256_decrypt_block(key, ciphertext, plaintext);
-	}
+	aes_key_init_common(expanded_key, key, AES256_KEY_SIZE);
 }
