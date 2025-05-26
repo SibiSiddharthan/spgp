@@ -18,22 +18,14 @@
 #define CAMELLIA192_KEY_SIZE 24
 #define CAMELLIA256_KEY_SIZE 32
 
-typedef enum _camellia_type
-{
-	CAMELLIA128,
-	CAMELLIA192,
-	CAMELLIA256
-} camellia_type;
-
 typedef struct _camellia_key
 {
-	camellia_type type;
 	uint64_t k[24], ke[6], kw[4];
 } camellia_key;
 
-camellia_key *camellia_key_init(void *ptr, size_t size, camellia_type type, void *key, size_t key_size);
-camellia_key *camellia_key_new(camellia_type type, void *key, size_t key_size);
-void camellia_key_delete(camellia_key *key);
+void camellia128_key_init(camellia_key *expanded_key, byte_t key[CAMELLIA128_KEY_SIZE]);
+void camellia192_key_init(camellia_key *expanded_key, byte_t key[CAMELLIA192_KEY_SIZE]);
+void camellia256_key_init(camellia_key *expanded_key, byte_t key[CAMELLIA256_KEY_SIZE]);
 
 void camellia128_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE]);
 void camellia128_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE]);
@@ -43,8 +35,5 @@ void camellia192_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLO
 
 void camellia256_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE]);
 void camellia256_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE]);
-
-void camellia_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE]);
-void camellia_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE]);
 
 #endif

@@ -429,7 +429,7 @@ void camellia256_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLO
 #define ROTR_128_HIGH(X, S) (((X[0] >> S) | (X[1] << (64 - S))))
 #define ROTR_128_LOW(X, S)  (((X[1] >> S) | (X[0] << (64 - S))))
 
-static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_key)
+static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_key, byte_t size)
 {
 	uint64_t kl[2], kr[2];
 	uint64_t ka[2], kb[2];
@@ -437,21 +437,21 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	uint64_t *p = (uint64_t *)actual_key;
 
 	// Determine kl, kr
-	switch (expanded_key->type)
+	switch (size)
 	{
-	case CAMELLIA128:
+	case CAMELLIA128_KEY_SIZE:
 		kl[0] = (p[0]);
 		kl[1] = (p[1]);
 		kr[0] = 0;
 		kr[1] = 0;
 		break;
-	case CAMELLIA192:
+	case CAMELLIA192_KEY_SIZE:
 		kl[0] = (p[0]);
 		kl[1] = (p[1]);
 		kr[0] = (p[2]);
 		kr[1] = (~p[2]);
 		break;
-	case CAMELLIA256:
+	case CAMELLIA256_KEY_SIZE:
 		kl[0] = (p[0]);
 		kl[1] = (p[1]);
 		kr[0] = (p[2]);
@@ -472,7 +472,7 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	ka[0] = d1;
 	ka[1] = d2;
 
-	if (expanded_key->type != CAMELLIA128)
+	if (size != CAMELLIA128_KEY_SIZE)
 	{
 		d1 = ka[0] ^ kr[0];
 		d2 = ka[1] ^ kr[1];
@@ -496,9 +496,9 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	kb[1] = BSWAP_64(kb[1]);
 
 	// Key expansion
-	switch (expanded_key->type)
+	switch (size)
 	{
-	case CAMELLIA128:
+	case CAMELLIA128_KEY_SIZE:
 		expanded_key->kw[0] = BSWAP_64(kl[0]);
 		expanded_key->kw[1] = BSWAP_64(kl[1]);
 		expanded_key->kw[2] = BSWAP_64(ROTR_128_HIGH(ka, 17));
@@ -529,8 +529,8 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 		expanded_key->k[17] = BSWAP_64(ROTR_128_LOW(kl, 17));
 
 		break;
-	case CAMELLIA192:
-	case CAMELLIA256:
+	case CAMELLIA192_KEY_SIZE:
+	case CAMELLIA256_KEY_SIZE:
 		expanded_key->kw[0] = BSWAP_64(kl[0]);
 		expanded_key->kw[1] = BSWAP_64(kl[1]);
 		expanded_key->kw[2] = BSWAP_64(ROTR_128_HIGH(kb, 17));
@@ -572,111 +572,23 @@ static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_ke
 	}
 }
 
-static inline camellia_key *camellia_key_init_checked(void *ptr, camellia_type type, void *key)
+static inline void camellia_key_init_common(camellia_key *expanded_key, byte_t *key, byte_t size)
 {
-	camellia_key *expanded_key = (camellia_key *)ptr;
-
 	memset(expanded_key, 0, sizeof(camellia_key));
-	expanded_key->type = type;
-	camellia_key_expansion(expanded_key, key);
-
-	return expanded_key;
+	camellia_key_expansion(expanded_key, key, size);
 }
 
-camellia_key *camellia_key_init(void *ptr, size_t size, camellia_type type, void *key, size_t key_size)
+void camellia128_key_init(camellia_key *expanded_key, byte_t key[CAMELLIA128_KEY_SIZE])
 {
-	size_t required_key_size = 0;
-
-	if (size < sizeof(camellia_key))
-	{
-		return NULL;
-	}
-
-	switch (type)
-	{
-	case CAMELLIA128:
-		required_key_size = CAMELLIA128_KEY_SIZE;
-		break;
-	case CAMELLIA192:
-		required_key_size = CAMELLIA192_KEY_SIZE;
-		break;
-	case CAMELLIA256:
-		required_key_size = CAMELLIA256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	return camellia_key_init_checked(ptr, type, key);
+	camellia_key_init_common(expanded_key, key, CAMELLIA128_KEY_SIZE);
 }
 
-camellia_key *camellia_key_new(camellia_type type, void *key, size_t key_size)
+void camellia192_key_init(camellia_key *expanded_key, byte_t key[CAMELLIA192_KEY_SIZE])
 {
-	camellia_key *expanded_key = NULL;
-	size_t required_key_size = 0;
-
-	switch (type)
-	{
-	case CAMELLIA128:
-		required_key_size = CAMELLIA128_KEY_SIZE;
-		break;
-	case CAMELLIA192:
-		required_key_size = CAMELLIA192_KEY_SIZE;
-		break;
-	case CAMELLIA256:
-		required_key_size = CAMELLIA256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	expanded_key = (camellia_key *)malloc(sizeof(camellia_key));
-
-	if (expanded_key == NULL)
-	{
-		return NULL;
-	}
-
-	return camellia_key_init_checked(expanded_key, type, key);
+	camellia_key_init_common(expanded_key, key, CAMELLIA192_KEY_SIZE);
 }
 
-void camellia_key_delete(camellia_key *key)
+void camellia256_key_init(camellia_key *expanded_key, byte_t key[CAMELLIA256_KEY_SIZE])
 {
-	// Zero the key for security reasons.
-	memset(key, 0, sizeof(camellia_key));
-	free(key);
-}
-
-void camellia_encrypt_block(camellia_key *key, byte_t plaintext[CAMELLIA_BLOCK_SIZE], byte_t ciphertext[CAMELLIA_BLOCK_SIZE])
-{
-	switch (key->type)
-	{
-	case CAMELLIA128:
-		return camellia128_encrypt_block(key, plaintext, ciphertext);
-	case CAMELLIA192:
-	case CAMELLIA256:
-		return camellia256_encrypt_block(key, plaintext, ciphertext);
-	}
-}
-
-void camellia_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLOCK_SIZE], byte_t plaintext[CAMELLIA_BLOCK_SIZE])
-{
-	switch (key->type)
-	{
-	case CAMELLIA128:
-		return camellia128_decrypt_block(key, ciphertext, plaintext);
-	case CAMELLIA192:
-	case CAMELLIA256:
-		return camellia256_decrypt_block(key, ciphertext, plaintext);
-	}
+	camellia_key_init_common(expanded_key, key, CAMELLIA256_KEY_SIZE);
 }
