@@ -603,7 +603,7 @@ void aria256_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], by
 	memcpy(plaintext, state, ARIA_BLOCK_SIZE);
 }
 
-static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
+static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key, byte_t size)
 {
 	uint64_t kl[2], kr[2];
 	uint8_t w0[16], w1[16], w2[16], w3[16];
@@ -612,23 +612,23 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 	uint64_t *k = (uint64_t *)actual_key;
 	uint8_t *r = (uint8_t *)kr;
 
-	switch (expanded_key->type)
+	switch (size)
 	{
-	case ARIA128:
+	case ARIA128_KEY_SIZE:
 		kl[0] = k[0];
 		kl[1] = k[1];
 		kr[0] = 0;
 		kr[1] = 0;
 		nr = ARIA128_ROUNDS;
 		break;
-	case ARIA192:
+	case ARIA192_KEY_SIZE:
 		kl[0] = k[0];
 		kl[1] = k[1];
 		kr[0] = k[2];
 		kr[1] = 0;
 		nr = ARIA192_ROUNDS;
 		break;
-	case ARIA256:
+	case ARIA256_KEY_SIZE:
 		kl[0] = k[0];
 		kl[1] = k[1];
 		kr[0] = k[2];
@@ -697,132 +697,44 @@ static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key)
 	memcpy(expanded_key->decryption_round_key[nr], expanded_key->encryption_round_key[0], sizeof(aria_round_key));
 }
 
-static inline aria_key *aria_key_init_checked(void *ptr, aria_type type, void *key)
+static inline void aria_key_init_common(aria_key *expanded_key, byte_t *key, byte_t size)
 {
-	aria_key *expanded_key = (aria_key *)ptr;
 
 	memset(expanded_key, 0, sizeof(aria_key));
-	expanded_key->type = type;
 
-	switch (type)
+	switch (size)
 	{
-	case ARIA128:
+	case ARIA128_KEY_SIZE:
 		memcpy(expanded_key->ck1, C1, 16);
 		memcpy(expanded_key->ck2, C2, 16);
 		memcpy(expanded_key->ck3, C3, 16);
 		break;
-	case ARIA192:
+	case ARIA192_KEY_SIZE:
 		memcpy(expanded_key->ck1, C2, 16);
 		memcpy(expanded_key->ck2, C3, 16);
 		memcpy(expanded_key->ck3, C1, 16);
 		break;
-	case ARIA256:
+	case ARIA256_KEY_SIZE:
 		memcpy(expanded_key->ck1, C3, 16);
 		memcpy(expanded_key->ck2, C1, 16);
 		memcpy(expanded_key->ck3, C2, 16);
 		break;
 	}
 
-	aria_key_expansion(expanded_key, key);
-
-	return expanded_key;
+	aria_key_expansion(expanded_key, key, size);
 }
 
-aria_key *aria_key_init(void *ptr, size_t size, aria_type type, void *key, size_t key_size)
+void aria128_key_init(aria_key *expanded_key, byte_t key[ARIA128_KEY_SIZE])
 {
-	size_t required_key_size = 0;
-
-	if (size < sizeof(aria_key))
-	{
-		return NULL;
-	}
-
-	switch (type)
-	{
-	case ARIA128:
-		required_key_size = ARIA128_KEY_SIZE;
-		break;
-	case ARIA192:
-		required_key_size = ARIA192_KEY_SIZE;
-		break;
-	case ARIA256:
-		required_key_size = ARIA256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	return aria_key_init_checked(ptr, type, key);
+	aria_key_init_common(expanded_key, key, ARIA128_KEY_SIZE);
 }
 
-aria_key *aria_key_new(aria_type type, void *key, size_t key_size)
+void aria192_key_init(aria_key *expanded_key, byte_t key[ARIA192_KEY_SIZE])
 {
-	aria_key *expanded_key = NULL;
-	size_t required_key_size = 0;
-
-	switch (type)
-	{
-	case ARIA128:
-		required_key_size = ARIA128_KEY_SIZE;
-		break;
-	case ARIA192:
-		required_key_size = ARIA192_KEY_SIZE;
-		break;
-	case ARIA256:
-		required_key_size = ARIA256_KEY_SIZE;
-		break;
-	default:
-		return NULL;
-	}
-
-	if (key_size != required_key_size)
-	{
-		return NULL;
-	}
-
-	expanded_key = (aria_key *)malloc(sizeof(aria_key));
-
-	if (expanded_key == NULL)
-	{
-		return NULL;
-	}
-
-	return aria_key_init_checked(expanded_key, type, key);
+	aria_key_init_common(expanded_key, key, ARIA192_KEY_SIZE);
 }
 
-void aria_key_delete(aria_key *key)
+void aria256_key_init(aria_key *expanded_key, byte_t key[ARIA256_KEY_SIZE])
 {
-	// Zero the key for security reasons.
-	memset(key, 0, sizeof(aria_key));
-	free(key);
-}
-
-void aria_encrypt_block(aria_key *key, byte_t plaintext[ARIA_BLOCK_SIZE], byte_t ciphertext[ARIA_BLOCK_SIZE])
-{
-	switch (key->type)
-	{
-	case ARIA128:
-		return aria128_encrypt_block(key, plaintext, ciphertext);
-	case ARIA192:
-		return aria192_encrypt_block(key, plaintext, ciphertext);
-	case ARIA256:
-		return aria256_encrypt_block(key, plaintext, ciphertext);
-	}
-}
-void aria_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], byte_t plaintext[ARIA_BLOCK_SIZE])
-{
-	switch (key->type)
-	{
-	case ARIA128:
-		return aria128_decrypt_block(key, ciphertext, plaintext);
-	case ARIA192:
-		return aria192_decrypt_block(key, ciphertext, plaintext);
-	case ARIA256:
-		return aria256_decrypt_block(key, ciphertext, plaintext);
-	}
+	aria_key_init_common(expanded_key, key, ARIA256_KEY_SIZE);
 }
