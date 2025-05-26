@@ -72,7 +72,7 @@ typedef struct _ctr_drbg
 	void *_dfctx;
 	size_t _size;
 	uint32_t _algorithm;
-	void (*_init)(void *, size_t, int32_t, void *, size_t);
+	void (*_init)(void *, void *);
 	void (*_encrypt)(void *, void *, void *);
 	uint32_t (*entropy)(void *state, void *buffer, uint32_t size);
 } ctr_drbg;

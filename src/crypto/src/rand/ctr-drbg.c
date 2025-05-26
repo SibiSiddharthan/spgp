@@ -96,7 +96,7 @@ static int32_t ctr_drbg_df(ctr_drbg *cdrbg, byte_t *input, size_t input_size, by
 
 	s[pos++] = 0x80;
 
-	cdrbg->_init(cdrbg->_dfctx, cdrbg->_size, cdrbg->_algorithm, (void *)base_key, cdrbg->key_size);
+	cdrbg->_init(cdrbg->_dfctx, base_key);
 
 	while (temp_size < cdrbg->seed_size)
 	{
@@ -112,7 +112,7 @@ static int32_t ctr_drbg_df(ctr_drbg *cdrbg, byte_t *input, size_t input_size, by
 	memcpy(new_key, temp, cdrbg->key_size);
 	memcpy(new_block, temp + cdrbg->key_size, cdrbg->block_size);
 
-	cdrbg->_init(cdrbg->_dfctx, cdrbg->_size, cdrbg->_algorithm, new_key, cdrbg->key_size);
+	cdrbg->_init(cdrbg->_dfctx, new_key);
 
 	memset(temp, 0, MAX_CTR_SEED_SIZE);
 	temp_size = 0;
@@ -157,7 +157,7 @@ static void ctr_drbg_update(ctr_drbg *cdrbg, byte_t *provided)
 	memcpy(cdrbg->key, temp, cdrbg->key_size);
 	memcpy(cdrbg->block, temp + (seed_size - block_size), block_size);
 
-	cdrbg->_init(cdrbg->_ctx, cdrbg->_size, cdrbg->_algorithm, cdrbg->key, cdrbg->key_size);
+	cdrbg->_init(cdrbg->_ctx, cdrbg->key);
 }
 
 static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_t personalization_size)
@@ -205,7 +205,7 @@ static int32_t ctr_drbg_init_state(ctr_drbg *cdrbg, void *personalization, size_
 	memset(cdrbg->key, 0, cdrbg->key_size);
 	memset(cdrbg->block, 0, cdrbg->block_size);
 
-	cdrbg->_init(cdrbg->_ctx, cdrbg->_size, cdrbg->_algorithm, cdrbg->key, cdrbg->key_size);
+	cdrbg->_init(cdrbg->_ctx, cdrbg->key);
 	ctr_drbg_update(cdrbg, seed);
 
 	cdrbg->reseed_counter = 1;
@@ -230,7 +230,7 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*en
 	uint16_t min_entropy_size;
 	uint16_t min_nonce_size;
 
-	void (*_init)(void *, size_t, int32_t, void *, size_t) = NULL;
+	void (*_init)(void *, void *) = NULL;
 	void (*_encrypt)(void *, void *, void *) = NULL;
 
 	switch (algorithm)
@@ -242,6 +242,7 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*en
 		min_entropy_size = 16;
 		min_nonce_size = 8;
 
+		_init = (void (*)(void *, void *))aes128_key_init;
 		_encrypt = (void (*)(void *, void *, void *))aes128_encrypt_block;
 		break;
 	case CIPHER_AES192:
@@ -250,6 +251,7 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*en
 		min_entropy_size = 24;
 		min_nonce_size = 12;
 
+		_init = (void (*)(void *, void *))aes192_key_init;
 		_encrypt = (void (*)(void *, void *, void *))aes192_encrypt_block;
 		break;
 	case CIPHER_AES256:
@@ -258,13 +260,12 @@ static ctr_drbg *ctr_drbg_init_checked(void *ptr, size_t ctx_size, uint32_t (*en
 		min_entropy_size = 32;
 		min_nonce_size = 16;
 
+		_init = (void (*)(void *, void *))aes256_key_init;
 		_encrypt = (void (*)(void *, void *, void *))aes256_encrypt_block;
 		break;
 	default: // Prevent -Wswitch
 		return NULL;
 	}
-
-	_init = (void (*)(void *, size_t, int32_t, void *, size_t))aes_key_init;
 
 	block_size = 16;
 	seed_size = key_size + block_size;
