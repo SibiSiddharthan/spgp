@@ -5,11 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <aes.h>
 #include <rotate.h>
+
+#include <string.h>
 
 // See NIST FIPS-197 Advanced Encryption Standard (AES)
 

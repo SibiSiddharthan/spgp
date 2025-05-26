@@ -5,11 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <chacha20.h>
 #include <rotate.h>
+
+#include <string.h>
 
 // See RFC 8439: ChaCha20 and Poly1305 for IETF Protocols
 

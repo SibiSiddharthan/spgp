@@ -5,11 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <aria.h>
 #include <byteswap.h>
+
+#include <string.h>
 
 // See RFC 5794: A Description of the ARIA Encryption Algorithm
 

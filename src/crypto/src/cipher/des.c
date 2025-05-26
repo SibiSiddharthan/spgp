@@ -6,7 +6,6 @@
 */
 
 #include <des.h>
-
 #include <byteswap.h>
 #include <ptr.h>
 

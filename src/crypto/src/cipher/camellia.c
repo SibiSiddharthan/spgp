@@ -5,12 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <camellia.h>
 #include <byteswap.h>
 #include <rotate.h>
+
+#include <string.h>
 
 // See RFC 3713: A Description of the Camellia Encryption Algorithm
 
