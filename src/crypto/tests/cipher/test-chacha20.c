@@ -40,7 +40,6 @@ int32_t chacha20_stream_test(void)
 	byte_t nonce[CHACHA20_NONCE_SIZE];
 	byte_t plaintext[114];
 	byte_t ciphertext[114];
-	chacha20_key *key = NULL;
 
 	chacha20_key key = {0};
 
@@ -53,7 +52,7 @@ int32_t chacha20_stream_test(void)
 	chacha20_key_init(&key, secret, nonce);
 
 	memset(ciphertext, 0, 114);
-	chacha20_encrypt(key, plaintext, ciphertext, 114);
+	chacha20_encrypt(&key, plaintext, ciphertext, 114);
 	status +=
 		CHECK_BLOCK(ciphertext, 114,
 					"6e2e359a2568f98041ba0728dd0d6981e97e7aec1d4360c20a27afccfd9fae0bf91b65c5524733ab8f593dabcd62b3571639d624e65152ab8f530c"
@@ -62,7 +61,7 @@ int32_t chacha20_stream_test(void)
 	chacha20_key_init(&key, secret, nonce);
 
 	memset(plaintext, 0, 114);
-	chacha20_decrypt(key, ciphertext, plaintext, 114);
+	chacha20_decrypt(&key, ciphertext, plaintext, 114);
 	status += CHECK_BLOCK(
 		plaintext, 114,
 		"4c616469657320616e642047656e746c656d656e206f662074686520636c617373206f66202739393a204966204920636f756c64206f6666657220796"

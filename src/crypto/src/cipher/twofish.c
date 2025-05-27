@@ -335,8 +335,6 @@ static inline void twofish_key_init_common(twofish_key *expanded_key, byte_t *ke
 
 	memset(expanded_key, 0, sizeof(twofish_key));
 	twofish_key_expansion(expanded_key, key, size);
-
-	return expanded_key;
 }
 
 void twofish128_key_init(twofish_key *expanded_key, byte_t key[TWOFISH128_KEY_SIZE])

@@ -17,7 +17,6 @@
 int32_t des_test_suite(void)
 {
 	int32_t status = 0;
-	tdes_key *key = NULL;
 	byte_t secret[DES_KEY_SIZE];
 	byte_t plaintext[DES_BLOCK_SIZE];
 	byte_t ciphertext[DES_BLOCK_SIZE];
@@ -73,7 +72,6 @@ int32_t des_test_suite(void)
 int32_t tdes_test_suite(void)
 {
 	int32_t status = 0;
-	tdes_key *key = NULL;
 	byte_t secret1[DES_KEY_SIZE], secret2[DES_KEY_SIZE], secret3[DES_KEY_SIZE];
 	byte_t plaintext[DES_BLOCK_SIZE];
 	byte_t ciphertext[DES_BLOCK_SIZE];

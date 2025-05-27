@@ -169,13 +169,10 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 		camellia256_key_init(cctx->_key, key);
 		break;
 
-		// CHACHA
-		// case CIPHER_CHACHA20:
-		//	if (key_size != CHACHA20_KEY_SIZE)
-		//	{
-		//		return NULL;
-		//	}
-		//	_ctx = chacha20_key_init(_ctx, ctx_size, key, NULL);
+	// CHACHA
+	// case CIPHER_CHACHA20:
+	//	chacha20_key_init(_ctx, ctx_size, key, NULL);
+	//	break;
 
 	// TDES
 	case CIPHER_TDES:
