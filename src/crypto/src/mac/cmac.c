@@ -49,62 +49,120 @@ static inline size_t get_key_ctx_size(cipher_algorithm algorithm)
 	}
 }
 
+static inline byte_t cipher_key_size_validate(cipher_algorithm algorithm, byte_t key_size)
+{
+	byte_t required_size = 0;
+
+	switch (algorithm)
+	{
+	case CIPHER_AES128:
+	case CIPHER_ARIA128:
+	case CIPHER_CAMELLIA128:
+	case CIPHER_TWOFISH128:
+		required_size = 16;
+		break;
+	case CIPHER_AES192:
+	case CIPHER_ARIA192:
+	case CIPHER_CAMELLIA192:
+	case CIPHER_TWOFISH192:
+		required_size = 24;
+		break;
+	case CIPHER_AES256:
+	case CIPHER_ARIA256:
+	case CIPHER_CAMELLIA256:
+	case CIPHER_TWOFISH256:
+	case CIPHER_CHACHA20:
+		required_size = 32;
+		break;
+	default:
+		break;
+	}
+
+	if (algorithm == CIPHER_TDES)
+	{
+		if (key_size != DES_KEY_SIZE && key_size != (DES_KEY_SIZE * 2) && key_size != (DES_KEY_SIZE * 3))
+		{
+			return 0;
+		}
+	}
+	else
+	{
+		if (required_size != key_size)
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
 {
+	if (cipher_key_size_validate(cctx->algorithm, key_size) == 0)
+	{
+		return NULL;
+	}
+
 	switch (cctx->algorithm)
 	{
 	// AES
 	case CIPHER_AES128:
-		return aes_key_init(cctx->_key, sizeof(aes_key), AES128, key, key_size);
+		aes128_key_init(cctx->_key, key);
+		break;
 	case CIPHER_AES192:
-		return aes_key_init(cctx->_key, sizeof(aes_key), AES192, key, key_size);
+		aes192_key_init(cctx->_key, key);
+		break;
 	case CIPHER_AES256:
-		return aes_key_init(cctx->_key, sizeof(aes_key), AES256, key, key_size);
+		aes256_key_init(cctx->_key, key);
+		break;
 
 	// ARIA
 	case CIPHER_ARIA128:
-		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA128, key, key_size);
+		aria128_key_init(cctx->_key, key);
+		break;
 	case CIPHER_ARIA192:
-		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA192, key, key_size);
+		aria192_key_init(cctx->_key, key);
+		break;
 	case CIPHER_ARIA256:
-		return aria_key_init(cctx->_key, sizeof(aria_key), ARIA256, key, key_size);
+		aria256_key_init(cctx->_key, key);
+		break;
 
 	// CAMELLIA
 	case CIPHER_CAMELLIA128:
-		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA128, key, key_size);
+		camellia128_key_init(cctx->_key, key);
+		break;
 	case CIPHER_CAMELLIA192:
-		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA192, key, key_size);
+		camellia192_key_init(cctx->_key, key);
+		break;
 	case CIPHER_CAMELLIA256:
-		return camellia_key_init(cctx->_key, sizeof(camellia_key), CAMELLIA256, key, key_size);
+		camellia256_key_init(cctx->_key, key);
+		break;
 
 	// TDES
 	case CIPHER_TDES:
 	{
-		int32_t status = 0;
 		byte_t k1[DES_KEY_SIZE], k2[DES_KEY_SIZE], k3[DES_KEY_SIZE];
 
-		status = tdes_key_decode(key, key_size, k1, k2, k3);
-
-		if (status == 0)
-		{
-			return NULL;
-		}
-
-		return tdes_key_init(cctx->_key, sizeof(tdes_key), k1, k2, k3, false);
+		tdes_key_decode(key, key_size, k1, k2, k3);
+		tdes_key_init(cctx->_key, k1, k2, k3);
 	}
+	break;
 
 	// TWOFISH
 	case CIPHER_TWOFISH128:
-		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH128, key, key_size);
+		twofish128_key_init(cctx->_key, key);
+		break;
 	case CIPHER_TWOFISH192:
-		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH192, key, key_size);
+		twofish192_key_init(cctx->_key, key);
+		break;
 	case CIPHER_TWOFISH256:
-		return twofish_key_init(cctx->_key, sizeof(twofish_key), TWOFISH256, key, key_size);
+		twofish256_key_init(cctx->_key, key);
+		break;
 	default:
 		return NULL;
 	}
 
-	return NULL;
+	return cctx->_key;
 }
 
 static inline void SHL128_1(byte_t buffer[16])
