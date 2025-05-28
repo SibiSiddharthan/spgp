@@ -58,13 +58,16 @@ int32_t ripemd160_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	ripemd160_ctx *ctx = ripemd160_new();
+	ripemd160_ctx ctx = {0};
+
+	ripemd160_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		ripemd160_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		ripemd160_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	ripemd160_final(ctx, buffer);
-	ripemd160_delete(ctx);
+
+	ripemd160_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, RIPEMD160_HASH_SIZE, "52783243c1697bdbe16d37f97f68f08325dc1528");
 

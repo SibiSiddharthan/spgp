@@ -22,9 +22,7 @@ typedef struct _ripemd160_ctx
 	byte_t internal[RIPEMD160_BLOCK_SIZE];
 } ripemd160_ctx;
 
-ripemd160_ctx *ripemd160_init(void *ptr, size_t size);
-ripemd160_ctx *ripemd160_new(void);
-void ripemd160_delete(ripemd160_ctx *ctx);
+void ripemd160_init(ripemd160_ctx *ctx);
 void ripemd160_reset(ripemd160_ctx *ctx);
 void ripemd160_update(ripemd160_ctx *ctx, void *data, size_t size);
 void ripemd160_final(ripemd160_ctx *ctx, byte_t buffer[RIPEMD160_HASH_SIZE]);

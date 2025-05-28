@@ -212,10 +212,8 @@ static void ripemd160_hash_block(ripemd160_ctx *ctx, byte_t block[RIPEMD160_BLOC
 	ctx->h0 = t;
 }
 
-static inline ripemd160_ctx *ripemd160_init_checked(void *ptr)
+ripemd160_ctx *ripemd160_init(ripemd160_ctx *ctx)
 {
-	ripemd160_ctx *ctx = (ripemd160_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(ripemd160_ctx));
 
 	ctx->h0 = H0;
@@ -223,40 +221,11 @@ static inline ripemd160_ctx *ripemd160_init_checked(void *ptr)
 	ctx->h2 = H2;
 	ctx->h3 = H3;
 	ctx->h4 = H4;
-
-	return ctx;
-}
-
-ripemd160_ctx *ripemd160_init(void *ptr, size_t size)
-{
-	if (size < sizeof(ripemd160_ctx))
-	{
-		return NULL;
-	}
-
-	return ripemd160_init_checked(ptr);
-}
-
-ripemd160_ctx *ripemd160_new(void)
-{
-	ripemd160_ctx *ctx = (ripemd160_ctx *)malloc(sizeof(ripemd160_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return ripemd160_init_checked(ctx);
-}
-
-void ripemd160_delete(ripemd160_ctx *ctx)
-{
-	free(ctx);
 }
 
 void ripemd160_reset(ripemd160_ctx *ctx)
 {
-	ripemd160_init_checked(ctx);
+	ripemd160_init(ctx);
 }
 
 void ripemd160_update(ripemd160_ctx *ctx, void *data, size_t size)
@@ -341,7 +310,7 @@ void ripemd160_hash(void *data, size_t size, byte_t buffer[RIPEMD160_HASH_SIZE])
 	ripemd160_ctx ctx;
 
 	// Initialize the context.
-	ripemd160_init_checked(&ctx);
+	ripemd160_init(&ctx);
 
 	// Hash the data.
 	ripemd160_update(&ctx, data, size);
