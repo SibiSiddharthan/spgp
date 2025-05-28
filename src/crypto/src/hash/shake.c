@@ -82,51 +82,17 @@ static void shake_common_final(sha3_ctx *ctx, void *buffer, size_t size)
 	memset(ctx, 0, sizeof(sha3_ctx));
 }
 
-static inline shake128_ctx *shake128_init_checked(void *ptr, uint32_t bits)
+void shake128_init(shake128_ctx *ctx, uint32_t bits)
 {
-	shake128_ctx *ctx = (shake128_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(shake128_ctx));
 
 	ctx->hash_size = bits / 8;
 	ctx->block_size = SHAKE128_BLOCK_SIZE;
-
-	return ctx;
-}
-
-shake128_ctx *shake128_init(void *ptr, size_t size, uint32_t bits)
-{
-	if (size < sizeof(shake128_ctx))
-	{
-		return NULL;
-	}
-
-	return shake128_init_checked(ptr, bits);
-}
-
-shake128_ctx *shake128_new(uint32_t bits)
-{
-	shake128_ctx *ctx = (shake128_ctx *)malloc(sizeof(shake128_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return shake128_init_checked(ctx, bits);
-}
-
-void shake128_delete(shake128_ctx *ctx)
-{
-	free(ctx);
 }
 
 void shake128_reset(shake128_ctx *ctx, uint32_t bits)
 {
-	memset(ctx, 0, sizeof(shake128_ctx));
-
-	ctx->hash_size = bits / 8;
-	ctx->block_size = SHAKE128_BLOCK_SIZE;
+	shake128_init(ctx, bits);
 }
 
 void shake128_update(shake128_ctx *ctx, void *data, size_t size)
@@ -144,7 +110,7 @@ void shake128_xof(void *data, size_t data_size, void *xof, size_t xof_size)
 	shake128_ctx ctx;
 
 	// Initialize the context.
-	shake128_init_checked(&ctx, xof_size * 8);
+	shake128_init(&ctx, xof_size * 8);
 
 	// Hash the data.
 	shake128_update(&ctx, data, data_size);
@@ -153,51 +119,17 @@ void shake128_xof(void *data, size_t data_size, void *xof, size_t xof_size)
 	shake128_final(&ctx, xof, xof_size);
 }
 
-static inline shake256_ctx *shake256_init_checked(void *ptr, uint32_t bits)
+void shake256_init(shake256_ctx *ctx, uint32_t bits)
 {
-	shake256_ctx *ctx = (shake256_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(shake256_ctx));
 
 	ctx->hash_size = bits / 8;
 	ctx->block_size = SHAKE256_BLOCK_SIZE;
-
-	return ctx;
-}
-
-shake256_ctx *shake256_init(void *ptr, size_t size, uint32_t bits)
-{
-	if (size < sizeof(shake256_ctx))
-	{
-		return NULL;
-	}
-
-	return shake256_init_checked(ptr, bits);
-}
-
-shake256_ctx *shake256_new(uint32_t bits)
-{
-	shake256_ctx *ctx = (shake256_ctx *)malloc(sizeof(shake256_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return shake256_init_checked(ctx, bits);
-}
-
-void shake256_delete(shake256_ctx *ctx)
-{
-	free(ctx);
 }
 
 void shake256_reset(shake256_ctx *ctx, uint32_t bits)
 {
-	memset(ctx, 0, sizeof(shake256_ctx));
-
-	ctx->hash_size = bits / 8;
-	ctx->block_size = SHAKE256_BLOCK_SIZE;
+	shake256_init(ctx, bits);
 }
 
 void shake256_update(shake256_ctx *ctx, void *data, size_t size)
@@ -215,7 +147,7 @@ void shake256_xof(void *data, size_t data_size, void *xof, size_t xof_size)
 	shake256_ctx ctx;
 
 	// Initialize the context.
-	shake256_init_checked(&ctx, xof_size * 8);
+	shake256_init(&ctx, xof_size * 8);
 
 	// Hash the data.
 	shake256_update(&ctx, data, data_size);
@@ -329,7 +261,7 @@ void cshake_common_final(sha3_ctx *ctx, void *buffer, size_t size)
 	memset(ctx, 0, sizeof(sha3_ctx));
 }
 
-sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *custom, size_t custom_size)
+void cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *custom, size_t custom_size)
 {
 	byte_t pad[16] = {0};
 	uint64_t pos = 0;
@@ -370,18 +302,15 @@ sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *
 	// Hash the state
 	sha3_hash_block(ctx);
 	ctx->message_size = 0;
-
-	return ctx;
 }
 
-static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
+void cshake128_init(shake128_ctx *ctx, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
-	shake128_ctx *ctx = (shake128_ctx *)ptr;
-
 	// Same as shake128
 	if (name == NULL && custom == NULL)
 	{
-		return shake128_init_checked(ptr, bits);
+		shake128_init(ctx, bits);
+		return;
 	}
 
 	memset(ctx, 0, sizeof(shake128_ctx));
@@ -389,59 +318,31 @@ static shake128_ctx *cshake128_init_checked(void *ptr, uint32_t bits, void *name
 	ctx->hash_size = bits / 8;
 	ctx->block_size = SHAKE128_BLOCK_SIZE;
 
-	return cshake_init_common(ctx, name, name_size, custom, custom_size);
-}
-
-shake128_ctx *cshake128_init(void *ptr, size_t size, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
-{
-	if (size < sizeof(shake128_ctx))
-	{
-		return NULL;
-	}
-
-	return cshake128_init_checked(ptr, bits, name, name_size, custom, custom_size);
-}
-
-shake128_ctx *cshake128_new(uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
-{
-	shake128_ctx *ctx = (shake128_ctx *)malloc(sizeof(shake128_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return cshake128_init_checked(ctx, bits, name, name_size, custom, custom_size);
-}
-
-void cshake128_delete(shake128_ctx *ctx)
-{
-	free(ctx);
+	cshake_init_common(ctx, name, name_size, custom, custom_size);
 }
 
 void cshake128_reset(shake128_ctx *ctx, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
-	cshake128_init_checked(ctx, bits, name, name_size, custom, custom_size);
+	cshake128_init(ctx, bits, name, name_size, custom, custom_size);
 }
 
 void cshake128_update(shake128_ctx *ctx, void *data, size_t size)
 {
-	return sha3_update(ctx, data, size);
+	sha3_update(ctx, data, size);
 }
 
 void cshake128_final(shake128_ctx *ctx, void *buffer, size_t size)
 {
-	return cshake_common_final(ctx, buffer, size);
+	cshake_common_final(ctx, buffer, size);
 }
 
-static shake256_ctx *cshake256_init_checked(void *ptr, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
+void cshake256_init(shake256_ctx *ctx, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
-	shake256_ctx *ctx = (shake256_ctx *)ptr;
-
 	// Same as shake256
 	if (name == NULL && custom == NULL)
 	{
-		return shake256_init_checked(ptr, bits);
+		shake256_init(ctx, bits);
+		return;
 	}
 
 	memset(ctx, 0, sizeof(shake256_ctx));
@@ -449,39 +350,12 @@ static shake256_ctx *cshake256_init_checked(void *ptr, uint32_t bits, void *name
 	ctx->hash_size = bits / 8;
 	ctx->block_size = SHAKE256_BLOCK_SIZE;
 
-	return cshake_init_common(ctx, name, name_size, custom, custom_size);
-}
-
-shake256_ctx *cshake256_init(void *ptr, size_t size, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
-{
-	if (size < sizeof(shake256_ctx))
-	{
-		return NULL;
-	}
-
-	return cshake256_init_checked(ptr, bits, name, name_size, custom, custom_size);
-}
-
-shake256_ctx *cshake256_new(uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
-{
-	shake256_ctx *ctx = (shake256_ctx *)malloc(sizeof(shake256_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return cshake256_init_checked(ctx, bits, name, name_size, custom, custom_size);
-}
-
-void cshake256_delete(shake256_ctx *ctx)
-{
-	free(ctx);
+	cshake_init_common(ctx, name, name_size, custom, custom_size);
 }
 
 void cshake256_reset(shake256_ctx *ctx, uint32_t bits, void *name, size_t name_size, void *custom, size_t custom_size)
 {
-	cshake256_init_checked(ctx, bits, name, name_size, custom, custom_size);
+	cshake256_init(ctx, bits, name, name_size, custom, custom_size);
 }
 
 void cshake256_update(shake256_ctx *ctx, void *data, size_t size)
