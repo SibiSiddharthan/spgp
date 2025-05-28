@@ -296,10 +296,8 @@ static void sha512_common_pre_final(sha512_ctx *ctx)
 	sha512_common_update(ctx, padding, total_padding);
 }
 
-static inline sha512_ctx *sha512_init_checked(void *ptr)
+void sha512_init(sha512_ctx *ctx)
 {
-	sha512_ctx *ctx = (sha512_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(sha512_ctx));
 
 	ctx->h0 = H512_0;
@@ -310,40 +308,11 @@ static inline sha512_ctx *sha512_init_checked(void *ptr)
 	ctx->h5 = H512_5;
 	ctx->h6 = H512_6;
 	ctx->h7 = H512_7;
-
-	return ctx;
-}
-
-sha512_ctx *sha512_init(void *ptr, size_t size)
-{
-	if (size < sizeof(sha512_ctx))
-	{
-		return NULL;
-	}
-
-	return sha512_init_checked(ptr);
-}
-
-sha512_ctx *sha512_new(void)
-{
-	sha512_ctx *ctx = (sha512_ctx *)malloc(sizeof(sha512_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return sha512_init_checked(ctx);
-}
-
-void sha512_delete(sha512_ctx *ctx)
-{
-	free(ctx);
 }
 
 void sha512_reset(sha512_ctx *ctx)
 {
-	sha512_init_checked(ctx);
+	sha512_init(ctx);
 }
 
 void sha512_update(sha512_ctx *ctx, void *data, size_t size)
@@ -377,7 +346,7 @@ void sha512_hash(void *data, size_t size, byte_t buffer[SHA512_HASH_SIZE])
 	sha512_ctx ctx;
 
 	// Initialize the context.
-	sha512_init_checked(&ctx);
+	sha512_init(&ctx);
 
 	// Hash the data.
 	sha512_update(&ctx, data, size);
@@ -386,10 +355,8 @@ void sha512_hash(void *data, size_t size, byte_t buffer[SHA512_HASH_SIZE])
 	sha512_final(&ctx, buffer);
 }
 
-static inline sha384_ctx *sha384_init_checked(void *ptr)
+void sha384_init(sha384_ctx *ctx)
 {
-	sha384_ctx *ctx = (sha384_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(sha384_ctx));
 
 	ctx->h0 = H384_0;
@@ -400,40 +367,11 @@ static inline sha384_ctx *sha384_init_checked(void *ptr)
 	ctx->h5 = H384_5;
 	ctx->h6 = H384_6;
 	ctx->h7 = H384_7;
-
-	return ctx;
-}
-
-sha384_ctx *sha384_init(void *ptr, size_t size)
-{
-	if (size < sizeof(sha384_ctx))
-	{
-		return NULL;
-	}
-
-	return sha384_init_checked(ptr);
-}
-
-sha384_ctx *sha384_new(void)
-{
-	sha384_ctx *ctx = (sha384_ctx *)malloc(sizeof(sha384_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return sha384_init_checked(ctx);
-}
-
-void sha384_delete(sha384_ctx *ctx)
-{
-	free(ctx);
 }
 
 void sha384_reset(sha384_ctx *ctx)
 {
-	sha384_init_checked(ctx);
+	sha384_init(ctx);
 }
 
 void sha384_update(sha384_ctx *ctx, void *data, size_t size)
@@ -465,7 +403,7 @@ void sha384_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZE])
 	sha384_ctx ctx;
 
 	// Initialize the context.
-	sha384_init_checked(&ctx);
+	sha384_init(&ctx);
 
 	// Hash the data.
 	sha384_update(&ctx, data, size);
@@ -474,10 +412,8 @@ void sha384_hash(void *data, size_t size, byte_t buffer[SHA384_HASH_SIZE])
 	sha384_final(&ctx, buffer);
 }
 
-static inline sha512_224_ctx *sha512_224_init_checked(void *ptr)
+void sha512_224_init(sha512_224_ctx *ctx)
 {
-	sha512_224_ctx *ctx = (sha512_224_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(sha512_224_ctx));
 
 	ctx->h0 = H512_224_0;
@@ -488,40 +424,11 @@ static inline sha512_224_ctx *sha512_224_init_checked(void *ptr)
 	ctx->h5 = H512_224_5;
 	ctx->h6 = H512_224_6;
 	ctx->h7 = H512_224_7;
-
-	return ctx;
-}
-
-sha512_224_ctx *sha512_224_init(void *ptr, size_t size)
-{
-	if (size < sizeof(sha512_224_ctx))
-	{
-		return NULL;
-	}
-
-	return sha512_224_init_checked(ptr);
-}
-
-sha512_224_ctx *sha512_224_new(void)
-{
-	sha512_224_ctx *ctx = (sha512_224_ctx *)malloc(sizeof(sha512_224_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return sha512_224_init_checked(ctx);
-}
-
-void sha512_224_delete(sha512_224_ctx *ctx)
-{
-	free(ctx);
 }
 
 void sha512_224_reset(sha512_224_ctx *ctx)
 {
-	sha512_224_init_checked(ctx);
+	sha512_224_init(ctx);
 }
 
 void sha512_224_update(sha512_224_ctx *ctx, void *data, size_t size)
@@ -551,7 +458,7 @@ void sha512_224_hash(void *data, size_t size, byte_t buffer[SHA512_224_HASH_SIZE
 	sha512_224_ctx ctx;
 
 	// Initialize the context.
-	sha512_224_init_checked(&ctx);
+	sha512_224_init(&ctx);
 
 	// Hash the data.
 	sha512_224_update(&ctx, data, size);
@@ -560,10 +467,8 @@ void sha512_224_hash(void *data, size_t size, byte_t buffer[SHA512_224_HASH_SIZE
 	sha512_224_final(&ctx, buffer);
 }
 
-static inline sha512_256_ctx *sha512_256_init_checked(void *ptr)
+void sha512_256_init(sha512_256_ctx *ctx)
 {
-	sha512_256_ctx *ctx = (sha512_256_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(sha512_256_ctx));
 
 	ctx->h0 = H512_256_0;
@@ -574,40 +479,11 @@ static inline sha512_256_ctx *sha512_256_init_checked(void *ptr)
 	ctx->h5 = H512_256_5;
 	ctx->h6 = H512_256_6;
 	ctx->h7 = H512_256_7;
-
-	return ctx;
-}
-
-sha512_256_ctx *sha512_256_init(void *ptr, size_t size)
-{
-	if (size < sizeof(sha512_256_ctx))
-	{
-		return NULL;
-	}
-
-	return sha512_256_init_checked(ptr);
-}
-
-sha512_256_ctx *sha512_256_new(void)
-{
-	sha512_256_ctx *ctx = (sha512_256_ctx *)malloc(sizeof(sha512_256_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return sha512_256_init_checked(ctx);
-}
-
-void sha512_256_delete(sha512_256_ctx *ctx)
-{
-	free(ctx);
 }
 
 void sha512_256_reset(sha512_256_ctx *ctx)
 {
-	sha512_256_init_checked(ctx);
+	sha512_256_init(ctx);
 }
 
 void sha512_256_update(sha512_256_ctx *ctx, void *data, size_t size)
@@ -637,7 +513,7 @@ void sha512_256_hash(void *data, size_t size, byte_t buffer[SHA512_256_HASH_SIZE
 	sha512_256_ctx ctx;
 
 	// Initialize the context.
-	sha512_256_init_checked(&ctx);
+	sha512_256_init(&ctx);
 
 	// Hash the data.
 	sha512_256_update(&ctx, data, size);
