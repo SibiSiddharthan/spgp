@@ -5,10 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <shake.h>
 #include <kmac.h>
-
-#include <stdlib.h>
 #include <string.h>
 
 // See NIST SP 800-185: SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash

@@ -7,8 +7,6 @@
 
 #include <shake.h>
 #include <bitscan.h>
-
-#include <stdlib.h>
 #include <string.h>
 
 // See NIST FIPS 202 : SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions

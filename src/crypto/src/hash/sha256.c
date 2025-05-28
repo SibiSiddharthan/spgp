@@ -6,8 +6,6 @@
 */
 
 #include <sha.h>
-
-#include <stdlib.h>
 #include <string.h>
 
 // See NIST FIPS 180-4 : Secure Hash Standard (SHS)

@@ -6,8 +6,6 @@
 */
 
 #include <ripemd.h>
-
-#include <stdlib.h>
 #include <string.h>
 
 // See RIPEMD-160: A Strengthened Version of RIPEMD
