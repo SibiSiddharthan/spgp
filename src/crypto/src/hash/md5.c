@@ -128,55 +128,19 @@ static void md5_hash_block(md5_ctx *ctx, byte_t block[MD5_BLOCK_SIZE])
 	ctx->d += d;
 }
 
-static inline md5_ctx *md5_init_checked(void *ptr)
+void md5_init(md5_ctx *ctx)
 {
-	md5_ctx *ctx = (md5_ctx *)ptr;
-
 	memset(ctx, 0, sizeof(md5_ctx));
 
 	ctx->a = A;
 	ctx->b = B;
 	ctx->c = C;
 	ctx->d = D;
-
-	return ctx;
-}
-
-md5_ctx *md5_init(void *ptr, size_t size)
-{
-	if (size < sizeof(md5_ctx))
-	{
-		return NULL;
-	}
-
-	return md5_init_checked(ptr);
-}
-
-md5_ctx *md5_new(void)
-{
-	md5_ctx *ctx = (md5_ctx *)malloc(sizeof(md5_ctx));
-
-	if (ctx == NULL)
-	{
-		return NULL;
-	}
-
-	return md5_init_checked(ctx);
-}
-
-void md5_delete(md5_ctx *ctx)
-{
-	free(ctx);
 }
 
 void md5_reset(md5_ctx *ctx)
 {
-	memset(ctx, 0, sizeof(md5_ctx));
-
-	ctx->a = A;
-	ctx->b = B;
-	ctx->c = C;
-	ctx->d = D;
+	md5_init(ctx);
 }
 
 void md5_update(md5_ctx *ctx, void *data, size_t size)
@@ -261,7 +225,7 @@ void md5_hash(void *data, size_t size, byte_t buffer[MD5_HASH_SIZE])
 	md5_ctx ctx;
 
 	// Initialize the context.
-	md5_init_checked(&ctx);
+	md5_init(&ctx);
 
 	// Hash the data.
 	md5_update(&ctx, data, size);
