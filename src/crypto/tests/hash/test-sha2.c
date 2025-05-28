@@ -33,19 +33,22 @@ int32_t sha224_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha224_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-					  112, buffer);
+	sha224_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				buffer);
 	status += CHECK_HASH(buffer, SHA224_HASH_SIZE, "c97ca9a559850ce97a04a96def6d99a9e0e0e2ab14e6b8df265fc0b3");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha224_ctx *ctx = sha224_new();
+	sha224_ctx ctx = {0};
+
+	sha224_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha224_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha224_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha224_final(ctx, buffer);
-	sha224_delete(ctx);
+
+	sha224_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, SHA224_HASH_SIZE, "20794655980c91d8bbb4c1ea97618a4bf03f42581948b2ee4ee7ad67");
 
@@ -74,19 +77,22 @@ int32_t sha256_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha256_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-					  112, buffer);
+	sha256_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				buffer);
 	status += CHECK_HASH(buffer, SHA256_HASH_SIZE, "cf5b16a778af8380036ce59e7b0492370b249b11e8f07a51afac45037afee9d1");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha256_ctx *ctx = sha256_new();
+	sha256_ctx ctx = {0};
+
+	sha256_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha256_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha256_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha256_final(ctx, buffer);
-	sha256_delete(ctx);
+
+	sha256_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, SHA256_HASH_SIZE, "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
 
@@ -118,20 +124,23 @@ int32_t sha384_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha384_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-					  112, buffer);
+	sha384_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				buffer);
 	status += CHECK_HASH(buffer, SHA384_HASH_SIZE,
 						 "09330c33f71147e83d192fc782cd1b4753111b173b3b05d22fa08086e3b0f712fcc7c71a557e2db966c3e9fa91746039");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha384_ctx *ctx = sha384_new();
+	sha384_ctx ctx = {0};
+
+	sha384_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha384_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha384_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha384_final(ctx, buffer);
-	sha384_delete(ctx);
+
+	sha384_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, SHA384_HASH_SIZE,
 						 "9d0e1809716474cb086e834e310a4a1ced149e9c00f248527972cec5704c2a5b07b8b3dc38ecc4ebae97ddd87f3d8985");
@@ -167,21 +176,24 @@ int32_t sha512_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha512_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-					  112, buffer);
+	sha512_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				buffer);
 	status += CHECK_HASH(
 		buffer, SHA512_HASH_SIZE,
 		"8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha512_ctx *ctx = sha512_new();
+	sha512_ctx ctx = {0};
+
+	sha512_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha512_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha512_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha512_final(ctx, buffer);
-	sha512_delete(ctx);
+
+	sha512_final(&ctx, buffer);
 
 	status += CHECK_HASH(
 		buffer, SHA512_HASH_SIZE,
@@ -203,8 +215,8 @@ int32_t sha512_224_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha512_224_hash(
-		"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112, buffer);
+	sha512_224_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+					buffer);
 	status += CHECK_HASH(buffer, SHA512_224_HASH_SIZE, "23fec5bb94d60b23308192640b0c453335d664734fe40e7268674af9");
 
 	return status;
@@ -223,8 +235,8 @@ int32_t sha512_256_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha512_256_hash(
-		"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112, buffer);
+	sha512_256_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+					buffer);
 	status += CHECK_HASH(buffer, SHA512_256_HASH_SIZE, "3928e184fb8690f840da3988121d31be65cb9d3ef83ee6146feac861e19b563a");
 
 	return status;

@@ -33,19 +33,21 @@ int32_t sha1_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha1_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-						 112, buffer);
+	sha1_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+			  buffer);
 	status += CHECK_HASH(buffer, SHA1_HASH_SIZE, "a49b2446a02c645bf419f995b67091253a04a259");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha1_ctx *ctx = sha1_new();
+	sha1_ctx ctx = {0};
+
+	sha1_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha1_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha1_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha1_final(ctx, buffer);
-	sha1_delete(ctx);
+	sha1_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, SHA1_HASH_SIZE, "34aa973cd4c4daa4f61eeb2bdbad27316534016f");
 

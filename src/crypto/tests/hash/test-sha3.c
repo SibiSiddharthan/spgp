@@ -33,19 +33,22 @@ int32_t sha3_224_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_224_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-						112, buffer);
+	sha3_224_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				  buffer);
 	status += CHECK_HASH(buffer, SHA3_224_HASH_SIZE, "543e6868e1666c1a643630df77367ae5a62a85070a51c14cbf665cbc");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_224_ctx *ctx = sha3_224_new();
+	sha3_224_ctx ctx = {0};
+
+	sha3_224_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha3_224_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha3_224_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha3_224_final(ctx, buffer);
-	sha3_224_delete(ctx);
+
+	sha3_224_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, SHA3_224_HASH_SIZE, "d69335b93325192e516a912e6d19a15cb51c6ed5c15243e7a7fd653c");
 
@@ -74,19 +77,22 @@ int32_t sha3_256_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_256_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-						112, buffer);
+	sha3_256_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				  buffer);
 	status += CHECK_HASH(buffer, SHA3_256_HASH_SIZE, "916f6061fe879741ca6469b43971dfdb28b1a32dc36cb3254e812be27aad1d18");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_256_ctx *ctx = sha3_256_new();
+	sha3_256_ctx ctx = {0};
+
+	sha3_256_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha3_256_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha3_256_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha3_256_final(ctx, buffer);
-	sha3_256_delete(ctx);
+
+	sha3_256_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, SHA3_256_HASH_SIZE, "5c8875ae474a3634ba4fd55ec85bffd661f32aca75c6d699d0cdcb6c115891c1");
 
@@ -118,20 +124,23 @@ int32_t sha3_384_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_384_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-						112, buffer);
+	sha3_384_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				  buffer);
 	status += CHECK_HASH(buffer, SHA3_384_HASH_SIZE,
 						 "79407d3b5916b59c3e30b09822974791c313fb9ecc849e406f23592d04f625dc8c709b98b43b3852b337216179aa7fc7");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_384_ctx *ctx = sha3_384_new();
+	sha3_384_ctx ctx = {0};
+
+	sha3_384_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha3_384_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha3_384_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha3_384_final(ctx, buffer);
-	sha3_384_delete(ctx);
+
+	sha3_384_final(&ctx, buffer);
 
 	status += CHECK_HASH(buffer, SHA3_384_HASH_SIZE,
 						 "eee9e24d78c1855337983451df97c8ad9eedf256c6334f8e948d252d5e0e76847aa0774ddb90a842190d2c558b4b8340");
@@ -167,21 +176,24 @@ int32_t sha3_512_test_suite(void)
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_512_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-						112, buffer);
+	sha3_512_hash("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
+				  buffer);
 	status += CHECK_HASH(
 		buffer, SHA3_512_HASH_SIZE,
 		"afebb2ef542e6579c50cad06d2e578f9f8dd6881d7dc824d26360feebf18a4fa73e3261122948efcfd492e74e82e2189ed0fb440d187f382270cb455f21dd185");
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	sha3_512_ctx *ctx = sha3_512_new();
+	sha3_512_ctx ctx = {0};
+
+	sha3_512_init(&ctx);
+
 	for (int32_t i = 0; i < 1000000; i += 50)
 	{
-		sha3_512_update(ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
+		sha3_512_update(&ctx, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50);
 	}
-	sha3_512_final(ctx, buffer);
-	sha3_512_delete(ctx);
+
+	sha3_512_final(&ctx, buffer);
 
 	status += CHECK_HASH(
 		buffer, SHA3_512_HASH_SIZE,
