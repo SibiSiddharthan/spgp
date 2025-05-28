@@ -23,18 +23,14 @@ typedef enum _kmac_algorithm
 	KMAC_256,
 } kmac_algorithm;
 
-kmac128_ctx *kmac128_init(void *ptr, size_t size, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
-kmac128_ctx *kmac128_new(uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
-void kmac128_delete(kmac128_ctx *ctx);
+void kmac128_init(kmac128_ctx *ctx, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
 void kmac128_reset(kmac128_ctx *ctx, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
 void kmac128_update(kmac128_ctx *ctx, void *data, size_t size);
 void kmac128_final(kmac128_ctx *ctx, void *buffer, size_t size);
 void kmac128(void *key, size_t key_size, void *custom, size_t custom_size, void *data, size_t data_size, void *mac, size_t mac_size);
 void kmacxof128(void *key, size_t key_size, void *custom, size_t custom_size, void *data, size_t data_size, void *xof, size_t xof_size);
 
-kmac256_ctx *kmac256_init(void *ptr, size_t size, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
-kmac256_ctx *kmac256_new(uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
-void kmac256_delete(kmac256_ctx *ctx);
+void kmac256_init(kmac256_ctx *ctx, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
 void kmac256_reset(kmac256_ctx *ctx, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size);
 void kmac256_update(kmac256_ctx *ctx, void *data, size_t size);
 void kmac256_final(kmac256_ctx *ctx, void *buffer, size_t size);
