@@ -31,21 +31,21 @@ static void selftest_sequence(uint8_t *out, size_t len, uint32_t seed)
 static void blake2b_hash(byte_t *out, size_t outlen, void *key, size_t keylen, void *in, size_t inlen)
 {
 	blake2b_param param = {.digest_size = outlen, .key_size = keylen, .depth = 1, .fanout = 1};
-	blake2b_ctx *ctx = blake2b_new(&param, key);
+	blake2b_ctx ctx = {0};
 
-	blake2b_update(ctx, in, inlen);
-	blake2b_final(ctx, out, outlen);
-	blake2b_delete(ctx);
+	blake2b_init(&ctx, &param, key);
+	blake2b_update(&ctx, in, inlen);
+	blake2b_final(&ctx, out, outlen);
 }
 
 static void blake2s_hash(byte_t *out, size_t outlen, void *key, size_t keylen, void *in, size_t inlen)
 {
 	blake2s_param param = {.digest_size = outlen, .key_size = keylen, .depth = 1, .fanout = 1};
-	blake2s_ctx *ctx = blake2s_new(&param, key);
+	blake2s_ctx ctx = {0};
 
-	blake2s_update(ctx, in, inlen);
-	blake2s_final(ctx, out, outlen);
-	blake2s_delete(ctx);
+	blake2s_init(&ctx, &param, key);
+	blake2s_update(&ctx, in, inlen);
+	blake2s_final(&ctx, out, outlen);
 }
 
 int32_t blake2b_selftest()
@@ -55,10 +55,10 @@ int32_t blake2b_selftest()
 	const size_t blake2b_in_len[6] = {0, 3, 128, 129, 255, 1024};
 	byte_t in[1024], md[64], key[64];
 	blake2b_param param = {.digest_size = 32, .key_size = 0, .depth = 1, .fanout = 1};
-	blake2b_ctx *ctx;
+	blake2b_ctx ctx = {0};
 
 	// 256-bit hash for testing
-	ctx = blake2b_new(&param, NULL);
+	blake2b_init(&ctx, &param, NULL);
 
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -69,15 +69,15 @@ int32_t blake2b_selftest()
 			size_t inlen = blake2b_in_len[j];
 			selftest_sequence(in, inlen, inlen); // unkeyed hash
 			blake2b_hash(md, outlen, NULL, 0, in, inlen);
-			blake2b_update(ctx, md, outlen);        // hash the hash
+			blake2b_update(&ctx, md, outlen);       // hash the hash
 			selftest_sequence(key, outlen, outlen); // keyed hash
 			blake2b_hash(md, outlen, key, outlen, in, inlen);
-			blake2b_update(ctx, md, outlen); // hash the hash
+			blake2b_update(&ctx, md, outlen); // hash the hash
 		}
 	}
 
 	// Compute and compare the hash of hashes
-	blake2b_final(ctx, md, 32);
+	blake2b_final(&ctx, md, 32);
 	return CHECK_HASH(md, 32, "c23a7800d98123bd10f506c61e29da5603d763b8bbad2e737f5e765a7bccd475");
 }
 
@@ -88,10 +88,10 @@ int blake2s_selftest()
 	const size_t b2s_in_len[6] = {0, 3, 64, 65, 255, 1024};
 	byte_t in[1024], md[32], key[32];
 	blake2s_param param = {.digest_size = 32, .key_size = 0, .depth = 1, .fanout = 1};
-	blake2s_ctx *ctx;
+	blake2s_ctx ctx = {0};
 
 	// 256-bit hash for testing.
-	ctx = blake2s_new(&param, NULL);
+	blake2s_init(&ctx, &param, NULL);
 
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -101,15 +101,15 @@ int blake2s_selftest()
 			size_t inlen = b2s_in_len[j];
 			selftest_sequence(in, inlen, inlen); // unkeyed hash
 			blake2s_hash(md, outlen, NULL, 0, in, inlen);
-			blake2s_update(ctx, md, outlen);        // hash the hash
+			blake2s_update(&ctx, md, outlen);       // hash the hash
 			selftest_sequence(key, outlen, outlen); // keyed hash
 			blake2s_hash(md, outlen, key, outlen, in, inlen);
-			blake2s_update(ctx, md, outlen); // hash the hash
+			blake2s_update(&ctx, md, outlen); // hash the hash
 		}
 	}
 
 	// Compute and compare the hash of hashes.
-	blake2s_final(ctx, md, 32);
+	blake2s_final(&ctx, md, 32);
 	return CHECK_HASH(md, 32, "6a411f08ce25adcdfb02aba641451cec53c598b24f4fc787fbdc88797f4c1dfe");
 }
 
