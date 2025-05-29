@@ -210,7 +210,7 @@ static void ripemd160_hash_block(ripemd160_ctx *ctx, byte_t block[RIPEMD160_BLOC
 	ctx->h0 = t;
 }
 
-ripemd160_ctx *ripemd160_init(ripemd160_ctx *ctx)
+void ripemd160_init(ripemd160_ctx *ctx)
 {
 	memset(ctx, 0, sizeof(ripemd160_ctx));
 

@@ -66,7 +66,7 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 		bparam.depth = 1;
 		bparam.fanout = 1;
 
-		blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
+		blake2b_init(&bctx, &bparam, NULL);
 
 		// BLAKE2B(LE32(T) || A)
 		blake2b_update(&bctx, &output_size, 4);
@@ -86,7 +86,7 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 		bparam.fanout = 1;
 
 		// First iteration
-		blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
+		blake2b_init(&bctx, &bparam, NULL);
 
 		blake2b_update(&bctx, &output_size, 4);
 		blake2b_update(&bctx, input, input_size);
@@ -100,7 +100,7 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 		// Other iterations
 		for (uint32_t i = 1; i < r; ++i)
 		{
-			blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
+			blake2b_init(&bctx, &bparam, NULL);
 			blake2b_update(&bctx, h, 64);
 			blake2b_final(&bctx, h, 64);
 
@@ -112,7 +112,7 @@ static void H(byte_t *input, uint32_t input_size, byte_t *output, uint32_t outpu
 		// Last iteration
 		bparam.digest_size = output_size - (32 * r);
 
-		blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
+		blake2b_init(&bctx, &bparam, NULL);
 		blake2b_update(&bctx, h, 64);
 		blake2b_final(&bctx, h, bparam.digest_size);
 
@@ -471,7 +471,7 @@ static void argon2_generate_h0(argon2_ctx *actx, void *password, uint32_t passwo
 	blake2b_param bparam = BLAKE2_PARAM_INIT(64, 0);
 	blake2b_ctx bctx;
 
-	blake2b_init(&bctx, sizeof(blake2b_ctx), &bparam, NULL);
+	blake2b_init(&bctx, &bparam, NULL);
 
 	blake2b_update(&bctx, &actx->parallel, 4);
 	blake2b_update(&bctx, &actx->key_size, 4);

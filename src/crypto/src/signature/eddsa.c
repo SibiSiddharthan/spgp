@@ -268,7 +268,7 @@ static ed25519_signature *ed25519_sign_internal(ec_group *group, ed25519_key *ke
 	byte_t prehash[SHA512_HASH_SIZE];
 	byte_t hash[SHA512_HASH_SIZE];
 
-	sha512_init(&hctx, sizeof(sha512_ctx));
+	sha512_init(&hctx);
 
 	bignum_ctx_start(bctx, ctx_size);
 
@@ -386,7 +386,7 @@ static uint32_t ed25519_verify_internal(ec_group *group, ed25519_key *key, ed255
 		goto end;
 	}
 
-	sha512_init(&hctx, sizeof(sha512_ctx));
+	sha512_init(&hctx);
 
 	sha512_update(&hctx, edsign, ED25519_KEY_OCTETS);
 	sha512_update(&hctx, key->public_key, ED25519_KEY_OCTETS);
@@ -453,7 +453,7 @@ static ed448_signature *ed448_sign_internal(ec_group *group, ed448_key *key, ed4
 	byte_t prehash[ED448_SIGN_OCTETS];
 	byte_t hash[ED448_SIGN_OCTETS];
 
-	shake256_init(&hctx, sizeof(shake256_ctx), 912);
+	shake256_init(&hctx, 912);
 
 	bignum_ctx_start(bctx, ctx_size);
 
@@ -580,7 +580,7 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 		goto end;
 	}
 
-	shake256_init(&hctx, sizeof(shake256_ctx), 912);
+	shake256_init(&hctx, 912);
 
 	shake256_reset(&hctx, 912);
 	dom4_shake256_update(&hctx, 0, context, context_size);
@@ -658,7 +658,7 @@ static ed25519_signature *ed25519ph_sign_internal(ec_group *group, ed25519_key *
 	s = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
 	d = bignum_ctx_allocate_bignum(bctx, SHA512_HASH_SIZE * 8);
 
-	sha512_init(&hctx, sizeof(sha512_ctx));
+	sha512_init(&hctx);
 
 	// Hash the message
 	sha512_update(&hctx, message, message_size);
@@ -777,7 +777,7 @@ static uint32_t ed25519ph_verify_internal(ec_group *group, ed25519_key *key, ed2
 		goto end;
 	}
 
-	sha512_init(&hctx, sizeof(sha512_ctx));
+	sha512_init(&hctx);
 
 	sha512_update(&hctx, message, message_size);
 	sha512_final(&hctx, hash);
@@ -860,7 +860,7 @@ static ed448_signature *ed448ph_sign_internal(ec_group *group, ed448_key *key, e
 	d = bignum_ctx_allocate_bignum(bctx, ED448_SIGN_OCTETS * 8);
 
 	// Hash the message
-	shake256_init(&hctx, sizeof(shake256_ctx), 512);
+	shake256_init(&hctx, 512);
 	shake256_update(&hctx, message, message_size);
 	shake256_final(&hctx, mhash, 64);
 
@@ -983,7 +983,7 @@ static uint32_t ed448ph_verify_internal(ec_group *group, ed448_key *key, ed448_s
 		goto end;
 	}
 
-	shake256_init(&hctx, sizeof(shake256_ctx), 512);
+	shake256_init(&hctx, 512);
 	shake256_update(&hctx, message, message_size);
 	shake256_final(&hctx, hash, 64);
 

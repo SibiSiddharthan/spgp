@@ -91,7 +91,7 @@ int32_t cshake128_test_suite(void)
 
 	hex_to_block(input, 4, "00010203");
 
-	cshake128_init(&sctx, sizeof(shake128_ctx), 256, NULL, 0, "Email Signature", 15);
+	cshake128_init(&sctx, 256, NULL, 0, "Email Signature", 15);
 	cshake128_update(&sctx, input, 4);
 	cshake128_final(&sctx, buffer, 128);
 
@@ -105,7 +105,7 @@ int32_t cshake128_test_suite(void)
 				 "797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b"
 				 "5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7");
 
-	cshake128_init(&sctx, sizeof(shake128_ctx), 256, NULL, 0, "Email Signature", 15);
+	cshake128_init(&sctx, 256, NULL, 0, "Email Signature", 15);
 	cshake128_update(&sctx, input, 200);
 	cshake128_final(&sctx, buffer, 128);
 
@@ -126,7 +126,7 @@ int32_t cshake256_test_suite(void)
 
 	hex_to_block(input, 4, "00010203");
 
-	cshake256_init(&sctx, sizeof(shake128_ctx), 512, NULL, 0, "Email Signature", 15);
+	cshake256_init(&sctx, 512, NULL, 0, "Email Signature", 15);
 	cshake256_update(&sctx, input, 4);
 	cshake256_final(&sctx, buffer, 128);
 
@@ -142,7 +142,7 @@ int32_t cshake256_test_suite(void)
 				 "797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b"
 				 "5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7");
 
-	cshake256_init(&sctx, sizeof(shake128_ctx), 512, NULL, 0, "Email Signature", 15);
+	cshake256_init(&sctx, 512, NULL, 0, "Email Signature", 15);
 	cshake256_update(&sctx, input, 200);
 	cshake256_final(&sctx, buffer, 128);
 

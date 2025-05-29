@@ -13,7 +13,7 @@
 // From shake.c
 uint8_t left_encode(uint64_t x, byte_t *o);
 uint8_t right_encode(uint64_t x, byte_t *o);
-sha3_ctx *cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *custom, size_t custom_size);
+void cshake_init_common(sha3_ctx *ctx, void *name, size_t name_size, void *custom, size_t custom_size);
 void cshake_common_final(sha3_ctx *ctx, void *buffer, size_t size);
 
 // From sha3.c
@@ -29,7 +29,7 @@ static void kmac_init_common(sha3_ctx *ctx, void *key, size_t key_size, void *cu
 	// X = bytepad(encode_string(K), B) || X || right_encode(L)
 	// left_encode(B) || left_encode(K) || K || padding
 
-	ctx = cshake_init_common(ctx, "KMAC", 4, custom, custom_size);
+	cshake_init_common(ctx, "KMAC", 4, custom, custom_size);
 
 	pos = left_encode(ctx->block_size, pad);
 	sha3_update(ctx, pad, pos);
@@ -120,7 +120,7 @@ void kmacxof128(void *key, size_t key_size, void *custom, size_t custom_size, vo
 	kmac128_final(&ctx, xof, xof_size);
 }
 
-kmac256_ctx *kmac256_init(kmac256_ctx *ctx, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size)
+void kmac256_init(kmac256_ctx *ctx, uint32_t bits, void *key, size_t key_size, void *custom, size_t custom_size)
 {
 	memset(ctx, 0, sizeof(kmac256_ctx));
 
