@@ -125,131 +125,131 @@ hmac_ctx *hmac_init(void *ptr, size_t size, hash_algorithm algorithm, void *key,
 	case HASH_MD5:
 	{
 		hash_size = MD5_HASH_SIZE;
-		block_size = MD5_BLOCK_SIZE;
-		_ctx = md5_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))md5_reset;
 		_update = (void (*)(void *, void *, size_t))md5_update;
 		_final = (void (*)(void *, void *))md5_final;
+
+		md5_init(_ctx);
 	}
 	break;
 	case HASH_RIPEMD160:
 	{
 		hash_size = RIPEMD160_HASH_SIZE;
-		block_size = RIPEMD160_BLOCK_SIZE;
-		_ctx = ripemd160_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))ripemd160_reset;
 		_update = (void (*)(void *, void *, size_t))ripemd160_update;
 		_final = (void (*)(void *, void *))ripemd160_final;
+
+		ripemd160_init(_ctx);
 	}
 	break;
 	case HASH_SHA1:
 	{
 		hash_size = SHA1_HASH_SIZE;
-		block_size = SHA1_BLOCK_SIZE;
-		_ctx = sha1_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha1_reset;
 		_update = (void (*)(void *, void *, size_t))sha1_update;
 		_final = (void (*)(void *, void *))sha1_final;
+
+		sha1_init(_ctx);
 	}
 	break;
 	case HASH_SHA224:
 	{
 		hash_size = SHA224_HASH_SIZE;
-		block_size = SHA256_BLOCK_SIZE;
-		_ctx = sha224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha224_reset;
 		_update = (void (*)(void *, void *, size_t))sha224_update;
 		_final = (void (*)(void *, void *))sha224_final;
+
+		sha224_init(_ctx);
 	}
 	break;
 	case HASH_SHA256:
 	{
 		hash_size = SHA256_HASH_SIZE;
-		block_size = SHA256_BLOCK_SIZE;
-		_ctx = sha256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha256_reset;
 		_update = (void (*)(void *, void *, size_t))sha256_update;
 		_final = (void (*)(void *, void *))sha256_final;
+
+		sha256_init(_ctx);
 	}
 	break;
 	case HASH_SHA384:
 	{
 		hash_size = SHA384_HASH_SIZE;
-		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha384_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha384_reset;
 		_update = (void (*)(void *, void *, size_t))sha384_update;
 		_final = (void (*)(void *, void *))sha384_final;
+
+		sha384_init(_ctx);
 	}
 	break;
 	case HASH_SHA512:
 	{
 		hash_size = SHA512_HASH_SIZE;
-		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_update;
 		_final = (void (*)(void *, void *))sha512_final;
+
+		sha512_init(_ctx);
 	}
 	break;
 	case HASH_SHA512_224:
 	{
 		hash_size = SHA512_224_HASH_SIZE;
-		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_224_update;
 		_final = (void (*)(void *, void *))sha512_224_final;
+
+		sha512_224_init(_ctx);
 	}
 	break;
 	case HASH_SHA512_256:
 	{
 		hash_size = SHA512_256_HASH_SIZE;
-		block_size = SHA512_BLOCK_SIZE;
-		_ctx = sha512_256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha512_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha512_256_update;
 		_final = (void (*)(void *, void *))sha512_256_final;
+
+		sha512_256_init(_ctx);
 	}
 	break;
 	case HASH_SHA3_224:
 	{
 		hash_size = SHA3_224_HASH_SIZE;
-		block_size = SHA3_224_BLOCK_SIZE;
-		_ctx = sha3_224_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha3_224_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_224_update;
 		_final = (void (*)(void *, void *))sha3_224_final;
+
+		sha3_224_init(_ctx);
 	}
 	break;
 	case HASH_SHA3_256:
 	{
 		hash_size = SHA3_256_HASH_SIZE;
-		block_size = SHA3_256_BLOCK_SIZE;
-		_ctx = sha3_256_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha3_256_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_256_update;
 		_final = (void (*)(void *, void *))sha3_256_final;
+
+		sha3_256_init(_ctx);
 	}
 	break;
 	case HASH_SHA3_384:
 	{
 		hash_size = SHA3_384_HASH_SIZE;
-		block_size = SHA3_384_BLOCK_SIZE;
-		_ctx = sha3_384_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha3_384_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_384_update;
 		_final = (void (*)(void *, void *))sha3_384_final;
+
+		sha3_384_init(_ctx);
 	}
 	break;
 	case HASH_SHA3_512:
 	{
 		hash_size = SHA3_512_HASH_SIZE;
-		block_size = SHA3_512_BLOCK_SIZE;
-		_ctx = sha3_512_init(_ctx, ctx_size);
 		_reset = (void (*)(void *))sha3_512_reset;
 		_update = (void (*)(void *, void *, size_t))sha3_512_update;
 		_final = (void (*)(void *, void *))sha3_512_final;
+
+		sha3_512_init(_ctx);
 	}
 	break;
 	default:
