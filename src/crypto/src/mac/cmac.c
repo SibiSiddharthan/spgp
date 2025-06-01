@@ -10,6 +10,7 @@
 #include <aes.h>
 #include <aria.h>
 #include <camellia.h>
+#include <cast5.h>
 #include <des.h>
 #include <twofish.h>
 
@@ -37,6 +38,8 @@ static inline size_t get_key_ctx_size(cipher_algorithm algorithm)
 	case CIPHER_CAMELLIA192:
 	case CIPHER_CAMELLIA256:
 		return sizeof(camellia_key);
+	case CIPHER_CAST5:
+		return sizeof(cast5_key);
 	case CIPHER_TDES:
 		return sizeof(tdes_key);
 	case CIPHER_TWOFISH128:
@@ -59,6 +62,7 @@ static inline byte_t cipher_key_size_validate(cipher_algorithm algorithm, byte_t
 	case CIPHER_ARIA128:
 	case CIPHER_CAMELLIA128:
 	case CIPHER_TWOFISH128:
+	case CIPHER_CAST5:
 		required_size = 16;
 		break;
 	case CIPHER_AES192:
@@ -136,6 +140,11 @@ static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
 		break;
 	case CIPHER_CAMELLIA256:
 		camellia256_key_init(cctx->_key, key);
+		break;
+
+	// CAST-5
+	case CIPHER_CAST5:
+		cast5_key_init(cctx->_key, key);
 		break;
 
 	// TDES
@@ -346,6 +355,9 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cipher_algorithm algorithm, void *ke
 	case CIPHER_TWOFISH256:
 		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
 		break;
+	case CIPHER_CAST5:
+		block_size = CAST5_BLOCK_SIZE;
+		_encrypt = (void (*)(void *, void *, void *))cast5_encrypt_block;
 	case CIPHER_TDES:
 		block_size = DES_BLOCK_SIZE;
 		_encrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;

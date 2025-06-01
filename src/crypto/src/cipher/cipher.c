@@ -14,6 +14,7 @@
 #include <aes.h>
 #include <aria.h>
 #include <camellia.h>
+#include <cast5.h>
 #include <des.h>
 #include <twofish.h>
 #include <chacha20.h>
@@ -37,6 +38,9 @@ static inline size_t key_ctx_size(cipher_algorithm algorithm)
 	case CIPHER_CAMELLIA192:
 	case CIPHER_CAMELLIA256:
 		return sizeof(camellia_key);
+	// CAST-5
+	case CIPHER_CAST5:
+		return sizeof(cast5_key);
 	// CHACHA
 	case CIPHER_CHACHA20:
 		return sizeof(chacha20_key);
@@ -90,6 +94,7 @@ static inline byte_t cipher_key_size_validate(cipher_algorithm algorithm, byte_t
 	case CIPHER_ARIA128:
 	case CIPHER_CAMELLIA128:
 	case CIPHER_TWOFISH128:
+	case CIPHER_CAST5:
 		required_size = 16;
 		break;
 	case CIPHER_AES192:
@@ -169,6 +174,11 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 		camellia256_key_init(cctx->_key, key);
 		break;
 
+	// CAST-5
+	case CIPHER_CAST5:
+		cast5_key_init(cctx->_key, key);
+		break;
+
 	// CHACHA
 	// case CIPHER_CHACHA20:
 	//	chacha20_key_init(_ctx, ctx_size, key, NULL);
@@ -217,6 +227,7 @@ size_t cipher_key_size(cipher_algorithm algorithm)
 	case CIPHER_ARIA128:
 	case CIPHER_CAMELLIA128:
 	case CIPHER_TWOFISH128:
+	case CIPHER_CAST5:
 		return 16;
 	case CIPHER_AES192:
 	case CIPHER_ARIA192:
@@ -245,7 +256,7 @@ size_t cipher_block_size(cipher_algorithm algorithm)
 	}
 
 	// 64 bit block ciphers
-	if (algorithm == CIPHER_TDES)
+	if (algorithm == CIPHER_TDES || algorithm == CIPHER_CAST5)
 	{
 		return 8;
 	}
@@ -262,7 +273,7 @@ size_t cipher_iv_size(cipher_algorithm algorithm)
 	}
 
 	// 64 bit block ciphers
-	if (algorithm == CIPHER_TDES)
+	if (algorithm == CIPHER_TDES || algorithm == CIPHER_CAST5)
 	{
 		return 8;
 	}
@@ -352,6 +363,12 @@ cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm
 	case CIPHER_CAMELLIA256:
 		_encrypt = (void (*)(void *, void *, void *))camellia256_encrypt_block;
 		_decrypt = (void (*)(void *, void *, void *))camellia256_decrypt_block;
+		break;
+
+	// CAST-5
+	case CIPHER_CAST5:
+		_encrypt = (void (*)(void *, void *, void *))cast5_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))cast5_decrypt_block;
 		break;
 
 	// CHACHA
