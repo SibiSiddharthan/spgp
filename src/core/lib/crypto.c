@@ -140,9 +140,10 @@ static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algo
 	{
 	case PGP_PLAINTEXT:
 	case PGP_IDEA:
-	case PGP_CAST5_128:
 	case PGP_BLOWFISH:
 		return 0; // Unimplemented
+	case PGP_CAST5_128:
+		return CIPHER_CAST5;
 	case PGP_TDES:
 		return CIPHER_TDES;
 	case PGP_AES_128:
