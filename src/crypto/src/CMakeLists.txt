@@ -42,6 +42,7 @@ ec/x448.c
 cipher/aes.c
 cipher/aria.c
 cipher/camellia.c
+cipher/cast5.c
 cipher/chacha20.c
 cipher/des.c
 cipher/twofish.c

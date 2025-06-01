@@ -353,7 +353,7 @@ void cast5_key_init(cast5_key *expanded_key, byte_t key[CAST5_KEY_SIZE])
 	expanded_key->km[12] = S5[((x[2] >> 24) & 0xFF)] ^ S6[((x[2] >> 16) & 0xFF)] ^ S7[((x[1] >> 0) & 0xFF)] ^ S8[((x[1] >> 8) & 0xFF)] ^ S5[((x[0] >> 0) & 0xFF)];
 	expanded_key->km[13] = S5[((x[2] >> 8) & 0xFF)] ^ S6[((x[2] >> 0) & 0xFF)] ^ S7[((x[1] >> 16) & 0xFF)] ^ S8[((x[1] >> 24) & 0xFF)] ^ S6[((x[1] >> 0) & 0xFF)];
 	expanded_key->km[14] = S5[((x[3] >> 24) & 0xFF)] ^ S6[((x[3] >> 16) & 0xFF)] ^ S7[((x[0] >> 0) & 0xFF)] ^ S8[((x[0] >> 8) & 0xFF)] ^ S7[((x[2] >> 24) & 0xFF)];
-	expanded_key->km[16] = S5[((x[3] >> 8) & 0xFF)] ^ S6[((x[3] >> 0) & 0xFF)] ^ S7[((x[0] >> 16) & 0xFF)] ^ S8[((x[0] >> 24) & 0xFF)] ^ S8[((x[3] >> 16) & 0xFF)];
+	expanded_key->km[15] = S5[((x[3] >> 8) & 0xFF)] ^ S6[((x[3] >> 0) & 0xFF)] ^ S7[((x[0] >> 16) & 0xFF)] ^ S8[((x[0] >> 24) & 0xFF)] ^ S8[((x[3] >> 16) & 0xFF)];
 
 	// Calculate kr
 	z[0] = x[0] ^ S5[((x[3] >> 16) & 0xFF)] ^ S6[((x[3] >> 0) & 0xFF)] ^ S7[((x[3] >> 24) & 0xFF)] ^ S8[((x[3] >> 8) & 0xFF)] ^ S7[((x[2] >> 24) & 0xFF)];
@@ -394,7 +394,7 @@ void cast5_key_init(cast5_key *expanded_key, byte_t key[CAST5_KEY_SIZE])
 	expanded_key->kr[12] = S5[((x[2] >> 24) & 0xFF)] ^ S6[((x[2] >> 16) & 0xFF)] ^ S7[((x[1] >> 0) & 0xFF)] ^ S8[((x[1] >> 8) & 0xFF)] ^ S5[((x[0] >> 0) & 0xFF)];
 	expanded_key->kr[13] = S5[((x[2] >> 8) & 0xFF)] ^ S6[((x[2] >> 0) & 0xFF)] ^ S7[((x[1] >> 16) & 0xFF)] ^ S8[((x[1] >> 24) & 0xFF)] ^ S6[((x[1] >> 0) & 0xFF)];
 	expanded_key->kr[14] = S5[((x[3] >> 24) & 0xFF)] ^ S6[((x[3] >> 16) & 0xFF)] ^ S7[((x[0] >> 0) & 0xFF)] ^ S8[((x[0] >> 8) & 0xFF)] ^ S7[((x[2] >> 24) & 0xFF)];
-	expanded_key->kr[16] = S5[((x[3] >> 8) & 0xFF)] ^ S6[((x[3] >> 0) & 0xFF)] ^ S7[((x[0] >> 16) & 0xFF)] ^ S8[((x[0] >> 24) & 0xFF)] ^ S8[((x[3] >> 16) & 0xFF)];
+	expanded_key->kr[15] = S5[((x[3] >> 8) & 0xFF)] ^ S6[((x[3] >> 0) & 0xFF)] ^ S7[((x[0] >> 16) & 0xFF)] ^ S8[((x[0] >> 24) & 0xFF)] ^ S8[((x[3] >> 16) & 0xFF)];
 }
 
 // clang-format on
