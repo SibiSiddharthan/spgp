@@ -90,6 +90,7 @@ crypto_cipher_tests(
 aes
 aria
 camellia
+cast5
 chacha20
 des
 twofish
