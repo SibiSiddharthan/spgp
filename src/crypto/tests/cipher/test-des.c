@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #include <des.h>
 
 #include <test.h>

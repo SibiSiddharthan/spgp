@@ -93,6 +93,7 @@ camellia
 cast5
 chacha20
 des
+idea
 twofish
 
 # modes
