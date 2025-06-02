@@ -45,6 +45,7 @@ cipher/camellia.c
 cipher/cast5.c
 cipher/chacha20.c
 cipher/des.c
+cipher/idea.c
 cipher/twofish.c
 cipher/cipher.c
 cipher/aead/ccm.c

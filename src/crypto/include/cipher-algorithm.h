@@ -26,6 +26,8 @@ typedef enum _cipher_algorithm
 	CIPHER_CAST5,
 	// CHACHA
 	CIPHER_CHACHA20,
+	// IDEA
+	CIPHER_IDEA,
 	// TDES
 	CIPHER_TDES,
 	// TWOFISH
