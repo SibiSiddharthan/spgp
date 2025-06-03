@@ -183,12 +183,13 @@ static inline uint32_t F(blowfish_key *key, uint32_t x)
 	return ((key->sbox0[a] + key->sbox1[b]) ^ key->sbox2[c]) + key->sbox3[d];
 }
 
-void blowfish_key_init(blowfish_key *expanded_key, byte_t key[BLOWFISH_KEY_SIZE])
+static void blowfish_key_init(blowfish_key *expanded_key, byte_t *key, byte_t size)
 {
 	byte_t data[BLOWFISH_BLOCK_SIZE] = {0};
 
 	uint32_t *k = (uint32_t *)key;
 	uint32_t *p = (uint32_t *)data;
+	uint32_t n = size / sizeof(uint32_t);
 
 	// Copy Initial P data
 	memcpy(expanded_key->round_key, P, sizeof(P));
@@ -200,16 +201,21 @@ void blowfish_key_init(blowfish_key *expanded_key, byte_t key[BLOWFISH_KEY_SIZE]
 	memcpy(expanded_key->sbox3, S3, sizeof(S3));
 
 	// XOR with P
-	for (uint32_t i = 0; i < 4; ++i)
-	{
-		expanded_key->round_key[(i * 4) + 0] ^= BSWAP_32(k[0]);
-		expanded_key->round_key[(i * 4) + 1] ^= BSWAP_32(k[1]);
-		expanded_key->round_key[(i * 4) + 2] ^= BSWAP_32(k[2]);
-		expanded_key->round_key[(i * 4) + 3] ^= BSWAP_32(k[3]);
-	}
+	uint32_t x = 0;
+	uint32_t y = 0;
 
-	expanded_key->round_key[16] ^= BSWAP_32(k[0]);
-	expanded_key->round_key[17] ^= BSWAP_32(k[1]);
+	for (uint32_t i = 0; i < (BLOWFISH_MAX_ROUNDS + 2); ++i)
+	{
+		expanded_key->round_key[x] ^= BSWAP_32(k[y]);
+
+		++x;
+		++y;
+
+		if (y == n)
+		{
+			y = 0;
+		}
+	}
 
 	// Initialize Round Keys
 	for (uint32_t i = 0; i < (BLOWFISH_MAX_ROUNDS + 2); i += 2)
@@ -252,6 +258,16 @@ void blowfish_key_init(blowfish_key *expanded_key, byte_t key[BLOWFISH_KEY_SIZE]
 		expanded_key->sbox3[(i * 2) + 0] = BSWAP_32(p[0]);
 		expanded_key->sbox3[(i * 2) + 1] = BSWAP_32(p[1]);
 	}
+}
+
+void blowfish64_key_init(blowfish_key *expanded_key, byte_t key[BLOWFISH64_KEY_SIZE])
+{
+	blowfish_key_init(expanded_key, key, BLOWFISH64_KEY_SIZE);
+}
+
+void blowfish128_key_init(blowfish_key *expanded_key, byte_t key[BLOWFISH128_KEY_SIZE])
+{
+	blowfish_key_init(expanded_key, key, BLOWFISH128_KEY_SIZE);
 }
 
 void blowfish_encrypt_block(blowfish_key *key, byte_t plaintext[BLOWFISH_BLOCK_SIZE], byte_t ciphertext[BLOWFISH_BLOCK_SIZE])
