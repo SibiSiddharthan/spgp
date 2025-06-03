@@ -44,6 +44,8 @@ void idea_key_init(idea_key *expanded_key, byte_t key[IDEA_KEY_SIZE])
 	uint64_t k1 = 0, k2 = 0, k3 = 0, k4 = 0;
 	uint64_t *k = (uint64_t *)key;
 
+	memset(expanded_key, 0, sizeof(idea_key));
+
 	// First 8 blocks of round keys are just the key itself
 	memcpy(expanded_key->k, key, IDEA_KEY_SIZE);
 

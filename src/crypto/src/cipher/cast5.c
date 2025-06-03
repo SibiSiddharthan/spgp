@@ -309,6 +309,8 @@ void cast5_key_init(cast5_key *expanded_key, byte_t key[CAST5_KEY_SIZE])
 	uint32_t z[4] = {0};
 	uint32_t *k = (uint32_t *)key;
 
+	memset(expanded_key,0, sizeof(cast5_key));
+
 	x[0] = BSWAP_32(k[0]);
 	x[1] = BSWAP_32(k[1]);
 	x[2] = BSWAP_32(k[2]);
