@@ -19,7 +19,7 @@
 
 typedef struct _cast5_key
 {
-	uint32_t km[16], kr[16];
+	uint32_t km[CAST5_MAX_ROUNDS], kr[CAST5_MAX_ROUNDS];
 } cast5_key;
 
 void cast5_key_init(cast5_key *expanded_key, byte_t key[CAST5_KEY_SIZE]);
