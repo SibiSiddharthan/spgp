@@ -89,6 +89,7 @@ prime
 crypto_cipher_tests(
 aes
 aria
+blowfish
 camellia
 cast5
 chacha20
