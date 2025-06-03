@@ -138,11 +138,10 @@ static cipher_algorithm pgp_algorithm_to_cipher_algorithm(pgp_symmetric_key_algo
 {
 	switch (algorithm)
 	{
-	case PGP_PLAINTEXT:
-	case PGP_BLOWFISH:
-	return 0; // Unimplemented
 	case PGP_IDEA:
 		return CIPHER_IDEA;
+	case PGP_BLOWFISH:
+		return CIPHER_BLOWFISH128;
 	case PGP_CAST5_128:
 		return CIPHER_CAST5;
 	case PGP_TDES:
