@@ -183,7 +183,7 @@ static inline uint32_t F(blowfish_key *key, uint32_t x)
 	return ((key->sbox0[a] + key->sbox1[b]) ^ key->sbox2[c]) + key->sbox3[d];
 }
 
-static void blowfish_key_init(blowfish_key *expanded_key, byte_t *key, byte_t size)
+static void blowfish_key_init_common(blowfish_key *expanded_key, byte_t *key, byte_t size)
 {
 	byte_t data[BLOWFISH_BLOCK_SIZE] = {0};
 
@@ -262,12 +262,12 @@ static void blowfish_key_init(blowfish_key *expanded_key, byte_t *key, byte_t si
 
 void blowfish64_key_init(blowfish_key *expanded_key, byte_t key[BLOWFISH64_KEY_SIZE])
 {
-	blowfish_key_init(expanded_key, key, BLOWFISH64_KEY_SIZE);
+	blowfish_key_init_common(expanded_key, key, BLOWFISH64_KEY_SIZE);
 }
 
 void blowfish128_key_init(blowfish_key *expanded_key, byte_t key[BLOWFISH128_KEY_SIZE])
 {
-	blowfish_key_init(expanded_key, key, BLOWFISH128_KEY_SIZE);
+	blowfish_key_init_common(expanded_key, key, BLOWFISH128_KEY_SIZE);
 }
 
 void blowfish_encrypt_block(blowfish_key *key, byte_t plaintext[BLOWFISH_BLOCK_SIZE], byte_t ciphertext[BLOWFISH_BLOCK_SIZE])
