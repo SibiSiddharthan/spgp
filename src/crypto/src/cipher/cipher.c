@@ -21,7 +21,7 @@
 #include <twofish.h>
 #include <chacha20.h>
 
-static inline size_t key_ctx_size(cipher_algorithm algorithm)
+static inline size_t get_key_ctx_size(cipher_algorithm algorithm)
 {
 	switch (algorithm)
 	{
@@ -237,12 +237,12 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 
 size_t cipher_ctx_size(cipher_algorithm algorithm)
 {
-	return sizeof(cipher_ctx) + key_ctx_size(algorithm);
+	return sizeof(cipher_ctx) + get_key_ctx_size(algorithm);
 }
 
 size_t cipher_aead_ctx_size(cipher_algorithm algorithm, cipher_aead_algorithm aead)
 {
-	return sizeof(cipher_ctx) + key_ctx_size(algorithm) + aead_ctx_size(aead);
+	return sizeof(cipher_ctx) + get_key_ctx_size(algorithm) + aead_ctx_size(aead);
 }
 
 size_t cipher_key_size(cipher_algorithm algorithm)
@@ -318,7 +318,7 @@ cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm
 {
 	cipher_ctx *cctx = (cipher_ctx *)ptr;
 
-	size_t ctx_size = key_ctx_size(algorithm);
+	size_t ctx_size = get_key_ctx_size(algorithm);
 	size_t required_size = sizeof(cipher_ctx) + ctx_size;
 	size_t total_size = required_size;
 	size_t aead_size = 0;
@@ -464,7 +464,7 @@ cipher_ctx *cipher_new(cipher_algorithm algorithm, void *key, size_t key_size)
 	cipher_ctx *cctx = NULL;
 	cipher_ctx *result = NULL;
 
-	size_t ctx_size = key_ctx_size(algorithm);
+	size_t ctx_size = get_key_ctx_size(algorithm);
 	size_t required_size = sizeof(cipher_ctx) + ctx_size;
 
 	cctx = (cipher_ctx *)malloc(required_size);

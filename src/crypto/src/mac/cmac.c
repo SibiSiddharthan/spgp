@@ -6,13 +6,17 @@
 */
 
 #include <cmac.h>
+#include <cipher.h>
 
 #include <aes.h>
 #include <aria.h>
+#include <blowfish.h>
 #include <camellia.h>
 #include <cast5.h>
+#include <idea.h>
 #include <des.h>
 #include <twofish.h>
+#include <chacha20.h>
 
 #include <xor.h>
 
@@ -23,31 +27,44 @@
 
 static inline size_t get_key_ctx_size(cipher_algorithm algorithm)
 {
-	// These are the only supported algorithms for CMAC currently.
 	switch (algorithm)
 	{
+	// AES
 	case CIPHER_AES128:
 	case CIPHER_AES192:
 	case CIPHER_AES256:
 		return sizeof(aes_key);
+	// ARIA
 	case CIPHER_ARIA128:
 	case CIPHER_ARIA192:
 	case CIPHER_ARIA256:
 		return sizeof(aria_key);
+	case CIPHER_BLOWFISH64:
+	case CIPHER_BLOWFISH128:
+		return sizeof(blowfish_key);
+	// CAMELLIA
 	case CIPHER_CAMELLIA128:
 	case CIPHER_CAMELLIA192:
 	case CIPHER_CAMELLIA256:
 		return sizeof(camellia_key);
+	// CAST-5
 	case CIPHER_CAST5:
 		return sizeof(cast5_key);
+	// CHACHA
+	case CIPHER_CHACHA20:
+		return sizeof(chacha20_key);
+	// IDEA
+	case CIPHER_IDEA:
+		return sizeof(idea_key);
+	// TDES
 	case CIPHER_TDES:
 		return sizeof(tdes_key);
+	// TWOFISH
 	case CIPHER_TWOFISH128:
 	case CIPHER_TWOFISH192:
 	case CIPHER_TWOFISH256:
 		return sizeof(twofish_key);
 	default:
-		// Invalid CMAC specifier.
 		return 0;
 	}
 }
@@ -58,11 +75,16 @@ static inline byte_t cipher_key_size_validate(cipher_algorithm algorithm, byte_t
 
 	switch (algorithm)
 	{
+	case CIPHER_BLOWFISH64:
+		required_size = 8;
+		break;
 	case CIPHER_AES128:
 	case CIPHER_ARIA128:
 	case CIPHER_CAMELLIA128:
 	case CIPHER_TWOFISH128:
+	case CIPHER_BLOWFISH128:
 	case CIPHER_CAST5:
+	case CIPHER_IDEA:
 		required_size = 16;
 		break;
 	case CIPHER_AES192:
@@ -131,6 +153,14 @@ static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
 		aria256_key_init(cctx->_key, key);
 		break;
 
+		// BLOWFISH
+	case CIPHER_BLOWFISH64:
+		blowfish64_key_init(cctx->_key, key);
+		break;
+	case CIPHER_BLOWFISH128:
+		blowfish128_key_init(cctx->_key, key);
+		break;
+
 	// CAMELLIA
 	case CIPHER_CAMELLIA128:
 		camellia128_key_init(cctx->_key, key);
@@ -145,6 +175,11 @@ static void *cmac_key_init(cmac_ctx *cctx, void *key, size_t key_size)
 	// CAST-5
 	case CIPHER_CAST5:
 		cast5_key_init(cctx->_key, key);
+		break;
+
+	// IDEA
+	case CIPHER_IDEA:
+		idea_key_init(cctx->_key, key);
 		break;
 
 	// TDES
@@ -296,13 +331,18 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cipher_algorithm algorithm, void *ke
 	cmac_ctx *cctx = (cmac_ctx *)ptr;
 	size_t key_ctx_size = get_key_ctx_size(algorithm);
 	size_t required_size = sizeof(cmac_ctx) + key_ctx_size;
-
-	size_t block_size = 16;
+	size_t block_size = cipher_block_size(algorithm);
 
 	void *_key = NULL;
 	void (*_encrypt)(void *key, void *plaintext, void *ciphertext) = NULL;
 
 	if (key_ctx_size == 0)
+	{
+		return NULL;
+	}
+
+	// Stream ciphers
+	if (block_size == 0)
 	{
 		return NULL;
 	}
@@ -347,19 +387,21 @@ cmac_ctx *cmac_init(void *ptr, size_t size, cipher_algorithm algorithm, void *ke
 		_encrypt = (void (*)(void *, void *, void *))camellia256_encrypt_block;
 		break;
 	case CIPHER_TWOFISH128:
-		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
-		break;
 	case CIPHER_TWOFISH192:
-		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
-		break;
 	case CIPHER_TWOFISH256:
 		_encrypt = (void (*)(void *, void *, void *))twofish_encrypt_block;
 		break;
+	case CIPHER_BLOWFISH64:
+	case CIPHER_BLOWFISH128:
+		_encrypt = (void (*)(void *, void *, void *))blowfish_encrypt_block;
+		break;
 	case CIPHER_CAST5:
-		block_size = CAST5_BLOCK_SIZE;
 		_encrypt = (void (*)(void *, void *, void *))cast5_encrypt_block;
+		break;
+	case CIPHER_IDEA:
+		_encrypt = (void (*)(void *, void *, void *))idea_encrypt_block;
+		break;
 	case CIPHER_TDES:
-		block_size = DES_BLOCK_SIZE;
 		_encrypt = (void (*)(void *, void *, void *))tdes_encrypt_block;
 		break;
 	default:
