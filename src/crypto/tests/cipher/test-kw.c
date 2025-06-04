@@ -5,11 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
+#include <test.h>
 #include <cipher.h>
 
-#include <test.h>
 
 // Refer RFC 3394: Advanced Encryption Standard (AES) Key Wrap Algorithm
 // Refer RFC 5649: Advanced Encryption Standard (AES) Key Wrap with Padding Algorithm

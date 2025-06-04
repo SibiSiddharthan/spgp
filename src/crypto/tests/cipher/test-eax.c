@@ -5,12 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <cipher.h>
-
 #include <test.h>
+#include <cipher.h>
 
 // Test vectors taken from NIST
 

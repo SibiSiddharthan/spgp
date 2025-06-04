@@ -5,11 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
+#include <test.h>
 #include <chacha20.h>
 
-#include <test.h>
 
 int32_t chacha20_block_test(void)
 {

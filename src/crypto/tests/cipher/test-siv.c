@@ -5,12 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <test.h>
 #include <cipher.h>
 
-#include <test.h>
 
 // Refer RFC 5297: Synthetic Initialization Vector (SIV) Authenticated Encryption Using AES, Appendix A for test vectors
 

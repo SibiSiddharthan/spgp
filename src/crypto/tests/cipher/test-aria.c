@@ -5,11 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
+#include <test.h>
 #include <aria.h>
 
-#include <test.h>
 
 // See RFC 5794: A Description of the ARIA Encryption Algorithm, Appendix A for test vectors
 

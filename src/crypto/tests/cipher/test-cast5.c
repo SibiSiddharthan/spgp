@@ -5,11 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
+#include <test.h>
 #include <cast5.h>
 
-#include <test.h>
 
 // See RFC 2144: The CAST-128 Encryption Algorithm, Appendix B for test vectors
 

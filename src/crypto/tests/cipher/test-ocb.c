@@ -5,12 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <test.h>
 #include <cipher.h>
 
-#include <test.h>
 
 // Refer RFC 7253 : The OCB Authenticated-Encryption Algorithm, Appendix A for test vectors
 

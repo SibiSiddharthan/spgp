@@ -5,11 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
-#include <twofish.h>
-
 #include <test.h>
+#include <twofish.h>
 
 // See Twofish: A 128-Bit Block Cipher, Appendix A for test vectors
 

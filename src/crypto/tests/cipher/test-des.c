@@ -5,11 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
+#include <test.h>
 #include <des.h>
 
-#include <test.h>
 
 // See openssl tests for des
 
