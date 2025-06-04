@@ -13,9 +13,11 @@
 #include <cipher.h>
 #include <aes.h>
 #include <aria.h>
+#include <blowfish.h>
 #include <camellia.h>
 #include <cast5.h>
 #include <des.h>
+#include <idea.h>
 #include <twofish.h>
 #include <chacha20.h>
 
@@ -33,6 +35,9 @@ static inline size_t key_ctx_size(cipher_algorithm algorithm)
 	case CIPHER_ARIA192:
 	case CIPHER_ARIA256:
 		return sizeof(aria_key);
+	case CIPHER_BLOWFISH64:
+	case CIPHER_BLOWFISH128:
+		return sizeof(blowfish_key);
 	// CAMELLIA
 	case CIPHER_CAMELLIA128:
 	case CIPHER_CAMELLIA192:
@@ -44,6 +49,9 @@ static inline size_t key_ctx_size(cipher_algorithm algorithm)
 	// CHACHA
 	case CIPHER_CHACHA20:
 		return sizeof(chacha20_key);
+	// IDEA
+	case CIPHER_IDEA:
+		return sizeof(idea_key);
 	// TDES
 	case CIPHER_TDES:
 		return sizeof(tdes_key);
@@ -90,11 +98,16 @@ static inline byte_t cipher_key_size_validate(cipher_algorithm algorithm, byte_t
 
 	switch (algorithm)
 	{
+	case CIPHER_BLOWFISH64:
+		required_size = 8;
+		break;
 	case CIPHER_AES128:
 	case CIPHER_ARIA128:
 	case CIPHER_CAMELLIA128:
 	case CIPHER_TWOFISH128:
+	case CIPHER_BLOWFISH128:
 	case CIPHER_CAST5:
+	case CIPHER_IDEA:
 		required_size = 16;
 		break;
 	case CIPHER_AES192:
@@ -163,6 +176,14 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 		aria256_key_init(cctx->_key, key);
 		break;
 
+	// BLOWFISH
+	case CIPHER_BLOWFISH64:
+		blowfish64_key_init(cctx->_key, key);
+		break;
+	case CIPHER_BLOWFISH128:
+		blowfish128_key_init(cctx->_key, key);
+		break;
+
 	// CAMELLIA
 	case CIPHER_CAMELLIA128:
 		camellia128_key_init(cctx->_key, key);
@@ -177,6 +198,11 @@ static void *cipher_key_init(cipher_ctx *cctx, void *key, size_t key_size)
 	// CAST-5
 	case CIPHER_CAST5:
 		cast5_key_init(cctx->_key, key);
+		break;
+
+	// IDEA
+	case CIPHER_IDEA:
+		idea_key_init(cctx->_key, key);
 		break;
 
 	// CHACHA
@@ -223,11 +249,15 @@ size_t cipher_key_size(cipher_algorithm algorithm)
 {
 	switch (algorithm)
 	{
+	case CIPHER_BLOWFISH64:
+		return 8;
 	case CIPHER_AES128:
 	case CIPHER_ARIA128:
 	case CIPHER_CAMELLIA128:
 	case CIPHER_TWOFISH128:
+	case CIPHER_BLOWFISH128:
 	case CIPHER_CAST5:
+	case CIPHER_IDEA:
 		return 16;
 	case CIPHER_AES192:
 	case CIPHER_ARIA192:
@@ -256,7 +286,8 @@ size_t cipher_block_size(cipher_algorithm algorithm)
 	}
 
 	// 64 bit block ciphers
-	if (algorithm == CIPHER_TDES || algorithm == CIPHER_CAST5)
+	if (algorithm == CIPHER_TDES || algorithm == CIPHER_CAST5 || algorithm == CIPHER_IDEA || algorithm == CIPHER_BLOWFISH64 ||
+		algorithm == CIPHER_BLOWFISH128)
 	{
 		return 8;
 	}
@@ -273,7 +304,8 @@ size_t cipher_iv_size(cipher_algorithm algorithm)
 	}
 
 	// 64 bit block ciphers
-	if (algorithm == CIPHER_TDES || algorithm == CIPHER_CAST5)
+	if (algorithm == CIPHER_TDES || algorithm == CIPHER_CAST5 || algorithm == CIPHER_IDEA || algorithm == CIPHER_BLOWFISH64 ||
+		algorithm == CIPHER_BLOWFISH128)
 	{
 		return 8;
 	}
@@ -351,6 +383,14 @@ cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm
 		_decrypt = (void (*)(void *, void *, void *))aria256_decrypt_block;
 		break;
 
+	// BLOWFISH
+	case CIPHER_BLOWFISH64:
+	case CIPHER_BLOWFISH128:
+		block_size = BLOWFISH_BLOCK_SIZE;
+		_encrypt = (void (*)(void *, void *, void *))blowfish_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))blowfish_decrypt_block;
+		break;
+
 	// CAMELLIA
 	case CIPHER_CAMELLIA128:
 		_encrypt = (void (*)(void *, void *, void *))camellia128_encrypt_block;
@@ -367,8 +407,16 @@ cipher_ctx *cipher_init(void *ptr, size_t size, uint16_t flags, cipher_algorithm
 
 	// CAST-5
 	case CIPHER_CAST5:
+		block_size = CAST5_BLOCK_SIZE;
 		_encrypt = (void (*)(void *, void *, void *))cast5_encrypt_block;
 		_decrypt = (void (*)(void *, void *, void *))cast5_decrypt_block;
+		break;
+
+	// IDEA
+	case CIPHER_IDEA:
+		block_size = IDEA_BLOCK_SIZE;
+		_encrypt = (void (*)(void *, void *, void *))idea_encrypt_block;
+		_decrypt = (void (*)(void *, void *, void *))idea_decrypt_block;
 		break;
 
 	// CHACHA
