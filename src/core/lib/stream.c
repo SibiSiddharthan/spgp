@@ -270,7 +270,6 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 	uint32_t temp_size = buffer_size;
 
 	uint32_t pos = 0;
-	byte_t first_packet = 0;
 
 	uint32_t input_pos = 0;
 	uint32_t input_size = 0;
@@ -290,11 +289,8 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 
 	options.flags = (ARMOR_SCAN_HEADERS | ARMOR_EMPTY_LINE | ARMOR_CHECKSUM_CRC24 | ARMOR_IGNORE_UNKNOWN_MARKERS);
 
-	while (pos < buffer_size)
+	while (input_pos < buffer_size)
 	{
-		input_pos += input_size;
-		output_pos += output_size;
-
 		input_size = buffer_size - input_size;
 		output_size = temp_size - output_size;
 
@@ -342,12 +338,9 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 			options.headers_size = 0;
 		}
 
-		first_packet = 0;
-
 		while (pos < output_size)
 		{
 			pgp_packet_header *header = NULL;
-			pgp_packet_type type = 0;
 			void *packet = NULL;
 			void *result = NULL;
 
@@ -359,42 +352,7 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 			}
 
 			header = packet;
-			type = pgp_packet_type_from_tag(header->tag);
 			pos += header->body_size + header->header_size;
-
-			// Check whether the armor content is valid for the corresponding marker
-			if (first_packet)
-			{
-				// PGP PUBLIC KEY BLOCK
-				if (options.marker == &markers[1])
-				{
-					if (type != PGP_PUBKEY && type != PGP_COMP)
-					{
-						error = PGP_ARMOR_INVALID_MARKER_FOR_TRANSFERABLE_PUBLIC_KEY;
-						goto error_cleanup;
-					}
-				}
-
-				// PGP PRIVATE KEY BLOCK
-				if (options.marker == &markers[2])
-				{
-					if (type != PGP_SECKEY && type != PGP_COMP)
-					{
-						error = PGP_ARMOR_INVALID_MARKER_FOR_TRANSFERABLE_SECRET_KEY;
-						goto error_cleanup;
-					}
-				}
-
-				// PGP SIGNATURE
-				if (options.marker == &markers[3])
-				{
-					if (type != PGP_SIG && type != PGP_OPS && type != PGP_COMP)
-					{
-						error = PGP_ARMOR_INVALID_MARKER_FOR_SIGNATURE;
-						goto error_cleanup;
-					}
-				}
-			}
 
 			result = pgp_stream_push(out, packet);
 
@@ -405,9 +363,10 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 			}
 
 			out = result;
-
-			first_packet += 1;
 		}
+
+		input_pos += input_size;
+		output_pos += output_size;
 	}
 
 	free(temp);
