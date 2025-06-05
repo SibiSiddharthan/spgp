@@ -291,8 +291,8 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 
 	while (input_pos < buffer_size)
 	{
-		input_size = buffer_size - input_size;
-		output_size = temp_size - output_size;
+		input_size = buffer_size - input_pos;
+		output_size = temp_size - output_pos;
 
 		status = armor_read(&options, markers, 4, PTR_OFFSET(buffer, input_pos), &input_size, PTR_OFFSET(temp, output_pos), &output_size);
 
@@ -337,6 +337,8 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 			options.headers = NULL;
 			options.headers_size = 0;
 		}
+
+		pos = 0;
 
 		while (pos < output_size)
 		{

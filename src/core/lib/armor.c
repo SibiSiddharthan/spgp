@@ -85,16 +85,16 @@ armor_status armor_read(armor_options *options, armor_marker *markers, uint16_t 
 
 	while (1)
 	{
+		if (in.pos == in.size)
+		{
+			break;
+		}
+
 		line_size = readline(&in, line_buffer, 1024);
 
 		if (line_size == 1024)
 		{
 			return ARMOR_LINE_TOO_BIG;
-		}
-
-		if (line_size == 0 && (in.pos == in.size))
-		{
-			return ARMOR_MALFORMED_DATA;
 		}
 
 		trimmed_line_size = trimline(line_buffer, line_size);
