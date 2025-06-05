@@ -1918,7 +1918,7 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	else
 	{
 		// 2 octet count for the unhashed subpacket data
-		LOAD_16BE(out + pos, &size);
+		LOAD_16BE(out + pos, &packet->unhashed_octets);
 		pos += 2;
 	}
 

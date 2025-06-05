@@ -12,6 +12,33 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void make_output_filename(char buffer[256], char *filename)
+{
+	strncpy(buffer, filename, 256);
+	strncat(buffer, ".pgp", 4);
+}
+
+void spgp_dearmor(void)
+{
+	pgp_stream_t *stream = NULL;
+	char buffer[256] = {0};
+
+	for (uint32_t i = 0; i < command.args->count; ++i)
+	{
+		stream = spgp_read_pgp_packets(command.args->data[i]);
+
+		if (command.args->data[i] == NULL)
+		{
+			spgp_write_pgp_packets(NULL, stream, NULL);
+		}
+		else
+		{
+			make_output_filename(buffer, command.args->data[i]);
+			spgp_write_pgp_packets(buffer, stream, NULL);
+		}
+	}
+}
+
 void spgp_list_packets(void)
 {
 	pgp_stream_t *stream = NULL;
@@ -31,7 +58,7 @@ void spgp_list_packets(void)
 
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		stream = spgp_read_pgp_packets(command.args->packets[i]);
+		stream = spgp_read_pgp_packets(command.args->data[i]);
 
 		pgp_packet_stream_print(stream, str, 65536, options);
 		printf("%s\n", str);

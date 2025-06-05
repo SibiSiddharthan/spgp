@@ -399,54 +399,58 @@ void spgp_initialize_home(spgp_command *spgp)
 	}
 }
 
-static uint32_t spgp_execute_operation(spgp_command *command)
+static void spgp_execute_operation(spgp_command *command)
 {
 	if (command->list_packets || command->dump_packets)
 	{
-		spgp_list_packets();
+		return spgp_list_packets();
 	}
 
 	if (command->sign || command->detach_sign || command->clear_sign)
 	{
-		spgp_sign();
+		return spgp_sign();
 	}
 
 	if (command->verify)
 	{
-		spgp_verify();
+		return spgp_verify();
 	}
 
 	if (command->encrypt || command->symmetric)
 	{
-		spgp_encrypt();
+		return spgp_encrypt();
 	}
 
 	if (command->decrypt)
 	{
-		spgp_decrypt();
+		return spgp_decrypt();
 	}
 
 	if (command->import_keys)
 	{
-		spgp_import_keys();
+		return spgp_import_keys();
 	}
 
 	if (command->export_keys || command->export_secret_keys)
 	{
-		spgp_export_keys();
+		return spgp_export_keys();
 	}
 
 	if (command->generate_key)
 	{
-		spgp_generate_key();
+		return spgp_generate_key();
 	}
 
 	if (command->list_keys || command->list_secret_keys)
 	{
-		spgp_list_keys();
+		return spgp_list_keys();
 	}
 
-	return 0;
+	if(command->dearmor)
+	{
+		return spgp_dearmor();
+	}
+
 }
 
 static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **argv)
@@ -506,9 +510,11 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 			break;
 		case SPGP_OPTION_ARMOR:
 			command->armor = 1;
+			command->dearmor = 0;
 			break;
 		case SPGP_OPTION_DEARMOR:
-			command->dearmor = 0;
+			command->dearmor = 1;
+			command->armor = 0;
 			break;
 
 		// Key Commands
@@ -662,8 +668,6 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 int main(int argc, char **argv)
 {
-	uint32_t exit_code = 0;
-
 	spgp_parse_arguments(&command, argc, argv);
 
 	// No command given, print help
@@ -676,7 +680,9 @@ int main(int argc, char **argv)
 	// The operations do not require setting up the home directory, execute them immediately.
 	if (command.need_home == 0)
 	{
-		return (int)spgp_execute_operation(&command);
+		spgp_execute_operation(&command);
+
+		return 0;
 	}
 
 	// Setup home and execute.
@@ -686,7 +692,7 @@ int main(int argc, char **argv)
 		spgp_initialize_home(&command);
 	}
 
-	exit_code = spgp_execute_operation(&command);
+	spgp_execute_operation(&command);
 
-	return (int)exit_code;
+	return 0;
 }

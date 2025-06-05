@@ -180,6 +180,7 @@ void spgp_verify(void);
 void spgp_encrypt(void);
 void spgp_decrypt(void);
 
+void spgp_dearmor(void);
 void spgp_list_keys(void);
 void spgp_list_packets(void);
 
