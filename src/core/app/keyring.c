@@ -1136,6 +1136,8 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	byte_t passphrase_buffer[128] = {0};
 	uint32_t passphrase_size = 0;
 
+	char message_buffer[256] = {0};
+
 	// Check if key needs decryption
 	if (key->encrypted == NULL && key->encrypted_octets == 0)
 	{
@@ -1180,12 +1182,14 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 		{
 			if (retry_count == 0)
 			{
-				passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passhrase for decrypting key.");
+				snprintf(message_buffer, 256, "Enter passhrase for decrypting key %.*s.", fingerprint_size * 2, passphrase_env);
+				passphrase_size = spgp_prompt_passphrase(passphrase_buffer, message_buffer);
 			}
 			else
 			{
-				passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passhrase for decrypting key (Retries %hhu of %hhu).",
-														 retry_count + 1, max_retries);
+				snprintf(message_buffer, 256, "Enter passhrase for decrypting key %.*s (Retries %hhu of %hhu).", fingerprint_size * 2,
+						 passphrase_env, retry_count + 1, max_retries);
+				passphrase_size = spgp_prompt_passphrase(passphrase_buffer, message_buffer);
 			}
 
 			status = pgp_key_packet_decrypt(key, passphrase_buffer, passphrase_size);
