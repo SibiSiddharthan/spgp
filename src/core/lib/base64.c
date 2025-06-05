@@ -164,5 +164,5 @@ size_t base64_decode(void *input, size_t input_size, void *output, size_t output
 		}
 	}
 
-	return BASE64_DECODE_SIZE(input_size);
+	return output_pos;
 }
