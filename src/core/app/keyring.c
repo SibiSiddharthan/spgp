@@ -1170,8 +1170,39 @@ pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *ke
 	// Prompt the user for password
 	if (passphrase == NULL)
 	{
-		passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passhrase for decrypting key.");
-		passphrase = passphrase_buffer;
+		// Allow upto 3 retries
+		pgp_error_t status = 0;
+
+		byte_t max_retries = 3;
+		byte_t retry_count = 0;
+
+		while (retry_count < max_retries)
+		{
+			if (retry_count == 0)
+			{
+				passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passhrase for decrypting key.");
+			}
+			else
+			{
+				passphrase_size = spgp_prompt_passphrase(passphrase_buffer, "Enter passhrase for decrypting key (Retries %hhu of %hhu).",
+														 retry_count + 1, max_retries);
+			}
+
+			status = pgp_key_packet_decrypt(key, passphrase_buffer, passphrase_size);
+
+			if (status == PGP_SUCCESS)
+			{
+				return key;
+			}
+
+			if (status != PGP_KEY_CHECKSUM_MISMATCH && status != PGP_MDC_TAG_MISMATCH && status != PGP_AEAD_TAG_MISMATCH)
+			{
+				printf("%s\n", pgp_error(status));
+				exit(1);
+			}
+
+			retry_count += 1;
+		}
 	}
 
 	if (passphrase_size == 0)
