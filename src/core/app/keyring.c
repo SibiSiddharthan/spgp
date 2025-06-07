@@ -235,6 +235,11 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 	pgp_keyring_packet *keyring = NULL;
 	pgp_user_info *uinfo = NULL;
 
+	if (stream == NULL)
+	{
+		return NULL;
+	}
+
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		uinfo = pgp_keyring_packet_search(stream->packets[i], input, size);
@@ -1167,6 +1172,11 @@ void spgp_list_keys(void)
 	size_t pos = 0;
 
 	stream = spgp_read_keyring();
+
+	if (stream == NULL)
+	{
+		return;
+	}
 
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
