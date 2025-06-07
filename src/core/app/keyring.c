@@ -184,16 +184,6 @@ static void spgp_import_certificates(pgp_stream_t *stream)
 				PGP_CALL(pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY));
 			}
 		}
-
-		if (type == PGP_SECKEY)
-		{
-			PGP_CALL(pgp_key_packet_transform(stream->packets[i], PGP_PUBKEY));
-		}
-
-		if (type == PGP_SECSUBKEY)
-		{
-			PGP_CALL(pgp_key_packet_transform(stream->packets[i], PGP_PUBSUBKEY));
-		}
 	}
 
 	spgp_write_certificate(stream);
@@ -387,7 +377,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			break;
 		}
 
-		if (key_type == PGP_PUBKEY)
+		if (key_type == PGP_KEY_TYPE_PUBLIC)
 		{
 			if (type == PGP_SECSUBKEY)
 			{
@@ -615,6 +605,9 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 				printf("Version of primary key and subkeys should be the same.\n");
 				exit(1);
 			}
+
+			PGP_CALL(pgp_key_fingerprint(subkey, subkey_fingerprint, &subkey_fingerprint_size));
+			PGP_CALL(pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint));
 		}
 
 		if (type == PGP_SIG)
@@ -679,9 +672,6 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			}
 		}
 
-		PGP_CALL(pgp_key_fingerprint(subkey, subkey_fingerprint, &subkey_fingerprint_size));
-		PGP_CALL(pgp_keyring_packet_add_subkey(keyring_packet, subkey_fingerprint));
-
 		pos += 1;
 	}
 
@@ -693,7 +683,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		header = stream->packets[i];
 		type = pgp_packet_type_from_tag(header->tag);
 
-		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
+		if (type == PGP_KEYDEF)
 		{
 			subkey = stream->packets[i];
 			spgp_write_key(subkey);
