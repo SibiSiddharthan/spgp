@@ -224,6 +224,12 @@ pgp_stream_t *spgp_read_keyring()
 	if (command.keyring_stream == NULL)
 	{
 		command.keyring_stream = spgp_read_pgp_packets_from_handle(command.keyring);
+
+		// Make sure the keyring is mutable
+		if (command.keyring_stream == &command.empty_stream)
+		{
+			STREAM_CALL(command.keyring_stream = pgp_stream_new(4));
+		}
 	}
 
 	return command.keyring_stream;
@@ -296,7 +302,7 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 	return keyring;
 }
 
-uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
+uint32_t spgp_update_keyring(pgp_keyring_packet *keyring, uint32_t options)
 {
 	pgp_stream_t *stream = NULL;
 	pgp_keyring_packet *packet = NULL;
@@ -305,18 +311,17 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
 
 	stream = spgp_read_keyring();
 
-	if (stream != NULL)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
-		for (uint32_t i = 0; i < stream->count; ++i)
-		{
-			packet = stream->packets[i];
+		packet = stream->packets[i];
 
-			if (packet->key_version == key->key_version &&
-				memcmp(packet->primary_fingerprint, key->primary_fingerprint, key->fingerprint_size) == 0)
-			{
-				matching_keyring_found = 1;
-				keyring_index = i;
-			}
+		if (packet->key_version == keyring->key_version &&
+			memcmp(packet->primary_fingerprint, keyring->primary_fingerprint, keyring->fingerprint_size) == 0)
+		{
+			matching_keyring_found = 1;
+			keyring_index = i;
+
+			break;
 		}
 	}
 
@@ -326,7 +331,7 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
 		{
 			// Update the keyring
 			pgp_keyring_packet_delete(stream->packets[keyring_index]);
-			stream->packets[keyring_index] = key;
+			stream->packets[keyring_index] = keyring;
 		}
 		else
 		{
@@ -335,7 +340,7 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options)
 	}
 	else
 	{
-		STREAM_CALL(stream = pgp_stream_push(stream, key));
+		STREAM_CALL(stream = pgp_stream_push(stream, keyring));
 	}
 
 	OS_CALL(os_seek(command.keyring, 0, SEEK_SET), printf("Unable to seek keyring"));
@@ -731,7 +736,6 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 	// Update the keyring
 	spgp_update_keyring(keyring_packet, SPGP_KEYRING_REPLACE);
-	pgp_keyring_packet_delete(keyring_packet);
 
 	return end;
 }
