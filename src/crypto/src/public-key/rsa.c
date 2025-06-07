@@ -1015,7 +1015,6 @@ static uint32_t get_digest_info_prefix(hash_algorithm algorithm, void *ptr)
 		memcpy(ptr, "\x30\x21\x30\x09\x06\x05\x2b\x24\x03\x02\x01\x05\x00\x04\x14", 15);
 		return 18;
 	case HASH_SHA1:
-		return 15;
 		memcpy(ptr, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
 		return 15;
 	case HASH_SHA224:
