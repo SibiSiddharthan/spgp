@@ -4037,14 +4037,42 @@ uint32_t pgp_key_id_from_fingerprint(pgp_key_version version, byte_t id[PGP_KEY_
 	return 0;
 }
 
-uint32_t pgp_key_fingerprint_compare(byte_t *a, byte_t a_size, byte_t *b, byte_t b_size)
+uint32_t pgp_key_compare(pgp_key_packet *key, byte_t *input, byte_t input_size)
 {
-	if (a_size == b_size)
+	pgp_error_t status = 0;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+	status = pgp_key_fingerprint(key, &fingerprint, &fingerprint_size);
+
+	if (status != PGP_SUCCESS)
 	{
-		return memcmp(a, b, a_size);
+		// Assume comparison fails
+		return 1;
 	}
 
-	return a_size > b_size;
+	if (fingerprint_size == input_size)
+	{
+		return memcmp(fingerprint, input, fingerprint_size);
+	}
+	else
+	{
+		// Check key ID
+		if (input_size == PGP_KEY_ID_SIZE)
+		{
+			if (key->version == PGP_KEY_V5)
+			{
+				return memcmp(fingerprint, input, PGP_KEY_ID_SIZE);
+			}
+			else
+			{
+				return memcmp(PTR_OFFSET(fingerprint, fingerprint_size - PGP_KEY_ID_SIZE), input, PGP_KEY_ID_SIZE);
+			}
+		}
+	}
+
+	return 1;
 }
 
 byte_t pgp_key_fingerprint_size(byte_t version)

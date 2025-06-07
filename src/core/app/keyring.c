@@ -467,8 +467,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 				exit(1);
 			}
 
-			if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
-											signature_fingerprint_size) == 0)
+			if (pgp_key_compare(primary_key, signature_fingerprint, signature_fingerprint_size) == 0)
 			{
 				signature_by_primary_key = 1;
 			}
@@ -563,8 +562,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			// Only use User ID packets for information
 			if (pgp_packet_type_from_tag(uid->header.tag) == PGP_UID)
 			{
-				if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
-												signature_fingerprint_size) == 0)
+				if (pgp_key_compare(primary_key, signature_fingerprint, signature_fingerprint_size) == 0)
 				{
 					signature_by_primary_key = 1;
 
@@ -654,8 +652,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 			PGP_CALL(pgp_signature_get_key_fingerprint(sign, signature_fingerprint, &signature_fingerprint_size));
 
-			if (pgp_key_fingerprint_compare(primary_fingerprint, primary_fingerprint_size, signature_fingerprint,
-											signature_fingerprint_size) == 0)
+			if (pgp_key_compare(primary_key, signature_fingerprint, signature_fingerprint_size) == 0)
 			{
 				signature_by_primary_key = 1;
 			}
