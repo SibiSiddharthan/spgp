@@ -1218,8 +1218,10 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 		// A 1-octet key version number.
 		// A 1-octet key type.
 		// A 1-octet key capabilities.
+		// A 1-octet key flags.
 		// A 1-octet public key algorithm.
 		// A 4-octet number denoting the time when the key was created.
+		// A 4-octet number denoting the time when the key was revoked.
 		// A 4-octet number denoting the time when the key will expire.
 		// A 4-octet scalar count for the public key material
 		// One or more MPIs comprising the public key.
@@ -1231,7 +1233,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 		// A 4-octet scalar count of key data (inclusive of tag)
 		// (Plaintext or encrypted) Private key data.
 
-		body_size = 1 + 1 + 1 + 1 + 4 + 4 + 4 + packet->public_key_data_octets;
+		body_size = 1 + 1 + 1 + 1 + 1 + 4 + 4 + 4 + 4 + packet->public_key_data_octets;
 
 		if (packet->type == PGP_KEY_TYPE_SECRET)
 		{
@@ -3279,6 +3281,11 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 
 	buffer->pos += packet->public_key_data_octets;
 
+	if (packet->type == PGP_KEY_TYPE_PUBLIC)
+	{
+		return PGP_SUCCESS;
+	}
+
 	// 1 octet of S2K usage
 	CHECK_READ(read8(buffer, &packet->s2k_usage), PGP_MALFORMED_KEYDEF_PACKET);
 
@@ -3457,9 +3464,6 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	byte_t s2k_size = 0;
 	byte_t conditional_field_size = 0;
 
-	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
-	conditional_field_size = pgp_key_packet_get_s2k_size(packet);
-
 	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
 		return 0;
@@ -3517,6 +3521,14 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 
 	// Public key material
 	pos += pgp_public_key_material_write(packet, out + pos, size - pos);
+
+	if (packet->type == PGP_KEY_TYPE_PUBLIC)
+	{
+		return pos;
+	}
+
+	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
+	conditional_field_size = pgp_key_packet_get_s2k_size(packet);
 
 	// 1 octet of S2K usage
 	LOAD_8(out + pos, &packet->s2k_usage);
