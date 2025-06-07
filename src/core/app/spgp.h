@@ -96,6 +96,7 @@ typedef struct _spgp_command
 	handle_t certs;
 	handle_t keyring;
 
+	pgp_stream_t empty_stream;
 	pgp_stream_t *keyring_stream;
 
 	void *homedir;

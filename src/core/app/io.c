@@ -19,6 +19,14 @@ static status_t spgp_read_disk_file(handle_t handle, size_t size, void **buffer,
 	status_t status = 0;
 	size_t read = 0;
 
+	if (size == 0)
+	{
+		*buffer = NULL;
+		*result = 0;
+
+		return OS_STATUS_SUCCESS;
+	}
+
 	*buffer = malloc(size);
 
 	if (*buffer == NULL)
@@ -217,6 +225,13 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 
 	in = buffer;
 
+	// Return an empty stream
+	if (size == 0)
+	{
+		stream = &command.empty_stream;
+		return stream;
+	}
+
 	if (in[0] > 128)
 	{
 		PGP_CALL(pgp_packet_stream_read(&stream, buffer, size));
@@ -227,6 +242,12 @@ pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle)
 	}
 
 	free(buffer);
+
+	// No packets in file
+	if (stream == NULL)
+	{
+		stream = &command.empty_stream;
+	}
 
 	return stream;
 }
