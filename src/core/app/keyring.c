@@ -97,24 +97,53 @@ static byte_t get_key_passphrase_env(char *buffer, byte_t *fingerprint, byte_t s
 
 pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
 {
+	handle_t handle = 0;
+	size_t result = 0;
+
+	pgp_stream_t *stream = NULL;
+
+	char buffer[16384] = {0};
 	char filename[256] = {0};
+	uint32_t length = 0;
 
-	get_cert_filename(filename, fingerprint, fingerprint_size);
+	length = get_cert_filename(filename, fingerprint, fingerprint_size);
 
-	return spgp_read_pgp_packets(filename);
+	OS_CALL(os_open(&handle, command.certs, filename, length, FILE_ACCESS_READ, 0, 0),
+			printf("Unable to open certificate file %s", filename));
+	OS_CALL(os_read(handle, buffer, 16384, &result), printf("Unable to read certificate file %s", filename));
+
+	PGP_CALL(pgp_packet_stream_read(&stream, buffer, result));
+
+	OS_CALL(os_close(handle), printf("Unable to close handle %u", (uint32_t)(uintptr_t)handle));
+
+	return stream;
 }
 
 void spgp_write_certificate(pgp_stream_t *stream)
 {
+	handle_t handle = 0;
+	size_t result = 0;
+
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	char filename[256] = {0};
+	uint32_t length = 0;
+
+	void *buffer = NULL;
+	size_t size = 0;
 
 	PGP_CALL(pgp_key_fingerprint(stream->packets[0], fingerprint, &fingerprint_size));
-	get_cert_filename(filename, fingerprint, fingerprint_size);
+	length = get_cert_filename(filename, fingerprint, fingerprint_size);
 
-	spgp_write_pgp_packets(filename, stream, NULL);
+	PGP_CALL(pgp_packet_stream_write(stream, &buffer, &size));
+
+	OS_CALL(os_open(&handle, command.certs, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+			printf("Unable to open certificate file %s", filename));
+	OS_CALL(os_write(handle, buffer, size, &result), printf("Unable to write certificate file %s", filename));
+	OS_CALL(os_close(handle), printf("Unable to close handle %u", (uint32_t)(uintptr_t)handle));
+
+	free(buffer);
 }
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
