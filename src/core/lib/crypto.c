@@ -2633,7 +2633,7 @@ pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_
 {
 	uint32_t status = 0;
 
-	if (pgp_key->curve == PGP_ED25519)
+	if (pgp_key->curve == PGP_EC_ED25519)
 	{
 		ed25519_key edkey = {0};
 		ed25519_signature edsign = {0};
@@ -2658,7 +2658,7 @@ pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_
 		return PGP_SUCCESS;
 	}
 
-	if (pgp_key->curve == PGP_ED448)
+	if (pgp_key->curve == PGP_EC_ED448)
 	{
 		ed448_key edkey = {0};
 		ed448_signature edsign = {0};
