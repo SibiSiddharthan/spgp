@@ -762,7 +762,7 @@ void spgp_import_keys(void)
 	printf("Processed %u keys.\n", count);
 }
 
-static void spgp_export_keyring(void *input, byte_t secret)
+static pgp_stream_t *spgp_export_keyring(void *input, byte_t secret)
 {
 	pgp_keyring_packet *keyring = NULL;
 	pgp_key_packet *key = NULL;
@@ -770,13 +770,9 @@ static void spgp_export_keyring(void *input, byte_t secret)
 
 	uint16_t subkey_index = 0;
 
-	armor_options options = {0};
-	armor_marker marker = {0};
-	armor_options *opts = NULL;
-
 	if (input == NULL)
 	{
-		return;
+		return NULL;
 	}
 
 	keyring = spgp_search_keyring(NULL, NULL, input, strlen(input), 0);
@@ -835,9 +831,23 @@ static void spgp_export_keyring(void *input, byte_t secret)
 		}
 	}
 
+	return certificate;
+}
+
+void spgp_export_keys(void)
+{
+	handle_t handle = 0;
+
+	pgp_stream_t *certificate = NULL;
+	pgp_key_packet *key = NULL;
+
+	armor_options options = {0};
+	armor_marker marker = {0};
+	armor_options *opts = NULL;
+
 	if (command.armor)
 	{
-		if (secret)
+		if (command.export_secret_keys)
 		{
 			marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_PRIVATE_KEY,
 									.header_line_size = strlen(PGP_ARMOR_BEGIN_PRIVATE_KEY),
@@ -853,20 +863,49 @@ static void spgp_export_keyring(void *input, byte_t secret)
 		}
 
 		options.marker = &marker;
-		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((keyring->key_version == PGP_KEY_V6) ? 0 : ARMOR_CHECKSUM_CRC24);
+		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING; // | ((keyring->key_version == PGP_KEY_V6) ? 0 : ARMOR_CHECKSUM_CRC24);
 
 		opts = &options;
 	}
 
-	spgp_write_pgp_packets(command.output, certificate, opts);
-	pgp_stream_delete(certificate, pgp_packet_delete);
-}
+	if (command.output != NULL)
+	{
+		OS_CALL(os_open(&handle, HANDLE_CWD, command.output, strlen(command.output), FILE_ACCESS_WRITE,
+						FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+				printf("Unable to open file %s", (char *)command.output));
+	}
+	else
+	{
+		handle = STDOUT_HANDLE;
+	}
 
-void spgp_export_keys(void)
-{
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		spgp_export_keyring(command.args->data[i], command.export_secret_keys);
+		certificate = spgp_export_keyring(command.args->data[i], command.export_secret_keys);
+
+		if (certificate == NULL)
+		{
+			continue;
+		}
+
+		if (command.armor)
+		{
+			key = certificate->packets[0];
+
+			// Add crc24 checksum to armor
+			if (key->version != PGP_KEY_V6)
+			{
+				options.flags |= ARMOR_CHECKSUM_CRC24;
+			}
+		}
+
+		spgp_write_pgp_packets_handle(handle, certificate, opts);
+		pgp_stream_delete(certificate, pgp_packet_delete);
+	}
+
+	if (command.output != NULL)
+	{
+		OS_CALL(os_close(handle), printf("Unable to close handle %u", OS_HANDLE_AS_UINT(handle)));
 	}
 }
 
