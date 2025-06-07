@@ -585,6 +585,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 				if (status != PGP_SUCCESS)
 				{
+					printf("Bad signature.\n");
 					exit(1);
 				}
 			}
@@ -677,6 +678,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 				if (status != PGP_SUCCESS)
 				{
+					printf("Bad signature.\n");
 					exit(1);
 				}
 			}

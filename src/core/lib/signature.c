@@ -4528,7 +4528,8 @@ pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte
 											  byte_t *fingerprint_size)
 {
 	pgp_subpacket_header *header = NULL;
-	pgp_issuer_fingerprint_subpacket *subpacket = NULL;
+	pgp_issuer_fingerprint_subpacket *fingerprint_subpacket = NULL;
+	pgp_issuer_key_id_subpacket *key_id_subpacket = NULL;
 
 	byte_t required_size = 0;
 
@@ -4538,7 +4539,7 @@ pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte
 		return PGP_KEY_ID_SIZE;
 	}
 
-	// Search hashed only
+	// Search issuer fingerprint in hashed only
 	if (packet->hashed_subpackets != NULL)
 	{
 		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
@@ -4547,8 +4548,8 @@ pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte
 
 			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_FINGERPRINT_SUBPACKET)
 			{
-				subpacket = packet->hashed_subpackets->packets[i];
-				required_size = pgp_key_fingerprint_size(subpacket->version);
+				fingerprint_subpacket = packet->hashed_subpackets->packets[i];
+				required_size = pgp_key_fingerprint_size(fingerprint_subpacket->version);
 
 				if (required_size == 0)
 				{
@@ -4562,7 +4563,37 @@ pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte
 				}
 
 				*fingerprint_size = required_size;
-				memcpy(fingerprint, subpacket->fingerprint, required_size);
+				memcpy(fingerprint, fingerprint_subpacket->fingerprint, required_size);
+
+				return PGP_SUCCESS;
+			}
+		}
+	}
+
+	// Search issuer key id in unhashed only
+	if (packet->unhashed_subpackets != NULL)
+	{
+		for (uint32_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+		{
+			header = packet->unhashed_subpackets->packets[i];
+
+			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_KEY_ID_SUBPACKET)
+			{
+				key_id_subpacket = packet->unhashed_subpackets->packets[i];
+
+				if (key_id_subpacket->header.body_size != PGP_KEY_ID_SIZE)
+				{
+					return PGP_MALFORMED_SIGNATURE_PACKET;
+				}
+
+				if (*fingerprint_size < PGP_KEY_ID_SIZE)
+				{
+					*fingerprint_size = PGP_KEY_ID_SIZE;
+					return PGP_BUFFER_TOO_SMALL;
+				}
+
+				*fingerprint_size = PGP_KEY_ID_SIZE;
+				memcpy(fingerprint, key_id_subpacket->key_id, PGP_KEY_ID_SIZE);
 
 				return PGP_SUCCESS;
 			}
