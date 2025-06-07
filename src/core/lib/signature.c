@@ -4636,14 +4636,47 @@ pgp_error_t pgp_signature_validate(pgp_signature_packet *packet)
 		}
 	}
 
-	if (creation_time_found == 0)
+	if (packet->version == PGP_SIGNATURE_V5 || packet->version == PGP_SIGNATURE_V6)
 	{
-		return PGP_MISSING_CREATION_TIME_SUBPACKET;
+		if (creation_time_found == 0)
+		{
+			return PGP_MISSING_CREATION_TIME_SUBPACKET;
+		}
+
+		if (issuer_fingerprint_found == 0)
+		{
+			return PGP_MISSING_ISSUER_FINGERPRINT_SUBPACKET;
+		}
 	}
 
-	if (issuer_fingerprint_found == 0)
+	if (packet->version == PGP_SIGNATURE_V4)
 	{
-		return PGP_MISSING_ISSUER_FINGERPRINT_SUBPACKET;
+		if (creation_time_found == 0)
+		{
+			return PGP_MISSING_CREATION_TIME_SUBPACKET;
+		}
+
+		if (issuer_fingerprint_found == 0)
+		{
+			// Search in unhashed for key id
+			if (packet->unhashed_subpackets != NULL)
+			{
+				for (uint32_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+				{
+					header = packet->unhashed_subpackets->packets[i];
+
+					if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_KEY_ID_SUBPACKET)
+					{
+						issuer_fingerprint_found += 1;
+					}
+				}
+			}
+
+			if (issuer_fingerprint_found == 0)
+			{
+				return PGP_MISSING_ISSUER_FINGERPRINT_SUBPACKET;
+			}
+		}
 	}
 
 	return PGP_SUCCESS;
