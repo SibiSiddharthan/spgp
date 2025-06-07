@@ -135,13 +135,16 @@ pgp_packet_header pgp_packet_header_encode(pgp_packet_header_format header_forma
 	header.header_size = get_packet_header_size(header_format, partial, body_size);
 	header.body_size = body_size;
 
-	if (header_format == PGP_HEADER)
+	if (partial)
 	{
-		header.partial_begin = 1;
-	}
-	else
-	{
-		header.partial_legacy = 1;
+		if (header_format == PGP_HEADER)
+		{
+			header.partial_begin = 1;
+		}
+		else
+		{
+			header.partial_legacy = 1;
+		}
 	}
 
 	return header;
