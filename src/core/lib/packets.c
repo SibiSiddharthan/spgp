@@ -2019,7 +2019,7 @@ static void hex_to_data(void *input, byte_t input_size, byte_t output[PGP_KEY_MA
 
 	for (byte_t i = 0; i < input_size; i += 2)
 	{
-		output[pos] = (hex_to_nibble_table[in[i]] << 4) + hex_to_nibble_table[in[i + 1]];
+		output[pos++] = (hex_to_nibble_table[in[i]] << 4) + hex_to_nibble_table[in[i + 1]];
 	}
 }
 
@@ -2032,13 +2032,11 @@ static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, v
 	// Check for 0x and trailing !
 	if (size % 4 != 0)
 	{
-		if (!(in[0] == '0' && TO_UPPER(in[1]) == 'X'))
+		if (in[0] == '0' && TO_UPPER(in[1]) == 'X')
 		{
-			return 0;
+			in += 2;
+			size -= 2;
 		}
-
-		in += 2;
-		size -= 2;
 
 		if (in[size - 1] == '!')
 		{
@@ -2201,7 +2199,7 @@ pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input
 		return keyring_search_uid(packet, input, size);
 	}
 
-	if (size < 65)
+	if (size <= 67)
 	{
 		fingerprint_size = keyring_search_key_fingerprint_or_id(packet, input, size, fingerprint);
 		pgp_user_info *uinfo = packet->users->packets[0];
