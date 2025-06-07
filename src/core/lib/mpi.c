@@ -65,24 +65,15 @@ void mpi_delete(mpi_t *mpi)
 uint32_t mpi_read(mpi_t *mpi, void *ptr, size_t size)
 {
 	uint32_t pos = 0;
-	uint16_t bits_be = 0;
-	uint16_t bits_le = 0;
 	uint16_t bytes = 0;
 
 	// Get the number of bits
-	LOAD_16(&bits_be, ptr);
-	bits_le = BSWAP_16(bits_be);
+	LOAD_16BE(&mpi->bits, ptr);
 	pos += 2;
 
-	if (bits_le > mpi->bits)
-	{
-		return 0;
-	}
-
-	mpi->bits = BSWAP_16(bits_be);
 	bytes = CEIL_DIV(mpi->bits, 8);
 
-	if (size < (2u + bytes))
+	if (size < (2 + bytes))
 	{
 		return 0;
 	}
@@ -97,15 +88,14 @@ uint32_t mpi_write(mpi_t *mpi, void *ptr, size_t size)
 {
 	// 2 bytes for the bits + the number in big endian form.
 	uint16_t required_size = 2 + CEIL_DIV(mpi->bits, 8);
-	uint16_t bits_be = BSWAP_16(mpi->bits);
 	byte_t *out = ptr;
 
 	if (size < required_size)
 	{
-		return -1;
+		return 0;
 	}
 
-	LOAD_16(out, &bits_be);
+	LOAD_16BE(out, &mpi->bits);
 	memcpy(out + sizeof(uint16_t), mpi->bytes, CEIL_DIV(mpi->bits, 8));
 
 	return required_size;
