@@ -409,6 +409,18 @@ pgp_error_t pgp_packet_stream_write_armor(pgp_stream_t *stream, armor_options *o
 	// Always add empty line after begin marker
 	options->flags |= ARMOR_EMPTY_LINE;
 
+	*buffer = malloc(*size);
+
+	if (*buffer == NULL)
+	{
+		free(temp);
+		return PGP_NO_MEMORY;
+	}
+
+	memset(*buffer, 0, *size);
+
+	status = armor_write(options, temp, (uint32_t)temp_size, *buffer, (uint32_t *)size);
+
 	if (status != ARMOR_SUCCESS)
 	{
 		if (status == ARMOR_BUFFER_TOO_SMALL)
@@ -417,6 +429,7 @@ pgp_error_t pgp_packet_stream_write_armor(pgp_stream_t *stream, armor_options *o
 
 			if (*buffer == NULL)
 			{
+				free(temp);
 				return PGP_NO_MEMORY;
 			}
 
@@ -523,11 +536,11 @@ pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *s
 			{
 				for (uint32_t j = 0; j < sign->hashed_subpackets->count; ++j)
 				{
-					subheader = sign->hashed_subpackets->packets[i];
+					subheader = sign->hashed_subpackets->packets[j];
 
 					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
 					{
-						exportable = sign->hashed_subpackets->packets[i];
+						exportable = sign->hashed_subpackets->packets[j];
 
 						if (exportable->state == 0)
 						{
@@ -541,11 +554,11 @@ pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *s
 			{
 				for (uint32_t j = 0; j < sign->unhashed_subpackets->count; ++j)
 				{
-					subheader = sign->unhashed_subpackets->packets[i];
+					subheader = sign->unhashed_subpackets->packets[j];
 
 					if ((subheader->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
 					{
-						exportable = sign->unhashed_subpackets->packets[i];
+						exportable = sign->unhashed_subpackets->packets[j];
 
 						if (exportable->state == 0)
 						{
