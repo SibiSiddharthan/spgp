@@ -765,6 +765,7 @@ void spgp_import_keys(void)
 static void spgp_export_keyring(void *input, byte_t secret)
 {
 	pgp_keyring_packet *keyring = NULL;
+	pgp_key_packet *key = NULL;
 	pgp_stream_t *certificate = NULL;
 
 	uint16_t subkey_index = 0;
@@ -772,6 +773,11 @@ static void spgp_export_keyring(void *input, byte_t secret)
 	armor_options options = {0};
 	armor_marker marker = {0};
 	armor_options *opts = NULL;
+
+	if (input == NULL)
+	{
+		return;
+	}
 
 	keyring = spgp_search_keyring(NULL, NULL, input, strlen(input), 0);
 
@@ -789,8 +795,18 @@ static void spgp_export_keyring(void *input, byte_t secret)
 	if (secret)
 	{
 		// First key packet is the primary key
+		key = spgp_read_key(keyring->primary_fingerprint, keyring->fingerprint_size);
+
+		if (key->type != PGP_KEY_TYPE_SECRET)
+		{
+			printf("Key is a public key.\n");
+			exit(1);
+		}
+
 		pgp_packet_delete(certificate->packets[0]);
-		certificate->packets[0] = spgp_read_key(keyring->primary_fingerprint, keyring->fingerprint_size);
+
+		pgp_key_packet_transform(key, PGP_SECKEY);
+		certificate->packets[0] = key;
 
 		for (uint32_t i = 1; i < certificate->count; ++i)
 		{
@@ -800,9 +816,19 @@ static void spgp_export_keyring(void *input, byte_t secret)
 			// The order of subkeys in the keyring and in the certificate will be the same.
 			if (type == PGP_PUBSUBKEY)
 			{
+				key = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, subkey_index * keyring->fingerprint_size),
+									keyring->fingerprint_size);
+
+				if (key->type != PGP_KEY_TYPE_SECRET)
+				{
+					printf("Key is a public key.\n");
+					exit(1);
+				}
+
 				pgp_packet_delete(certificate->packets[i]);
-				certificate->packets[0] = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, subkey_index * keyring->fingerprint_size),
-														keyring->fingerprint_size);
+
+				pgp_key_packet_transform(key, PGP_SECSUBKEY);
+				certificate->packets[i] = key;
 
 				subkey_index += 1;
 			}
@@ -840,7 +866,7 @@ void spgp_export_keys(void)
 {
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		spgp_export_keyring(command.args->packets[i], command.export_secret_keys);
+		spgp_export_keyring(command.args->data[i], command.export_secret_keys);
 	}
 }
 
