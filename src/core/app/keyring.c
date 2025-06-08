@@ -757,6 +757,55 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		pos += 1;
 	}
 
+	if (key_type == PGP_KEY_TYPE_SECRET)
+	{
+		// Check if key can be decrypted.
+		byte_t passphrase_buffer[SPGP_MAX_PASSPHRASE_SIZE] = {0};
+		byte_t passphrase_size = 0;
+
+		char message_buffer[256] = {0};
+		char fingerprint_hex[128] = {0};
+
+		hexify(fingerprint_hex, primary_fingerprint, primary_fingerprint_size);
+		snprintf(message_buffer, 256, "Enter passhrase for importing secret key %.*s.", primary_fingerprint_size * 2, fingerprint_hex);
+
+		passphrase_size = spgp_prompt_passphrase(passphrase_buffer, message_buffer);
+
+		if (passphrase_size == 0)
+		{
+			printf("No passphrase provided\n.");
+			exit(1);
+		}
+
+		// Primary key
+		status = pgp_key_packet_decrypt_check(primary_key, passphrase_buffer, passphrase_size);
+
+		if (status != PGP_SUCCESS)
+		{
+			printf("Incorrect passphrase. Secret key cannot be imported\n.");
+			exit(1);
+		}
+
+		// Subkeys (same passphrase)
+		for (uint32_t i = offset + 1; i < end; ++i)
+		{
+			header = stream->packets[i];
+			type = pgp_packet_type_from_tag(header->tag);
+
+			if (type == PGP_KEYDEF)
+			{
+				subkey = stream->packets[i];
+				status = pgp_key_packet_decrypt_check(subkey, passphrase_buffer, passphrase_size);
+
+				if (status != PGP_SUCCESS)
+				{
+					printf("Incorrect passphrase. Secret key cannot be imported\n.");
+					exit(1);
+				}
+			}
+		}
+	}
+
 	// Write the keys
 	spgp_write_key(primary_key);
 
