@@ -3121,9 +3121,8 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+static pgp_error_t pgp_key_packet_decrypt_internal(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
 {
-	pgp_error_t result = 0;
 	byte_t tag = pgp_packet_type_from_tag(packet->header.tag);
 
 	if (tag != PGP_KEYDEF && tag != PGP_SECKEY && tag != PGP_SECSUBKEY)
@@ -3199,11 +3198,18 @@ pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, siz
 
 	// Checksum will be updated
 	// Private octet count will be updated
-	result = pgp_secret_key_material_decrypt(packet, passphrase, passphrase_size);
+	return pgp_secret_key_material_decrypt(packet, passphrase, passphrase_size);
+}
 
-	if (result != PGP_SUCCESS)
+pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+{
+	pgp_error_t status = 0;
+
+	status = pgp_key_packet_decrypt_internal(packet, passphrase, passphrase_size);
+
+	if (status != PGP_SUCCESS)
 	{
-		return result;
+		return status;
 	}
 
 	// Free the encrypted portion
@@ -3216,6 +3222,12 @@ pgp_error_t pgp_key_packet_decrypt(pgp_key_packet *packet, void *passphrase, siz
 	pgp_key_packet_encode_header(packet, PGP_KEYDEF);
 
 	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_key_packet_decrypt_check(pgp_key_packet *packet, void *passphrase, size_t passphrase_size)
+{
+	// Only check whether the key can be decrypted with the given passphrase
+	return pgp_key_packet_decrypt_internal(packet, passphrase, passphrase_size);
 }
 
 static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *buffer)
