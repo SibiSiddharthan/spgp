@@ -1184,6 +1184,13 @@ static uint32_t pgp_private_key_material_write(pgp_key_packet *packet, void *ptr
 
 static uint32_t pgp_key_packet_get_s2k_size(pgp_key_packet *packet)
 {
+	uint32_t count = 0;
+
+	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
+	{
+		count = 1;
+	}
+
 	switch (packet->s2k_usage)
 	{
 	case 0: // Plaintext
@@ -1191,17 +1198,17 @@ static uint32_t pgp_key_packet_get_s2k_size(pgp_key_packet *packet)
 	case 253: // AEAD
 		// A 1-octet symmetric key algorithm.
 		// A 1-octet AEAD algorithm.
-		// A 1-octet count of S2K specifier
+		// A 1-octet count of S2K specifier (V5 and V6)
 		// A S2K specifier
 		// IV
-		return 1 + 1 + 1 + packet->iv_size + pgp_s2k_octets(&packet->s2k);
+		return 1 + 1 + count + packet->iv_size + pgp_s2k_octets(&packet->s2k);
 	case 254: // CFB
 	case 255: // Malleable CFB
 		// A 1-octet symmetric key algorithm.
-		// A 1-octet count of S2K specifier
+		// A 1-octet count of S2K specifier (V5 and V6)
 		// A S2K specifier
 		// IV
-		return 1 + 1 + packet->iv_size + pgp_s2k_octets(&packet->s2k);
+		return 1 + count + packet->iv_size + pgp_s2k_octets(&packet->s2k);
 		break;
 	default:
 		return 0;
@@ -1300,7 +1307,16 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 			}
 		}
 
-		body_size += (packet->s2k_usage != 0) ? (1 + pgp_key_packet_get_s2k_size(packet)) : 0;
+		// S2K
+		if (packet->s2k_usage != 0)
+		{
+			body_size += pgp_key_packet_get_s2k_size(packet);
+
+			if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
+			{
+				body_size += 1;
+			}
+		}
 
 		packet->header = pgp_packet_header_encode(format, type, 0, body_size);
 	}
