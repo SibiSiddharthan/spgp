@@ -136,6 +136,8 @@ char *pgp_error(pgp_error_t status)
 		return "Unknown String-to-Key (S2K) Specifier";
 	case PGP_MALFORMED_S2K_SIZE:
 		return "Malformed String-to-Key (S2K) Size";
+	case PGP_MALFORMED_S2K_USAGE_SIZE:
+		return "Malformed String-to-Key (S2K) Usage Size";
 	case PGP_EMPTY_S2K:
 		return "Empty String-to-Key (S2K)";
 

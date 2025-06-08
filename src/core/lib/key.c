@@ -1182,33 +1182,43 @@ static uint32_t pgp_private_key_material_write(pgp_key_packet *packet, void *ptr
 	}
 }
 
-static uint32_t pgp_key_packet_get_s2k_size(pgp_key_packet *packet)
+static uint32_t pgp_key_packet_get_s2k_size(pgp_key_packet *packet, pgp_packet_type type)
 {
-	uint32_t count = 0;
-
-	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
-	{
-		count = 1;
-	}
-
 	switch (packet->s2k_usage)
 	{
 	case 0: // Plaintext
 		return 0;
+	case PGP_IDEA:
+	case PGP_TDES:
+	case PGP_CAST5_128:
+	case PGP_BLOWFISH:
+	case PGP_AES_128:
+	case PGP_AES_192:
+	case PGP_AES_256:
+	case PGP_TWOFISH:
+	case PGP_CAMELLIA_128:
+	case PGP_CAMELLIA_192:
+	case PGP_CAMELLIA_256:
+		return pgp_symmetric_cipher_block_size(packet->s2k_usage);
 	case 253: // AEAD
 		// A 1-octet symmetric key algorithm.
 		// A 1-octet AEAD algorithm.
-		// A 1-octet count of S2K specifier (V5 and V6)
+		// A 1-octet count of S2K specifier (V6)
 		// A S2K specifier
 		// IV
-		return 1 + 1 + count + packet->iv_size + pgp_s2k_octets(&packet->s2k);
+		return 1 + 1 + packet->iv_size + pgp_s2k_octets(&packet->s2k) + (type == PGP_KEYDEF || packet->version == PGP_KEY_V6);
 	case 254: // CFB
+		// A 1-octet symmetric key algorithm.
+		// A 1-octet count of S2K specifier (V6)
+		// A S2K specifier
+		// IV
+		return 1 + packet->iv_size + pgp_s2k_octets(&packet->s2k) + (type == PGP_KEYDEF || packet->version == PGP_KEY_V6);
 	case 255: // Malleable CFB
 		// A 1-octet symmetric key algorithm.
-		// A 1-octet count of S2K specifier (V5 and V6)
+		// A 1-octet count of S2K specifier (KEYDEF)
 		// A S2K specifier
 		// IV
-		return 1 + count + packet->iv_size + pgp_s2k_octets(&packet->s2k);
+		return 1 + packet->iv_size + pgp_s2k_octets(&packet->s2k) + (type == PGP_KEYDEF);
 		break;
 	default:
 		return 0;
@@ -1246,7 +1256,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 		{
 			body_size += 1 + 4;
 			body_size += (packet->encrypted != NULL ? packet->encrypted_octets : packet->private_key_data_octets);
-			body_size += (packet->s2k_usage != 0) ? (1 + pgp_key_packet_get_s2k_size(packet)) : 0;
+			body_size += (packet->s2k_usage != 0) ? (1 + pgp_key_packet_get_s2k_size(packet, PGP_KEYDEF)) : 0;
 		}
 
 		packet->header = pgp_packet_header_encode(format, type, 0, body_size);
@@ -1310,7 +1320,7 @@ static void pgp_key_packet_encode_header(pgp_key_packet *packet, pgp_packet_type
 		// S2K
 		if (packet->s2k_usage != 0)
 		{
-			body_size += pgp_key_packet_get_s2k_size(packet);
+			body_size += pgp_key_packet_get_s2k_size(packet, PGP_SECKEY);
 
 			if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 			{
@@ -2383,6 +2393,7 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 	{
 		byte_t s2k_size = 0;
 		byte_t conditional_field_size = 0;
+		size_t current_pos = buffer->pos + 1;
 
 		if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
 		{
@@ -2399,10 +2410,13 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 			CHECK_READ(read8(buffer, &packet->aead_algorithm_id), PGP_MALFORMED_SECRET_KEY_PACKET);
 		}
 
-		if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254)
 		{
-			// 1-octet count of S2K specifier
-			CHECK_READ(read8(buffer, &s2k_size), PGP_MALFORMED_SECRET_KEY_PACKET);
+			if (packet->version == PGP_KEY_V6)
+			{
+				// 1-octet count of S2K specifier
+				CHECK_READ(read8(buffer, &s2k_size), PGP_MALFORMED_SECRET_KEY_PACKET);
+			}
 		}
 
 		// S2K specifier
@@ -2440,6 +2454,14 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 		}
 
 		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_SECRET_KEY_PACKET);
+
+		if (conditional_field_size != 0)
+		{
+			if (conditional_field_size != (buffer->pos - current_pos))
+			{
+				return PGP_MALFORMED_S2K_USAGE_SIZE;
+			}
+		}
 
 		// Encrypted secret key
 		if (packet->version == PGP_KEY_V5)
@@ -2576,7 +2598,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 	byte_t conditional_field_size = 0;
 
 	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
-	conditional_field_size = pgp_key_packet_get_s2k_size(packet);
+	conditional_field_size = pgp_key_packet_get_s2k_size(packet, PGP_SECKEY);
 
 	if (size < PGP_PACKET_OCTETS(packet->header))
 	{
@@ -2638,19 +2660,25 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 			pos += 1;
 		}
 
-		if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254)
 		{
-			// 1-octet count of S2K specifier
-			LOAD_8(out + pos, &s2k_size);
-			pos += 1;
+			if (packet->version == PGP_KEY_V6)
+			{
+				// 1-octet count of S2K specifier
+				LOAD_8(out + pos, &s2k_size);
+				pos += 1;
+			}
 		}
 
 		// S2K specifier
-		pos += pgp_s2k_write(&packet->s2k, out + pos);
+		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		{
+			pos += pgp_s2k_write(&packet->s2k, out + pos);
+		}
 
 		// IV
 		memcpy(out + pos, packet->iv, packet->iv_size);
-		pos += 16;
+		pos += packet->iv_size;
 
 		// Secret key octet count
 		if (packet->version == PGP_KEY_V5)
@@ -3321,6 +3349,7 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 	{
 		byte_t s2k_size = 0;
 		byte_t conditional_field_size = 0;
+		size_t current_pos = buffer->pos + 1;
 
 		// 1-octet scalar count of S2K fields
 		CHECK_READ(read8(buffer, &conditional_field_size), PGP_MALFORMED_KEYDEF_PACKET);
@@ -3334,13 +3363,13 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 			CHECK_READ(read8(buffer, &packet->aead_algorithm_id), PGP_MALFORMED_KEYDEF_PACKET);
 		}
 
-		// 1-octet count of S2K specifier
-		CHECK_READ(read8(buffer, &s2k_size), PGP_MALFORMED_KEYDEF_PACKET);
-
 		// S2K specifier
 		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
 		{
 			uint32_t result = 0;
+
+			// 1-octet count of S2K specifier
+			CHECK_READ(read8(buffer, &s2k_size), PGP_MALFORMED_KEYDEF_PACKET);
 
 			result = pgp_s2k_read(&packet->s2k, buffer->data + buffer->pos, s2k_size);
 
@@ -3349,12 +3378,9 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 				return PGP_UNKNOWN_S2K_SPECIFIER;
 			}
 
-			if (s2k_size != 0)
+			if (result != s2k_size)
 			{
-				if (result != s2k_size)
-				{
-					return PGP_MALFORMED_S2K_SIZE;
-				}
+				return PGP_MALFORMED_S2K_SIZE;
 			}
 
 			buffer->pos += result;
@@ -3372,6 +3398,11 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 		}
 
 		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_KEYDEF_PACKET);
+
+		if (conditional_field_size != (buffer->pos - current_pos))
+		{
+			return PGP_MALFORMED_S2K_USAGE_SIZE;
+		}
 
 		// Secret key octet count
 		CHECK_READ(read32_be(buffer, &packet->encrypted_octets), PGP_MALFORMED_KEYDEF_PACKET);
@@ -3556,7 +3587,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	}
 
 	s2k_size = (packet->s2k_usage != 0) ? pgp_s2k_octets(&packet->s2k) : 0;
-	conditional_field_size = pgp_key_packet_get_s2k_size(packet);
+	conditional_field_size = pgp_key_packet_get_s2k_size(packet, PGP_KEYDEF);
 
 	// 1 octet of S2K usage
 	LOAD_8(out + pos, &packet->s2k_usage);
@@ -3579,16 +3610,19 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 			pos += 1;
 		}
 
-		// 1-octet count of S2K specifier
-		LOAD_8(out + pos, &s2k_size);
-		pos += 1;
+		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		{
+			// 1-octet count of S2K specifier
+			LOAD_8(out + pos, &s2k_size);
+			pos += 1;
 
-		// S2K specifier
-		pos += pgp_s2k_write(&packet->s2k, out + pos);
+			// S2K specifier
+			pos += pgp_s2k_write(&packet->s2k, out + pos);
+		}
 
 		// IV
 		memcpy(out + pos, packet->iv, packet->iv_size);
-		pos += 16;
+		pos += packet->iv_size;
 
 		// Secret key octet count
 		LOAD_32BE(out + pos, &packet->encrypted_octets);
