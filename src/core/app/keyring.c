@@ -782,7 +782,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		if (status != PGP_SUCCESS)
 		{
-			printf("Incorrect passphrase. Secret key cannot be imported\n.");
+			printf("Incorrect passphrase. Secret key cannot be imported.\n");
 			exit(1);
 		}
 
@@ -799,7 +799,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 				if (status != PGP_SUCCESS)
 				{
-					printf("Incorrect passphrase. Secret key cannot be imported\n.");
+					printf("Incorrect passphrase. Secret key cannot be imported.\n");
 					exit(1);
 				}
 			}
@@ -948,7 +948,7 @@ static pgp_stream_t *spgp_export_keyring(void *input, byte_t secret)
 
 		if (status != PGP_SUCCESS)
 		{
-			printf("Incorrect passphrase. Secret key cannot be exported\n.");
+			printf("Incorrect passphrase. Secret key cannot be exported.\n");
 			exit(1);
 		}
 
@@ -978,7 +978,7 @@ static pgp_stream_t *spgp_export_keyring(void *input, byte_t secret)
 
 				if (status != PGP_SUCCESS)
 				{
-					printf("Incorrect passphrase. Secret key cannot be exported\n.");
+					printf("Incorrect passphrase. Secret key cannot be exported.\n");
 					exit(1);
 				}
 
@@ -1495,6 +1495,19 @@ uint32_t spgp_prompt_passphrase(byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE], cha
 	if (result == 0)
 	{
 		return 0;
+	}
+
+	// Remove any newline characters
+	while (result > 0)
+	{
+		if (passphrase[result - 1] == '\n' || passphrase[result - 1] == '\r')
+		{
+			result -= 1;
+		}
+		else
+		{
+			break;
+		}
 	}
 
 	return (uint32_t)result;
