@@ -171,8 +171,11 @@ pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], 
 
 void spgp_write_key(pgp_key_packet *key)
 {
+	status_t status = 0;
 	handle_t handle = 0;
 	size_t result = 0;
+
+	stat_t stat = {0};
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
@@ -181,10 +184,51 @@ void spgp_write_key(pgp_key_packet *key)
 	char filename[256] = {0};
 	uint32_t length = 0;
 
+	pgp_key_packet *packet = NULL;
+
 	PGP_CALL(pgp_key_fingerprint(key, fingerprint, &fingerprint_size));
 	length = get_key_filename(filename, fingerprint, fingerprint_size);
 
-	pgp_key_packet_write(key, buffer, 16384);
+	// Check if we already have a key file
+	status = os_stat(command.keys, filename, length, STAT_NO_ACLS, &stat, sizeof(stat_t));
+
+	if (status == OS_STATUS_SUCCESS)
+	{
+		packet = spgp_read_key(fingerprint, fingerprint_size);
+
+		if (packet->type == key->type)
+		{
+			// Update the attributes
+			packet->flags = key->flags;
+			packet->capabilities = key->capabilities;
+			packet->key_expiry_seconds = key->key_expiry_seconds;
+
+			if (packet->key_revocation_time == 0)
+			{
+				packet->key_revocation_time = key->key_revocation_time;
+			}
+
+			pgp_key_packet_write(packet, buffer, 16384);
+		}
+		else
+		{
+			// Prefer secret key packets
+			if (packet->type == PGP_KEY_TYPE_SECRET)
+			{
+				pgp_key_packet_write(packet, buffer, 16384);
+			}
+			else
+			{
+				pgp_key_packet_write(key, buffer, 16384);
+			}
+		}
+
+		pgp_key_packet_delete(packet);
+	}
+	else
+	{
+		pgp_key_packet_write(key, buffer, 16384);
+	}
 
 	OS_CALL(os_open(&handle, command.keys, filename, length, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
 			printf("Unable to open key file %s", filename));
