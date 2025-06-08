@@ -806,6 +806,24 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		}
 	}
 
+	// Update trust levels
+	for (uint32_t i = 0; i < keyring_packet->users->count; ++i)
+	{
+		uinfo = keyring_packet->users->packets[i];
+
+		if (uinfo->trust == PGP_TRUST_NEVER)
+		{
+			if (key_type == PGP_KEY_TYPE_SECRET)
+			{
+				uinfo->trust = PGP_TRUST_ULTIMATE;
+			}
+			else
+			{
+				uinfo->trust = PGP_TRUST_MARGINAL;
+			}
+		}
+	}
+
 	// Write the keys
 	spgp_write_key(primary_key);
 
