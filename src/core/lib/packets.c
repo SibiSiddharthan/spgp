@@ -2023,6 +2023,77 @@ static void hex_to_data(void *input, byte_t input_size, byte_t output[PGP_KEY_MA
 	}
 }
 
+static byte_t keyring_search_key_fingerprint_or_id_hex(pgp_keyring_packet *packet, void *input, uint32_t size,
+													   byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
+{
+	if (size == packet->fingerprint_size)
+	{
+		// Check primary key first
+		if (memcmp(packet->primary_fingerprint, input, packet->fingerprint_size) == 0)
+		{
+			memcpy(output, input, packet->fingerprint_size);
+			return packet->fingerprint_size;
+		}
+
+		// Check subkeys in order
+		for (byte_t i = 0; i < packet->subkey_count; ++i)
+		{
+			if (memcmp(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), input, packet->fingerprint_size) == 0)
+			{
+				memcpy(output, input, packet->fingerprint_size);
+				return packet->fingerprint_size;
+			}
+		}
+	}
+	else // size == PGP_KEY_ID_SIZE
+	{
+		if (packet->key_version == PGP_KEY_V5)
+		{
+			// First 8 octets
+			// Check primary key first
+			if (memcmp(packet->primary_fingerprint, input, PGP_KEY_ID_SIZE) == 0)
+			{
+				memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
+				return packet->fingerprint_size;
+			}
+
+			// Check subkeys in order
+			for (byte_t i = 0; i < packet->subkey_count; ++i)
+			{
+				if (memcmp(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), input, PGP_KEY_ID_SIZE) == 0)
+				{
+					memcpy(output, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
+					return packet->fingerprint_size;
+				}
+			}
+		}
+		else
+		{
+			// Last 8 octets
+			// Check primary key first
+			if (memcmp(PTR_OFFSET(packet->primary_fingerprint, packet->fingerprint_size - PGP_KEY_ID_SIZE), input, PGP_KEY_ID_SIZE) == 0)
+			{
+				memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
+				return packet->fingerprint_size;
+			}
+
+			// Check subkeys in order
+			for (byte_t i = 0; i < packet->subkey_count; ++i)
+			{
+				if (memcmp(PTR_OFFSET(packet->subkey_fingerprints,
+									  (i * packet->fingerprint_size) + (packet->fingerprint_size - PGP_KEY_ID_SIZE)),
+						   input, PGP_KEY_ID_SIZE) == 0)
+				{
+					memcpy(output, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
+					return packet->fingerprint_size;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
 static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, void *input, uint32_t size,
 												   byte_t output[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
@@ -2063,73 +2134,7 @@ static byte_t keyring_search_key_fingerprint_or_id(pgp_keyring_packet *packet, v
 	// Convert to bytes
 	hex_to_data(in, size, fingerprint);
 
-	if (size == (packet->fingerprint_size * 2))
-	{
-		// Check primary key first
-		if (memcmp(packet->primary_fingerprint, fingerprint, packet->fingerprint_size) == 0)
-		{
-			memcpy(output, fingerprint, packet->fingerprint_size);
-			return packet->fingerprint_size;
-		}
-
-		// Check subkeys in order
-		for (byte_t i = 0; i < packet->subkey_count; ++i)
-		{
-			if (memcmp(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), fingerprint, packet->fingerprint_size) == 0)
-			{
-				memcpy(output, fingerprint, packet->fingerprint_size);
-				return packet->fingerprint_size;
-			}
-		}
-	}
-	else // size == 16
-	{
-		if (packet->key_version == PGP_KEY_V5)
-		{
-			// First 8 octets
-			// Check primary key first
-			if (memcmp(packet->primary_fingerprint, fingerprint, PGP_KEY_ID_SIZE) == 0)
-			{
-				memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
-				return packet->fingerprint_size;
-			}
-
-			// Check subkeys in order
-			for (byte_t i = 0; i < packet->subkey_count; ++i)
-			{
-				if (memcmp(PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), fingerprint, PGP_KEY_ID_SIZE) == 0)
-				{
-					memcpy(output, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
-					return packet->fingerprint_size;
-				}
-			}
-		}
-		else
-		{
-			// Last 8 octets
-			// Check primary key first
-			if (memcmp(PTR_OFFSET(packet->primary_fingerprint, packet->fingerprint_size - PGP_KEY_ID_SIZE), fingerprint, PGP_KEY_ID_SIZE) ==
-				0)
-			{
-				memcpy(output, packet->primary_fingerprint, packet->fingerprint_size);
-				return packet->fingerprint_size;
-			}
-
-			// Check subkeys in order
-			for (byte_t i = 0; i < packet->subkey_count; ++i)
-			{
-				if (memcmp(PTR_OFFSET(packet->subkey_fingerprints,
-									  (i * packet->fingerprint_size) + (packet->fingerprint_size - PGP_KEY_ID_SIZE)),
-						   fingerprint, PGP_KEY_ID_SIZE) == 0)
-				{
-					memcpy(output, PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size), packet->fingerprint_size);
-					return packet->fingerprint_size;
-				}
-			}
-		}
-	}
-
-	return 0;
+	return keyring_search_key_fingerprint_or_id_hex(packet, fingerprint, size / 2, output);
 }
 
 static pgp_user_info *keyring_search_uid(pgp_keyring_packet *packet, void *input, uint32_t size)
@@ -2193,6 +2198,21 @@ pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
+
+	if (size == packet->fingerprint_size || size == PGP_KEY_ID_SIZE)
+	{
+		fingerprint_size = keyring_search_key_fingerprint_or_id_hex(packet, input, size, fingerprint);
+		pgp_user_info *uinfo = packet->users->packets[0];
+
+		if (fingerprint_size != 0)
+		{
+			// Use the primary user info and copy the fingerprint to it.
+			memcpy(uinfo->fingerprint, fingerprint, fingerprint_size);
+			uinfo->fingerprint_size = fingerprint_size;
+
+			return uinfo;
+		}
+	}
 
 	if (in[0] == '<' || in[0] == '=' || in[0] == '@')
 	{
