@@ -446,11 +446,10 @@ static void spgp_execute_operation(spgp_command *command)
 		return spgp_list_keys();
 	}
 
-	if(command->dearmor)
+	if (command->dearmor)
 	{
 		return spgp_dearmor();
 	}
-
 }
 
 static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **argv)
@@ -649,6 +648,11 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		case ARGPARSE_RETURN_NON_OPTION:
 		{
 			STREAM_CALL(command->args = pgp_stream_push(command->args, result->data));
+		}
+		break;
+		case ARGPARSE_RETURN_STDIN_OPTION:
+		{
+			STREAM_CALL(command->args = pgp_stream_push(command->args, NULL));
 		}
 		break;
 
