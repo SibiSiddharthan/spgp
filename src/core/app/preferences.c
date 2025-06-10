@@ -108,7 +108,7 @@ pgp_compression_algorithms preferred_compression_algorithm(pgp_user_info **users
 	{
 		if (preferences[i] == count)
 		{
-			algorithm = preferences[i];
+			algorithm = i;
 			break;
 		}
 	}
@@ -135,14 +135,19 @@ pgp_symmetric_key_algorithms preferred_cipher_algorithm(pgp_user_info **users, u
 		{
 			if (algorithm == 0)
 			{
-				algorithm = preferences[i];
+				algorithm = i;
 			}
 			else
 			{
 				// Choose the stronger encryption algorithm
-				if (pgp_symmetric_cipher_key_size(preferences[i]) > pgp_symmetric_cipher_key_size(algorithm))
+				if (pgp_symmetric_cipher_block_size(i) > pgp_symmetric_cipher_block_size(i))
 				{
-					algorithm = preferences[i];
+					algorithm = i;
+				}
+				else if ((pgp_symmetric_cipher_block_size(i) == pgp_symmetric_cipher_block_size(i)) &&
+						 pgp_symmetric_cipher_key_size(i) > pgp_symmetric_cipher_key_size(algorithm))
+				{
+					algorithm = i;
 				}
 			}
 		}
@@ -186,7 +191,7 @@ uint16_t preferred_aead_algorithm(pgp_user_info **users, uint32_t count)
 		{
 			if (algorithm == 0)
 			{
-				algorithm = preferences[i];
+				algorithm = i;
 			}
 			else
 			{
@@ -194,7 +199,7 @@ uint16_t preferred_aead_algorithm(pgp_user_info **users, uint32_t count)
 				if (pgp_symmetric_cipher_key_size(preferences[i] % cipher_algorithm_count) >
 					pgp_symmetric_cipher_key_size(algorithm % cipher_algorithm_count))
 				{
-					algorithm = preferences[i];
+					algorithm = i;
 				}
 			}
 		}
@@ -212,7 +217,7 @@ uint16_t preferred_aead_algorithm(pgp_user_info **users, uint32_t count)
 		aead_algorithm = (algorithm / cipher_algorithm_count) + 1;
 	}
 
-	return ((cipher_algorithm << 8) + aead_algorithm);
+	return (((cipher_algorithm + PGP_AES_128) << 8) + aead_algorithm);
 }
 
 void preferred_s2k_algorithm(pgp_key_version version, pgp_s2k *s2k)
