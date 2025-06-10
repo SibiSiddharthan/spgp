@@ -236,7 +236,7 @@ void spgp_write_key(pgp_key_packet *key)
 	OS_CALL(os_close(handle), printf("Unable to close handle %u", (uint32_t)(uintptr_t)handle));
 }
 
-static void spgp_import_certificates(pgp_stream_t *stream)
+void spgp_import_certificates(pgp_stream_t *stream)
 {
 	pgp_packet_header *header = NULL;
 	pgp_packet_type type = 0;
@@ -426,6 +426,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	byte_t signature_fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	byte_t signature_by_primary_key = 0;
+	byte_t check_passphrase = 0;
 	byte_t certificate_version = 0;
 
 	// The first packet must be public key or secret key packet
@@ -447,6 +448,14 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 	{
 		printf("Invalid top level key algorithm.\n");
 		exit(1);
+	}
+
+	if (key_type == PGP_KEY_TYPE_SECRET)
+	{
+		if (primary_key->encrypted != NULL && primary_key->encrypted_octets != 0)
+		{
+			check_passphrase = 1;
+		}
 	}
 
 	for (uint32_t i = offset + 1; i < stream->count; ++i)
@@ -474,6 +483,30 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			{
 				printf("Bad PGP Key certificate.\n");
 				exit(1);
+			}
+		}
+
+		if (type == PGP_SECSUBKEY)
+		{
+			subkey = stream->packets[i];
+
+			// Encrypted key, subkeys should also be encrypted with the same passphrase
+			if (check_passphrase)
+			{
+				if (subkey->encrypted == NULL || subkey->encrypted_octets == 0)
+				{
+					printf("Bad PGP Key certificate.\n");
+					exit(1);
+				}
+			}
+			// Plaintext key, subkeys should also be plaintext
+			else
+			{
+				if (subkey->encrypted != NULL || subkey->encrypted_octets != 0)
+				{
+					printf("Bad PGP Key certificate.\n");
+					exit(1);
+				}
 			}
 		}
 	}
@@ -757,7 +790,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		pos += 1;
 	}
 
-	if (key_type == PGP_KEY_TYPE_SECRET)
+	if (key_type == PGP_KEY_TYPE_SECRET && check_passphrase)
 	{
 		// Check if key can be decrypted.
 		byte_t passphrase_buffer[SPGP_MAX_PASSPHRASE_SIZE] = {0};
@@ -890,6 +923,7 @@ static pgp_stream_t *spgp_export_keyring(void *input, byte_t secret)
 	pgp_stream_t *certificate = NULL;
 
 	uint16_t subkey_index = 0;
+	byte_t check_passphrase = 0;
 
 	byte_t passphrase_buffer[SPGP_MAX_PASSPHRASE_SIZE] = {0};
 	byte_t passphrase_size = 0;
@@ -928,28 +962,36 @@ static pgp_stream_t *spgp_export_keyring(void *input, byte_t secret)
 
 		pgp_packet_delete(certificate->packets[0]);
 
-		// Prompt for passphrase when exporting secret keys
-		hexify(fingerprint_hex, keyring->primary_fingerprint, keyring->fingerprint_size);
-		snprintf(message_buffer, 256, "Enter passhrase for importing secret key %.*s.", keyring->fingerprint_size * 2, fingerprint_hex);
-
-		passphrase_size = spgp_prompt_passphrase(passphrase_buffer, message_buffer);
-
-		if (passphrase_size == 0)
-		{
-			printf("No passphrase provided\n.");
-			exit(1);
-		}
-
 		pgp_key_packet_transform(key, PGP_SECKEY);
 		certificate->packets[0] = key;
 
-		// Primary
-		status = pgp_key_packet_decrypt_check(key, passphrase_buffer, passphrase_size);
-
-		if (status != PGP_SUCCESS)
+		if (key->encrypted != NULL && key->encrypted_octets != 0)
 		{
-			printf("Incorrect passphrase. Secret key cannot be exported.\n");
-			exit(1);
+			check_passphrase = 1;
+		}
+
+		if (check_passphrase)
+		{
+			// Prompt for passphrase when exporting secret keys
+			hexify(fingerprint_hex, keyring->primary_fingerprint, keyring->fingerprint_size);
+			snprintf(message_buffer, 256, "Enter passhrase for importing secret key %.*s.", keyring->fingerprint_size * 2, fingerprint_hex);
+
+			passphrase_size = spgp_prompt_passphrase(passphrase_buffer, message_buffer);
+
+			if (passphrase_size == 0)
+			{
+				printf("No passphrase provided\n.");
+				exit(1);
+			}
+
+			// Primary
+			status = pgp_key_packet_decrypt_check(key, passphrase_buffer, passphrase_size);
+
+			if (status != PGP_SUCCESS)
+			{
+				printf("Incorrect passphrase. Secret key cannot be exported.\n");
+				exit(1);
+			}
 		}
 
 		for (uint32_t i = 1; i < certificate->count; ++i)
@@ -974,12 +1016,15 @@ static pgp_stream_t *spgp_export_keyring(void *input, byte_t secret)
 				pgp_key_packet_transform(key, PGP_SECSUBKEY);
 				certificate->packets[i] = key;
 
-				status = pgp_key_packet_decrypt_check(key, passphrase_buffer, passphrase_size);
-
-				if (status != PGP_SUCCESS)
+				if (check_passphrase)
 				{
-					printf("Incorrect passphrase. Secret key cannot be exported.\n");
-					exit(1);
+					status = pgp_key_packet_decrypt_check(key, passphrase_buffer, passphrase_size);
+
+					if (status != PGP_SUCCESS)
+					{
+						printf("Incorrect passphrase. Secret key cannot be exported.\n");
+						exit(1);
+					}
 				}
 
 				subkey_index += 1;
