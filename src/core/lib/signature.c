@@ -297,10 +297,6 @@ size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet
 		pos += 8;
 	}
 
-	// A 8-octet Key ID of the signer.
-	LOAD_64(out + pos, &packet->key_id);
-	pos += 8;
-
 	// A 1-octet flag for nested signatures.
 	LOAD_8(out + pos, &packet->nested);
 	pos += 1;
@@ -2526,7 +2522,7 @@ pgp_preferred_key_server_subpacket *pgp_preferred_key_server_subpacket_new(byte_
 {
 	pgp_string_subpacket *subpacket = NULL;
 
-	subpacket = malloc(size);
+	subpacket = malloc(sizeof(pgp_string_subpacket) + size);
 
 	if (subpacket == NULL)
 	{
@@ -2552,7 +2548,7 @@ pgp_policy_uri_subpacket *pgp_policy_uri_subpacket_new(byte_t critical, void *po
 {
 	pgp_string_subpacket *subpacket = NULL;
 
-	subpacket = malloc(size);
+	subpacket = malloc(sizeof(pgp_string_subpacket) + size);
 
 	if (subpacket == NULL)
 	{
@@ -2578,7 +2574,7 @@ pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacket_new(void *uid, byte_t
 {
 	pgp_string_subpacket *subpacket = NULL;
 
-	subpacket = malloc(size);
+	subpacket = malloc(sizeof(pgp_string_subpacket) + size);
 
 	if (subpacket == NULL)
 	{
@@ -2590,7 +2586,7 @@ pgp_signer_user_id_subpacket *pgp_signer_user_id_subpacket_new(void *uid, byte_t
 	subpacket->uid = PTR_OFFSET(subpacket, sizeof(pgp_string_subpacket));
 	memcpy(subpacket->uid, uid, size);
 
-	subpacket->header = pgp_subpacket_header_encode(PGP_SIGNER_USER_ID_SUBPACKET, 1, size); // Critical
+	subpacket->header = pgp_subpacket_header_encode(PGP_SIGNER_USER_ID_SUBPACKET, 0, size);
 
 	return subpacket;
 }
@@ -2604,7 +2600,7 @@ pgp_trust_alias_subpacket *pgp_trust_alias_subpacket_new(void *alias, byte_t siz
 {
 	pgp_string_subpacket *subpacket = NULL;
 
-	subpacket = malloc(size);
+	subpacket = malloc(sizeof(pgp_string_subpacket) + size);
 
 	if (subpacket == NULL)
 	{
@@ -2824,7 +2820,7 @@ pgp_error_t pgp_sign_info_set_signer_id(pgp_sign_info *sign, byte_t *signer, uin
 {
 	sign->signer = malloc(size);
 
-	if (sign->signer != NULL)
+	if (sign->signer == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
@@ -3841,6 +3837,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		}
 	}
 
+	literal_copy.header = literal->header;
 	literal_copy.data = literal->data;
 	literal_copy.data_size = literal->data_size;
 	literal_copy.partials = literal->partials;
