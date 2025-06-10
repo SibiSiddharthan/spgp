@@ -457,17 +457,19 @@ pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version)
 		return PGP_UNKNOWN_PUBLIC_SESSION_PACKET_VERSION;
 	}
 
-	packet = malloc(sizeof(pgp_pkesk_packet));
+	session = malloc(sizeof(pgp_pkesk_packet));
 
-	if (packet == NULL)
+	if (session == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_pkesk_packet));
+	memset(session, 0, sizeof(pgp_pkesk_packet));
 
 	pgp_pkesk_packet_encode_header(session);
 	session->version = version;
+
+	*packet = session;
 
 	return PGP_SUCCESS;
 }
