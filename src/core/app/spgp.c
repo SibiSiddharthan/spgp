@@ -674,6 +674,11 @@ int main(int argc, char **argv)
 {
 	spgp_parse_arguments(&command, argc, argv);
 
+	if (command.mode == 0)
+	{
+		command.mode = SPGP_MODE_RFC4880;
+	}
+
 	// No command given, print help
 	if (command.options == 0)
 	{

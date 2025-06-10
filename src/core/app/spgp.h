@@ -203,6 +203,7 @@ void spgp_write_key(pgp_key_packet *key);
 
 pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 void spgp_write_certificate(pgp_stream_t *stream);
+void spgp_import_certificates(pgp_stream_t *stream);
 
 #define SPGP_KEYRING_REPLACE 0x1
 
