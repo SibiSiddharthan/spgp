@@ -79,7 +79,7 @@ static byte_t get_key_passphrase_env(char *buffer, byte_t *fingerprint, byte_t s
 	pos = hexify(buffer, fingerprint, size);
 
 	// Append .passphrase
-	buffer[pos++] = '.';
+	buffer[pos++] = '_';
 	buffer[pos++] = 'p';
 	buffer[pos++] = 'a';
 	buffer[pos++] = 's';
