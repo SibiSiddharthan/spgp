@@ -1211,7 +1211,7 @@ static size_t print_times(pgp_key_packet *key, void *str, size_t size)
 
 	// Creation time
 	timestamp = key->key_creation_time;
-	strftime(date_buffer, 64, "%Y-%m-%d %H:%M:%S", gmtime(&timestamp));
+	strftime(date_buffer, 64, "%Y-%m-%d %H:%M:%S", localtime(&timestamp));
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "[created: %s]", date_buffer);
 
 	// Expiry time
@@ -1231,7 +1231,7 @@ static size_t print_times(pgp_key_packet *key, void *str, size_t size)
 			timestamp = key->key_creation_time + (key->key_expiry_days * 86400);
 		}
 
-		strftime(date_buffer, 64, "%Y-%m-%d %H:%M:%S", gmtime(&timestamp));
+		strftime(date_buffer, 64, "%Y-%m-%d %H:%M:%S", localtime(&timestamp));
 
 		if (current_time > timestamp)
 		{

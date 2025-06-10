@@ -132,7 +132,7 @@ static size_t print_timestamp(uint32_t indent, char *prefix, time_t timestamp, v
 	size_t pos = 0;
 	char date_buffer[64] = {0};
 
-	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", gmtime(&timestamp));
+	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", localtime(&timestamp));
 	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s: %s\n", prefix, date_buffer);
 
 	return pos;
