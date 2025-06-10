@@ -300,6 +300,9 @@ void spgp_encrypt(void)
 	armor_marker marker = {0};
 	armor_options *opts = NULL;
 
+	void **passphrases = NULL;
+	uint32_t passphrase_count = 0;
+
 	byte_t compression_algorithm = 0;
 	byte_t cipher_algorithm = 0;
 	byte_t aead_algorithm = 0;
@@ -327,6 +330,12 @@ void spgp_encrypt(void)
 
 			STREAM_CALL(command.passhprases = pgp_stream_push(command.passhprases, command.passphrase_buffer));
 		}
+	}
+
+	if (command.passhprases != NULL)
+	{
+		passphrases = command.passhprases->data;
+		passphrase_count = command.passhprases->count;
 	}
 
 	count = command.recipients->count;
@@ -385,21 +394,19 @@ void spgp_encrypt(void)
 
 		if (features & PGP_SEIPD_V2)
 		{
-			message = spgp_encrypt_seipd(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm,
-										 aead_algorithm, stream);
+			message = spgp_encrypt_seipd(key, count, passphrases, passphrase_count, cipher_algorithm, aead_algorithm, stream);
 		}
 		else if (features & PGP_AEAD)
 		{
-			message = spgp_encrypt_aead(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm, aead_algorithm,
-										stream);
+			message = spgp_encrypt_aead(key, count, passphrases, passphrase_count, cipher_algorithm, aead_algorithm, stream);
 		}
 		else if (features & PGP_MDC)
 		{
-			message = spgp_encrypt_mdc(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm, stream);
+			message = spgp_encrypt_mdc(key, count, passphrases, passphrase_count, cipher_algorithm, stream);
 		}
 		else
 		{
-			message = spgp_encrypt_sed(key, count, command.passhprases->data, command.passhprases->count, cipher_algorithm, stream);
+			message = spgp_encrypt_sed(key, count, passphrases, passphrase_count, cipher_algorithm, stream);
 		}
 
 		stream = pgp_stream_clear(stream, pgp_packet_delete);
@@ -408,10 +415,10 @@ void spgp_encrypt(void)
 	// Write output
 	if (command.armor)
 	{
-		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_SIGNATURE,
-								.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE),
-								.trailer_line = PGP_ARMOR_END_SIGNATURE,
-								.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE)};
+		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_MESSAGE,
+								.header_line_size = strlen(PGP_ARMOR_BEGIN_MESSAGE),
+								.trailer_line = PGP_ARMOR_END_MESSAGE,
+								.trailer_line_size = strlen(PGP_ARMOR_END_MESSAGE)};
 
 		options.marker = &marker;
 		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
@@ -569,7 +576,7 @@ decrypt:
 	break;
 	case PGP_AEAD:
 	{
-		// Check whether the algorith is correct
+		// Check whether the algorithm is correct
 		seipd = encrypted_packet;
 
 		if (algorithm != 0)

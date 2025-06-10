@@ -582,10 +582,13 @@ static uint32_t spgp_verify_stream_legacy(pgp_stream_t *stream)
 			spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, PGP_KEY_FLAG_SIGN);
 		}
 
-		if (key != NULL)
+		if (key == NULL)
 		{
-			status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+			printf("No public key to verify signature.\n");
+			exit(1);
 		}
+
+		status = spgp_verify_signature(sign, key, uinfo, literal, 1);
 	}
 
 	return status;
