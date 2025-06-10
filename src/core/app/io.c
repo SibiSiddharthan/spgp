@@ -155,7 +155,7 @@ pgp_literal_packet *spgp_literal_read_file(const char *file, pgp_literal_data_fo
 		OS_CALL(spgp_read_pipe_file(handle, &buffer, &size), printf("Unable to read handle %u", OS_HANDLE_AS_UINT(handle)));
 	}
 
-	PGP_CALL(pgp_literal_packet_new(&literal, PGP_HEADER, stat.st_mtim.tv_sec, (void *)file, strlen(file)));
+	PGP_CALL(pgp_literal_packet_new(&literal, PGP_HEADER, stat.st_mtim.tv_sec, (void *)file, (file != NULL) ? strlen(file) : 0));
 	PGP_CALL(pgp_literal_packet_store(literal, format, buffer, size));
 
 	free(buffer);

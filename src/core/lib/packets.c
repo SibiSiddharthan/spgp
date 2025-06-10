@@ -510,6 +510,11 @@ pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_fo
 
 void pgp_literal_packet_delete(pgp_literal_packet *packet)
 {
+	if (packet == NULL)
+	{
+		return;
+	}
+
 	free(packet->filename);
 	free(packet->data);
 	free(packet);
