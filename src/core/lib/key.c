@@ -2706,6 +2706,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 		if (packet->version != PGP_KEY_V6)
 		{
 			// 2-octet checksum
+			packet->key_checksum = pgp_private_key_material_checksum(packet);
 			LOAD_16(out + pos, &packet->key_checksum);
 			pos += 2;
 		}
@@ -2818,6 +2819,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 		return status;
 	}
 
+	pgpkey->type = PGP_KEY_TYPE_SECRET;
 	pgpkey->version = version;
 	pgpkey->key_creation_time = key_creation_time;
 	pgpkey->key_expiry_seconds = key_expiry_seconds;
@@ -2825,6 +2827,7 @@ pgp_error_t pgp_key_generate(pgp_key_packet **packet, byte_t version, byte_t pub
 	pgpkey->flags = flags & PGP_KEY_FLAGS_MASK;
 
 	pgpkey->key = key;
+	pgpkey->public_key_algorithm_id = public_key_algorithm_id;
 	pgpkey->public_key_data_octets = get_public_key_material_octets(public_key_algorithm_id, key);
 	pgpkey->private_key_data_octets = get_private_key_material_octets(public_key_algorithm_id, key);
 
@@ -3421,11 +3424,8 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 	{
 		uint32_t private_key_data_octets = 0;
 
-		if (packet->version == PGP_KEY_V5)
-		{
-			// Secret key octet count
-			CHECK_READ(read32_be(buffer, &private_key_data_octets), PGP_MALFORMED_KEYDEF_PACKET);
-		}
+		// Secret key octet count
+		CHECK_READ(read32_be(buffer, &private_key_data_octets), PGP_MALFORMED_KEYDEF_PACKET);
 
 		// Plaintext private key
 		error = pgp_private_key_material_read(packet, buffer->data + buffer->pos, private_key_data_octets);
@@ -3435,12 +3435,9 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 			return error;
 		}
 
-		if (packet->version == PGP_KEY_V5)
+		if (packet->private_key_data_octets != private_key_data_octets)
 		{
-			if (packet->private_key_data_octets != private_key_data_octets)
-			{
-				return PGP_MALFORMED_SECRET_KEY_COUNT;
-			}
+			return PGP_MALFORMED_SECRET_KEY_COUNT;
 		}
 
 		buffer->pos += packet->private_key_data_octets;
@@ -3635,7 +3632,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 	else
 	{
 		// Secret key octet count
-		LOAD_32(out + pos, &packet->private_key_data_octets);
+		LOAD_32BE(out + pos, &packet->private_key_data_octets);
 		pos += 4;
 
 		// Plaintext private key

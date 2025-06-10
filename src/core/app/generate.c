@@ -339,12 +339,12 @@ static void parse_key(key_specfication *spec, byte_t *in, byte_t length)
 		parse_algorithm(spec, in, length);
 		break;
 	case 1:
-		parse_algorithm(spec, in, capabilities_offset - 2);
+		parse_algorithm(spec, in, capabilities_offset - 1);
 		parse_capabilities(spec, in + capabilities_offset, length - capabilities_offset);
 		break;
 	case 2:
-		parse_algorithm(spec, in, capabilities_offset - 2);
-		parse_capabilities(spec, in + capabilities_offset, expiry_offset - 2);
+		parse_algorithm(spec, in, capabilities_offset - 1);
+		parse_capabilities(spec, in + capabilities_offset, expiry_offset - capabilities_offset);
 		parse_expiry(spec, in + expiry_offset, length - expiry_offset);
 		break;
 	}
@@ -466,6 +466,7 @@ static uint32_t parse_spec(byte_t *in, key_specfication **out)
 		}
 	}
 
+	count += 1;
 	spec = malloc(sizeof(key_specfication) * count);
 
 	if (spec == NULL)
@@ -496,14 +497,14 @@ static uint32_t parse_spec(byte_t *in, key_specfication **out)
 			pos += 1;
 		}
 
-		end = pos + 1;
+		end = pos;
 
 		if (in[j] == '/')
 		{
-			pos += 2;
+			pos += 1;
 		}
 
-		parse_key(&spec[i], PTR_OFFSET(in, pos), end - start);
+		parse_key(&spec[i], PTR_OFFSET(in, start), end - start);
 
 		// The primary key should always have certification capability
 		if (i == 0)
@@ -538,9 +539,9 @@ static void make_default_preferences(pgp_user_info *info)
 	else
 	{
 		info->hash_algorithm_preferences_octets = 3;
-		info->hash_algorithm_preferences[1] = PGP_SHA2_512;
-		info->hash_algorithm_preferences[2] = PGP_SHA2_256;
-		info->hash_algorithm_preferences[3] = PGP_SHA1;
+		info->hash_algorithm_preferences[0] = PGP_SHA2_512;
+		info->hash_algorithm_preferences[1] = PGP_SHA2_256;
+		info->hash_algorithm_preferences[2] = PGP_SHA1;
 	}
 
 	info->compression_algorithm_preferences_octets = 1;
@@ -548,7 +549,7 @@ static void make_default_preferences(pgp_user_info *info)
 
 	if (command.mode == SPGP_MODE_OPENPGP)
 	{
-		info->aead_algorithm_preferences_octets = 3;
+		info->aead_algorithm_preferences_octets = 6;
 
 		info->aead_algorithm_preferences[0][0] = PGP_AES_256;
 		info->aead_algorithm_preferences[0][1] = PGP_AEAD_GCM;
@@ -577,6 +578,9 @@ static void make_default_preferences(pgp_user_info *info)
 	}
 
 	info->flags = PGP_KEY_SERVER_NO_MODIFY;
+
+	info->info_octets += info->cipher_algorithm_preferences_octets + info->hash_algorithm_preferences_octets +
+						 info->compression_algorithm_preferences_octets + info->aead_algorithm_preferences_octets;
 }
 
 void spgp_generate_key(void)
@@ -597,6 +601,11 @@ void spgp_generate_key(void)
 	pgp_signature_packet *signature = NULL;
 	pgp_sign_info *sinfo = NULL;
 
+	pgp_keyring_packet *keyring = NULL;
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
 	time_t creation_time = time(NULL);
 
 	if (command.args == NULL || command.args->count != 2)
@@ -605,8 +614,8 @@ void spgp_generate_key(void)
 		exit(1);
 	}
 
-	uid = command.args->packets[0];
-	spec = command.args->packets[1];
+	uid = command.args->data[0];
+	spec = command.args->data[1];
 
 	// Set the version
 	switch (command.mode)
@@ -629,6 +638,12 @@ void spgp_generate_key(void)
 	// Create the keys
 	count = parse_spec(spec, &key_specs);
 
+	if (count == 0)
+	{
+		printf("No spec.\n");
+		exit(1);
+	}
+
 	key_packets = malloc(sizeof(void *) * count);
 
 	if (key_packets == NULL)
@@ -641,8 +656,8 @@ void spgp_generate_key(void)
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		PGP_CALL(pgp_key_generate(&key_packets[i], version, key_specs->algorithm, key_specs->capabilities, key_specs->flags, creation_time,
-								  key_specs->expiry, &key_specs->parameters));
+		PGP_CALL(pgp_key_generate(&key_packets[i], version, key_specs[i].algorithm, key_specs[i].capabilities, key_specs[i].flags,
+								  creation_time, key_specs[i].expiry, &key_specs[i].parameters));
 	}
 
 	// Create the certificate
@@ -662,6 +677,10 @@ void spgp_generate_key(void)
 
 	pgp_stream_push(certificate, signature);
 
+	// Create the keyring
+	PGP_CALL(pgp_key_fingerprint(key_packets[0], fingerprint, &fingerprint_size));
+	PGP_CALL(pgp_keyring_packet_new(&keyring, version, fingerprint, uinfo));
+
 	for (uint32_t i = 1; i < count; ++i)
 	{
 		signature = NULL;
@@ -675,6 +694,9 @@ void spgp_generate_key(void)
 
 		pgp_stream_push(certificate, signature);
 		pgp_sign_info_delete(sinfo);
+
+		PGP_CALL(pgp_key_fingerprint(key_packets[i], fingerprint, &fingerprint_size));
+		PGP_CALL(pgp_keyring_packet_add_subkey(keyring, fingerprint));
 	}
 
 	// Write the keys and certificate
@@ -683,5 +705,8 @@ void spgp_generate_key(void)
 		spgp_write_key(key_packets[i]);
 	}
 
-	spgp_write_certificate(certificate);
+	spgp_import_certificates(certificate);
+
+	// Update keyring
+	spgp_update_keyring(keyring, SPGP_KEYRING_REPLACE);
 }
