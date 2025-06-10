@@ -1817,7 +1817,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size, 
 	}
 	else if (packet->version == PGP_PKESK_V3)
 	{
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 3\n");
 		pos += print_key(1, PTR_OFFSET(str, pos), size - pos, packet->key_id, 8);
 		pos += pgp_kex_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_kex_print(packet->public_key_algorithm_id, packet->encrypted_session_key, packet->encrypted_session_key_octets,
@@ -1850,7 +1850,7 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size)
 	}
 	else if (packet->version == PGP_SKESK_V4)
 	{
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 4 (Deprecated)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 4\n");
 		pos += pgp_symmetric_key_algorithm_print(packet->symmetric_key_algorithm_id, PTR_OFFSET(str, pos), size - pos, 1);
 		pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 1);
 
@@ -2294,7 +2294,7 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size)
 	}
 	else if (packet->version == PGP_SEIPD_V1)
 	{
-		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 1 (Deprecated)\n");
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Version: 1\n");
 		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Encrypted Data (%u bytes)\n", packet->header.body_size - 1);
 	}
 	else
