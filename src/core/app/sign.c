@@ -301,6 +301,16 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 	sign = stream->packets[0];
 	format = (sign->type == PGP_BINARY_SIGNATURE) ? PGP_LITERAL_DATA_BINARY : PGP_LITERAL_DATA_TEXT;
 
+	// Read the file
+	if (sign->type == PGP_BINARY_SIGNATURE)
+	{
+		literal_binary = spgp_literal_read_file(file, PGP_LITERAL_DATA_BINARY);
+	}
+	else
+	{
+		literal_text = spgp_literal_read_file(file, PGP_LITERAL_DATA_TEXT);
+	}
+
 	for (uint32_t i = 1; i < stream->count; ++i)
 	{
 		sign = stream->packets[i];
@@ -309,8 +319,14 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 		{
 			changing_format = 1;
 
-			literal_binary = spgp_literal_read_file(file, PGP_LITERAL_DATA_BINARY);
-			literal_text = spgp_literal_read_file(file, PGP_LITERAL_DATA_TEXT);
+			if (sign->type == PGP_BINARY_SIGNATURE)
+			{
+				literal_binary = spgp_literal_read_file(file, PGP_LITERAL_DATA_BINARY);
+			}
+			else
+			{
+				literal_text = spgp_literal_read_file(file, PGP_LITERAL_DATA_TEXT);
+			}
 
 			break;
 		}
@@ -318,10 +334,10 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 
 	if (changing_format == 0)
 	{
-		literal = (format == PGP_BINARY_SIGNATURE) ? literal_binary : literal_text;
+		literal = (format == PGP_LITERAL_DATA_BINARY) ? literal_binary : literal_text;
 	}
 
-	for (uint32_t i = 1; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		sign = stream->packets[i];
 		key = NULL;
@@ -334,16 +350,19 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 			spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, PGP_KEY_FLAG_SIGN);
 		}
 
-		if (key != NULL)
+		if (key == NULL)
 		{
-			if (changing_format == 0)
-			{
-				status = spgp_verify_signature(sign, key, uinfo, literal, 1);
-			}
-			else
-			{
-				status = spgp_verify_signature(sign, key, uinfo, (sign->type == PGP_BINARY_SIGNATURE) ? literal_binary : literal_text, 1);
-			}
+			printf("No public key to verify signature.\n");
+			exit(1);
+		}
+
+		if (changing_format == 0)
+		{
+			status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+		}
+		else
+		{
+			status = spgp_verify_signature(sign, key, uinfo, (sign->type == PGP_BINARY_SIGNATURE) ? literal_binary : literal_text, 1);
 		}
 	}
 
@@ -669,7 +688,7 @@ void spgp_sign(void)
 	spgp_write_pgp_packets(command.output, signatures, opts);
 }
 
-static uint32_t spgp_verify_file(void *file)
+static uint32_t spgp_verify_file(void *file, uint32_t index)
 {
 	pgp_stream_t *stream = NULL;
 	pgp_packet_header *header = NULL;
@@ -768,21 +787,23 @@ static uint32_t spgp_verify_file(void *file)
 					exit(1);
 				}
 			}
-			else
-			{
-				if (type == PGP_SIG)
-				{
-					return spgp_detach_verify_stream(stream, command.args->data[1]);
-				}
+		}
 
-				if (type == PGP_LIT)
-				{
-					return spgp_verify_stream_legacy(stream);
-				}
+		header = stream->packets[stream->count - 1];
+		type = pgp_packet_type_from_tag(header->tag);
 
-				printf("Bad Signature Sequence.\n");
-				exit(1);
-			}
+		if (type == PGP_SIG)
+		{
+			return spgp_detach_verify_stream(stream, pgp_stream_remove(command.args, index + 1));
+		}
+		else if (type == PGP_LIT)
+		{
+			return spgp_verify_stream_legacy(stream);
+		}
+		else
+		{
+			printf("Bad Signature Sequence.\n");
+			exit(1);
 		}
 	}
 
@@ -796,7 +817,7 @@ void spgp_verify(void)
 
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
-		status += spgp_verify_file(command.args->data[i]);
+		status += spgp_verify_file(command.args->data[i], i);
 	}
 
 	if (status != 0)
