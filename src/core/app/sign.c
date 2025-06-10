@@ -397,6 +397,11 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
+	byte_t key_id[PGP_KEY_ID_SIZE] = {0};
+
+	void *in = NULL;
+	byte_t in_size = 0;
+
 	STREAM_CALL(stream = pgp_stream_new((count * 2) + 1));
 
 	// Generate one pass signatures (last to first)
@@ -409,10 +414,22 @@ static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfo
 		PGP_CALL(pgp_key_fingerprint(keys[j], fingerprint, &fingerprint_size));
 		sinfo[j] = spgp_create_sign_info(keys[j], uinfos[j], sig_type);
 
+		if (ops_version == PGP_ONE_PASS_SIGNATURE_V3)
+		{
+			pgp_key_id_from_fingerprint(keys[j]->version, key_id, fingerprint, fingerprint_size);
+
+			in = key_id;
+			in_size = PGP_KEY_ID_SIZE;
+		}
+		else
+		{
+			in = fingerprint;
+			in_size = fingerprint_size;
+		}
+
 		// Only the last one pass packet will have the nested flag set.
 		PGP_CALL(pgp_one_pass_signature_packet_new(&ops, ops_version, sig_type, (j == 0) ? 1 : 0, keys[j]->public_key_algorithm_id,
-												   sinfo[j]->hash_algorithm, sinfo[j]->salt, sinfo[j]->salt_size, fingerprint,
-												   fingerprint_size));
+												   sinfo[j]->hash_algorithm, sinfo[j]->salt, sinfo[j]->salt_size, in, in_size));
 
 		pgp_stream_push(stream, ops);
 	}
@@ -475,10 +492,13 @@ static uint32_t spgp_verify_stream(pgp_stream_t *stream)
 			spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, PGP_KEY_FLAG_SIGN);
 		}
 
-		if (key != NULL)
+		if (key == NULL)
 		{
-			status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+			printf("No public key to verify signature.\n");
+			exit(1);
 		}
+
+		status = spgp_verify_signature(sign, key, uinfo, literal, 1);
 	}
 
 	return status;
@@ -605,11 +625,11 @@ void spgp_sign(void)
 		{
 			signatures = spgp_detach_sign_file(key, uinfo, count, command.args->data[i]);
 		}
-		if (command.clear_sign)
+		else if (command.clear_sign)
 		{
 			signatures = spgp_clear_sign_file(key, uinfo, count, command.args->data[i]);
 		}
-		if (command.sign)
+		else // (command.sign)
 		{
 			if (command.mode != SPGP_MODE_RFC2440)
 			{
@@ -892,7 +912,7 @@ static void print_key(pgp_key_packet *key, char key_buffer[128])
 
 	strncat(key_buffer, " (", 2);
 	strncat(key_buffer, fingerprint_buffer, fingerprint_size * 2);
-	strncat(key_buffer, " )", 1);
+	strncat(key_buffer, ")", 1);
 }
 
 static char *get_trust_value(byte_t trust)
@@ -1125,23 +1145,23 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	// [Status] [UID]
 
 	// Signature type
-	pos += snprintf(buffer, size - pos, "%s ", sign_type);
+	pos += snprintf(buffer + pos, size - pos, "%s ", sign_type);
 
 	// Time
-	strftime(time_buffer, 128, "%Y-%m-%d %H:%M:%S", gmtime(&creation_time));
-	pos += snprintf(buffer, size - pos, "Made On %s ", time_buffer);
+	strftime(time_buffer, 128, "%Y-%m-%d %H:%M:%S", localtime(&creation_time));
+	pos += snprintf(buffer + pos, size - pos, "Made On %s ", time_buffer);
 
 	// Key
 	print_key(key, key_buffer);
-	pos += snprintf(buffer, size - pos, "Using %s\n", key_buffer);
+	pos += snprintf(buffer + pos, size - pos, "Using %s\n", key_buffer);
 
 	// Attuributes
 	// Expiry time
 	if (expiry_time > 0)
 	{
 		memset(time_buffer, 0, 128);
-		strftime(time_buffer, 128, "%Y-%m-%d %H:%M:%S", gmtime(&creation_time));
-		pos += snprintf(buffer, size - pos, "Expiry :%s\n", time_buffer);
+		strftime(time_buffer, 128, "%Y-%m-%d %H:%M:%S", localtime(&creation_time));
+		pos += snprintf(buffer + pos, size - pos, "Expiry :%s\n", time_buffer);
 	}
 
 	// Issuer
@@ -1151,17 +1171,19 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	pos += get_signature_strings(sign, PGP_POLICY_URI_SUBPACKET, buffer + pos, size - pos);
 
 	// Status
-	pos += snprintf(buffer, size - pos, "%s", status_type);
+	pos += snprintf(buffer + pos, size - pos, "%s ", status_type);
 
 	if (uinfo != NULL)
 	{
-		pos += snprintf(buffer, size - pos, "From %.*s ", uinfo->uid_octets, (char *)uinfo->uid);
-		pos += snprintf(buffer, size - pos, "[%s]\n", get_trust_value(uinfo->trust));
+		pos += snprintf(buffer + pos, size - pos, "from \"%.*s\" ", uinfo->uid_octets, (char *)uinfo->uid);
+		pos += snprintf(buffer + pos, size - pos, "[%s]\n", get_trust_value(uinfo->trust));
 	}
 	else
 	{
-		pos += snprintf(buffer, size - pos, "\n");
+		pos += snprintf(buffer + pos, size - pos, "\n");
 	}
+
+	printf("%s\n", buffer);
 
 	return status;
 }
