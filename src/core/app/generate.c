@@ -449,6 +449,34 @@ static void process_key(key_specfication *spec)
 			}
 		}
 	}
+
+	// Set ECDH parameters
+	if (spec->algorithm == PGP_ECDH)
+	{
+		switch (spec->parameters.curve)
+		{
+		case PGP_EC_NIST_P256:
+		case PGP_EC_BRAINPOOL_256R1:
+		case PGP_EC_CURVE25519:
+			spec->parameters.hash_algorithm = PGP_SHA2_256;
+			spec->parameters.cipher_algorithm = PGP_AES_128;
+			break;
+		case PGP_EC_NIST_P384:
+		case PGP_EC_BRAINPOOL_384R1:
+			spec->parameters.hash_algorithm = PGP_SHA2_384;
+			spec->parameters.cipher_algorithm = PGP_AES_192;
+			break;
+		case PGP_EC_NIST_P521:
+		case PGP_EC_BRAINPOOL_512R1:
+		case PGP_EC_CURVE448:
+			spec->parameters.hash_algorithm = PGP_SHA2_512;
+			spec->parameters.cipher_algorithm = PGP_AES_256;
+			break;
+
+		default:
+			break;
+		}
+	}
 }
 
 // Key specification: algorithm[:usage[:expiry]]/algorithm[:usage[:expiry]]
