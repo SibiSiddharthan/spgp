@@ -1296,6 +1296,12 @@ static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, 
 		break;
 	}
 
+	// Add critical bit
+	if (header.tag & 0x80)
+	{
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (Critical)");
+	}
+
 	// Add packet size
 	pos += snprintf(PTR_OFFSET(str, pos), size - pos, " (%zu bytes)\n", header.body_size);
 
