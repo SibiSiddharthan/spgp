@@ -797,6 +797,12 @@ static uint32_t spgp_verify_file(void *file, uint32_t index)
 
 		if (type == PGP_SIG)
 		{
+			if ((index + 1) == command.args->count)
+			{
+				printf("Signing data not provided.\n");
+				exit(1);
+			}
+
 			return spgp_detach_verify_stream(stream, pgp_stream_remove(command.args, index + 1));
 		}
 		else if (type == PGP_LIT)
