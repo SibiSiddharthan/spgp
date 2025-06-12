@@ -117,6 +117,49 @@ pgp_stream_t *pgp_stream_push(pgp_stream_t *stream, void *packet)
 	return stream;
 }
 
+pgp_stream_t *pgp_stream_insert(pgp_stream_t *stream, void *packet, uint32_t index)
+{
+	void *temp = NULL;
+
+	if (stream == NULL)
+	{
+		stream = pgp_stream_new(index + 1);
+
+		if (stream == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (stream->count == stream->capacity)
+	{
+		stream->capacity *= 2;
+		temp = realloc(stream->packets, sizeof(void *) * stream->capacity);
+
+		if (temp == NULL)
+		{
+			return NULL;
+		}
+
+		stream->packets = temp;
+	}
+
+	if (index < stream->count)
+	{
+		memmove(&stream->packets[index + 1], &stream->packets[index], (stream->count - index) * sizeof(void *));
+		stream->packets[index] = packet;
+	}
+	else
+	{
+		// Insert the packet at the end
+		stream->packets[stream->count] = packet;
+	}
+
+	stream->count += 1;
+
+	return stream;
+}
+
 void *pgp_stream_pop(pgp_stream_t *stream)
 {
 	void *packet = NULL;
@@ -137,7 +180,7 @@ void *pgp_stream_remove(pgp_stream_t *stream, uint32_t index)
 {
 	void *packet = NULL;
 
-	if (stream->count <= index)
+	if (index >= stream->count)
 	{
 		return NULL;
 	}
