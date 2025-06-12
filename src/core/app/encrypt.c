@@ -458,12 +458,12 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	stream = pgp_packet_stream_filter_padding_packets(stream);
 
 	// Validate packet sequence
-	for (uint32_t i = 0; i < stream->count; ++i)
+	for (uint32_t i = 0; i < stream->count - 1; ++i)
 	{
 		header = stream->packets[i];
 		type = pgp_packet_type_from_tag(header->tag);
 
-		if (type != PGP_PKESK && type != PGP_SKESK && type != PGP_SEIPD && type != PGP_AEAD && type != PGP_SED)
+		if (type != PGP_PKESK && type != PGP_SKESK)
 		{
 			printf("Bad PGP message sequence.\n");
 			exit(1);
@@ -525,12 +525,90 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 
 		if (type == PGP_AEAD)
 		{
-			aead_version = ((pgp_aead_packet *)stream->packets[i])->version;
+			version = ((pgp_aead_packet *)stream->packets[i])->version;
+
+			if (aead_version == 0)
+			{
+				aead_version = version;
+			}
+			else
+			{
+				if (aead_version != version)
+				{
+					printf("SEIPD mulitple versions %hhu %hhu.\n", aead_version, version);
+					exit(1);
+				}
+			}
 		}
 	}
 
+	// The last packet should be an encryption container
+	header = stream->packets[stream->count - 1];
+	type = pgp_packet_type_from_tag(header->tag);
+
+	if (type != PGP_SEIPD && type != PGP_AEAD && type != PGP_SED)
+	{
+		printf("Bad PGP message sequence.\n");
+		exit(1);
+	}
+
 	// Check legal packet versions
-	
+	if (pkesk_version == PGP_PKESK_V3)
+	{
+		// Allowed skesk v4 or v5
+		if (skesk_version != 0 && skesk_version != PGP_SKESK_V4 && skesk_version != PGP_SKESK_V5)
+		{
+			printf("Incompatibale PKESK (V%hhu) and SKESK (V%hhu) versions.\n", pkesk_version, skesk_version);
+			exit(1);
+		}
+
+		// Allowed sed, seipd v1, aead
+		if (seipd_version != 0 && seipd_version != PGP_SEIPD_V1 && aead_version != PGP_AEAD_V1)
+		{
+			printf("Incompatibale PKESK and encryption container.\n");
+			exit(1);
+		}
+	}
+
+	if (pkesk_version == PGP_PKESK_V6)
+	{
+		// OpenPGP
+		if (skesk_version != 0 && skesk_version != PGP_SKESK_V6)
+		{
+			printf("Incompatibale PKESK (V%hhu) and SKESK (V%hhu) versions.\n", pkesk_version, skesk_version);
+			exit(1);
+		}
+
+		if (seipd_version != PGP_SEIPD_V2)
+		{
+			printf("Incompatibale PKESK (V%hhu) and SEIPD (V%hhu) versions.\n", pkesk_version, seipd_version);
+			exit(1);
+		}
+	}
+
+	if (skesk_version != 0)
+	{
+		// Allow V1 SEIPD and SED packets with V4 SKESK
+		if (skesk_version == PGP_SKESK_V4 && seipd_version != PGP_SEIPD_V1 && seipd_version != 0 && aead_version != 0)
+		{
+			printf("Incompatibale SKESK and encryption container.\n");
+			exit(1);
+		}
+
+		// LibrePGP
+		if (skesk_version == PGP_SKESK_V5 && aead_version != PGP_AEAD_V1)
+		{
+			printf("Incompatibale SKESK and encryption container.\n");
+			exit(1);
+		}
+
+		// OpenPGP
+		if (skesk_version == PGP_SKESK_V6 && aead_version != PGP_SEIPD_V2)
+		{
+			printf("Incompatibale SKESK and encryption container.\n");
+			exit(1);
+		}
+	}
 
 	// Search PKESKs first
 	for (uint32_t i = 0; i < stream->count; ++i)
