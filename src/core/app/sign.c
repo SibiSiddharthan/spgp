@@ -1063,6 +1063,7 @@ static uint32_t get_signature_strings(pgp_signature_packet *sign, pgp_signature_
 pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_user_info *uinfo, void *data, byte_t print)
 {
 	pgp_error_t status = 0;
+	size_t result = 0;
 
 	char time_buffer[128] = {0};
 	char key_buffer[128] = {0};
@@ -1222,7 +1223,8 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 		pos += snprintf(buffer + pos, size - pos, "\n");
 	}
 
-	printf("%s\n", buffer);
+	// Write status to stderr
+	OS_CALL(os_write(STDERR_HANDLE, buffer, pos, &result), printf("Unable to write to handle %u", OS_HANDLE_AS_UINT(STDERR_HANDLE)));
 
 	return status;
 }
