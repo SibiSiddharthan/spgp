@@ -511,8 +511,14 @@ static pgp_error_t pgp_seipd_packet_v1_decrypt(pgp_seipd_packet *packet, void *s
 	}
 
 	// Decrypt everything
-	pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data, packet->data_size,
-					temp, packet->data_size);
+	status = pgp_cfb_decrypt(packet->symmetric_key_algorithm_id, session_key, session_key_size, zero_iv, block_size, packet->data,
+							 packet->data_size, temp, packet->data_size);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(temp);
+		return status;
+	}
 
 	// Copy the prefix
 	memcpy(prefix, temp, block_size + 2);

@@ -720,12 +720,47 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 
 				if (status == PGP_SUCCESS)
 				{
-					session_key_found = 1;
-
+					// For V4 packets do the decryption here itself.
+					// There is no way to check whether the session key is correct other than decrypting seipd/sed packet.
 					if (skesk->version == PGP_SKESK_V4)
 					{
-						algorithm = skesk->symmetric_key_algorithm_id;
+						header = stream->packets[stream->count - 1];
+						encrypted_packet = stream->packets[stream->count - 1];
+
+						if (pgp_packet_type_from_tag(header->tag) == PGP_SEIPD)
+						{
+							seipd = encrypted_packet;
+							seipd->symmetric_key_algorithm_id = skesk->symmetric_key_algorithm_id;
+
+							status = pgp_seipd_packet_decrypt(encrypted_packet, session_key, session_key_size, &message);
+
+							if (status == PGP_SUCCESS)
+							{
+								goto finish;
+							}
+							else
+							{
+								continue;
+							}
+						}
+
+						if (pgp_packet_type_from_tag(header->tag) == PGP_SED)
+						{
+							status = pgp_sed_packet_decrypt(encrypted_packet, skesk->symmetric_key_algorithm_id, session_key,
+															session_key_size, &message);
+
+							if (status == PGP_SUCCESS)
+							{
+								goto finish;
+							}
+							else
+							{
+								continue;
+							}
+						}
 					}
+
+					session_key_found = 1;
 
 					goto decrypt;
 				}
@@ -785,6 +820,7 @@ decrypt:
 		exit(1);
 	}
 
+finish:
 	pgp_stream_delete(stream, pgp_packet_delete);
 
 	return message;
