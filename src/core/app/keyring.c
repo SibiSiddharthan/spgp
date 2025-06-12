@@ -893,6 +893,11 @@ static uint32_t spgp_import_key_file(void *file)
 	stream = spgp_read_pgp_packets(file);
 	stream = pgp_packet_stream_filter_padding_packets(stream);
 
+	if (stream->count == 0)
+	{
+		return 0;
+	}
+
 	while (offset < stream->count)
 	{
 		offset = spgp_process_transferable_key(stream, offset);
