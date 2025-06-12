@@ -1560,5 +1560,8 @@ uint32_t spgp_prompt_passphrase(byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE], cha
 		}
 	}
 
+	// Null terminate
+	passphrase[result] = '\0';
+
 	return (uint32_t)result;
 }
