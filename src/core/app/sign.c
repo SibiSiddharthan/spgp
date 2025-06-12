@@ -698,7 +698,7 @@ static uint32_t spgp_verify_file(void *file, uint32_t index)
 	pgp_packet_type type = 0;
 
 	stream = spgp_read_pgp_packets(file);
-	stream = pgp_packet_stream_filter_padding_packets(stream);
+	stream = spgp_preprocess_stream(stream);
 
 	// Check signature types
 	for (uint32_t i = 0; i < stream->count; ++i)

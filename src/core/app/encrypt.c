@@ -455,7 +455,7 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	byte_t aead_version = 0;
 
 	stream = spgp_read_pgp_packets(file);
-	stream = pgp_packet_stream_filter_padding_packets(stream);
+	stream = spgp_preprocess_stream(stream);
 
 	// Validate packet sequence
 	for (uint32_t i = 0; i < stream->count - 1; ++i)
@@ -770,7 +770,7 @@ void spgp_decrypt(void)
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
 		stream = spgp_decrypt_file(command.args->data[i]);
-		stream = pgp_packet_stream_filter_padding_packets(stream);
+		stream = spgp_preprocess_stream(stream);
 
 		header = stream->packets[0];
 

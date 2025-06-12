@@ -891,7 +891,7 @@ static uint32_t spgp_import_key_file(void *file)
 	uint32_t count = 0;
 
 	stream = spgp_read_pgp_packets(file);
-	stream = pgp_packet_stream_filter_padding_packets(stream);
+	stream = spgp_preprocess_stream(stream);
 
 	if (stream->count == 0)
 	{
