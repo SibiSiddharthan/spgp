@@ -439,6 +439,8 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	pgp_packet_header *header = NULL;
 	pgp_seipd_packet *seipd = NULL;
 
+	pgp_packet_type type = 0;
+
 	void *encrypted_packet = NULL;
 	byte_t algorithm = 0;
 
@@ -446,8 +448,89 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	byte_t session_key_size = 32;
 	byte_t session_key_found = 0;
 
+	byte_t version = 0;
+	byte_t pkesk_version = 0;
+	byte_t skesk_version = 0;
+	byte_t seipd_version = 0;
+	byte_t aead_version = 0;
+
 	stream = spgp_read_pgp_packets(file);
 	stream = pgp_packet_stream_filter_padding_packets(stream);
+
+	// Validate packet sequence
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		type = pgp_packet_type_from_tag(header->tag);
+
+		if (type != PGP_PKESK && type != PGP_SKESK && type != PGP_SEIPD && type != PGP_AEAD && type != PGP_SED)
+		{
+			printf("Bad PGP message sequence.\n");
+			exit(1);
+		}
+
+		if (type == PGP_PKESK)
+		{
+			version = ((pgp_pkesk_packet *)stream->packets[i])->version;
+
+			if (pkesk_version == 0)
+			{
+				pkesk_version = version;
+			}
+			else
+			{
+				if (pkesk_version != version)
+				{
+					printf("PKESK mulitple versions %hhu %hhu.\n", pkesk_version, version);
+					exit(1);
+				}
+			}
+		}
+
+		if (type == PGP_SKESK)
+		{
+			version = ((pgp_skesk_packet *)stream->packets[i])->version;
+
+			if (skesk_version == 0)
+			{
+				skesk_version = version;
+			}
+			else
+			{
+				if (skesk_version != version)
+				{
+					printf("SKESK mulitple versions %hhu %hhu.\n", skesk_version, version);
+					exit(1);
+				}
+			}
+		}
+
+		if (type == PGP_SEIPD)
+		{
+			version = ((pgp_seipd_packet *)stream->packets[i])->version;
+
+			if (seipd_version == 0)
+			{
+				seipd_version = version;
+			}
+			else
+			{
+				if (seipd_version != version)
+				{
+					printf("SEIPD mulitple versions %hhu %hhu.\n", seipd_version, version);
+					exit(1);
+				}
+			}
+		}
+
+		if (type == PGP_AEAD)
+		{
+			aead_version = ((pgp_aead_packet *)stream->packets[i])->version;
+		}
+	}
+
+	// Check legal packet versions
+	
 
 	// Search PKESKs first
 	for (uint32_t i = 0; i < stream->count; ++i)
