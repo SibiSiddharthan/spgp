@@ -9,6 +9,7 @@
 #include <packet.h>
 #include <key.h>
 #include <signature.h>
+#include <crypto.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -616,6 +617,7 @@ void spgp_generate_key(void)
 	void *uid = NULL;
 	void *spec = NULL;
 
+	pgp_key_version key_version = 0;
 	key_specfication *key_specs = NULL;
 	pgp_key_packet **key_packets = NULL;
 	uint32_t count = 0;
@@ -623,13 +625,18 @@ void spgp_generate_key(void)
 	pgp_user_id_packet *user = NULL;
 	pgp_user_info *uinfo = NULL;
 
-	pgp_key_version version = 0;
-
-	pgp_stream_t *certificate = NULL;
 	pgp_signature_packet *signature = NULL;
 	pgp_sign_info *sinfo = NULL;
-
+	pgp_stream_t *certificate = NULL;
 	pgp_keyring_packet *keyring = NULL;
+
+	pgp_s2k s2k = {0};
+	byte_t s2k_usage = 0;
+	byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE] = {0};
+	byte_t passphrase_size = 0;
+
+	byte_t iv[16] = {0};
+	byte_t iv_size = pgp_symmetric_cipher_block_size(PGP_AES_128);
 
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
@@ -649,14 +656,20 @@ void spgp_generate_key(void)
 	switch (command.mode)
 	{
 	case SPGP_MODE_RFC2440:
+		key_version = PGP_KEY_V4;
+		s2k_usage = 255;
+		break;
 	case SPGP_MODE_RFC4880:
-		version = PGP_KEY_V4;
+		key_version = PGP_KEY_V4;
+		s2k_usage = 254;
 		break;
 	case SPGP_MODE_LIBREPGP:
-		version = PGP_KEY_V5;
+		key_version = PGP_KEY_V5;
+		s2k_usage = 253;
 		break;
 	case SPGP_MODE_OPENPGP:
-		version = PGP_KEY_V6;
+		key_version = PGP_KEY_V6;
+		s2k_usage = 253;
 		break;
 	}
 
@@ -684,7 +697,7 @@ void spgp_generate_key(void)
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		PGP_CALL(pgp_key_generate(&key_packets[i], version, key_specs[i].algorithm, key_specs[i].capabilities, key_specs[i].flags,
+		PGP_CALL(pgp_key_generate(&key_packets[i], key_version, key_specs[i].algorithm, key_specs[i].capabilities, key_specs[i].flags,
 								  creation_time, key_specs[i].expiry, &key_specs[i].parameters));
 	}
 
@@ -707,7 +720,7 @@ void spgp_generate_key(void)
 
 	// Create the keyring
 	PGP_CALL(pgp_key_fingerprint(key_packets[0], fingerprint, &fingerprint_size));
-	PGP_CALL(pgp_keyring_packet_new(&keyring, version, fingerprint, uinfo));
+	PGP_CALL(pgp_keyring_packet_new(&keyring, key_version, fingerprint, uinfo));
 
 	for (uint32_t i = 1; i < count; ++i)
 	{
@@ -725,6 +738,26 @@ void spgp_generate_key(void)
 
 		PGP_CALL(pgp_key_fingerprint(key_packets[i], fingerprint, &fingerprint_size));
 		PGP_CALL(pgp_keyring_packet_add_subkey(keyring, fingerprint));
+	}
+
+	// Encrypt the key
+	passphrase_size = spgp_prompt_passphrase(passphrase, "Enter passphrase to encrypt key (Leave empty for plaintext key).");
+
+	if (passphrase_size > 0)
+	{
+		for (uint32_t i = 0; i < count; ++i)
+		{
+			// Generate S2K
+			memset(&s2k, 0, sizeof(pgp_s2k));
+			preferred_s2k_algorithm(key_version, &s2k);
+
+			// Generate IV
+			memset(iv, 0, iv_size);
+			PGP_CALL(pgp_rand(iv, iv_size));
+
+			PGP_CALL(pgp_key_packet_encrypt(key_packets[i], passphrase, passphrase_size, s2k_usage, &s2k, iv, iv_size, PGP_AES_128,
+											PGP_AEAD_OCB));
+		}
 	}
 
 	// Write the keys and certificate
