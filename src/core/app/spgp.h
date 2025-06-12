@@ -205,6 +205,8 @@ pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_S
 void spgp_write_certificate(pgp_stream_t *stream);
 void spgp_import_certificates(pgp_stream_t *stream);
 
+pgp_stream_t *spgp_preprocess_stream(pgp_stream_t *stream);
+
 #define SPGP_KEYRING_REPLACE 0x1
 
 pgp_stream_t *spgp_read_keyring();
