@@ -121,7 +121,7 @@ static mpi_t *mpi_from_ec_point(ec_group *group, ec_point *point)
 		// Prefixed native
 		ec_point_encode(group, point, PTR_OFFSET(mpi->bytes, 1), FLOOR_DIV(mpi->bits, 8), 0);
 
-		mpi->bytes[1] = 0x40;
+		mpi->bytes[0] = 0x40;
 		mpi->bits = ROUND_UP(group->bits * 2, 8) + 7; // 0x40
 	}
 	else
@@ -1085,9 +1085,10 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 		return PGP_NO_MEMORY;
 	}
 
-	if (curve == PGP_ED25519)
+	if (curve == PGP_EC_ED25519)
 	{
-		uint32_t bits = 256 + 7;
+		uint32_t bits = 256;
+		uint32_t offset = 0;
 		ed25519_key ed25519_key = {0};
 		byte_t zero[ED25519_KEY_OCTETS] = {0};
 
@@ -1111,7 +1112,7 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 			pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
 		}
 
-		pgp_key->point = mpi_new(bits);
+		pgp_key->point = mpi_new(bits + 7);
 		pgp_key->x = mpi_new(bits);
 
 		if (pgp_key->point == NULL || pgp_key->x == NULL)
@@ -1121,22 +1122,23 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 		}
 
 		// Set the public point
-		pgp_key->point->bits = bits;
+		pgp_key->point->bits = bits + 7;
 		pgp_key->point->bytes[0] = 0x40;
 		memcpy(&pgp_key->point->bytes[1], ed25519_key.public_key, ED25519_KEY_OCTETS);
 
 		// Set the private scalar
-		pgp_key->x->bits = bits;
-		pgp_key->x->bytes[0] = 0x40;
-		memcpy(&pgp_key->x->bytes[1], ed25519_key.private_key, ED25519_KEY_OCTETS);
+		pgp_key->x->bits = bitcount_bytes(ed25519_key.private_key, ED25519_KEY_OCTETS);
+		offset = ED25519_KEY_OCTETS - CEIL_DIV(pgp_key->x->bits, 8);
+		memcpy(pgp_key->x->bytes, PTR_OFFSET(ed25519_key.private_key, offset), ED25519_KEY_OCTETS - offset);
 
 		*key = pgp_key;
 		return PGP_SUCCESS;
 	}
 
-	if (curve == PGP_ED448)
+	if (curve == PGP_EC_ED448)
 	{
-		uint32_t bits = 448 + 7;
+		uint32_t bits = 448;
+		uint32_t offset = 0;
 		ed448_key ed448_key = {0};
 		byte_t zero[ED448_KEY_OCTETS] = {0};
 
@@ -1151,7 +1153,7 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 		pgp_key->curve = curve;
 		pgp_key->oid_size = (byte_t)ec_curve_encode_oid(id, pgp_key->oid, 16);
 
-		pgp_key->point = mpi_new(bits);
+		pgp_key->point = mpi_new(bits + 7);
 		pgp_key->x = mpi_new(bits);
 
 		if (pgp_key->point == NULL || pgp_key->x == NULL)
@@ -1161,14 +1163,14 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 		}
 
 		// Set the public point
-		pgp_key->point->bits = bits;
+		pgp_key->point->bits = bits + 7;
 		pgp_key->point->bytes[0] = 0x40;
 		memcpy(&pgp_key->point->bytes[1], ed448_key.public_key, ED448_KEY_OCTETS);
 
 		// Set the private scalar
 		pgp_key->x->bits = bits;
-		pgp_key->x->bytes[0] = 0x40;
-		memcpy(&pgp_key->x->bytes[1], ed448_key.private_key, ED448_KEY_OCTETS);
+		offset = ED448_KEY_OCTETS - CEIL_DIV(pgp_key->x->bits, 8);
+		memcpy(pgp_key->x->bytes, PTR_OFFSET(ed448_key.private_key, offset), ED448_KEY_OCTETS - offset);
 
 		*key = pgp_key;
 		return PGP_SUCCESS;
@@ -2544,23 +2546,25 @@ pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_k
 	void *status = NULL;
 	pgp_eddsa_signature *pgp_sign = NULL;
 
-	if (pgp_key->curve == PGP_ED25519)
+	if (pgp_key->curve == PGP_EC_ED25519)
 	{
 		ed25519_key edkey = {0};
 		ed25519_signature edsign = {0};
 
+		byte_t p_offset = 0;
 		byte_t r_offset = 0;
 		byte_t s_offset = 0;
 
 		// eddsa and dsa share the same structure
-		pgp_sign = pgp_dsa_signature_new(256);
+		pgp_sign = pgp_dsa_signature_new(ED25519_KEY_OCTETS * 8);
 
 		if (pgp_sign == NULL)
 		{
 			return PGP_NO_MEMORY;
 		}
 
-		memcpy(edkey.private_key, pgp_key->x->bytes, ED25519_KEY_OCTETS);
+		p_offset = ED25519_KEY_OCTETS - CEIL_DIV(pgp_key->x->bits, 8);
+		memcpy(PTR_OFFSET(edkey.private_key, p_offset), pgp_key->x->bytes, ED25519_KEY_OCTETS - p_offset);
 		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED25519_KEY_OCTETS);
 
 		status = ed25519_sign(&edkey, &edsign, hash, hash_size);
@@ -2585,23 +2589,25 @@ pgp_error_t pgp_eddsa_sign(pgp_eddsa_signature **signature, pgp_eddsa_key *pgp_k
 		return PGP_SUCCESS;
 	}
 
-	if (pgp_key->curve == PGP_ED448)
+	if (pgp_key->curve == PGP_EC_ED448)
 	{
 		ed448_key edkey = {0};
 		ed448_signature edsign = {0};
 
+		byte_t p_offset = 0;
 		byte_t r_offset = 0;
 		byte_t s_offset = 0;
 
 		// eddsa and dsa share the same structure
-		pgp_sign = pgp_dsa_signature_new(456);
+		pgp_sign = pgp_dsa_signature_new(ED448_KEY_OCTETS * 8);
 
 		if (pgp_sign == NULL)
 		{
 			return PGP_NO_MEMORY;
 		}
 
-		memcpy(edkey.private_key, pgp_key->x->bytes, ED448_KEY_OCTETS);
+		p_offset = ED448_KEY_OCTETS - CEIL_DIV(pgp_key->x->bits, 8);
+		memcpy(PTR_OFFSET(edkey.private_key, p_offset), pgp_key->x->bytes, ED448_KEY_OCTETS - p_offset);
 		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED448_KEY_OCTETS);
 
 		status = ed448_sign(&edkey, &edsign, NULL, 0, hash, hash_size);
