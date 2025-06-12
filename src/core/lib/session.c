@@ -985,12 +985,14 @@ static pgp_error_t pgp_skesk_packet_session_key_v4_decrypt(pgp_skesk_packet *pac
 
 	if (packet->session_key_size == 0)
 	{
-		status = pgp_s2k_hash(&packet->s2k, password, password_size, session_key, *session_key_size);
+		status = pgp_s2k_hash(&packet->s2k, password, password_size, session_key, key_size);
 
 		if (status != PGP_SUCCESS)
 		{
 			return status;
 		}
+
+		*session_key_size = key_size;
 	}
 	else
 	{

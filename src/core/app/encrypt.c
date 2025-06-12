@@ -35,7 +35,7 @@ static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_
 	if (recipient_count == 0 && passphrase_count == 1)
 	{
 		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, 0, 0, &s2k));
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, algorithm, 0, &s2k));
 		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
 
 		pgp_stream_push(message, skesk);
@@ -104,7 +104,7 @@ static pgp_stream_t *spgp_encrypt_mdc(pgp_key_packet **keys, uint32_t recipient_
 	if (recipient_count == 0 && passphrase_count == 1)
 	{
 		preferred_s2k_algorithm(PGP_KEY_V4, &s2k);
-		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, 0, 0, &s2k));
+		PGP_CALL(pgp_skesk_packet_new(&skesk, PGP_SKESK_V4, algorithm, 0, &s2k));
 		PGP_CALL(pgp_skesk_packet_session_key_encrypt(skesk, passphrases[0], strlen(passphrases[0]), NULL, 0, NULL, 0));
 
 		pgp_stream_push(message, skesk);
@@ -338,47 +338,88 @@ void spgp_encrypt(void)
 		passphrase_count = command.passhprases->count;
 	}
 
-	count = command.recipients->count;
+	count = command.recipients != NULL ? command.recipients->count : 0;
 
-	// Search the keyring to find the keys
-	for (uint32_t i = 0; i < count; ++i)
+	if (count > 0)
 	{
-		keyring[i] = spgp_search_keyring(&key[i], &uinfo[i], command.recipients->data[i], strlen(command.recipients->data[i]),
-										 (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE));
-
-		if (keyring[i] == NULL)
+		// Search the keyring to find the keys
+		for (uint32_t i = 0; i < count; ++i)
 		{
-			printf("Unable to find recipient %s\n.", (char *)command.recipients->data[i]);
-			exit(1);
+			keyring[i] = spgp_search_keyring(&key[i], &uinfo[i], command.recipients->data[i], strlen(command.recipients->data[i]),
+											 (PGP_KEY_FLAG_ENCRYPT_COM | PGP_KEY_FLAG_ENCRYPT_STORAGE));
+
+			if (keyring[i] == NULL)
+			{
+				printf("Unable to find recipient %s\n.", (char *)command.recipients->data[i]);
+				exit(1);
+			}
+
+			if (key[i] == NULL)
+			{
+				printf("No Encryption key for recipient %s\n.", (char *)command.recipients->data[i]);
+				exit(1);
+			}
+
+			features &= uinfo[i]->features;
 		}
 
-		if (key[i] == NULL)
+		compression_algorithm = preferred_compression_algorithm(uinfo, count);
+
+		if (features & (PGP_SEIPD_V2 | PGP_AEAD))
 		{
-			printf("No Encryption key for recipient %s\n.", (char *)command.recipients->data[i]);
-			exit(1);
+			aead_pair = preferred_aead_algorithm(uinfo, count);
+			cipher_algorithm = aead_pair << 8;
+			aead_algorithm = aead_algorithm & 0xFF;
 		}
-
-		features &= uinfo[i]->features;
-	}
-
-	compression_algorithm = preferred_compression_algorithm(uinfo, count);
-
-	if (features & (PGP_SEIPD_V2 | PGP_AEAD))
-	{
-		aead_pair = preferred_aead_algorithm(uinfo, count);
-		cipher_algorithm = aead_pair << 8;
-		aead_algorithm = aead_algorithm & 0xFF;
+		else
+		{
+			cipher_algorithm = preferred_cipher_algorithm(uinfo, count);
+		}
 	}
 	else
 	{
-		cipher_algorithm = preferred_cipher_algorithm(uinfo, count);
+		// Defaults
+		compression_algorithm = PGP_DEFALTE;
+		cipher_algorithm = PGP_AES_128;
+		aead_algorithm = PGP_AEAD_OCB;
+
+		// Determine features depend on operation mode
+		switch (command.mode)
+		{
+		case SPGP_MODE_RFC2440:
+			features = 0;
+			break;
+		case SPGP_MODE_RFC4880:
+			features = PGP_FEATURE_MDC;
+			break;
+		case SPGP_MODE_LIBREPGP:
+			features = PGP_FEATURE_AEAD;
+			break;
+		case SPGP_MODE_OPENPGP:
+			features = PGP_FEATURE_SEIPD_V2;
+			break;
+		}
+	}
+
+	// Armor setup
+	if (command.armor)
+	{
+		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_MESSAGE,
+								.header_line_size = strlen(PGP_ARMOR_BEGIN_MESSAGE),
+								.trailer_line = PGP_ARMOR_END_MESSAGE,
+								.trailer_line_size = strlen(PGP_ARMOR_END_MESSAGE)};
+
+		options.marker = &marker;
+		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
+
+		opts = &options;
 	}
 
 	// Literal or compressed packet
 	STREAM_CALL(stream = pgp_stream_new(1));
 
 	// Create the encrypted message
-	for (uint32_t i = 0; i < count; ++i)
+	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
 		literal = spgp_literal_read_file(command.args->data[i], PGP_LITERAL_DATA_BINARY);
 		stream = pgp_stream_push(stream, literal);
@@ -410,23 +451,10 @@ void spgp_encrypt(void)
 		}
 
 		stream = pgp_stream_clear(stream, pgp_packet_delete);
+
+		// Write output
+		spgp_write_pgp_packets(command.output, message, opts);
 	}
-
-	// Write output
-	if (command.armor)
-	{
-		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_MESSAGE,
-								.header_line_size = strlen(PGP_ARMOR_BEGIN_MESSAGE),
-								.trailer_line = PGP_ARMOR_END_MESSAGE,
-								.trailer_line_size = strlen(PGP_ARMOR_END_MESSAGE)};
-
-		options.marker = &marker;
-		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
-
-		opts = &options;
-	}
-
-	spgp_write_pgp_packets(command.output, message, opts);
 }
 
 static pgp_stream_t *spgp_decrypt_file(void *file)
