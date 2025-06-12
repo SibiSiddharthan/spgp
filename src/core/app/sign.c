@@ -1021,10 +1021,12 @@ static uint32_t get_signature_strings(pgp_signature_packet *sign, pgp_signature_
 				switch ((header->tag & PGP_SUBPACKET_TAG_MASK))
 				{
 				case PGP_SIGNER_USER_ID_SUBPACKET:
-					pos += snprintf(str, size - pos, "Issuer: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
+					pos += snprintf(str, size - pos, "        Issuer: %.*s\n", (uint32_t)subpacket->header.body_size,
+									(char *)subpacket->data); // 8 spaces
 					break;
 				case PGP_POLICY_URI_SUBPACKET:
-					pos += snprintf(str, size - pos, "Policy: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
+					pos += snprintf(str, size - pos, "        Policy: %.*s\n", (uint32_t)subpacket->header.body_size,
+									(char *)subpacket->data); // 8 spaces
 					break;
 				}
 			}
@@ -1043,10 +1045,12 @@ static uint32_t get_signature_strings(pgp_signature_packet *sign, pgp_signature_
 				switch ((header->tag & PGP_SUBPACKET_TAG_MASK))
 				{
 				case PGP_SIGNER_USER_ID_SUBPACKET:
-					pos += snprintf(str, size - pos, "Issuer: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
+					pos += snprintf(str, size - pos, "        Issuer: %.*s\n", (uint32_t)subpacket->header.body_size,
+									(char *)subpacket->data); // 8 spaces
 					break;
 				case PGP_POLICY_URI_SUBPACKET:
-					pos += snprintf(str, size - pos, "Policy: %.*s\n", (uint32_t)subpacket->header.body_size, (char *)subpacket->data);
+					pos += snprintf(str, size - pos, "        Policy: %.*s\n", (uint32_t)subpacket->header.body_size,
+									(char *)subpacket->data); // 8 spaces
 					break;
 				}
 			}
@@ -1149,6 +1153,11 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 			status_type = "Good Signature (Revoked Key)";
 			status = PGP_BAD_SIGNATURE;
 		}
+		else if (key->key_expiry_seconds != 0 && current_time > (key->key_creation_time + key->key_expiry_seconds))
+		{
+			status_type = "Good Signature (Expired Key)";
+			status = PGP_BAD_SIGNATURE;
+		}
 		else if (expiry_time != 0 && current_time > expiry_time)
 		{
 			status_type = "Good Signature (Expired)";
@@ -1191,7 +1200,7 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	{
 		memset(time_buffer, 0, 128);
 		strftime(time_buffer, 128, "%Y-%m-%d %H:%M:%S", localtime(&creation_time));
-		pos += snprintf(buffer + pos, size - pos, "Expiry: %s\n", time_buffer);
+		pos += snprintf(buffer + pos, size - pos, "        Expiry: %s\n", time_buffer); // 8 spaces
 	}
 
 	// Issuer
