@@ -645,3 +645,57 @@ pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream)
 
 	return stream;
 }
+
+pgp_error_t pgp_packet_stream_decompress(pgp_stream_t *stream)
+{
+	pgp_error_t status = 0;
+	void *result = NULL;
+
+	pgp_packet_header *header = NULL;
+	pgp_compresed_packet *packet = NULL;
+	pgp_stream_t *compressed = NULL;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_type_from_tag(header->tag) == PGP_COMP)
+		{
+			packet = pgp_stream_remove(stream, i);
+			status = pgp_compressed_packet_decompress(packet, &compressed);
+
+			if (status != PGP_SUCCESS)
+			{
+				return status;
+			}
+
+			pgp_compressed_packet_delete(packet);
+
+			if (compressed != NULL)
+			{
+				for (uint32_t j = 0; j < compressed->count; ++j)
+				{
+					result = pgp_stream_insert(stream, compressed->packets[j], i + j);
+
+					if (result == NULL)
+					{
+						return PGP_NO_MEMORY;
+					}
+
+					stream = result;
+				}
+
+				// Skip over the compressed contents
+				// NOTE: There will never be another compressed packet inside a compressed packet
+				i += stream->count;
+
+				// Free the memory for the stream pointers only
+				pgp_stream_delete(compressed, NULL);
+			}
+
+			i -= 1;
+		}
+	}
+
+	return PGP_SUCCESS;
+}

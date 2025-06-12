@@ -30,6 +30,7 @@ pgp_stream_t *pgp_stream_clear(pgp_stream_t *stream, void (*deleter)(void *));
 void pgp_stream_delete(pgp_stream_t *stream, void (*deleter)(void *));
 
 pgp_stream_t *pgp_stream_push(pgp_stream_t *stream, void *packet);
+pgp_stream_t *pgp_stream_insert(pgp_stream_t *stream, void *packet, uint32_t index);
 void *pgp_stream_pop(pgp_stream_t *stream);
 void *pgp_stream_remove(pgp_stream_t *stream, uint32_t index);
 
@@ -44,5 +45,7 @@ size_t pgp_packet_stream_print(pgp_stream_t *stream, void *buffer, size_t size, 
 pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream);
 pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *stream);
 pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream);
+
+pgp_error_t pgp_packet_stream_decompress(pgp_stream_t *stream);
 
 #endif

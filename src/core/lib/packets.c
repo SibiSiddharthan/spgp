@@ -199,18 +199,22 @@ pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t spl
 static pgp_error_t pgp_compressed_packet_read_body(pgp_compresed_packet *packet, buffer_t *buffer)
 {
 	packet->data_size = packet->header.body_size - 1;
-	packet->data = malloc(packet->data_size);
-
-	if (packet->data == NULL)
-	{
-		return PGP_NO_MEMORY;
-	}
 
 	// 1 octet compression algorithm
 	CHECK_READ(read8(buffer, &packet->compression_algorithm_id), PGP_MALFORMED_COMPRESSED_PACKET);
 
 	// Copy the compressed data.
-	readn(buffer, packet->data, packet->data_size);
+	if (packet->data_size > 0)
+	{
+		packet->data = malloc(packet->data_size);
+
+		if (packet->data == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		readn(buffer, packet->data, packet->data_size);
+	}
 
 	return PGP_SUCCESS;
 }
