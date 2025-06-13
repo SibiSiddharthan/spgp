@@ -1226,5 +1226,23 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	// Write status to stderr
 	OS_CALL(os_write(STDERR_HANDLE, buffer, pos, &result), printf("Unable to write to handle %u", OS_HANDLE_AS_UINT(STDERR_HANDLE)));
 
+	// Git gpg interface compatibility
+	if (command.status_fd != 0)
+	{
+		handle_t handle = command.status_fd == 1 ? STDOUT_HANDLE : STDERR_HANDLE;
+
+		char gpg_buffer[256] = {0};
+		char fingerprint[128] = {0};
+		byte_t gpg_pos = 0;
+
+		print_fingerprint(key->fingerprint, key->fingerprint_size, fingerprint);
+
+		gpg_pos += snprintf(gpg_buffer + gpg_pos, 256 - gpg_pos, "[GNUPG:] KEY_CONSIDERED %s\n", fingerprint);
+		gpg_pos +=
+			snprintf(gpg_buffer + gpg_pos, 256 - gpg_pos, "[GNUPG:] %s %s\n", (status == PGP_SUCCESS) ? "GOODSIG" : "BADSIG", fingerprint);
+
+		OS_CALL(os_write(handle, gpg_buffer, gpg_pos, &result), printf("Unable to write to handle %u", OS_HANDLE_AS_UINT(handle)));
+	}
+
 	return status;
 }
