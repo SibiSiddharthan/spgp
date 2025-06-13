@@ -402,6 +402,44 @@ static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info *
 	return stream;
 }
 
+static uint32_t spgp_clear_verify_stream(pgp_stream_t *stream)
+{
+	pgp_error_t status = 0;
+
+	pgp_signature_packet *sign = NULL;
+	pgp_key_packet *key = NULL;
+	pgp_user_info *uinfo = NULL;
+
+	pgp_literal_packet *literal = stream->packets[0];
+
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = 0;
+
+	for (uint32_t i = 1; i < stream->count; ++i)
+	{
+		sign = stream->packets[i];
+		key = NULL;
+		uinfo = NULL;
+
+		fingerprint_size = spgp_get_sign_fingerprint(sign, fingerprint);
+
+		if (fingerprint_size != 0)
+		{
+			spgp_search_keyring(&key, &uinfo, fingerprint, fingerprint_size, PGP_KEY_FLAG_SIGN);
+		}
+
+		if (key == NULL)
+		{
+			printf("No public key to verify signature.\n");
+			exit(1);
+		}
+
+		status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+	}
+
+	return status;
+}
+
 static pgp_stream_t *spgp_sign_file(pgp_key_packet **keys, pgp_user_info **uinfos, uint32_t count, void *file)
 {
 	pgp_stream_t *stream = NULL;
@@ -814,6 +852,29 @@ static uint32_t spgp_verify_file(void *file, uint32_t index)
 			printf("Bad Signature Sequence.\n");
 			exit(1);
 		}
+	}
+
+	if (type == PGP_LIT)
+	{
+		if (stream->count < 2)
+		{
+			printf("Bad Signature Sequence.\n");
+			exit(1);
+		}
+
+		for (uint32_t i = 1; i < stream->count; ++i)
+		{
+			header = stream->packets[i];
+			type = pgp_packet_type_from_tag(header->tag);
+
+			if (type != PGP_SIG)
+			{
+				printf("Bad Signature Sequence.\n");
+				exit(1);
+			}
+		}
+
+		return spgp_clear_verify_stream(stream);
 	}
 
 	// Unreachable
