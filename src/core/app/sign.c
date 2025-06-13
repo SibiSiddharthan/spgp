@@ -1148,13 +1148,14 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 
 	if (status == PGP_SUCCESS)
 	{
-		// Check key revocation status
+		// Check if signature is made after key has been revoked
 		if (key->key_revocation_time > (uint32_t)creation_time)
 		{
 			status_type = "Good Signature (Revoked Key)";
 			status = PGP_BAD_SIGNATURE;
 		}
-		else if (key->key_expiry_seconds != 0 && current_time > (key->key_creation_time + key->key_expiry_seconds))
+		// Check if signature is made after key has expired
+		else if (key->key_expiry_seconds != 0 && creation_time > (key->key_creation_time + key->key_expiry_seconds))
 		{
 			status_type = "Good Signature (Expired Key)";
 			status = PGP_BAD_SIGNATURE;
