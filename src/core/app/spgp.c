@@ -196,6 +196,9 @@ typedef enum _spgp_option
 	SPGP_OPTION_HOMEDIR,
 	SPGP_OPTION_PASSPHRASE,
 	SPGP_OPTION_FAKED_TIME,
+
+	// Compatibility Options
+	SPGP_OPTION_COMPAT_GNUPG_STATUS_FD
 } spgp_option;
 
 static arg_option_t spgp_options[] = {
@@ -271,10 +274,10 @@ static arg_option_t spgp_options[] = {
 	{"no-mpis", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_NO_MPIS},
 	{"homedir", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_HOMEDIR},
 	{"passphrase", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_PASSPHRASE},
-	{"faked-system-time", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_FAKED_TIME}
+	{"faked-system-time", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_FAKED_TIME},
 
 	// Compatibility Options
-};
+	{"status-fd", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_COMPAT_GNUPG_STATUS_FD}};
 
 static void spgp_print_help(void)
 {
@@ -645,6 +648,30 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		}
 		break;
 
+		// Compatibility Options
+		case SPGP_OPTION_COMPAT_GNUPG_STATUS_FD:
+		{
+			byte_t fd = 0;
+
+			if (strnlen(result->data, 256) != 1)
+			{
+				printf("Bad usage for --status-fd.\n");
+				exit(1);
+			}
+
+			fd = ((byte_t *)result->data)[0] - '0';
+
+			if (fd != 1 && fd != 2)
+			{
+				printf("Bad value for --status-fd. Allowed 1 or 2 only.\n");
+				exit(1);
+			}
+
+			command->status_fd = fd;
+		}
+		break;
+
+		// Argparse stuff
 		case ARGPARSE_RETURN_NON_OPTION:
 		{
 			STREAM_CALL(command->args = pgp_stream_push(command->args, result->data));

@@ -169,6 +169,9 @@ typedef struct _spgp_command
 		uint64_t options;
 	};
 
+	// Compatibility stuff
+	byte_t status_fd;
+
 } spgp_command;
 
 extern spgp_command command;
