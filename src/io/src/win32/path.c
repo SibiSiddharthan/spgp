@@ -312,24 +312,27 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 		offset += u16_device->Length;
 		u16_size += offset;
 
-		u8_path.Buffer = PTR_OFFSET(path, 2);
-		u8_path.Length = length - 2;
-		u8_path.MaximumLength = length - 2;
-
-		u16_path.Buffer = PTR_OFFSET(u16_buffer, offset);
-		u16_path.Length = 0;
-		u16_path.MaximumLength = (length + 1) * sizeof(WCHAR);
-
-		status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, FALSE);
-		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_device);
-
-		if (status != STATUS_SUCCESS)
+		if (length > 2)
 		{
-			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_buffer);
-			return status;
-		}
+			u8_path.Buffer = PTR_OFFSET(path, 2);
+			u8_path.Length = length - 2;
+			u8_path.MaximumLength = length - 2;
 
-		u16_size += u16_path.Length;
+			u16_path.Buffer = PTR_OFFSET(u16_buffer, offset);
+			u16_path.Length = 0;
+			u16_path.MaximumLength = (length + 1) * sizeof(WCHAR);
+
+			status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, FALSE);
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_device);
+
+			if (status != STATUS_SUCCESS)
+			{
+				RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_buffer);
+				return status;
+			}
+
+			u16_size += u16_path.Length;
+		}
 	}
 	else
 	{
@@ -383,7 +386,7 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 			return status;
 		}
 
-		u16_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_root_path->Length + ((length + 1) * sizeof(WCHAR)));
+		u16_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_root_path->Length + ((length + 2) * sizeof(WCHAR)));
 
 		if (u16_buffer == NULL)
 		{
@@ -393,6 +396,10 @@ NTSTATUS _os_ntpath(void **result, handle_t root, const char *path, uint16_t len
 
 		memcpy(PTR_OFFSET(u16_buffer, offset), u16_root_path->Buffer, u16_root_path->Length);
 		offset += u16_root_path->Length;
+		u16_size += offset;
+
+		u16_buffer[offset / sizeof(WCHAR)] = L'\\';
+		offset += sizeof(WCHAR);
 		u16_size += offset;
 
 		u8_path.Buffer = (CHAR *)path;
