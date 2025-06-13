@@ -612,12 +612,6 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 		if (type == PGP_PUBSUBKEY || type == PGP_SECSUBKEY)
 		{
-			if (uinfo != NULL)
-			{
-				PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
-				uinfo = NULL;
-			}
-
 			break;
 		}
 
@@ -696,6 +690,13 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 		}
 
 		pos += 1;
+	}
+
+	// Add any remaining users
+	if (uinfo != NULL)
+	{
+		PGP_CALL(pgp_keyring_packet_add_user(keyring_packet, uinfo));
+		uinfo = NULL;
 	}
 
 	// Check whether the primary key has certification capability
