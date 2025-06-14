@@ -678,6 +678,20 @@ void spgp_sign(void)
 		key[i] = spgp_decrypt_key(keyring[i], key[i]);
 	}
 
+	// Armor setup
+	if (command.armor)
+	{
+		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_SIGNATURE,
+								.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE),
+								.trailer_line = PGP_ARMOR_END_SIGNATURE,
+								.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE)};
+
+		options.marker = &marker;
+		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
+
+		opts = &options;
+	}
+
 	// Create the signature
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
@@ -700,33 +714,20 @@ void spgp_sign(void)
 				signatures = spgp_sign_file_legacy(key, uinfo, count, command.args->data[i]);
 			}
 		}
+
+		// Compress the stream
+		if (command.compression_level != 0)
+		{
+			PGP_CALL(pgp_compressed_packet_new(&compressed, PGP_HEADER, PGP_ZLIB));
+			PGP_CALL(pgp_compressed_packet_compress(compressed, signatures));
+
+			signatures = pgp_stream_clear(signatures, pgp_packet_delete);
+			signatures = pgp_stream_push(signatures, compressed);
+		}
+
+		// Write output
+		spgp_write_pgp_packets(command.output, signatures, opts);
 	}
-
-	// Compress the stream
-	if (command.compression_level != 0)
-	{
-		PGP_CALL(pgp_compressed_packet_new(&compressed, PGP_HEADER, PGP_ZLIB));
-		PGP_CALL(pgp_compressed_packet_compress(compressed, signatures));
-
-		signatures = pgp_stream_clear(signatures, pgp_packet_delete);
-		signatures = pgp_stream_push(signatures, compressed);
-	}
-
-	// Write output
-	if (command.armor)
-	{
-		marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_SIGNATURE,
-								.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE),
-								.trailer_line = PGP_ARMOR_END_SIGNATURE,
-								.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE)};
-
-		options.marker = &marker;
-		options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
-
-		opts = &options;
-	}
-
-	spgp_write_pgp_packets(command.output, signatures, opts);
 }
 
 static uint32_t spgp_verify_file(void *file, uint32_t index)
