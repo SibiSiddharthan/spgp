@@ -1478,7 +1478,7 @@ static void pgp_signature_packet_encode_header(pgp_signature_packet *packet)
 
 		body_size = 1 + 1 + 1 + 1 + 2 + packet->hashed_octets + packet->unhashed_octets + packet->signature_octets;
 		body_size += (packet->version == PGP_SIGNATURE_V6) ? (4 + 4 + 1 + packet->salt_size) : (2 + 2);
-		packet->header = pgp_packet_header_encode(PGP_LEGACY_HEADER, PGP_SIG, 0, body_size);
+		packet->header = pgp_packet_header_encode(PGP_HEADER, PGP_SIG, 0, body_size);
 	}
 	else
 	{
