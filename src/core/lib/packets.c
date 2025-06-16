@@ -2651,43 +2651,77 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
-static pgp_error_t pgp_armor_parse_header(void *headers, uint16_t headers_size, char *field, byte_t *field_size, uint16_t *offset)
+static inline uint16_t memchr_count(void *data, uint16_t size)
 {
-}
+	void *result = 0;
 
-static uint16_t pgp_armor_load_field(pgp_armor_packet *packet, void **destination, byte_t *destination_size, void *source,
-									 byte_t source_size, uint16_t offset)
-{
-	if (source_size == 0)
+	result = memchr(data, 0, size);
+
+	if (result == NULL)
 	{
-		return 0;
+		return size;
 	}
 
-	*destination_size = source_size;
-	*destination = PTR_OFFSET(packet, sizeof(pgp_armor_packet) + offset);
-	memcpy(*destination, source, source_size);
-
-	return source_size;
+	return (uint16_t)((uintptr_t)result - (uintptr_t)data);
 }
 
 pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16_t marker_size, void *headers, uint16_t headers_size)
 {
 	pgp_armor_packet *armor = NULL;
 
-	byte_t comment_size = 0;
+	byte_t *result = headers;
+	uint16_t pos = 0;
+	uint16_t count = 0;
+	uint16_t copy = 0;
+
+	uint16_t size = 0;
+	uint16_t offset = 0;
+
 	byte_t version_size = 0;
+	byte_t comment_size = 0;
 	byte_t hash_size = 0;
 	byte_t charset_size = 0;
 	byte_t message_id_size = 0;
 
-	uint16_t comment_offset = 0;
-	uint16_t version_offset = 0;
-	uint16_t hash_offset = 0;
-	uint16_t charset_offset = 0;
-	uint16_t message_id_offset = 0;
+	while (pos < headers_size)
+	{
+		count = memchr_count(PTR_OFFSET(headers, pos), headers_size - pos);
 
-	uint16_t size = 0;
-	uint16_t offset = 0;
+		if (memcmp(PTR_OFFSET(headers, pos), "Version: ", 9) == 0)
+		{
+			version_size += (count - 9) + 1;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "Comment: ", 9) == 0)
+		{
+			comment_size += (count - 9) + 1;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "Hash: ", 6) == 0)
+		{
+			hash_size += (count - 6) + 1;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "Charset: ", 9) == 0)
+		{
+			charset_size += (count - 9) + 1;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "MessageID: ", 11) == 0)
+		{
+			// This needs to be of length 32 only
+			if ((count - 11) != 32)
+			{
+				return PGP_ARMOR_BAD_MESSAGE_ID;
+			}
+
+			message_id_size += (count - 11) + 1;
+		}
+		else
+		{
+			return PGP_ARMOR_UNKNOWN_HEADER;
+		}
+
+		pos += count + 1;
+	}
+
+	size = marker_size + version_size + comment_size + hash_size + charset_size + message_id_size;
 
 	armor = malloc(sizeof(pgp_armor_packet) + size);
 
@@ -2698,25 +2732,98 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 
 	memset(armor, 0, sizeof(pgp_armor_packet) + size);
 
-	// Marker
-	offset += pgp_armor_load_field(armor, &armor->marker, &armor->marker_size, marker, marker_size, offset);
-
-	// Comment
-	offset += pgp_armor_load_field(armor, &armor->comment, &armor->comment_size, PTR_OFFSET(headers, comment_offset), comment_size, offset);
+	// Load the marker
+	armor->marker_size = marker_size;
+	armor->marker = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
+	memcpy(armor->marker, marker, armor->marker_size);
+	offset += armor->marker_size;
 
 	// Version
-	offset += pgp_armor_load_field(armor, &armor->version, &armor->version_size, PTR_OFFSET(headers, version_offset), version_size, offset);
+	if (version_size > 0)
+	{
+		armor->version = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
+		offset += version_size;
+	}
+
+	// Comment
+	if (comment_size > 0)
+	{
+		armor->comment = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
+		offset += comment_size;
+	}
 
 	// Hash
-	offset += pgp_armor_load_field(armor, &armor->hash, &armor->hash_size, PTR_OFFSET(headers, hash_offset), hash_size, offset);
+	if (hash_size > 0)
+	{
+		armor->marker = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
+		offset += hash_size;
+	}
 
 	// Charset
-	offset += pgp_armor_load_field(armor, &armor->charset, &armor->charset_size, PTR_OFFSET(headers, charset_offset), charset_size, offset);
+	if (charset_size > 0)
+	{
+		armor->marker = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
+		offset += charset_size;
+	}
 
 	// Message ID
-	offset += pgp_armor_load_field(armor, &armor->message_id, &armor->message_id_size, PTR_OFFSET(headers, message_id_offset),
-								   message_id_size, offset);
+	if (message_id_size > 0)
+	{
+		armor->marker = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
+		offset += message_id_size;
+	}
 
+	pos = 0;
+
+	while (pos < headers_size)
+	{
+		count = memchr_count(PTR_OFFSET(headers, pos), headers_size - pos);
+
+		if (memcmp(PTR_OFFSET(headers, pos), "Version: ", 9) == 0)
+		{
+			copy = (count - 9) + 1;
+
+			memcpy(PTR_OFFSET(armor->version, armor->version_size), PTR_OFFSET(headers, pos + 9), copy);
+			armor->version_size += copy;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "Comment: ", 9) == 0)
+		{
+			copy = (count - 9) + 1;
+
+			memcpy(PTR_OFFSET(armor->comment, armor->comment_size), PTR_OFFSET(headers, pos + 9), copy);
+			armor->comment_size += copy;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "Hash: ", 6) == 0)
+		{
+			copy = (count - 6) + 1;
+
+			memcpy(PTR_OFFSET(armor->hash, armor->hash_size), PTR_OFFSET(headers, pos + 6), copy);
+			armor->hash_size += copy;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "Charset: ", 9) == 0)
+		{
+			copy = (count - 9) + 1;
+
+			memcpy(PTR_OFFSET(armor->charset, armor->charset_size), PTR_OFFSET(headers, pos + 9), copy);
+			armor->charset_size += copy;
+		}
+		else if (memcmp(PTR_OFFSET(headers, pos), "MessageID: ", 11) == 0)
+		{
+			copy = (count - 11) + 1;
+
+			memcpy(PTR_OFFSET(armor->message_id, armor->message_id_size), PTR_OFFSET(headers, pos + 11), copy);
+			armor->message_id_size += copy;
+		}
+		else
+		{
+			// Should be unreachable, as we are already checking this.
+			return PGP_ARMOR_UNKNOWN_HEADER;
+		}
+
+		pos += count + 1;
+	}
+
+	// Set the header
 	armor->header = pgp_packet_header_encode(PGP_HEADER, PGP_ARMOR, 0, size + 6);
 
 	*packet = armor;

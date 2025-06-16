@@ -114,6 +114,8 @@ char *pgp_error(pgp_error_t status)
 		return "Invalid Armor Marker Begin And End";
 	case PGP_ARMOR_UNKNOWN_HEADER:
 		return "Unknown Armor Header";
+	case PGP_ARMOR_BAD_MESSAGE_ID:
+		return "Bad Armor Message ID";
 	case PGP_ARMOR_TOO_BIG:
 		return "Armor Too Long";
 	case PGP_ARMOR_LINE_TOO_BIG:
