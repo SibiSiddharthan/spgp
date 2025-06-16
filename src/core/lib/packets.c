@@ -2651,6 +2651,84 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 	return pos;
 }
 
+static pgp_error_t pgp_armor_parse_header(void *headers, uint16_t headers_size, char *field, byte_t *field_size, uint16_t *offset)
+{
+}
+
+static uint16_t pgp_armor_load_field(pgp_armor_packet *packet, void **destination, byte_t *destination_size, void *source,
+									 byte_t source_size, uint16_t offset)
+{
+	if (source_size == 0)
+	{
+		return 0;
+	}
+
+	*destination_size = source_size;
+	*destination = PTR_OFFSET(packet, sizeof(pgp_armor_packet) + offset);
+	memcpy(*destination, source, source_size);
+
+	return source_size;
+}
+
+pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16_t marker_size, void *headers, uint16_t headers_size)
+{
+	pgp_armor_packet *armor = NULL;
+
+	byte_t comment_size = 0;
+	byte_t version_size = 0;
+	byte_t hash_size = 0;
+	byte_t charset_size = 0;
+	byte_t message_id_size = 0;
+
+	uint16_t comment_offset = 0;
+	uint16_t version_offset = 0;
+	uint16_t hash_offset = 0;
+	uint16_t charset_offset = 0;
+	uint16_t message_id_offset = 0;
+
+	uint16_t size = 0;
+	uint16_t offset = 0;
+
+	armor = malloc(sizeof(pgp_armor_packet) + size);
+
+	if (armor == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(armor, 0, sizeof(pgp_armor_packet) + size);
+
+	// Marker
+	offset += pgp_armor_load_field(armor, &armor->marker, &armor->marker_size, marker, marker_size, offset);
+
+	// Comment
+	offset += pgp_armor_load_field(armor, &armor->comment, &armor->comment_size, PTR_OFFSET(headers, comment_offset), comment_size, offset);
+
+	// Version
+	offset += pgp_armor_load_field(armor, &armor->version, &armor->version_size, PTR_OFFSET(headers, version_offset), version_size, offset);
+
+	// Hash
+	offset += pgp_armor_load_field(armor, &armor->hash, &armor->hash_size, PTR_OFFSET(headers, hash_offset), hash_size, offset);
+
+	// Charset
+	offset += pgp_armor_load_field(armor, &armor->charset, &armor->charset_size, PTR_OFFSET(headers, charset_offset), charset_size, offset);
+
+	// Message ID
+	offset += pgp_armor_load_field(armor, &armor->message_id, &armor->message_id_size, PTR_OFFSET(headers, message_id_offset),
+								   message_id_size, offset);
+
+	armor->header = pgp_packet_header_encode(PGP_HEADER, PGP_ARMOR, 0, size + 6);
+
+	*packet = armor;
+
+	return PGP_SUCCESS;
+}
+
+void pgp_armor_packet_delete(pgp_armor_packet *packet)
+{
+	free(packet);
+}
+
 pgp_error_t pgp_unknown_packet_read_with_header(pgp_unknown_packet **packet, pgp_packet_header *header, void *data)
 {
 	pgp_unknown_packet *unknown = NULL;

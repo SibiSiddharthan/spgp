@@ -237,12 +237,14 @@ typedef struct _pgp_armor_packet
 {
 	pgp_packet_header header;
 
+	byte_t marker_size;
 	byte_t comment_size;
 	byte_t version_size;
 	byte_t hash_size;
 	byte_t charset_size;
 	byte_t message_id_size;
 
+	void *marker;
 	void *comment;
 	void *version;
 	void *hash;
@@ -433,7 +435,7 @@ size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t si
 size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size);
 
 // Armor Packet
-pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *headers, uint16_t size);
+pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16_t marker_size, void *headers, uint16_t headers_size);
 void pgp_armor_packet_delete(pgp_armor_packet *packet);
 
 size_t pgp_armor_packet_print(pgp_armor_packet *packet, void *str, size_t size);
