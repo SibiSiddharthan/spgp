@@ -138,6 +138,9 @@ typedef struct _pgp_literal_packet
 	byte_t filename_size;
 	void *filename;
 
+	byte_t hash_algorithm;
+	byte_t cleartext;
+
 } pgp_literal_packet;
 
 typedef struct _pgp_user_id_packet
