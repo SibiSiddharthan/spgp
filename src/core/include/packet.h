@@ -240,14 +240,12 @@ typedef struct _pgp_armor_packet
 	byte_t marker_size;
 	byte_t version_size;
 	byte_t comment_size;
-	byte_t hash_size;
 	byte_t charset_size;
 	byte_t message_id_size;
 
 	void *marker;
 	void *version;
 	void *comment;
-	void *hash;
 	void *charset;
 	void *message_id;
 

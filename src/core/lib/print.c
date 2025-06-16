@@ -2701,7 +2701,7 @@ size_t pgp_armor_packet_print(pgp_armor_packet *packet, void *str, size_t size)
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Marker: %.*s\n", packet->marker_size, packet->marker);
 
-	if ((packet->comment_size + packet->version_size + packet->hash_size + packet->charset_size + packet->message_id_size) == 0)
+	if ((packet->comment_size + packet->version_size + packet->charset_size + packet->message_id_size) == 0)
 	{
 		// No headers present
 		return pos;
@@ -2711,7 +2711,6 @@ size_t pgp_armor_packet_print(pgp_armor_packet *packet, void *str, size_t size)
 
 	pos += pgp_armor_header_print("Version", packet->version, packet->version_size, PTR_OFFSET(str, pos), size - pos, 2);
 	pos += pgp_armor_header_print("Comment", packet->comment, packet->comment_size, PTR_OFFSET(str, pos), size - pos, 2);
-	pos += pgp_armor_header_print("Hash", packet->hash, packet->hash_size, PTR_OFFSET(str, pos), size - pos, 2);
 	pos += pgp_armor_header_print("Charset", packet->charset, packet->charset_size, PTR_OFFSET(str, pos), size - pos, 2);
 	pos += pgp_armor_header_print("MessageID", packet->message_id, packet->message_id_size, PTR_OFFSET(str, pos), size - pos, 2);
 

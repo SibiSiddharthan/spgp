@@ -116,6 +116,8 @@ char *pgp_error(pgp_error_t status)
 		return "Unknown Armor Header";
 	case PGP_ARMOR_BAD_MESSAGE_ID:
 		return "Bad Armor Message ID";
+	case PGP_ARMOR_HASH_HEADER_INVALID_USAGE:
+		return "Invalid Usage of Hash Header In Armored Message";
 	case PGP_ARMOR_TOO_BIG:
 		return "Armor Too Long";
 	case PGP_ARMOR_LINE_TOO_BIG:

@@ -2669,7 +2669,6 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 {
 	pgp_armor_packet *armor = NULL;
 
-	byte_t *result = headers;
 	uint16_t pos = 0;
 	uint16_t count = 0;
 	uint16_t copy = 0;
@@ -2679,7 +2678,6 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 
 	byte_t version_size = 0;
 	byte_t comment_size = 0;
-	byte_t hash_size = 0;
 	byte_t charset_size = 0;
 	byte_t message_id_size = 0;
 
@@ -2697,7 +2695,7 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 		}
 		else if (memcmp(PTR_OFFSET(headers, pos), "Hash: ", 6) == 0)
 		{
-			hash_size += (count - 6) + 1;
+			return PGP_ARMOR_HASH_HEADER_INVALID_USAGE;
 		}
 		else if (memcmp(PTR_OFFSET(headers, pos), "Charset: ", 9) == 0)
 		{
@@ -2721,7 +2719,7 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 		pos += count + 1;
 	}
 
-	size = marker_size + version_size + comment_size + hash_size + charset_size + message_id_size;
+	size = marker_size + version_size + comment_size + charset_size + message_id_size;
 
 	armor = malloc(sizeof(pgp_armor_packet) + size);
 
@@ -2750,13 +2748,6 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 	{
 		armor->comment = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
 		offset += comment_size;
-	}
-
-	// Hash
-	if (hash_size > 0)
-	{
-		armor->marker = PTR_OFFSET(armor, sizeof(pgp_armor_packet) + offset);
-		offset += hash_size;
 	}
 
 	// Charset
@@ -2793,13 +2784,6 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 			memcpy(PTR_OFFSET(armor->comment, armor->comment_size), PTR_OFFSET(headers, pos + 9), copy);
 			armor->comment_size += copy;
 		}
-		else if (memcmp(PTR_OFFSET(headers, pos), "Hash: ", 6) == 0)
-		{
-			copy = (count - 6) + 1;
-
-			memcpy(PTR_OFFSET(armor->hash, armor->hash_size), PTR_OFFSET(headers, pos + 6), copy);
-			armor->hash_size += copy;
-		}
 		else if (memcmp(PTR_OFFSET(headers, pos), "Charset: ", 9) == 0)
 		{
 			copy = (count - 9) + 1;
@@ -2824,7 +2808,7 @@ pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16
 	}
 
 	// Set the header
-	armor->header = pgp_packet_header_encode(PGP_HEADER, PGP_ARMOR, 0, size + 6);
+	armor->header = pgp_packet_header_encode(PGP_HEADER, PGP_ARMOR, 0, size + 5);
 
 	*packet = armor;
 
