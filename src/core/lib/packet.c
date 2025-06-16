@@ -845,6 +845,7 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 	case PGP_KEYRING:
 		error = pgp_keyring_packet_read_with_header((pgp_keyring_packet **)packet, &header, data);
 		break;
+	case PGP_ARMOR: // fallthrough
 	default:
 		error = pgp_unknown_packet_read_with_header((pgp_unknown_packet **)packet, &header, data);
 		break;
@@ -907,6 +908,7 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 		return pgp_key_packet_write(packet, ptr, size);
 	case PGP_KEYRING:
 		return pgp_keyring_packet_write(packet, ptr, size);
+	case PGP_ARMOR: // fallthrough
 	default:
 		return pgp_unknown_packet_write(packet, ptr, size);
 	}
@@ -966,6 +968,8 @@ size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
 		return pgp_key_packet_print(packet, str, size, options);
 	case PGP_KEYRING:
 		return pgp_keyring_packet_print(packet, str, size);
+	case PGP_ARMOR:
+		return pgp_armor_packet_print(packet, str, size);
 	default:
 		return pgp_unknown_packet_print(packet, str, size);
 	}
@@ -1035,6 +1039,8 @@ void pgp_packet_delete(void *packet)
 		return pgp_key_packet_delete(packet);
 	case PGP_KEYRING:
 		return pgp_keyring_packet_delete(packet);
+	case PGP_ARMOR:
+		return pgp_armor_packet_delete(packet);
 	default:
 		return free(packet);
 	}

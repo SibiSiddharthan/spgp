@@ -41,6 +41,7 @@ typedef enum _pgp_packet_type
 	PGP_PADDING = 21,   // Padding Packet
 	PGP_KEYDEF = 60,    // Key Definition Packet (Private)
 	PGP_KEYRING = 61,   // Keyring Packet (Private)
+	PGP_ARMOR = 62,     // Armor Packet (Private)
 } pgp_packet_type;
 
 #define PGP_SUBPACKET_TAG_MASK 0x7F
@@ -232,6 +233,24 @@ typedef struct _pgp_keyring_packet
 
 } pgp_keyring_packet;
 
+typedef struct _pgp_armor_packet
+{
+	pgp_packet_header header;
+
+	byte_t comment_size;
+	byte_t version_size;
+	byte_t hash_size;
+	byte_t charset_size;
+	byte_t message_id_size;
+
+	void *comment;
+	void *version;
+	void *hash;
+	void *charset;
+	void *message_id;
+
+} pgp_armor_packet;
+
 typedef struct _pgp_user_info
 {
 	uint32_t info_octets;
@@ -412,6 +431,12 @@ pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input
 pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, size_t size);
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);
 size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size);
+
+// Armor Packet
+pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *headers, uint16_t size);
+void pgp_armor_packet_delete(pgp_armor_packet *packet);
+
+size_t pgp_armor_packet_print(pgp_armor_packet *packet, void *str, size_t size);
 
 // Unknown Packet
 pgp_error_t pgp_unknown_packet_read(pgp_unknown_packet **packet, void *data, size_t size);
