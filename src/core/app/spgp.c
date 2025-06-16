@@ -116,6 +116,7 @@ Miscellaneous Options:\n\
      --batch                    enable batch mode\n\
      --expert                   enable expert mode\n\
      --no-mpis                  dont print mpis when dumping packets\n\
+     --with-armor-info          print armor information\n\
      --homedir                  set home directory for spgp\n\
      --passphrase PASS          use passphrase PASS\n\
      --faked-system-time TIME   use timestamp TIME\n\
@@ -193,6 +194,7 @@ typedef enum _spgp_option
 	SPGP_OPTION_BATCH,
 	SPGP_OPTION_EXPERT,
 	SPGP_OPTION_NO_MPIS,
+	SPGP_OPTION_WITH_ARMOR_INFO,
 	SPGP_OPTION_HOMEDIR,
 	SPGP_OPTION_PASSPHRASE,
 	SPGP_OPTION_FAKED_TIME,
@@ -272,6 +274,7 @@ static arg_option_t spgp_options[] = {
 	{"batch", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_BATCH},
 	{"expert", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_EXPERT},
 	{"no-mpis", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_NO_MPIS},
+	{"with-armor-info", 0, ARGPARSE_OPTION_ARGUMENT_NONE, SPGP_OPTION_WITH_ARMOR_INFO},
 	{"homedir", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_HOMEDIR},
 	{"passphrase", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_PASSPHRASE},
 	{"faked-system-time", 0, ARGPARSE_OPTION_ARGUMENT_REQUIRED, SPGP_OPTION_FAKED_TIME},
@@ -645,6 +648,11 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 		case SPGP_OPTION_NO_MPIS:
 		{
 			command->no_print_mpis = 1;
+		}
+		break;
+		case SPGP_OPTION_WITH_ARMOR_INFO:
+		{
+			command->print_armor_info = 1;
 		}
 		break;
 

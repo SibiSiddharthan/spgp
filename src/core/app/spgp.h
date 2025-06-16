@@ -164,6 +164,7 @@ typedef struct _spgp_command
 			byte_t list_packets : 1;
 			byte_t dump_packets : 1;
 			byte_t no_print_mpis : 1;
+			byte_t print_armor_info : 1;
 		};
 
 		uint64_t options;
