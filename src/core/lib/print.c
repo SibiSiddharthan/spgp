@@ -215,6 +215,9 @@ size_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size
 	case PGP_KEYRING:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Keyring Packet (Private)");
 		break;
+	case PGP_ARMOR:
+		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Armor Packet (Private)");
+		break;
 	default:
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown Packet (Tag %hhu)", header->tag);
 	}
@@ -2651,6 +2654,66 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t si
 			pos += pgp_user_info_print(packet->users->packets[i], PTR_OFFSET(str, pos), size - pos, 2);
 		}
 	}
+
+	return pos;
+}
+
+static inline byte_t memchr_count(void *data, byte_t size)
+{
+	void *result = 0;
+
+	result = memchr(data, 0, size);
+
+	if (result == NULL)
+	{
+		return size;
+	}
+
+	return (byte_t)((uintptr_t)result - (uintptr_t)data);
+}
+
+static size_t pgp_armor_header_print(const char *header, void *data, byte_t data_size, void *str, size_t str_size, uint32_t indent)
+{
+	size_t offset = 0;
+	byte_t pos = 0;
+	byte_t count = 0;
+
+	if (data_size == 0)
+	{
+		return 0;
+	}
+
+	while (pos < data_size)
+	{
+		count = memchr_count(PTR_OFFSET(data, pos), data_size - pos);
+		offset += print_format(indent, PTR_OFFSET(str, offset), str_size - offset, "%s: %.*s\n", header, PTR_OFFSET(data, pos), count);
+		pos += count + 1;
+	}
+
+	return offset;
+}
+
+size_t pgp_armor_packet_print(pgp_armor_packet *packet, void *str, size_t size)
+{
+	size_t pos = 0;
+
+	pos += pgp_packet_header_print(&packet->header, str, size);
+
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Marker: %.*s\n", packet->marker_size, packet->marker);
+
+	if ((packet->comment_size + packet->version_size + packet->hash_size + packet->charset_size + packet->message_id_size) == 0)
+	{
+		// No headers present
+		return pos;
+	}
+
+	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Headers:\n");
+
+	pos += pgp_armor_header_print("Version", packet->version, packet->version_size, PTR_OFFSET(str, pos), size - pos, 2);
+	pos += pgp_armor_header_print("Comment", packet->comment, packet->comment_size, PTR_OFFSET(str, pos), size - pos, 2);
+	pos += pgp_armor_header_print("Hash", packet->hash, packet->hash_size, PTR_OFFSET(str, pos), size - pos, 2);
+	pos += pgp_armor_header_print("Charset", packet->charset, packet->charset_size, PTR_OFFSET(str, pos), size - pos, 2);
+	pos += pgp_armor_header_print("MessageID", packet->message_id, packet->message_id_size, PTR_OFFSET(str, pos), size - pos, 2);
 
 	return pos;
 }
