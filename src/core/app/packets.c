@@ -60,7 +60,26 @@ void spgp_list_packets(void)
 	{
 		stream = spgp_read_pgp_packets(command.args->data[i]);
 
+		// Move the armor packet to the beginning of the stream
+		if (command.print_armor_info)
+		{
+			pgp_packet_header *header = NULL;
+			uint32_t start = 0;
+
+			for (uint32_t j = 0; j < stream->count; ++j)
+			{
+				header = stream->packets[i];
+
+				if (pgp_packet_type_from_tag(header->tag) == PGP_ARMOR)
+				{
+					pgp_stream_insert(stream, pgp_stream_remove(stream, j), start);
+					start = j + 1;
+				}
+			}
+		}
+
 		pgp_packet_stream_print(stream, str, 65536, options);
-		printf("%s\n", str);
+		pgp_stream_delete(stream, pgp_packet_delete);
+		printf("%s", str);
 	}
 }
