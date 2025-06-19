@@ -682,6 +682,11 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 
 	size_t pos = 0;
 
+	if (packet->trimmed)
+	{
+		return PGP_SUCCESS;
+	}
+
 	// Always collate packets
 	status = pgp_data_packet_collate((pgp_data_packet *)packet);
 
@@ -742,54 +747,193 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 		*out++ = '\n';
 	}
 
+	// Set trimmed status
+	packet->trimmed = 1;
 	packet->data_size = PTR_DIFF(out, packet->data);
+
 	pgp_literal_packet_encode_header(packet, 0, 0);
 
 	return PGP_SUCCESS;
 }
 
-static size_t encode_cleartext(byte_t *output, byte_t *input, size_t size)
+static size_t get_cleartext_encode_size(pgp_literal_packet *packet, byte_t hash_algorithm)
 {
+	byte_t *in = packet->data;
+	size_t size = 0;
+
+	// Marker
+	size += 36;
+
+	// Hash header
+	switch (hash_algorithm)
+	{
+	case PGP_MD5:
+		size += 11;
+		break;
+	case PGP_SHA1:
+		size += 12;
+		break;
+	case PGP_RIPEMD_160:
+		size += 17;
+		break;
+	case PGP_SHA2_256:
+		size += 14;
+		break;
+	case PGP_SHA2_384:
+		size += 14;
+		break;
+	case PGP_SHA2_512:
+		size += 14;
+		break;
+	case PGP_SHA2_224:
+		size += 14;
+		break;
+	case PGP_SHA3_256:
+		size += 16;
+		break;
+	case PGP_SHA3_512:
+		size += 16;
+		break;
+	default:
+		break;
+	}
+
+	// Empty line
+	size += 2;
+
+	if (packet->data_size > 0)
+	{
+		// Dash escaped text
+		if (in[0] == '-')
+		{
+			size += 2;
+		}
+
+		for (size_t i = 1; i < packet->data_size; ++i)
+		{
+			if (in[i] == '-' && in[i - 1] == '\n')
+			{
+				size += 2;
+			}
+		}
+
+		size += packet->data_size;
+	}
+
+	// Empty line
+	size += 2;
+
+	return size;
+}
+
+pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, byte_t hash_algorithm, void *buffer, size_t *size)
+{
+	pgp_error_t status = 0;
+
+	size_t required_size = 0;
 	size_t pos = 0;
 
-	// First character
-	// Dash Escapes
-	if (input[0] == '-')
+	byte_t *out = NULL;
+	byte_t *in = NULL;
+
+	status = pgp_literal_packet_trim_text(packet);
+
+	if (status != PGP_SUCCESS)
 	{
-		output[pos++] = '-';
-		output[pos++] = ' ';
-		output[pos++] = '-';
+		return status;
 	}
 
-	// LF -> CRLF
-	if (input[0] == '\n')
+	if (*size < (required_size = get_cleartext_encode_size(packet, hash_algorithm)))
 	{
-		output[pos++] = '\r';
-		output[pos++] = '\n';
+		*size = required_size;
+		return PGP_BUFFER_TOO_SMALL;
 	}
 
-	for (size_t i = 1; i < size; ++i)
+	*size = required_size;
+
+	// Marker
+	memcpy(PTR_OFFSET(buffer, pos), "-----BEGIN PGP SIGNED MESSAGE-----\r\n", 36);
+	pos += 36;
+
+	// Hash algorithm
+	switch (hash_algorithm)
 	{
-		// Dash Escapes
-		if (input[i] == '-' && input[i - 1] == '\n')
+	case PGP_MD5:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: MD5\r\n", 11);
+		pos += 11;
+		break;
+	case PGP_SHA1:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA1\r\n", 12);
+		pos += 12;
+		break;
+	case PGP_RIPEMD_160:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: RIPEMD160\r\n", 17);
+		pos += 17;
+		break;
+	case PGP_SHA2_256:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA256\r\n", 14);
+		pos += 14;
+		break;
+	case PGP_SHA2_384:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA384\r\n", 14);
+		pos += 14;
+		break;
+	case PGP_SHA2_512:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA512\r\n", 14);
+		pos += 14;
+		break;
+	case PGP_SHA2_224:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA224\r\n", 14);
+		pos += 14;
+		break;
+	case PGP_SHA3_256:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA3-256\r\n", 16);
+		pos += 16;
+		break;
+	case PGP_SHA3_512:
+		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA3-512\r\n", 16);
+		pos += 16;
+		break;
+	default:
+		break;
+	}
+
+	in = packet->data;
+	out = PTR_OFFSET(buffer, pos);
+
+	// Empty line
+	*out++ = '\r';
+	*out++ = '\n';
+
+	// Dash escaped data
+	if (packet->data_size > 0)
+	{
+		// First character
+		if (in[0] == '-')
 		{
-			// Every line starting with '-' is prefixed with '-' and ' '.
-			output[pos++] = '-';
-			output[pos++] = ' ';
-			output[pos++] = '-';
+			*out++ = '-';
+			*out++ = ' ';
 		}
 
-		// LF -> CRLF
-		if (input[i] == '\n' && input[i - 1] != '\r')
-		{
-			output[pos++] = '\r';
-			output[pos++] = '\n';
-		}
+		*out++ = in[0];
 
-		output[pos++] = input[i];
+		for (size_t i = 1; i < packet->data_size; ++i)
+		{
+			if (in[i] == '-' && in[i - 1] == '\n')
+			{
+				*out++ = '-';
+				*out++ = ' ';
+			}
+
+			*out++ = in[i];
+		}
 	}
 
-	return pos;
+	// Empty line
+	*out++ = '\r';
+	*out++ = '\n';
+
+	return PGP_SUCCESS;
 }
 
 static size_t decode_cleartext(byte_t *output, byte_t *input, size_t size)
