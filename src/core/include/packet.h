@@ -365,6 +365,7 @@ pgp_error_t pgp_literal_packet_split(pgp_literal_packet *packet, byte_t split);
 
 pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet);
 pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, byte_t hash_algorithm, void *buffer, size_t *size);
+pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, void *buffer, size_t size);
 
 pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, size_t size);
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size);

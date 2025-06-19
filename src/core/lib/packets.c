@@ -936,31 +936,199 @@ pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, byte
 	return PGP_SUCCESS;
 }
 
-static size_t decode_cleartext(byte_t *output, byte_t *input, size_t size)
+static uint16_t trimline(byte_t *line, uint16_t line_size)
 {
-	size_t input_pos = 0;
-	size_t output_pos = 0;
-
-	// First character
-	// Dash Escapes
-	if (input[0] == '-')
+	while (line_size > 0)
 	{
-		input_pos += 2;
-	}
+		line_size -= 1;
 
-	for (size_t i = input_pos; i < size; ++i)
-	{
-		// Dash Escapes
-		if (input[i] == '-' && input[i - 1] == '\n')
+		if (line[line_size] == ' ' || line[line_size] == '\t')
 		{
-			// Every line starting with '-' is prefixed with '-' and ' '.
-			i += 2;
+			continue;
 		}
 
-		output[output_pos++] = input[i];
+		return line_size + 1;
 	}
 
-	return output_pos;
+	return 0;
+}
+
+static pgp_error_t pgp_decode_cleartext(buffer_t *in, byte_t *out, size_t *outpos)
+{
+	byte_t previous_char = 0;
+	byte_t current_char = 0;
+	byte_t result = 0;
+
+	size_t pos = 0;
+
+	while ((result = read8(&in, &current_char)) != 0)
+	{
+		if (pos == 0)
+		{
+			if (current_char == '-')
+			{
+				CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+
+				if (current_char != ' ')
+				{
+					return PGP_MALFORMED_CLEARTEXT_DATA;
+				}
+
+				CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+
+				if (current_char != '-')
+				{
+					return PGP_MALFORMED_CLEARTEXT_DATA;
+				}
+			}
+		}
+
+		if (current_char == '\n')
+		{
+			if (previous_char != '\r')
+			{
+				return PGP_MALFORMED_CLEARTEXT_DATA;
+			}
+		}
+
+		if (previous_char == '\n' && current_char == '-')
+		{
+			CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+
+			if (current_char != ' ')
+			{
+				return PGP_MALFORMED_CLEARTEXT_DATA;
+			}
+
+			CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+
+			if (current_char != '-')
+			{
+				return PGP_MALFORMED_CLEARTEXT_DATA;
+			}
+		}
+
+		out[pos++] = current_char;
+		previous_char = current_char;
+	}
+
+	// Remove the last newline
+	if (pos >= 2)
+	{
+		if (out[pos - 1] == '\n')
+		{
+			pos -= 2;
+		}
+	}
+
+	*outpos = pos;
+
+	return PGP_SUCCESS;
+}
+
+pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, void *buffer, size_t size)
+{
+	pgp_error_t status = 0;
+
+	buffer_t in = {.data = buffer, .pos = 0, .size = size, .capacity = size};
+	byte_t line_buffer[1024] = {0};
+
+	uint16_t line_size = 0;
+	uint16_t trimmed_line_size = 0;
+
+	void *data = NULL;
+	size_t data_size = 0;
+
+	byte_t *out = NULL;
+	size_t outpos = 0;
+
+	byte_t hash_algorithm = 0;
+
+	// Check marker
+	line_size = readline(&in, line_buffer, 1024);
+	trimmed_line_size = trimline(line_buffer, line_size);
+
+	if (trimmed_line_size != 34 && memcmp("-----BEGIN PGP SIGNED MESSAGE-----", line_buffer, trimmed_line_size) != 0)
+	{
+		return PGP_INVALID_CLEARTEXT_MARKER;
+	}
+
+	// Parse the hash headers
+	while (1)
+	{
+		line_size = readline(&in, line_buffer, 1024);
+		trimmed_line_size = trimline(line_buffer, line_size);
+
+		if (trimmed_line_size == 0)
+		{
+			break;
+		}
+
+		if (memcmp("Hash: ", line_buffer, 6) == 0)
+		{
+		}
+		else
+		{
+			return PGP_INVALID_CLEARTEXT_HEADER;
+		}
+	}
+
+	// Initialize buffer
+	data_size = in.size - in.pos;
+
+	if (data_size == 0)
+	{
+		// Create the literal packet and return
+		status = pgp_literal_packet_new(packet, PGP_LITERAL_DATA_TEXT, 0, NULL, 0);
+
+		if (status != PGP_SUCCESS)
+		{
+			return status;
+		}
+
+		(*packet)->hash_algorithm = hash_algorithm;
+		(*packet)->cleartext = 1;
+
+		return PGP_SUCCESS;
+	}
+
+	data = malloc(data_size);
+
+	if (data == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	memset(data, 0, data_size);
+
+	// Dash escaped data
+	status = pgp_decode_cleartext(&in, data, &outpos);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(data);
+		return status;
+	}
+
+	// Create the literal packet
+	status = pgp_literal_packet_new(packet, PGP_LITERAL_DATA_TEXT, 0, NULL, 0);
+
+	if (status != PGP_SUCCESS)
+	{
+		free(data);
+		return status;
+	}
+
+	if (outpos > 0)
+	{
+		(*packet)->data = data;
+		(*packet)->data_size = outpos;
+	}
+
+	(*packet)->hash_algorithm = hash_algorithm;
+	(*packet)->cleartext = 1;
+
+	return PGP_SUCCESS;
 }
 
 static pgp_error_t pgp_literal_packet_read_body(pgp_literal_packet *packet, buffer_t *buffer)
