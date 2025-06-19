@@ -748,6 +748,77 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 	return PGP_SUCCESS;
 }
 
+static size_t encode_cleartext(byte_t *output, byte_t *input, size_t size)
+{
+	size_t pos = 0;
+
+	// First character
+	// Dash Escapes
+	if (input[0] == '-')
+	{
+		output[pos++] = '-';
+		output[pos++] = ' ';
+		output[pos++] = '-';
+	}
+
+	// LF -> CRLF
+	if (input[0] == '\n')
+	{
+		output[pos++] = '\r';
+		output[pos++] = '\n';
+	}
+
+	for (size_t i = 1; i < size; ++i)
+	{
+		// Dash Escapes
+		if (input[i] == '-' && input[i - 1] == '\n')
+		{
+			// Every line starting with '-' is prefixed with '-' and ' '.
+			output[pos++] = '-';
+			output[pos++] = ' ';
+			output[pos++] = '-';
+		}
+
+		// LF -> CRLF
+		if (input[i] == '\n' && input[i - 1] != '\r')
+		{
+			output[pos++] = '\r';
+			output[pos++] = '\n';
+		}
+
+		output[pos++] = input[i];
+	}
+
+	return pos;
+}
+
+static size_t decode_cleartext(byte_t *output, byte_t *input, size_t size)
+{
+	size_t input_pos = 0;
+	size_t output_pos = 0;
+
+	// First character
+	// Dash Escapes
+	if (input[0] == '-')
+	{
+		input_pos += 2;
+	}
+
+	for (size_t i = input_pos; i < size; ++i)
+	{
+		// Dash Escapes
+		if (input[i] == '-' && input[i - 1] == '\n')
+		{
+			// Every line starting with '-' is prefixed with '-' and ' '.
+			i += 2;
+		}
+
+		output[output_pos++] = input[i];
+	}
+
+	return output_pos;
+}
+
 static pgp_error_t pgp_literal_packet_read_body(pgp_literal_packet *packet, buffer_t *buffer)
 {
 	// 1-octet format specifier
