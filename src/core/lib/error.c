@@ -126,6 +126,12 @@ char *pgp_error(pgp_error_t status)
 		return "Bad Base64 Encoded Data";
 	case PGP_ARMOR_CRC_MISMATCH:
 		return "Armor CRC24 Mismatch";
+	case PGP_ARMOR_INVALID_CLEARTEXT_MARKER:
+		return "Invalid Cleartext Marker";
+	case PGP_ARMOR_INVALID_CLEARTEXT_HEADER:
+		return "Invalid Cleartext Header";
+	case PGP_ARMOR_MALFORMED_CLEARTEXT_DATA:
+		return "Malformed Cleartext Data";
 	case PGP_ARMOR_INVALID_MARKER_FOR_TRANSFERABLE_PUBLIC_KEY:
 		return "Armor Invalid Marker For Transferable Public Key";
 	case PGP_ARMOR_INVALID_MARKER_FOR_TRANSFERABLE_SECRET_KEY:

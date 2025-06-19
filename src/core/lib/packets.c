@@ -961,24 +961,24 @@ static pgp_error_t pgp_decode_cleartext(buffer_t *in, byte_t *out, size_t *outpo
 
 	size_t pos = 0;
 
-	while ((result = read8(&in, &current_char)) != 0)
+	while ((result = read8(in, &current_char)) != 0)
 	{
 		if (pos == 0)
 		{
 			if (current_char == '-')
 			{
-				CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+				CHECK_READ(read8(in, &current_char), PGP_ARMOR_MALFORMED_CLEARTEXT_DATA);
 
 				if (current_char != ' ')
 				{
-					return PGP_MALFORMED_CLEARTEXT_DATA;
+					return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
 				}
 
-				CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+				CHECK_READ(read8(in, &current_char), PGP_ARMOR_MALFORMED_CLEARTEXT_DATA);
 
 				if (current_char != '-')
 				{
-					return PGP_MALFORMED_CLEARTEXT_DATA;
+					return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
 				}
 			}
 		}
@@ -987,24 +987,24 @@ static pgp_error_t pgp_decode_cleartext(buffer_t *in, byte_t *out, size_t *outpo
 		{
 			if (previous_char != '\r')
 			{
-				return PGP_MALFORMED_CLEARTEXT_DATA;
+				return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
 			}
 		}
 
 		if (previous_char == '\n' && current_char == '-')
 		{
-			CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+			CHECK_READ(read8(in, &current_char), PGP_ARMOR_MALFORMED_CLEARTEXT_DATA);
 
 			if (current_char != ' ')
 			{
-				return PGP_MALFORMED_CLEARTEXT_DATA;
+				return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
 			}
 
-			CHECK_READ(read8(&in, &current_char), PGP_MALFORMED_CLEARTEXT_DATA);
+			CHECK_READ(read8(in, &current_char), PGP_ARMOR_MALFORMED_CLEARTEXT_DATA);
 
 			if (current_char != '-')
 			{
-				return PGP_MALFORMED_CLEARTEXT_DATA;
+				return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
 			}
 		}
 
@@ -1038,9 +1038,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 
 	void *data = NULL;
 	size_t data_size = 0;
-
-	byte_t *out = NULL;
-	size_t outpos = 0;
+	size_t decode_size = 0;
 
 	byte_t hash_algorithm = 0;
 
@@ -1050,7 +1048,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 
 	if (trimmed_line_size != 34 && memcmp("-----BEGIN PGP SIGNED MESSAGE-----", line_buffer, trimmed_line_size) != 0)
 	{
-		return PGP_INVALID_CLEARTEXT_MARKER;
+		return PGP_ARMOR_INVALID_CLEARTEXT_MARKER;
 	}
 
 	// Parse the hash headers
@@ -1069,7 +1067,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 		}
 		else
 		{
-			return PGP_INVALID_CLEARTEXT_HEADER;
+			return PGP_ARMOR_INVALID_CLEARTEXT_HEADER;
 		}
 	}
 
@@ -1102,7 +1100,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 	memset(data, 0, data_size);
 
 	// Dash escaped data
-	status = pgp_decode_cleartext(&in, data, &outpos);
+	status = pgp_decode_cleartext(&in, data, &decode_size);
 
 	if (status != PGP_SUCCESS)
 	{
@@ -1119,10 +1117,10 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 		return status;
 	}
 
-	if (outpos > 0)
+	if (decode_size > 0)
 	{
 		(*packet)->data = data;
-		(*packet)->data_size = outpos;
+		(*packet)->data_size = decode_size;
 	}
 
 	(*packet)->hash_algorithm = hash_algorithm;
