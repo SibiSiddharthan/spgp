@@ -558,6 +558,26 @@ pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream)
 	return stream;
 }
 
+pgp_stream_t *pgp_packet_stream_filter_marker_packets(pgp_stream_t *stream)
+{
+	pgp_packet_header *header = NULL;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+
+		if (pgp_packet_type_from_tag(header->tag) == PGP_MARKER || pgp_packet_type_from_tag(header->tag) == PGP_ARMOR)
+		{
+			pgp_stream_remove(stream, i);
+			pgp_packet_delete(header);
+
+			--i;
+		}
+	}
+
+	return stream;
+}
+
 pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *stream)
 {
 	pgp_packet_header *header = NULL;
