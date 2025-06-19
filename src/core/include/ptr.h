@@ -11,5 +11,6 @@
 #include <stdint.h>
 
 #define PTR_OFFSET(p, o) ((void *)(((uint8_t *)(p)) + (o)))
+#define PTR_DIFF(a, b)   (uintptr_t)((uintptr_t)(a) - (uintptr_t)(b))
 
 #endif
