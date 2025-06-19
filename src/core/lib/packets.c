@@ -672,6 +672,82 @@ pgp_error_t pgp_literal_packet_split(pgp_literal_packet *packet, byte_t split)
 	return PGP_SUCCESS;
 }
 
+pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
+{
+	pgp_error_t status = 0;
+
+	byte_t *result = packet->data;
+	byte_t *out = packet->data;
+	byte_t *in = packet->data;
+
+	size_t pos = 0;
+
+	// Always collate packets
+	status = pgp_data_packet_collate((pgp_data_packet *)packet);
+
+	if (status != PGP_SUCCESS)
+	{
+		return status;
+	}
+
+	while (result != NULL)
+	{
+		in = PTR_OFFSET(packet->data, pos);
+		result = memchr(in, '\n', packet->data_size - pos);
+
+		if (result != NULL)
+		{
+			pos += PTR_DIFF(result, in) + 1;
+
+			// Ignore \n and \r
+			--result;
+
+			if (*result == '\r')
+			{
+				--result;
+			}
+
+			while (result != in)
+			{
+				if (*result == ' ' || *result == '\t')
+				{
+					--result;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			while (result != in)
+			{
+				if (*result == ' ' || *result == '\t' || *result == '\r')
+				{
+					--result;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		memmove(out, in, PTR_DIFF(result, in));
+		out += PTR_DIFF(result, in);
+
+		// Add \r and \n
+		*out++ = '\r';
+		*out++ = '\n';
+	}
+
+	packet->data_size = PTR_DIFF(out, packet->data);
+	pgp_literal_packet_encode_header(packet, 0, 0);
+
+	return PGP_SUCCESS;
+}
+
 static pgp_error_t pgp_literal_packet_read_body(pgp_literal_packet *packet, buffer_t *buffer)
 {
 	// 1-octet format specifier
