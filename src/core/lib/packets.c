@@ -953,6 +953,77 @@ static uint16_t trimline(byte_t *line, uint16_t line_size)
 	return 0;
 }
 
+static byte_t get_hash_algorithm(byte_t *line, uint16_t size)
+{
+	// Ignore the hash algorithm if more than one is given.
+	if (memchr(line, ',', size) != NULL)
+	{
+		return 0;
+	}
+
+	if (size == 3)
+	{
+		if (memcmp(line, "MD5", 3) == 0)
+		{
+			return PGP_MD5;
+		}
+	}
+
+	if (size == 4)
+	{
+		if (memcmp(line, "SHA1", 4) == 0)
+		{
+			return PGP_SHA1;
+		}
+	}
+
+	if (size == 6)
+	{
+		if (memcmp(line, "SHA224", 6) == 0)
+		{
+			return PGP_SHA2_224;
+		}
+
+		if (memcmp(line, "SHA256", 6) == 0)
+		{
+			return PGP_SHA2_256;
+		}
+
+		if (memcmp(line, "SHA384", 6) == 0)
+		{
+			return PGP_SHA2_384;
+		}
+
+		if (memcmp(line, "SHA512", 6) == 0)
+		{
+			return PGP_SHA2_512;
+		}
+	}
+
+	if (size == 8)
+	{
+		if (memcmp(line, "SHA3-256", 8) == 0)
+		{
+			return PGP_SHA3_256;
+		}
+
+		if (memcmp(line, "SHA3-512", 8) == 0)
+		{
+			return PGP_SHA3_512;
+		}
+	}
+
+	if (size == 9)
+	{
+		if (memcmp(line, "RIPEMD160", 9) == 0)
+		{
+			return PGP_RIPEMD_160;
+		}
+	}
+
+	return 0;
+}
+
 static pgp_error_t pgp_decode_cleartext(buffer_t *in, byte_t *out, size_t *outpos)
 {
 	byte_t previous_char = 0;
@@ -1041,6 +1112,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 	size_t decode_size = 0;
 
 	byte_t hash_algorithm = 0;
+	byte_t first_hash_header = 0;
 
 	// Check marker
 	line_size = readline(&in, line_buffer, 1024);
@@ -1064,6 +1136,15 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 
 		if (memcmp("Hash: ", line_buffer, 6) == 0)
 		{
+			// Ignore the hash header if more than one is given.
+			if (first_hash_header)
+			{
+				hash_algorithm = 0;
+			}
+
+			first_hash_header = 1;
+
+			hash_algorithm = get_hash_algorithm(PTR_OFFSET(line_buffer, 6), trimmed_line_size - 6);
 		}
 		else
 		{
