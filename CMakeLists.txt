@@ -27,7 +27,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 						/wd4244 # Conversion possible loss of data
 						/wd4267 # Conversion possible loss of data
 						/wd4702 # Unreachable code
-						/std:c11)
+						/std:c17)
 endif()
 
 option(ENABLE_ASAN "Use address sanitizer" OFF)
