@@ -387,7 +387,7 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *keyring, uint32_t options)
 		STREAM_CALL(stream = pgp_stream_push(stream, keyring));
 	}
 
-	OS_CALL(os_seek(command.keyring, 0, SEEK_SET), printf("Unable to seek keyring"));
+	OS_CALL(os_seek(command.keyring, 0, SEEK_BEGIN), printf("Unable to seek keyring"));
 	OS_CALL(os_truncate(command.keyring, NULL, 0, 0), printf("Unable to truncate keyring"));
 
 	spgp_write_pgp_packets_handle(command.keyring, stream, NULL);

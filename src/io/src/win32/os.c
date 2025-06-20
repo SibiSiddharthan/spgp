@@ -405,7 +405,7 @@ status_t os_seek(handle_t handle, off_t offset, uint32_t whence)
 
 	switch (whence)
 	{
-	case SEEK_SET:
+	case SEEK_BEGIN:
 	{
 		if (offset < 0)
 		{
@@ -415,7 +415,7 @@ status_t os_seek(handle_t handle, off_t offset, uint32_t whence)
 		current_pos = 0;
 	}
 	break;
-	case SEEK_CUR:
+	case SEEK_CURRENT:
 	{
 		FILE_POSITION_INFORMATION curpos_info = {0};
 

@@ -34,9 +34,9 @@ void *_os_security_descriptor(mode_t mode, uint32_t directory);
 void _os_access(handle_t handle, void *st);
 
 // Seek constants
-#define SEEK_SET 1
-#define SEEK_CUR 2
-#define SEEK_END 3
+#define SEEK_BEGIN   0
+#define SEEK_CURRENT 1
+#define SEEK_END     2
 
 // Native NT access
 #define __FILE_ACCESS_READ_DATA   0x0001ul
@@ -195,7 +195,7 @@ typedef struct _stat_t
 	nlink_t st_nlink;       // number of links to the file
 	uid_t st_uid;           // user ID of file
 	gid_t st_gid;           // group ID of file
-	size_t st_size;          // file size in bytes (if file is a regular file)
+	size_t st_size;         // file size in bytes (if file is a regular file)
 	timespec_t st_atim;     // time of last access
 	timespec_t st_mtim;     // time of last data modification
 	timespec_t st_ctim;     // time of last status change
