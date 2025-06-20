@@ -57,6 +57,26 @@ static uint32_t parse_expiry(byte_t *in, byte_t length)
 	return value;
 }
 
+static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+static size_t print_fingerprint(byte_t *fingerprint, byte_t size, char *out)
+{
+	byte_t pos = 0;
+
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		byte_t a, b;
+
+		a = fingerprint[i] / 16;
+		b = fingerprint[i] % 16;
+
+		out[pos++] = hex_table[a];
+		out[pos++] = hex_table[b];
+	}
+
+	return pos;
+}
+
 static uint32_t spgp_get_sign_fingerprint(pgp_signature_packet *sign, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE])
 {
 	if (sign->hashed_subpackets != NULL)
@@ -205,6 +225,25 @@ static pgp_stream_t *spgp_detach_sign_file(pgp_key_packet **keys, pgp_user_info 
 	}
 
 	pgp_literal_packet_delete(literal);
+
+	// Git gpg interface compatibility
+	if (command.status_fd != 0)
+	{
+		handle_t handle = command.status_fd == 1 ? STDOUT_HANDLE : STDERR_HANDLE;
+
+		char gpg_buffer[256] = {0};
+		char fingerprint[128] = {0};
+		byte_t gpg_pos = 0;
+
+		size_t result = 0;
+
+		print_fingerprint(keys[0]->fingerprint, keys[0]->fingerprint_size, fingerprint);
+
+		gpg_pos += snprintf(gpg_buffer + gpg_pos, 256 - gpg_pos, "[GNUPG:] KEY_CONSIDERED %s\n", fingerprint);
+		gpg_pos += snprintf(gpg_buffer + gpg_pos, 256 - gpg_pos, "[GNUPG:] SIG_CREATED USING %s\n", fingerprint);
+
+		OS_CALL(os_write(handle, gpg_buffer, gpg_pos, &result), printf("Unable to write to handle %u", OS_HANDLE_AS_UINT(handle)));
+	}
 
 	return stream;
 }
@@ -824,26 +863,6 @@ void spgp_verify(void)
 	{
 		exit(1);
 	}
-}
-
-static const char hex_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-
-static size_t print_fingerprint(byte_t *fingerprint, byte_t size, char *out)
-{
-	byte_t pos = 0;
-
-	for (uint32_t i = 0; i < size; ++i)
-	{
-		byte_t a, b;
-
-		a = fingerprint[i] / 16;
-		b = fingerprint[i] % 16;
-
-		out[pos++] = hex_table[a];
-		out[pos++] = hex_table[b];
-	}
-
-	return pos;
 }
 
 static void print_key(pgp_key_packet *key, char key_buffer[128])
