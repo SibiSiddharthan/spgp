@@ -72,7 +72,8 @@ static inline void rho(uint64_t A[25])
 {
 	// A'[x, y, z] = A[x, y, (z – (t + 1)(t + 2)/2) mod 64]
 	// (x,y) = (y, (2x + 3y) mod 5)
-	RHO_STEP(A, 0);
+
+	// (Skip this) RHO_STEP(A, 0);
 	RHO_STEP(A, 1);
 	RHO_STEP(A, 2);
 	RHO_STEP(A, 3);
