@@ -12,13 +12,13 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-fcolor-diagnostics -fansi-escape-codes
 						-Wall -Wextra
 						-Wno-cast-function-type-mismatch
-						-std=c11)
+						-std=c23)
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	add_compile_options(-fdiagnostics-color
 						-Wall -Wextra
-						-std=c11)
+						-std=c23)
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
