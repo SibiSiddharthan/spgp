@@ -405,60 +405,60 @@ void spgp_initialize_home(spgp_command *spgp)
 	}
 }
 
-static void spgp_execute_operation(spgp_command *command)
+static void spgp_execute_operation(void)
 {
-	if (command->list_packets || command->dump_packets)
+	if (command.list_packets || command.dump_packets)
 	{
 		return spgp_list_packets();
 	}
 
-	if (command->sign || command->detach_sign || command->clear_sign)
+	if (command.sign || command.detach_sign || command.clear_sign)
 	{
 		return spgp_sign();
 	}
 
-	if (command->verify)
+	if (command.verify)
 	{
 		return spgp_verify();
 	}
 
-	if (command->encrypt || command->symmetric)
+	if (command.encrypt || command.symmetric)
 	{
 		return spgp_encrypt();
 	}
 
-	if (command->decrypt)
+	if (command.decrypt)
 	{
 		return spgp_decrypt();
 	}
 
-	if (command->import_keys)
+	if (command.import_keys)
 	{
 		return spgp_import_keys();
 	}
 
-	if (command->export_keys || command->export_secret_keys)
+	if (command.export_keys || command.export_secret_keys)
 	{
 		return spgp_export_keys();
 	}
 
-	if (command->generate_key)
+	if (command.generate_key)
 	{
 		return spgp_generate_key();
 	}
 
-	if (command->list_keys || command->list_secret_keys)
+	if (command.list_keys || command.list_secret_keys)
 	{
 		return spgp_list_keys();
 	}
 
-	if (command->dearmor)
+	if (command.dearmor)
 	{
 		return spgp_dearmor();
 	}
 }
 
-static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **argv)
+static void spgp_parse_arguments(uint32_t argc, char **argv)
 {
 	argparse_t *actx = NULL;
 	arg_result_t *result = NULL;
@@ -485,174 +485,174 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 
 		// Basic Commands
 		case SPGP_OPTION_SIGN:
-			command->need_home = 1;
-			command->sign = 1;
+			command.need_home = 1;
+			command.sign = 1;
 			break;
 		case SPGP_OPTION_DETACH_SIGN:
-			command->need_home = 1;
-			command->detach_sign = 1;
+			command.need_home = 1;
+			command.detach_sign = 1;
 			break;
 		case SPGP_OPTION_CLEAR_SIGN:
-			command->need_home = 1;
-			command->clear_sign = 1;
+			command.need_home = 1;
+			command.clear_sign = 1;
 			break;
 		case SPGP_OPTION_VERIFY:
-			command->need_home = 1;
-			command->verify = 1;
+			command.need_home = 1;
+			command.verify = 1;
 			break;
 		case SPGP_OPTION_ENCRYPT:
-			command->need_home = 1;
-			command->encrypt = 1;
+			command.need_home = 1;
+			command.encrypt = 1;
 			break;
-			command->need_home = 1;
+			command.need_home = 1;
 		case SPGP_OPTION_SYMMETRIC_ENCRYPT:
-			command->need_home = 1;
-			command->symmetric = 1;
+			command.need_home = 1;
+			command.symmetric = 1;
 			break;
 		case SPGP_OPTION_DECRYPT:
-			command->need_home = 1;
-			command->decrypt = 1;
+			command.need_home = 1;
+			command.decrypt = 1;
 			break;
 		case SPGP_OPTION_ARMOR:
-			command->armor = 1;
-			command->dearmor = 0;
+			command.armor = 1;
+			command.dearmor = 0;
 			break;
 		case SPGP_OPTION_DEARMOR:
-			command->dearmor = 1;
-			command->armor = 0;
+			command.dearmor = 1;
+			command.armor = 0;
 			break;
 
 		// Key Commands
 		case SPGP_OPTION_LIST_KEYS:
-			command->need_home = 1;
-			command->list_keys = 1;
+			command.need_home = 1;
+			command.list_keys = 1;
 			break;
 		case SPGP_OPTION_LIST_SECRET_KEYS:
-			command->need_home = 1;
-			command->list_secret_keys = 1;
+			command.need_home = 1;
+			command.list_secret_keys = 1;
 			break;
 
 		case SPGP_OPTION_IMPORT_KEYS:
-			command->need_home = 1;
-			command->import_keys = 1;
+			command.need_home = 1;
+			command.import_keys = 1;
 			break;
 
 		case SPGP_OPTION_EXPORT_KEYS:
-			command->need_home = 1;
-			command->export_keys = 1;
+			command.need_home = 1;
+			command.export_keys = 1;
 			break;
 
 		case SPGP_OPTION_EXPORT_SECRET_KEYS:
-			command->need_home = 1;
-			command->export_secret_keys = 1;
+			command.need_home = 1;
+			command.export_secret_keys = 1;
 			break;
 
 		case SPGP_OPTION_GENERATE_KEY:
-			command->need_home = 1;
-			command->generate_key = 1;
+			command.need_home = 1;
+			command.generate_key = 1;
 			break;
 		case SPGP_OPTION_FULL_GENERATE_KEY:
-			command->need_home = 1;
-			command->full_generate_key = 1;
+			command.need_home = 1;
+			command.full_generate_key = 1;
 			break;
 
 		// Packet Commands
 		case SPGP_OPTION_LIST_PACKETS:
-			command->list_packets = 1;
+			command.list_packets = 1;
 			break;
 		case SPGP_OPTION_DUMP_PACKETS:
-			command->dump_packets = 1;
+			command.dump_packets = 1;
 			break;
 
 		// Key Selection
 		case SPGP_OPTION_USER_ID:
 		{
-			STREAM_CALL(command->users = pgp_stream_push(command->users, result->data));
+			STREAM_CALL(command.users = pgp_stream_push(command.users, result->data));
 		}
 		break;
 		case SPGP_OPTION_RECIPIENT:
 		{
-			STREAM_CALL(command->recipients = pgp_stream_push(command->recipients, result->data));
+			STREAM_CALL(command.recipients = pgp_stream_push(command.recipients, result->data));
 		}
 		break;
 
 		// Output Options
 		case SPGP_OPTION_OUTPUT:
-			command->output = result->data;
+			command.output = result->data;
 			break;
 
 		// Processing Options
 		case SPGP_OPTION_TEXTMODE:
-			command->textmode = 1;
+			command.textmode = 1;
 			break;
 
 		case SPGP_OPTION_MULTIFILE:
-			command->multifile = 1;
+			command.multifile = 1;
 			break;
 
 		// Operation Modes
 		case SPGP_OPTION_RFC2440:
 		{
-			command->mode = SPGP_MODE_RFC2440;
+			command.mode = SPGP_MODE_RFC2440;
 		}
 		break;
 		case SPGP_OPTION_RFC4880:
 		{
-			command->mode = SPGP_MODE_RFC4880;
+			command.mode = SPGP_MODE_RFC4880;
 		}
 		break;
 		case SPGP_OPTION_LIBREPGP:
 		{
-			command->mode = SPGP_MODE_LIBREPGP;
+			command.mode = SPGP_MODE_LIBREPGP;
 		}
 		break;
 		case SPGP_OPTION_OPENPGP:
 		{
-			command->mode = SPGP_MODE_OPENPGP;
+			command.mode = SPGP_MODE_OPENPGP;
 		}
 		break;
 
 		// Signature Option
 		case SPGP_OPTION_SIG_EXPIRE:
 		{
-			command->expiration = result->data;
+			command.expiration = result->data;
 		}
 		break;
 		case SPGP_OPTION_SIG_NOTATION:
 		{
-			STREAM_CALL(command->notation = pgp_stream_push(command->notation, result->data));
+			STREAM_CALL(command.notation = pgp_stream_push(command.notation, result->data));
 		}
 		break;
 		case SPGP_OPTION_SIG_POLICY:
 		{
-			STREAM_CALL(command->policy = pgp_stream_push(command->policy, result->data));
+			STREAM_CALL(command.policy = pgp_stream_push(command.policy, result->data));
 		}
 		break;
 		case SPGP_OPTION_SIG_KEYSERVER:
 		{
-			STREAM_CALL(command->keyserver = pgp_stream_push(command->keyserver, result->data));
+			STREAM_CALL(command.keyserver = pgp_stream_push(command.keyserver, result->data));
 		}
 		break;
 
 		// Miscellaneous Options
 		case SPGP_OPTION_HOMEDIR:
 		{
-			command->home = result->data;
+			command.home = result->data;
 		}
 		break;
 		case SPGP_OPTION_PASSPHRASE:
 		{
-			STREAM_CALL(command->passhprases = pgp_stream_push(command->passhprases, result->data));
+			STREAM_CALL(command.passhprases = pgp_stream_push(command.passhprases, result->data));
 		}
 		break;
 		case SPGP_OPTION_NO_MPIS:
 		{
-			command->no_print_mpis = 1;
+			command.no_print_mpis = 1;
 		}
 		break;
 		case SPGP_OPTION_WITH_ARMOR_INFO:
 		{
-			command->print_armor_info = 1;
+			command.print_armor_info = 1;
 		}
 		break;
 
@@ -675,19 +675,19 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 				exit(1);
 			}
 
-			command->status_fd = fd;
+			command.status_fd = fd;
 		}
 		break;
 
 		// Argparse stuff
 		case ARGPARSE_RETURN_NON_OPTION:
 		{
-			STREAM_CALL(command->args = pgp_stream_push(command->args, result->data));
+			STREAM_CALL(command.args = pgp_stream_push(command.args, result->data));
 		}
 		break;
 		case ARGPARSE_RETURN_STDIN_OPTION:
 		{
-			STREAM_CALL(command->args = pgp_stream_push(command->args, NULL));
+			STREAM_CALL(command.args = pgp_stream_push(command.args, NULL));
 		}
 		break;
 
@@ -699,15 +699,15 @@ static void spgp_parse_arguments(spgp_command *command, uint32_t argc, char **ar
 	argparse_delete(actx);
 
 	// Add an empty option to make life easier
-	if (command->args == NULL)
+	if (command.args == NULL)
 	{
-		STREAM_CALL(command->args = pgp_stream_push(command->args, NULL));
+		STREAM_CALL(command.args = pgp_stream_push(command.args, NULL));
 	}
 }
 
 int main(int argc, char **argv)
 {
-	spgp_parse_arguments(&command, argc, argv);
+	spgp_parse_arguments(argc, argv);
 
 	if (command.mode == 0)
 	{
@@ -724,7 +724,7 @@ int main(int argc, char **argv)
 	// The operations do not require setting up the home directory, execute them immediately.
 	if (command.need_home == 0)
 	{
-		spgp_execute_operation(&command);
+		spgp_execute_operation();
 
 		return 0;
 	}
@@ -736,7 +736,7 @@ int main(int argc, char **argv)
 		spgp_initialize_home(&command);
 	}
 
-	spgp_execute_operation(&command);
+	spgp_execute_operation();
 
 	return 0;
 }
