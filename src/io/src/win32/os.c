@@ -283,9 +283,9 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 		if (STAT_IS_FIFO(st->st_mode))
 		{
-			st->st_size = -1;
 			PREPARSE_DATA_BUFFER reparse_buffer =
 				(PREPARSE_DATA_BUFFER)RtlAllocateHeap(NtCurrentProcessHeap(), 0, MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+			st->st_size = 0;
 
 			if (reparse_buffer != NULL)
 			{

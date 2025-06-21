@@ -494,7 +494,7 @@ uint32_t rsa_encrypt_oaep(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mas
 uint32_t rsa_decrypt_oaep(rsa_key *key, hash_ctx *hctx_label, hash_ctx *hctx_mask, void *label, size_t label_size, void *ciphertext,
 						  size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	uint32_t status = -1;
+	uint32_t status = -1u;
 
 	// Sizes
 	size_t key_size = key->bits / 8;
@@ -692,7 +692,7 @@ retry:
 
 uint32_t rsa_decrypt_pkcs(rsa_key *key, void *ciphertext, size_t ciphertext_size, void *plaintext, size_t plaintext_size)
 {
-	uint32_t status = -1;
+	uint32_t status = -1u;
 
 	// Sizes
 	size_t key_size = key->bits / 8;

@@ -437,7 +437,7 @@ uint32_t ctr_drbg_generate(ctr_drbg *cdrbg, uint32_t prediction_resistance_reque
 	// Check requested size
 	if (output_size > MAX_DRBG_OUTPUT_SIZE)
 	{
-		return -1;
+		return -1u;
 	}
 
 	// Reseed

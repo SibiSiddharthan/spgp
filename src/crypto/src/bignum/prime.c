@@ -140,7 +140,7 @@ uint32_t bignum_is_probable_prime(bignum_ctx *bctx, bignum_t *bn)
 
 		if (bctx == NULL)
 		{
-			return -1;
+			return -1u;
 		}
 	}
 

@@ -409,4 +409,7 @@ uint32_t kdf(kdf_ctx *ctx, void *key, uint32_t key_size, void *derived_key, uint
 	case KDF_MODE_DOUBLE_PIPLELINE:
 		return kdf_double_pipeline(ctx, derived_key, derived_key_size);
 	}
+
+	// Unreachable
+	return 0;
 }

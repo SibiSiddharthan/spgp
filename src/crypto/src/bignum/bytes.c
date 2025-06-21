@@ -14,7 +14,6 @@
 
 bignum_t *bignum_set_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 {
-
 	if (bn == NULL)
 	{
 		bn = bignum_new(size * 8);
@@ -130,7 +129,7 @@ uint32_t bignum_get_bytes_le(bignum_t *bn, byte_t *bytes, size_t size)
 	{
 		if (size == 0)
 		{
-			return -1;
+			return 0;
 		}
 
 		bytes[0] = 0x00;
@@ -160,7 +159,7 @@ uint32_t bignum_get_bytes_be(bignum_t *bn, byte_t *bytes, size_t size)
 	{
 		if (size == 0)
 		{
-			return -1;
+			return 0;
 		}
 
 		bytes[0] = 0x00;
@@ -355,7 +354,7 @@ uint32_t bignum_get_hex(bignum_t *bn, char *hex, size_t size)
 
 	if (size < required_size)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (bn->sign < 0)
