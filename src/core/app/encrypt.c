@@ -365,7 +365,7 @@ void spgp_encrypt(void)
 
 		compression_algorithm = preferred_compression_algorithm(uinfo, count);
 
-		if (features & (PGP_SEIPD_V2 | PGP_AEAD))
+		if (features & (PGP_FEATURE_SEIPD_V2 | PGP_FEATURE_AEAD))
 		{
 			aead_pair = preferred_aead_algorithm(uinfo, count);
 			cipher_algorithm = aead_pair << 8;
@@ -433,15 +433,15 @@ void spgp_encrypt(void)
 			stream = pgp_stream_push(stream, compressed);
 		}
 
-		if (features & PGP_SEIPD_V2)
+		if (features & PGP_FEATURE_SEIPD_V2)
 		{
 			message = spgp_encrypt_seipd(key, count, passphrases, passphrase_count, cipher_algorithm, aead_algorithm, stream);
 		}
-		else if (features & PGP_AEAD)
+		else if (features & PGP_FEATURE_AEAD)
 		{
 			message = spgp_encrypt_aead(key, count, passphrases, passphrase_count, cipher_algorithm, aead_algorithm, stream);
 		}
-		else if (features & PGP_MDC)
+		else if (features & PGP_FEATURE_MDC)
 		{
 			message = spgp_encrypt_mdc(key, count, passphrases, passphrase_count, cipher_algorithm, stream);
 		}
