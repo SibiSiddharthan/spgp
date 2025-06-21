@@ -140,6 +140,7 @@ pgp_error_t pgp_compressed_packet_decompress(pgp_compresed_packet *packet, pgp_s
 			return status;
 		}
 	}
+	break;
 	case PGP_DEFALTE:
 	case PGP_ZLIB:
 	case PGP_BZIP2:
@@ -1694,6 +1695,7 @@ static size_t pgp_user_attribute_subpacket_write(void *subpacket, void *ptr, siz
 		memcpy(out + pos, image_subpacket->image_data, image_size);
 		pos += image_size;
 	}
+	break;
 	case PGP_USER_ATTRIBUTE_UID:
 	{
 		pgp_user_attribute_uid_subpacket *uid_subpacket = subpacket;

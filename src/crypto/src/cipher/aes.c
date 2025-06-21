@@ -70,7 +70,7 @@ static const uint8_t RCON[11] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40,
 #define AES256_ROUNDS    14
 #define AES256_KEY_WORDS 8
 
-#define SUBWORD(W) SBOX[((W) >> 24) & 0xFF] << 24 | SBOX[((W) >> 16) & 0xFF] << 16 | SBOX[((W) >> 8) & 0xFF] << 8 | SBOX[(W) & 0xFF]
+#define SUBWORD(W) (SBOX[((W) >> 24) & 0xFF] << 24 | SBOX[((W) >> 16) & 0xFF] << 16 | SBOX[((W) >> 8) & 0xFF] << 8 | SBOX[(W) & 0xFF])
 
 // Galois Field Multiplications
 // Residue polymnial x^8 + x^4 + x^3 + x + 1

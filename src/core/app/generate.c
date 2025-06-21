@@ -595,6 +595,7 @@ static void make_default_preferences(pgp_user_info *info)
 	{
 	case SPGP_MODE_RFC2440:
 		info->features = 0;
+		break;
 	case SPGP_MODE_RFC4880:
 		info->features = PGP_FEATURE_MDC;
 		break;

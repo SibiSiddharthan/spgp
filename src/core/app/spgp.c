@@ -504,7 +504,6 @@ static void spgp_parse_arguments(uint32_t argc, char **argv)
 			command.need_home = 1;
 			command.encrypt = 1;
 			break;
-			command.need_home = 1;
 		case SPGP_OPTION_SYMMETRIC_ENCRYPT:
 			command.need_home = 1;
 			command.symmetric = 1;

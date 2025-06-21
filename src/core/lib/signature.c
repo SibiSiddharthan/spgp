@@ -3207,6 +3207,7 @@ static void pgp_compute_uat_hash(pgp_hash_t *hctx, byte_t version, pgp_user_attr
 				pgp_hash_update(hctx, image_header, 16);
 				pgp_hash_update(hctx, subpacket->image_data, header->body_size - 16);
 			}
+			break;
 			case PGP_USER_ATTRIBUTE_UID:
 			{
 				pgp_user_attribute_uid_subpacket *subpacket = uat->subpackets->packets[i];
@@ -3849,6 +3850,7 @@ pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_k
 		literal_copy.format = PGP_LITERAL_DATA_TEXT;
 		literal_copy.filename_size = 0;
 		literal_copy.date = 0;
+		break;
 	default:
 		literal_copy.format = literal->format;
 		literal_copy.filename_size = literal->filename_size;

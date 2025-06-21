@@ -297,16 +297,16 @@ uint32_t ec_curve_encode_oid(curve_id id, void *buffer, uint32_t size)
 
 	// Montgomery and Edwards
 	case EC_CURVE25519:
-		memcpy(buffer, "\x2B\x65\x6E", 9);
+		memcpy(buffer, "\x2B\x65\x6E", 3);
 		return 3;
 	case EC_CURVE448:
-		memcpy(buffer, "\x2B\x65\x6F", 9);
+		memcpy(buffer, "\x2B\x65\x6F", 3);
 		return 3;
 	case EC_ED25519:
-		memcpy(buffer, "\x2B\x65\x70", 9);
+		memcpy(buffer, "\x2B\x65\x70", 3);
 		return 3;
 	case EC_ED448:
-		memcpy(buffer, "\x2B\x65\x71", 9);
+		memcpy(buffer, "\x2B\x65\x71", 3);
 		return 3;
 
 	default:
