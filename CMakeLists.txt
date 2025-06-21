@@ -18,6 +18,7 @@ endif()
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	add_compile_options(-fdiagnostics-color
 						-Wall -Wextra
+						-Wno-cast-function-type
 						-std=c23)
 endif()
 
