@@ -23,12 +23,14 @@ endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/W4
-						/wd4018 # signed/unsigned mismatch
+						/wd4018 # '<': signed/unsigned mismatch
 						/wd4098 # 'void' function returning a value
-						/wd4146 # Unary minus operator applied to unsigned type
-						/wd4244 # Conversion possible loss of data
-						/wd4267 # Conversion possible loss of data
-						/wd4702 # Unreachable code
+						/wd4146 # unary minus operator applied to unsigned type
+						/wd4244 # conversion possible loss of data
+						/wd4267 # conversion possible loss of data
+						/wd4334 # '<<': result of 32-bit shift implicitly converted to 64 bits
+						/wd4389 # '==': signed/unsigned mismatch
+						/wd4702 # unreachable code
 						/std:c17)
 endif()
 
