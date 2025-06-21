@@ -582,7 +582,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
 	{
 		struct _pgp_timestamp_subpacket *timestamp_subpacket = NULL;
-		pgp_error_t error = 0;
 
 		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_CREATION_TIME_SUBPACKET)
 		{
@@ -629,7 +628,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_PRIMARY_USER_ID_SUBPACKET:
 	{
 		struct _pgp_boolean_subpacket *boolean_subpacket = NULL;
-		pgp_error_t error = 0;
 		byte_t value = 0;
 
 		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_EXPORTABLE_SUBPACKET)
@@ -678,7 +676,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_FEATURES_SUBPACKET:
 	{
 		struct _pgp_flags_subpacket *flags_subpacket = NULL;
-		pgp_error_t error = 0;
 
 		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_KEY_SERVER_PREFERENCES_SUBPACKET)
 		{
@@ -721,7 +718,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
 		struct _pgp_preferred_algorithms_subpacket *preferred_algorithm_subpacket = NULL;
-		pgp_error_t error = 0;
 
 		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET)
 		{
@@ -771,7 +767,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
 	{
 		struct _pgp_key_fingerprint_subpacket *key_fingerprint_subpacket = NULL;
-		pgp_error_t error = 0;
 
 		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_FINGERPRINT_SUBPACKET)
 		{
@@ -836,7 +831,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	case PGP_SIGNER_USER_ID_SUBPACKET:
 	{
 		struct _pgp_string_subpacket *string_subpacket = NULL;
-		pgp_error_t error = 0;
 
 		if ((header.tag & PGP_SUBPACKET_TAG_MASK) == PGP_REGULAR_EXPRESSION_SUBPACKET)
 		{
@@ -1073,7 +1067,6 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 	}
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
-		pgp_error_t error = 0;
 		pgp_embedded_signature_subpacket *embedded_subpacket = NULL;
 
 		embedded_subpacket = malloc(sizeof(pgp_embedded_signature_subpacket));

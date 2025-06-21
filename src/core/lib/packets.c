@@ -3535,9 +3535,9 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 
 			if (user->features == 0)
 			{
-				for (uint32_t i = 0; i < subpacket->header.body_size; ++i)
+				for (uint32_t j = 0; j < subpacket->header.body_size; ++j)
 				{
-					user->features |= subpacket->flags[i];
+					user->features |= subpacket->flags[j];
 				}
 			}
 		}
@@ -3548,9 +3548,9 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 
 			if (user->flags == 0)
 			{
-				for (uint32_t i = 0; i < subpacket->header.body_size; ++i)
+				for (uint32_t j = 0; j < subpacket->header.body_size; ++j)
 				{
-					user->flags |= subpacket->flags[i];
+					user->flags |= subpacket->flags[j];
 				}
 			}
 		}
