@@ -448,7 +448,7 @@ curve_id ec_curve_decode_oid(void *oid, uint32_t size)
 				return 0;
 			}
 
-			switch (in[3])
+			switch (in[2])
 			{
 			case 0x6E:
 				return EC_CURVE25519;
