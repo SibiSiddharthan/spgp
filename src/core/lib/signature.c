@@ -1675,7 +1675,7 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 		if (packet->version == PGP_SIGNATURE_V6)
 		{
 			// 1 octed salt size
-			CHECK_READ(read16(buffer, &packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET);
+			CHECK_READ(read8(buffer, &packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET);
 
 			// Salt
 			CHECK_READ(readn(buffer, packet->salt, packet->salt_size), PGP_MALFORMED_SIGNATURE_PACKET_SALT_SIZE);
