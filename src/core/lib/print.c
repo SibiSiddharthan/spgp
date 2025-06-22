@@ -1486,8 +1486,17 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Name (%hu bytes): %.*s\n", notation_subpacket->name_size,
 							notation_subpacket->name_size, notation_subpacket->data);
 
-		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Value (%hu bytes): %.*s\n", notation_subpacket->value_size,
-							notation_subpacket->value_size, PTR_OFFSET(notation_subpacket->data, notation_subpacket->name_size));
+		if (notation_subpacket->flags & PGP_NOTATION_DATA_UTF8)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Value (%hu bytes): %.*s\n", notation_subpacket->value_size,
+								notation_subpacket->value_size, PTR_OFFSET(notation_subpacket->data, notation_subpacket->name_size));
+		}
+		else
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Value (%hu bytes): ", notation_subpacket->value_size);
+			pos += print_hex(hex_lower_table, PTR_OFFSET(str, pos), PTR_OFFSET(notation_subpacket->data, notation_subpacket->name_size),
+							 notation_subpacket->value_size);
+		}
 	}
 	break;
 	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
