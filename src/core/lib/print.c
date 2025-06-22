@@ -1882,26 +1882,32 @@ static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_pac
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, indent);
 
-		if (packet->hashed_subpackets->count > 0)
+		if (packet->hashed_subpackets != NULL)
 		{
-			pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Hashed Subpackets:\n");
+			if (packet->hashed_subpackets->count > 0)
+			{
+				pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Hashed Subpackets:\n");
+			}
+
+			for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+			{
+				pos += pgp_signature_subpacket_print(packet->hashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1,
+													 options);
+			}
 		}
 
-		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		if (packet->unhashed_subpackets != NULL)
 		{
-			pos +=
-				pgp_signature_subpacket_print(packet->hashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1, options);
-		}
+			if (packet->unhashed_subpackets->count > 0)
+			{
+				pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Unhashed Subpackets:\n");
+			}
 
-		if (packet->unhashed_subpackets->count > 0)
-		{
-			pos += print_format(indent, PTR_OFFSET(ptr, pos), size - pos, "Unhashed Subpackets:\n");
-		}
-
-		for (uint32_t i = 0; i < packet->unhashed_subpackets->count; ++i)
-		{
-			pos += pgp_signature_subpacket_print(packet->unhashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1,
-												 options);
+			for (uint32_t i = 0; i < packet->unhashed_subpackets->count; ++i)
+			{
+				pos += pgp_signature_subpacket_print(packet->unhashed_subpackets->packets[i], PTR_OFFSET(ptr, pos), size - pos, indent + 1,
+													 options);
+			}
 		}
 
 		pos += print_bytes(indent, "Hash Check: ", PTR_OFFSET(ptr, pos), size - pos, packet->quick_hash, 2);
