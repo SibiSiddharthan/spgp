@@ -1166,7 +1166,7 @@ pgp_error_t pgp_skesk_packet_session_key_encrypt(pgp_skesk_packet *packet, void 
 			return PGP_INVALID_CIPHER_KEY_SIZE;
 		}
 
-		return pgp_skesk_packet_session_key_v5_v6_encrypt(packet, password, password_size, session_key, session_key_size, iv, iv_size);
+		return pgp_skesk_packet_session_key_v5_v6_encrypt(packet, password, password_size, iv, iv_size, session_key, session_key_size);
 	}
 	case PGP_SKESK_V4:
 		return pgp_skesk_packet_session_key_v4_encrypt(packet, password, password_size, session_key, session_key_size);

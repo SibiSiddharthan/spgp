@@ -1125,14 +1125,14 @@ pgp_error_t pgp_aead_packet_new(pgp_aead_packet **packet, byte_t symmetric_key_a
 		return PGP_INVALID_CHUNK_SIZE;
 	}
 
-	packet = malloc(sizeof(pgp_aead_packet));
+	aead = malloc(sizeof(pgp_aead_packet));
 
-	if (packet == NULL)
+	if (aead == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	memset(packet, 0, sizeof(pgp_aead_packet));
+	memset(aead, 0, sizeof(pgp_aead_packet));
 
 	aead->version = PGP_AEAD_V1;
 	aead->symmetric_key_algorithm_id = symmetric_key_algorithm_id;
