@@ -877,7 +877,7 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 {
 	size_t pos = 0;
 
-	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Material\n");
+	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Material:\n");
 
 	switch (public_key_algorithm)
 	{
@@ -932,25 +932,25 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	case PGP_X25519:
 	{
 		pgp_x25519_key *key = public_key;
-		pos += print_bytes(indent + 1, "X25519 Public Key: ", str, str_size, key->public_key, 32);
+		pos += print_bytes(indent + 1, "X25519 Public Key: ", PTR_OFFSET(str, pos), str_size - pos, key->public_key, 32);
 	}
 	break;
 	case PGP_X448:
 	{
 		pgp_x448_key *key = public_key;
-		pos += print_bytes(indent + 1, "X448 Public Key: ", str, str_size, key->public_key, 56);
+		pos += print_bytes(indent + 1, "X448 Public Key: ", PTR_OFFSET(str, pos), str_size - pos, key->public_key, 56);
 	}
 	break;
 	case PGP_ED25519:
 	{
 		pgp_ed25519_key *key = public_key;
-		pos += print_bytes(indent + 1, "Ed25519 Public Key: ", str, str_size, key->public_key, 32);
+		pos += print_bytes(indent + 1, "Ed25519 Public Key: ", PTR_OFFSET(str, pos), str_size - pos, key->public_key, 32);
 	}
 	break;
 	case PGP_ED448:
 	{
 		pgp_ed448_key *key = public_key;
-		pos += print_bytes(indent + 1, "Ed448 Public Key: ", str, str_size, key->public_key, 57);
+		pos += print_bytes(indent + 1, "Ed448 Public Key: ", PTR_OFFSET(str, pos), str_size - pos, key->public_key, 57);
 	}
 	break;
 	default:
