@@ -1459,6 +1459,7 @@ size_t pgp_skesk_packet_write(pgp_skesk_packet *packet, void *ptr, size_t size)
 	{
 	case PGP_SKESK_V4:
 		return pgp_skesk_packet_v4_write(packet, ptr, size);
+	case PGP_SKESK_V5:
 	case PGP_SKESK_V6:
 		return pgp_skesk_packet_v5_v6_write(packet, ptr, size);
 	default:

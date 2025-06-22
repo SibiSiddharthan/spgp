@@ -603,7 +603,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 	memcpy(iv, PTR_OFFSET(derived_key, key_size), iv_size - 8);
 
 	// Encrypt the data paritioned by chunk size
-	packet->data_size = CEIL_DIV(data_size, chunk_size) * (chunk_size + PGP_AEAD_TAG_SIZE);
+	packet->data_size = (data_size / chunk_size) * (chunk_size + PGP_AEAD_TAG_SIZE) + ((data_size % chunk_size) + PGP_AEAD_TAG_SIZE);
 	packet->data = malloc(packet->data_size);
 
 	data = malloc(data_size);
@@ -1180,10 +1180,12 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 		return PGP_INVALID_AEAD_IV_SIZE;
 	}
 
+	// Copy the IV
+	memcpy(packet->iv, iv, iv_size);
 	packet->iv_size = iv_size;
 
 	// Encrypt the data paritioned by chunk size
-	packet->data_size = CEIL_DIV(data_size, chunk_size) * (chunk_size + PGP_AEAD_TAG_SIZE);
+	packet->data_size = (data_size / chunk_size) * (chunk_size + PGP_AEAD_TAG_SIZE) + ((data_size % chunk_size) + PGP_AEAD_TAG_SIZE);
 	packet->data = malloc(packet->data_size);
 
 	data = malloc(data_size);
