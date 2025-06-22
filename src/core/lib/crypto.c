@@ -237,6 +237,15 @@ static pgp_elliptic_curve_id pgp_curve_id_to_ec_curve(curve_id id)
 		return PGP_EC_BRAINPOOL_384R1;
 	case EC_BRAINPOOL_512R1:
 		return PGP_EC_BRAINPOOL_512R1;
+	case EC_CURVE25519:
+		return PGP_EC_CURVE25519;
+	case EC_CURVE448:
+		return PGP_EC_CURVE448;
+	case EC_ED25519:
+		return PGP_EC_ED25519;
+	case EC_ED448:
+		return PGP_EC_ED448;
+
 	default:
 		return 0;
 	}
