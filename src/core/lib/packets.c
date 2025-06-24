@@ -3504,6 +3504,11 @@ static pgp_error_t pgp_user_info_fill(pgp_user_info *user, pgp_stream_t *stream)
 	pgp_error_t status = 0;
 	pgp_subpacket_header *header = NULL;
 
+	if (stream == NULL)
+	{
+		return PGP_SUCCESS;
+	}
+
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];

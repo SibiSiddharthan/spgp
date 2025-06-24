@@ -2993,6 +2993,11 @@ static void pgp_key_packet_fill(pgp_key_packet *key, pgp_stream_t *stream)
 {
 	pgp_subpacket_header *header = NULL;
 
+	if (stream == NULL)
+	{
+		return;
+	}
+
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		header = stream->packets[i];
@@ -3044,6 +3049,11 @@ pgp_error_t pgp_key_packet_make_definition(pgp_key_packet *key, pgp_signature_pa
 	if (sign->type == PGP_KEY_REVOCATION_SIGNATURE || sign->type == PGP_SUBKEY_REVOCATION_SIGNATURE)
 	{
 		// Only check the hashed subpackets
+		if (sign->hashed_subpackets == NULL)
+		{
+			return PGP_INTERNAL_BUG;
+		}
+
 		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
 		{
 			pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];

@@ -3573,7 +3573,6 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 	break;
 	case PGP_SUBKEY_BINDING_SIGNATURE:
 	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
-	case PGP_DIRECT_KEY_SIGNATURE:
 	case PGP_KEY_REVOCATION_SIGNATURE:
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
 	{
@@ -3598,6 +3597,7 @@ static pgp_error_t pgp_check_sign_data(pgp_signature_type signature_type, void *
 		}
 	}
 	break;
+	case PGP_DIRECT_KEY_SIGNATURE:
 	case PGP_STANDALONE_SIGNATURE:
 	case PGP_TIMESTAMP_SIGNATURE:
 		break;
