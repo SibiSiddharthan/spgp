@@ -2732,10 +2732,10 @@ static pgp_user_info *keyring_search_uid(pgp_keyring_packet *packet, void *input
 		}
 
 		// Partial case insensitive match (TODO case)
-		if (strstr(user->uid, (void *)in) != NULL)
-		{
-			return user;
-		}
+		// if (strstr(user->uid, (void *)in) != NULL)
+		//{
+		//	return user;
+		//}
 	}
 
 	return NULL;

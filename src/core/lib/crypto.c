@@ -1937,12 +1937,12 @@ pgp_error_t pgp_x25519_kex_encrypt(pgp_x25519_kex **kex, pgp_x25519_key *pgp_key
 
 	xkex = malloc(sizeof(pgp_x25519_kex));
 
-	if (kex == NULL)
+	if (xkex == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	memset(kex, 0, sizeof(pgp_x25519_kex));
+	memset(xkex, 0, sizeof(pgp_x25519_kex));
 	memcpy(xkex->ephemeral_key, ephemeral_key.public_key, X25519_KEY_OCTETS);
 
 	// V3 PKESK
@@ -2046,14 +2046,14 @@ pgp_error_t pgp_x448_kex_encrypt(pgp_x448_kex **kex, pgp_x448_key *pgp_key, byte
 
 	hkdf(HASH_SHA256, hkdf_input, pos, NULL, 0, "OpenPGP X448", 12, key_wrap_key, AES256_KEY_SIZE);
 
-	kex = malloc(sizeof(pgp_x448_kex));
+	xkex = malloc(sizeof(pgp_x448_kex));
 
-	if (kex == NULL)
+	if (xkex == NULL)
 	{
 		return PGP_NO_MEMORY;
 	}
 
-	memset(kex, 0, sizeof(pgp_x448_kex));
+	memset(xkex, 0, sizeof(pgp_x448_kex));
 	memcpy(xkex->ephemeral_key, ephemeral_key.public_key, X448_KEY_OCTETS);
 
 	if (symmetric_key_algorithm_id != 0)
