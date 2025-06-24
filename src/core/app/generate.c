@@ -713,7 +713,7 @@ void spgp_generate_key(void)
 
 	PGP_CALL(pgp_sign_info_new(&sinfo, PGP_POSITIVE_CERTIFICATION_SIGNATURE, preferred_hash_algorithm_for_signature(key_packets[0]),
 							   creation_time, 0, 0, 0));
-	PGP_CALL(pgp_generate_certificate_binding_signature(&signature, key_packets[0], sinfo, uinfo, user));
+	PGP_CALL(pgp_generate_certificate_binding_signature(&signature, key_packets[0], NULL, sinfo, uinfo, user));
 
 	pgp_sign_info_delete(sinfo);
 

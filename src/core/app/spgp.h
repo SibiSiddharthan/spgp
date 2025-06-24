@@ -220,7 +220,8 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options);
 pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *key);
 uint32_t spgp_prompt_passphrase(byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE], char *message);
 
-pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_user_info *uinfo, void *data, byte_t print);
+pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *tpkey, pgp_user_info *uinfo, void *data,
+								  byte_t print);
 
 pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packet);
 pgp_compression_algorithms preferred_compression_algorithm(pgp_user_info **users, uint32_t count);

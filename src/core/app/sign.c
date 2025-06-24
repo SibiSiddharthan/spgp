@@ -326,11 +326,11 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 
 		if (changing_format == 0)
 		{
-			status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+			status = spgp_verify_signature(sign, key, NULL, uinfo, literal, 1);
 		}
 		else
 		{
-			status = spgp_verify_signature(sign, key, uinfo, (sign->type == PGP_BINARY_SIGNATURE) ? literal_binary : literal_text, 1);
+			status = spgp_verify_signature(sign, key, NULL, uinfo, (sign->type == PGP_BINARY_SIGNATURE) ? literal_binary : literal_text, 1);
 		}
 	}
 
@@ -402,7 +402,7 @@ static uint32_t spgp_clear_verify_stream(pgp_stream_t *stream)
 			exit(1);
 		}
 
-		status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+		status = spgp_verify_signature(sign, key, NULL, uinfo, literal, 1);
 	}
 
 	return status;
@@ -523,7 +523,7 @@ static uint32_t spgp_verify_stream(pgp_stream_t *stream)
 			exit(1);
 		}
 
-		status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+		status = spgp_verify_signature(sign, key, NULL, uinfo, literal, 1);
 	}
 
 	return status;
@@ -594,7 +594,7 @@ static uint32_t spgp_verify_stream_legacy(pgp_stream_t *stream)
 			exit(1);
 		}
 
-		status = spgp_verify_signature(sign, key, uinfo, literal, 1);
+		status = spgp_verify_signature(sign, key, NULL, uinfo, literal, 1);
 	}
 
 	return status;
@@ -1070,7 +1070,8 @@ static uint32_t get_signature_strings(pgp_signature_packet *sign, pgp_signature_
 	return pos;
 }
 
-pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_user_info *uinfo, void *data, byte_t print)
+pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *tpkey, pgp_user_info *uinfo, void *data,
+								  byte_t print)
 {
 	pgp_error_t status = 0;
 	size_t result = 0;
@@ -1109,15 +1110,15 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
-		status = pgp_verify_certificate_binding_signature(sign, key, data);
+		status = pgp_verify_certificate_binding_signature(sign, key, tpkey, data);
 		sign_type = "Certification Signature";
 		break;
 	case PGP_ATTESTED_KEY_SIGNATURE:
-		status = pgp_verify_certificate_binding_signature(sign, key, data);
+		status = pgp_verify_certificate_binding_signature(sign, key, tpkey, data);
 		sign_type = "Attestation Signature";
 		break;
 	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
-		status = pgp_verify_revocation_signature(sign, key, data);
+		status = pgp_verify_revocation_signature(sign, key, tpkey, data);
 		sign_type = "Certficate Revocation Signature";
 		break;
 
@@ -1128,7 +1129,7 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 		break;
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
 	case PGP_KEY_REVOCATION_SIGNATURE:
-		status = pgp_verify_revocation_signature(sign, key, data);
+		status = pgp_verify_revocation_signature(sign, key, tpkey, data);
 		sign_type = "Key Revocation Signature";
 		break;
 
@@ -1144,11 +1145,11 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 
 	case PGP_STANDALONE_SIGNATURE:
 		sign_type = "Standalone Signature";
-		status = pgp_verify_signature(sign, key, NULL);
+		status = pgp_verify_signature(sign, key, NULL, NULL);
 		break;
 	case PGP_TIMESTAMP_SIGNATURE:
 		sign_type = "Timestamp Signature";
-		status = pgp_verify_signature(sign, key, NULL);
+		status = pgp_verify_signature(sign, key, NULL, NULL);
 		break;
 	}
 

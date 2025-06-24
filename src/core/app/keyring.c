@@ -573,7 +573,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			// Check the signature
 			if (signature_by_primary_key)
 			{
-				status = spgp_verify_signature(sign, primary_key, NULL, primary_key, 0);
+				status = spgp_verify_signature(sign, primary_key, NULL, NULL, primary_key, 0);
 
 				if (status != PGP_SUCCESS)
 				{
@@ -590,7 +590,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 				if (other_key != NULL)
 				{
-					status = spgp_verify_signature(sign, other_key, NULL, primary_key, 0);
+					status = spgp_verify_signature(sign, primary_key, other_key, NULL, primary_key, 0);
 
 					if (status != PGP_SUCCESS)
 					{
@@ -660,7 +660,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			// Check the signature
 			if (signature_by_primary_key)
 			{
-				status = spgp_verify_signature(sign, primary_key, NULL, uid, 0);
+				status = spgp_verify_signature(sign, primary_key, NULL, NULL, uid, 0);
 
 				if (status != PGP_SUCCESS)
 				{
@@ -678,7 +678,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 				if (other_key != NULL)
 				{
-					status = spgp_verify_signature(sign, other_key, NULL, uid, 0);
+					status = spgp_verify_signature(sign, primary_key, other_key, NULL, uid, 0);
 
 					if (status != PGP_SUCCESS)
 					{
@@ -759,7 +759,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 			// Check the signature
 			if (signature_by_primary_key)
 			{
-				status = spgp_verify_signature(sign, primary_key, NULL, subkey, 0);
+				status = spgp_verify_signature(sign, primary_key, NULL, NULL, subkey, 0);
 
 				if (status != PGP_SUCCESS)
 				{
@@ -777,7 +777,7 @@ static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t off
 
 				if (other_key != NULL)
 				{
-					status = spgp_verify_signature(sign, other_key, NULL, subkey, 0);
+					status = spgp_verify_signature(sign, primary_key, other_key, NULL, subkey, 0);
 
 					if (status != PGP_SUCCESS)
 					{
