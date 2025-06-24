@@ -1063,7 +1063,7 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_encrypt(pgp_skesk_packet *
 		return PGP_INVALID_AEAD_IV_SIZE;
 	}
 
-	info[0] = packet->header.tag;
+	info[0] = 0xC0 | (byte_t)pgp_packet_type_from_tag(packet->header.tag);
 	info[1] = packet->version;
 	info[2] = packet->symmetric_key_algorithm_id;
 	info[3] = packet->aead_algorithm_id;
@@ -1124,7 +1124,7 @@ static pgp_error_t pgp_skesk_packet_session_key_v5_v6_decrypt(pgp_skesk_packet *
 
 	byte_t key_size = pgp_symmetric_cipher_key_size(packet->symmetric_key_algorithm_id);
 
-	info[0] = packet->header.tag;
+	info[0] = 0xC0 | (byte_t)pgp_packet_type_from_tag(packet->header.tag);
 	info[1] = packet->version;
 	info[2] = packet->symmetric_key_algorithm_id;
 	info[3] = packet->aead_algorithm_id;

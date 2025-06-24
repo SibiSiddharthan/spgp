@@ -11,6 +11,8 @@
 #include <seipd.h>
 #include <crypto.h>
 
+#include <xor.h>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -1204,6 +1206,7 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
+		XOR8(PTR_OFFSET(iv, iv_size - 8), PTR_OFFSET(iv, iv_size - 8), &count_be);
 
 		// Encrypt the data
 		status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size,
@@ -1230,6 +1233,7 @@ pgp_error_t pgp_aead_packet_encrypt(pgp_aead_packet *packet, byte_t iv[16], byte
 
 	memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 	memcpy(PTR_OFFSET(aad, 13), &octets_be, 8);
+	XOR8(PTR_OFFSET(iv, iv_size - 8), PTR_OFFSET(iv, iv_size - 8), &count_be);
 
 	status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size,
 							  aad, 21, NULL, 0, packet->tag, PGP_AEAD_TAG_SIZE);
@@ -1256,6 +1260,7 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 	size_t count = 0;
 
 	byte_t aad[32] = {0};
+	byte_t iv[16] = {0};
 
 	void *temp = NULL;
 	byte_t *in = NULL;
@@ -1266,6 +1271,8 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 	aad[2] = packet->symmetric_key_algorithm_id;
 	aad[3] = packet->aead_algorithm_id;
 	aad[4] = packet->chunk_size;
+
+	memcpy(iv, packet->iv, packet->iv_size);
 
 	temp = malloc(packet->data_size);
 
@@ -1284,10 +1291,11 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 		size_t count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
+		XOR8(PTR_OFFSET(iv, iv_size - 8), PTR_OFFSET(iv, iv_size - 8), &count_be);
 
 		// Decrypt the data
-		status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, packet->iv,
-								  iv_size, aad, 13, in + in_pos, in_size, out + out_pos, in_size - PGP_AEAD_TAG_SIZE);
+		status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size,
+								  aad, 13, in + in_pos, in_size, out + out_pos, in_size - PGP_AEAD_TAG_SIZE);
 
 		if (status != PGP_SUCCESS)
 		{
@@ -1306,9 +1314,10 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 
 	memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 	memcpy(PTR_OFFSET(aad, 13), &octets_be, 8);
+	XOR8(PTR_OFFSET(iv, iv_size - 8), PTR_OFFSET(iv, iv_size - 8), &count_be);
 
-	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, packet->iv,
-							  iv_size, aad, 21, packet->tag, PGP_AEAD_TAG_SIZE, NULL, 0);
+	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, iv, iv_size,
+							  aad, 21, packet->tag, PGP_AEAD_TAG_SIZE, NULL, 0);
 
 	if (status != PGP_SUCCESS)
 	{
