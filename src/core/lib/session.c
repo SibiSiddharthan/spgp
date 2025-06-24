@@ -1397,7 +1397,51 @@ static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, siz
 	return pos;
 }
 
-static size_t pgp_skesk_packet_v5_v6_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+static size_t pgp_skesk_packet_v5_write(pgp_skesk_packet *packet, void *ptr, size_t size)
+{
+	byte_t *out = ptr;
+	byte_t s2k_size = 0;
+	size_t pos = 0;
+
+	if (size < PGP_PACKET_OCTETS(packet->header))
+	{
+		return 0;
+	}
+
+	// Header
+	pos += pgp_packet_header_write(&packet->header, out + pos);
+
+	// 1 octet version
+	LOAD_8(out + pos, &packet->version);
+	pos += 1;
+
+	// 1 octet symmetric key algorithm
+	LOAD_8(out + pos, &packet->symmetric_key_algorithm_id);
+	pos += 1;
+
+	// 1 octet AEAD algorithm
+	LOAD_8(out + pos, &packet->aead_algorithm_id);
+	pos += 1;
+
+	// S2K specifier
+	pos += pgp_s2k_write(&packet->s2k, out + pos);
+
+	// IV
+	memcpy(out + pos, packet->iv, packet->iv_size);
+	pos += packet->iv_size;
+
+	// Encrypted session key.
+	memcpy(out + pos, packet->session_key, packet->session_key_size);
+	pos += packet->session_key_size;
+
+	// Authetication key tag.
+	memcpy(out + pos, packet->tag, packet->tag_size);
+	pos += packet->tag_size;
+
+	return pos;
+}
+
+static size_t pgp_skesk_packet_v6_write(pgp_skesk_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
 	byte_t s2k_size = 0;
@@ -1460,8 +1504,9 @@ size_t pgp_skesk_packet_write(pgp_skesk_packet *packet, void *ptr, size_t size)
 	case PGP_SKESK_V4:
 		return pgp_skesk_packet_v4_write(packet, ptr, size);
 	case PGP_SKESK_V5:
+		return pgp_skesk_packet_v5_write(packet, ptr, size);
 	case PGP_SKESK_V6:
-		return pgp_skesk_packet_v5_v6_write(packet, ptr, size);
+		return pgp_skesk_packet_v6_write(packet, ptr, size);
 	default:
 		return 0;
 	}
