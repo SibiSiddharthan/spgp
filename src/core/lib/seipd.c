@@ -577,6 +577,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 	size_t in_pos = 0;
 	size_t out_pos = 0;
 	size_t count = 0;
+	size_t count_be = 0;
 	size_t data_size = pgp_packet_stream_octets(stream);
 
 	byte_t derived_key[48] = {0};
@@ -624,7 +625,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 	while (in_pos < data_size)
 	{
 		uint32_t in_size = MIN(chunk_size, data_size - in_pos);
-		size_t count_be = BSWAP_64(count);
+		count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(iv, iv_size - 8), &count_be, 8);
 
@@ -648,7 +649,7 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 
 	// Final authentication tag
 	byte_t aad[16] = {0};
-	byte_t *pc = (byte_t *)count;
+	size_t octets_be = BSWAP_64(data_size);
 
 	packet->tag_size = PGP_AEAD_TAG_SIZE;
 
@@ -659,18 +660,15 @@ static pgp_error_t pgp_seipd_packet_v2_encrypt(pgp_seipd_packet *packet, byte_t 
 	aad[3] = info[3];
 	aad[4] = info[4];
 
-	// Store number of chunks as 8 byte big endian
-	aad[5] = pc[7];
-	aad[6] = pc[6];
-	aad[7] = pc[5];
-	aad[8] = pc[4];
-	aad[9] = pc[3];
-	aad[10] = pc[2];
-	aad[11] = pc[1];
-	aad[12] = pc[0];
+	// Store number of plaintext octets as 8 byte big endian
+	memcpy(PTR_OFFSET(aad, 5), &octets_be, 8);
 
-	status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
-							  PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, packet->tag, packet->tag_size);
+	// Last chunk
+	count_be = BSWAP_64(count);
+	memcpy(PTR_OFFSET(iv, iv_size - 8), &count_be, 8);
+
+	status = pgp_aead_encrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size, iv, iv_size, aad, 13,
+							  NULL, 0, packet->tag, packet->tag_size);
 
 	if (status != PGP_SUCCESS)
 	{
@@ -695,8 +693,8 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 	size_t in_pos = 0;
 	size_t out_pos = 0;
 	size_t count = 0;
+	size_t count_be = 0;
 
-	byte_t tag[PGP_AEAD_TAG_SIZE] = {0};
 	byte_t derived_key[48] = {0};
 	byte_t iv[16] = {0};
 	byte_t info[5] = {0};
@@ -731,7 +729,7 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 	while (in_pos < packet->data_size)
 	{
 		uint32_t in_size = MIN(chunk_size + packet->tag_size, packet->data_size - in_pos);
-		size_t count_be = BSWAP_64(count);
+		count_be = BSWAP_64(count);
 
 		memcpy(PTR_OFFSET(iv, iv_size - 8), &count_be, 8);
 
@@ -752,7 +750,7 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 
 	// Final authentication tag
 	byte_t aad[16] = {0};
-	byte_t *pc = (byte_t *)count;
+	size_t octets_be = BSWAP_64(out_pos);
 
 	packet->tag_size = PGP_AEAD_TAG_SIZE;
 
@@ -764,17 +762,14 @@ static pgp_error_t pgp_seipd_packet_v2_decrypt(pgp_seipd_packet *packet, void *s
 	aad[4] = info[4];
 
 	// Store number of chunks as 8 byte big endian
-	aad[5] = pc[7];
-	aad[6] = pc[6];
-	aad[7] = pc[5];
-	aad[8] = pc[4];
-	aad[9] = pc[3];
-	aad[10] = pc[2];
-	aad[11] = pc[1];
-	aad[12] = pc[0];
+	memcpy(PTR_OFFSET(aad, 5), &octets_be, 8);
 
-	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size,
-							  PTR_OFFSET(derived_key, key_size), (iv_size - 8), aad, 13, NULL, 0, tag, PGP_AEAD_TAG_SIZE);
+	// Last chunk
+	count_be = BSWAP_64(count);
+	memcpy(PTR_OFFSET(iv, iv_size - 8), &count_be, 8);
+
+	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, derived_key, key_size, iv, iv_size, aad, 13,
+							  packet->tag, PGP_AEAD_TAG_SIZE, NULL, 0);
 
 	if (status != PGP_SUCCESS)
 	{
@@ -1260,7 +1255,6 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 	size_t out_pos = 0;
 	size_t count = 0;
 
-	byte_t tag[PGP_AEAD_TAG_SIZE] = {0};
 	byte_t aad[32] = {0};
 
 	void *temp = NULL;
@@ -1308,13 +1302,13 @@ pgp_error_t pgp_aead_packet_decrypt(pgp_aead_packet *packet, void *session_key, 
 
 	// Final authentication tag
 	size_t count_be = BSWAP_64(count);
-	size_t octets_be = BSWAP_64(packet->data_size);
+	size_t octets_be = BSWAP_64(out_pos);
 
 	memcpy(PTR_OFFSET(aad, 5), &count_be, 8);
 	memcpy(PTR_OFFSET(aad, 13), &octets_be, 8);
 
 	status = pgp_aead_decrypt(packet->symmetric_key_algorithm_id, packet->aead_algorithm_id, session_key, session_key_size, packet->iv,
-							  iv_size, aad, 21, NULL, 0, tag, PGP_AEAD_TAG_SIZE);
+							  iv_size, aad, 21, packet->tag, PGP_AEAD_TAG_SIZE, NULL, 0);
 
 	if (status != PGP_SUCCESS)
 	{
