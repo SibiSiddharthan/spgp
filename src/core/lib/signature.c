@@ -3051,33 +3051,36 @@ void pgp_signature_hash(void *ctx, pgp_signature_packet *sign)
 		}
 
 		// Hash the subpackets
-		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+		if (sign->hashed_subpackets != NULL)
 		{
-			pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
+			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+			{
+				pgp_subpacket_header *header = sign->hashed_subpackets->packets[i];
 
-			max_subpacket_size = MAX(max_subpacket_size, header->body_size + header->header_size);
+				max_subpacket_size = MAX(max_subpacket_size, header->body_size + header->header_size);
+			}
+
+			max_subpacket_size = ROUND_UP(max_subpacket_size, 16);
+			subpacket_buffer = malloc(max_subpacket_size);
+
+			if (subpacket_buffer == NULL)
+			{
+				return;
+			}
+
+			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+			{
+				uint32_t subpacket_size = 0;
+
+				// Write the subpackets to the buffer then hash them.
+				memset(subpacket_buffer, 0, max_subpacket_size);
+
+				subpacket_size = pgp_signature_subpacket_write(sign->hashed_subpackets->packets[i], subpacket_buffer, max_subpacket_size);
+				pgp_hash_update(hctx, subpacket_buffer, subpacket_size);
+			}
+
+			free(subpacket_buffer);
 		}
-
-		max_subpacket_size = ROUND_UP(max_subpacket_size, 16);
-		subpacket_buffer = malloc(max_subpacket_size);
-
-		if (subpacket_buffer == NULL)
-		{
-			return;
-		}
-
-		for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
-		{
-			uint32_t subpacket_size = 0;
-
-			// Write the subpackets to the buffer then hash them.
-			memset(subpacket_buffer, 0, max_subpacket_size);
-
-			subpacket_size = pgp_signature_subpacket_write(sign->hashed_subpackets->packets[i], subpacket_buffer, max_subpacket_size);
-			pgp_hash_update(hctx, subpacket_buffer, subpacket_size);
-		}
-
-		free(subpacket_buffer);
 
 		// Unhashed subpacket octets (as 0)
 		if (sign->version == PGP_SIGNATURE_V6)
@@ -3331,35 +3334,38 @@ static uint32_t pgp_compute_hash(void *ctx, byte_t hash[64], pgp_signature_packe
 		}
 
 		// Hash the subpackets
-		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+		if (packet->hashed_subpackets != NULL)
 		{
-			pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
+			for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+			{
+				pgp_subpacket_header *header = packet->hashed_subpackets->packets[i];
 
-			max_subpacket_size = MAX(max_subpacket_size, header->body_size + header->header_size);
+				max_subpacket_size = MAX(max_subpacket_size, header->body_size + header->header_size);
+			}
+
+			max_subpacket_size = ROUND_UP(max_subpacket_size, 16);
+			subpacket_buffer = malloc(max_subpacket_size);
+
+			if (subpacket_buffer == NULL)
+			{
+				return 0;
+			}
+
+			for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+			{
+				uint32_t subpacket_size = 0;
+
+				// Write the subpackets to the buffer then hash them.
+				memset(subpacket_buffer, 0, max_subpacket_size);
+
+				subpacket_size = pgp_signature_subpacket_write(packet->hashed_subpackets->packets[i], subpacket_buffer, max_subpacket_size);
+
+				pgp_hash_update(hctx, subpacket_buffer, subpacket_size);
+				hashed_size += subpacket_size;
+			}
+
+			free(subpacket_buffer);
 		}
-
-		max_subpacket_size = ROUND_UP(max_subpacket_size, 16);
-		subpacket_buffer = malloc(max_subpacket_size);
-
-		if (subpacket_buffer == NULL)
-		{
-			return 0;
-		}
-
-		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
-		{
-			uint32_t subpacket_size = 0;
-
-			// Write the subpackets to the buffer then hash them.
-			memset(subpacket_buffer, 0, max_subpacket_size);
-
-			subpacket_size = pgp_signature_subpacket_write(packet->hashed_subpackets->packets[i], subpacket_buffer, max_subpacket_size);
-
-			pgp_hash_update(hctx, subpacket_buffer, subpacket_size);
-			hashed_size += subpacket_size;
-		}
-
-		free(subpacket_buffer);
 
 		if (packet->version == PGP_SIGNATURE_V5 && (packet->type == PGP_BINARY_SIGNATURE || packet->type == PGP_TEXT_SIGNATURE))
 		{
@@ -4171,31 +4177,37 @@ pgp_error_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_
 		pgp_subpacket_header *header = NULL;
 
 		// Search unhashed first
-		for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
+		if (sign->unhashed_subpackets != NULL)
 		{
-			header = sign->unhashed_subpackets->packets[i];
-
-			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EMBEDDED_SIGNATURE_SUBPACKET)
+			for (uint32_t i = 0; i < sign->unhashed_subpackets->count; ++i)
 			{
-				embedded_sign = sign->unhashed_subpackets->packets[i];
-				error = pgp_do_verify(embedded_sign, subkey, key);
+				header = sign->unhashed_subpackets->packets[i];
 
-				break;
+				if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EMBEDDED_SIGNATURE_SUBPACKET)
+				{
+					embedded_sign = sign->unhashed_subpackets->packets[i];
+					error = pgp_do_verify(embedded_sign, subkey, key);
+
+					break;
+				}
 			}
 		}
 
 		if (embedded_sign == NULL)
 		{
-			for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
+			if (sign->hashed_subpackets != NULL)
 			{
-				header = sign->hashed_subpackets->packets[i];
-
-				if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EMBEDDED_SIGNATURE_SUBPACKET)
+				for (uint32_t i = 0; i < sign->hashed_subpackets->count; ++i)
 				{
-					embedded_sign = sign->hashed_subpackets->packets[i];
-					error = pgp_do_verify(embedded_sign, subkey, key);
+					header = sign->hashed_subpackets->packets[i];
 
-					break;
+					if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_EMBEDDED_SIGNATURE_SUBPACKET)
+					{
+						embedded_sign = sign->hashed_subpackets->packets[i];
+						error = pgp_do_verify(embedded_sign, subkey, key);
+
+						break;
+					}
 				}
 			}
 		}
@@ -4613,18 +4625,21 @@ pgp_error_t pgp_signature_validate(pgp_signature_packet *packet)
 		return PGP_MALFORMED_SIGNATURE_PACKET;
 	}
 
-	for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
+	if (packet->hashed_subpackets != NULL)
 	{
-		header = packet->hashed_subpackets->packets[i];
-
-		if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_CREATION_TIME_SUBPACKET)
+		for (uint32_t i = 0; i < packet->hashed_subpackets->count; ++i)
 		{
-			creation_time_found += 1;
-		}
+			header = packet->hashed_subpackets->packets[i];
 
-		if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_FINGERPRINT_SUBPACKET)
-		{
-			issuer_fingerprint_found += 1;
+			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_SIGNATURE_CREATION_TIME_SUBPACKET)
+			{
+				creation_time_found += 1;
+			}
+
+			if ((header->tag & PGP_SUBPACKET_TAG_MASK) == PGP_ISSUER_FINGERPRINT_SUBPACKET)
+			{
+				issuer_fingerprint_found += 1;
+			}
 		}
 	}
 
