@@ -213,11 +213,11 @@ uint16_t preferred_aead_algorithm(pgp_user_info **users, uint32_t count)
 	}
 	else
 	{
-		cipher_algorithm = algorithm % cipher_algorithm_count;
-		aead_algorithm = (algorithm / cipher_algorithm_count) + 1;
+		cipher_algorithm = (algorithm % cipher_algorithm_count) + PGP_AES_128;
+		aead_algorithm = (algorithm / cipher_algorithm_count) + PGP_AEAD_EAX;
 	}
 
-	return (((cipher_algorithm + PGP_AES_128) << 8) + aead_algorithm);
+	return (((cipher_algorithm) << 8) + aead_algorithm);
 }
 
 void preferred_s2k_algorithm(pgp_key_version version, pgp_s2k *s2k)

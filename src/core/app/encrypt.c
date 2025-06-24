@@ -368,8 +368,8 @@ void spgp_encrypt(void)
 		if (features & (PGP_FEATURE_SEIPD_V2 | PGP_FEATURE_AEAD))
 		{
 			aead_pair = preferred_aead_algorithm(uinfo, count);
-			cipher_algorithm = aead_pair << 8;
-			aead_algorithm = aead_algorithm & 0xFF;
+			cipher_algorithm = aead_pair >> 8;
+			aead_algorithm = aead_pair & 0xFF;
 		}
 		else
 		{
