@@ -532,42 +532,6 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 				}
 			}
 		}
-
-		if (type == PGP_SEIPD)
-		{
-			version = ((pgp_seipd_packet *)stream->packets[i])->version;
-
-			if (seipd_version == 0)
-			{
-				seipd_version = version;
-			}
-			else
-			{
-				if (seipd_version != version)
-				{
-					printf("SEIPD mulitple versions %hhu %hhu.\n", seipd_version, version);
-					exit(1);
-				}
-			}
-		}
-
-		if (type == PGP_AEAD)
-		{
-			version = ((pgp_aead_packet *)stream->packets[i])->version;
-
-			if (aead_version == 0)
-			{
-				aead_version = version;
-			}
-			else
-			{
-				if (aead_version != version)
-				{
-					printf("SEIPD mulitple versions %hhu %hhu.\n", aead_version, version);
-					exit(1);
-				}
-			}
-		}
 	}
 
 	// The last packet should be an encryption container
@@ -578,6 +542,16 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	{
 		printf("Bad PGP message sequence.\n");
 		exit(1);
+	}
+
+	if (type == PGP_SEIPD)
+	{
+		seipd_version = ((pgp_seipd_packet *)stream->packets[stream->count - 1])->version;
+	}
+
+	if (type == PGP_AEAD)
+	{
+		aead_version = ((pgp_aead_packet *)stream->packets[stream->count - 1])->version;
 	}
 
 	// Check legal packet versions
@@ -631,7 +605,7 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 		}
 
 		// OpenPGP
-		if (skesk_version == PGP_SKESK_V6 && aead_version != PGP_SEIPD_V2)
+		if (skesk_version == PGP_SKESK_V6 && seipd_version != PGP_SEIPD_V2)
 		{
 			printf("Incompatibale SKESK and encryption container.\n");
 			exit(1);
