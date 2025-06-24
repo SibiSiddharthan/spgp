@@ -755,19 +755,19 @@ pgp_error_t pgp_aead_decrypt(pgp_symmetric_key_algorithms symmetric_key_algorith
 	case PGP_AEAD_EAX:
 	{
 		cipher_eax_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
-		cipher_eax_decrypt_final(cctx, in, in_size, out, out_size, tag, PGP_AEAD_TAG_SIZE);
+		cipher_eax_decrypt_final(cctx, in, in_size - PGP_AEAD_TAG_SIZE, out, out_size, tag, PGP_AEAD_TAG_SIZE);
 	}
 	break;
 	case PGP_AEAD_OCB:
 	{
 		cipher_ocb_decrypt_init(cctx, PGP_AEAD_TAG_SIZE, iv, iv_size, associated_data, ad_size);
-		cipher_ocb_decrypt_final(cctx, in, in_size, out, out_size, tag, PGP_AEAD_TAG_SIZE);
+		cipher_ocb_decrypt_final(cctx, in, in_size - PGP_AEAD_TAG_SIZE, out, out_size, tag, PGP_AEAD_TAG_SIZE);
 	}
 	break;
 	case PGP_AEAD_GCM:
 	{
 		cipher_gcm_decrypt_init(cctx, iv, iv_size, associated_data, ad_size);
-		cipher_gcm_decrypt_final(cctx, in, in_size, out, out_size, tag, PGP_AEAD_TAG_SIZE);
+		cipher_gcm_decrypt_final(cctx, in, in_size - PGP_AEAD_TAG_SIZE, out, out_size, tag, PGP_AEAD_TAG_SIZE);
 	}
 	break;
 	}
