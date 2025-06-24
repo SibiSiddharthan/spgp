@@ -4194,7 +4194,12 @@ pgp_error_t pgp_verify_subkey_binding_signature(pgp_signature_packet *sign, pgp_
 
 		if (embedded_sign == NULL)
 		{
-			return PGP_MISSING_EMBEDDED_SIGNATURE_PACKET;
+			// Only return an error for signing keys.
+			// For certification and authentication keys the embedded signature is optional.
+			if (subkey->capabilities & PGP_KEY_FLAG_SIGN)
+			{
+				return PGP_MISSING_EMBEDDED_SIGNATURE_PACKET;
+			}
 		}
 	}
 
