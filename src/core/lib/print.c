@@ -1657,24 +1657,32 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 
 		for (uint32_t i = 0; i < features_subpacket->header.body_size; ++i)
 		{
-			switch (features_subpacket->flags[i])
+			byte_t flag = features_subpacket->flags[i];
+
+			if (flag & PGP_FEATURE_MDC)
 			{
-			case PGP_FEATURE_SEIPD_V1:
 				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: SEIPD-V1 (MDC) Supported (0x01)\n");
-				break;
-			case PGP_FEATURE_AEAD:
+				flag &= ~PGP_FEATURE_MDC;
+			}
+			if (flag & PGP_FEATURE_AEAD)
+			{
 				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: AEAD Supported (0x02)\n");
-				break;
-			case PGP_FEATURE_KEY_V5:
+				flag &= ~PGP_FEATURE_AEAD;
+			}
+			if (flag & PGP_FEATURE_KEY_V5)
+			{
 				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: V5 Keys Supported (0x04)\n");
-				break;
-			case PGP_FEATURE_SEIPD_V2:
+				flag &= ~PGP_FEATURE_KEY_V5;
+			}
+			if (flag & PGP_FEATURE_SEIPD_V2)
+			{
 				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: SEIPD-V2 Supported (0x08)\n");
-				break;
-			default:
-				pos +=
-					print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: Unknown (0x%hhx)\n", features_subpacket->flags[i]);
-				break;
+				flag &= ~PGP_FEATURE_SEIPD_V2;
+			}
+
+			if (flag != 0)
+			{
+				pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Feature: Unknown (0x%hhx)\n", flag);
 			}
 		}
 	}
