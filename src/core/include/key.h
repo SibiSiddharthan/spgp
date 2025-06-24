@@ -182,26 +182,26 @@ typedef struct _pgp_ecdh_key
 
 typedef struct _pgp_x25519_key
 {
-	byte_t public_key[32];
 	byte_t private_key[32];
+	byte_t public_key[32];
 } pgp_x25519_key;
 
 typedef struct _pgp_x448_key
 {
-	byte_t public_key[56];
 	byte_t private_key[56];
+	byte_t public_key[56];
 } pgp_x448_key;
 
 typedef struct _pgp_ed25519_key
 {
-	byte_t public_key[32];
 	byte_t private_key[32];
+	byte_t public_key[32];
 } pgp_ed25519_key;
 
 typedef struct _pgp_ed448_key
 {
-	byte_t public_key[57];
 	byte_t private_key[57];
+	byte_t public_key[57];
 } pgp_ed448_key;
 
 pgp_error_t pgp_key_packet_new(pgp_key_packet **packet, byte_t version, byte_t public_key_algorithm_id, uint32_t key_creation_time,
