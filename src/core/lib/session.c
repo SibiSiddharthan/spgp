@@ -1208,7 +1208,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 	// 1 octet version
 	CHECK_READ(read8(buffer, &packet->version), PGP_MALFORMED_SYMMETRIC_SESSION_PACKET);
 
-	if (packet->version == PGP_SKESK_V6 || packet->version == PGP_SKESK_V5)
+	if (packet->version == PGP_SKESK_V6)
 	{
 		uint32_t result = 0;
 		byte_t count = 0;
@@ -1232,7 +1232,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 			return PGP_MALFORMED_S2K_SIZE;
 		}
 
-		result = pgp_s2k_read(&packet->s2k, buffer->data + buffer->pos, s2k_size);
+		result = pgp_s2k_read(&packet->s2k, buffer->data + buffer->pos, buffer->size - buffer->pos);
 
 		if (result == 0)
 		{
@@ -1244,7 +1244,7 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 			return PGP_MALFORMED_S2K_SIZE;
 		}
 
-		buffer->pos += s2k_size;
+		buffer->pos += result;
 		packet->iv_size = count - (1 + 1 + 1 + s2k_size);
 
 		// IV
@@ -1253,6 +1253,37 @@ static pgp_error_t pgp_skesk_packet_read_body(pgp_skesk_packet *packet, buffer_t
 			return PGP_MALFORMED_SYMMETRIC_SESSION_PACKET_COUNT;
 		}
 
+		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_SYMMETRIC_SESSION_PACKET);
+
+		// Encrypted session key.
+		packet->session_key_size = buffer->size - buffer->pos - PGP_AEAD_TAG_SIZE;
+		CHECK_READ(readn(buffer, packet->session_key, packet->session_key_size), PGP_MALFORMED_SYMMETRIC_SESSION_PACKET);
+
+		// Authetication key tag.
+		packet->tag_size = PGP_AEAD_TAG_SIZE;
+		CHECK_READ(readn(buffer, packet->tag, packet->tag_size), PGP_MALFORMED_SYMMETRIC_SESSION_PACKET);
+	}
+	else if (packet->version == PGP_SKESK_V5)
+	{
+		uint32_t result = 0;
+
+		// 1 octet symmetric key algorithm
+		CHECK_READ(read8(buffer, &packet->symmetric_key_algorithm_id), PGP_MALFORMED_SYMMETRIC_SESSION_PACKET);
+
+		// 1 octet AEAD algorithm
+		CHECK_READ(read8(buffer, &packet->aead_algorithm_id), PGP_MALFORMED_SYMMETRIC_SESSION_PACKET);
+
+		result = pgp_s2k_read(&packet->s2k, buffer->data + buffer->pos, buffer->size - buffer->pos);
+
+		if (result == 0)
+		{
+			return PGP_UNKNOWN_S2K_SPECIFIER;
+		}
+
+		buffer->pos += result;
+		packet->iv_size = pgp_aead_iv_size(packet->aead_algorithm_id);
+
+		// IV
 		CHECK_READ(readn(buffer, packet->iv, packet->iv_size), PGP_MALFORMED_SYMMETRIC_SESSION_PACKET);
 
 		// Encrypted session key.
@@ -1400,7 +1431,6 @@ static size_t pgp_skesk_packet_v4_write(pgp_skesk_packet *packet, void *ptr, siz
 static size_t pgp_skesk_packet_v5_write(pgp_skesk_packet *packet, void *ptr, size_t size)
 {
 	byte_t *out = ptr;
-	byte_t s2k_size = 0;
 	size_t pos = 0;
 
 	if (size < PGP_PACKET_OCTETS(packet->header))
