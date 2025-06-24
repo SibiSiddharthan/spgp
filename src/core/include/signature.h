@@ -454,16 +454,17 @@ pgp_error_t pgp_sign_info_add_keyserver_url(pgp_sign_info *sign, byte_t critical
 pgp_error_t pgp_sign_info_add_notation(pgp_sign_info *sign, byte_t critical, uint32_t flags, void *name, uint16_t name_size, void *value,
 									   uint16_t value_size);
 
-pgp_error_t pgp_generate_signature(pgp_signature_packet *packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data);
-pgp_error_t pgp_verify_signature(pgp_signature_packet *packet, pgp_key_packet *key, void *data);
+pgp_error_t pgp_generate_signature(pgp_signature_packet *packet, pgp_key_packet *key, pgp_key_packet *tpkey, pgp_sign_info *sinfo,
+								   void *data);
+pgp_error_t pgp_verify_signature(pgp_signature_packet *packet, pgp_key_packet *key, pgp_key_packet *tpkey, void *data);
 
 pgp_error_t pgp_generate_document_signature(pgp_signature_packet **packet, pgp_key_packet *key, byte_t flags, pgp_sign_info *sinfo,
 											pgp_literal_packet *literal);
 pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_literal_packet *literal);
 
-pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo,
-													   pgp_user_info *uinfo, void *user);
-pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
+pgp_error_t pgp_generate_certificate_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *tpkey,
+													   pgp_sign_info *sinfo, pgp_user_info *uinfo, void *user);
+pgp_error_t pgp_verify_certificate_binding_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *tpkey, void *user);
 
 pgp_error_t pgp_generate_subkey_binding_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *subkey,
 												  pgp_sign_info *sinfo);
@@ -473,18 +474,19 @@ pgp_error_t pgp_generate_direct_key_signature(pgp_signature_packet **packet, pgp
 											  byte_t revocation_class, byte_t algorithm_id, byte_t *fingerprint, byte_t fingerprint_size);
 pgp_error_t pgp_verify_direct_key_signature(pgp_signature_packet *sign, pgp_key_packet *key);
 
-pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *user,
-										 byte_t trust_level, byte_t trust_amount, void *regex, uint16_t regex_size, void *alias,
+pgp_error_t pgp_generate_trust_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *tpkey, pgp_sign_info *sinfo,
+										 void *user, byte_t trust_level, byte_t trust_amount, void *regex, uint16_t regex_size, void *alias,
 										 uint16_t alias_size);
-pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *user);
+pgp_error_t pgp_verify_trust_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *tpkey, void *user);
 
 pgp_error_t pgp_generate_confirmation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo,
 												pgp_signature_packet *signature);
 pgp_error_t pgp_verify_confirmation_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_signature_packet *signature);
 
-pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_sign_info *sinfo, void *data,
-											  byte_t code, void *reason, uint32_t size, pgp_signature_packet *signature);
-pgp_error_t pgp_verify_revocation_signature(pgp_signature_packet *sign, pgp_key_packet *key, void *data);
+pgp_error_t pgp_generate_revocation_signature(pgp_signature_packet **packet, pgp_key_packet *key, pgp_key_packet *tpkey,
+											  pgp_sign_info *sinfo, void *data, byte_t code, void *reason, uint32_t size,
+											  pgp_signature_packet *signature);
+pgp_error_t pgp_verify_revocation_signature(pgp_signature_packet *sign, pgp_key_packet *key, pgp_key_packet *tpkey, void *data);
 
 pgp_error_t pgp_signature_get_key_fingerprint(pgp_signature_packet *packet, byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE],
 											  byte_t *fingerprint_size);
