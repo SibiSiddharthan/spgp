@@ -1967,6 +1967,7 @@ size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_
 	case PGP_SIGNATURE_V3:
 		return pgp_signature_packet_v3_write(packet, ptr, size);
 	case PGP_SIGNATURE_V4:
+	case PGP_SIGNATURE_V5:
 	case PGP_SIGNATURE_V6:
 		return pgp_signature_packet_v4_v5_v6_write(packet, ptr, size);
 	default:
