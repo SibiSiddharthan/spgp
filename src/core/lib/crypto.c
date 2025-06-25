@@ -1096,7 +1096,7 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 
 	if (curve == PGP_EC_ED25519)
 	{
-		uint32_t bits = 256;
+		uint32_t bits = ED25519_KEY_OCTETS * 8;
 		uint32_t offset = 0;
 		ed25519_key ed25519_key = {0};
 		byte_t zero[ED25519_KEY_OCTETS] = {0};
@@ -1146,7 +1146,7 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 
 	if (curve == PGP_EC_ED448)
 	{
-		uint32_t bits = 448;
+		uint32_t bits = ED448_KEY_OCTETS * 8;
 		uint32_t offset = 0;
 		ed448_key ed448_key = {0};
 		byte_t zero[ED448_KEY_OCTETS] = {0};
@@ -1177,7 +1177,7 @@ pgp_error_t pgp_eddsa_generate_key(pgp_eddsa_key **key, pgp_elliptic_curve_id cu
 		memcpy(&pgp_key->point->bytes[1], ed448_key.public_key, ED448_KEY_OCTETS);
 
 		// Set the private scalar
-		pgp_key->x->bits = bits;
+		pgp_key->x->bits = bitcount_bytes(ed448_key.private_key, ED448_KEY_OCTETS);
 		offset = ED448_KEY_OCTETS - CEIL_DIV(pgp_key->x->bits, 8);
 		memcpy(pgp_key->x->bytes, PTR_OFFSET(ed448_key.private_key, offset), ED448_KEY_OCTETS - offset);
 
