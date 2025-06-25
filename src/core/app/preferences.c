@@ -45,15 +45,12 @@ pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packe
 		switch (key->curve)
 		{
 		case PGP_EC_NIST_P256:
-			return PGP_SHA2_256;
-		case PGP_EC_NIST_P384:
-			return PGP_SHA2_384;
-		case PGP_EC_NIST_P521:
-			return PGP_SHA2_512;
 		case PGP_EC_BRAINPOOL_256R1:
 			return PGP_SHA2_256;
+		case PGP_EC_NIST_P384:
 		case PGP_EC_BRAINPOOL_384R1:
 			return PGP_SHA2_384;
+		case PGP_EC_NIST_P521:
 		case PGP_EC_BRAINPOOL_512R1:
 			return PGP_SHA2_512;
 		}
@@ -68,7 +65,7 @@ pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packe
 			return PGP_SHA2_256;
 		}
 
-		if (key->curve == PGP_EC_ED25519)
+		if (key->curve == PGP_EC_ED448)
 		{
 			return PGP_SHA2_512;
 		}
