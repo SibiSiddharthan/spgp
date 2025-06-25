@@ -17,6 +17,18 @@
 #include <string.h>
 #include <time.h>
 
+static size_t pgp_stream_write_internal(pgp_stream_t *stream, void *buffer, size_t size)
+{
+	size_t pos = 0;
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+	}
+
+	return pos;
+}
+
 static byte_t pgp_signature_type_validate(pgp_signature_type type)
 {
 	switch (type)
@@ -1080,11 +1092,18 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 
 		// Copy the header
 		embedded_subpacket->header = header;
-		*subpacket = embedded_subpacket;
 
 		error = pgp_signature_packet_body_read(embedded_subpacket, buffer);
 
-		return error;
+		if (error != PGP_SUCCESS)
+		{
+			pgp_signature_packet_delete(embedded_subpacket);
+			return error;
+		}
+
+		*subpacket = embedded_subpacket;
+
+		return PGP_SUCCESS;
 	}
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
@@ -1104,6 +1123,46 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		CHECK_READ(readn(buffer, attestation_subpacket->hash, header.body_size), PGP_MALFORMED_ATTESTED_CERTIFICATIONS_SUBPACKET);
 
 		*subpacket = attestation_subpacket;
+
+		return PGP_SUCCESS;
+	}
+	case PGP_KEY_BLOCK_SUBPACKET:
+	{
+		pgp_key_block_subpacket *key_block_subpacket = NULL;
+		pgp_stream_t *certificate = NULL;
+
+		if (header.body_size == 1)
+		{
+			return PGP_MALFORMED_KEY_BLOCK_HASH_SUBPACKET;
+		}
+
+		key_block_subpacket = malloc(sizeof(pgp_key_block_subpacket));
+
+		if (key_block_subpacket == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		memset(key_block_subpacket, 0, sizeof(pgp_key_block_subpacket));
+
+		// Copy the header
+		key_block_subpacket->header = header;
+
+		// 1 octet
+		CHECK_READ(read8(buffer, &key_block_subpacket->octet), PGP_MALFORMED_KEY_BLOCK_HASH_SUBPACKET);
+
+		// Certificate
+		error = pgp_packet_stream_read(&certificate, PTR_OFFSET(buffer->data, buffer->pos), header.body_size - 1);
+
+		if (error != PGP_SUCCESS)
+		{
+			return error;
+		}
+
+		buffer->pos += header.body_size - 1;
+		key_block_subpacket->certificate = certificate;
+
+		*subpacket = key_block_subpacket;
 
 		return PGP_SUCCESS;
 	}
@@ -1156,8 +1215,8 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		}
 
 		unknown->header = header;
-		unknown->data = PTR_OFFSET(subpacket, sizeof(pgp_unknown_subpacket));
-		CHECK_READ(readn(buffer, unknown->data, header.body_size), PGP_INSUFFICIENT_DATA);
+		unknown->data = PTR_OFFSET(unknown, sizeof(pgp_unknown_subpacket));
+		readn(buffer, unknown->data, header.body_size);
 
 		*subpacket = unknown;
 
@@ -1375,6 +1434,18 @@ static size_t pgp_signature_subpacket_write(void *subpacket, void *ptr, size_t s
 		pos += pgp_signature_packet_body_write(embedded_subpacket, out + pos, PGP_SUBPACKET_OCTETS(*header));
 	}
 	break;
+	case PGP_KEY_BLOCK_SUBPACKET:
+	{
+		pgp_key_block_subpacket *key_block_subpacket = subpacket;
+
+		// 1 octet
+		LOAD_8(out + pos, &key_block_subpacket->octet);
+		pos += 1;
+
+		// Certificate
+		pos += pgp_stream_write_internal(key_block_subpacket->certificate, out + pos, size - pos);
+	}
+	break;
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
 		pgp_attested_certifications_subpacket *attestation_subpacket = subpacket;
@@ -1442,7 +1513,8 @@ static void pgp_signature_subpacket_delete(void *subpacket)
 		pgp_signature_packet_delete(subpacket);
 		break;
 	case PGP_KEY_BLOCK_SUBPACKET:
-		// TODO
+		pgp_stream_delete(((pgp_key_block_subpacket *)subpacket)->certificate, pgp_packet_delete);
+		free(subpacket);
 		break;
 	default:
 		free(subpacket);
@@ -1594,6 +1666,7 @@ static pgp_error_t pgp_signature_packet_body_read(pgp_signature_packet *packet, 
 			{
 				// Just a free should be enough here.
 				// The embedded signature subpacket is freed in pgp_signature_subpacket_read.
+				// The key block certificate free will not be required as it is the last step.
 				if (subpacket != NULL)
 				{
 					free(subpacket);

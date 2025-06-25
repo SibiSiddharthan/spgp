@@ -283,6 +283,14 @@ typedef struct _pgp_attested_certifications_subpacket
 	void *hash;
 } pgp_attested_certifications_subpacket;
 
+typedef struct _pgp_key_block_subpacket
+{
+	pgp_subpacket_header header;
+	byte_t octet; // 0
+	pgp_stream_t *certificate;
+
+} pgp_key_block_subpacket;
+
 typedef struct _pgp_literal_data_meta_hash_subpacket
 {
 	pgp_subpacket_header header;

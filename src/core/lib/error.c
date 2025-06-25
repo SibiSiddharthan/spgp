@@ -398,6 +398,8 @@ char *pgp_error(pgp_error_t status)
 		return "Malformed Signature Target Subpacket";
 	case PGP_MALFORMED_EMBEDDED_SIGNATURE_SUBPACKET:
 		return "Malformed Embedded Signature Subpacket";
+	case PGP_MALFORMED_KEY_BLOCK_HASH_SUBPACKET:
+		return "Malformed Key Block Subpacket";
 	case PGP_MALFORMED_ATTESTED_CERTIFICATIONS_SUBPACKET:
 		return "Malformed Attested Certifications Subpacket";
 	case PGP_MALFORMED_LITERAL_DATA_META_HASH_SUBPACKET:

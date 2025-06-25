@@ -1766,6 +1766,14 @@ static size_t pgp_signature_subpacket_print(void *subpacket, void *str, size_t s
 		}
 	}
 	break;
+	case PGP_KEY_BLOCK_SUBPACKET:
+	{
+		// TODO indent
+		pgp_key_block_subpacket *key_block_subpacket = subpacket;
+		pos += print_format(indent + 1, PTR_OFFSET(str, pos), size - pos, "Octet: %hhu\n", key_block_subpacket->octet);
+		pos += pgp_packet_stream_print(key_block_subpacket->certificate, PTR_OFFSET(str, pos), size - pos, options);
+	}
+	break;
 	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
 	{
 		pgp_preferred_aead_ciphersuites_subpacket *preferred_subpacket = subpacket;
