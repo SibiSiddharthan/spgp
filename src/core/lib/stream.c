@@ -160,6 +160,44 @@ pgp_stream_t *pgp_stream_insert(pgp_stream_t *stream, void *packet, uint32_t ind
 	return stream;
 }
 
+pgp_stream_t *pgp_stream_extend(pgp_stream_t *stream, pgp_stream_t *other)
+{
+	void *temp = NULL;
+
+	if (other == NULL)
+	{
+		return stream;
+	}
+
+	if (stream == NULL)
+	{
+		stream = pgp_stream_new(other->count);
+
+		if (stream == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (stream->capacity - stream->count < other->count)
+	{
+		stream->capacity *= 2;
+		temp = realloc(stream->packets, sizeof(void *) * stream->capacity);
+
+		if (temp == NULL)
+		{
+			return NULL;
+		}
+
+		stream->packets = temp;
+	}
+
+	memcpy(PTR_OFFSET(stream->packets, stream->count * sizeof(void *)), other->packets, other->count * sizeof(void *));
+	stream->count += other->count;
+
+	return stream;
+}
+
 void *pgp_stream_pop(pgp_stream_t *stream)
 {
 	void *packet = NULL;

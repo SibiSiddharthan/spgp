@@ -31,6 +31,7 @@ void pgp_stream_delete(pgp_stream_t *stream, void (*deleter)(void *));
 
 pgp_stream_t *pgp_stream_push(pgp_stream_t *stream, void *packet);
 pgp_stream_t *pgp_stream_insert(pgp_stream_t *stream, void *packet, uint32_t index);
+pgp_stream_t *pgp_stream_extend(pgp_stream_t *stream, pgp_stream_t *other);
 void *pgp_stream_pop(pgp_stream_t *stream);
 void *pgp_stream_remove(pgp_stream_t *stream, uint32_t index);
 
