@@ -2655,13 +2655,22 @@ pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_
 
 		byte_t r_offset = ED25519_KEY_OCTETS - CEIL_DIV(signature->r->bits, 8);
 		byte_t s_offset = ED25519_KEY_OCTETS - CEIL_DIV(signature->s->bits, 8);
+		byte_t k_offset = 0;
 
 		// Copy signature
 		memcpy(PTR_OFFSET(edsign.sign, r_offset), signature->r->bytes, ED25519_KEY_OCTETS - r_offset);
 		memcpy(PTR_OFFSET(edsign.sign, ED25519_KEY_OCTETS + s_offset), signature->s->bytes, ED25519_KEY_OCTETS - s_offset);
 
 		// Copy public key
-		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED25519_KEY_OCTETS);
+		if (pgp_key->point->bits == ((ED25519_KEY_OCTETS * 8) + 7))
+		{
+			memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED25519_KEY_OCTETS);
+		}
+		else
+		{
+			k_offset = ED25519_KEY_OCTETS - CEIL_DIV(pgp_key->point->bits, 8);
+			memcpy(PTR_OFFSET(edkey.public_key, k_offset), pgp_key->point->bytes, ED25519_KEY_OCTETS - k_offset);
+		}
 
 		status = ed25519_verify(&edkey, &edsign, hash, hash_size);
 
@@ -2680,13 +2689,22 @@ pgp_error_t pgp_eddsa_verify(pgp_eddsa_signature *signature, pgp_eddsa_key *pgp_
 
 		byte_t r_offset = ED448_KEY_OCTETS - CEIL_DIV(signature->r->bits, 8);
 		byte_t s_offset = ED448_KEY_OCTETS - CEIL_DIV(signature->s->bits, 8);
+		byte_t k_offset = 0;
 
 		// Copy signature
 		memcpy(PTR_OFFSET(edsign.sign, r_offset), signature->r->bytes, ED448_KEY_OCTETS - r_offset);
 		memcpy(PTR_OFFSET(edsign.sign, ED448_KEY_OCTETS + s_offset), signature->s->bytes, ED448_KEY_OCTETS - s_offset);
 
 		// Copy public key
-		memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED448_KEY_OCTETS);
+		if (pgp_key->point->bits == ((ED448_KEY_OCTETS * 8) + 7))
+		{
+			memcpy(edkey.public_key, PTR_OFFSET(pgp_key->point->bytes, 1), ED448_KEY_OCTETS);
+		}
+		else
+		{
+			k_offset = ED448_KEY_OCTETS - CEIL_DIV(pgp_key->point->bits, 8);
+			memcpy(PTR_OFFSET(edkey.public_key, k_offset), pgp_key->point->bytes, ED448_KEY_OCTETS - k_offset);
+		}
 
 		status = ed448_verify(&edkey, &edsign, NULL, 0, hash, hash_size);
 
