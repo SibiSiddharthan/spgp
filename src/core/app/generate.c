@@ -358,7 +358,26 @@ static void process_key(key_specfication *spec)
 	{
 		if (spec->algorithm == PGP_DSA || spec->algorithm == PGP_ELGAMAL_ENCRYPT_ONLY)
 		{
-			printf("Unsupported V6 key algorithm");
+			printf("Unsupported V6 key algorithm.\n");
+			exit(1);
+		}
+	}
+
+	if (command.mode == SPGP_MODE_RFC4880)
+	{
+		if (spec->algorithm == PGP_EDDSA && spec->parameters.curve == PGP_EC_ED448)
+		{
+			printf("Unsupported V4 key algorithm.\n");
+			exit(1);
+		}
+	}
+
+	if (command.mode == SPGP_MODE_RFC2440)
+	{
+		if (spec->algorithm != PGP_RSA_ENCRYPT_OR_SIGN && spec->algorithm != PGP_RSA_ENCRYPT_ONLY && spec->algorithm != PGP_RSA_SIGN_ONLY &&
+			spec->algorithm != PGP_DSA && spec->algorithm != PGP_ELGAMAL_ENCRYPT_ONLY)
+		{
+			printf("Unsupported key algorithm for RFC:2440 conformance.\n");
 			exit(1);
 		}
 	}
@@ -393,7 +412,7 @@ static void process_key(key_specfication *spec)
 		}
 	}
 
-	// Convert to librenpgp algorithm identifiers
+	// Convert to librepgp algorithm identifiers
 	if (command.mode == SPGP_MODE_LIBREPGP)
 	{
 		if (spec->algorithm == PGP_X25519)
