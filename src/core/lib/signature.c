@@ -3934,15 +3934,6 @@ pgp_error_t pgp_verify_document_signature(pgp_signature_packet *sign, pgp_key_pa
 		return PGP_INCORRECT_FUNCTION;
 	}
 
-	if (sign->type == PGP_TEXT_SIGNATURE)
-	{
-		if (literal->format != PGP_LITERAL_DATA_MIME && literal->format != PGP_LITERAL_DATA_TEXT &&
-			literal->format != PGP_LITERAL_DATA_UTF8)
-		{
-			return PGP_INVALID_LITERAL_PACKET_FORMAT_FOR_TEXT_SIGNATURE;
-		}
-	}
-
 	return pgp_do_verify(sign, key, literal, NULL);
 }
 

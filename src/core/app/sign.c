@@ -305,6 +305,21 @@ static uint32_t spgp_detach_verify_stream(pgp_stream_t *stream, void *file)
 		literal = (format == PGP_LITERAL_DATA_BINARY) ? literal_binary : literal_text;
 	}
 
+	// For V5 detached document signature metadata
+	if (literal_binary != NULL)
+	{
+		literal_binary->format = 0;
+		literal_binary->filename_size = 0;
+		literal_binary->date = 0;
+	}
+
+	if (literal_text != NULL)
+	{
+		literal_text->format = 0;
+		literal_text->filename_size = 0;
+		literal_text->date = 0;
+	}
+
 	for (uint32_t i = 0; i < stream->count; ++i)
 	{
 		sign = stream->packets[i];
@@ -1101,9 +1116,12 @@ pgp_error_t spgp_verify_signature(pgp_signature_packet *sign, pgp_key_packet *ke
 	switch (sign->type)
 	{
 	case PGP_BINARY_SIGNATURE:
-	case PGP_TEXT_SIGNATURE:
 		status = pgp_verify_document_signature(sign, key, data);
 		sign_type = "Document Signature";
+		break;
+	case PGP_TEXT_SIGNATURE:
+		status = pgp_verify_document_signature(sign, key, data);
+		sign_type = "Document Signature (Text)";
 		break;
 
 	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
