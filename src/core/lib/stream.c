@@ -350,14 +350,14 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 	void *temp = NULL;
 	uint32_t temp_size = buffer_size;
 
-	uint32_t pos = 0;
-
 	uint32_t input_pos = 0;
 	uint32_t input_size = 0;
-	uint32_t output_pos = 0;
 	uint32_t output_size = 0;
 
+	void *result = NULL;
+
 	pgp_stream_t *out = NULL;
+	pgp_stream_t *ts = NULL;
 
 	temp = malloc(temp_size);
 
@@ -373,9 +373,9 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 	while (input_pos < buffer_size)
 	{
 		input_size = buffer_size - input_pos;
-		output_size = temp_size - output_pos;
+		output_size = temp_size;
 
-		status = armor_read(&options, markers, 4, PTR_OFFSET(buffer, input_pos), &input_size, PTR_OFFSET(temp, output_pos), &output_size);
+		status = armor_read(&options, markers, 4, PTR_OFFSET(buffer, input_pos), &input_size, temp, &output_size);
 
 		if (status != ARMOR_SUCCESS)
 		{
@@ -419,25 +419,17 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 			options.headers_size = 0;
 		}
 
-		pos = 0;
-
-		while (pos < output_size)
+		if (output_size > 0)
 		{
-			pgp_packet_header *header = NULL;
-			void *packet = NULL;
-			void *result = NULL;
-
-			error = pgp_packet_read(&packet, PTR_OFFSET(temp, output_pos + pos), output_size - pos);
+			ts = NULL;
+			error = pgp_packet_stream_read(&ts, temp, output_size);
 
 			if (error != PGP_SUCCESS)
 			{
 				goto error_cleanup;
 			}
 
-			header = packet;
-			pos += header->body_size + header->header_size;
-
-			result = pgp_stream_push(out, packet);
+			result = pgp_stream_extend(out, ts);
 
 			if (result == NULL)
 			{
@@ -445,11 +437,12 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 				goto error_cleanup;
 			}
 
+			// Only delete the container
+			pgp_stream_delete(ts, NULL);
 			out = result;
 		}
 
 		input_pos += input_size;
-		output_pos += output_size;
 	}
 
 	free(temp);
@@ -461,6 +454,7 @@ end:
 
 error_cleanup:
 	free(temp);
+	pgp_stream_delete(ts, pgp_packet_delete);
 	pgp_stream_delete(out, pgp_packet_delete);
 	goto end;
 }
