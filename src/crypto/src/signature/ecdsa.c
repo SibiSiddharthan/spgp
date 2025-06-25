@@ -185,7 +185,7 @@ uint32_t ecdsa_verify(ec_key *key, ecdsa_signature *ecsign, void *hash, size_t h
 	// Initial checks
 	if (bignum_cmp(r, key->eg->n) >= 0 || bignum_cmp(s, key->eg->n) >= 0)
 	{
-		return 0;
+		goto end;
 	}
 
 	// Zero the lower hash bits for the partial byte
