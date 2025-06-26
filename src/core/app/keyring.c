@@ -146,18 +146,14 @@ void spgp_write_certificate(pgp_stream_t *stream)
 	free(buffer);
 }
 
-void spgp_delete_certificate(pgp_key_packet *primary_key)
+void spgp_delete_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
 {
-	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
-
 	char filename[256] = {0};
 	uint32_t length = 0;
 
-	PGP_CALL(pgp_key_fingerprint(primary_key, fingerprint, &fingerprint_size));
 	length = get_cert_filename(filename, fingerprint, fingerprint_size);
 
-	OS_CALL(os_remove(command.keys, filename, length), printf("Unable to delete certificate file %s", filename));
+	OS_CALL(os_remove(command.certs, filename, length), printf("Unable to delete certificate file %s", filename));
 }
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
@@ -250,15 +246,11 @@ void spgp_write_key(pgp_key_packet *key)
 	OS_CALL(os_close(handle), printf("Unable to close handle %u", (uint32_t)(uintptr_t)handle));
 }
 
-void spgp_delete_key(pgp_key_packet *key)
+void spgp_delete_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
 {
-	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
-	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
-
 	char filename[256] = {0};
 	uint32_t length = 0;
 
-	PGP_CALL(pgp_key_fingerprint(key, fingerprint, &fingerprint_size));
 	length = get_key_filename(filename, fingerprint, fingerprint_size);
 
 	OS_CALL(os_remove(command.keys, filename, length), printf("Unable to delete key file %s", filename));
@@ -339,7 +331,7 @@ pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **us
 	{
 		*key = spgp_read_key(uinfo->fingerprint, uinfo->fingerprint_size);
 
-		if (((*key)->capabilities & capabilities) == 0)
+		if (capabilities != 0 && ((*key)->capabilities & capabilities) == 0)
 		{
 			pgp_key_packet_delete(*key);
 			*key = NULL;
@@ -1175,6 +1167,68 @@ void spgp_export_keys(void)
 	if (command.output != NULL)
 	{
 		OS_CALL(os_close(handle), printf("Unable to close handle %u", OS_HANDLE_AS_UINT(handle)));
+	}
+}
+
+void spgp_delete_keys(void)
+{
+	pgp_keyring_packet *keyring = NULL;
+	pgp_key_packet *key = NULL;
+
+	for (uint32_t i = 0; i < command.args->count; ++i)
+	{
+		keyring = NULL;
+		key = NULL;
+
+		if (command.args->data[i] == NULL)
+		{
+			continue;
+		}
+
+		keyring = spgp_search_keyring(&key, NULL, command.args->data[i], strlen(command.args->data[i]), 0);
+
+		// Only delete whole keys for now
+		if (keyring != NULL)
+		{
+			if (command.delete_secret_keys)
+			{
+				if (key->type != PGP_KEY_TYPE_SECRET)
+				{
+					printf("Key is a public key.\n");
+					continue;
+				}
+			}
+
+			if (command.delete_keys)
+			{
+				if (key->type != PGP_KEY_TYPE_PUBLIC)
+				{
+					printf("Key is a secret key.\n");
+					continue;
+				}
+			}
+
+			if (pgp_key_compare(key, keyring->primary_fingerprint, keyring->fingerprint_size) == 0)
+			{
+				// Delete the keys
+				spgp_delete_key(keyring->primary_fingerprint, keyring->fingerprint_size);
+
+				for (uint32_t j = 0; j < keyring->subkey_count; ++j)
+				{
+					spgp_delete_key(PTR_OFFSET(keyring->subkey_fingerprints, keyring->fingerprint_size * j), keyring->fingerprint_size);
+				}
+
+				// Delete the certificate
+				spgp_delete_certificate(keyring->primary_fingerprint, keyring->fingerprint_size);
+
+				// Delete from the keyring
+				spgp_delete_keyring(keyring);
+			}
+			else
+			{
+				printf("Cannot delete subkeys only for now.\n");
+			}
+		}
 	}
 }
 

@@ -204,11 +204,11 @@ void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 void spgp_write_key(pgp_key_packet *key);
-void spgp_delete_key(pgp_key_packet *key);
+void spgp_delete_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 
 pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 void spgp_write_certificate(pgp_stream_t *stream);
-void spgp_delete_certificate(pgp_key_packet *primary_key);
+void spgp_delete_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 
 void spgp_import_certificates(pgp_stream_t *stream);
 
