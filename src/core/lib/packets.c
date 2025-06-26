@@ -696,7 +696,7 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 		return status;
 	}
 
-	while (result != NULL)
+	while (pos < packet->data_size)
 	{
 		in = PTR_OFFSET(packet->data, pos);
 		result = memchr(in, '\n', packet->data_size - pos);
@@ -727,6 +727,9 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 		}
 		else
 		{
+			result = in + (packet->data_size - pos);
+			pos = packet->data_size;
+
 			while (result != in)
 			{
 				if (*result == ' ' || *result == '\t' || *result == '\r')
@@ -738,10 +741,15 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 					break;
 				}
 			}
+
+			memmove(out, in, PTR_DIFF(result, in));
+			out += PTR_DIFF(result, in);
+
+			break;
 		}
 
-		memmove(out, in, PTR_DIFF(result, in));
-		out += PTR_DIFF(result, in);
+		memmove(out, in, PTR_DIFF(result, in) + 1);
+		out += PTR_DIFF(result, in) + 1;
 
 		// Add \r and \n
 		*out++ = '\r';
@@ -827,7 +835,7 @@ static size_t get_cleartext_encode_size(pgp_literal_packet *packet, byte_t hash_
 	return size;
 }
 
-pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, byte_t hash_algorithm, void *buffer, size_t *size)
+pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, void **buffer, size_t *size)
 {
 	pgp_error_t status = 0;
 
@@ -844,55 +852,59 @@ pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, byte
 		return status;
 	}
 
-	if (*size < (required_size = get_cleartext_encode_size(packet, hash_algorithm)))
-	{
-		*size = required_size;
-		return PGP_BUFFER_TOO_SMALL;
-	}
-
+	required_size = get_cleartext_encode_size(packet, packet->hash_algorithm);
 	*size = required_size;
 
+	*buffer = malloc(*size);
+
+	if (*buffer == NULL)
+	{
+		return PGP_NO_MEMORY;
+	}
+
+	out = *buffer;
+
 	// Marker
-	memcpy(PTR_OFFSET(buffer, pos), "-----BEGIN PGP SIGNED MESSAGE-----\r\n", 36);
+	memcpy(PTR_OFFSET(out, pos), "-----BEGIN PGP SIGNED MESSAGE-----\r\n", 36);
 	pos += 36;
 
 	// Hash algorithm
-	switch (hash_algorithm)
+	switch (packet->hash_algorithm)
 	{
 	case PGP_MD5:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: MD5\r\n", 11);
+		memcpy(PTR_OFFSET(out, pos), "Hash: MD5\r\n", 11);
 		pos += 11;
 		break;
 	case PGP_SHA1:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA1\r\n", 12);
+		memcpy(PTR_OFFSET(out, pos), "Hash: SHA1\r\n", 12);
 		pos += 12;
 		break;
 	case PGP_RIPEMD_160:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: RIPEMD160\r\n", 17);
+		memcpy(PTR_OFFSET(out, pos), "Hash: RIPEMD160\r\n", 17);
 		pos += 17;
 		break;
 	case PGP_SHA2_256:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA256\r\n", 14);
+		memcpy(PTR_OFFSET(out, pos), "Hash: SHA256\r\n", 14);
 		pos += 14;
 		break;
 	case PGP_SHA2_384:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA384\r\n", 14);
+		memcpy(PTR_OFFSET(out, pos), "Hash: SHA384\r\n", 14);
 		pos += 14;
 		break;
 	case PGP_SHA2_512:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA512\r\n", 14);
+		memcpy(PTR_OFFSET(out, pos), "Hash: SHA512\r\n", 14);
 		pos += 14;
 		break;
 	case PGP_SHA2_224:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA224\r\n", 14);
+		memcpy(PTR_OFFSET(out, pos), "Hash: SHA224\r\n", 14);
 		pos += 14;
 		break;
 	case PGP_SHA3_256:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA3-256\r\n", 16);
+		memcpy(PTR_OFFSET(out, pos), "Hash: SHA3-256\r\n", 16);
 		pos += 16;
 		break;
 	case PGP_SHA3_512:
-		memcpy(PTR_OFFSET(buffer, pos), "Hash: SHA3-512\r\n", 16);
+		memcpy(PTR_OFFSET(out, pos), "Hash: SHA3-512\r\n", 16);
 		pos += 16;
 		break;
 	default:
@@ -900,7 +912,7 @@ pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, byte
 	}
 
 	in = packet->data;
-	out = PTR_OFFSET(buffer, pos);
+	out += pos;
 
 	// Empty line
 	*out++ = '\r';

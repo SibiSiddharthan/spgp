@@ -276,11 +276,32 @@ pgp_stream_t *spgp_read_pgp_packets(const char *file)
 	return stream;
 }
 
+static void spgp_write_cleartext_handle(handle_t handle, pgp_stream_t *stream, armor_options *options)
+{
+	void *buffer = NULL;
+	size_t size = 0;
+	size_t write = 0;
+
+	pgp_literal_packet *literal = pgp_stream_remove(stream, 0);
+
+	// Write the literal packet first
+	PGP_CALL(pgp_literal_packet_cleartext_encode(literal, &buffer, &size));
+	OS_CALL(os_write(handle, buffer, size, &write), printf("Unable to write to file"));
+	free(buffer);
+
+	// Write the signature
+	PGP_CALL(pgp_packet_stream_write_armor(stream, options, &buffer, &size));
+	OS_CALL(os_write(handle, buffer, size, &write), printf("Unable to write to file"));
+	free(buffer);
+}
+
 void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_options *options)
 {
 	void *buffer = NULL;
 	size_t size = 0;
 	size_t write = 0;
+
+	pgp_packet_header *header = NULL;
 
 	if (options == NULL)
 	{
@@ -288,6 +309,16 @@ void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_
 	}
 	else
 	{
+		header = stream->packets[0];
+
+		if (pgp_packet_type_from_tag(header->tag) == PGP_LIT)
+		{
+			if (((pgp_literal_packet *)stream->packets[0])->cleartext)
+			{
+				return spgp_write_cleartext_handle(handle, stream, options);
+			}
+		}
+
 		PGP_CALL(pgp_packet_stream_write_armor(stream, options, &buffer, &size));
 	}
 

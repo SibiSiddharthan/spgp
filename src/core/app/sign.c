@@ -362,10 +362,14 @@ static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info *
 	pgp_signature_packet *sign = NULL;
 	pgp_sign_info *sinfo = NULL;
 
-	STREAM_CALL(stream = pgp_stream_new(count));
+	byte_t hash_algorithm = 0;
 
-	// TODO (Write the data as cleartext)
+	STREAM_CALL(stream = pgp_stream_new(count + 1));
+
 	literal = spgp_literal_read_file(file, PGP_LITERAL_DATA_TEXT);
+	PGP_CALL(pgp_literal_packet_trim_text(literal));
+
+	pgp_stream_push(stream, literal);
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
@@ -374,13 +378,17 @@ static pgp_stream_t *spgp_clear_sign_file(pgp_key_packet **keys, pgp_user_info *
 
 		// Cleartext signatures are always text
 		sinfo = spgp_create_sign_info(keys[i], uinfos[i], PGP_TEXT_SIGNATURE);
+		hash_algorithm = sinfo->hash_algorithm;
+
 		PGP_CALL(pgp_generate_document_signature(&sign, keys[i], PGP_SIGNATURE_FLAG_CLEARTEXT, sinfo, literal));
 
 		pgp_stream_push(stream, sign);
 		pgp_sign_info_delete(sinfo);
 	}
 
-	pgp_literal_packet_delete(literal);
+	// Mark the literal packet for cleartext processing
+	literal->cleartext = 1;
+	literal->hash_algorithm = hash_algorithm;
 
 	return stream;
 }
@@ -685,6 +693,17 @@ void spgp_sign(void)
 		else if (command.clear_sign)
 		{
 			signatures = spgp_clear_sign_file(key, uinfo, count, command.args->data[i]);
+
+			// Clear text signatures are always armored
+			marker = (armor_marker){.header_line = PGP_ARMOR_BEGIN_SIGNATURE,
+									.header_line_size = strlen(PGP_ARMOR_BEGIN_SIGNATURE),
+									.trailer_line = PGP_ARMOR_END_SIGNATURE,
+									.trailer_line_size = strlen(PGP_ARMOR_END_SIGNATURE)};
+
+			options.marker = &marker;
+			options.flags = ARMOR_EMPTY_LINE | ARMOR_CRLF_ENDING | ((command.mode == SPGP_MODE_OPENPGP) ? 0 : ARMOR_CHECKSUM_CRC24);
+
+			opts = &options;
 		}
 		else // (command.sign)
 		{
@@ -699,7 +718,7 @@ void spgp_sign(void)
 		}
 
 		// Compress the stream
-		if (command.compression_level != 0)
+		if (command.clear_sign == 0 && command.compression_level != 0)
 		{
 			PGP_CALL(pgp_compressed_packet_new(&compressed, PGP_HEADER, PGP_ZLIB));
 			PGP_CALL(pgp_compressed_packet_compress(compressed, signatures));
