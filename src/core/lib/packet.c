@@ -845,7 +845,11 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 	case PGP_KEYRING:
 		error = pgp_keyring_packet_read_with_header((pgp_keyring_packet **)packet, &header, data);
 		break;
-	case PGP_ARMOR: // fallthrough
+	case PGP_ARMOR:
+		// Never read armor packets from input.
+		// These are supposed to be generated only.
+		error = PGP_SUCCESS;
+		break;
 	default:
 		error = pgp_unknown_packet_read_with_header((pgp_unknown_packet **)packet, &header, data);
 		break;
@@ -908,7 +912,9 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 		return pgp_key_packet_write(packet, ptr, size);
 	case PGP_KEYRING:
 		return pgp_keyring_packet_write(packet, ptr, size);
-	case PGP_ARMOR: // fallthrough
+	case PGP_ARMOR:
+		// Never write these packets to output.
+		return 0;
 	default:
 		return pgp_unknown_packet_write(packet, ptr, size);
 	}
