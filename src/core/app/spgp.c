@@ -452,6 +452,11 @@ static void spgp_execute_operation(void)
 		return spgp_list_keys();
 	}
 
+	if (command.delete_keys || command.delete_secret_keys)
+	{
+		return spgp_delete_keys();
+	}
+
 	if (command.dearmor)
 	{
 		return spgp_dearmor();
@@ -529,6 +534,15 @@ static void spgp_parse_arguments(uint32_t argc, char **argv)
 		case SPGP_OPTION_LIST_SECRET_KEYS:
 			command.need_home = 1;
 			command.list_secret_keys = 1;
+			break;
+
+		case SPGP_OPTION_DELETE_KEYS:
+			command.need_home = 1;
+			command.delete_keys = 1;
+			break;
+		case SPGP_OPTION_DELETE_SECRET_KEYS:
+			command.need_home = 1;
+			command.delete_secret_keys = 1;
 			break;
 
 		case SPGP_OPTION_IMPORT_KEYS:

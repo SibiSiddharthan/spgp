@@ -146,6 +146,20 @@ void spgp_write_certificate(pgp_stream_t *stream)
 	free(buffer);
 }
 
+void spgp_delete_certificate(pgp_key_packet *primary_key)
+{
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+	char filename[256] = {0};
+	uint32_t length = 0;
+
+	PGP_CALL(pgp_key_fingerprint(primary_key, fingerprint, &fingerprint_size));
+	length = get_cert_filename(filename, fingerprint, fingerprint_size);
+
+	OS_CALL(os_remove(command.keys, filename, length), printf("Unable to delete certificate file %s", filename));
+}
+
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size)
 {
 	handle_t handle = 0;
@@ -234,6 +248,20 @@ void spgp_write_key(pgp_key_packet *key)
 			printf("Unable to open key file %s", filename));
 	OS_CALL(os_write(handle, buffer, PGP_PACKET_OCTETS(key->header), &result), printf("Unable to write key file %s", filename));
 	OS_CALL(os_close(handle), printf("Unable to close handle %u", (uint32_t)(uintptr_t)handle));
+}
+
+void spgp_delete_key(pgp_key_packet *key)
+{
+	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
+	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
+
+	char filename[256] = {0};
+	uint32_t length = 0;
+
+	PGP_CALL(pgp_key_fingerprint(key, fingerprint, &fingerprint_size));
+	length = get_key_filename(filename, fingerprint, fingerprint_size);
+
+	OS_CALL(os_remove(command.keys, filename, length), printf("Unable to delete key file %s", filename));
 }
 
 void spgp_import_certificates(pgp_stream_t *stream)
@@ -393,6 +421,40 @@ uint32_t spgp_update_keyring(pgp_keyring_packet *keyring, uint32_t options)
 	spgp_write_pgp_packets_handle(command.keyring, stream, NULL);
 
 	return 0;
+}
+
+void spgp_delete_keyring(pgp_keyring_packet *keyring)
+{
+	pgp_stream_t *stream = NULL;
+	pgp_keyring_packet *packet = NULL;
+	byte_t matching_keyring_found = 0;
+	uint16_t keyring_index = 0;
+
+	stream = spgp_read_keyring();
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		packet = stream->packets[i];
+
+		if (packet->key_version == keyring->key_version &&
+			memcmp(packet->primary_fingerprint, keyring->primary_fingerprint, keyring->fingerprint_size) == 0)
+		{
+			matching_keyring_found = 1;
+			keyring_index = i;
+
+			break;
+		}
+	}
+
+	if (matching_keyring_found)
+	{
+		pgp_stream_remove(stream, keyring_index);
+
+		OS_CALL(os_seek(command.keyring, 0, SEEK_BEGIN), printf("Unable to seek keyring"));
+		OS_CALL(os_truncate(command.keyring, NULL, 0, 0), printf("Unable to truncate keyring"));
+
+		spgp_write_pgp_packets_handle(command.keyring, stream, NULL);
+	}
 }
 
 static uint32_t spgp_process_transferable_key(pgp_stream_t *stream, uint32_t offset)

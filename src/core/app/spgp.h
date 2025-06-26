@@ -191,7 +191,7 @@ void spgp_list_packets(void);
 
 void spgp_import_keys(void);
 void spgp_export_keys(void);
-uint32_t spgp_delete_keys(spgp_command *command);
+void spgp_delete_keys(void);
 
 pgp_literal_packet *spgp_literal_read_file(const char *file, pgp_literal_data_format format);
 void spgp_literal_write_file(const char *file, pgp_literal_packet *literal);
@@ -204,9 +204,12 @@ void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_
 
 pgp_key_packet *spgp_read_key(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 void spgp_write_key(pgp_key_packet *key);
+void spgp_delete_key(pgp_key_packet *key);
 
 pgp_stream_t *spgp_read_certificate(byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE], byte_t fingerprint_size);
 void spgp_write_certificate(pgp_stream_t *stream);
+void spgp_delete_certificate(pgp_key_packet *primary_key);
+
 void spgp_import_certificates(pgp_stream_t *stream);
 
 pgp_stream_t *spgp_preprocess_stream(pgp_stream_t *stream);
@@ -215,7 +218,8 @@ pgp_stream_t *spgp_preprocess_stream(pgp_stream_t *stream);
 
 pgp_stream_t *spgp_read_keyring();
 pgp_keyring_packet *spgp_search_keyring(pgp_key_packet **key, pgp_user_info **user, void *input, uint32_t size, byte_t capabilities);
-uint32_t spgp_update_keyring(pgp_keyring_packet *key, uint32_t options);
+uint32_t spgp_update_keyring(pgp_keyring_packet *keyring, uint32_t options);
+void spgp_delete_keyring(pgp_keyring_packet *keyring);
 
 pgp_key_packet *spgp_decrypt_key(pgp_keyring_packet *keyring, pgp_key_packet *key);
 uint32_t spgp_prompt_passphrase(byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE], char *message);
