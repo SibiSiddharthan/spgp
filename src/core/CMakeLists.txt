@@ -26,6 +26,10 @@ add_library(pgp STATIC
 target_include_directories(pgp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(pgp crypto)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+	target_compile_definitions(pgp PUBLIC PGP_DEBUG=1)
+endif()
+
 add_executable(spgp 
 app/spgp.c app/argparse.c app/io.c app/keyring.c app/misc.c app/packets.c app/preferences.c app/encrypt.c app/sign.c app/generate.c)
 

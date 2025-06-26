@@ -321,6 +321,17 @@ pgp_error_t pgp_packet_stream_write(pgp_stream_t *stream, void **buffer, size_t 
 		pos += pgp_packet_write(stream->packets[i], PTR_OFFSET(*buffer, pos), *size - pos);
 	}
 
+#ifdef PGP_DEBUG
+	// Sanity check
+	if (*size != pos)
+	{
+		free(*buffer);
+		return PGP_INTERNAL_BUG;
+	}
+#endif
+
+	*size = pos;
+
 	return PGP_SUCCESS;
 }
 
