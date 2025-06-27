@@ -67,6 +67,9 @@ typedef struct _armor_options
 
 	uint16_t flags;
 
+	byte_t unknown_header[64];
+	uint16_t unknown_header_size;
+
 } armor_options;
 
 armor_status armor_read(armor_options *options, armor_marker *markers, uint16_t count, void *input, uint32_t *input_size, void *output,

@@ -379,7 +379,7 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 
 	memset(temp, 0, temp_size);
 
-	options.flags = (ARMOR_SCAN_HEADERS | ARMOR_EMPTY_LINE | ARMOR_CHECKSUM_CRC24 | ARMOR_IGNORE_UNKNOWN_MARKERS);
+	options.flags = (ARMOR_SCAN_HEADERS | ARMOR_EMPTY_LINE | ARMOR_CHECKSUM_CRC24);
 
 	while (input_pos < buffer_size)
 	{
@@ -390,35 +390,71 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 
 		if (status != ARMOR_SUCCESS)
 		{
-			switch (status)
+			if (status == ARMOR_UNKOWN_MARKER)
 			{
-			case ARMOR_UNKOWN_MARKER:
-				error = PGP_ARMOR_UNKNOWN_MARKER;
-				break;
-			case ARMOR_MARKER_MISMATCH:
-				error = PGP_ARMOR_MARKER_MISMATCH;
-				break;
-			case ARMOR_MALFORMED_DATA:
-				error = PGP_ARMOR_MALFORMED_BASE64_DATA;
-				break;
-			case ARMOR_CRC_MISMATCH:
-				error = PGP_ARMOR_CRC_MISMATCH;
-				break;
-			case ARMOR_LINE_TOO_BIG:
-				error = PGP_ARMOR_LINE_TOO_BIG;
-				break;
-			case ARMOR_BUFFER_TOO_SMALL:
-				error = PGP_BUFFER_TOO_SMALL;
-				break;
-			case ARMOR_NO_MEMORY:
-				error = PGP_NO_MEMORY;
-				break;
-			default:
-				error = PGP_INTERNAL_BUG;
-				break;
+				// Clear text handling
+				if ((strlen(PGP_ARMOR_CLEARTEXT) - 10) == options.unknown_header_size &&
+					memcmp(PTR_OFFSET(PGP_ARMOR_CLEARTEXT, 5), options.unknown_header, options.unknown_header_size) == 0)
+				{
+					pgp_literal_packet *literal = NULL;
+					size_t size = buffer_size - input_pos;
+
+					error = pgp_literal_packet_cleartext_decode(&literal, PTR_OFFSET(buffer, input_pos), &size);
+
+					if (error != PGP_SUCCESS)
+					{
+						goto error_cleanup;
+					}
+
+					status = ARMOR_SUCCESS;
+					input_pos += size;
+
+					result = pgp_stream_push(out, literal);
+
+					if (result == NULL)
+					{
+						error = PGP_NO_MEMORY;
+						goto error_cleanup;
+					}
+
+					out = result;
+
+					continue;
+				}
 			}
 
-			goto error_cleanup;
+			if (status != ARMOR_SUCCESS)
+			{
+				switch (status)
+				{
+				case ARMOR_UNKOWN_MARKER:
+					error = PGP_ARMOR_UNKNOWN_MARKER;
+					break;
+				case ARMOR_MARKER_MISMATCH:
+					error = PGP_ARMOR_MARKER_MISMATCH;
+					break;
+				case ARMOR_MALFORMED_DATA:
+					error = PGP_ARMOR_MALFORMED_BASE64_DATA;
+					break;
+				case ARMOR_CRC_MISMATCH:
+					error = PGP_ARMOR_CRC_MISMATCH;
+					break;
+				case ARMOR_LINE_TOO_BIG:
+					error = PGP_ARMOR_LINE_TOO_BIG;
+					break;
+				case ARMOR_BUFFER_TOO_SMALL:
+					error = PGP_BUFFER_TOO_SMALL;
+					break;
+				case ARMOR_NO_MEMORY:
+					error = PGP_NO_MEMORY;
+					break;
+				default:
+					error = PGP_INTERNAL_BUG;
+					break;
+				}
+
+				goto error_cleanup;
+			}
 		}
 
 		// Ignore the headers

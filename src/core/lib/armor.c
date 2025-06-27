@@ -126,7 +126,12 @@ armor_status armor_read(armor_options *options, armor_marker *markers, uint16_t 
 					if ((options->flags & ARMOR_IGNORE_UNKNOWN_MARKERS) == 0)
 					{
 						// Unread the line so that the caller can read the line again.
-						*input_size = (in.pos - line_size) + 1 + (in.data[in.pos - 2] == '\r');
+						*input_size = in.pos - (line_size + 1 + (in.data[in.pos - 2] == '\r'));
+
+						// Place the marker in the result
+						options->unknown_header_size = trimmed_line_size - 10;
+						memcpy(options->unknown_header, &line_buffer[5], MIN(trimmed_line_size - 10, 64));
+
 						return ARMOR_UNKOWN_MARKER;
 					}
 
