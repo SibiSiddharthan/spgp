@@ -12,6 +12,7 @@
 #include <minmax.h>
 #include <byteswap.h>
 #include <load.h>
+#include <ptr.h>
 #include <string.h>
 
 typedef struct _buffer_t
@@ -142,7 +143,7 @@ static inline size_t peekline(buffer_t *buffer, void *out, size_t size)
 		return copy_size;
 	}
 
-	copy_size = (size_t)((uintptr_t)result - (uintptr_t)(buffer->data + buffer->pos));
+	copy_size = PTR_DIFF(result, buffer->data + buffer->pos);
 
 	if (copy_size == 0)
 	{
@@ -186,7 +187,7 @@ static inline size_t readline(buffer_t *buffer, void *out, size_t size)
 		return copy_size;
 	}
 
-	copy_size = (size_t)((uintptr_t)result - (uintptr_t)(buffer->data + buffer->pos));
+	copy_size = PTR_DIFF(result, buffer->data + buffer->pos);
 	move_size = 1;
 
 	if (copy_size == 0)
@@ -203,7 +204,7 @@ static inline size_t readline(buffer_t *buffer, void *out, size_t size)
 		if (copy_size == 1)
 		{
 			// Again, nothing to copy
-			// Moce pos by 2 characters "\r\n"
+			// Move pos by 2 characters "\r\n"
 			buffer->pos += 2;
 			return 0;
 		}
