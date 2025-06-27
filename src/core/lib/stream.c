@@ -421,6 +421,22 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 
 					continue;
 				}
+
+				// Message part handling
+				if (memcmp(PGP_ARMOR_BEGIN_MESSAGE ", PART ", options.unknown_header, strlen(PGP_ARMOR_BEGIN_MESSAGE) + 7) == 0)
+				{
+					char end_marker[ARMOR_MAX_MARKER_SIZE] = {0};
+
+					memcpy(end_marker, "END ", 4);
+					memcpy(PTR_OFFSET(end_marker, 4), PTR_OFFSET(options.unknown_header, 6), options.unknown_header_size - 6);
+
+					armor_marker part_marker[1] = {{.header_line = options.unknown_header,
+													.header_line_size = options.unknown_header_size,
+													.trailer_line = end_marker,
+													.trailer_line_size = options.unknown_header_size - 2}};
+
+					status = armor_read(&options, part_marker, 1, PTR_OFFSET(buffer, input_pos), &input_size, temp, &output_size);
+				}
 			}
 
 			if (status != ARMOR_SUCCESS)
