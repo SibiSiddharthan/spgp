@@ -478,19 +478,32 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 			}
 		}
 
-		// Prepare armor packet
-		packet = NULL;
-		error = pgp_armor_packet_new(&packet, options.marker->header_line, options.marker->header_line_size, options.headers,
-									 options.headers_size);
-
-		if (error != PGP_SUCCESS)
-		{
-			goto error_cleanup;
-		}
-
 		if (output_size > 0)
 		{
+			packet = NULL;
 			ts = NULL;
+
+			// Prepare armor packet
+			error = pgp_armor_packet_new(&packet, options.marker->header_line, options.marker->header_line_size, options.headers,
+										 options.headers_size);
+
+			if (error != PGP_SUCCESS)
+			{
+				goto error_cleanup;
+			}
+
+			// Append the armor packet
+			result = pgp_stream_push(out, packet);
+
+			if (result == NULL)
+			{
+				error = PGP_NO_MEMORY;
+				goto error_cleanup;
+			}
+
+			out = result;
+
+			// Read the binary stream
 			error = pgp_packet_stream_read(&ts, temp, output_size);
 
 			if (error != PGP_SUCCESS)
@@ -498,6 +511,7 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 				goto error_cleanup;
 			}
 
+			// Append the stream
 			result = pgp_stream_extend(out, ts);
 
 			if (result == NULL)
@@ -506,21 +520,11 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 				goto error_cleanup;
 			}
 
+			out = result;
+
 			// Only delete the container
 			pgp_stream_delete(ts, NULL);
-			out = result;
 		}
-
-		// Append the armor packet
-		result = pgp_stream_push(out, packet);
-
-		if (result == NULL)
-		{
-			error = PGP_NO_MEMORY;
-			goto error_cleanup;
-		}
-
-		out = result;
 
 		input_pos += input_size;
 	}
