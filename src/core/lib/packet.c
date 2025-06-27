@@ -262,6 +262,7 @@ pgp_packet_type pgp_packet_type_from_tag(byte_t tag)
 	case PGP_PADDING:
 	case PGP_KEYDEF:
 	case PGP_KEYRING:
+	case PGP_ARMOR:
 		break;
 	default:
 		// Error
