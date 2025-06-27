@@ -2189,7 +2189,6 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size
 
 size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t size)
 {
-	byte_t *out = str;
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, str, size);
@@ -2217,16 +2216,21 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t si
 		pos += snprintf(PTR_OFFSET(str, pos), size - pos, "Unknown (Tag %hhu)\n", packet->format);
 	}
 
-	pos += print_timestamp(1, "Date", packet->date, PTR_OFFSET(str, pos), size - pos);
-	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Filename (%u bytes): ", packet->filename_size);
-
-	if (packet->filename_size > 0)
+	if (packet->cleartext == 0)
 	{
-		memcpy(PTR_OFFSET(str, pos), packet->filename, packet->filename_size);
-		pos += packet->filename_size;
+		pos += print_timestamp(1, "Date", packet->date, PTR_OFFSET(str, pos), size - pos);
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Filename (%u bytes): %.*s\n", packet->filename_size,
+							packet->filename_size, packet->filename);
 	}
+	else
+	{
+		pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Cleartext: True\n");
 
-	out[pos++] = '\n';
+		if (packet->hash_algorithm != 0)
+		{
+			pos += pgp_hash_algorithm_print(packet->hash_algorithm, PTR_OFFSET(str, pos), size - pos, 1);
+		}
+	}
 
 	pos += print_format(1, PTR_OFFSET(str, pos), size - pos, "Data (%u bytes)\n", packet->data_size);
 
