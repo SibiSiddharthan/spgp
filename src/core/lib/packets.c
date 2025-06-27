@@ -727,7 +727,7 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 		}
 		else
 		{
-			result = in + (packet->data_size - pos);
+			result = in + (packet->data_size - pos) - 1;
 			pos = packet->data_size;
 
 			while (result != in)
@@ -742,8 +742,8 @@ pgp_error_t pgp_literal_packet_trim_text(pgp_literal_packet *packet)
 				}
 			}
 
-			memmove(out, in, PTR_DIFF(result, in));
-			out += PTR_DIFF(result, in);
+			memmove(out, in, PTR_DIFF(result, in) + 1);
+			out += PTR_DIFF(result, in) + 1;
 
 			break;
 		}
@@ -865,7 +865,7 @@ pgp_error_t pgp_literal_packet_cleartext_encode(pgp_literal_packet *packet, void
 	out = *buffer;
 
 	// Marker
-	memcpy(PTR_OFFSET(out, pos), "-----BEGIN PGP SIGNED MESSAGE-----\r\n", 36);
+	memcpy(PTR_OFFSET(out, pos), PGP_ARMOR_CLEARTEXT "\r\n", 36);
 	pos += 36;
 
 	// Hash algorithm
@@ -1069,9 +1069,13 @@ static pgp_error_t pgp_decode_cleartext(buffer_t *in, byte_t *out, size_t *outpo
 
 		if (current_char == '\n')
 		{
-			if (previous_char != '\r')
+			// Last line exception.
+			if (in->pos != in->size)
 			{
-				return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
+				if (previous_char != '\r')
+				{
+					return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
+				}
 			}
 		}
 
@@ -1097,12 +1101,14 @@ static pgp_error_t pgp_decode_cleartext(buffer_t *in, byte_t *out, size_t *outpo
 	}
 
 	// Remove the last newline
-	if (pos >= 2)
+	if (pos > 0 && out[pos - 1] == '\n')
 	{
-		if (out[pos - 1] == '\n')
-		{
-			pos -= 2;
-		}
+		pos -= 1;
+	}
+
+	if (pos > 0 && out[pos - 1] == '\r')
+	{
+		pos -= 1;
 	}
 
 	*outpos = pos;
@@ -1110,11 +1116,11 @@ static pgp_error_t pgp_decode_cleartext(buffer_t *in, byte_t *out, size_t *outpo
 	return PGP_SUCCESS;
 }
 
-pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, void *buffer, size_t size)
+pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, void *buffer, size_t *size)
 {
 	pgp_error_t status = 0;
 
-	buffer_t in = {.data = buffer, .pos = 0, .size = size, .capacity = size};
+	buffer_t in = {.data = buffer, .pos = 0, .size = *size, .capacity = *size};
 	byte_t line_buffer[1024] = {0};
 
 	uint16_t line_size = 0;
@@ -1124,6 +1130,8 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 	size_t data_size = 0;
 	size_t decode_size = 0;
 
+	size_t old_pos = 0;
+
 	byte_t hash_algorithm = 0;
 	byte_t first_hash_header = 0;
 
@@ -1131,12 +1139,12 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 	line_size = readline(&in, line_buffer, 1024);
 	trimmed_line_size = trimline(line_buffer, line_size);
 
-	if (trimmed_line_size != 34 && memcmp("-----BEGIN PGP SIGNED MESSAGE-----", line_buffer, trimmed_line_size) != 0)
+	if (trimmed_line_size != 34 && memcmp(PGP_ARMOR_CLEARTEXT, line_buffer, trimmed_line_size) != 0)
 	{
 		return PGP_ARMOR_INVALID_CLEARTEXT_MARKER;
 	}
 
-	// Parse the hash headers
+	// Parse the hash headers (and the empty line following)
 	while (1)
 	{
 		line_size = readline(&in, line_buffer, 1024);
@@ -1165,9 +1173,36 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 		}
 	}
 
-	// Initialize buffer
-	data_size = in.size - in.pos;
+	// Calculate the amount of data we need to process
+	old_pos = in.pos;
 
+	while (1)
+	{
+		line_size = readline(&in, line_buffer, 1024);
+
+		if (memcmp("-----", line_buffer, 5) == 0)
+		{
+			if (line_size == strlen(PGP_ARMOR_BEGIN_SIGNATURE) + 10 &&
+				memcmp(PGP_ARMOR_BEGIN_SIGNATURE, PTR_OFFSET(line_buffer, 5), strlen(PGP_ARMOR_BEGIN_SIGNATURE)) == 0)
+			{
+				in.pos = in.pos - (line_size + 1 + (in.data[in.pos - 2] == '\r'));
+				break;
+			}
+			else
+			{
+				return PGP_ARMOR_MALFORMED_CLEARTEXT_DATA;
+			}
+		}
+	}
+
+	data_size = in.pos - old_pos;
+
+	in.pos = old_pos;
+	in.size = in.capacity = (in.pos + data_size);
+
+	*size = in.size;
+
+	// Initialize buffer
 	if (data_size == 0)
 	{
 		// Create the literal packet and return
@@ -1203,7 +1238,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 	}
 
 	// Create the literal packet
-	status = pgp_literal_packet_new(packet, PGP_LITERAL_DATA_TEXT, 0, NULL, 0);
+	status = pgp_literal_packet_new(packet, PGP_HEADER, 0, NULL, 0);
 
 	if (status != PGP_SUCCESS)
 	{
@@ -1211,12 +1246,18 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 		return status;
 	}
 
-	if (decode_size > 0)
+	(*packet)->data = data;
+	(*packet)->data_size = decode_size;
+
+	status = pgp_literal_packet_trim_text(*packet);
+
+	if (status != PGP_SUCCESS)
 	{
-		(*packet)->data = data;
-		(*packet)->data_size = decode_size;
+		pgp_literal_packet_delete(*packet);
+		return status;
 	}
 
+	(*packet)->format = PGP_LITERAL_DATA_TEXT;
 	(*packet)->hash_algorithm = hash_algorithm;
 	(*packet)->cleartext = 1;
 

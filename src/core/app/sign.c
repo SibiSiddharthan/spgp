@@ -859,6 +859,12 @@ static uint32_t spgp_verify_file(void *file, uint32_t index)
 
 	if (type == PGP_LIT)
 	{
+		if (((pgp_literal_packet *)stream->packets[0])->cleartext == 0)
+		{
+			printf("Bad Signature Sequence.\n");
+			exit(1);
+		}
+
 		if (stream->count < 2)
 		{
 			printf("Bad Signature Sequence.\n");
