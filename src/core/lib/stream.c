@@ -445,6 +445,9 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 				case ARMOR_BUFFER_TOO_SMALL:
 					error = PGP_BUFFER_TOO_SMALL;
 					break;
+				case ARMOR_MARKER_TOO_BIG:
+					error = PGP_ARMOR_MARKER_TOO_BIG;
+					break;
 				case ARMOR_NO_MEMORY:
 					error = PGP_NO_MEMORY;
 					break;

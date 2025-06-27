@@ -122,6 +122,8 @@ char *pgp_error(pgp_error_t status)
 		return "Armor Too Long";
 	case PGP_ARMOR_LINE_TOO_BIG:
 		return "Armor Line Too Long";
+	case PGP_ARMOR_MARKER_TOO_BIG:
+		return "Armor Unknown Marker Too Long";
 	case PGP_ARMOR_MALFORMED_BASE64_DATA:
 		return "Bad Base64 Encoded Data";
 	case PGP_ARMOR_CRC_MISMATCH:

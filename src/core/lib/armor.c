@@ -130,7 +130,12 @@ armor_status armor_read(armor_options *options, armor_marker *markers, uint16_t 
 
 						// Place the marker in the result
 						options->unknown_header_size = trimmed_line_size - 10;
-						memcpy(options->unknown_header, &line_buffer[5], MIN(trimmed_line_size - 10, 64));
+						memcpy(options->unknown_header, &line_buffer[5], MIN(trimmed_line_size - 10, ARMOR_MAX_MARKER_SIZE));
+
+						if ((trimmed_line_size - 10) > ARMOR_MAX_MARKER_SIZE)
+						{
+							return ARMOR_MARKER_TOO_BIG;
+						}
 
 						return ARMOR_UNKOWN_MARKER;
 					}

@@ -30,6 +30,8 @@
 #define PGP_ARMOR_HEADER_COMMENT    "Comment"
 #define PGP_ARMOR_HEADER_MESSAGE_ID "MessageID"
 
+#define ARMOR_MAX_MARKER_SIZE 64
+
 typedef enum _armor_status
 {
 	ARMOR_SUCCESS = 0,
@@ -41,6 +43,7 @@ typedef enum _armor_status
 	ARMOR_NO_MEMORY,
 	ARMOR_INPUT_TOO_BIG,
 	ARMOR_LINE_TOO_BIG,
+	ARMOR_MARKER_TOO_BIG
 } armor_status;
 
 #define ARMOR_CHECKSUM_CRC24         0x01
@@ -67,7 +70,7 @@ typedef struct _armor_options
 
 	uint16_t flags;
 
-	byte_t unknown_header[64];
+	byte_t unknown_header[ARMOR_MAX_MARKER_SIZE];
 	uint16_t unknown_header_size;
 
 } armor_options;
