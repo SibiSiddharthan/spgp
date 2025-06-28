@@ -2096,7 +2096,10 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 
 		if (packet->s2k_usage == 0)
 		{
-			pos += print_bytes(1, "Checksum: ", PTR_OFFSET(str, pos), size - pos, &packet->key_checksum, 2);
+			if (packet->version != PGP_KEY_V6)
+			{
+				pos += print_bytes(1, "Checksum: ", PTR_OFFSET(str, pos), size - pos, &packet->key_checksum, 2);
+			}
 		}
 	}
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
