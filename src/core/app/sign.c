@@ -406,7 +406,7 @@ static uint32_t spgp_clear_verify_stream(pgp_stream_t *stream)
 	byte_t fingerprint[PGP_KEY_MAX_FINGERPRINT_SIZE] = {0};
 	byte_t fingerprint_size = 0;
 
-	for (uint32_t i = 1; i < stream->count; ++i)
+	for (uint32_t i = 2; i < stream->count; ++i)
 	{
 		sign = stream->packets[i];
 		key = NULL;
@@ -735,8 +735,15 @@ void spgp_sign(void)
 static uint32_t spgp_verify_file(void *file, uint32_t index)
 {
 	pgp_stream_t *stream = NULL;
+	pgp_stream_t message = {0};
+	pgp_armor_packet *armor = NULL;
+
 	pgp_packet_header *header = NULL;
 	pgp_packet_type type = 0;
+
+	uint32_t start = 0;
+	uint32_t count = 0;
+	uint32_t result = 0;
 
 	stream = spgp_read_pgp_packets(file);
 	stream = spgp_preprocess_stream(stream);
@@ -768,126 +775,214 @@ static uint32_t spgp_verify_file(void *file, uint32_t index)
 				exit(1);
 			}
 		}
+
+		if (type == PGP_ARMOR)
+		{
+			armor = stream->packets[i];
+
+			if (armor->marker_size != strlen(PGP_ARMOR_BEGIN_SIGNATURE))
+			{
+				printf("Not a signature stream.\n");
+				exit(1);
+			}
+		}
 	}
 
-	header = stream->packets[0];
-	type = pgp_packet_type_from_tag(header->tag);
-
-	// Check packet sequence
-	if (type == PGP_OPS)
+	// Parse packet sequence
+	for (uint32_t i = 0; i < stream->count; ++i)
 	{
-		if ((stream->count - 1) % 2 != 0)
+		header = stream->packets[i];
+		type = pgp_packet_type_from_tag(header->tag);
+
+		if (type == PGP_ARMOR)
 		{
-			printf("Bad Signature Sequence.\n");
-			exit(1);
+			armor = stream->packets[i];
+			continue;
 		}
 
-		for (uint32_t i = 1; i < stream->count; ++i)
+		// OPS[n] || LIT || SIG[n]
+		if (type == PGP_OPS)
 		{
-			header = stream->packets[i];
-			type = pgp_packet_type_from_tag(header->tag);
+			pgp_one_pass_signature_packet *ops = NULL;
 
-			if (i < (stream->count - 1) / 2)
+			uint32_t ops_count = 1;
+			uint32_t sig_count = 0;
+
+			start = i;
+			count = 1;
+
+			ops = stream->packets[i];
+			i += 1;
+
+			while (i < stream->count && ops->nested == 0)
 			{
+				header = stream->packets[i];
+				type = pgp_packet_type_from_tag(header->tag);
+
 				if (type != PGP_OPS)
 				{
 					printf("Bad Signature Sequence.\n");
 					exit(1);
 				}
-			}
-			else if (i > (stream->count - 1) / 2)
-			{
-				if (type != PGP_SIG)
-				{
-					printf("Bad Signature Sequence.\n");
-					exit(1);
-				}
-			}
-			else // (i == (stream->count - 1) / 2)
-			{
-				if (type != PGP_LIT)
-				{
-					printf("Bad Signature Sequence.\n");
-					exit(1);
-				}
-			}
-		}
 
-		return spgp_verify_stream(stream);
-	}
+				ops = stream->packets[i];
+				ops_count += 1;
+				count += 1;
 
-	if (type == PGP_SIG)
-	{
-		for (uint32_t i = 1; i < stream->count; ++i)
-		{
+				i += 1;
+			}
+
 			header = stream->packets[i];
 			type = pgp_packet_type_from_tag(header->tag);
 
-			if (i != stream->count - 1)
+			if (type != PGP_LIT)
 			{
+				printf("Bad Signature Sequence.\n");
+				exit(1);
+			}
+
+			count += 1;
+			i += 1;
+
+			while (i < stream->count && sig_count < ops_count)
+			{
+				header = stream->packets[i];
+				type = pgp_packet_type_from_tag(header->tag);
+
 				if (type != PGP_SIG)
 				{
 					printf("Bad Signature Sequence.\n");
 					exit(1);
 				}
+
+				sig_count += 1;
+				count += 1;
+
+				i += 1;
 			}
+
+			if (ops_count != sig_count)
+			{
+				printf("Bad Signature Sequence.\n");
+				exit(1);
+			}
+
+			message.count = message.capacity = count;
+			message.packets = PTR_OFFSET(stream->packets, start * sizeof(void *));
+
+			result += spgp_verify_stream(&message);
+			continue;
 		}
 
-		header = stream->packets[stream->count - 1];
-		type = pgp_packet_type_from_tag(header->tag);
+		// Cleartext signature LIT || ARMOR || SIG[n]
+		if (type == PGP_LIT)
+		{
+			if (((pgp_literal_packet *)stream->packets[i])->cleartext == 0)
+			{
+				printf("Bad Signature Sequence.\n");
+				exit(1);
+			}
 
+			start = i;
+			i += 1;
+
+			if (i == stream->count)
+			{
+				printf("Bad Signature Sequence.\n");
+				exit(1);
+			}
+
+			header = stream->packets[i];
+			type = pgp_packet_type_from_tag(header->tag);
+
+			if (type != PGP_ARMOR)
+			{
+				printf("Bad Signature Sequence.\n");
+				exit(1);
+			}
+
+			i += 1;
+			count = 2;
+
+			while (i < stream->count)
+			{
+				header = stream->packets[i];
+				type = pgp_packet_type_from_tag(header->tag);
+
+				if (type != PGP_SIG)
+				{
+					break;
+				}
+
+				count += 1;
+				i += 1;
+			}
+
+			if (count < 3)
+			{
+				printf("Bad Signature Sequence.\n");
+				exit(1);
+			}
+
+			message.count = message.capacity = count;
+			message.packets = PTR_OFFSET(stream->packets, start * sizeof(void *));
+
+			result += spgp_clear_verify_stream(&message);
+			continue;
+		}
+
+		// Detached or legacy signatures (SIG[n] [||LIT])
 		if (type == PGP_SIG)
 		{
+			start = i;
+			count = 1;
+
+			i += 1;
+
+			while (i < stream->count)
+			{
+				header = stream->packets[i];
+				type = pgp_packet_type_from_tag(header->tag);
+
+				if (type != PGP_SIG)
+				{
+					break;
+				}
+
+				count += 1;
+				i += 1;
+			}
+
+			if (type == PGP_LIT)
+			{
+				// Legacy signatures
+				if (((pgp_literal_packet *)stream->packets[i])->cleartext == 0)
+				{
+					message.count = message.capacity = count + 1;
+					message.packets = PTR_OFFSET(stream->packets, start * sizeof(void *));
+
+					result += spgp_verify_stream_legacy(&message);
+					i += 1;
+					continue;
+				}
+			}
+
+			// Detached signatures
 			if ((index + 1) == command.args->count)
 			{
 				printf("Signing data not provided.\n");
 				exit(1);
 			}
 
-			return spgp_detach_verify_stream(stream, pgp_stream_remove(command.args, index + 1));
-		}
-		else if (type == PGP_LIT)
-		{
-			return spgp_verify_stream_legacy(stream);
-		}
-		else
-		{
-			printf("Bad Signature Sequence.\n");
-			exit(1);
+			message.count = message.capacity = count;
+			message.packets = PTR_OFFSET(stream->packets, start * sizeof(void *));
+
+			result += spgp_detach_verify_stream(&message, pgp_stream_remove(command.args, index + 1));
+			continue;
 		}
 	}
 
-	if (type == PGP_LIT)
-	{
-		if (((pgp_literal_packet *)stream->packets[0])->cleartext == 0)
-		{
-			printf("Bad Signature Sequence.\n");
-			exit(1);
-		}
-
-		if (stream->count < 2)
-		{
-			printf("Bad Signature Sequence.\n");
-			exit(1);
-		}
-
-		for (uint32_t i = 1; i < stream->count; ++i)
-		{
-			header = stream->packets[i];
-			type = pgp_packet_type_from_tag(header->tag);
-
-			if (type != PGP_SIG)
-			{
-				printf("Bad Signature Sequence.\n");
-				exit(1);
-			}
-		}
-
-		return spgp_clear_verify_stream(stream);
-	}
-
-	// Unreachable
-	return 0;
+	return result;
 }
 
 void spgp_verify(void)
