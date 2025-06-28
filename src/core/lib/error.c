@@ -437,6 +437,8 @@ char *pgp_error(pgp_error_t status)
 
 	case PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_VERSION:
 		return "Incompatible Signature And Key Version";
+	case PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_ALGORITHM:
+		return "Incompatible Signature And Key Algorithm";
 	case PGP_MISSING_EMBEDDED_SIGNATURE_PACKET:
 		return "Missing Embedded Signature Packet For Signing Capable Subkey";
 	case PGP_MISSING_CREATION_TIME_SUBPACKET:

@@ -1998,7 +1998,7 @@ size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet
 	}
 	else if (packet->version == PGP_ONE_PASS_SIGNATURE_V3)
 	{
-		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: 3 (Deprecated)\n");
+		pos += print_format(1, PTR_OFFSET(ptr, pos), size - pos, "Version: 3\n");
 		pos += pgp_signature_type_print(packet->type, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_hash_algorithm_print(packet->hash_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);
 		pos += pgp_signature_algorithm_print(packet->public_key_algorithm_id, PTR_OFFSET(ptr, pos), size - pos, 1);

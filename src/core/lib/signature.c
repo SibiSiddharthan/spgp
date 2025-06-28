@@ -3434,7 +3434,7 @@ static uint32_t pgp_compute_hash(void *ctx, byte_t hash[64], pgp_signature_packe
 			// N octets of file name
 			if (literal->filename_size > 0)
 			{
-				pgp_hash_update(hctx, &literal->filename, literal->filename_size);
+				pgp_hash_update(hctx, literal->filename, literal->filename_size);
 			}
 
 			// 4 octets of date
@@ -3690,12 +3690,14 @@ static pgp_error_t pgp_do_sign(pgp_signature_packet *packet, pgp_key_packet *key
 	{
 		if (tpkey->public_key_algorithm_id != packet->public_key_algorithm_id)
 		{
+			return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_ALGORITHM;
 		}
 	}
 	else
 	{
 		if (key->public_key_algorithm_id != packet->public_key_algorithm_id)
 		{
+			return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_ALGORITHM;
 		}
 	}
 
@@ -3806,12 +3808,14 @@ static pgp_error_t pgp_do_verify(pgp_signature_packet *packet, pgp_key_packet *k
 	{
 		if (tpkey->public_key_algorithm_id != packet->public_key_algorithm_id)
 		{
+			return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_ALGORITHM;
 		}
 	}
 	else
 	{
 		if (key->public_key_algorithm_id != packet->public_key_algorithm_id)
 		{
+			return PGP_INCOMPATIBLE_SIGNATURE_AND_KEY_ALGORITHM;
 		}
 	}
 
