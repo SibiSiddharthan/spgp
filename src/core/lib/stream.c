@@ -181,7 +181,11 @@ pgp_stream_t *pgp_stream_extend(pgp_stream_t *stream, pgp_stream_t *other)
 
 	if (stream->capacity - stream->count < other->count)
 	{
-		stream->capacity *= 2;
+		while (stream->capacity - stream->count < other->count)
+		{
+			stream->capacity *= 2;
+		}
+
 		temp = realloc(stream->packets, sizeof(void *) * stream->capacity);
 
 		if (temp == NULL)
