@@ -457,16 +457,14 @@ void spgp_encrypt(void)
 	}
 }
 
-static pgp_stream_t *spgp_decrypt_file(void *file)
+static pgp_stream_t *spgp_decrypt_stream(pgp_stream_t *stream)
 {
 	pgp_error_t status = 0;
 
-	pgp_stream_t *stream = NULL;
 	pgp_stream_t *message = NULL;
-
-	pgp_packet_header *header = NULL;
 	pgp_seipd_packet *seipd = NULL;
 
+	pgp_packet_header *header = NULL;
 	pgp_packet_type type = 0;
 
 	void *encrypted_packet = NULL;
@@ -481,9 +479,6 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 	byte_t skesk_version = 0;
 	byte_t seipd_version = 0;
 	byte_t aead_version = 0;
-
-	stream = spgp_read_pgp_packets(file);
-	stream = spgp_preprocess_stream(stream);
 
 	// Validate packet sequence
 	for (uint32_t i = 0; i < stream->count - 1; ++i)
@@ -662,6 +657,12 @@ static pgp_stream_t *spgp_decrypt_file(void *file)
 		}
 	}
 
+	if (skesk_version == 0)
+	{
+		printf("Unable to process\n");
+		exit(1);
+	}
+
 	// Search SKESKs
 	if (command.passhprases == NULL)
 	{
@@ -795,9 +796,69 @@ decrypt:
 	}
 
 finish:
+	return message;
+}
+
+static pgp_stream_t *spgp_decrypt_file(void *file)
+{
+	pgp_stream_t *stream = NULL;
+	pgp_stream_t *result = NULL;
+	pgp_stream_t message = {0};
+
+	pgp_armor_packet *armor = NULL;
+	pgp_packet_header *header = NULL;
+	pgp_packet_type type = 0;
+
+	uint32_t start = 0;
+	uint32_t count = 0;
+
+	stream = spgp_read_pgp_packets(file);
+	stream = spgp_preprocess_stream(stream);
+
+	for (uint32_t i = 0; i < stream->count; ++i)
+	{
+		header = stream->packets[i];
+		type = pgp_packet_type_from_tag(header->tag);
+
+		if (type == PGP_ARMOR)
+		{
+			armor = stream->packets[i];
+
+			if (armor->marker_size != strlen(PGP_ARMOR_BEGIN_MESSAGE))
+			{
+				printf("Bad PGP message armor.\n");
+				exit(1);
+			}
+
+			start = i + 1;
+			continue;
+		}
+
+		count += 1;
+
+		if (type == PGP_SEIPD || type == PGP_AEAD || type == PGP_SED)
+		{
+			message.count = message.capacity = count;
+			message.packets = PTR_OFFSET(stream->packets, start * sizeof(void *));
+
+			STREAM_CALL(result = pgp_stream_extend(result, spgp_decrypt_stream(&message)));
+
+			count = 0;
+			start = i + 1;
+		}
+	}
+
+	if (count != 0)
+	{
+		message.count = message.capacity = count;
+		message.packets = PTR_OFFSET(stream->packets, start * sizeof(void *));
+
+		STREAM_CALL(result = pgp_stream_extend(result, spgp_decrypt_stream(&message)));
+	}
+
 	pgp_stream_delete(stream, pgp_packet_delete);
 
-	return message;
+	return result;
 }
 
 void spgp_decrypt(void)
