@@ -716,6 +716,12 @@ static void spgp_parse_arguments(uint32_t argc, char **argv)
 	{
 		STREAM_CALL(command.args = pgp_stream_push(command.args, NULL));
 	}
+
+	// Ignore output option if more than one arg is given
+	if (command.args->count > 1)
+	{
+		command.output = NULL;
+	}
 }
 
 int main(int argc, char **argv)

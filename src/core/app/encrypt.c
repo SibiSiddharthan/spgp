@@ -453,7 +453,14 @@ void spgp_encrypt(void)
 		stream = pgp_stream_clear(stream, pgp_packet_delete);
 
 		// Write output
-		spgp_write_pgp_packets(command.output, message, opts);
+		if (command.output != NULL)
+		{
+			spgp_write_pgp_packets(command.output, NULL, message, opts);
+		}
+		else
+		{
+			spgp_write_pgp_packets(command.args->data[i], opts == NULL ? SPGP_FILE_EXT : SPGP_ARMOR_EXT, message, opts);
+		}
 	}
 }
 

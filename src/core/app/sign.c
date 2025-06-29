@@ -728,7 +728,14 @@ void spgp_sign(void)
 		}
 
 		// Write output
-		spgp_write_pgp_packets(command.output, signatures, opts);
+		if (command.output != NULL)
+		{
+			spgp_write_pgp_packets(command.output, NULL, signatures, opts);
+		}
+		else
+		{
+			spgp_write_pgp_packets(command.args->data[i], opts == NULL ? SPGP_SIG_EXT : SPGP_ARMOR_EXT, signatures, opts);
+		}
 	}
 }
 
