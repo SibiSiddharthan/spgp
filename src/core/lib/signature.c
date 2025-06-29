@@ -431,7 +431,7 @@ static pgp_error_t pgp_signature_material_read(pgp_signature_packet *packet, voi
 		mpi_r_bits = ((uint16_t)in[0] << 8) + in[1];
 		offset += mpi_octets(mpi_r_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return error;
 		}

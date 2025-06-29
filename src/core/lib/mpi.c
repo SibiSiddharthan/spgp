@@ -73,7 +73,7 @@ uint32_t mpi_read(mpi_t *mpi, void *ptr, size_t size)
 
 	bytes = CEIL_DIV(mpi->bits, 8);
 
-	if (size < (2 + bytes))
+	if (size < (2u + bytes))
 	{
 		return 0;
 	}

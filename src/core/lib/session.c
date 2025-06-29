@@ -79,7 +79,7 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, ui
 		mpi_r_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_r_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_ELGAMAL_SESSION_KEY;
 		}

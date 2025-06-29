@@ -18,8 +18,10 @@ endif()
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	add_compile_options(-fdiagnostics-color
 						-Wall -Wextra
+						-Wstringop-overflow=0
 						-Wno-cast-function-type
-						-std=c23)
+						-Wno-type-limits
+						-std=c2x)
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
@@ -57,6 +59,10 @@ if(ENABLE_ASAN)
 		add_link_options(/incremental:no)
 	endif()
 
+endif()
+
+if(NOT WIN32)
+	add_compile_definitions(_POSIX_C_SOURCE=201709L)
 endif()
 
 add_subdirectory(src)

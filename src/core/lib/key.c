@@ -282,7 +282,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		mpi_n_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_n_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_RSA_PUBLIC_KEY;
 		}
@@ -338,7 +338,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		mpi_p_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_p_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_ELGAMAL_PUBLIC_KEY;
 		}
@@ -346,7 +346,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		mpi_g_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_g_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_ELGAMAL_PUBLIC_KEY;
 		}
@@ -405,7 +405,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		mpi_p_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_p_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
@@ -413,7 +413,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		mpi_q_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_q_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
@@ -421,7 +421,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		mpi_g_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_g_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_DSA_PUBLIC_KEY;
 		}
@@ -470,7 +470,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		uint16_t offset = in[0] + 1;
 		uint16_t mpi_point_bits = 0;
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_ECDH_PUBLIC_KEY;
 		}
@@ -478,7 +478,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		mpi_point_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_point_bits);
 
-		if (size < (offset + 4)) // 4 octets for KDF
+		if (size < (offset + 4u)) // 4 octets for KDF
 		{
 			return PGP_MALFORMED_ECDH_PUBLIC_KEY;
 		}
@@ -541,7 +541,7 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		pgp_error_t error =
 			(packet->public_key_algorithm_id == PGP_ECDSA) ? PGP_MALFORMED_ECDSA_PUBLIC_KEY : PGP_MALFORMED_EDDSA_PUBLIC_KEY;
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return error;
 		}
@@ -857,7 +857,7 @@ static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *p
 		mpi_d_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_d_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_RSA_SECRET_KEY;
 		}
@@ -865,7 +865,7 @@ static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *p
 		mpi_p_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_p_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_RSA_SECRET_KEY;
 		}
@@ -873,7 +873,7 @@ static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *p
 		mpi_q_bits = ((uint16_t)in[offset] << 8) + in[offset + 1];
 		offset += mpi_octets(mpi_q_bits);
 
-		if (size < (offset + 2))
+		if (size < (offset + 2u))
 		{
 			return PGP_MALFORMED_RSA_SECRET_KEY;
 		}
