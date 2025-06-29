@@ -17,9 +17,29 @@
 
 #include <unused.h>
 
+#include <sys/stat.h>
+
 status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t flags, uint32_t mode)
 {
 	UNUSED(length);
+
+	access &= ~(FILE_ACCESS_READ | FILE_ACCESS_WRITE);
+
+	if ((access & (FILE_ACCESS_READ | FILE_ACCESS_WRITE)) == (FILE_ACCESS_READ | FILE_ACCESS_WRITE))
+	{
+		access &= ~(FILE_ACCESS_READ | FILE_ACCESS_WRITE);
+		access |= O_RDWR;
+	}
+	else if ((access & FILE_ACCESS_WRITE) == FILE_ACCESS_WRITE)
+	{
+		access &= ~(FILE_ACCESS_READ | FILE_ACCESS_WRITE);
+		access |= O_WRONLY;
+	}
+	else
+	{
+		access &= ~(FILE_ACCESS_READ | FILE_ACCESS_WRITE);
+		access |= O_RDONLY;
+	}
 
 	*handle = openat(root, path, access | flags, mode);
 
@@ -75,14 +95,57 @@ status_t os_write(handle_t handle, void *buffer, size_t size, size_t *result)
 
 status_t os_seek(handle_t handle, off_t offset, uint32_t whence)
 {
-	off_t offset = 0;
+	off_t result = 0;
 
-	offset = lseek(handle, offset, whence);
+	result = lseek(handle, offset, whence);
 
-	if (offset < 0)
+	if (result < 0)
 	{
 		return _os_status(errno);
 	}
+
+	return OS_STATUS_SUCCESS;
+}
+
+status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flags, void *buffer, uint16_t size)
+{
+	struct stat st = {0};
+	stat_t *out = buffer;
+
+	UNUSED(length);
+
+	if (size < sizeof(stat_t))
+	{
+		return OS_STATUS_INSUFFICIENT_BUFFER;
+	}
+
+	if (path == NULL)
+	{
+		if (fstat(root, &st) < 0)
+		{
+			return _os_status(errno);
+		}
+	}
+	else
+	{
+		if (fstatat(root, path, &st, flags) < 0)
+		{
+			return _os_status(errno);
+		}
+	}
+
+	out->st_dev = st.st_dev;
+	out->st_rdev = st.st_rdev;
+	out->st_ino = st.st_ino;
+	out->st_mode = st.st_mode;
+	out->st_attributes = 0;
+	out->st_nlink = st.st_nlink;
+	out->st_gid = st.st_gid;
+	out->st_size = st.st_size;
+	out->st_atim = st.st_atim;
+	out->st_mtim = st.st_mtim;
+	out->st_ctim = st.st_ctim;
+	out->st_birthtim = st.st_ctim;
 
 	return OS_STATUS_SUCCESS;
 }
@@ -93,12 +156,12 @@ status_t os_truncate(handle_t root, const char *path, uint16_t length, size_t si
 
 	UNUSED(length);
 
-	if ((fd = openat(root, path, 0, 0)) < 0)
+	if ((fd = openat(root, path, O_WRONLY, 0)) < 0)
 	{
 		return _os_status(errno);
 	}
 
-	if (ftrucate(fd, size) < 0)
+	if (ftruncate(fd, size) < 0)
 	{
 		close(fd);
 		return _os_status(errno);
@@ -129,7 +192,7 @@ status_t os_remove(handle_t root, const char *path, uint16_t length)
 	{
 		if (errno = EISDIR)
 		{
-			if (unlinkat(root, path, 1) < 0)
+			if (unlinkat(root, path, AT_REMOVEDIR) < 0)
 			{
 				return _os_status(errno);
 			}
