@@ -327,14 +327,37 @@ void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_
 	free(buffer);
 }
 
-void spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options)
+void spgp_write_pgp_packets(const char *file, const char *extension, pgp_stream_t *stream, armor_options *options)
 {
 	handle_t handle = 0;
 
 	if (file != NULL)
 	{
-		OS_CALL(os_open(&handle, HANDLE_CWD, file, strlen(file), FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
-				printf("Unable to open file %s", file));
+		if (extension != NULL)
+		{
+			size_t length = strlen(file);
+			char *path = malloc(length + 5); // 4 character for extension + NULL
+
+			if (path == NULL)
+			{
+				printf("No memory");
+				exit(1);
+			}
+
+			memset(path, 0, length + 5);
+			memcpy(path, file, length);
+			memcpy(path + length, extension, 4);
+
+			OS_CALL(os_open(&handle, HANDLE_CWD, path, length + 4, FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+					printf("Unable to open file %s", path));
+
+			free(path);
+		}
+		else
+		{
+			OS_CALL(os_open(&handle, HANDLE_CWD, file, strlen(file), FILE_ACCESS_WRITE, FILE_FLAG_CREATE | FILE_FLAG_TRUNCATE, 0700),
+					printf("Unable to open file %s", file));
+		}
 	}
 	else
 	{

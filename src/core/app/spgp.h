@@ -40,8 +40,11 @@
 #define SPGP_CERTS "certs"
 
 // Filename extensions
-#define SPGP_KEY_EXT  ".key"
-#define SPGP_CERT_EXT ".cert"
+#define SPGP_KEY_EXT   ".key"
+#define SPGP_CERT_EXT  ".cert"
+#define SPGP_ARMOR_EXT ".asc"
+#define SPGP_FILE_EXT  ".pgp"
+#define SPGP_SIG_EXT   ".sig"
 
 #define SPGP_MAX_PASSPHRASE_SIZE 128
 
@@ -197,7 +200,7 @@ pgp_literal_packet *spgp_literal_read_file(const char *file, pgp_literal_data_fo
 void spgp_literal_write_file(const char *file, pgp_literal_packet *literal);
 
 pgp_stream_t *spgp_read_pgp_packets(const char *file);
-void spgp_write_pgp_packets(const char *file, pgp_stream_t *stream, armor_options *options);
+void spgp_write_pgp_packets(const char *file, const char *extension, pgp_stream_t *stream, armor_options *options);
 
 pgp_stream_t *spgp_read_pgp_packets_from_handle(handle_t handle);
 void spgp_write_pgp_packets_handle(handle_t handle, pgp_stream_t *stream, armor_options *options);
