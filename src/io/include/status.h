@@ -33,6 +33,7 @@
 #define OS_STATUS_END_OF_DATA         42
 #define OS_STATUS_NOT_SUPPORTED       129
 #define OS_STATUS_TIMED_OUT           138
+#define OS_STATUS_INSUFFICIENT_BUFFER 140
 #define OS_STATUS_UNKNOWN             200
 
 #endif

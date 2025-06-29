@@ -107,6 +107,9 @@ status_t _os_status(status_t nt_status)
 	case STATUS_TIMEOUT:
 		return OS_STATUS_TIMED_OUT;
 
+	case STATUS_BUFFER_TOO_SMALL:
+		return OS_STATUS_INSUFFICIENT_BUFFER;
+
 	default:
 		return OS_STATUS_UNKNOWN;
 	};

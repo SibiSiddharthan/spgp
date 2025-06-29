@@ -62,6 +62,8 @@ char *os_status(status_t status)
 		return "Operation Not Supported";
 	case OS_STATUS_TIMED_OUT:
 		return "Operation Timed Out";
+	case OS_STATUS_INSUFFICIENT_BUFFER:
+		return "Insufficient Buffer";
 	}
 
 	return "Unknown";

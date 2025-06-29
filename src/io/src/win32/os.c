@@ -180,7 +180,7 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 
 	if (size < sizeof(stat_t))
 	{
-		return 0;
+		return OS_STATUS_INSUFFICIENT_BUFFER;
 	}
 
 	if (path != NULL)
