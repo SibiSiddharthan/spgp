@@ -84,7 +84,6 @@ mac/kmac.c
 #public-key
 public-key/rsa.c
 # rand
-rand/entropy.c
 rand/drbg.c
 rand/ctr-drbg.c
 rand/hash-drbg.c
@@ -95,8 +94,23 @@ signature/ecdsa.c
 signature/eddsa.c
 )
 
-if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
-	set_source_files_properties(rand/entropy.c PROPERTIES COMPILE_FLAGS "-mrdseed")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|i[3-6]86|AMD64)$")
+	
+	# Add CPU entropy source for x86_64
+	target_sources(crypto PRIVATE rand/entropy/entropy-x86.c)
+
+	if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
+		set_source_files_properties(rand/entropy/entropy-x86.c PROPERTIES COMPILE_FLAGS "-mrdseed")
+	endif()
+#elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|aarch64)")
+else()
+	
+	if(WIN32)
+		target_sources(crypto PRIVATE rand/entropy/entropy-windows.c)
+	else()
+		target_sources(crypto PRIVATE rand/entropy/entropy-posix.c)
+	endif()
+
 endif()
 
 target_include_directories(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
