@@ -650,7 +650,7 @@ static void spgp_parse_arguments(uint32_t argc, char **argv)
 		// Miscellaneous Options
 		case SPGP_OPTION_HOMEDIR:
 		{
-			command.home = result->data;
+			command.homedir = result->data;
 		}
 		break;
 		case SPGP_OPTION_PASSPHRASE:

@@ -1706,12 +1706,12 @@ uint32_t spgp_prompt_passphrase(byte_t passphrase[SPGP_MAX_PASSPHRASE_SIZE], cha
 	result = snprintf(buffer, 256, "%s\r\nPassword: ", message);
 
 	// Write the message
-	OS_CALL(os_write(STDOUT_HANDLE, buffer, result, &result), NULL);
+	OS_CALL(os_write(STDOUT_HANDLE, buffer, result, &result), printf("Unable to write to terminal"));
 
 	// Read the input
 	result = 0;
 
-	OS_CALL(os_read(STDIN_HANDLE, passphrase, SPGP_MAX_PASSPHRASE_SIZE, &result), NULL);
+	OS_CALL(os_read(STDIN_HANDLE, passphrase, SPGP_MAX_PASSPHRASE_SIZE, &result), printf("Unable to read passphrase"));
 
 	if (result == 0)
 	{
