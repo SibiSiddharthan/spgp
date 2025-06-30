@@ -3,19 +3,6 @@ name: spgp CI/CD
 on: workflow_dispatch
 
 jobs:
-  clang-asan:
-    runs-on: windows-2025
-    steps:
-    - uses: actions/checkout@v4
-    - name: Build & Test
-      shell: cmd
-      run: |
-        SET CC=clang
-        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
-        ninja
-        cd src/crypto
-        ctest -VV
-
   clang-release:
     runs-on: windows-2025
     steps:
@@ -25,6 +12,20 @@ jobs:
       run: |
         SET CC=clang
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+        ninja
+        cd src/crypto
+        ctest -VV
+
+  msvc-asan:
+    runs-on: windows-2025
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build & Test
+      shell: cmd
+      run: |
+        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
+        SET CC=cl
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
         ninja
         cd src/crypto
         ctest -VV
@@ -70,8 +71,6 @@ jobs:
           ctest -VV
 
   macos-arm64:
-    # Skip for now
-    if: false
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
