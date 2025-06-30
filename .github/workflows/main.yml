@@ -6,10 +6,7 @@ jobs:
   clang-asan:
     runs-on: windows-2025
     steps:
-    - uses: actions/checkout@v3
-    - name: Install ninja
-      shell: cmd
-      run: choco install ninja
+    - uses: actions/checkout@v4
     - name: Build & Test
       shell: cmd
       run: |
@@ -23,9 +20,6 @@ jobs:
     runs-on: windows-2025
     steps:
     - uses: actions/checkout@v4
-    - name: Install ninja
-      shell: cmd
-      run: choco install ninja
     - name: Build & Test
       shell: cmd
       run: |
@@ -39,9 +33,6 @@ jobs:
     runs-on: windows-2025
     steps:
     - uses: actions/checkout@v4
-    - name: Install ninja
-      shell: cmd
-      run: choco install ninja
     - name: Build & Test
       shell: cmd
       run: |
@@ -52,13 +43,23 @@ jobs:
         cd src/crypto
         ctest -VV
 
+  gcc-asan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Test
+        shell: bash
+        run: |
+          export CC=gcc
+          cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
+          ninja
+          cd src/crypto
+          ctest -VV
+
   gcc-release:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install ninja
-        shell: bash
-        run: sudo apt install ninja-build
       - name: Build & Test
         shell: bash
         run: |
@@ -74,9 +75,6 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Install ninja
-        shell: bash
-        run: brew install ninja
       - name: Build & Test
         shell: bash
         run: |
