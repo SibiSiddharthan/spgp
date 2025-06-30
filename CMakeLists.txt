@@ -20,7 +20,6 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 						-Wall -Wextra
 						-Wstringop-overflow=0
 						-Wno-cast-function-type
-						-Wno-type-limits
 						-std=c2x)
 endif()
 
@@ -34,7 +33,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 						/wd4334 # '<<': result of 32-bit shift implicitly converted to 64 bits
 						/wd4389 # '==': signed/unsigned mismatch
 						/wd4702 # unreachable code
-						/std:c17)
+						/std:clatest)
 endif()
 
 option(ENABLE_ASAN "Use address sanitizer" OFF)

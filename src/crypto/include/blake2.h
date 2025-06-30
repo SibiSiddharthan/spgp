@@ -12,17 +12,17 @@
 
 // See RFC 7693 : The BLAKE2 Cryptographic Hash and Message Authentication Code
 
-#define BLAKE2B_MAX_HASH_SIZE 64
-#define BLAKE2B_MAX_KEY_SIZE  64
-#define BLAKE2B_SALT_SIZE     32
-#define BLAKE2B_PERSONAL_SIZE 32
-#define BLAKE2B_BLOCK_SIZE    128
+#define BLAKE2B_MAX_HASH_SIZE 64u
+#define BLAKE2B_MAX_KEY_SIZE  64u
+#define BLAKE2B_SALT_SIZE     32u
+#define BLAKE2B_PERSONAL_SIZE 32u
+#define BLAKE2B_BLOCK_SIZE    128u
 
-#define BLAKE2S_MAX_HASH_SIZE 32
-#define BLAKE2S_MAX_KEY_SIZE  32
-#define BLAKE2S_SALT_SIZE     16
-#define BLAKE2S_PERSONAL_SIZE 16
-#define BLAKE2S_BLOCK_SIZE    64
+#define BLAKE2S_MAX_HASH_SIZE 32u
+#define BLAKE2S_MAX_KEY_SIZE  32u
+#define BLAKE2S_SALT_SIZE     16u
+#define BLAKE2S_PERSONAL_SIZE 16u
+#define BLAKE2S_BLOCK_SIZE    64u
 
 #define BLAKE2_PARAM_INIT(HASH_SIZE, KEY_SIZE) {.digest_size = HASH_SIZE, .key_size = KEY_SIZE, .fanout = 1, .depth = 1};
 

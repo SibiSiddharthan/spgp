@@ -21,7 +21,7 @@ uint32_t get_entropy(void *state, void *buffer, uint32_t size)
 
 	while ((count + sizeof(uint64_t)) <= size)
 	{
-		status = _rdseed64_step((uint64_t *)(bp + count));
+		status = _rdseed64_step((void *)(bp + count));
 
 		if (status == 0)
 		{
@@ -35,7 +35,7 @@ uint32_t get_entropy(void *state, void *buffer, uint32_t size)
 	{
 		uint64_t temp;
 
-		status = _rdseed64_step(&temp);
+		status = _rdseed64_step((void *)&temp);
 
 		if (status == 0)
 		{
