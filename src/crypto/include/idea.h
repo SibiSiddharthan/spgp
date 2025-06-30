@@ -19,7 +19,8 @@
 
 typedef struct _idea_key
 {
-	uint16_t k[56];
+	uint16_t ek[56];
+	uint16_t dk[56];
 } idea_key;
 
 void idea_key_init(idea_key *expanded_key, byte_t key[IDEA_KEY_SIZE]);
