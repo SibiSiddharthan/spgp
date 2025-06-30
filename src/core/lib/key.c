@@ -2410,19 +2410,16 @@ static pgp_error_t pgp_secret_key_packet_read_body(pgp_key_packet *packet, buffe
 			CHECK_READ(read8(buffer, &packet->aead_algorithm_id), PGP_MALFORMED_SECRET_KEY_PACKET);
 		}
 
-		if (packet->s2k_usage == 253 || packet->s2k_usage == 254)
+		// S2K specifier
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 		{
+			uint32_t result = 0;
+
 			if (packet->version == PGP_KEY_V6)
 			{
 				// 1-octet count of S2K specifier
 				CHECK_READ(read8(buffer, &s2k_size), PGP_MALFORMED_SECRET_KEY_PACKET);
 			}
-		}
-
-		// S2K specifier
-		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
-		{
-			uint32_t result = 0;
 
 			result = pgp_s2k_read(&packet->s2k, buffer->data + buffer->pos, s2k_size != 0 ? s2k_size : (buffer->size - buffer->pos));
 
@@ -2671,7 +2668,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 		}
 
 		// S2K specifier
-		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
 		{
 			pos += pgp_s2k_write(&packet->s2k, out + pos);
 		}
@@ -3027,6 +3024,7 @@ static void pgp_key_packet_fill(pgp_key_packet *key, pgp_stream_t *stream)
 				{
 				case 2:
 					key->flags |= flags_subpacket->flags[1] & (PGP_KEY_FLAG_RESTRICTED_ENCRYPT | PGP_KEY_FLAG_TIMESTAMP);
+					[[fallthrough]];
 				case 1:
 					key->capabilities |= flags_subpacket->flags[0] & (PGP_KEY_FLAG_CERTIFY | PGP_KEY_FLAG_SIGN | PGP_KEY_FLAG_ENCRYPT_COM |
 																	  PGP_KEY_FLAG_ENCRYPT_STORAGE | PGP_KEY_FLAG_AUTHENTICATION);
@@ -3112,7 +3110,7 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 
 		packet->symmetric_key_algorithm_id = s2k_usage;
 	}
-	else if (s2k_usage >= 253 && s2k_usage <= 255)
+	else if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
 	{
 		if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 		{
@@ -3213,7 +3211,7 @@ static pgp_error_t pgp_key_packet_decrypt_internal(pgp_key_packet *packet, void 
 			return PGP_INVALID_CFB_IV_SIZE;
 		}
 	}
-	else if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+	else if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
 	{
 		if (pgp_symmetric_cipher_algorithm_validate(packet->symmetric_key_algorithm_id) == 0)
 		{
@@ -3375,7 +3373,7 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 		}
 
 		// S2K specifier
-		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
 		{
 			uint32_t result = 0;
 
@@ -3615,7 +3613,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 			pos += 1;
 		}
 
-		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
 		{
 			// 1-octet count of S2K specifier
 			LOAD_8(out + pos, &s2k_size);

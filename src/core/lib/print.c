@@ -2083,7 +2083,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 				pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
 			}
 
-			if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+			if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 			{
 				pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 2);
 			}
@@ -2135,7 +2135,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t siz
 				pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
 			}
 
-			if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+			if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 			{
 				pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 2);
 			}
@@ -2552,7 +2552,7 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint
 			pos += pgp_aead_algorithm_print(packet->aead_algorithm_id, PTR_OFFSET(str, pos), size - pos, 2);
 		}
 
-		if (packet->s2k_usage >= 253 && packet->s2k_usage <= 255)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
 		{
 			pos += pgp_s2k_print(&packet->s2k, PTR_OFFSET(str, pos), size - pos, 2);
 		}

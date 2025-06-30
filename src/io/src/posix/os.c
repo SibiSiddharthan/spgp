@@ -21,6 +21,8 @@
 
 status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t length, uint32_t access, uint32_t flags, uint32_t mode)
 {
+	int fd = 0;
+
 	UNUSED(length);
 
 	access &= ~(FILE_ACCESS_READ | FILE_ACCESS_WRITE);
@@ -41,12 +43,12 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 		access |= O_RDONLY;
 	}
 
-	*handle = openat(root, path, access | flags, mode);
-
-	if (*handle < 0)
+	if ((fd = openat(root, path, access | flags, mode)) < 0)
 	{
 		return _os_status(errno);
 	}
+
+	*handle = (handle_t)fd;
 
 	return OS_STATUS_SUCCESS;
 }

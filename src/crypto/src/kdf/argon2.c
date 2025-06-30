@@ -245,7 +245,7 @@ static argon2_ctx *argon2_new(uint32_t argon2_type, uint32_t parallel, uint32_t 
 		return 0;
 	}
 
-	if (iterations < 0)
+	if (iterations < 1)
 	{
 		return 0;
 	}
