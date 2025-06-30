@@ -164,11 +164,6 @@ static const uint32_t S3[256] =
 	{                              \
 		L = L ^ K->round_key[I];   \
 		R = R ^ F(K, L);           \
-                                   \
-		/* Swap */                 \
-		L = L ^ R;                 \
-		R = L ^ R;                 \
-		L = L ^ R;                 \
 	}
 
 static inline uint32_t F(blowfish_key *key, uint32_t x)
@@ -222,8 +217,8 @@ static void blowfish_key_init_common(blowfish_key *expanded_key, byte_t *key, by
 	{
 		blowfish_encrypt_block(expanded_key, data, data);
 
-		expanded_key->round_key[(i * 2) + 0] = BSWAP_32(p[0]);
-		expanded_key->round_key[(i * 2) + 1] = BSWAP_32(p[1]);
+		expanded_key->round_key[i + 0] = BSWAP_32(p[0]);
+		expanded_key->round_key[i + 1] = BSWAP_32(p[1]);
 	}
 
 	// Initialize S-Box
@@ -231,32 +226,32 @@ static void blowfish_key_init_common(blowfish_key *expanded_key, byte_t *key, by
 	{
 		blowfish_encrypt_block(expanded_key, data, data);
 
-		expanded_key->sbox0[(i * 2) + 0] = BSWAP_32(p[0]);
-		expanded_key->sbox0[(i * 2) + 1] = BSWAP_32(p[1]);
+		expanded_key->sbox0[i + 0] = BSWAP_32(p[0]);
+		expanded_key->sbox0[i + 1] = BSWAP_32(p[1]);
 	}
 
 	for (uint32_t i = 0; i < 256; i += 2)
 	{
 		blowfish_encrypt_block(expanded_key, data, data);
 
-		expanded_key->sbox1[(i * 2) + 0] = BSWAP_32(p[0]);
-		expanded_key->sbox1[(i * 2) + 1] = BSWAP_32(p[1]);
+		expanded_key->sbox1[i + 0] = BSWAP_32(p[0]);
+		expanded_key->sbox1[i + 1] = BSWAP_32(p[1]);
 	}
 
 	for (uint32_t i = 0; i < 256; i += 2)
 	{
 		blowfish_encrypt_block(expanded_key, data, data);
 
-		expanded_key->sbox2[(i * 2) + 0] = BSWAP_32(p[0]);
-		expanded_key->sbox2[(i * 2) + 1] = BSWAP_32(p[1]);
+		expanded_key->sbox2[i + 0] = BSWAP_32(p[0]);
+		expanded_key->sbox2[i + 1] = BSWAP_32(p[1]);
 	}
 
 	for (uint32_t i = 0; i < 256; i += 2)
 	{
 		blowfish_encrypt_block(expanded_key, data, data);
 
-		expanded_key->sbox3[(i * 2) + 0] = BSWAP_32(p[0]);
-		expanded_key->sbox3[(i * 2) + 1] = BSWAP_32(p[1]);
+		expanded_key->sbox3[i + 0] = BSWAP_32(p[0]);
+		expanded_key->sbox3[i + 1] = BSWAP_32(p[1]);
 	}
 }
 
@@ -281,32 +276,27 @@ void blowfish_encrypt_block(blowfish_key *key, byte_t plaintext[BLOWFISH_BLOCK_S
 
 	// 16 rounds
 	BLOWFISH_ROUND(key, 0, l, r);
-	BLOWFISH_ROUND(key, 1, l, r);
+	BLOWFISH_ROUND(key, 1, r, l);
 	BLOWFISH_ROUND(key, 2, l, r);
-	BLOWFISH_ROUND(key, 3, l, r);
+	BLOWFISH_ROUND(key, 3, r, l);
 	BLOWFISH_ROUND(key, 4, l, r);
-	BLOWFISH_ROUND(key, 5, l, r);
+	BLOWFISH_ROUND(key, 5, r, l);
 	BLOWFISH_ROUND(key, 6, l, r);
-	BLOWFISH_ROUND(key, 7, l, r);
+	BLOWFISH_ROUND(key, 7, r, l);
 	BLOWFISH_ROUND(key, 8, l, r);
-	BLOWFISH_ROUND(key, 9, l, r);
+	BLOWFISH_ROUND(key, 9, r, l);
 	BLOWFISH_ROUND(key, 10, l, r);
-	BLOWFISH_ROUND(key, 11, l, r);
+	BLOWFISH_ROUND(key, 11, r, l);
 	BLOWFISH_ROUND(key, 12, l, r);
-	BLOWFISH_ROUND(key, 13, l, r);
+	BLOWFISH_ROUND(key, 13, r, l);
 	BLOWFISH_ROUND(key, 14, l, r);
-	BLOWFISH_ROUND(key, 15, l, r);
-
-	// Undo last swap
-	l = l ^ r;
-	r = l ^ r;
-	l = l ^ r;
+	BLOWFISH_ROUND(key, 15, r, l);
 
 	l = l ^ key->round_key[16];
 	r = r ^ key->round_key[17];
 
-	c[0] = BSWAP_32(l);
-	c[1] = BSWAP_32(r);
+	c[0] = BSWAP_32(r);
+	c[1] = BSWAP_32(l);
 }
 
 void blowfish_decrypt_block(blowfish_key *key, byte_t ciphertext[BLOWFISH_BLOCK_SIZE], byte_t plaintext[BLOWFISH_BLOCK_SIZE])
@@ -318,32 +308,27 @@ void blowfish_decrypt_block(blowfish_key *key, byte_t ciphertext[BLOWFISH_BLOCK_
 	l = BSWAP_32(c[0]);
 	r = BSWAP_32(c[1]);
 
-	l = l ^ key->round_key[16];
-	r = r ^ key->round_key[17];
-
-	// swap l,r
-	l = l ^ r;
-	r = l ^ r;
-	l = l ^ r;
-
 	// 16 rounds
+	BLOWFISH_ROUND(key, 17, l, r);
+	BLOWFISH_ROUND(key, 16, r, l);
 	BLOWFISH_ROUND(key, 15, l, r);
-	BLOWFISH_ROUND(key, 14, l, r);
+	BLOWFISH_ROUND(key, 14, r, l);
 	BLOWFISH_ROUND(key, 13, l, r);
-	BLOWFISH_ROUND(key, 12, l, r);
+	BLOWFISH_ROUND(key, 12, r, l);
 	BLOWFISH_ROUND(key, 11, l, r);
-	BLOWFISH_ROUND(key, 10, l, r);
+	BLOWFISH_ROUND(key, 10, r, l);
 	BLOWFISH_ROUND(key, 9, l, r);
-	BLOWFISH_ROUND(key, 8, l, r);
+	BLOWFISH_ROUND(key, 8, r, l);
 	BLOWFISH_ROUND(key, 7, l, r);
-	BLOWFISH_ROUND(key, 6, l, r);
+	BLOWFISH_ROUND(key, 6, r, l);
 	BLOWFISH_ROUND(key, 5, l, r);
-	BLOWFISH_ROUND(key, 4, l, r);
+	BLOWFISH_ROUND(key, 4, r, l);
 	BLOWFISH_ROUND(key, 3, l, r);
-	BLOWFISH_ROUND(key, 2, l, r);
-	BLOWFISH_ROUND(key, 1, l, r);
-	BLOWFISH_ROUND(key, 0, l, r);
+	BLOWFISH_ROUND(key, 2, r, l);
 
-	p[0] = BSWAP_32(l);
-	p[1] = BSWAP_32(r);
+	l = l ^ key->round_key[1];
+	r = r ^ key->round_key[0];
+
+	p[0] = BSWAP_32(r);
+	p[1] = BSWAP_32(l);
 }
