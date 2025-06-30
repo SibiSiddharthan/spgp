@@ -409,7 +409,7 @@ static inline uint32_t F1(cast5_key *key, uint32_t round, uint32_t data)
 	i = key->km[round] + data;
 	i = ROTL_32(i, key->kr[round] & 0x1F);
 
-	f = ((S1[(i >> 0) & 0xFF] ^ S2[(i >> 8) & 0xFF]) - S3[(i >> 16) & 0xFF]) + S4[i & 0xFF];
+	f = ((S1[(i >> 24) & 0xFF] ^ S2[(i >> 16) & 0xFF]) - S3[(i >> 8) & 0xFF]) + S4[i & 0xFF];
 
 	return f;
 }
@@ -422,7 +422,7 @@ static inline uint32_t F2(cast5_key *key, uint32_t round, uint32_t data)
 	i = key->km[round] ^ data;
 	i = ROTL_32(i, key->kr[round] & 0x1F);
 
-	f = ((S1[(i >> 0) & 0xFF] - S2[(i >> 8) & 0xFF]) + S3[(i >> 16) & 0xFF]) ^ S4[i & 0xFF];
+	f = ((S1[(i >> 24) & 0xFF] - S2[(i >> 16) & 0xFF]) + S3[(i >> 8) & 0xFF]) ^ S4[i & 0xFF];
 
 	return f;
 }
@@ -435,7 +435,7 @@ static inline uint32_t F3(cast5_key *key, uint32_t round, uint32_t data)
 	i = key->km[round] - data;
 	i = ROTL_32(i, key->kr[round] & 0x1F);
 
-	f = ((S1[(i >> 0) & 0xFF] + S2[(i >> 8) & 0xFF]) ^ S3[(i >> 16) & 0xFF]) - S4[i & 0xFF];
+	f = ((S1[(i >> 24) & 0xFF] + S2[(i >> 16) & 0xFF]) ^ S3[(i >> 8) & 0xFF]) - S4[i & 0xFF];
 
 	return f;
 }
@@ -501,8 +501,8 @@ void cast5_decrypt_block(cast5_key *key, byte_t ciphertext[CAST5_BLOCK_SIZE], by
 	uint32_t *p = (uint32_t *)plaintext;
 	uint32_t *c = (uint32_t *)ciphertext;
 
-	l = BSWAP_32(c[1]);
-	r = BSWAP_32(c[0]);
+	l = BSWAP_32(c[0]);
+	r = BSWAP_32(c[1]);
 
 	ROUND_F1(key, 15, l, r);
 	ROUND_F3(key, 14, l, r);
@@ -517,10 +517,10 @@ void cast5_decrypt_block(cast5_key *key, byte_t ciphertext[CAST5_BLOCK_SIZE], by
 	ROUND_F3(key, 5, l, r);
 	ROUND_F2(key, 4, l, r);
 	ROUND_F1(key, 3, l, r);
-	ROUND_F2(key, 1, l, r);
 	ROUND_F3(key, 2, l, r);
+	ROUND_F2(key, 1, l, r);
 	ROUND_F1(key, 0, l, r);
 
-	p[0] = BSWAP_32(l);
-	p[1] = BSWAP_32(r);
+	p[1] = BSWAP_32(l);
+	p[0] = BSWAP_32(r);
 }
