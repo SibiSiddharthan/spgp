@@ -111,6 +111,7 @@ ed25519_key *ed25519_key_generate(ed25519_key *key, byte_t private_key[ED25519_K
 
 	ec_point_encode(group, a, key->public_key, ED25519_KEY_OCTETS, 0);
 
+	bignum_delete(s);
 	ec_point_delete(a);
 	ec_group_delete(group);
 
@@ -408,6 +409,8 @@ static uint32_t ed25519_verify_internal(ec_group *group, ed25519_key *key, ed255
 end:
 	ec_point_delete(r);
 	ec_point_delete(q);
+	ec_point_delete(lhs);
+	ec_point_delete(rhs);
 	bignum_ctx_end(bctx);
 
 	return status;
@@ -604,6 +607,8 @@ static uint32_t ed448_verify_internal(ec_group *group, ed448_key *key, ed448_sig
 end:
 	ec_point_delete(r);
 	ec_point_delete(q);
+	ec_point_delete(lhs);
+	ec_point_delete(rhs);
 	bignum_ctx_end(bctx);
 
 	return status;
@@ -804,6 +809,8 @@ static uint32_t ed25519ph_verify_internal(ec_group *group, ed25519_key *key, ed2
 end:
 	ec_point_delete(r);
 	ec_point_delete(q);
+	ec_point_delete(lhs);
+	ec_point_delete(rhs);
 	bignum_ctx_end(bctx);
 
 	return status;
@@ -1009,6 +1016,8 @@ static uint32_t ed448ph_verify_internal(ec_group *group, ed448_key *key, ed448_s
 end:
 	ec_point_delete(r);
 	ec_point_delete(q);
+	ec_point_delete(lhs);
+	ec_point_delete(rhs);
 	bignum_ctx_end(bctx);
 
 	return status;

@@ -126,6 +126,8 @@ static int32_t ctr_drbg_df(ctr_drbg *cdrbg, byte_t *input, size_t input_size, by
 
 	memcpy(output, temp, output_size);
 
+	free(s);
+
 	return 0;
 }
 

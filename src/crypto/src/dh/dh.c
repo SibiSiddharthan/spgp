@@ -956,4 +956,5 @@ void dh_key_delete(dh_key *key)
 	dh_group_delete(key->group);
 	bignum_delete(key->x);
 	bignum_delete(key->y);
+	free(key);
 }
