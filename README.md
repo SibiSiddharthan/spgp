@@ -93,3 +93,21 @@ spgp -x <FILE...> # Short arguments
 spgp --export-secret-keys <KEY...> # Long arguments
 spgp -X <FILE...> # Short arguments
 ```
+
+## Features
+### Supported Alogrithms
+* Hash: MD5, RIPEMD160, SHA1, SHA224, SHA256, SHA384, SHA512, SHA3-256, SHA3-512
+* Ciphers: IDEA, TDES, CAST-5, BLOWFISH, AES, CAMELLIA, TWOFISH
+* Public Key: RSA, DSA, ECDH, ECDSA, EDDSA, ED25519, ED448, X25519, X448
+
+## Build
+
+### Prerequisites 
+* CMake 3.15 or newer
+* C23 Compatible compiler
+
+### Instructions
+
+```sh
+cmake .
+```
