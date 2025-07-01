@@ -91,9 +91,6 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - uses: actions/checkout@v4
-    - name: Install ninja
-      shell: bash
-      run: sudo apt install ninja-build
     - name: Build & Test
       shell: bash
       run: |
