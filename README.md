@@ -1,5 +1,13 @@
-# simple-pgp
+# simple-pgp 
 `simple-pgp` is an implementation of the [OpenPGP RFC: 9580](https://www.rfc-editor.org/rfc/rfc9580.html) and the [LibrePGP](https://www.ietf.org/archive/id/draft-koch-librepgp-03.html) standards.
+
+[![Build Status](https://github.com/SibiSiddharthan/spgp/actions/workflows/main.yml/badge.svg)](https://github.com/SibiSiddharthan/spgp/actions/workflows/main.yml)
+
+## Features
+### Supported Alogrithms
+* Hash: MD5, RIPEMD160, SHA1, SHA224, SHA256, SHA384, SHA512, SHA3-256, SHA3-512
+* Ciphers: IDEA, TDES, CAST-5, BLOWFISH, AES, CAMELLIA, TWOFISH
+* Public Key: RSA, DSA, ECDH, ECDSA, EDDSA, ED25519, ED448, X25519, X448
 
 ## Usage
 
@@ -93,12 +101,6 @@ spgp -x <FILE...> # Short arguments
 spgp --export-secret-keys <KEY...> # Long arguments
 spgp -X <FILE...> # Short arguments
 ```
-
-## Features
-### Supported Alogrithms
-* Hash: MD5, RIPEMD160, SHA1, SHA224, SHA256, SHA384, SHA512, SHA3-256, SHA3-512
-* Ciphers: IDEA, TDES, CAST-5, BLOWFISH, AES, CAMELLIA, TWOFISH
-* Public Key: RSA, DSA, ECDH, ECDSA, EDDSA, ED25519, ED448, X25519, X448
 
 ## Build
 
