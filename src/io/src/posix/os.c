@@ -144,10 +144,11 @@ status_t os_stat(handle_t root, const char *path, uint16_t length, uint32_t flag
 	out->st_nlink = st.st_nlink;
 	out->st_gid = st.st_gid;
 	out->st_size = st.st_size;
-	out->st_atim = st.st_atim;
-	out->st_mtim = st.st_mtim;
-	out->st_ctim = st.st_ctim;
-	out->st_birthtim = st.st_ctim;
+	// Ignore (for now)
+	// out->st_atim = st.st_atim;
+	// out->st_mtim = st.st_mtim;
+	// out->st_ctim = st.st_ctim;
+	// out->st_birthtim = st.st_ctim;
 
 	return OS_STATUS_SUCCESS;
 }
@@ -192,7 +193,7 @@ status_t os_remove(handle_t root, const char *path, uint16_t length)
 
 	if (unlinkat(root, path, 0) < 0)
 	{
-		if (errno = EISDIR)
+		if (errno == EISDIR)
 		{
 			if (unlinkat(root, path, AT_REMOVEDIR) < 0)
 			{
