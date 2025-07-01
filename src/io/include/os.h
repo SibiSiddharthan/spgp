@@ -17,6 +17,8 @@
 #	include "linux/os.h"
 #elif defined __APPLE__
 #	include "darwin/os.h"
+#else
+#	include "posix/os.h"
 #endif
 
 typedef uint8_t byte_t;
