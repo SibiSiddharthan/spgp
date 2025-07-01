@@ -70,6 +70,38 @@ jobs:
           cd src/crypto
           ctest -VV
 
+  windows-arm64:
+    runs-on: windows-11-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ARM64
+        SET CC=cl
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+        ninja
+        cd src/crypto
+        ctest -VV
+  
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install ninja
+      shell: bash
+      run: sudo apt install ninja-build
+    - name: Build & Test
+      shell: bash
+      run: |
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+        ninja
+        cd src/crypto
+        ctest -VV
+
   macos-arm64:
     runs-on: macos-15
     steps:
