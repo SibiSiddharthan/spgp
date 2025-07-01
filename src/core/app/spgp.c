@@ -27,7 +27,7 @@ Distributed under the MIT license\n\
 \n\
 Supported algorithms:\n\
 Public Key: RSA, DSA, ECDH, ECDSA, EDDSA, ED25519, ED448, X25519, X448\n\
-Symmetric Ciphers: TDES, AES, CAMELLIA, TWOFISH\n\
+Symmetric Ciphers: IDEA, TDES, CAST-5, BLOWFISH, AES, CAMELLIA, TWOFISH\n\
 Hash: MD5, RIPEMD160, SHA1, SHA224, SHA256, SHA384, SHA512, SHA3-256, SHA3-512\n\
 Compression: Uncompressed\n\
 ";
