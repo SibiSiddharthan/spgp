@@ -302,9 +302,9 @@ hash_ctx *hash_dup(hash_ctx *hctx)
 	size_t ctx_size = get_ctx_size(hctx->algorithm);
 	size_t required_size = sizeof(hash_ctx) + ctx_size;
 
-	hctx = (hash_ctx *)malloc(required_size);
+	copy = (hash_ctx *)malloc(required_size);
 
-	if (hctx == NULL)
+	if (copy == NULL)
 	{
 		return NULL;
 	}
