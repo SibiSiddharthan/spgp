@@ -94,6 +94,7 @@ signature/ecdsa.c
 signature/eddsa.c
 )
 
+message(${CMAKE_SYSTEM_PROCESSOR})
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|i[3-6]86|AMD64)$")
 	
 	# Add CPU entropy source for x86_64
