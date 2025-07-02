@@ -254,7 +254,7 @@ static inline void XOR128(byte_t r[16], byte_t x[16], byte_t y[16])
 // r = x ^ (y >>> 19)
 static inline void XOR_ROTR19(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	uint64_t t0, t1;
+	uint64_t t0 = 0, t1 = 0;
 	uint64_t *rp = (uint64_t *)r;
 	uint64_t *xp = (uint64_t *)x;
 	uint64_t *yp = (uint64_t *)y;
@@ -275,7 +275,7 @@ static inline void XOR_ROTR19(byte_t r[16], byte_t x[16], byte_t y[16])
 // r = x ^ (y >>> 31)
 static inline void XOR_ROTR31(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	uint64_t t0, t1;
+	uint64_t t0 = 0, t1 = 0;
 	uint64_t *rp = (uint64_t *)r;
 	uint64_t *xp = (uint64_t *)x;
 	uint64_t *yp = (uint64_t *)y;
@@ -296,7 +296,7 @@ static inline void XOR_ROTR31(byte_t r[16], byte_t x[16], byte_t y[16])
 // r = x ^ (y <<< 19)
 static inline void XOR_ROTL19(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	uint64_t t0, t1;
+	uint64_t t0 = 0, t1 = 0;
 	uint64_t *rp = (uint64_t *)r;
 	uint64_t *xp = (uint64_t *)x;
 	uint64_t *yp = (uint64_t *)y;
@@ -317,7 +317,7 @@ static inline void XOR_ROTL19(byte_t r[16], byte_t x[16], byte_t y[16])
 // r = x ^ (y <<< 31)
 static inline void XOR_ROTL31(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	uint64_t t0, t1;
+	uint64_t t0 = 0, t1 = 0;
 	uint64_t *rp = (uint64_t *)r;
 	uint64_t *xp = (uint64_t *)x;
 	uint64_t *yp = (uint64_t *)y;
@@ -338,7 +338,7 @@ static inline void XOR_ROTL31(byte_t r[16], byte_t x[16], byte_t y[16])
 // r = x ^ (y <<< 61)
 static inline void XOR_ROTL61(byte_t r[16], byte_t x[16], byte_t y[16])
 {
-	uint64_t t0, t1;
+	uint64_t t0 = 0, t1 = 0;
 	uint64_t *rp = (uint64_t *)r;
 	uint64_t *xp = (uint64_t *)x;
 	uint64_t *yp = (uint64_t *)y;
@@ -604,8 +604,8 @@ void aria256_decrypt_block(aria_key *key, byte_t ciphertext[ARIA_BLOCK_SIZE], by
 
 static void aria_key_expansion(aria_key *expanded_key, byte_t *actual_key, byte_t size)
 {
-	uint64_t kl[2], kr[2];
-	uint8_t w0[16], w1[16], w2[16], w3[16];
+	uint64_t kl[2] = {0}, kr[2] = {0};
+	uint8_t w0[16] = {0}, w1[16] = {0}, w2[16] = {0}, w3[16] = {0};
 	uint8_t nr = 0;
 
 	uint64_t *k = (uint64_t *)actual_key;

@@ -430,9 +430,9 @@ void camellia256_decrypt_block(camellia_key *key, byte_t ciphertext[CAMELLIA_BLO
 
 static void camellia_key_expansion(camellia_key *expanded_key, byte_t *actual_key, byte_t size)
 {
-	uint64_t kl[2], kr[2];
-	uint64_t ka[2], kb[2];
-	uint64_t d1, d2;
+	uint64_t kl[2] = {0}, kr[2] = {0};
+	uint64_t ka[2] = {0}, kb[2] = {0};
+	uint64_t d1 = 0, d2 = 0;
 	uint64_t *p = (uint64_t *)actual_key;
 
 	// Determine kl, kr
