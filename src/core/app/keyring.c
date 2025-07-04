@@ -1562,6 +1562,7 @@ void spgp_list_keys(void)
 			// Skip non secret keys
 			if (key->type == PGP_KEY_TYPE_PUBLIC)
 			{
+				pgp_key_packet_delete(key);
 				continue;
 			}
 		}
@@ -1569,6 +1570,7 @@ void spgp_list_keys(void)
 		// Primary key
 		pos += print_key(key, 1, command.list_secret_keys, keyring->primary_fingerprint, keyring->fingerprint_size, PTR_OFFSET(buffer, pos),
 						 size - pos);
+		pgp_key_packet_delete(key);
 
 		// Add uids
 		for (byte_t j = 0; j < keyring->users->count; ++j)
@@ -1583,6 +1585,8 @@ void spgp_list_keys(void)
 			key = spgp_read_key(PTR_OFFSET(keyring->subkey_fingerprints, keyring->fingerprint_size * j), keyring->fingerprint_size);
 			pos += print_key(key, 0, command.list_secret_keys, PTR_OFFSET(keyring->subkey_fingerprints, keyring->fingerprint_size * j),
 							 keyring->fingerprint_size, PTR_OFFSET(buffer, pos), size - pos);
+
+			pgp_key_packet_delete(key);
 		}
 
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "\n");
