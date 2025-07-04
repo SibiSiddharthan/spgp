@@ -28,6 +28,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 						/wd4018 # '<': signed/unsigned mismatch
 						/wd4098 # 'void' function returning a value
 						/wd4146 # unary minus operator applied to unsigned type
+						/wd4200 # nonstandard extension used: zero-sized array in struct/union
 						/wd4244 # conversion possible loss of data
 						/wd4267 # conversion possible loss of data
 						/wd4334 # '<<': result of 32-bit shift implicitly converted to 64 bits

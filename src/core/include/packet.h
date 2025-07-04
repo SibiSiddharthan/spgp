@@ -148,7 +148,7 @@ typedef struct _pgp_literal_packet
 typedef struct _pgp_user_id_packet
 {
 	pgp_packet_header header;
-	byte_t user_data[1];
+	byte_t user_data[];
 } pgp_user_id_packet;
 
 typedef enum _pgp_user_attribute_subpacket_type
@@ -178,7 +178,7 @@ typedef struct _pgp_user_attribute_image_subpacket
 typedef struct _pgp_user_attribute_uid_subpacket
 {
 	pgp_subpacket_header header;
-	byte_t user_data[1];
+	byte_t user_data[];
 } pgp_user_attribute_uid_subpacket;
 
 typedef struct _pgp_user_attribute_packet
@@ -192,7 +192,7 @@ typedef struct _pgp_user_attribute_packet
 typedef struct _pgp_padding_packet
 {
 	pgp_packet_header header;
-	byte_t data[1];
+	byte_t data[];
 } pgp_padding_packet;
 
 typedef struct _pgp_mdc_packet

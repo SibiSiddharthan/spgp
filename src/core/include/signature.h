@@ -197,14 +197,14 @@ typedef struct _pgp_boolean_subpacket
 typedef struct _pgp_preferred_algorithms_subpacket
 {
 	pgp_subpacket_header header;
-	byte_t preferred_algorithms[1];
+	byte_t preferred_algorithms[];
 } pgp_preferred_algorithms_subpacket, pgp_preferred_symmetric_ciphers_subpacket, pgp_preferred_hash_algorithms_subpacket,
 	pgp_preferred_compression_algorithms_subpacket, pgp_preferred_encryption_modes_subpacket, pgp_preferred_aead_ciphersuites_subpacket;
 
 typedef struct _pgp_flags_subpacket
 {
 	pgp_subpacket_header header;
-	byte_t flags[1];
+	byte_t flags[];
 } pgp_flags_subpacket, pgp_key_server_preferences_subpacket, pgp_key_flags_subpacket, pgp_features_subpacket;
 
 typedef struct _pgp_string_subpacket
