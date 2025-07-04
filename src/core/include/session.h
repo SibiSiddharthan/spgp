@@ -102,11 +102,6 @@ typedef struct _pgp_x448_kex
 	byte_t encrypted_session_key[40];
 } pgp_x448_kex;
 
-typedef struct _pgp_unknown_kex
-{
-	byte_t encrypted_session_key[1];
-} pgp_unknown_kex;
-
 // Public Key Encrypted Session Key Packet (Tag 1)
 pgp_error_t pgp_pkesk_packet_new(pgp_pkesk_packet **packet, byte_t version);
 void pgp_pkesk_packet_delete(pgp_pkesk_packet *packet);

@@ -260,16 +260,7 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, ui
 		return PGP_SUCCESS;
 	}
 	default:
-		pgp_unknown_kex *sk = malloc(size);
-
-		if (sk == NULL)
-		{
-			return PGP_NO_MEMORY;
-		}
-
-		memcpy(sk->encrypted_session_key, data, size);
 		packet->encrypted_session_key_octets = size;
-
 		return PGP_SUCCESS;
 	}
 }
