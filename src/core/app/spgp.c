@@ -327,7 +327,7 @@ void spgp_initialize_home(spgp_command *spgp)
 	handle_t handle = 0;
 
 	// Initialize home
-	if (spgp->home == NULL)
+	if (spgp->homedir == NULL)
 	{
 		// Get base of home from the environment.
 		// Prefer $HOME to $USERPROFILE

@@ -25,8 +25,6 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 
 	UNUSED(length);
 
-	access &= ~(FILE_ACCESS_READ | FILE_ACCESS_WRITE);
-
 	if ((access & (FILE_ACCESS_READ | FILE_ACCESS_WRITE)) == (FILE_ACCESS_READ | FILE_ACCESS_WRITE))
 	{
 		access &= ~(FILE_ACCESS_READ | FILE_ACCESS_WRITE);
@@ -158,6 +156,16 @@ status_t os_truncate(handle_t root, const char *path, uint16_t length, size_t si
 	int fd = 0;
 
 	UNUSED(length);
+
+	if (path == NULL)
+	{
+		if (ftruncate(root, size) < 0)
+		{
+			return _os_status(errno);
+		}
+
+		return OS_STATUS_SUCCESS;
+	}
 
 	if ((fd = openat(root, path, O_WRONLY, 0)) < 0)
 	{
