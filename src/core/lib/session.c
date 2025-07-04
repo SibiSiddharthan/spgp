@@ -260,8 +260,22 @@ static pgp_error_t pgp_session_key_read(pgp_pkesk_packet *packet, void *data, ui
 		return PGP_SUCCESS;
 	}
 	default:
+	{
+		void *kex = malloc(size);
+
+		if (kex == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		// Copy the opaque data
+		memcpy(kex, data, size);
+
+		packet->encrypted_session_key = kex;
 		packet->encrypted_session_key_octets = size;
+
 		return PGP_SUCCESS;
+	}
 	}
 }
 
@@ -361,7 +375,11 @@ static uint32_t pgp_session_key_write(pgp_pkesk_packet *packet, void *ptr, uint3
 		return pos;
 	}
 	default:
-		return 0;
+	{
+		// Copy the opaque data
+		memcpy(out, packet->encrypted_session_key, packet->encrypted_session_key_octets);
+		return packet->encrypted_session_key_octets;
+	}
 	}
 }
 

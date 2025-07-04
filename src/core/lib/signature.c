@@ -347,9 +347,9 @@ static uint32_t get_signature_octets(pgp_public_key_algorithms algorithm, void *
 	}
 }
 
-static pgp_error_t pgp_signature_material_read(pgp_signature_packet *packet, void *ptr, uint32_t size)
+static pgp_error_t pgp_signature_material_read(pgp_signature_packet *packet, void *data, uint32_t size)
 {
-	byte_t *in = ptr;
+	byte_t *in = data;
 	uint32_t pos = 0;
 
 	if (size == 0)
@@ -516,8 +516,22 @@ static pgp_error_t pgp_signature_material_read(pgp_signature_packet *packet, voi
 		return PGP_SUCCESS;
 	}
 	default:
+	{
+		void *sig = malloc(size);
+
+		if (sig == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		// Copy the opaque data
+		memcpy(sig, data, size);
+
+		packet->signature = sig;
 		packet->signature_octets = size;
+
 		return PGP_SUCCESS;
+	}
 	}
 }
 
@@ -559,7 +573,11 @@ static size_t pgp_signature_material_write(pgp_signature_packet *packet, void *p
 		return 114;
 	}
 	default:
-		return 0;
+	{
+		// Copy the opaque data
+		memcpy(out, packet->signature, packet->signature_octets);
+		return packet->signature_octets;
+	}
 	}
 }
 

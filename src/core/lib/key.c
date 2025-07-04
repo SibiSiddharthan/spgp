@@ -252,9 +252,9 @@ static uint16_t pgp_private_key_material_checksum(pgp_key_packet *packet)
 	return BSWAP_16(checksum);
 }
 
-static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *ptr, uint32_t size)
+static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *data, uint32_t size)
 {
-	byte_t *in = ptr;
+	byte_t *in = data;
 	uint32_t pos = 0;
 
 	if (size == 0)
@@ -691,8 +691,22 @@ static pgp_error_t pgp_public_key_material_read(pgp_key_packet *packet, void *pt
 		return PGP_SUCCESS;
 	}
 	default:
+	{
+		void *key = malloc(size);
+
+		if (key == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		// Copy the opaque data
+		memcpy(key, data, size);
+
+		packet->key = key;
 		packet->public_key_data_octets = size;
+
 		return PGP_SUCCESS;
+	}
 	}
 }
 
@@ -816,14 +830,18 @@ static uint32_t pgp_public_key_material_write(pgp_key_packet *packet, void *ptr,
 		return 57;
 	}
 	default:
-		return 0;
+	{
+		// Copy the opaque data
+		memcpy(out, packet->key, packet->public_key_data_octets);
+		return packet->public_key_data_octets;
+	}
 	}
 }
 
 // This should only be called after `pgp_public_key_material_read` which will allocate the key.
-static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *ptr, uint32_t size)
+static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *data, uint32_t size)
 {
-	byte_t *in = ptr;
+	byte_t *in = data;
 	uint32_t pos = 0;
 
 	if (packet->key == NULL)
@@ -1091,8 +1109,22 @@ static pgp_error_t pgp_private_key_material_read(pgp_key_packet *packet, void *p
 		return PGP_SUCCESS;
 	}
 	default:
+	{
+		void *key = realloc(packet->key, packet->public_key_data_octets + size);
+
+		if (key == NULL)
+		{
+			return PGP_NO_MEMORY;
+		}
+
+		packet->key = key;
 		packet->private_key_data_octets = size;
+
+		// Copy the opaque data
+		memcpy(PTR_OFFSET(packet->key, packet->public_key_data_octets), data, size);
+
 		return PGP_SUCCESS;
+	}
 	}
 }
 
@@ -1178,7 +1210,11 @@ static uint32_t pgp_private_key_material_write(pgp_key_packet *packet, void *ptr
 		return 57;
 	}
 	default:
-		return 0;
+	{
+		// Copy the opaque data
+		memcpy(out, PTR_OFFSET(packet->key, packet->public_key_data_octets), packet->private_key_data_octets);
+		return packet->private_key_data_octets;
+	}
 	}
 }
 
@@ -2668,7 +2704,7 @@ size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t siz
 		}
 
 		// S2K specifier
-		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 		{
 			pos += pgp_s2k_write(&packet->s2k, out + pos);
 		}
@@ -2938,6 +2974,7 @@ void pgp_key_packet_delete(pgp_key_packet *packet)
 		free(packet->key);
 		break;
 	default:
+		free(packet->key);
 		break;
 	}
 
@@ -3110,7 +3147,7 @@ pgp_error_t pgp_key_packet_encrypt(pgp_key_packet *packet, void *passphrase, siz
 
 		packet->symmetric_key_algorithm_id = s2k_usage;
 	}
-	else if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
+	else if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 	{
 		if (pgp_symmetric_cipher_algorithm_validate(symmetric_key_algorithm_id) == 0)
 		{
@@ -3211,7 +3248,7 @@ static pgp_error_t pgp_key_packet_decrypt_internal(pgp_key_packet *packet, void 
 			return PGP_INVALID_CFB_IV_SIZE;
 		}
 	}
-	else if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
+	else if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 	{
 		if (pgp_symmetric_cipher_algorithm_validate(packet->symmetric_key_algorithm_id) == 0)
 		{
@@ -3373,7 +3410,7 @@ static pgp_error_t pgp_key_packet_read_body(pgp_key_packet *packet, buffer_t *bu
 		}
 
 		// S2K specifier
-		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 		{
 			uint32_t result = 0;
 
@@ -3613,7 +3650,7 @@ size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size)
 			pos += 1;
 		}
 
-		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 ||  packet->s2k_usage == 255)
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 		{
 			// 1-octet count of S2K specifier
 			LOAD_8(out + pos, &s2k_size);
