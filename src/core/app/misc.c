@@ -17,7 +17,7 @@
 pgp_stream_t *spgp_preprocess_stream(pgp_stream_t *stream)
 {
 	// First collate any partials
-	// PGP_CALL(pgp_packet_stream_collate_partials(stream));
+	STREAM_CALL(pgp_packet_stream_collate_partials(stream));
 
 	// Decompress any compressed packets in the stream
 	PGP_CALL(pgp_packet_stream_decompress(stream));
