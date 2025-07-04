@@ -1046,14 +1046,14 @@ static pgp_error_t pgp_signature_subpacket_read(void **subpacket, buffer_t *buff
 		pgp_signature_target_subpacket *target_subpacket = NULL;
 		byte_t hash_size = header.body_size - 2;
 
-		target_subpacket = malloc(sizeof(pgp_subpacket_header));
+		target_subpacket = malloc(sizeof(pgp_signature_target_subpacket));
 
 		if (target_subpacket == NULL)
 		{
 			return PGP_NO_MEMORY;
 		}
 
-		memset(target_subpacket, 0, sizeof(pgp_subpacket_header));
+		memset(target_subpacket, 0, sizeof(pgp_signature_target_subpacket));
 
 		// Copy the header
 		target_subpacket->header = header;
@@ -1958,7 +1958,9 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	else
 	{
 		// 2 octet count for the hashed subpacket data
-		LOAD_16BE(out + pos, &packet->hashed_octets);
+		uint16_t hashed_octets = (uint16_t)packet->hashed_octets;
+
+		LOAD_16BE(out + pos, &hashed_octets);
 		pos += 2;
 	}
 
@@ -1980,7 +1982,9 @@ static size_t pgp_signature_packet_body_write(pgp_signature_packet *packet, void
 	else
 	{
 		// 2 octet count for the unhashed subpacket data
-		LOAD_16BE(out + pos, &packet->unhashed_octets);
+		uint16_t unhashed_octets = (uint16_t)packet->unhashed_octets;
+
+		LOAD_16BE(out + pos, &unhashed_octets);
 		pos += 2;
 	}
 

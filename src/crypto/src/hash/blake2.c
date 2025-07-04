@@ -189,7 +189,12 @@ static inline void blake2b_init_internal(blake2b_ctx *ctx, blake2b_param *param,
 	// Keyed hashing.
 	if (ctx->key_size > 0)
 	{
-		memcpy(ctx->internal, key, ctx->key_size);
+		if (key != NULL)
+		{
+			memcpy(ctx->internal, key, ctx->key_size);
+		}
+
+		// Assume key is zero bytes
 		ctx->unhashed += BLAKE2B_BLOCK_SIZE;
 	}
 }
@@ -317,7 +322,12 @@ static inline void blake2s_init_internal(blake2s_ctx *ctx, blake2s_param *param,
 	// Keyed hashing.
 	if (ctx->key_size > 0)
 	{
-		memcpy(ctx->internal, key, ctx->key_size);
+		if (key != NULL)
+		{
+			memcpy(ctx->internal, key, ctx->key_size);
+		}
+
+		// Assume key is zero bytes
 		ctx->unhashed += BLAKE2S_BLOCK_SIZE;
 	}
 }
