@@ -59,7 +59,7 @@ status_t os_open(handle_t *handle, handle_t root, const char *path, uint16_t len
 	UNICODE_STRING *u16_path = NULL;
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
 
-	ACCESS_MASK access_rights = access;
+	ACCESS_MASK access_rights = access | (flags & FILE_FLAG_APPEND);
 	ULONG disposition = flags & (FILE_FLAG_CREATE | FILE_FLAG_EXCLUSIVE | FILE_FLAG_TRUNCATE);
 	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 	ULONG attributes = flags & (FILE_FLAG_READONLY | FILE_FLAG_HIDDEN | FILE_FLAG_SYSTEM);

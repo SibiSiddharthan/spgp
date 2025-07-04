@@ -39,11 +39,11 @@ status_t _os_status(errno_t error);
 #define SEEK_END     2
 
 // Access
-#define FILE_ACCESS_READ   0x001
-#define FILE_ACCESS_WRITE  0x002
-#define FILE_ACCESS_APPEND 0x400 // O_APPEND
+#define FILE_ACCESS_READ  0x001
+#define FILE_ACCESS_WRITE 0x002
 
 // Flags
+#define FILE_FLAG_APPEND    0x400  // O_APPEND
 #define FILE_FLAG_CREATE    0x0040 // O_CREAT
 #define FILE_FLAG_EXCLUSIVE 0x0080 // O_EXCL
 #define FILE_FLAG_NOCTTY    0x0100 // O_NOCTTY

@@ -94,8 +94,6 @@ void _os_access(handle_t handle, void *st);
                                   __FILE_ACCESS_READ_ATTRIBUTES    |\
                                   __FILE_ACCESS_WRITE_ATTRIBUTES)
 
-#define FILE_ACCESS_APPEND __FILE_ACCESS_APPEND_DATA
-
 #define FILE_ACCESS_EXECUTE      (__FILE_ACCESS_READ_CONTROL       |\
                                   __FILE_ACCESS_SYNCHRONIZE        |\
                                   __FILE_ACCESS_EXECUTE            |\
@@ -106,6 +104,8 @@ void _os_access(handle_t handle, void *st);
 #define FILE_ACCESS_PATH (__FILE_ACCESS_READ_CONTROL | __FILE_ACCESS_SYNCHRONIZE)
 
 // Flags
+#define FILE_FLAG_APPEND __FILE_ACCESS_APPEND_DATA
+
 #define FILE_FLAG_CREATE    0x00100000ul
 #define FILE_FLAG_EXCLUSIVE 0x00200000ul
 #define FILE_FLAG_TRUNCATE  0x00400000ul

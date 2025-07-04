@@ -113,13 +113,14 @@ status_t file_open(file_t *file, handle_t root, const char *path, uint16_t lengt
 		break;
 	case FILE_APPEND:
 	case FILE_WRITE | FILE_APPEND:
-		access = FILE_ACCESS_WRITE | FILE_ACCESS_APPEND;
-		options = FILE_FLAG_CREATE;
+		access = FILE_ACCESS_WRITE;
+		options = FILE_FLAG_CREATE | FILE_FLAG_APPEND;
 		break;
 	case FILE_READ | FILE_APPEND:
 	case FILE_READ | FILE_WRITE | FILE_APPEND:
-		access = FILE_ACCESS_READ | FILE_ACCESS_WRITE | FILE_ACCESS_APPEND;
+		access = FILE_ACCESS_READ | FILE_ACCESS_WRITE;
 		options = FILE_FLAG_CREATE;
+		options = FILE_FLAG_CREATE | FILE_FLAG_APPEND;
 		break;
 	}
 
