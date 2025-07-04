@@ -67,6 +67,7 @@ typedef struct _pgp_packet_header
 			byte_t partial_continue : 1;
 			byte_t partial_end : 1;
 			byte_t partial_legacy : 1;
+			byte_t partial_collated : 1;
 		};
 
 		byte_t partial;

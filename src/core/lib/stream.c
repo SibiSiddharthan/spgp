@@ -779,7 +779,7 @@ pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream)
 	{
 		header = stream->packets[i];
 
-		if (header->partial_begin)
+		if (header->partial_begin && !header->partial_collated)
 		{
 			index = i + 1;
 			partials = NULL;
@@ -802,6 +802,7 @@ pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream)
 			} while (header->partial_end == 0);
 
 			header = stream->packets[i];
+			header->partial_collated = 1;
 
 			switch (pgp_packet_type_from_tag(header->tag))
 			{
@@ -820,7 +821,6 @@ pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream)
 			case PGP_AEAD:
 				((pgp_aead_packet *)stream->packets[i])->partials = partials;
 				break;
-
 			default:
 				// This should never happen.
 				pgp_stream_delete(partials, (void (*)(void *))pgp_partial_packet_delete);

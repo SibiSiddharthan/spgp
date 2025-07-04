@@ -23,7 +23,7 @@ pgp_stream_t *spgp_preprocess_stream(pgp_stream_t *stream)
 	PGP_CALL(pgp_packet_stream_decompress(stream));
 
 	// Collate partials again
-	// PGP_CALL(pgp_packet_stream_collate_partials(stream));
+	STREAM_CALL(pgp_packet_stream_collate_partials(stream));
 
 	// Filter out padding and marker packets
 	pgp_packet_stream_filter_padding_packets(stream);
