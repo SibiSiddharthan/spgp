@@ -8,6 +8,8 @@
 #ifndef TLS_ALERT_H
 #define TLS_ALERT_H
 
+#include <stdint.h>
+
 typedef enum _tls_alert_level
 {
 	TLS_WARNING = 1,
@@ -52,8 +54,8 @@ typedef enum _tls_alert_description
 
 typedef struct _tls_alert
 {
-	byte_t level;
-	byte_t description;
+	uint8_t level;
+	uint8_t description;
 } tls_alert;
 
 #endif
