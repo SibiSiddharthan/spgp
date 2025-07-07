@@ -1,0 +1,43 @@
+/*
+   Copyright (c) 2024 - 2025 Sibi Siddharthan
+
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
+*/
+
+#ifndef TLS_HANDSHAKE_H
+#define TLS_HANDSHAKE_H
+
+#include <stdint.h>
+
+typedef enum _tls_handshake_type
+{
+	TLS_HELLO_REQUEST = 0,
+	TLS_CLIENT_HELLO = 1,
+	TLS_SERVER_HELLO = 2,
+	TLS_HELLO_VERIFY_REQUEST = 3,
+	TLS_NEW_SESSION_TICKET = 4,
+	TLS_END_OF_EARLY_DATA = 5,
+	TLS_HELLO_RETRY_REQUEST = 6,
+	TLS_ENCRYPTED_EXTENSIONS = 8,
+	TLS_CERTIFICATE = 11,
+	TLS_SERVER_KEY_EXCHANGE = 12,
+	TLS_CERTIFICATE_REQUEST = 13,
+	TLS_SERVER_HELLO_DONE = 14,
+	TLS_CERTIFICATE_VERIFY = 15,
+	TLS_CLIENT_KEY_EXCHANGE = 16,
+	TLS_FINISHED = 20,
+	TLS_CERTIFICATE_URL = 21,
+	TLS_CERTIFICATE_STATUS = 22,
+	TLS_SUPPLEMENTAL_DATA = 23,
+	TLS_KEY_UPDATE = 24,
+	TLS_MESSAGE_HASH = 254,
+} tls_handshake_type;
+
+typedef struct _tls_handshake
+{
+	uint8_t handshake_type;
+	uint32_t handshake_size : 24;
+} tls_handshake;
+
+#endif
