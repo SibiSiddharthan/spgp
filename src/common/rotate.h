@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef CRYPTO_ROTATE_H
-#define CRYPTO_ROTATE_H
+#ifndef COMMON_ROTATE_H
+#define COMMON_ROTATE_H
 
 // Given an unsigned N-bit argument X and a shift count S rotate (left/right) the bytes and return.
 
