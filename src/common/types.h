@@ -1,12 +1,16 @@
-#[[
+/*
    Copyright (c) 2024 - 2025 Sibi Siddharthan
 
    Distributed under the MIT license.
    Refer to the LICENSE file at the root directory for details.
-]]
+*/
 
-include_directories(common)
+#ifndef COMMON_TYPES_H
+#define COMMON_TYPES_H
 
-add_subdirectory(core)
-add_subdirectory(crypto)
-add_subdirectory(io)
+#include <stdint.h>
+#include <stddef.h>
+
+typedef uint8_t byte_t;
+
+#endif

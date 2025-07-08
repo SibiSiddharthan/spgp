@@ -1,12 +1,13 @@
-#[[
+/*
    Copyright (c) 2024 - 2025 Sibi Siddharthan
 
    Distributed under the MIT license.
    Refer to the LICENSE file at the root directory for details.
-]]
+*/
 
-include_directories(common)
+#ifndef COMMON_UNUSED_H
+#define COMMON_UNUSED_H
 
-add_subdirectory(core)
-add_subdirectory(crypto)
-add_subdirectory(io)
+#define UNUSED(x) ((void)(x))
+
+#endif
