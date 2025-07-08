@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef SPGP_POPCOUNT_H
-#define SPGP_POPCOUNT_H
+#ifndef COMMON_POPCOUNT_H
+#define COMMON_POPCOUNT_H
 
 #include <stdint.h>
 
