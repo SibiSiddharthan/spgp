@@ -14,10 +14,7 @@ else()
 endif()
 
 add_library(io STATIC ${io_src})
-
-
 target_include_directories(io PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-target_include_directories(io PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../core/include)
 
 if(WIN32)
 	target_link_libraries(io PUBLIC ntdll)
