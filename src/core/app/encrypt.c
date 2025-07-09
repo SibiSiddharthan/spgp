@@ -6,12 +6,13 @@
 */
 
 #include <spgp.h>
-#include <packet.h>
-#include <key.h>
-#include <crypto.h>
-#include <session.h>
-#include <seipd.h>
-#include <signature.h>
+
+#include <pgp/packet.h>
+#include <pgp/key.h>
+#include <pgp/crypto.h>
+#include <pgp/session.h>
+#include <pgp/seipd.h>
+#include <pgp/signature.h>
 
 #include <stdio.h>
 #include <stdlib.h>

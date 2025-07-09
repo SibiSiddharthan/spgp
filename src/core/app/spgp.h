@@ -12,16 +12,16 @@
 
 #include <types.h>
 #include <buffer.h>
-
-#include <packet.h>
-#include <key.h>
-#include <stream.h>
-
 #include <byteswap.h>
 #include <minmax.h>
 #include <ptr.h>
 #include <round.h>
 #include <load.h>
+
+#include <pgp/pgp.h>
+#include <pgp/packet.h>
+#include <pgp/key.h>
+#include <pgp/stream.h>
 
 #include <status.h>
 #include <os.h>

@@ -7,7 +7,8 @@
 
 #include <spgp.h>
 #include <argparse.h>
-#include <algorithms.h>
+
+#include <pgp/algorithms.h>
 
 #include <status.h>
 #include <os.h>

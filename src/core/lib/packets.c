@@ -5,15 +5,15 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <pgp.h>
-#include <algorithms.h>
-#include <packet.h>
-#include <key.h>
-#include <seipd.h>
-#include <session.h>
-#include <signature.h>
-#include <stream.h>
-#include <crypto.h>
+#include <pgp/pgp.h>
+#include <pgp/algorithms.h>
+#include <pgp/packet.h>
+#include <pgp/key.h>
+#include <pgp/seipd.h>
+#include <pgp/session.h>
+#include <pgp/signature.h>
+#include <pgp/stream.h>
+#include <pgp/crypto.h>
 
 #include <string.h>
 #include <stdlib.h>

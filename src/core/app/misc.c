@@ -8,7 +8,7 @@
 #include <spgp.h>
 #include <os.h>
 
-#include <packet.h>
+#include <pgp/packet.h>
 
 #include <stdio.h>
 #include <stdlib.h>

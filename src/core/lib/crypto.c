@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <pgp.h>
+#include <pgp/pgp.h>
 
-#include <crypto.h>
-#include <algorithms.h>
+#include <pgp/crypto.h>
+#include <pgp/algorithms.h>
 
 #include <bignum.h>
 #include <ec.h>

@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <pgp.h>
-#include <armor.h>
-#include <base64.h>
-#include <crc24.h>
+#include <pgp/pgp.h>
+#include <pgp/armor.h>
+#include <pgp/base64.h>
+#include <pgp/crc24.h>
 
 #include <stdlib.h>
 #include <string.h>

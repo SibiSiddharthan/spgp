@@ -8,10 +8,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <spgp.h>
-#include <crypto.h>
-#include <packet.h>
-#include <key.h>
-#include <signature.h>
+#include <pgp/crypto.h>
+#include <pgp/packet.h>
+#include <pgp/key.h>
+#include <pgp/signature.h>
 
 #include <stdio.h>
 #include <stdlib.h>

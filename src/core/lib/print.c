@@ -7,13 +7,13 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <pgp.h>
-#include <algorithms.h>
-#include <packet.h>
-#include <seipd.h>
-#include <session.h>
-#include <signature.h>
-#include <crypto.h>
+#include <pgp/pgp.h>
+#include <pgp/algorithms.h>
+#include <pgp/packet.h>
+#include <pgp/seipd.h>
+#include <pgp/session.h>
+#include <pgp/signature.h>
+#include <pgp/crypto.h>
 
 #include <stdarg.h>
 #include <stdio.h>

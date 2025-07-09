@@ -5,13 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <pgp.h>
-#include <algorithms.h>
-#include <packet.h>
-#include <key.h>
-#include <signature.h>
-
-#include <crypto.h>
+#include <pgp/pgp.h>
+#include <pgp/algorithms.h>
+#include <pgp/packet.h>
+#include <pgp/key.h>
+#include <pgp/signature.h>
+#include <pgp/crypto.h>
 
 #include <stdlib.h>
 #include <string.h>

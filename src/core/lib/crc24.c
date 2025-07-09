@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <crc24.h>
+#include <pgp/crc24.h>
 
 // clang-format off
 static uint32_t crc24_table[256] = 

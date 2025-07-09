@@ -6,7 +6,7 @@
 */
 
 #include <spgp.h>
-#include <crypto.h>
+#include <pgp/crypto.h>
 
 pgp_hash_algorithms preferred_hash_algorithm_for_signature(pgp_key_packet *packet)
 {

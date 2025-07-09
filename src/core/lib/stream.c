@@ -5,12 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <pgp.h>
-#include <armor.h>
-#include <packet.h>
-#include <stream.h>
-#include <seipd.h>
-#include <signature.h>
+#include <pgp/pgp.h>
+#include <pgp/armor.h>
+#include <pgp/packet.h>
+#include <pgp/stream.h>
+#include <pgp/seipd.h>
+#include <pgp/signature.h>
 
 #include <stdlib.h>
 #include <string.h>

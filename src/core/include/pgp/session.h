@@ -8,12 +8,12 @@
 #ifndef SPGP_SESSION_H
 #define SPGP_SESSION_H
 
-#include <pgp.h>
-#include <packet.h>
-#include <error.h>
-#include <key.h>
-#include <mpi.h>
-#include <s2k.h>
+#include <pgp/pgp.h>
+#include <pgp/packet.h>
+#include <pgp/error.h>
+#include <pgp/key.h>
+#include <pgp/mpi.h>
+#include <pgp/s2k.h>
 
 typedef enum _pgp_pkesk_version
 {

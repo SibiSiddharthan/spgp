@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <pgp.h>
-#include <mpi.h>
+#include <pgp/pgp.h>
+#include <pgp/mpi.h>
 
 #include <stdlib.h>
 #include <string.h>

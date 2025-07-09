@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <error.h>
+#include <pgp/error.h>
 
 char *pgp_error(pgp_error_t status)
 {

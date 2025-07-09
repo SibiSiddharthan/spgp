@@ -6,10 +6,10 @@
 */
 
 #include <spgp.h>
-#include <packet.h>
-#include <key.h>
-#include <signature.h>
-#include <crypto.h>
+#include <pgp/packet.h>
+#include <pgp/key.h>
+#include <pgp/signature.h>
+#include <pgp/crypto.h>
 
 #include <stdio.h>
 #include <stdlib.h>

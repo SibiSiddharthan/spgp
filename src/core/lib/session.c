@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <pgp.h>
-#include <algorithms.h>
-#include <crypto.h>
-#include <packet.h>
-#include <session.h>
+#include <pgp/pgp.h>
+#include <pgp/algorithms.h>
+#include <pgp/crypto.h>
+#include <pgp/packet.h>
+#include <pgp/session.h>
 
 #include <string.h>
 #include <stdlib.h>

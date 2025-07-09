@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details->
 */
 
-#include <pgp.h>
-#include <s2k.h>
-#include <algorithms.h>
+#include <pgp/pgp.h>
+#include <pgp/s2k.h>
+#include <pgp/algorithms.h>
+#include <pgp/crypto.h>
 
-#include <crypto.h>
 #include <string.h>
 
 uint32_t pgp_s2k_read(pgp_s2k *s2k, void *data, size_t size)
