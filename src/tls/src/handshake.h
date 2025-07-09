@@ -34,10 +34,42 @@ typedef enum _tls_handshake_type
 	TLS_MESSAGE_HASH = 254,
 } tls_handshake_type;
 
-typedef struct _tls_handshake
+typedef struct _tls_handshake_header
 {
 	uint8_t handshake_type;
 	uint32_t handshake_size : 24;
-} tls_handshake;
+} tls_handshake_header;
+
+typedef struct _tls_session_id
+{
+	uint8_t size;
+	uint8_t id[32];
+} tls_session_id;
+
+typedef struct _tls_client_hello
+{
+	tls_handshake_header header;
+
+	uint16_t version;
+	uint8_t compression_methods_size;
+	uint16_t cipher_suites_size;
+	uint16_t extensions_size;
+	tls_session_id session;
+	uint8_t random[32];
+	uint8_t data[];
+} tls_client_hello;
+
+typedef struct _tls_server_hello
+{
+	tls_handshake_header header;
+
+	uint16_t version;
+	uint16_t cipher_suite;
+	uint8_t compression_method;
+	uint16_t extensions_size;
+	tls_session_id session;
+	uint8_t random[32];
+	uint8_t data[];
+} tls_server_hello;
 
 #endif
