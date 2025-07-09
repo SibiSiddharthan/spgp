@@ -8,7 +8,7 @@
 #ifndef SPGP_MPI_H
 #define SPGP_MPI_H
 
-#include <pgp.h>
+#include <pgp/pgp.h>
 
 typedef struct _mpi_t
 {

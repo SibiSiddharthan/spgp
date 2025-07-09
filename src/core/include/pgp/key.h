@@ -8,11 +8,11 @@
 #ifndef SPGP_KEY_H
 #define SPGP_KEY_H
 
-#include <pgp.h>
-#include <packet.h>
-#include <s2k.h>
-#include <mpi.h>
-#include <algorithms.h>
+#include <pgp/pgp.h>
+#include <pgp/packet.h>
+#include <pgp/s2k.h>
+#include <pgp/mpi.h>
+#include <pgp/algorithms.h>
 
 typedef struct _pgp_signature_packet pgp_signature_packet;
 

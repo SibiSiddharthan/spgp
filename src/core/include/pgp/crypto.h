@@ -8,12 +8,12 @@
 #ifndef SPGP_CRYPTO_H
 #define SPGP_CRYPTO_H
 
-#include <pgp.h>
-#include <algorithms.h>
+#include <pgp/pgp.h>
+#include <pgp/algorithms.h>
 
-#include <key.h>
-#include <session.h>
-#include <signature.h>
+#include <pgp/key.h>
+#include <pgp/session.h>
+#include <pgp/signature.h>
 
 #define PGP_AEAD_TAG_SIZE 16
 

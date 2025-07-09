@@ -8,7 +8,7 @@
 #ifndef SPGP_CRC24_H
 #define SPGP_CRC24_H
 
-#include <pgp.h>
+#include <pgp/pgp.h>
 
 /*
    Name   : "CRC-24"

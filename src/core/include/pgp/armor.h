@@ -8,7 +8,7 @@
 #ifndef SPGP_ARMOR_H
 #define SPGP_ARMOR_H
 
-#include <pgp.h>
+#include <pgp/pgp.h>
 
 #define PGP_ARMOR_BEGIN_MESSAGE "BEGIN PGP MESSAGE"
 #define PGP_ARMOR_END_MESSAGE   "END PGP MESSAGE"

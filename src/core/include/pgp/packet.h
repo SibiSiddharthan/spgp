@@ -8,9 +8,9 @@
 #ifndef SPGP_PACKET_H
 #define SPGP_PACKET_H
 
-#include <pgp.h>
-#include <error.h>
-#include <stream.h>
+#include <pgp/pgp.h>
+#include <pgp/error.h>
+#include <pgp/stream.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5 Packet Types
 

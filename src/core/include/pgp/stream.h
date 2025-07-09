@@ -8,9 +8,9 @@
 #ifndef SPGP_STREAM_H
 #define SPGP_STREAM_H
 
-#include <pgp.h>
-#include <armor.h>
-#include <error.h>
+#include <pgp/pgp.h>
+#include <pgp/armor.h>
+#include <pgp/error.h>
 
 typedef struct _pgp_stream_t
 {

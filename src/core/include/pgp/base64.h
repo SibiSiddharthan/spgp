@@ -8,7 +8,7 @@
 #ifndef SPGP_BASE64_H
 #define SPGP_BASE64_H
 
-#include <pgp.h>
+#include <pgp/pgp.h>
 
 #define BASE64_ENCODE_SIZE(x) (CEIL_DIV((x), 3) * 4)
 #define BASE64_DECODE_SIZE(x) (((x) / 4) * 3)

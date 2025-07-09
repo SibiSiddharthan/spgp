@@ -8,12 +8,12 @@
 #ifndef SPGP_SIGNATURE_H
 #define SPGP_SIGNATURE_H
 
-#include <pgp.h>
-#include <error.h>
-#include <packet.h>
-#include <stream.h>
-#include <mpi.h>
-#include <key.h>
+#include <pgp/pgp.h>
+#include <pgp/error.h>
+#include <pgp/packet.h>
+#include <pgp/stream.h>
+#include <pgp/mpi.h>
+#include <pgp/key.h>
 
 // Refer RFC 9580 - OpenPGP, Section 5.2 Signature Packet
 

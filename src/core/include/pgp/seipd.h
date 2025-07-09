@@ -8,9 +8,9 @@
 #ifndef SPGP_SEIPD_H
 #define SPGP_SEIPD_H
 
-#include <pgp.h>
-#include <packet.h>
-#include <stream.h>
+#include <pgp/pgp.h>
+#include <pgp/packet.h>
+#include <pgp/stream.h>
 
 #define PGP_MAX_CHUNK_SIZE   16
 #define PGP_CHUNK_SIZE(size) ((uint32_t)1 << ((size) + 6))
