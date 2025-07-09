@@ -40,6 +40,8 @@ typedef struct _tls_handshake_header
 	uint32_t handshake_size : 24;
 } tls_handshake_header;
 
+typedef tls_handshake_header tls_hello_request, tls_end_of_early_data;
+
 typedef struct _tls_session_id
 {
 	uint8_t size;
@@ -71,5 +73,29 @@ typedef struct _tls_server_hello
 	uint8_t random[32];
 	uint8_t data[];
 } tls_server_hello;
+
+typedef struct _tls_new_session_ticket
+{
+	tls_handshake_header header;
+
+	uint32_t ticket_lifetime;
+	uint32_t ticket_age_add;
+	uint8_t ticket_nonce[256];
+	uint16_t ticket_size;
+	uint16_t extensions_size;
+	uint8_t data[];
+} tls_new_session_ticket;
+
+typedef enum _tls_key_update_request
+{
+	TLS_KEY_UPDATE_NOT_REQUESTED = 0,
+	TLS_KEY_UPDATE_REQUESTED = 1
+} tls_key_update_request;
+
+typedef struct _tls_key_update
+{
+	tls_handshake_header header;
+	uint8_t request;
+} tls_key_update;
 
 #endif
