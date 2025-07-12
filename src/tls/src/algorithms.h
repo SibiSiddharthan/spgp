@@ -298,4 +298,8 @@ static const uint16_t tls_grease_ciphers[16] = {
 	TLS_MAKE_GREASE_CIPHER_ID(0xCA), TLS_MAKE_GREASE_CIPHER_ID(0xDA), TLS_MAKE_GREASE_CIPHER_ID(0xEA), TLS_MAKE_GREASE_CIPHER_ID(0xFA),
 };
 
+static const uint16_t tls_grease_signatures[16] = {
+	0x0A0A, 0x1A1A, 0x2A2A, 0x3A3A, 0x4A4A, 0x5A5A, 0x6A6A, 0x7A7A, 0x8A8A, 0x9A9A, 0xAAAA, 0xBABA, 0xCACA, 0xDADA, 0xEAEA, 0xFAFA,
+};
+
 #endif
