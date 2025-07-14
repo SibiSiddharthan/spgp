@@ -17,6 +17,9 @@ typedef enum _tls_content_type
 	TLS_ALERT = 21,
 	TLS_HANDSHAKE = 22,
 	TLS_APPLICATION_DATA = 23,
+	TLS_HEARTBEAT = 24,
+	TLS_CID = 25,
+	TLS_ACK = 26
 } tls_content_type;
 
 typedef struct _tls_protocol_version
