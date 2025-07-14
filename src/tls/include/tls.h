@@ -16,4 +16,9 @@
 
 #define TLS_VERSION_DEFAULT TLS_VERSION_1_2
 
+#include <tls/alert.h>
+#include <tls/algorithms.h>
+#include <tls/handshake.h>
+#include <tls/record.h>
+
 #endif
