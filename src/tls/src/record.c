@@ -6,6 +6,8 @@
 */
 
 #include <tls/record.h>
+#include <tls/version.h>
+
 #include <load.h>
 #include <ptr.h>
 
@@ -95,3 +97,80 @@ uint32_t tls_record_write(tls_record *record, void *data, uint32_t size)
 	return pos;
 }
 
+uint32_t tls_record_print(tls_record *record, void *data, uint32_t size)
+{
+	uint32_t pos = 0;
+
+	// Content Type
+	pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Content Type:");
+
+	switch (record->content)
+	{
+	case TLS_INVALID_CONTENT:
+		pos += snprintf(data, size, "Invalid Content Type (ID 0)\n");
+		break;
+	case TLS_CHANGE_CIPHER_SPEC:
+		pos += snprintf(data, size, "Cipher Specification Change (ID 20)\n");
+		break;
+	case TLS_ALERT:
+		pos += snprintf(data, size, "TLS Alert (ID 21)\n");
+		break;
+	case TLS_HANDSHAKE:
+		pos += snprintf(data, size, "TLS Handshake (ID 22)\n");
+		break;
+	case TLS_APPLICATION_DATA:
+		pos += snprintf(data, size, "Application Data (ID 23)\n");
+		break;
+	case TLS_HEARTBEAT:
+		pos += snprintf(data, size, "TLS Heartbeat (ID 24)\n");
+		break;
+	case TLS_CID:
+		pos += snprintf(data, size, "Content Identifier (ID 25)\n");
+		break;
+	case TLS_ACK:
+		pos += snprintf(data, size, "TLS Acknowledge (ID 26)\n");
+		break;
+	default:
+		pos += snprintf(data, size, "Unknown Content Type (ID %hhu)\n", record->content);
+		break;
+	}
+
+	// Protocol Version
+	switch ((record->version.major << 8) + record->version.minor)
+	{
+	case TLS_VERSION_1_0:
+		pos += snprintf(data, size, "TLS 1.0 (3, 1)\n");
+		break;
+	case TLS_VERSION_1_1:
+		pos += snprintf(data, size, "TLS 1.1 (3, 2)\n");
+		break;
+	case TLS_VERSION_1_2:
+		pos += snprintf(data, size, "TLS 1.2 (3, 3)\n");
+		break;
+	case TLS_VERSION_1_3:
+		pos += snprintf(data, size, "TLS 1.3 (3, 4)\n");
+		break;
+	default:
+		pos += snprintf(data, size, "Unkown Protocol Version (%hhu, %hhu)\n", record->version.major, record->version.minor);
+		break;
+	}
+
+	// Record Size
+	pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Record Size: %hu\n", record->size);
+
+	switch (record->content)
+	{
+	case TLS_INVALID_CONTENT:
+		break;
+	case TLS_CHANGE_CIPHER_SPEC:
+	case TLS_ALERT:
+	case TLS_HANDSHAKE:
+	case TLS_APPLICATION_DATA:
+	case TLS_HEARTBEAT:
+	case TLS_CID:
+	case TLS_ACK:
+		break;
+	}
+
+	return pos;
+}
