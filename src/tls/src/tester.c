@@ -25,6 +25,9 @@ DWORD handle_requests(PVOID socket)
 
 	while (1)
 	{
+		tls_record *record = NULL;
+		uint8_t print[1024] = {0};
+
 		memset(buffer, 0, 1024);
 		status = recv(handler, (char *)buffer, 1024, 0);
 		printf("%llu %d %d\n", handler, status, WSAGetLastError());
@@ -35,13 +38,10 @@ DWORD handle_requests(PVOID socket)
 			break;
 		}
 
-		uint8_t content_type = buffer[0];
-		uint16_t record_version = buffer[1] * 256 + buffer[2];
-		uint16_t record_length = buffer[3] * 256 + buffer[4];
+		tls_record_read(&record, buffer, status);
+		tls_record_print(record, print, 1024);
 
-		printf("Content Type: %hhu\n", content_type);
-		printf("Record Version: %hu\n", record_version);
-		printf("Record Length: %hu\n", record_length);
+		printf("%s", print);
 	}
 
 	closesocket(handler);
