@@ -36,4 +36,8 @@ typedef struct _tls_record
 	void *data;
 } tls_record;
 
+void tls_record_read(tls_record **record, void *data, uint32_t size);
+uint32_t tls_record_write(tls_record *record, void *data, uint32_t size);
+uint32_t tls_record_print(tls_record *record, void *data, uint32_t size);
+
 #endif
