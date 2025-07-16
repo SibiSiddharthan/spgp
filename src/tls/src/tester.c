@@ -21,15 +21,15 @@ DWORD handle_requests(PVOID socket)
 {
 	SOCKET handler = (SOCKET)socket;
 	int status;
-	uint8_t buffer[1024];
+	uint8_t buffer[65536];
 
 	while (1)
 	{
 		tls_record *record = NULL;
 		uint8_t print[1024] = {0};
 
-		memset(buffer, 0, 1024);
-		status = recv(handler, (char *)buffer, 1024, 0);
+		memset(buffer, 0, 65536);
+		status = recv(handler, (char *)buffer, 65536, 0);
 		printf("%llu %d %d\n", handler, status, WSAGetLastError());
 
 		if (status == 0)
