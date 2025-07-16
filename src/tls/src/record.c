@@ -56,6 +56,8 @@ void tls_record_read(tls_record **record, void *data, uint32_t size)
 	case TLS_ACK:
 		break;
 	}
+
+	*record = result;
 }
 
 uint32_t tls_record_write(tls_record *record, void *data, uint32_t size)

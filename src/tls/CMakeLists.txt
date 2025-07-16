@@ -8,8 +8,11 @@
 cmake_minimum_required(VERSION 3.15)
 project(tls C)
 
+add_library(tls src/record.c)
+target_include_directories(tls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 if(WIN32)
 	add_executable(tls-tester src/tester.c)
-	target_include_directories(tls-tester PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+	target_link_libraries(tls-tester tls)
 	set_target_properties(tls-tester PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
