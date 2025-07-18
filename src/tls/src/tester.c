@@ -26,7 +26,7 @@ DWORD handle_requests(PVOID socket)
 	while (1)
 	{
 		tls_record *record = NULL;
-		uint8_t print[1024] = {0};
+		uint8_t print[65536] = {0};
 
 		memset(buffer, 0, 65536);
 		status = recv(handler, (char *)buffer, 65536, 0);
@@ -39,7 +39,7 @@ DWORD handle_requests(PVOID socket)
 		}
 
 		tls_record_read(&record, buffer, status);
-		tls_record_print(record, print, 1024);
+		tls_record_print(record, print, 65536);
 
 		printf("%s", print);
 	}
