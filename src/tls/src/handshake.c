@@ -232,577 +232,586 @@ static uint32_t print_cipher_suite(void *buffer, uint32_t size, uint8_t o1, uint
 		return snprintf(buffer, size, "    TLS_NULL_WITH_NULL_NULL (ID {0x00, 0x00})\n");
 
 	case TLS_RSA_WITH_NULL_MD5:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_NULL_MD5 (ID {0x00, 0x01})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_NULL_MD5 (ID {0x00, 0x01})\n");
 	case TLS_RSA_WITH_NULL_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_NULL_SHA1 (ID {0x00, 0x02})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_NULL_SHA1 (ID {0x00, 0x02})\n");
 	case TLS_RSA_WITH_NULL_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_NULL_SHA256 (ID {0x00, 0x3B})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_NULL_SHA256 (ID {0x00, 0x3B})\n");
 	case TLS_RSA_WITH_RC4_128_MD5:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_RC4_128_MD5 (ID {0x00, 0x04})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_RC4_128_MD5 (ID {0x00, 0x04})\n");
 	case TLS_RSA_WITH_RC4_128_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_RC4_128_SHA1 (ID {0x00, 0x05})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_RC4_128_SHA1 (ID {0x00, 0x05})\n");
 	case TLS_RSA_WITH_IDEA_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_IDEA_CBC_SHA1 (ID {0x00, 0x07})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_IDEA_CBC_SHA1 (ID {0x00, 0x07})\n");
 	case TLS_RSA_WITH_DES_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x09})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x09})\n");
 	case TLS_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x0A})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x0A})\n");
 	case TLS_RSA_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x2F})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x2F})\n");
 	case TLS_RSA_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x35})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x35})\n");
 	case TLS_RSA_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3C})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3C})\n");
 	case TLS_RSA_WITH_AES_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x3D})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x3D})\n");
 
 	case TLS_DH_DSS_WITH_DES_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_DES_CBC_SHA1 (ID {0x00, 0x0C})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_DES_CBC_SHA1 (ID {0x00, 0x0C})\n");
 	case TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x0D})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x0D})\n");
 	case TLS_DH_RSA_WITH_DES_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x0F})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x0F})\n");
 	case TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x10})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x10})\n");
 	case TLS_DHE_DSS_WITH_DES_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_DES_CBC_SHA1 (ID {0x00, 0x12})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_DES_CBC_SHA1 (ID {0x00, 0x12})\n");
 	case TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x13})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x13})\n");
 	case TLS_DHE_RSA_WITH_DES_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x15})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x15})\n");
 	case TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x16})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x16})\n");
 	case TLS_DH_DSS_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x30})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x30})\n");
 	case TLS_DH_RSA_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x31})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x31})\n");
 	case TLS_DHE_DSS_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x32})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x32})\n");
 	case TLS_DHE_RSA_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x33})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x33})\n");
 	case TLS_DH_DSS_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x36})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x36})\n");
 	case TLS_DH_RSA_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x37})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x37})\n");
 	case TLS_DHE_DSS_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x38})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x38})\n");
 	case TLS_DHE_RSA_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x39})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x39})\n");
 	case TLS_DH_DSS_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3E})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3E})\n");
 	case TLS_DH_RSA_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3F})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3F})\n");
 	case TLS_DHE_DSS_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x40})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x40})\n");
 	case TLS_DHE_RSA_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x67})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x67})\n");
 	case TLS_DH_DSS_WITH_AES_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x68})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x68})\n");
 	case TLS_DH_RSA_WITH_AES_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x69})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x69})\n");
 	case TLS_DHE_DSS_WITH_AES_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6A})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6A})\n");
 	case TLS_DHE_RSA_WITH_AES_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6B})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6B})\n");
 
 	case TLS_DH_ANON_WITH_RC4_128_MD5:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_RC4_128_MD5 (ID {0x00, 0x18})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_RC4_128_MD5 (ID {0x00, 0x18})\n");
 	case TLS_DH_ANON_WITH_DES_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_DES_CBC_SHA1 (ID {0x00, 0x1A})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_DES_CBC_SHA1 (ID {0x00, 0x1A})\n");
 	case TLS_DH_ANON_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x1B})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x1B})\n");
 	case TLS_DH_ANON_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x34})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x34})\n");
 	case TLS_DH_ANON_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x3A})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x3A})\n");
 	case TLS_DH_ANON_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x6C})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x6C})\n");
 	case TLS_DH_ANON_WITH_AES_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6D})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6D})\n");
 
-		// RFC 5487: Pre-Shared Key Cipher Suites for TLS with SHA-256/384 and AES Galois Counter Mode
+	// RFC 5487: Pre-Shared Key Cipher Suites for TLS with SHA-256/384 and AES Galois Counter Mode
 	case TLS_PSK_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA8})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA8})\n");
 	case TLS_PSK_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA9})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA9})\n");
 	case TLS_DHE_PSK_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xAA})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xAA})\n");
 	case TLS_DHE_PSK_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xAB})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xAB})\n");
 	case TLS_RSA_PSK_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xAC})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xAC})\n");
 	case TLS_RSA_PSK_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xAD})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xAD})\n");
 
 	case TLS_PSK_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xAE})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xAE})\n");
 	case TLS_PSK_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xAF})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xAF})\n");
 	case TLS_PSK_WITH_NULL_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB0})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB0})\n");
 	case TLS_PSK_WITH_NULL_SHA384:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB1})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB1})\n");
 
 	case TLS_DHE_PSK_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xB2})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xB2})\n");
 	case TLS_DHE_PSK_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xB3})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xB3})\n");
 	case TLS_DHE_PSK_WITH_NULL_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB4})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB4})\n");
 	case TLS_DHE_PSK_WITH_NULL_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB5})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB5})\n");
 
 	case TLS_RSA_PSK_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xB6})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xB6})\n");
 	case TLS_RSA_PSK_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xB7})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xB7})\n");
 	case TLS_RSA_PSK_WITH_NULL_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB8})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB8})\n");
 	case TLS_RSA_PSK_WITH_NULL_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB9})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB9})\n");
 
-		// RFC 5932:  Camellia Cipher Suites for TLS
+	// RFC 5932:  Camellia Cipher Suites for TLS
 	case TLS_RSA_WITH_CAMELLIA_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x41})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x41})\n");
 	case TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x42})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x42})\n");
 	case TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x43})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x43})\n");
 	case TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x44})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x44})\n");
 	case TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x45})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x45})\n");
 	case TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x46})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x46})\n");
 
 	case TLS_RSA_WITH_CAMELLIA_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x84})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x84})\n");
 	case TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x85})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x85})\n");
 	case TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x86})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x86})\n");
 	case TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x87})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x87})\n");
 	case TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x88})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x88})\n");
 	case TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x89})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x89})\n");
 
 	case TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBA})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBA})\n");
 	case TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBB})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBB})\n");
 	case TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBC})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBC})\n");
 	case TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBD})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBD})\n");
 	case TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBE})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBE})\n");
 	case TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBF})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBF})\n");
 
 	case TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC0})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC0})\n");
 	case TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC1})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC1})\n");
 	case TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC2})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC2})\n");
 	case TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC3})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC3})\n");
 	case TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC4})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC4})\n");
 	case TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC5})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC5})\n");
 
-		// RFC 8998: ShangMi (SM) Cipher Suites for TLS 1.3
+	// RFC 8998: ShangMi (SM) Cipher Suites for TLS 1.3
 	case TLS_SM4_GCM_SM3:
-		return snprintf(buffer, size, "    	TLS_SM4_GCM_SM3 (ID {0x00, 0xC6})\n");
+		return snprintf(buffer, size, "    TLS_SM4_GCM_SM3 (ID {0x00, 0xC6})\n");
 	case TLS_SM4_CCM_SM3:
-		return snprintf(buffer, size, "    	TLS_SM4_CCM_SM3 (ID {0x00, 0xC7})\n");
+		return snprintf(buffer, size, "    TLS_SM4_CCM_SM3 (ID {0x00, 0xC7})\n");
 
-		// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	case TLS_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_AES_128_GCM_SHA256 (ID {0x13, 0x01})\n");
+		return snprintf(buffer, size, "    TLS_AES_128_GCM_SHA256 (ID {0x13, 0x01})\n");
 	case TLS_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_AES_256_GCM_SHA384 (ID {0x13, 0x02})\n");
+		return snprintf(buffer, size, "    TLS_AES_256_GCM_SHA384 (ID {0x13, 0x02})\n");
 	case TLS_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_CHACHA20_POLY1305_SHA256 (ID {0x13, 0x03})\n");
+		return snprintf(buffer, size, "    TLS_CHACHA20_POLY1305_SHA256 (ID {0x13, 0x03})\n");
 	case TLS_AES_128_CCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_AES_128_CCM_SHA256 (ID {0x13, 0x04})\n");
+		return snprintf(buffer, size, "    TLS_AES_128_CCM_SHA256 (ID {0x13, 0x04})\n");
 	case TLS_AES_128_CCM_8_SHA256:
-		return snprintf(buffer, size, "    	TLS_AES_128_CCM_8_SHA256 (ID {0x13, 0x05})\n");
+		return snprintf(buffer, size, "    TLS_AES_128_CCM_8_SHA256 (ID {0x13, 0x05})\n");
 
 		// RFC 8422:  Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 	case TLS_ECDHE_ECDSA_WITH_NULL_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_NULL_SHA1 (ID {0xC0, 0x06})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_NULL_SHA1 (ID {0xC0, 0x06})\n");
 	case TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x08})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x08})\n");
 	case TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x09})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x09})\n");
 	case TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x0A})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x0A})\n");
 
 	case TLS_ECDHE_RSA_WITH_NULL_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_NULL_SHA1 (ID {0xC0, 0x10})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_NULL_SHA1 (ID {0xC0, 0x10})\n");
 	case TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x12})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x12})\n");
 	case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x13})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x13})\n");
 	case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x14})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x14})\n");
 
 	case TLS_ECDH_ANON_WITH_NULL_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDH_ANON_WITH_NULL_SHA1 (ID {0xC0, 0x15})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ANON_WITH_NULL_SHA1 (ID {0xC0, 0x15})\n");
 	case TLS_ECDH_ANON_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDH_ANON_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x17})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ANON_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x17})\n");
 	case TLS_ECDH_ANON_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDH_ANON_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x18})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ANON_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x18})\n");
 	case TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x19})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x19})\n");
 
-		// RFC 5289: TLS Elliptic Curve Cipher Suites with SHA-256/384 and AES Galois Counter Mode (GCM)
+	// RFC 5289: TLS Elliptic Curve Cipher Suites with SHA-256/384 and AES Galois Counter Mode (GCM)
 	case TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x23})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x23})\n");
 	case TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x24})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x24})\n");
 	case TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x25})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x25})\n");
 	case TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x26})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x26})\n");
 	case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x27})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x27})\n");
 	case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x28})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x28})\n");
 	case TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x29})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x29})\n");
 	case TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x2A})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x2A})\n");
 
 	case TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2B})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2B})\n");
 	case TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x2C})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x2C})\n");
 	case TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2D})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2D})\n");
 	case TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x2E})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x2E})\n");
 	case TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2F})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2F})\n");
 	case TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x30})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x30})\n");
 	case TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x31})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x31})\n");
 	case TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x32})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x32})\n");
 
-		// RFC 5489: ECDHE_PSK Cipher Suites for Transport Layer Security (TLS)
+	// RFC 5489: ECDHE_PSK Cipher Suites for Transport Layer Security (TLS)
 	case TLS_ECDHE_PSK_WITH_RC4_128_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_RC4_128_SHA1 (ID {0xC0, 0x33})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_RC4_128_SHA1 (ID {0xC0, 0x33})\n");
 	case TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x34})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x34})\n");
 	case TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x35})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x35})\n");
 	case TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x36})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x36})\n");
 	case TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x37})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x37})\n");
 	case TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x38})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x38})\n");
 	case TLS_ECDHE_PSK_WITH_NULL_SHA1:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_NULL_SHA1 (ID {0xC0, 0x39})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_NULL_SHA1 (ID {0xC0, 0x39})\n");
 	case TLS_ECDHE_PSK_WITH_NULL_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_NULL_SHA256 (ID {0xC0, 0x3A})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_NULL_SHA256 (ID {0xC0, 0x3A})\n");
 	case TLS_ECDHE_PSK_WITH_NULL_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_NULL_SHA384 (ID {0xC0, 0x3B})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_NULL_SHA384 (ID {0xC0, 0x3B})\n");
 
-		// RFC 6209: Addition of the ARIA Cipher Suites to Transport Layer Security (TLS)
+	// RFC 6209: Addition of the ARIA Cipher Suites to Transport Layer Security (TLS)
 	case TLS_RSA_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x3C})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x3C})\n");
 	case TLS_RSA_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x3D})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x3D})\n");
 	case TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x3E})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x3E})\n");
 	case TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x3F})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x3F})\n");
 	case TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x40})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x40})\n");
 	case TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x41})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x41})\n");
 	case TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x42})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x42})\n");
 	case TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x43})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x43})\n");
 	case TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x44})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x44})\n");
 	case TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x45})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x45})\n");
 	case TLS_DH_ANON_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x46})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x46})\n");
 	case TLS_DH_ANON_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x47})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x47})\n");
 
 	case TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x48})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x48})\n");
 	case TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x49})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x49})\n");
 	case TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4A})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4A})\n");
 	case TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4B})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4B})\n");
 	case TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4C})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4C})\n");
 	case TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4D})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4D})\n");
 	case TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4E})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4E})\n");
 	case TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4F})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4F})\n");
 
 	case TLS_RSA_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x50})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x50})\n");
 	case TLS_RSA_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x51})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x51})\n");
 	case TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x52})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x52})\n");
 	case TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x53})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x53})\n");
 	case TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x54})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x54})\n");
 	case TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x55})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x55})\n");
 	case TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x56})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x56})\n");
 	case TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x57})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x57})\n");
 	case TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x58})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x58})\n");
 	case TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x59})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x59})\n");
 	case TLS_DH_ANON_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5A})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5A})\n");
 	case TLS_DH_ANON_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5B})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5B})\n");
 
 	case TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5C})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5C})\n");
 	case TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5D})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5D})\n");
 	case TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5E})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5E})\n");
 	case TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5F})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5F})\n");
 	case TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x60})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x60})\n");
 	case TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x61})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x61})\n");
 	case TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x62})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x62})\n");
 	case TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x63})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x63})\n");
 
 	case TLS_PSK_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x64})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x64})\n");
 	case TLS_PSK_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x65})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x65})\n");
 	case TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x66})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x66})\n");
 	case TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x67})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x67})\n");
 	case TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x68})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x68})\n");
 	case TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x69})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x69})\n");
 	case TLS_PSK_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6A})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6A})\n");
 	case TLS_PSK_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6B})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6B})\n");
 	case TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6C})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6C})\n");
 	case TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6D})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6D})\n");
 	case TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6E})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6E})\n");
 	case TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6F})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6F})\n");
 	case TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x70})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x70})\n");
 	case TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x71})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x71})\n");
 
-		// RFC 6367: Addition of the Camellia Cipher Suites to Transport Layer Security (TLS)
+	// RFC 6367: Addition of the Camellia Cipher Suites to Transport Layer Security (TLS)
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x72})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x72})\n");
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x73})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x73})\n");
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x74})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x74})\n");
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x75})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x75})\n");
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x76})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x76})\n");
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x77})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x77})\n");
 	case TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x78})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x78})\n");
 	case TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x79})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x79})\n");
 
 	case TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7A})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7A})\n");
 	case TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7B})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7B})\n");
 	case TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7C})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7C})\n");
 	case TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7D})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7D})\n");
 	case TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7E})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7E})\n");
 	case TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7F})\n");
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7F})\n");
 	case TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x80})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x80})\n");
 	case TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x81})\n");
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x81})\n");
 	case TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x82})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x82})\n");
 	case TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x83})\n");
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x83})\n");
 	case TLS_DH_ANON_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x84})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x84})\n");
 	case TLS_DH_ANON_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DH_ANON_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x85})\n");
+		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x85})\n");
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x86})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x86})\n");
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x87})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x87})\n");
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x88})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x88})\n");
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x89})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x89})\n");
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8A})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8A})\n");
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8B})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8B})\n");
 	case TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8C})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8C})\n");
 	case TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8D})\n");
+		return snprintf(buffer, size, "    TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8D})\n");
 
 	case TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8D})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8D})\n");
 	case TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8F})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8F})\n");
 	case TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x90})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x90})\n");
 	case TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x91})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x91})\n");
 	case TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x92})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x92})\n");
 	case TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x93})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x93})\n");
 	case TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x94})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x94})\n");
 	case TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x95})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x95})\n");
 	case TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x96})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x96})\n");
 	case TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x97})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x97})\n");
 	case TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x98})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x98})\n");
 	case TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x99})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x99})\n");
 	case TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x9A})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x9A})\n");
 	case TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x9B})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x9B})\n");
 
-		// RFC 6655: AES-CCM Cipher Suites for Transport Layer Security (TLS)
+	// RFC 6655: AES-CCM Cipher Suites for Transport Layer Security (TLS)
 	case TLS_RSA_WITH_AES_128_CCM:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_128_CCM (ID {0xC0, 0x9C})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_128_CCM (ID {0xC0, 0x9C})\n");
 	case TLS_RSA_WITH_AES_256_CCM:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_256_CCM (ID {0xC0, 0x9D})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_256_CCM (ID {0xC0, 0x9D})\n");
 	case TLS_DHE_RSA_WITH_AES_128_CCM:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_128_CCM (ID {0xC0, 0x9E})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_128_CCM (ID {0xC0, 0x9E})\n");
 	case TLS_DHE_RSA_WITH_AES_256_CCM:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_256_CCM (ID {0xC0, 0x9F})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_256_CCM (ID {0xC0, 0x9F})\n");
 	case TLS_RSA_WITH_AES_128_CCM_8:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_128_CCM_8 (ID {0xC0, 0xA0})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_128_CCM_8 (ID {0xC0, 0xA0})\n");
 	case TLS_RSA_WITH_AES_256_CCM_8:
-		return snprintf(buffer, size, "    	TLS_RSA_WITH_AES_256_CCM_8 (ID {0xC0, 0xA1})\n");
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_256_CCM_8 (ID {0xC0, 0xA1})\n");
 	case TLS_DHE_RSA_WITH_AES_128_CCM_8:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_128_CCM_8 (ID {0xC0, 0xA2})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_128_CCM_8 (ID {0xC0, 0xA2})\n");
 	case TLS_DHE_RSA_WITH_AES_256_CCM_8:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_AES_256_CCM_8 (ID {0xC0, 0xA3})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_256_CCM_8 (ID {0xC0, 0xA3})\n");
 
 	case TLS_PSK_WITH_AES_128_CCM:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_128_CCM (ID {0xC0, 0xA4})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_128_CCM (ID {0xC0, 0xA4})\n");
 	case TLS_PSK_WITH_AES_256_CCM:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_256_CCM (ID {0xC0, 0xA5})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_256_CCM (ID {0xC0, 0xA5})\n");
 	case TLS_DHE_PSK_WITH_AES_128_CCM:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_AES_128_CCM (ID {0xC0, 0xA6})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_AES_128_CCM (ID {0xC0, 0xA6})\n");
 	case TLS_DHE_PSK_WITH_AES_256_CCM:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_AES_256_CCM (ID {0xC0, 0xA7})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_AES_256_CCM (ID {0xC0, 0xA7})\n");
 	case TLS_PSK_WITH_AES_128_CCM_8:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_128_CCM_8 (ID {0xC0, 0xA8})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_128_CCM_8 (ID {0xC0, 0xA8})\n");
 	case TLS_PSK_WITH_AES_256_CCM_8:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_AES_256_CCM_8 (ID {0xC0, 0xA9})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_256_CCM_8 (ID {0xC0, 0xA9})\n");
 	case TLS_PSK_DHE_WITH_AES_128_CCM_8:
-		return snprintf(buffer, size, "    	TLS_PSK_DHE_WITH_AES_128_CCM_8 (ID {0xC0, 0xAA})\n");
+		return snprintf(buffer, size, "    TLS_PSK_DHE_WITH_AES_128_CCM_8 (ID {0xC0, 0xAA})\n");
 	case TLS_PSK_DHE_WITH_AES_256_CCM_8:
-		return snprintf(buffer, size, "    	TLS_PSK_DHE_WITH_AES_256_CCM_8 (ID {0xC0, 0xAB})\n");
+		return snprintf(buffer, size, "    TLS_PSK_DHE_WITH_AES_256_CCM_8 (ID {0xC0, 0xAB})\n");
 
-		// RFC 9150: TLS 1.3 Authentication and Integrity-Only Cipher Suites
+	// RFC 9150: TLS 1.3 Authentication and Integrity-Only Cipher Suites
 	case TLS_SHA256_SHA256:
-		return snprintf(buffer, size, "    	TLS_SHA256_SHA256 (ID {0xC0, 0xB4})\n");
+		return snprintf(buffer, size, "    TLS_SHA256_SHA256 (ID {0xC0, 0xB4})\n");
 	case TLS_SHA384_SHA384:
-		return snprintf(buffer, size, "    	TLS_SHA384_SHA384 (ID {0xC0, 0xB5})\n");
+		return snprintf(buffer, size, "    TLS_SHA384_SHA384 (ID {0xC0, 0xB5})\n");
 
-		// RFC 9189: GOST Cipher Suites for Transport Layer Security (TLS) Protocol Version 1.2
+	// RFC 9189: GOST Cipher Suites for Transport Layer Security (TLS) Protocol Version 1.2
 	case TLS_GOST_R341112_256_WITH_KUZNYECHIK_CTR_OMAC:
-		return snprintf(buffer, size, "    	TLS_GOST_R341112_256_WITH_KUZNYECHIK_CTR_OMAC (ID {0xC1, 0x00})\n");
+		return snprintf(buffer, size, "    TLS_GOST_R341112_256_WITH_KUZNYECHIK_CTR_OMAC (ID {0xC1, 0x00})\n");
 	case TLS_GOST_R341112_256_WITH_MAGMA_CTR_OMAC:
-		return snprintf(buffer, size, "    	TLS_GOST_R341112_256_WITH_MAGMA_CTR_OMAC (ID {0xC1, 0x01})\n");
+		return snprintf(buffer, size, "    TLS_GOST_R341112_256_WITH_MAGMA_CTR_OMAC (ID {0xC1, 0x01})\n");
 	case TLS_GOST_R341112_256_WITH_28147_CNT_IMIT:
-		return snprintf(buffer, size, "    	TLS_GOST_R341112_256_WITH_28147_CNT_IMIT (ID {0xC1, 0x02})\n");
+		return snprintf(buffer, size, "    TLS_GOST_R341112_256_WITH_28147_CNT_IMIT (ID {0xC1, 0x02})\n");
 	case TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_LIGHT:
-		return snprintf(buffer, size, "    	TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_LIGHT (ID {0xC1, 0x03})\n");
+		return snprintf(buffer, size, "    TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_LIGHT (ID {0xC1, 0x03})\n");
 	case TLS_GOST_R341112_256_WITH_MAGMA_MGM_LIGHT:
-		return snprintf(buffer, size, "    	TLS_GOST_R341112_256_WITH_MAGMA_MGM_LIGHT (ID {0xC1, 0x04})\n");
+		return snprintf(buffer, size, "    TLS_GOST_R341112_256_WITH_MAGMA_MGM_LIGHT (ID {0xC1, 0x04})\n");
 	case TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_STRONG:
-		return snprintf(buffer, size, "    	TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_STRONG (ID {0xC1, 0x05})\n");
+		return snprintf(buffer, size, "    TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_STRONG (ID {0xC1, 0x05})\n");
 	case TLS_GOST_R341112_256_WITH_MAGMA_MGM_STRONG:
-		return snprintf(buffer, size, "    	TLS_GOST_R341112_256_WITH_MAGMA_MGM_STRONG (ID {0xC1, 0x06})\n");
+		return snprintf(buffer, size, "    TLS_GOST_R341112_256_WITH_MAGMA_MGM_STRONG (ID {0xC1, 0x06})\n");
 
-		// RFC 7905: ChaCha20-Poly1305 Cipher Suites for Transport Layer Security (TLS)
+	// RFC 7905: ChaCha20-Poly1305 Cipher Suites for Transport Layer Security (TLS)
 	case TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xA8})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xA8})\n");
 	case TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xA9})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xA9})\n");
 	case TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAA})\n");
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAA})\n");
 
 	case TLS_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAB})\n");
+		return snprintf(buffer, size, "    TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAB})\n");
 	case TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAC})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAC})\n");
 	case TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAD})\n");
+		return snprintf(buffer, size, "    TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAD})\n");
 	case TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return snprintf(buffer, size, "    	TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAE})\n");
+		return snprintf(buffer, size, "    TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAE})\n");
 
-		// RFC 8442: ECDHE_PSK with AES-GCM and AES-CCM Cipher Suites for TLS 1.2 and DTLS 1.2
+	// RFC 8442: ECDHE_PSK with AES-GCM and AES-CCM Cipher Suites for TLS 1.2 and DTLS 1.2
 	case TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256 (ID {0xD0, 0x01})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256 (ID {0xD0, 0x01})\n");
 	case TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 (ID {0xD0, 0x02})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 (ID {0xD0, 0x02})\n");
 	case TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 (ID {0xD0, 0x03})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 (ID {0xD0, 0x03})\n");
 	case TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256:
-		return snprintf(buffer, size, "    	TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 (ID {0xD0, 0x05})\n");
+		return snprintf(buffer, size, "    TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 (ID {0xD0, 0x05})\n");
 
 	default:
-		return snprintf(buffer, size, "    	Unknown (ID {%02hhx, %02hhx})\n", o1, o2);
+		// Check GREASE values
+		if (o1 == o2)
+		{
+			if ((o1 & 0x0F) == 0x0A)
+			{
+				return snprintf(buffer, size, "    GREASE (ID {%02hhx, %02hhx})\n", o1, o2);
+			}
+		}
+
+		return snprintf(buffer, size, "    Unknown (ID {%02hhx, %02hhx})\n", o1, o2);
 	}
 }
 
