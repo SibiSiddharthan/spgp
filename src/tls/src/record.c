@@ -63,9 +63,9 @@ void tls_record_read(tls_record **record, void *data, uint32_t size)
 	*record = result;
 }
 
-uint32_t tls_record_write(tls_record *record, void *data, uint32_t size)
+uint32_t tls_record_write(tls_record *record, void *buffer, uint32_t size)
 {
-	uint8_t *out = data;
+	uint8_t *out = buffer;
 	uint32_t pos = 0;
 
 	if (size < (5 + record->size))
@@ -102,68 +102,68 @@ uint32_t tls_record_write(tls_record *record, void *data, uint32_t size)
 	return pos;
 }
 
-uint32_t tls_record_print(tls_record *record, void *data, uint32_t size)
+uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size)
 {
 	uint32_t pos = 0;
 
 	// Content Type
-	pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Content Type: ");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Content Type: ");
 
 	switch (record->content)
 	{
 	case TLS_INVALID_CONTENT:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Invalid Content Type (ID 0)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Invalid Content Type (ID 0)\n");
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Cipher Specification Change (ID 20)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Cipher Specification Change (ID 20)\n");
 		break;
 	case TLS_ALERT:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS Alert (ID 21)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Alert (ID 21)\n");
 		break;
 	case TLS_HANDSHAKE:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS Handshake (ID 22)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Handshake (ID 22)\n");
 		break;
 	case TLS_APPLICATION_DATA:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Application Data (ID 23)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Application Data (ID 23)\n");
 		break;
 	case TLS_HEARTBEAT:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS Heartbeat (ID 24)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Heartbeat (ID 24)\n");
 		break;
 	case TLS_CID:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Content Identifier (ID 25)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Content Identifier (ID 25)\n");
 		break;
 	case TLS_ACK:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS Acknowledge (ID 26)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Acknowledge (ID 26)\n");
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Unknown (ID %hhu)\n", record->content);
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", record->content);
 		break;
 	}
 
 	// Protocol Version
-	pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Protocol Version: ");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Protocol Version: ");
 
 	switch ((record->version.major << 8) + record->version.minor)
 	{
 	case TLS_VERSION_1_0:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS 1.0 (3, 1)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
 		break;
 	case TLS_VERSION_1_1:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS 1.1 (3, 2)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.1 (3, 2)\n");
 		break;
 	case TLS_VERSION_1_2:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS 1.2 (3, 3)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.2 (3, 3)\n");
 		break;
 	case TLS_VERSION_1_3:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "TLS 1.3 (3, 4)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Unkown (%hhu, %hhu)\n", record->version.major, record->version.minor);
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unkown (%hhu, %hhu)\n", record->version.major, record->version.minor);
 		break;
 	}
 
 	// Record Size
-	pos += snprintf(PTR_OFFSET(data, pos), size - pos, "Record Size: %hu\n", record->size);
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Record Size: %hu\n", record->size);
 
 	switch (record->content)
 	{
