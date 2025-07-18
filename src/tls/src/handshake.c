@@ -6,6 +6,8 @@
 */
 
 #include <tls/handshake.h>
+#include <tls/version.h>
+
 #include <load.h>
 #include <ptr.h>
 
@@ -57,7 +59,7 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 	LOAD_8(&hello->compression_methods_size, in + pos);
 	pos += 1;
 
-	if(hello->compression_methods_size > 0)
+	if (hello->compression_methods_size > 0)
 	{
 		memcpy(hello->data + offset, in + pos, hello->compression_methods_size);
 		pos += hello->compression_methods_size;
@@ -174,6 +176,74 @@ uint32_t tls_handshake_write(tls_handshake_header *handshake, void *buffer, uint
 	return pos;
 }
 
+static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+static uint32_t print_hex(void *buffer, void *data, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		uint8_t a, b;
+
+		a = ((uint8_t *)data)[i] / 16;
+		b = ((uint8_t *)data)[i] % 16;
+
+		out[pos++] = hex_lower_table[a];
+		out[pos++] = hex_lower_table[b];
+	}
+
+	out[pos++] = '\n';
+
+	return pos;
+}
+
+static uint32_t print_bytes(void *buffer, uint32_t buffer_size, char *prefix, void *data, uint32_t data_size)
+{
+	uint32_t pos = 0;
+
+	pos += snprintf(PTR_OFFSET(buffer, pos), buffer_size, "%s (%u bytes): ", prefix, data_size);
+	pos += print_hex(PTR_OFFSET(buffer, pos), data, data_size);
+
+	return pos;
+}
+
+static uint32_t tls_client_hello_print(tls_client_hello *hello, void *buffer, uint32_t size)
+{
+	uint32_t pos = 0;
+
+	// Protocol Version
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Protocol Version: ");
+
+	switch (TLS_VERSION_RAW(hello->version))
+	{
+	case TLS_VERSION_1_0:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
+		break;
+	case TLS_VERSION_1_1:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.1 (3, 2)\n");
+		break;
+	case TLS_VERSION_1_2:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.2 (3, 3)\n");
+		break;
+	case TLS_VERSION_1_3:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unkown (%hhu, %hhu)\n", hello->version.major, hello->version.minor);
+		break;
+	}
+
+	// Random
+	pos += print_bytes(PTR_OFFSET(buffer, pos), size - pos, "Random", hello->random, 32);
+
+	// Session ID
+	pos += print_bytes(PTR_OFFSET(buffer, pos), size - pos, "Session ID", hello->session.id, hello->session.size);
+
+	return pos;
+}
+
 uint32_t tls_handshake_print(tls_handshake_header *handshake, void *buffer, uint32_t size)
 {
 	uint32_t pos = 0;
@@ -254,8 +324,12 @@ uint32_t tls_handshake_print(tls_handshake_header *handshake, void *buffer, uint
 	switch (handshake->handshake_type)
 	{
 	case TLS_HELLO_REQUEST:
+		break;
 	case TLS_CLIENT_HELLO:
+		pos += tls_client_hello_print(handshake, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_SERVER_HELLO:
+		break;
 	case TLS_HELLO_VERIFY_REQUEST:
 	case TLS_NEW_SESSION_TICKET:
 	case TLS_END_OF_EARLY_DATA:
