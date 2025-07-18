@@ -83,8 +83,11 @@ uint32_t tls_record_write(tls_record *record, void *buffer, uint32_t size)
 	pos += 1;
 
 	// 2-octet protocol version
-	LOAD_16(out + pos, &record->version);
-	pos += 2;
+	LOAD_8(out + pos, &record->version.major);
+	pos += 1;
+
+	LOAD_8(out + pos, &record->version.minor);
+	pos += 1;
 
 	// 2-octet record size
 	LOAD_16BE(out + pos, &record->size);

@@ -9,6 +9,7 @@
 #define TLS_HANDSHAKE_H
 
 #include <stdint.h>
+#include <tls/version.h>
 
 typedef enum _tls_handshake_type
 {
@@ -52,7 +53,7 @@ typedef struct _tls_client_hello
 {
 	tls_handshake_header header;
 
-	uint16_t version;
+	tls_protocol_version version;
 	uint8_t compression_methods_size;
 	uint16_t cipher_suites_size;
 	uint16_t extensions_size;
@@ -65,7 +66,7 @@ typedef struct _tls_server_hello
 {
 	tls_handshake_header header;
 
-	uint16_t version;
+	tls_protocol_version version;
 	uint16_t cipher_suite;
 	uint8_t compression_method;
 	uint16_t extensions_size;
