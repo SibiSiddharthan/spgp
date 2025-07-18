@@ -320,6 +320,32 @@ static uint32_t print_cipher_suite(void *buffer, uint32_t size, uint8_t o1, uint
 	case TLS_DH_ANON_WITH_AES_256_CBC_SHA256:
 		return snprintf(buffer, size, "    TLS_DH_ANON_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6D})\n");
 
+	// RFC 5288: AES Galois Counter Mode (GCM) Cipher Suites for TLS
+	case TLS_RSA_WITH_AES_128_GCM_SHA256:
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_128_GCM_SHA256 (ID {0x00, 0x9C})\n");
+	case TLS_RSA_WITH_AES_256_GCM_SHA384:
+		return snprintf(buffer, size, "    TLS_RSA_WITH_AES_256_GCM_SHA384 (ID {0x00, 0x9D})\n");
+	case TLS_DHE_RSA_WITH_AES_128_GCM_SHA256:
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 (ID {0x00, 0x9E})\n");
+	case TLS_DHE_RSA_WITH_AES_256_GCM_SHA384:
+		return snprintf(buffer, size, "    TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 (ID {0x00, 0x9F})\n");
+	case TLS_DH_RSA_WITH_AES_128_GCM_SHA256:
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA0})\n");
+	case TLS_DH_RSA_WITH_AES_256_GCM_SHA384:
+		return snprintf(buffer, size, "    TLS_DH_RSA_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA1})\n");
+	case TLS_DHE_DSS_WITH_AES_128_GCM_SHA256:
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA2})\n");
+	case TLS_DHE_DSS_WITH_AES_256_GCM_SHA384:
+		return snprintf(buffer, size, "    TLS_DHE_DSS_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA3})\n");
+	case TLS_DH_DSS_WITH_AES_128_GCM_SHA256:
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA4})\n");
+	case TLS_DH_DSS_WITH_AES_256_GCM_SHA384:
+		return snprintf(buffer, size, "    TLS_DH_DSS_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA5})\n");
+	case TLS_DH_anon_WITH_AES_128_GCM_SHA256:
+		return snprintf(buffer, size, "    TLS_DH_anon_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA6})\n");
+	case TLS_DH_anon_WITH_AES_256_GCM_SHA384:
+		return snprintf(buffer, size, "    TLS_DH_anon_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA7})\n");
+
 	// RFC 5487: Pre-Shared Key Cipher Suites for TLS with SHA-256/384 and AES Galois Counter Mode
 	case TLS_PSK_WITH_AES_128_GCM_SHA256:
 		return snprintf(buffer, size, "    TLS_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA8})\n");
