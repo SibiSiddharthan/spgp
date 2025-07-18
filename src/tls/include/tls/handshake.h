@@ -100,5 +100,6 @@ typedef struct _tls_key_update
 
 void tls_handshake_read(void **handshake, void *data, uint32_t size);
 uint32_t tls_handshake_write(tls_handshake_header *handshake, void *buffer, uint32_t size);
+uint32_t tls_handshake_print(tls_handshake_header *handshake, void *buffer, uint32_t size);
 
 #endif
