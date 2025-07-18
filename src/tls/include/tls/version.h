@@ -15,4 +15,12 @@
 
 #define TLS_VERSION_DEFAULT TLS_VERSION_1_2
 
+typedef struct _tls_protocol_version
+{
+	uint8_t major;
+	uint8_t minor;
+} tls_protocol_version;
+
+#define TLS_VERSION_RAW(V) ((((uint16_t)((V).major)) << 8) + ((uint16_t)((V).minor)))
+
 #endif

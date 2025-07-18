@@ -9,6 +9,7 @@
 #define TLS_RECORD_H
 
 #include <stdint.h>
+#include <tls/version.h>
 
 typedef enum _tls_content_type
 {
@@ -21,12 +22,6 @@ typedef enum _tls_content_type
 	TLS_CID = 25,
 	TLS_ACK = 26
 } tls_content_type;
-
-typedef struct _tls_protocol_version
-{
-	uint8_t major;
-	uint8_t minor;
-} tls_protocol_version;
 
 typedef struct _tls_record
 {

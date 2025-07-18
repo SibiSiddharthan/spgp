@@ -150,7 +150,7 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size)
 	// Protocol Version
 	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Protocol Version: ");
 
-	switch ((record->version.major << 8) + record->version.minor)
+	switch (TLS_VERSION_RAW(record->version))
 	{
 	case TLS_VERSION_1_0:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
