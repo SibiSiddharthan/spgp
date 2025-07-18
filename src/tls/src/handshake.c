@@ -833,11 +833,11 @@ static uint32_t print_cipher_suite(void *buffer, uint32_t size, uint8_t o1, uint
 		{
 			if ((o1 & 0x0F) == 0x0A)
 			{
-				return snprintf(buffer, size, "    GREASE (ID {%02hhx, %02hhx})\n", o1, o2);
+				return snprintf(buffer, size, "    GREASE (ID {0x%02hhx, 0x%02hhx})\n", o1, o2);
 			}
 		}
 
-		return snprintf(buffer, size, "    Unknown (ID {%02hhx, %02hhx})\n", o1, o2);
+		return snprintf(buffer, size, "    Unknown (ID {0x%02hhx, 0x%02hhx})\n", o1, o2);
 	}
 }
 
