@@ -231,7 +231,7 @@ static uint32_t tls_client_hello_print(tls_client_hello *hello, void *buffer, ui
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unkown (%hhu, %hhu)\n", hello->version.major, hello->version.minor);
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (%hhu, %hhu)\n", hello->version.major, hello->version.minor);
 		break;
 	}
 
@@ -240,6 +240,28 @@ static uint32_t tls_client_hello_print(tls_client_hello *hello, void *buffer, ui
 
 	// Session ID
 	pos += print_bytes(PTR_OFFSET(buffer, pos), size - pos, "Session ID", hello->session.id, hello->session.size);
+
+	// Compression Methods
+	if (hello->compression_methods_size > 0)
+	{
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Compression Methods:\n");
+
+		for (uint32_t i = 0; i < hello->compression_methods_size; ++i)
+		{
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "    %hhu\n", hello->data[hello->cipher_suites_size + i]);
+		}
+	}
+
+	// Cipher Suites
+	if (hello->cipher_suites_size > 0)
+	{
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Preferred Cipher Suites:\n");
+
+		for (uint32_t i = 0; i < hello->cipher_suites_size; i += 2)
+		{
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "    (%hhu, %hhu)\n", hello->data[i], hello->data[i + 1]);
+		}
+	}
 
 	return pos;
 }
