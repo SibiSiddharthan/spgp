@@ -33,9 +33,11 @@ void tls_alert_read(tls_alert **alert, void *data, uint32_t size)
 
 	// 1 octet alert level
 	LOAD_8(&(*alert)->level, in + pos);
-
+	pos += 1;
+	
 	// 1 octet alert description
 	LOAD_8(&(*alert)->description, in + pos);
+	pos += 1;
 
 	return;
 }
@@ -52,9 +54,11 @@ uint32_t tls_alert_write(tls_alert *alert, void *buffer, uint32_t size)
 
 	// 1 octet alert level
 	LOAD_8(out + pos, &alert->level);
+	pos += 1;
 
 	// 1 octet alert description
 	LOAD_8(out + pos, &alert->description);
+	pos += 1;
 
 	return pos;
 }
