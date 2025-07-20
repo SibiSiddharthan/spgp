@@ -34,14 +34,14 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 	pos += 32;
 
 	// 1 octet session id size
-	LOAD_8(&hello->session.size, in + pos);
+	LOAD_8(&hello->session_id_size, in + pos);
 	pos += 1;
 
 	// N octets of session id
-	if (hello->session.size > 0)
+	if (hello->session_id_size > 0)
 	{
-		memcpy(&hello->session.id, in + pos, hello->session.size);
-		pos += hello->session.size;
+		memcpy(&hello->session_id, in + pos, hello->session_id_size);
+		pos += hello->session_id_size;
 	}
 
 	// 2 octet cipher suites size
@@ -891,7 +891,10 @@ static uint32_t tls_client_hello_print(tls_client_hello *hello, void *buffer, ui
 	pos += print_bytes(PTR_OFFSET(buffer, pos), size - pos, "Random", hello->random, 32);
 
 	// Session ID
-	pos += print_bytes(PTR_OFFSET(buffer, pos), size - pos, "Session ID", hello->session.id, hello->session.size);
+	if (hello->session_id_size > 0)
+	{
+		pos += print_bytes(PTR_OFFSET(buffer, pos), size - pos, "Session ID", hello->session_id, hello->session_id_size);
+	}
 
 	// Compression Methods
 	if (hello->compression_methods_size > 0)

@@ -8,8 +8,8 @@
 #ifndef TLS_HANDSHAKE_H
 #define TLS_HANDSHAKE_H
 
-#include <stdint.h>
 #include <tls/version.h>
+#include <tls/extensions.h>
 
 typedef enum _tls_handshake_type
 {
@@ -43,23 +43,22 @@ typedef struct _tls_handshake_header
 
 typedef tls_handshake_header tls_hello_request, tls_end_of_early_data;
 
-typedef struct _tls_session_id
-{
-	uint8_t size;
-	uint8_t id[32];
-} tls_session_id;
-
 typedef struct _tls_client_hello
 {
 	tls_handshake_header header;
 
 	tls_protocol_version version;
-	uint8_t compression_methods_size;
 	uint16_t cipher_suites_size;
+	uint8_t compression_methods_size;
+	uint8_t session_id_size;
 	uint16_t extensions_size;
-	tls_session_id session;
+	uint16_t extensions_count;
+	uint8_t session_id[32];
 	uint8_t random[32];
+	void **extensions;
+
 	uint8_t data[];
+
 } tls_client_hello;
 
 typedef struct _tls_server_hello
@@ -69,10 +68,13 @@ typedef struct _tls_server_hello
 	tls_protocol_version version;
 	uint16_t cipher_suite;
 	uint8_t compression_method;
+	uint8_t session_id_size;
 	uint16_t extensions_size;
-	tls_session_id session;
+	uint16_t extensions_count;
+	uint8_t session_id[32];
 	uint8_t random[32];
-	uint8_t data[];
+	void **extensions;
+
 } tls_server_hello;
 
 typedef struct _tls_new_session_ticket
