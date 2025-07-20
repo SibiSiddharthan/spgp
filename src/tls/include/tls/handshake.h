@@ -8,6 +8,7 @@
 #ifndef TLS_HANDSHAKE_H
 #define TLS_HANDSHAKE_H
 
+#include <tls/types.h>
 #include <tls/version.h>
 #include <tls/extensions.h>
 

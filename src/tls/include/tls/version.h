@@ -8,6 +8,8 @@
 #ifndef TLS_VERSION_H
 #define TLS_VERSION_H
 
+#include <tls/types.h>
+
 #define TLS_VERSION_1_0 0x0301 // TLS 1.0
 #define TLS_VERSION_1_1 0x0302 // TLS 1.1
 #define TLS_VERSION_1_2 0x0303 // TLS 1.2

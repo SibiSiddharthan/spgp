@@ -8,7 +8,7 @@
 #ifndef TLS_ALERT_H
 #define TLS_ALERT_H
 
-#include <stdint.h>
+#include <tls/types.h>
 
 typedef enum _tls_alert_level
 {

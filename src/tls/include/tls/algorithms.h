@@ -8,7 +8,7 @@
 #ifndef TLS_ALGORITHMS_H
 #define TLS_ALGORITHMS_H
 
-#include <stdint.h>
+#include <tls/types.h>
 
 #define TLS_MAKE_CIPHER_SUITE(A, B) ((((uint16_t)(A)) << 8) + ((uint16_t)(B)))
 

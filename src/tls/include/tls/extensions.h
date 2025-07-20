@@ -8,7 +8,7 @@
 #ifndef TLS_EXTENSIONS_H
 #define TLS_EXTENSIONS_H
 
-#include <stdint.h>
+#include <tls/types.h>
 
 typedef enum _tls_extension_type
 {

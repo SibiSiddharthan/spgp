@@ -8,7 +8,7 @@
 #ifndef TLS_RECORD_H
 #define TLS_RECORD_H
 
-#include <stdint.h>
+#include <tls/types.h>
 #include <tls/version.h>
 
 typedef enum _tls_content_type
