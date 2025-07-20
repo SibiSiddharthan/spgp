@@ -458,7 +458,7 @@ static uint32_t print_cipher_suite(void *buffer, uint32_t size, uint8_t o1, uint
 	case TLS_AES_128_CCM_8_SHA256:
 		return snprintf(buffer, size, "    TLS_AES_128_CCM_8_SHA256 (ID {0x13, 0x05})\n");
 
-		// RFC 8422:  Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
+	// RFC 8422:  Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 	case TLS_ECDHE_ECDSA_WITH_NULL_SHA1:
 		return snprintf(buffer, size, "    TLS_ECDHE_ECDSA_WITH_NULL_SHA1 (ID {0xC0, 0x06})\n");
 	case TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA1:
@@ -485,6 +485,26 @@ static uint32_t print_cipher_suite(void *buffer, uint32_t size, uint8_t o1, uint
 		return snprintf(buffer, size, "    TLS_ECDH_ANON_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x18})\n");
 	case TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1:
 		return snprintf(buffer, size, "    TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x19})\n");
+
+	// RFC 5054: Using the Secure Remote Password (SRP) Protocol for TLS Authentication
+	case TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x1A})\n");
+	case TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x1B})\n");
+	case TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x1C})\n");
+	case TLS_SRP_SHA_WITH_AES_128_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x1D})\n");
+	case TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x1E})\n");
+	case TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x1F})\n");
+	case TLS_SRP_SHA_WITH_AES_256_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x20})\n");
+	case TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x21})\n");
+	case TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA1:
+		return snprintf(buffer, size, "    TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x22})\n");
 
 	// RFC 5289: TLS Elliptic Curve Cipher Suites with SHA-256/384 and AES Galois Counter Mode (GCM)
 	case TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:
