@@ -938,6 +938,16 @@ static uint32_t tls_client_hello_print(tls_client_hello *hello, void *buffer, ui
 		}
 	}
 
+	if (hello->extensions_count > 0)
+	{
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", hello->extensions_size);
+
+		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		{
+			pos += tls_extension_print(hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos);
+		}
+	}
+
 	return pos;
 }
 
