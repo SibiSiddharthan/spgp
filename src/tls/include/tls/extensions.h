@@ -64,11 +64,14 @@ typedef enum _tls_extension_type
 	TLS_EXT_EXTERNAL_SESSION_ID = 56,
 } tls_extension_type;
 
-typedef struct _tls_extension
+typedef struct _tls_extension_header
 {
 	tls_extension_type extension;
 	uint16_t size;
-	void *data;
-} tls_extension;
+} tls_extension_header;
+
+void tls_extension_read(void **extension, void *data, uint32_t size);
+uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
+uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size);
 
 #endif
