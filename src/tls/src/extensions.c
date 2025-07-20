@@ -147,7 +147,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size)
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Truncated HMAC (ID 4)\n");
 		break;
 	case TLS_EXT_STATUS_REQUEST:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Status Request (Legacy) (ID 5)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Status Request (ID 5)\n");
 		break;
 	case TLS_EXT_USER_MAPPING:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "User Mapping (ID 6)\n");
@@ -165,7 +165,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size)
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Supported Groups (ID 10)\n");
 		break;
 	case TLS_EXT_EC_POINT_FORMATS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "EC Point Formates (ID 11)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "EC Point Formats (ID 11)\n");
 		break;
 	case TLS_EXT_SRP:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Secure Remote Password (ID 12)\n");
@@ -287,12 +287,12 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size)
 	}
 
 	// Extension Size
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Extension Size: %hu bytes", header->size);
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Extension Size: %hu bytes\n", header->size);
 
 	return pos;
 }
 
-uint32_t tls_extension_count(void *data, uint32_t size)
+uint16_t tls_extension_count(void *data, uint32_t size)
 {
 	uint8_t *in = data;
 	uint32_t pos = 0;
