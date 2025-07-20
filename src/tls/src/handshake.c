@@ -8,6 +8,7 @@
 #include <tls/algorithms.h>
 #include <tls/handshake.h>
 #include <tls/version.h>
+#include <tls/extensions.h>
 
 #include <load.h>
 #include <ptr.h>
@@ -70,6 +71,25 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 	// 2 octet extensions size
 	LOAD_16BE(&hello->extensions_size, in + pos);
 	pos += 2;
+
+	if (hello->extensions_size > 0)
+	{
+		hello->extensions_count = tls_extension_count(in + pos, size - pos);
+		hello->extensions = malloc(hello->extensions_count * sizeof(void *));
+
+		if (hello->extensions == NULL)
+		{
+			return;
+		}
+
+		memset(hello->extensions, 0, hello->extensions_count * sizeof(void *));
+
+		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		{
+			tls_extension_read(&hello->extensions[i], in + pos, size - pos);
+			pos += TLS_EXTENSION_SIZE(hello->extensions[i]);
+		}
+	}
 }
 
 void tls_handshake_read(void **handshake, void *data, uint32_t size)

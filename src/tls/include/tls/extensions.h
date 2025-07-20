@@ -76,4 +76,6 @@ void tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
 uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size);
 
+uint16_t tls_extension_count(void *data, uint32_t size);
+
 #endif
