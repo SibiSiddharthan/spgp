@@ -10,6 +10,8 @@
 
 #include <tls/types.h>
 
+#define TLS_EXTENSION_SIZE(H) ((((tls_extension_header *)(H))->size) + 4)
+
 typedef enum _tls_extension_type
 {
 	TLS_EXT_SERVER_NAME = 0,
