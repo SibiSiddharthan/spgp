@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(tls C)
 
-add_library(tls src/handshake.c src/record.c)
+add_library(tls src/alert.c src/handshake.c src/record.c)
 target_include_directories(tls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(WIN32)

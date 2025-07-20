@@ -58,4 +58,10 @@ typedef struct _tls_alert
 	uint8_t description;
 } tls_alert;
 
+#define TLS_ALERT_SIZE 2
+
+void tls_alert_read(tls_alert **alert, void *data, uint32_t size);
+uint32_t tls_alert_write(tls_alert *alert, void *buffer, uint32_t size);
+uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size);
+
 #endif
