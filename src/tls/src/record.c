@@ -5,6 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <tls/alert.h>
 #include <tls/record.h>
 #include <tls/version.h>
 #include <tls/handshake.h>
@@ -53,11 +54,11 @@ void tls_record_read(tls_record **record, void *data, uint32_t size)
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
 	case TLS_ALERT:
+		tls_alert_read(&result->data, PTR_OFFSET(data, pos), result->size);
+		break;
 	case TLS_HANDSHAKE:
-	{
 		tls_handshake_read(&result->data, PTR_OFFSET(data, pos), result->size);
-	}
-	break;
+		break;
 	case TLS_APPLICATION_DATA:
 	case TLS_HEARTBEAT:
 	case TLS_CID:
@@ -99,6 +100,8 @@ uint32_t tls_record_write(tls_record *record, void *buffer, uint32_t size)
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
 	case TLS_ALERT:
+		pos += tls_alert_write(record->data, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_HANDSHAKE:
 		pos += tls_handshake_write(record->data, PTR_OFFSET(buffer, pos), size - pos);
 		break;
@@ -181,6 +184,8 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size)
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
 	case TLS_ALERT:
+		pos += tls_alert_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_HANDSHAKE:
 		pos += tls_handshake_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
 		break;
