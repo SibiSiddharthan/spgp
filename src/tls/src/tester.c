@@ -39,7 +39,7 @@ DWORD handle_requests(PVOID socket)
 		}
 
 		tls_record_read(&record, buffer, status);
-		tls_record_print(record, print, 65536);
+		tls_record_print(record, print, 65536, 0);
 
 		printf("%s", print);
 	}

@@ -115,12 +115,12 @@ uint32_t tls_record_write(tls_record *record, void *buffer, uint32_t size)
 	return pos;
 }
 
-uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size)
+uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size, uint32_t indent)
 {
 	uint32_t pos = 0;
 
 	// Content Type
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Content Type: ");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sContent Type: ", indent * 4, "");
 
 	switch (record->content)
 	{
@@ -154,7 +154,7 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size)
 	}
 
 	// Protocol Version
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Protocol Version: ");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sProtocol Version: ", indent * 4, "");
 
 	switch (TLS_VERSION_RAW(record->version))
 	{
@@ -176,7 +176,7 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size)
 	}
 
 	// Record Size
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Record Size: %hu\n", record->size);
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sRecord Size: %hu\n", indent * 4, "", record->size);
 
 	switch (record->content)
 	{
@@ -187,7 +187,7 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size)
 		pos += tls_alert_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_HANDSHAKE:
-		pos += tls_handshake_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
+		pos += tls_handshake_print(record->data, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_APPLICATION_DATA:
 	case TLS_HEARTBEAT:

@@ -120,14 +120,14 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	return pos;
 }
 
-uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size)
+uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent)
 {
 	uint32_t pos = 0;
 
 	tls_extension_header *header = extension;
 
 	// Extension Type
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Extension Type: ");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sExtension Type: ", indent * 4, "");
 
 	switch (header->extension)
 	{
@@ -287,7 +287,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size)
 	}
 
 	// Extension Size
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Extension Size: %hu bytes\n", header->size);
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sExtension Size: %hu bytes\n", indent * 4, "", header->size);
 
 	return pos;
 }
