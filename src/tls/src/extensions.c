@@ -112,6 +112,26 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	}
 	break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
+	{
+		tls_extension_max_fragment_length *fragment = malloc(sizeof(tls_extension_max_fragment_length));
+
+		if (fragment == NULL)
+		{
+			return;
+		}
+
+		memset(fragment, 0, sizeof(tls_extension_max_fragment_length));
+
+		// Copy the header
+		fragment->header = header;
+
+		// 1 octet length identifier
+		LOAD_8(&fragment->max_fragment_length, in + pos);
+		pos += 1;
+
+		*extension = fragment;
+	}
+	break;
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
 	case TLS_EXT_TRUSTED_CA_KEYS:
 	case TLS_EXT_TRUNCATED_HMAC:
@@ -231,6 +251,14 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	}
 	break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
+	{
+		tls_extension_max_fragment_length *fragment = extension;
+
+		// 1 octet length identifier
+		LOAD_8(out + pos, &fragment->max_fragment_length);
+		pos += 1;
+	}
+	break;
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
 	case TLS_EXT_TRUSTED_CA_KEYS:
 	case TLS_EXT_TRUNCATED_HMAC:
@@ -482,6 +510,31 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	}
 	break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
+	{
+		tls_extension_max_fragment_length *fragment = extension;
+
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sMaximum Fragment Length: ", (indent + 1) * 4, "");
+
+		switch (fragment->max_fragment_length)
+		{
+		case TLS_MAX_FRAGMENT_LENGTH_512:
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "512 (ID 1)\n");
+			break;
+		case TLS_MAX_FRAGMENT_LENGTH_1024:
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "1024 (ID 2)\n");
+			break;
+		case TLS_MAX_FRAGMENT_LENGTH_2048:
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "2048 (ID 3)\n");
+			break;
+		case TLS_MAX_FRAGMENT_LENGTH_4096:
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "4096 (ID 4)\n");
+			break;
+		default:
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu) (Assuming 16384)\n", fragment->max_fragment_length);
+			break;
+		}
+	}
+	break;
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
 	case TLS_EXT_TRUSTED_CA_KEYS:
 	case TLS_EXT_TRUNCATED_HMAC:

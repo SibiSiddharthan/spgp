@@ -92,6 +92,18 @@ typedef struct _tls_extension_server_name
 	void **list;
 } tls_extension_server_name;
 
+#define TLS_MAX_FRAGMENT_LENGTH      16384
+#define TLS_MAX_FRAGMENT_LENGTH_512  1 // (1 << 9)
+#define TLS_MAX_FRAGMENT_LENGTH_1024 2 // (1 << 10)
+#define TLS_MAX_FRAGMENT_LENGTH_2048 3 // (1 << 11)
+#define TLS_MAX_FRAGMENT_LENGTH_4096 4 // (1 << 12)
+
+typedef struct _tls_extension_max_fragment_length
+{
+	tls_extension_header header;
+	uint8_t max_fragment_length;
+} tls_extension_max_fragment_length;
+
 void tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
 uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent);
