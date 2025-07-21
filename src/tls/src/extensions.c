@@ -19,20 +19,96 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	uint8_t *in = data;
 	uint32_t pos = 0;
 
-	tls_extension_type extension_type = 0;
-	uint16_t extension_size = 0;
+	tls_extension_header header = {0};
 
 	// 2 octet extension type
-	LOAD_16BE(&extension_type, in + pos);
+	LOAD_16BE(&header.extension, in + pos);
 	pos += 2;
 
 	// 2 octet extension size
-	LOAD_16BE(&extension_size, in + pos);
+	LOAD_16BE(&header.size, in + pos);
 	pos += 2;
 
-	switch (extension_type)
+	switch (header.extension)
 	{
 	case TLS_EXT_SERVER_NAME:
+	{
+		tls_extension_server_name *server = malloc(sizeof(tls_extension_server_name));
+		uint32_t new_pos = 0;
+		uint16_t name_size = 0;
+		uint16_t name_count = 0;
+
+		if (server == NULL)
+		{
+			return;
+		}
+
+		memset(server, 0, sizeof(tls_extension_server_name));
+
+		server->header = header;
+
+		// 2 octet list size
+		LOAD_16BE(&server->size, in + pos);
+		pos += 2;
+
+		while (new_pos < server->size)
+		{
+			LOAD_16BE(&name_size, in + pos + new_pos + 1);
+			new_pos += 3 + name_size;
+			name_count += 1;
+		}
+
+		server->count = name_count;
+		server->list = malloc(sizeof(void *) * server->count);
+
+		if (server->list == NULL)
+		{
+			return;
+		}
+
+		memset(server->list, 0, sizeof(void *) * server->count);
+
+		for (uint16_t i = 0; i < name_count; ++i)
+		{
+			tls_server_name *name = NULL;
+			uint16_t name_size = 0;
+			tls_name_type name_type = 0;
+
+			// 1 octet name type
+			LOAD_8(&name_type, in + pos);
+			pos += 1;
+
+			switch (name_type)
+			{
+			case TLS_HOST_NAME:
+			{
+				// 2 octet name size
+				LOAD_16BE(&name_size, in + pos);
+				pos += 2;
+
+				name = malloc(sizeof(tls_server_name) + name_size);
+
+				if (name == NULL)
+				{
+					return;
+				}
+
+				memset(name, 0, sizeof(tls_server_name) + name_size);
+
+				name->name_type = name_type;
+				name->name_size = name_size;
+
+				// N octets of name
+				memcpy(name->name, in + pos, name->name_size);
+				pos += name->name_size;
+			}
+			break;
+			}
+
+			server->list[i] = name;
+		}
+	}
+	break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
 	case TLS_EXT_TRUSTED_CA_KEYS:
@@ -84,17 +160,17 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_EXTERNAL_SESSION_ID:
 	default:
 	{
-		tls_extension_header *header = malloc(sizeof(tls_extension_header));
+		tls_extension_header *unknown = malloc(sizeof(tls_extension_header));
 
-		if (header == NULL)
+		if (unknown == NULL)
 		{
 			return;
 		}
 
-		header->extension = extension_type;
-		header->size = extension_size;
+		unknown->extension = header.extension;
+		unknown->size = header.size;
 
-		*extension = header;
+		*extension = unknown;
 	}
 	break;
 	}
@@ -116,6 +192,94 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	// 2 octet extension size
 	LOAD_16BE(out + pos, &header->size);
 	pos += 2;
+
+	switch (header->extension)
+	{
+	case TLS_EXT_SERVER_NAME:
+	{
+		tls_extension_server_name *server = extension;
+
+		// 2 octet list size
+		LOAD_16BE(out + pos, &server->size);
+		pos += 2;
+
+		for (uint16_t i = 0; i < server->count; ++i)
+		{
+			tls_server_name *name = server->list[i];
+
+			// 1 octet name type
+			LOAD_8(out + pos, name->name_type);
+			pos += 1;
+
+			switch (name->name_type)
+			{
+			case TLS_HOST_NAME:
+			{
+				// 2 octet name size
+				LOAD_16BE(out + pos, &name->name_size);
+				pos += 2;
+
+				// N octets of name
+				memcpy(out + pos, name->name, name->name_size);
+				pos += name->name_size;
+			}
+			break;
+			}
+		}
+	}
+	break;
+	case TLS_EXT_MAX_FRAGMENT_LENGTH:
+	case TLS_EXT_CLIENT_CERTIFICATE_URL:
+	case TLS_EXT_TRUSTED_CA_KEYS:
+	case TLS_EXT_TRUNCATED_HMAC:
+	case TLS_EXT_STATUS_REQUEST:
+	case TLS_EXT_USER_MAPPING:
+	case TLS_EXT_CLIENT_AUTHORIZATION:
+	case TLS_EXT_SERVER_AUTHORIZATION:
+	case TLS_EXT_CERTIFICATE_TYPE:
+	case TLS_EXT_SUPPORTED_GROUPS:
+	case TLS_EXT_EC_POINT_FORMATS:
+	case TLS_EXT_SRP:
+	case TLS_EXT_SIGNATURE_ALGORITHMS:
+	case TLS_EXT_USE_SRTP:
+	case TLS_EXT_HEARTBEAT:
+	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+	case TLS_EXT_STATUS_REQUEST_V2:
+	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
+	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+	case TLS_EXT_PADDING:
+	case TLS_EXT_ENCRYPT_THEN_MAC:
+	case TLS_EXT_EXTENDED_MASTER_SECRET:
+	case TLS_EXT_TOKEN_BINDING:
+	case TLS_EXT_CACHED_INFO:
+	case TLS_EXT_LTS:
+	case TLS_EXT_COMPRESS_CERTIFICATE:
+	case TLS_EXT_RECORD_SIZE_LIMIT:
+	case TLS_EXT_PASSWORD_PROTECT:
+	case TLS_EXT_PASSWORD_CLEAR:
+	case TLS_EXT_PASSWORD_SALT:
+	case TLS_EXT_TICKET_PINNING:
+	case TLS_EXT_DELEGATED_CREDENTIAL:
+	case TLS_EXT_SESSION_TICKET:
+	case TLS_EXT_PSK:
+	case TLS_EXT_EARLY_DATA:
+	case TLS_EXT_SUPPORTED_VERSIONS:
+	case TLS_EXT_COOKIE:
+	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
+	case TLS_EXT_CERTIFICATE_AUTHORITIES:
+	case TLS_EXT_OID_FILTERS:
+	case TLS_EXT_POST_HANDSHAKE_AUTH:
+	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
+	case TLS_EXT_KEY_SHARE:
+	case TLS_EXT_TRANSPARENCY_INFO:
+	case TLS_EXT_CONNECTION_INFO_LEGACY:
+	case TLS_EXT_CONNECTION_INFO:
+	case TLS_EXT_EXTERNAL_ID_HASH:
+	case TLS_EXT_EXTERNAL_SESSION_ID:
+	default:
+		break;
+	}
 
 	return pos;
 }
