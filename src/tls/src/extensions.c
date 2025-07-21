@@ -175,14 +175,14 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
-		tls_ec_point_format *format = malloc(sizeof(tls_ec_point_format) + (header.size - 1));
+		tls_extension_ec_point_format *format = malloc(sizeof(tls_extension_ec_point_format) + (header.size - 1));
 
 		if (format == NULL)
 		{
 			return;
 		}
 
-		memset(format, 0, sizeof(tls_ec_point_format) + (header.size - 1));
+		memset(format, 0, sizeof(tls_extension_ec_point_format) + (header.size - 1));
 
 		// Copy the header
 		format->header = header;
@@ -344,7 +344,7 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
-		tls_ec_point_format *format = extension;
+		tls_extension_ec_point_format *format = extension;
 
 		// 1 octet size
 		LOAD_8(out + pos, &format->size);
@@ -786,7 +786,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
-		tls_ec_point_format *format = extension;
+		tls_extension_ec_point_format *format = extension;
 
 		for (uint8_t i = 0; i < format->size; ++i)
 		{

@@ -455,6 +455,13 @@ typedef enum _tls_group
 
 } tls_group;
 
+typedef enum _tls_ec_point_format_type
+{
+	TLS_EC_POINT_UNCOMPRESSED = 0,
+	TLS_EC_POINT_ANSI_X962_COMPRESSED_PRIME = 1,
+	TLS_EC_POINT_ANSI_X962_COMPRESSED_CHAR2 = 2
+} tls_ec_point_format_type;
+
 // RFC 8701: Applying Generate Random Extensions And Sustain Extensibility (GREASE) to TLS Extensibility
 #define TLS_MAKE_GREASE_CIPHER_ID(A) ((((uint16_t)(A)) << 8) + ((uint16_t)(A)))
 

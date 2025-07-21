@@ -105,19 +105,12 @@ typedef struct _tls_extension_max_fragment_length
 	uint8_t max_fragment_length;
 } tls_extension_max_fragment_length;
 
-typedef enum _tls_ec_point_format_type
-{
-	TLS_EC_POINT_UNCOMPRESSED = 0,
-	TLS_EC_POINT_ANSI_X962_COMPRESSED_PRIME = 1,
-	TLS_EC_POINT_ANSI_X962_COMPRESSED_CHAR2 = 2
-} tls_ec_point_format_type;
-
-typedef struct _tls_ec_point_format
+typedef struct _tls_extension_ec_point_format
 {
 	tls_extension_header header;
 	uint8_t size;
 	uint8_t formats[];
-} tls_ec_point_format;
+} tls_extension_ec_point_format;
 
 typedef struct _tls_extension_ec_group
 {
