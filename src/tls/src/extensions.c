@@ -107,6 +107,8 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 			server->list[i] = name;
 		}
+
+		*extension = server;
 	}
 	break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
@@ -452,6 +454,85 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 
 	// Extension Size
 	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sExtension Size: %hu bytes\n", indent * 4, "", header->size);
+
+	switch (header->extension)
+	{
+	case TLS_EXT_SERVER_NAME:
+	{
+		tls_extension_server_name *server = extension;
+
+		for (uint16_t i = 0; i < server->count; ++i)
+		{
+			tls_server_name *name = server->list[i];
+
+			switch (name->name_type)
+			{
+			case TLS_HOST_NAME:
+			{
+				// Name Type
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sName Type: Host Name (ID 0)\n", (indent + 1) * 4, "");
+
+				// Name
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sName (%hu bytes): %.*s\n", (indent + 1) * 4, "", name->name_size,
+								name->name_size, name->name);
+			}
+			break;
+			}
+		}
+	}
+	break;
+	case TLS_EXT_MAX_FRAGMENT_LENGTH:
+	case TLS_EXT_CLIENT_CERTIFICATE_URL:
+	case TLS_EXT_TRUSTED_CA_KEYS:
+	case TLS_EXT_TRUNCATED_HMAC:
+	case TLS_EXT_STATUS_REQUEST:
+	case TLS_EXT_USER_MAPPING:
+	case TLS_EXT_CLIENT_AUTHORIZATION:
+	case TLS_EXT_SERVER_AUTHORIZATION:
+	case TLS_EXT_CERTIFICATE_TYPE:
+	case TLS_EXT_SUPPORTED_GROUPS:
+	case TLS_EXT_EC_POINT_FORMATS:
+	case TLS_EXT_SRP:
+	case TLS_EXT_SIGNATURE_ALGORITHMS:
+	case TLS_EXT_USE_SRTP:
+	case TLS_EXT_HEARTBEAT:
+	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+	case TLS_EXT_STATUS_REQUEST_V2:
+	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
+	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+	case TLS_EXT_PADDING:
+	case TLS_EXT_ENCRYPT_THEN_MAC:
+	case TLS_EXT_EXTENDED_MASTER_SECRET:
+	case TLS_EXT_TOKEN_BINDING:
+	case TLS_EXT_CACHED_INFO:
+	case TLS_EXT_LTS:
+	case TLS_EXT_COMPRESS_CERTIFICATE:
+	case TLS_EXT_RECORD_SIZE_LIMIT:
+	case TLS_EXT_PASSWORD_PROTECT:
+	case TLS_EXT_PASSWORD_CLEAR:
+	case TLS_EXT_PASSWORD_SALT:
+	case TLS_EXT_TICKET_PINNING:
+	case TLS_EXT_DELEGATED_CREDENTIAL:
+	case TLS_EXT_SESSION_TICKET:
+	case TLS_EXT_PSK:
+	case TLS_EXT_EARLY_DATA:
+	case TLS_EXT_SUPPORTED_VERSIONS:
+	case TLS_EXT_COOKIE:
+	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
+	case TLS_EXT_CERTIFICATE_AUTHORITIES:
+	case TLS_EXT_OID_FILTERS:
+	case TLS_EXT_POST_HANDSHAKE_AUTH:
+	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
+	case TLS_EXT_KEY_SHARE:
+	case TLS_EXT_TRANSPARENCY_INFO:
+	case TLS_EXT_CONNECTION_INFO_LEGACY:
+	case TLS_EXT_CONNECTION_INFO:
+	case TLS_EXT_EXTERNAL_ID_HASH:
+	case TLS_EXT_EXTERNAL_SESSION_ID:
+	default:
+		break;
+	}
 
 	return pos;
 }
