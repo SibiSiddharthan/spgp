@@ -123,7 +123,7 @@ typedef struct _tls_extension_ec_group
 {
 	tls_extension_header header;
 	uint16_t size;
-	uint8_t groups[];
+	uint16_t groups[];
 } tls_extension_ec_group;
 
 void tls_extension_read(void **extension, void *data, uint32_t size);

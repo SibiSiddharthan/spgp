@@ -164,8 +164,11 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		}
 
 		// N octets of data
-		memcpy(group->groups, in + pos, group->size);
-		pos += group->size;
+		for (uint16_t i = 0; i < group->size / 2; ++i)
+		{
+			LOAD_16BE(&group->groups[i], in + pos);
+			pos += 2;
+		}
 
 		*extension = group;
 	}
@@ -627,12 +630,165 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	// case TLS_EXT_SERVER_AUTHORIZATION:
 	// case TLS_EXT_CERTIFICATE_TYPE:
 	case TLS_EXT_SUPPORTED_GROUPS:
-		break;
+	{
+		tls_extension_ec_group *group = extension;
+
+		for (uint16_t i = 0; i < group->size / 2; ++i)
+		{
+			switch (group->groups[i])
+			{
+			case TLS_SECT_163K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect163k1 (ID 1)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_163R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect163r1 (ID 2)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_163R2:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect163r2 (ID 3)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_193R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect193r1 (ID 4)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_193R2:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect193r2 (ID 5)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_233K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect233k1 (ID 6)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_233R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect233r1 (ID 7)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_239K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect239k1 (ID 8)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_283K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect283k1 (ID 9)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_283R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect283r1 (ID 10)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_409K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect409k1 (ID 11)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_409R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect409r1 (ID 12)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_571K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect571k1 (ID 13)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECT_571R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssect571r1 (ID 14)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_160K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp160k1 (ID 15)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_160R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp160r1 (ID 16)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_160R2:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp160r2 (ID 17)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_192K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp192k1 (ID 18)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_192R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp192r1 (ID 19)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_224K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp224k1 (ID 20)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_224R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp224r1 (ID 21)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_256K1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp256k1 (ID 22)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_256R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp256r1 (ID 23)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_384R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp384r1 (ID 24)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SECP_521R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssecp521r1 (ID 25)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_BRAINPOOL_256R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sbrainpoolP256r1 (ID 26)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_BRAINPOOL_384R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sbrainpoolP384r1 (ID 27)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_BRAINPOOL_512R1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sbrainpoolP512r1 (ID 28)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_X25519:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sx25519 (ID 29)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_X448:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sx448 (ID 30)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_BRAINPOOL_256R1_TLS_13:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sbrainpoolP256r1tls13 (ID 31)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_BRAINPOOL_384R1_TLS_13:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sbrainpoolP384r1tls13 (ID 32)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_BRAINPOOL_512R1_TLS_13:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sbrainpoolP512r1tls13 (ID 33)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_GOST_256A:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGC256A (ID 34)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_GOST_256B:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGC256B (ID 35)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_GOST_256C:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGC256C (ID 36)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_GOST_256D:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGC256D (ID 37)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_GOST_512A:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGC512A (ID 38)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_GOST_512B:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGC512B (ID 39)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_GOST_512C:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGC512C (ID 40)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_SM2:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sSM2 (ID 41)\n", (indent + 1) * 4, "");
+				break;
+			default:
+			{
+				uint8_t o1 = 0, o2 = 0;
+
+				// Check GREASE values
+				o1 = (group->groups[i] >> 8) & 0xFF;
+				o2 = (group->groups[i] >> 0) & 0xFF;
+
+				if (o1 == o2)
+				{
+					if ((o1 & 0x0F) == 0x0A)
+					{
+						pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %02hhx%02hhx)\n", (indent + 1) * 4, "", o1, o2);
+						break;
+					}
+				}
+
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hu)\n", (indent + 1) * 4, "", group->groups[i]);
+			}
+			break;
+			}
+		}
+	}
+	break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
 		tls_ec_point_format *format = extension;
 
-		for (uint16_t i = 0; i < format->size; ++i)
+		for (uint8_t i = 0; i < format->size; ++i)
 		{
 			switch (format->formats[i])
 			{
