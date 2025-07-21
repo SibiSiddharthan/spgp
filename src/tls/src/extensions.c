@@ -132,15 +132,15 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		*extension = fragment;
 	}
 	break;
-	case TLS_EXT_CLIENT_CERTIFICATE_URL:
-	case TLS_EXT_TRUSTED_CA_KEYS:
-	case TLS_EXT_TRUNCATED_HMAC:
-	case TLS_EXT_STATUS_REQUEST:
-	case TLS_EXT_USER_MAPPING:
-	case TLS_EXT_CLIENT_AUTHORIZATION:
-	case TLS_EXT_SERVER_AUTHORIZATION:
-	case TLS_EXT_CERTIFICATE_TYPE:
-	case TLS_EXT_SUPPORTED_GROUPS:
+		// case TLS_EXT_CLIENT_CERTIFICATE_URL:
+		// case TLS_EXT_TRUSTED_CA_KEYS:
+		// case TLS_EXT_TRUNCATED_HMAC:
+		// case TLS_EXT_STATUS_REQUEST:
+		// case TLS_EXT_USER_MAPPING:
+		// case TLS_EXT_CLIENT_AUTHORIZATION:
+		// case TLS_EXT_SERVER_AUTHORIZATION:
+		// case TLS_EXT_CERTIFICATE_TYPE:
+		// case TLS_EXT_SUPPORTED_GROUPS:
 		break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
@@ -172,44 +172,44 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		*extension = format;
 	}
 	break;
-	case TLS_EXT_SRP:
-	case TLS_EXT_SIGNATURE_ALGORITHMS:
-	case TLS_EXT_USE_SRTP:
-	case TLS_EXT_HEARTBEAT:
-	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
-	case TLS_EXT_STATUS_REQUEST_V2:
-	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
-	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
-	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
-	case TLS_EXT_PADDING:
-	case TLS_EXT_ENCRYPT_THEN_MAC:
-	case TLS_EXT_EXTENDED_MASTER_SECRET:
-	case TLS_EXT_TOKEN_BINDING:
-	case TLS_EXT_CACHED_INFO:
-	case TLS_EXT_LTS:
-	case TLS_EXT_COMPRESS_CERTIFICATE:
-	case TLS_EXT_RECORD_SIZE_LIMIT:
-	case TLS_EXT_PASSWORD_PROTECT:
-	case TLS_EXT_PASSWORD_CLEAR:
-	case TLS_EXT_PASSWORD_SALT:
-	case TLS_EXT_TICKET_PINNING:
-	case TLS_EXT_DELEGATED_CREDENTIAL:
-	case TLS_EXT_SESSION_TICKET:
-	case TLS_EXT_PSK:
-	case TLS_EXT_EARLY_DATA:
-	case TLS_EXT_SUPPORTED_VERSIONS:
-	case TLS_EXT_COOKIE:
-	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
-	case TLS_EXT_CERTIFICATE_AUTHORITIES:
-	case TLS_EXT_OID_FILTERS:
-	case TLS_EXT_POST_HANDSHAKE_AUTH:
-	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
-	case TLS_EXT_KEY_SHARE:
-	case TLS_EXT_TRANSPARENCY_INFO:
-	case TLS_EXT_CONNECTION_INFO_LEGACY:
-	case TLS_EXT_CONNECTION_INFO:
-	case TLS_EXT_EXTERNAL_ID_HASH:
-	case TLS_EXT_EXTERNAL_SESSION_ID:
+	// case TLS_EXT_SRP:
+	// case TLS_EXT_SIGNATURE_ALGORITHMS:
+	// case TLS_EXT_USE_SRTP:
+	// case TLS_EXT_HEARTBEAT:
+	// case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+	// case TLS_EXT_STATUS_REQUEST_V2:
+	// case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+	// case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
+	// case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+	// case TLS_EXT_PADDING:
+	// case TLS_EXT_ENCRYPT_THEN_MAC:
+	// case TLS_EXT_EXTENDED_MASTER_SECRET:
+	// case TLS_EXT_TOKEN_BINDING:
+	// case TLS_EXT_CACHED_INFO:
+	// case TLS_EXT_LTS:
+	// case TLS_EXT_COMPRESS_CERTIFICATE:
+	// case TLS_EXT_RECORD_SIZE_LIMIT:
+	// case TLS_EXT_PASSWORD_PROTECT:
+	// case TLS_EXT_PASSWORD_CLEAR:
+	// case TLS_EXT_PASSWORD_SALT:
+	// case TLS_EXT_TICKET_PINNING:
+	// case TLS_EXT_DELEGATED_CREDENTIAL:
+	// case TLS_EXT_SESSION_TICKET:
+	// case TLS_EXT_PSK:
+	// case TLS_EXT_EARLY_DATA:
+	// case TLS_EXT_SUPPORTED_VERSIONS:
+	// case TLS_EXT_COOKIE:
+	// case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
+	// case TLS_EXT_CERTIFICATE_AUTHORITIES:
+	// case TLS_EXT_OID_FILTERS:
+	// case TLS_EXT_POST_HANDSHAKE_AUTH:
+	// case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
+	// case TLS_EXT_KEY_SHARE:
+	// case TLS_EXT_TRANSPARENCY_INFO:
+	// case TLS_EXT_CONNECTION_INFO_LEGACY:
+	// case TLS_EXT_CONNECTION_INFO:
+	// case TLS_EXT_EXTERNAL_ID_HASH:
+	// case TLS_EXT_EXTERNAL_SESSION_ID:
 	default:
 	{
 		tls_extension_header *unknown = malloc(sizeof(tls_extension_header));
@@ -578,16 +578,40 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		}
 	}
 	break;
-	case TLS_EXT_CLIENT_CERTIFICATE_URL:
-	case TLS_EXT_TRUSTED_CA_KEYS:
-	case TLS_EXT_TRUNCATED_HMAC:
-	case TLS_EXT_STATUS_REQUEST:
-	case TLS_EXT_USER_MAPPING:
-	case TLS_EXT_CLIENT_AUTHORIZATION:
-	case TLS_EXT_SERVER_AUTHORIZATION:
-	case TLS_EXT_CERTIFICATE_TYPE:
+	// case TLS_EXT_CLIENT_CERTIFICATE_URL:
+	// case TLS_EXT_TRUSTED_CA_KEYS:
+	// case TLS_EXT_TRUNCATED_HMAC:
+	// case TLS_EXT_STATUS_REQUEST:
+	// case TLS_EXT_USER_MAPPING:
+	// case TLS_EXT_CLIENT_AUTHORIZATION:
+	// case TLS_EXT_SERVER_AUTHORIZATION:
+	// case TLS_EXT_CERTIFICATE_TYPE:
 	case TLS_EXT_SUPPORTED_GROUPS:
+		break;
 	case TLS_EXT_EC_POINT_FORMATS:
+	{
+		tls_ec_point_format *format = extension;
+
+		for (uint16_t i = 0; i < format->size; ++i)
+		{
+			switch (format->formats[i])
+			{
+			case TLS_EC_POINT_UNCOMPRESSED:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUncompressed (ID 0)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_EC_POINT_ANSI_X962_COMPRESSED_PRIME:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sCompressed Prime (ID 1)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_EC_POINT_ANSI_X962_COMPRESSED_CHAR2:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sCompressed Binary (ID 2)\n", (indent + 1) * 4, "");
+				break;
+			default:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hhu)\n", (indent + 1) * 4, "", format->formats[i]);
+				break;
+			}
+		}
+	}
+	break;
 	case TLS_EXT_SRP:
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
 	case TLS_EXT_USE_SRTP:
