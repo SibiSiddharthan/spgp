@@ -9,6 +9,7 @@
 #define TLS_EXTENSIONS_H
 
 #include <tls/types.h>
+#include <tls/algorithms.h>
 
 #define TLS_EXTENSION_SIZE(H) ((((tls_extension_header *)(H))->size) + 4)
 
@@ -117,6 +118,13 @@ typedef struct _tls_ec_point_format
 	uint8_t size;
 	uint8_t formats[];
 } tls_ec_point_format;
+
+typedef struct _tls_extension_ec_group
+{
+	tls_extension_header header;
+	uint16_t size;
+	uint8_t groups[];
+} tls_extension_ec_group;
 
 void tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);

@@ -140,8 +140,36 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		// case TLS_EXT_CLIENT_AUTHORIZATION:
 		// case TLS_EXT_SERVER_AUTHORIZATION:
 		// case TLS_EXT_CERTIFICATE_TYPE:
-		// case TLS_EXT_SUPPORTED_GROUPS:
-		break;
+	case TLS_EXT_SUPPORTED_GROUPS:
+	{
+		tls_extension_ec_group *group = malloc(sizeof(tls_extension_ec_group) + (header.size - 2));
+
+		if (group == NULL)
+		{
+			return;
+		}
+
+		memset(group, 0, sizeof(tls_extension_ec_group) + (header.size - 2));
+
+		// Copy the header
+		group->header = header;
+
+		// 2 octet size
+		LOAD_16BE(&group->size, in + pos);
+		pos += 2;
+
+		if (group->size != (header.size - 2))
+		{
+			return;
+		}
+
+		// N octets of data
+		memcpy(group->groups, in + pos, group->size);
+		pos += group->size;
+
+		*extension = group;
+	}
+	break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
 		tls_ec_point_format *format = malloc(sizeof(tls_ec_point_format) + (header.size - 1));
@@ -297,8 +325,20 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_CLIENT_AUTHORIZATION:
 	case TLS_EXT_SERVER_AUTHORIZATION:
 	case TLS_EXT_CERTIFICATE_TYPE:
-	case TLS_EXT_SUPPORTED_GROUPS:
 		break;
+	case TLS_EXT_SUPPORTED_GROUPS:
+	{
+		tls_extension_ec_group *group = extension;
+
+		// 1 octet size
+		LOAD_16BE(out + pos, &group->size);
+		pos += 2;
+
+		// N octets of data
+		memcpy(out + pos, group->groups, group->size);
+		pos += group->size;
+	}
+	break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
 		tls_ec_point_format *format = extension;
