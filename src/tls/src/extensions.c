@@ -141,7 +141,37 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_SERVER_AUTHORIZATION:
 	case TLS_EXT_CERTIFICATE_TYPE:
 	case TLS_EXT_SUPPORTED_GROUPS:
+		break;
 	case TLS_EXT_EC_POINT_FORMATS:
+	{
+		tls_ec_point_format *format = malloc(sizeof(tls_ec_point_format) + (header.size - 1));
+
+		if (format == NULL)
+		{
+			return;
+		}
+
+		memset(format, 0, sizeof(tls_ec_point_format) + (header.size - 1));
+
+		// Copy the header
+		format->header = header;
+
+		// 1 octet size
+		LOAD_8(&format->size, in + pos);
+		pos += 1;
+
+		if (format->size != (header.size - 1))
+		{
+			return;
+		}
+
+		// N octets of data
+		memcpy(format->formats, in + pos, format->size);
+		pos += format->size;
+
+		*extension = format;
+	}
+	break;
 	case TLS_EXT_SRP:
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
 	case TLS_EXT_USE_SRTP:
@@ -268,7 +298,20 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_SERVER_AUTHORIZATION:
 	case TLS_EXT_CERTIFICATE_TYPE:
 	case TLS_EXT_SUPPORTED_GROUPS:
+		break;
 	case TLS_EXT_EC_POINT_FORMATS:
+	{
+		tls_ec_point_format *format = extension;
+
+		// 1 octet size
+		LOAD_8(out + pos, &format->size);
+		pos += 1;
+
+		// N octets of data
+		memcpy(out + pos, format->formats, format->size);
+		pos += format->size;
+	}
+	break;
 	case TLS_EXT_SRP:
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
 	case TLS_EXT_USE_SRTP:
