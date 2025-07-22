@@ -1,0 +1,31 @@
+/*
+   Copyright (c) 2024 - 2025 Sibi Siddharthan
+
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
+*/
+
+#ifndef TLS_MEMORY_H
+#define TLS_MEMORY_H
+
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+
+static inline void *zmalloc(size_t size)
+{
+	void *mem = NULL;
+
+	mem = malloc(size);
+
+	if (mem == NULL)
+	{
+		return NULL;
+	}
+
+	memset(mem, 0, size);
+
+	return mem;
+}
+
+#endif
