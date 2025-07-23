@@ -1050,7 +1050,40 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_EARLY_DATA:
 	case TLS_EXT_SUPPORTED_VERSIONS:
 	case TLS_EXT_COOKIE:
+		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
+	{
+		tls_extension_psk_exchange_mode *modes = extension;
+
+		for (uint8_t i = 0; i < modes->size; ++i)
+		{
+			switch (modes->modes[i])
+			{
+			case TLS_PSK_KEY_EXCHANGE:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sPSK-only key establishment (ID 0)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_PSK_DHE_KEY_EXCHANGE:
+				pos +=
+					snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sPSK with (EC)DHE key establishment (ID 1)\n", (indent + 1) * 4, "");
+				break;
+				// GREASE
+			case 0x0B:
+			case 0x2A:
+			case 0x49:
+			case 0x68:
+			case 0x87:
+			case 0xA6:
+			case 0xC5:
+			case 0xE4:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %02hhX)\n", (indent + 1) * 4, "", modes->modes[i]);
+				break;
+			default:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hhu)\n", (indent + 1) * 4, "", modes->modes[i]);
+				break;
+			}
+		}
+	}
+	break;
 	case TLS_EXT_CERTIFICATE_AUTHORITIES:
 	case TLS_EXT_OID_FILTERS:
 	case TLS_EXT_POST_HANDSHAKE_AUTH:
