@@ -139,6 +139,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_SUPPORTED_GROUPS:
 	{
 		tls_extension_ec_group *group = zmalloc(sizeof(tls_extension_ec_group) + (header.size - 2));
+		uint16_t count = 0;
 
 		if (group == NULL)
 		{
@@ -158,7 +159,9 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		}
 
 		// N octets of data
-		for (uint16_t i = 0; i < group->size / 2; ++i)
+		count = group->size / 2;
+
+		for (uint16_t i = 0; i < count; ++i)
 		{
 			LOAD_16BE(&group->groups[i], in + pos);
 			pos += 2;
@@ -196,7 +199,40 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	}
 	break;
 	// case TLS_EXT_SRP:
-	// case TLS_EXT_SIGNATURE_ALGORITHMS:
+	case TLS_EXT_SIGNATURE_ALGORITHMS:
+	{
+		tls_extension_signature_algorithm *signatures = zmalloc(sizeof(tls_extension_signature_algorithm) + (header.size - 2));
+		uint16_t count = 0;
+
+		if (signatures == NULL)
+		{
+			return;
+		}
+
+		// Copy the header
+		signatures->header = header;
+
+		// 2 octet size
+		LOAD_16BE(&signatures->size, in + pos);
+		pos += 2;
+
+		if (signatures->size != (header.size - 2))
+		{
+			return;
+		}
+
+		// N octets of data
+		count = signatures->size / 2;
+
+		for (uint16_t i = 0; i < count; ++i)
+		{
+			LOAD_16BE(&signatures->algorithms[i], in + pos);
+			pos += 2;
+		}
+
+		*extension = signatures;
+	}
+	break;
 	// case TLS_EXT_USE_SRTP:
 	// case TLS_EXT_HEARTBEAT:
 	// case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
@@ -324,14 +360,18 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_SUPPORTED_GROUPS:
 	{
 		tls_extension_ec_group *group = extension;
+		uint16_t count = group->size / 2;
 
-		// 1 octet size
+		// 2 octet size
 		LOAD_16BE(out + pos, &group->size);
 		pos += 2;
 
 		// N octets of data
-		memcpy(out + pos, group->groups, group->size);
-		pos += group->size;
+		for (uint16_t i = 0; i < count; ++i)
+		{
+			LOAD_16BE(out + pos, &group->groups[i]);
+			pos += 2;
+		}
 	}
 	break;
 	case TLS_EXT_EC_POINT_FORMATS:
@@ -348,7 +388,24 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	}
 	break;
 	case TLS_EXT_SRP:
+		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
+	{
+		tls_extension_signature_algorithm *signatures = extension;
+		uint16_t count = signatures->size / 2;
+
+		// 2 octet size
+		LOAD_16BE(out + pos, &signatures->size);
+		pos += 2;
+
+		// N octets of data
+		for (uint16_t i = 0; i < count; ++i)
+		{
+			LOAD_16BE(out + pos, &signatures->algorithms[i]);
+			pos += 2;
+		}
+	}
+	break;
 	case TLS_EXT_USE_SRTP:
 	case TLS_EXT_HEARTBEAT:
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:

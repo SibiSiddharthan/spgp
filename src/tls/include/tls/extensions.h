@@ -119,6 +119,13 @@ typedef struct _tls_extension_ec_group
 	uint16_t groups[];
 } tls_extension_ec_group;
 
+typedef struct _tls_extension_signature_algorithm
+{
+	tls_extension_header header;
+	uint16_t size;
+	uint16_t algorithms[];
+} tls_extension_signature_algorithm;
+
 void tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
 uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent);
