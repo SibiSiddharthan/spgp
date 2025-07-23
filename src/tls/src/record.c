@@ -9,6 +9,7 @@
 #include <tls/record.h>
 #include <tls/version.h>
 #include <tls/handshake.h>
+#include <tls/memory.h>
 
 #include <load.h>
 #include <ptr.h>
@@ -24,14 +25,12 @@ void tls_record_read(tls_record **record, void *data, uint32_t size)
 	uint8_t *in = data;
 	uint32_t pos = 0;
 
-	result = malloc(sizeof(tls_record));
+	result = zmalloc(sizeof(tls_record));
 
 	if (result == NULL)
 	{
 		return;
 	}
-
-	memset(result, 0, sizeof(tls_record));
 
 	// 1-octet content type
 	LOAD_8(&result->content, in + pos);

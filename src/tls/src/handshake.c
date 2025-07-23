@@ -9,6 +9,7 @@
 #include <tls/handshake.h>
 #include <tls/version.h>
 #include <tls/extensions.h>
+#include <tls/memory.h>
 
 #include <load.h>
 #include <ptr.h>
@@ -109,14 +110,13 @@ void tls_handshake_read(void **handshake, void *data, uint32_t size)
 	header.handshake_size = (in[pos] << 16) + (in[pos + 1] << 8) + in[pos + 2];
 	pos += 3;
 
-	result = malloc(sizeof(tls_client_hello) + 2048);
+	result = zmalloc(sizeof(tls_client_hello) + 2048);
 
 	if (result == NULL)
 	{
 		return;
 	}
 
-	memset(result, 0, sizeof(tls_client_hello) + 2048);
 	memcpy(result, &header, sizeof(tls_handshake_header));
 
 	switch (header.handshake_type)

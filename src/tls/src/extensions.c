@@ -6,6 +6,7 @@
 */
 
 #include <tls/extensions.h>
+#include <tls/memory.h>
 
 #include <load.h>
 #include <ptr.h>
@@ -33,7 +34,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	{
 	case TLS_EXT_SERVER_NAME:
 	{
-		tls_extension_server_name *server = malloc(sizeof(tls_extension_server_name));
+		tls_extension_server_name *server = zmalloc(sizeof(tls_extension_server_name));
 		uint32_t new_pos = 0;
 		uint16_t name_size = 0;
 		uint16_t name_count = 0;
@@ -43,8 +44,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 			return;
 		}
 
-		memset(server, 0, sizeof(tls_extension_server_name));
-
+		// Copy the header
 		server->header = header;
 
 		// 2 octet list size
@@ -86,14 +86,12 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 				LOAD_16BE(&name_size, in + pos);
 				pos += 2;
 
-				name = malloc(sizeof(tls_server_name) + name_size);
+				name = zmalloc(sizeof(tls_server_name) + name_size);
 
 				if (name == NULL)
 				{
 					return;
 				}
-
-				memset(name, 0, sizeof(tls_server_name) + name_size);
 
 				name->name_type = name_type;
 				name->name_size = name_size;
@@ -113,14 +111,12 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
 	{
-		tls_extension_max_fragment_length *fragment = malloc(sizeof(tls_extension_max_fragment_length));
+		tls_extension_max_fragment_length *fragment = zmalloc(sizeof(tls_extension_max_fragment_length));
 
 		if (fragment == NULL)
 		{
 			return;
 		}
-
-		memset(fragment, 0, sizeof(tls_extension_max_fragment_length));
 
 		// Copy the header
 		fragment->header = header;
@@ -142,14 +138,12 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		// case TLS_EXT_CERTIFICATE_TYPE:
 	case TLS_EXT_SUPPORTED_GROUPS:
 	{
-		tls_extension_ec_group *group = malloc(sizeof(tls_extension_ec_group) + (header.size - 2));
+		tls_extension_ec_group *group = zmalloc(sizeof(tls_extension_ec_group) + (header.size - 2));
 
 		if (group == NULL)
 		{
 			return;
 		}
-
-		memset(group, 0, sizeof(tls_extension_ec_group) + (header.size - 2));
 
 		// Copy the header
 		group->header = header;
@@ -175,14 +169,12 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	break;
 	case TLS_EXT_EC_POINT_FORMATS:
 	{
-		tls_extension_ec_point_format *format = malloc(sizeof(tls_extension_ec_point_format) + (header.size - 1));
+		tls_extension_ec_point_format *format = zmalloc(sizeof(tls_extension_ec_point_format) + (header.size - 1));
 
 		if (format == NULL)
 		{
 			return;
 		}
-
-		memset(format, 0, sizeof(tls_extension_ec_point_format) + (header.size - 1));
 
 		// Copy the header
 		format->header = header;
@@ -243,7 +235,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_EXTERNAL_SESSION_ID:
 	default:
 	{
-		tls_extension_header *unknown = malloc(sizeof(tls_extension_header));
+		tls_extension_header *unknown = zmalloc(sizeof(tls_extension_header));
 
 		if (unknown == NULL)
 		{

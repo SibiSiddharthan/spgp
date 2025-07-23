@@ -6,6 +6,7 @@
 */
 
 #include <tls/alert.h>
+#include <tls/memory.h>
 
 #include <load.h>
 #include <ptr.h>
@@ -24,7 +25,7 @@ void tls_alert_read(tls_alert **alert, void *data, uint32_t size)
 		return;
 	}
 
-	*alert = malloc(sizeof(tls_alert));
+	*alert = zmalloc(sizeof(tls_alert));
 
 	if (*alert == NULL)
 	{
