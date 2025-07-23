@@ -48,7 +48,7 @@ uint32_t tls_change_cipher_spec_write(tls_change_cipher_spec *cs, void *buffer, 
 uint32_t tls_change_cipher_spec_print(tls_change_cipher_spec *cs, void *buffer, uint32_t size, uint32_t indent)
 {
 	// State
-	if (cs->state == TLS_CHANGE_CIPHER_SPEC)
+	if (cs->state == TLS_CHANGE_CIPHER_SPEC_TYPE)
 	{
 		return snprintf(buffer, size, "%*sChange Cipher Spec: Yes (1)", indent * 4, "");
 	}

@@ -8,6 +8,7 @@
 #include <tls/alert.h>
 #include <tls/record.h>
 #include <tls/version.h>
+#include <tls/cs.h>
 #include <tls/handshake.h>
 #include <tls/memory.h>
 
@@ -52,6 +53,8 @@ void tls_record_read(tls_record **record, void *data, uint32_t size)
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
+		tls_change_cipher_spec_read(&result->data, PTR_OFFSET(data, pos), result->size);
+		break;
 	case TLS_ALERT:
 		tls_alert_read(&result->data, PTR_OFFSET(data, pos), result->size);
 		break;
@@ -98,6 +101,8 @@ uint32_t tls_record_write(tls_record *record, void *buffer, uint32_t size)
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
+		pos += tls_change_cipher_spec_write(record->data, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_ALERT:
 		pos += tls_alert_write(record->data, PTR_OFFSET(buffer, pos), size - pos);
 		break;
@@ -182,6 +187,8 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size, uint3
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
+		pos += tls_change_cipher_spec_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_ALERT:
 		pos += tls_alert_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
 		break;

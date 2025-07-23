@@ -10,7 +10,7 @@
 
 #include <tls/types.h>
 
-#define TLS_CHANGE_CIPHER_SPEC 1
+#define TLS_CHANGE_CIPHER_SPEC_TYPE 1
 
 typedef struct _tls_change_cipher_spec
 {
