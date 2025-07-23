@@ -187,7 +187,7 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size, uint3
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		pos += tls_change_cipher_spec_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
+		pos += tls_change_cipher_spec_print(record->data, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_ALERT:
 		pos += tls_alert_print(record->data, PTR_OFFSET(buffer, pos), size - pos);

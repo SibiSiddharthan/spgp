@@ -462,4 +462,10 @@ typedef enum _tls_ec_point_format_type
 	TLS_EC_POINT_ANSI_X962_COMPRESSED_CHAR2 = 2
 } tls_ec_point_format_type;
 
+typedef enum _tls_psk_exchange_mode_type
+{
+	TLS_PSK_KEY_EXCHANGE = 0,
+	TLS_PSK_DHE_KEY_EXCHANGE = 1
+} tls_psk_exchange_mode_type;
+
 #endif

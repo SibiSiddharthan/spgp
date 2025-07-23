@@ -259,7 +259,34 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_EARLY_DATA:
 	// case TLS_EXT_SUPPORTED_VERSIONS:
 	// case TLS_EXT_COOKIE:
-	// case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
+	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
+	{
+		tls_extension_psk_exchange_mode *modes = zmalloc(sizeof(tls_extension_psk_exchange_mode) + (header.size - 1));
+
+		if (modes == NULL)
+		{
+			return;
+		}
+
+		// Copy the header
+		modes->header = header;
+
+		// 1 octet size
+		LOAD_8(&modes->size, in + pos);
+		pos += 1;
+
+		if (modes->size != (header.size - 1))
+		{
+			return;
+		}
+
+		// N octets of data
+		memcpy(modes->modes, in + pos, modes->size);
+		pos += modes->size;
+
+		*extension = modes;
+	}
+	break;
 	// case TLS_EXT_CERTIFICATE_AUTHORITIES:
 	// case TLS_EXT_OID_FILTERS:
 	// case TLS_EXT_POST_HANDSHAKE_AUTH:
@@ -432,7 +459,20 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_EARLY_DATA:
 	case TLS_EXT_SUPPORTED_VERSIONS:
 	case TLS_EXT_COOKIE:
+		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
+	{
+		tls_extension_psk_exchange_mode *modes = extension;
+
+		// 1 octet size
+		LOAD_8(out + pos, &modes->size);
+		pos += 1;
+
+		// N octets of data
+		memcpy(out + pos, modes->modes, modes->size);
+		pos += modes->size;
+	}
+	break;
 	case TLS_EXT_CERTIFICATE_AUTHORITIES:
 	case TLS_EXT_OID_FILTERS:
 	case TLS_EXT_POST_HANDSHAKE_AUTH:

@@ -126,6 +126,13 @@ typedef struct _tls_extension_signature_algorithm
 	uint16_t algorithms[];
 } tls_extension_signature_algorithm;
 
+typedef struct _tls_extension_psk_exchange_mode
+{
+	tls_extension_header header;
+	uint8_t size;
+	uint8_t modes[];
+} tls_extension_psk_exchange_mode;
+
 void tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
 uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent);
