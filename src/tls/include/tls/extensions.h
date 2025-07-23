@@ -10,6 +10,7 @@
 
 #include <tls/types.h>
 #include <tls/algorithms.h>
+#include <tls/version.h>
 
 #define TLS_EXTENSION_SIZE(H) ((((tls_extension_header *)(H))->size) + 4)
 
@@ -132,6 +133,13 @@ typedef struct _tls_extension_psk_exchange_mode
 	uint8_t size;
 	uint8_t modes[];
 } tls_extension_psk_exchange_mode;
+
+typedef struct _tls_extension_supported_version
+{
+	tls_extension_header header;
+	uint8_t size;
+	tls_protocol_version version[];
+} tls_extension_supported_version;
 
 void tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);

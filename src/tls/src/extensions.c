@@ -257,7 +257,34 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_SESSION_TICKET:
 	// case TLS_EXT_PSK:
 	// case TLS_EXT_EARLY_DATA:
-	// case TLS_EXT_SUPPORTED_VERSIONS:
+	case TLS_EXT_SUPPORTED_VERSIONS:
+	{
+		tls_extension_supported_version *version = zmalloc(sizeof(tls_extension_psk_exchange_mode) + (header.size - 1));
+
+		if (version == NULL)
+		{
+			return;
+		}
+
+		// Copy the header
+		version->header = header;
+
+		// 1 octet size
+		LOAD_8(&version->size, in + pos);
+		pos += 1;
+
+		if (version->size != (header.size - 1))
+		{
+			return;
+		}
+
+		// N octets of data
+		memcpy(version->version, in + pos, version->size);
+		pos += version->size;
+
+		*extension = version;
+	}
+	break;
 	// case TLS_EXT_COOKIE:
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
 	{
@@ -457,7 +484,20 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_SESSION_TICKET:
 	case TLS_EXT_PSK:
 	case TLS_EXT_EARLY_DATA:
+		break;
 	case TLS_EXT_SUPPORTED_VERSIONS:
+	{
+		tls_extension_supported_version *version = extension;
+
+		// 1 octet size
+		LOAD_8(out + pos, &version->size);
+		pos += 1;
+
+		// N octets of data
+		memcpy(out + pos, version->version, version->size);
+		pos += version->size;
+	}
+	break;
 	case TLS_EXT_COOKIE:
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
@@ -1048,7 +1088,46 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_SESSION_TICKET:
 	case TLS_EXT_PSK:
 	case TLS_EXT_EARLY_DATA:
+		break;
 	case TLS_EXT_SUPPORTED_VERSIONS:
+	{
+		tls_extension_supported_version *version = extension;
+		uint8_t count = version->size / 2;
+
+		for (uint8_t i = 0; i < count; ++i)
+		{
+			switch (TLS_VERSION_RAW(version->version[i]))
+			{
+			case TLS_VERSION_1_0:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.0 (3, 1)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_VERSION_1_1:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.1 (3, 2)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_VERSION_1_2:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.2 (3, 3)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_VERSION_1_3:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.3 (3, 4)\n", (indent + 1) * 4, "");
+				break;
+			default:
+			{
+				if (tls_check_grease_value(TLS_VERSION_RAW(version->version[i])))
+				{
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (%02hhX, %02hhX)\n", (indent + 1) * 4, "",
+									version->version[i].major, version->version[i].minor);
+				}
+				else
+				{
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (%hhu, %hhu)\n", (indent + 1) * 4, "",
+									version->version[i].major, version->version[i].minor);
+				}
+			}
+			break;
+			}
+		}
+	}
+	break;
 	case TLS_EXT_COOKIE:
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
