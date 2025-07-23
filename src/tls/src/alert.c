@@ -35,7 +35,7 @@ void tls_alert_read(tls_alert **alert, void *data, uint32_t size)
 	// 1 octet alert level
 	LOAD_8(&(*alert)->level, in + pos);
 	pos += 1;
-	
+
 	// 1 octet alert description
 	LOAD_8(&(*alert)->description, in + pos);
 	pos += 1;
@@ -64,12 +64,12 @@ uint32_t tls_alert_write(tls_alert *alert, void *buffer, uint32_t size)
 	return pos;
 }
 
-uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size)
+uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size, uint32_t indent)
 {
 	uint32_t pos = 0;
 
 	// Alert Level
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Alert Level: ");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sAlert Level: ", indent * 4, "");
 
 	switch (alert->level)
 	{
@@ -85,7 +85,7 @@ uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size)
 	}
 
 	// Alert Description
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Alert Description: ");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sAlert Description: ", indent * 4, "");
 
 	switch (alert->description)
 	{

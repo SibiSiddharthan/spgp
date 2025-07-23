@@ -62,6 +62,6 @@ typedef struct _tls_alert
 
 void tls_alert_read(tls_alert **alert, void *data, uint32_t size);
 uint32_t tls_alert_write(tls_alert *alert, void *buffer, uint32_t size);
-uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size);
+uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size, uint32_t indent);
 
 #endif

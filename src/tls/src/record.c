@@ -190,7 +190,7 @@ uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size, uint3
 		pos += tls_change_cipher_spec_print(record->data, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_ALERT:
-		pos += tls_alert_print(record->data, PTR_OFFSET(buffer, pos), size - pos);
+		pos += tls_alert_print(record->data, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_HANDSHAKE:
 		pos += tls_handshake_print(record->data, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
