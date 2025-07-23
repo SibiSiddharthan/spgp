@@ -554,8 +554,25 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "External Session ID (ID 56)\n");
 		break;
 	default:
+	{
+		uint8_t o1 = 0, o2 = 0;
+
+		// Check GREASE values
+		o1 = (header->extension >> 8) & 0xFF;
+		o2 = (header->extension >> 0) & 0xFF;
+
+		if (o1 == o2)
+		{
+			if ((o1 & 0x0F) == 0x0A)
+			{
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE (ID %02hhx%02hhx)\n", o1, o2);
+				break;
+			}
+		}
+
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hu)\n", header->extension);
-		break;
+	}
+	break;
 	}
 
 	// Extension Size
