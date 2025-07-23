@@ -7,6 +7,7 @@
 
 #include <tls/extensions.h>
 #include <tls/memory.h>
+#include <tls/grease.h>
 
 #include <load.h>
 #include <ptr.h>
@@ -612,22 +613,14 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		break;
 	default:
 	{
-		uint8_t o1 = 0, o2 = 0;
-
-		// Check GREASE values
-		o1 = (header->extension >> 8) & 0xFF;
-		o2 = (header->extension >> 0) & 0xFF;
-
-		if (o1 == o2)
+		if (tls_check_grease_value(header->extension))
 		{
-			if ((o1 & 0x0F) == 0x0A)
-			{
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE (ID %02hhx%02hhx)\n", o1, o2);
-				break;
-			}
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE (ID %04hX)\n", header->extension);
 		}
-
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hu)\n", header->extension);
+		else
+		{
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hu)\n", header->extension);
+		}
 	}
 	break;
 	}
@@ -829,22 +822,14 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 				break;
 			default:
 			{
-				uint8_t o1 = 0, o2 = 0;
-
-				// Check GREASE values
-				o1 = (group->groups[i] >> 8) & 0xFF;
-				o2 = (group->groups[i] >> 0) & 0xFF;
-
-				if (o1 == o2)
+				if (tls_check_grease_value(group->groups[i]))
 				{
-					if ((o1 & 0x0F) == 0x0A)
-					{
-						pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %02hhx%02hhx)\n", (indent + 1) * 4, "", o1, o2);
-						break;
-					}
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %04hX)\n", (indent + 1) * 4, "", group->groups[i]);
 				}
-
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hu)\n", (indent + 1) * 4, "", group->groups[i]);
+				else
+				{
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hu)\n", (indent + 1) * 4, "", group->groups[i]);
+				}
 			}
 			break;
 			}
@@ -984,24 +969,16 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 				break;
 			default:
 			{
-				uint8_t o1 = 0, o2 = 0;
-
-				// Check GREASE values
-				o1 = (signatures->algorithms[i] >> 8) & 0xFF;
-				o2 = (signatures->algorithms[i] >> 0) & 0xFF;
-
-				if (o1 == o2)
+				if (tls_check_grease_value(signatures->algorithms[i]))
 				{
-					if ((o1 & 0x0F) == 0x0A)
-					{
-						pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %04hX)\n", (indent + 1) * 4, "",
-										signatures->algorithms[i]);
-						break;
-					}
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %04hX)\n", (indent + 1) * 4, "",
+									signatures->algorithms[i]);
 				}
-
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %04hX)\n", (indent + 1) * 4, "",
-								signatures->algorithms[i]);
+				else
+				{
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %04hX)\n", (indent + 1) * 4, "",
+									signatures->algorithms[i]);
+				}
 			}
 			break;
 			}

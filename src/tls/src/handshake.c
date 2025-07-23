@@ -10,6 +10,7 @@
 #include <tls/version.h>
 #include <tls/extensions.h>
 #include <tls/memory.h>
+#include <tls/grease.h>
 
 #include <load.h>
 #include <ptr.h>
@@ -868,16 +869,16 @@ static uint32_t print_cipher_suite(uint32_t indent, void *buffer, uint32_t size,
 		return snprintf(buffer, size, "%*sTLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 (ID {0xD0, 0x05})\n", indent * 4, "");
 
 	default:
-		// Check GREASE values
-		if (o1 == o2)
+	{
+		if (tls_check_grease_value(id))
 		{
-			if ((o1 & 0x0F) == 0x0A)
-			{
-				return snprintf(buffer, size, "%*sGREASE (ID {0x%02hhx, 0x%02hhx})\n", indent * 4, "", o1, o2);
-			}
+			return snprintf(buffer, size, "%*sGREASE (ID {0x%02hhX, 0x%02hhX})\n", indent * 4, "", o1, o2);
 		}
-
-		return snprintf(buffer, size, "%*sUnknown (ID {0x%02hhx, 0x%02hhx})\n", indent * 4, "", o1, o2);
+		else
+		{
+			return snprintf(buffer, size, "%*sUnknown (ID {0x%02hhX, 0x%02hhX})\n", indent * 4, "", o1, o2);
+		}
+	}
 	}
 }
 
