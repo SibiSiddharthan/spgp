@@ -11,7 +11,9 @@
 #include <tls/types.h>
 
 // RFC 8701: Applying Generate Random Extensions And Sustain Extensibility (GREASE) to TLS Extensibility
-#define TLS_MAKE_GREASE_CIPHER_ID(A) ((((uint16_t)(A)) << 8) + ((uint16_t)(A)))
+#if 0
+
+#	define TLS_MAKE_GREASE_CIPHER_ID(A) ((((uint16_t)(A)) << 8) + ((uint16_t)(A)))
 
 static const uint16_t tls_grease_ciphers[16] = {
 	TLS_MAKE_GREASE_CIPHER_ID(0x0A), TLS_MAKE_GREASE_CIPHER_ID(0x1A), TLS_MAKE_GREASE_CIPHER_ID(0x2A), TLS_MAKE_GREASE_CIPHER_ID(0x3A),
@@ -25,6 +27,8 @@ static const uint16_t tls_grease_signatures[16] = {
 };
 
 static const uint8_t tls_grease_psk_modes[8] = {0x0B, 0x2A, 0x49, 0x68, 0x87, 0xA6, 0xC5, 0xE4};
+
+#endif
 
 static inline uint16_t tls_check_grease_value(uint16_t value)
 {
