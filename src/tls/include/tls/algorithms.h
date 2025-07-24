@@ -468,4 +468,11 @@ typedef enum _tls_psk_exchange_mode_type
 	TLS_PSK_DHE_KEY_EXCHANGE = 1
 } tls_psk_exchange_mode_type;
 
+typedef enum _tls_compression_algorithm
+{
+	TLS_ZLIB = 1,
+	TLS_BROTLI = 2,
+	TLS_ZSTD = 3
+} tls_compression_algorithm;
+
 #endif
