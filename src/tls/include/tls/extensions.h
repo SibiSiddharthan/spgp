@@ -106,6 +106,12 @@ typedef struct _tls_extension_max_fragment_length
 	uint8_t max_fragment_length;
 } tls_extension_max_fragment_length;
 
+typedef struct _tls_extension_record_size_limit
+{
+	tls_extension_header header;
+	uint16_t limit;
+} tls_extension_record_size_limit;
+
 typedef struct _tls_extension_ec_point_format
 {
 	tls_extension_header header;

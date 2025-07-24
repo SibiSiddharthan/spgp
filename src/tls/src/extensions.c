@@ -234,21 +234,44 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		*extension = signatures;
 	}
 	break;
-	// case TLS_EXT_USE_SRTP:
-	// case TLS_EXT_HEARTBEAT:
-	// case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
-	// case TLS_EXT_STATUS_REQUEST_V2:
-	// case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
-	// case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
-	// case TLS_EXT_SERVER_CERTIFICATE_TYPE:
-	// case TLS_EXT_PADDING:
-	// case TLS_EXT_ENCRYPT_THEN_MAC:
-	// case TLS_EXT_EXTENDED_MASTER_SECRET:
-	// case TLS_EXT_TOKEN_BINDING:
-	// case TLS_EXT_CACHED_INFO:
-	// case TLS_EXT_LTS:
-	// case TLS_EXT_COMPRESS_CERTIFICATE:
-	// case TLS_EXT_RECORD_SIZE_LIMIT:
+		// case TLS_EXT_USE_SRTP:
+		// case TLS_EXT_HEARTBEAT:
+		// case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+		// case TLS_EXT_STATUS_REQUEST_V2:
+		// case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+		// case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
+		// case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+		// case TLS_EXT_PADDING:
+		// case TLS_EXT_ENCRYPT_THEN_MAC:
+		// case TLS_EXT_EXTENDED_MASTER_SECRET:
+		// case TLS_EXT_TOKEN_BINDING:
+		// case TLS_EXT_CACHED_INFO:
+		// case TLS_EXT_LTS:
+		// case TLS_EXT_COMPRESS_CERTIFICATE:
+	case TLS_EXT_RECORD_SIZE_LIMIT:
+	{
+		tls_extension_record_size_limit *limit = zmalloc(sizeof(tls_extension_record_size_limit));
+
+		if (limit == NULL)
+		{
+			return;
+		}
+
+		// Copy the header
+		limit->header = header;
+
+		// 2 octet length identifier
+		LOAD_16BE(&limit->limit, in + pos);
+		pos += 2;
+
+		if (limit->limit < 64)
+		{
+			return;
+		}
+
+		*extension = limit;
+	}
+	break;
 	// case TLS_EXT_PASSWORD_PROTECT:
 	// case TLS_EXT_PASSWORD_CLEAR:
 	// case TLS_EXT_PASSWORD_SALT:
@@ -475,7 +498,16 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_CACHED_INFO:
 	case TLS_EXT_LTS:
 	case TLS_EXT_COMPRESS_CERTIFICATE:
+		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
+	{
+		tls_extension_record_size_limit *limit = extension;
+
+		// 2 octet length identifier
+		LOAD_16BE(out + pos, &limit->limit);
+		pos += 2;
+	}
+	break;
 	case TLS_EXT_PASSWORD_PROTECT:
 	case TLS_EXT_PASSWORD_CLEAR:
 	case TLS_EXT_PASSWORD_SALT:
@@ -1094,7 +1126,15 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_CACHED_INFO:
 	case TLS_EXT_LTS:
 	case TLS_EXT_COMPRESS_CERTIFICATE:
+		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
+	{
+		tls_extension_record_size_limit *limit = extension;
+
+		// Record Size Limit
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sRecord Size Limit: %hu bytes\n", (indent + 1) * 4, "", limit->limit);
+	}
+	break;
 	case TLS_EXT_PASSWORD_PROTECT:
 	case TLS_EXT_PASSWORD_CLEAR:
 	case TLS_EXT_PASSWORD_SALT:
