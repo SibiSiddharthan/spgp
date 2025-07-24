@@ -113,12 +113,12 @@ typedef struct _tls_extension_ec_point_format
 	uint8_t formats[];
 } tls_extension_ec_point_format;
 
-typedef struct _tls_extension_ec_group
+typedef struct _tls_extension_supported_group
 {
 	tls_extension_header header;
 	uint16_t size;
 	uint16_t groups[];
-} tls_extension_ec_group;
+} tls_extension_supported_group;
 
 typedef struct _tls_extension_signature_algorithm
 {

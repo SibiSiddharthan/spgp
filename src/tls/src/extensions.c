@@ -139,7 +139,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		// case TLS_EXT_CERTIFICATE_TYPE:
 	case TLS_EXT_SUPPORTED_GROUPS:
 	{
-		tls_extension_ec_group *group = zmalloc(sizeof(tls_extension_ec_group) + (header.size - 2));
+		tls_extension_supported_group *group = zmalloc(sizeof(tls_extension_supported_group) + (header.size - 2));
 		uint16_t count = 0;
 
 		if (group == NULL)
@@ -414,7 +414,7 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		break;
 	case TLS_EXT_SUPPORTED_GROUPS:
 	{
-		tls_extension_ec_group *group = extension;
+		tls_extension_supported_group *group = extension;
 		uint16_t count = group->size / 2;
 
 		// 2 octet size
@@ -770,7 +770,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	// case TLS_EXT_CERTIFICATE_TYPE:
 	case TLS_EXT_SUPPORTED_GROUPS:
 	{
-		tls_extension_ec_group *group = extension;
+		tls_extension_supported_group *group = extension;
 		uint16_t count = group->size / 2;
 
 		for (uint16_t i = 0; i < count; ++i)
@@ -899,6 +899,21 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 				break;
 			case TLS_SM2:
 				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sSM2 (ID 41)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_FFDHE_2048:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sffdhe2048 (ID 256)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_FFDHE_3072:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sffdhe3072 (ID 257)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_FFDHE_4096:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sffdhe4096 (ID 258)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_FFDHE_6144:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sffdhe6144 (ID 259)\n", (indent + 1) * 4, "");
+				break;
+			case TLS_FFDHE_8192:
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sffdhe8192 (ID 260)\n", (indent + 1) * 4, "");
 				break;
 			default:
 			{
