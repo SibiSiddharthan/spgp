@@ -28,4 +28,19 @@ static inline void *zmalloc(size_t size)
 	return mem;
 }
 
+static inline void *zrealloc(void *old, size_t size)
+{
+	void *mem = NULL;
+
+	mem = malloc(old, size);
+
+	if (mem == NULL)
+	{
+		free(old);
+		return NULL;
+	}
+
+	return mem;
+}
+
 #endif
