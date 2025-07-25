@@ -12,7 +12,7 @@
 #include <tls/algorithms.h>
 #include <tls/version.h>
 
-#define TLS_EXTENSION_SIZE(H) ((((tls_extension_header *)(H))->size) + 4)
+#define TLS_EXTENSION_OCTETS(H) ((((tls_extension_header *)(H))->size) + 4)
 
 typedef enum _tls_extension_type
 {
@@ -70,7 +70,7 @@ typedef enum _tls_extension_type
 
 typedef struct _tls_extension_header
 {
-	tls_extension_type extension;
+	tls_extension_type type;
 	uint16_t size;
 } tls_extension_header;
 

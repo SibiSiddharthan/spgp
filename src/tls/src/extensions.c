@@ -21,14 +21,14 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	tls_extension_header header = {0};
 
 	// 2 octet extension type
-	LOAD_16BE(&header.extension, in + pos);
+	LOAD_16BE(&header.type, in + pos);
 	pos += 2;
 
 	// 2 octet extension size
 	LOAD_16BE(&header.size, in + pos);
 	pos += 2;
 
-	switch (header.extension)
+	switch (header.type)
 	{
 	case TLS_EXT_SERVER_NAME:
 	{
@@ -353,7 +353,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 			return;
 		}
 
-		unknown->extension = header.extension;
+		unknown->type = header.type;
 		unknown->size = header.size;
 
 		*extension = unknown;
@@ -372,14 +372,14 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	tls_extension_header *header = extension;
 
 	// 2 octet extension type
-	LOAD_16BE(out + pos, &header->extension);
+	LOAD_16BE(out + pos, &header->type);
 	pos += 2;
 
 	// 2 octet extension size
 	LOAD_16BE(out + pos, &header->size);
 	pos += 2;
 
-	switch (header->extension)
+	switch (header->type)
 	{
 	case TLS_EXT_SERVER_NAME:
 	{
@@ -565,7 +565,7 @@ static uint32_t print_extension_header(tls_extension_header *header, void *buffe
 
 	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*s", indent * 4, "");
 
-	switch (header->extension)
+	switch (header->type)
 	{
 	case TLS_EXT_SERVER_NAME:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Name (ID 0) (%hu bytes)\n", header->size);
@@ -719,14 +719,14 @@ static uint32_t print_extension_header(tls_extension_header *header, void *buffe
 		break;
 	default:
 	{
-		if (tls_check_grease_value(header->extension))
+		if (tls_check_grease_value(header->type))
 		{
 			pos +=
-				snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE Extension (ID %04hX) (%hu bytes)\n", header->extension, header->size);
+				snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE Extension (ID %04hX) (%hu bytes)\n", header->type, header->size);
 		}
 		else
 		{
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hu) (%hu bytes)\n", header->extension, header->size);
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hu) (%hu bytes)\n", header->type, header->size);
 		}
 	}
 	break;
@@ -744,7 +744,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	// Extension Type
 	pos += print_extension_header(header, PTR_OFFSET(buffer, pos), size - pos, indent);
 
-	switch (header->extension)
+	switch (header->type)
 	{
 	case TLS_EXT_SERVER_NAME:
 	{

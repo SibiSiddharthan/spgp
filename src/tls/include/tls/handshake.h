@@ -14,7 +14,6 @@
 #include <tls/extensions.h>
 
 #define TLS_HANDSHAKE_HEADER_OCTETS 4
-#define TLS_HANDSHAKE_SIZE(H)       ((((tls_handshake_header *)(H))->handshake_size) + 4)
 
 typedef enum _tls_handshake_type
 {

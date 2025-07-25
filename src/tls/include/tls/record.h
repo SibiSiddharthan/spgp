@@ -14,8 +14,6 @@
 
 #define TLS_RECORD_HEADER_OCTETS 5
 
-#define TLS_RECORD_SIZE(R) ((((tls_record *)(R))->size) + 5)
-
 typedef enum _tls_content_type
 {
 	TLS_INVALID_CONTENT = 0,

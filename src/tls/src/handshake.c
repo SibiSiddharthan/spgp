@@ -123,7 +123,7 @@ static tls_error_t tls_client_hello_read(tls_client_hello **handshake, tls_hands
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
 			tls_extension_read(&hello->extensions[i], in + pos, size - pos);
-			pos += TLS_EXTENSION_SIZE(hello->extensions[i]);
+			pos += TLS_EXTENSION_OCTETS(hello->extensions[i]);
 		}
 	}
 
