@@ -104,7 +104,7 @@ tls_error_t tls_record_read(void **record, void *data, uint32_t size)
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		error = tls_change_cipher_spec_read(&result->data, PTR_OFFSET(data, pos), result->size);
+		error = tls_change_cipher_spec_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
 		break;
 	case TLS_ALERT:
 		error = tls_alert_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
@@ -145,7 +145,7 @@ uint32_t tls_record_write(void *record, void *buffer, uint32_t size)
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		pos += tls_change_cipher_spec_write(record, out + pos, size - pos);
+		pos += tls_change_cipher_spec_write_body(record, out + pos, size - pos);
 		break;
 	case TLS_ALERT:
 		pos += tls_alert_write_body(record, out + pos, size - pos);

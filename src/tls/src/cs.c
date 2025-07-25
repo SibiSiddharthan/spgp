@@ -13,31 +13,39 @@
 
 #include <stdio.h>
 
-void tls_change_cipher_spec_read(void **cs, void *data, uint32_t size)
+tls_error_t tls_change_cipher_spec_read_body(tls_change_cipher_spec **cs, tls_record_header *header, void *data, uint32_t size)
 {
-	tls_change_cipher_spec *ccs = NULL;
-
 	uint8_t *in = data;
 	uint32_t pos = 0;
 
-	ccs = zmalloc(sizeof(tls_change_cipher_spec));
-
-	if (ccs == NULL)
+	if (size != TLS_CHANGE_CIPHER_SPEC_OCTETS)
 	{
-		return;
+		return TLS_MALFORMED_CHANGE_CIPHER_SPEC;
+	}
+
+	*cs = zmalloc(sizeof(tls_change_cipher_spec));
+
+	if (*cs == NULL)
+	{
+		return TLS_NO_MEMORY;
 	}
 
 	// 1 octet state
-	LOAD_8(&ccs->state, in + pos);
+	LOAD_8(&(*cs)->state, in + pos);
 	pos += 1;
 
-	*cs = ccs;
+	return TLS_SUCCESS;
 }
 
-uint32_t tls_change_cipher_spec_write(tls_change_cipher_spec *cs, void *buffer, uint32_t size)
+uint32_t tls_change_cipher_spec_write_body(tls_change_cipher_spec *cs, void *buffer, uint32_t size)
 {
 	uint8_t *out = buffer;
 	uint32_t pos = 0;
+
+	if (size < TLS_CHANGE_CIPHER_SPEC_OCTETS)
+	{
+		return 0;
+	}
 
 	LOAD_8(out + pos, &cs->state);
 	pos += 1;
