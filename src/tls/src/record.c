@@ -110,7 +110,7 @@ tls_error_t tls_record_read(void **record, void *data, uint32_t size)
 		error = tls_alert_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
 		break;
 	case TLS_HANDSHAKE:
-		error = tls_handshake_read(&result->data, PTR_OFFSET(data, pos), result->size);
+		error = tls_handshake_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
 		break;
 	case TLS_APPLICATION_DATA:
 	case TLS_HEARTBEAT:

@@ -94,6 +94,142 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 	}
 }
 
+static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
+											 uint32_t size)
+{
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	if (size < 4)
+	{
+		return TLS_INSUFFICIENT_DATA;
+	}
+
+	// Copy the record header
+	handshake_header->header = *record_header;
+
+	// 1 octet handshake type
+	handshake_header->type = in[pos];
+	pos += 1;
+
+	// 3 octet handshake size
+	handshake_header->size = (in[pos] << 16) + (in[pos + 1] << 8) + in[pos + 2];
+	pos += 3;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_handshake_header_write(tls_handshake_header *header, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	if (size < 4)
+	{
+		return 0;
+	}
+
+	// 1 octet handshake type
+	out[pos++] = header->type;
+
+	// 3 octet handshake size
+	out[pos++] = (header->size >> 16) & 0xFF;
+	out[pos++] = (header->size >> 8) & 0xFF;
+	out[pos++] = (header->size >> 0) & 0xFF;
+
+	return pos;
+}
+
+tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_header, void *data, uint32_t size)
+{
+	tls_error_t error = 0;
+	tls_handshake_header handshake_header = {0};
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	error = tls_handshake_header_read(&handshake_header, record_header, data, size);
+	pos += TLS_HANDSHAKE_HEADER_OCTETS;
+
+	if (error != TLS_SUCCESS)
+	{
+		return error;
+	}
+
+	switch (handshake_header.type)
+	{
+	case TLS_HELLO_REQUEST:
+		break;
+	case TLS_CLIENT_HELLO:
+		tls_client_hello_read(result, PTR_OFFSET(data, pos), size - pos);
+		break;
+	case TLS_SERVER_HELLO:
+		break;
+	case TLS_HELLO_VERIFY_REQUEST:
+	case TLS_NEW_SESSION_TICKET:
+	case TLS_END_OF_EARLY_DATA:
+	case TLS_HELLO_RETRY_REQUEST:
+	case TLS_ENCRYPTED_EXTENSIONS:
+	case TLS_CERTIFICATE:
+	case TLS_SERVER_KEY_EXCHANGE:
+	case TLS_CERTIFICATE_REQUEST:
+	case TLS_SERVER_HELLO_DONE:
+	case TLS_CERTIFICATE_VERIFY:
+	case TLS_CLIENT_KEY_EXCHANGE:
+	case TLS_FINISHED:
+	case TLS_CERTIFICATE_URL:
+	case TLS_CERTIFICATE_STATUS:
+	case TLS_SUPPLEMENTAL_DATA:
+	case TLS_KEY_UPDATE:
+	case TLS_MESSAGE_HASH:
+		break;
+	}
+
+	return TLS_SUCCESS;
+}
+
+uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	tls_handshake_header *header = handshake;
+
+	if (size < (TLS_HANDSHAKE_HEADER_OCTETS + header->size))
+	{
+		return 0;
+	}
+
+	pos += tls_handshake_header_write(header, out + pos, size - pos);
+
+	switch (header->type)
+	{
+	case TLS_HELLO_REQUEST:
+	case TLS_CLIENT_HELLO:
+	case TLS_SERVER_HELLO:
+	case TLS_HELLO_VERIFY_REQUEST:
+	case TLS_NEW_SESSION_TICKET:
+	case TLS_END_OF_EARLY_DATA:
+	case TLS_HELLO_RETRY_REQUEST:
+	case TLS_ENCRYPTED_EXTENSIONS:
+	case TLS_CERTIFICATE:
+	case TLS_SERVER_KEY_EXCHANGE:
+	case TLS_CERTIFICATE_REQUEST:
+	case TLS_SERVER_HELLO_DONE:
+	case TLS_CERTIFICATE_VERIFY:
+	case TLS_CLIENT_KEY_EXCHANGE:
+	case TLS_FINISHED:
+	case TLS_CERTIFICATE_URL:
+	case TLS_CERTIFICATE_STATUS:
+	case TLS_SUPPLEMENTAL_DATA:
+	case TLS_KEY_UPDATE:
+	case TLS_MESSAGE_HASH:
+		break;
+	}
+
+	return pos;
+}
+
 void tls_handshake_read(void **handshake, void *data, uint32_t size)
 {
 	void *result = NULL;
@@ -150,52 +286,6 @@ void tls_handshake_read(void **handshake, void *data, uint32_t size)
 	}
 
 	*handshake = result;
-}
-
-uint32_t tls_handshake_write(tls_handshake_header *handshake, void *buffer, uint32_t size)
-{
-	uint8_t *out = buffer;
-	uint32_t pos = 0;
-
-	if (size < (4 + handshake->handshake_size))
-	{
-		return 0;
-	}
-
-	// 1 octet handshake type
-	out[pos++] = handshake->handshake_type;
-
-	// 3 octet handshake size
-	out[pos++] = (handshake->handshake_size >> 16) & 0xFF;
-	out[pos++] = (handshake->handshake_size >> 8) & 0xFF;
-	out[pos++] = (handshake->handshake_size >> 0) & 0xFF;
-
-	switch (handshake->handshake_type)
-	{
-	case TLS_HELLO_REQUEST:
-	case TLS_CLIENT_HELLO:
-	case TLS_SERVER_HELLO:
-	case TLS_HELLO_VERIFY_REQUEST:
-	case TLS_NEW_SESSION_TICKET:
-	case TLS_END_OF_EARLY_DATA:
-	case TLS_HELLO_RETRY_REQUEST:
-	case TLS_ENCRYPTED_EXTENSIONS:
-	case TLS_CERTIFICATE:
-	case TLS_SERVER_KEY_EXCHANGE:
-	case TLS_CERTIFICATE_REQUEST:
-	case TLS_SERVER_HELLO_DONE:
-	case TLS_CERTIFICATE_VERIFY:
-	case TLS_CLIENT_KEY_EXCHANGE:
-	case TLS_FINISHED:
-	case TLS_CERTIFICATE_URL:
-	case TLS_CERTIFICATE_STATUS:
-	case TLS_SUPPLEMENTAL_DATA:
-	case TLS_KEY_UPDATE:
-	case TLS_MESSAGE_HASH:
-		break;
-	}
-
-	return pos;
 }
 
 static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -959,7 +1049,7 @@ uint32_t tls_handshake_print(tls_handshake_header *handshake, void *buffer, uint
 	// Handshake Type
 	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sHandshake Type: ", indent * 4, "");
 
-	switch (handshake->handshake_type)
+	switch (handshake->type)
 	{
 	case TLS_HELLO_REQUEST:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Hello Request (ID 0)\n");
@@ -1022,14 +1112,14 @@ uint32_t tls_handshake_print(tls_handshake_header *handshake, void *buffer, uint
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Message Hash (ID 254)\n");
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", handshake->handshake_type);
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", handshake->type);
 		break;
 	}
 
 	// Handshake Size
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sHandshake Size: %u\n", indent * 4, "", handshake->handshake_size);
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sHandshake Size: %u\n", indent * 4, "", handshake->size);
 
-	switch (handshake->handshake_type)
+	switch (handshake->type)
 	{
 	case TLS_HELLO_REQUEST:
 		break;
