@@ -10,7 +10,7 @@
 
 #include <tls/types.h>
 
-typedef enum _tls_error
+typedef enum _tls_error_t
 {
 	// No error
 	TLS_SUCCESS = 0,
@@ -21,6 +21,9 @@ typedef enum _tls_error
 	TLS_BUFFER_TOO_SMALL,
 	TLS_INVALID_PARAMETER,
 
-} tls_error;
+	// Version errors
+	TLS_UNKNOWN_PROTOCOL_VERSION
+
+} tls_error_t;
 
 #endif

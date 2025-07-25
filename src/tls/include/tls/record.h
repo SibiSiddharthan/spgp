@@ -10,6 +10,7 @@
 
 #include <tls/types.h>
 #include <tls/version.h>
+#include <tls/error.h>
 
 #define TLS_RECORD_SIZE(R) ((((tls_record *)(R))->size) + 5)
 
@@ -27,13 +28,15 @@ typedef enum _tls_content_type
 
 typedef struct _tls_record_header
 {
-	tls_content_type content;
+	tls_content_type type;
 	tls_protocol_version version;
 	uint16_t size;
 } tls_record_header;
 
+tls_error_t tls_record_header_read(tls_record_header *header, void *data, uint32_t size);
+uint32_t tls_record_header_write(tls_record_header *header, void *buffer, uint32_t size);
+
 void tls_record_read(tls_record **record, void *data, uint32_t size);
-uint32_t tls_record_write(tls_record *record, void *buffer, uint32_t size);
 uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size, uint32_t indent);
 
 #endif
