@@ -241,7 +241,7 @@ uint32_t tls_record_print(void *record, void *buffer, uint32_t size, uint32_t in
 		pos += tls_alert_print_body(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_HANDSHAKE:
-		pos += tls_handshake_print(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_handshake_print_body(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_APPLICATION_DATA:
 	case TLS_HEARTBEAT:

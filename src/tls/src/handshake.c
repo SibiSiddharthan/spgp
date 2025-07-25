@@ -1023,84 +1023,91 @@ static uint32_t tls_client_hello_print(tls_client_hello *hello, void *buffer, ui
 	return pos;
 }
 
-uint32_t tls_handshake_print(tls_handshake_header *handshake, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t print_handshake_header(tls_handshake_header *header, void *buffer, uint32_t size, uint32_t indent)
 {
 	uint32_t pos = 0;
 
-	// Handshake Type
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sHandshake Type: ", indent * 4, "");
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*s", indent * 4, "");
 
-	switch (handshake->type)
+	switch (header->type)
 	{
 	case TLS_HELLO_REQUEST:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Hello Request (ID 0)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Hello Request (ID 0) (%u bytes)\n", header->size);
 		break;
 	case TLS_CLIENT_HELLO:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Hello (ID 1)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Hello (ID 1) (%u bytes)\n", header->size);
 		break;
 	case TLS_SERVER_HELLO:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Hello (ID 2)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Hello (ID 2) (%u bytes)\n", header->size);
 		break;
 	case TLS_HELLO_VERIFY_REQUEST:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Hello Verify Request (ID 3)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Hello Verify Request (ID 3) (%u bytes)\n", header->size);
 		break;
 	case TLS_NEW_SESSION_TICKET:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "New Session Ticket (ID 4)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "New Session Ticket (ID 4) (%u bytes)\n", header->size);
 		break;
 	case TLS_END_OF_EARLY_DATA:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "End Of Early Data (ID 5)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "End Of Early Data (ID 5) (%u bytes)\n", header->size);
 		break;
 	case TLS_HELLO_RETRY_REQUEST:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Hello Retry Request (ID 6)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Hello Retry Request (ID 6) (%u bytes)\n", header->size);
 		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Extensions (ID 8)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Extensions (ID 8) (%u bytes)\n", header->size);
 		break;
 	case TLS_CERTIFICATE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Certificate (ID 11)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Certificate (ID 11) (%u bytes)\n", header->size);
 		break;
 	case TLS_SERVER_KEY_EXCHANGE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Key Exchange (ID 12)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Key Exchange (ID 12) (%u bytes)\n", header->size);
 		break;
 	case TLS_CERTIFICATE_REQUEST:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Request (ID 13)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Request (ID 13) (%u bytes)\n", header->size);
 		break;
 	case TLS_SERVER_HELLO_DONE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Hello Done (ID 14)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Hello Done (ID 14) (%u bytes)\n", header->size);
 		break;
 	case TLS_CERTIFICATE_VERIFY:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Verify (ID 15)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Verify (ID 15) (%u bytes)\n", header->size);
 		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Key Exchange (ID 16)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Key Exchange (ID 16) (%u bytes)\n", header->size);
 		break;
 	case TLS_FINISHED:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Finished (ID 20)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Finished (ID 20) (%u bytes)\n", header->size);
 		break;
 	case TLS_CERTIFICATE_URL:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate URL (ID 21)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate URL (ID 21) (%u bytes)\n", header->size);
 		break;
 	case TLS_CERTIFICATE_STATUS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Status (ID 22)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Status (ID 22) (%u bytes)\n", header->size);
 		break;
 	case TLS_SUPPLEMENTAL_DATA:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Supplemental Data (ID 23)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Supplemental Data (ID 23) (%u bytes)\n", header->size);
 		break;
 	case TLS_KEY_UPDATE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Key Update (ID 24)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Key Update (ID 24) (%u bytes)\n", header->size);
 		break;
 	case TLS_MESSAGE_HASH:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Message Hash (ID 254)\n");
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Message Hash (ID 254) (%u bytes)\n", header->size);
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", handshake->type);
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu) (%u bytes)\n", header->type, header->size);
 		break;
 	}
 
-	// Handshake Size
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sHandshake Size: %u\n", indent * 4, "", handshake->size);
+	return pos;
+}
 
-	switch (handshake->type)
+uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, uint32_t indent)
+{
+	tls_handshake_header *header = handshake;
+	uint32_t pos = 0;
+
+	// Handshake Type
+	pos += print_handshake_header(header, PTR_OFFSET(buffer, pos), size - pos, indent);
+
+	switch (header->type)
 	{
 	case TLS_HELLO_REQUEST:
 		break;
