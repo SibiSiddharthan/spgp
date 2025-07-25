@@ -30,6 +30,9 @@ tls_error_t tls_change_cipher_spec_read_body(tls_change_cipher_spec **cs, tls_re
 		return TLS_NO_MEMORY;
 	}
 
+	// Copy the header
+	(*cs)->header = *header;
+
 	// 1 octet state
 	LOAD_8(&(*cs)->state, in + pos);
 	pos += 1;

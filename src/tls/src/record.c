@@ -104,10 +104,11 @@ tls_error_t tls_record_read(void **record, void *data, uint32_t size)
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		error = tls_change_cipher_spec_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
+		error = tls_change_cipher_spec_read_body((tls_change_cipher_spec **)record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS),
+												 header.size);
 		break;
 	case TLS_ALERT:
-		error = tls_alert_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
+		error = tls_alert_read_body((tls_alert **)record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
 		break;
 	case TLS_HANDSHAKE:
 		error = tls_handshake_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
@@ -151,7 +152,7 @@ uint32_t tls_record_write(void *record, void *buffer, uint32_t size)
 		pos += tls_alert_write_body(record, out + pos, size - pos);
 		break;
 	case TLS_HANDSHAKE:
-		pos += tls_handshake_write(record, out + pos, size - pos);
+		pos += tls_handshake_write_body(record, out + pos, size - pos);
 		break;
 	case TLS_APPLICATION_DATA:
 	case TLS_HEARTBEAT:

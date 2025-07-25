@@ -25,7 +25,7 @@ DWORD handle_requests(PVOID socket)
 
 	while (1)
 	{
-		tls_record *record = NULL;
+		void *record = NULL;
 		uint8_t print[65536] = {0};
 
 		memset(buffer, 0, 65536);

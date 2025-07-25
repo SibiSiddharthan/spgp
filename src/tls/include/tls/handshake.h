@@ -14,7 +14,7 @@
 #include <tls/extensions.h>
 
 #define TLS_HANDSHAKE_HEADER_OCTETS 4
-#define TLS_HANDSHAKE_SIZE(H) ((((tls_handshake_header *)(H))->handshake_size) + 4)
+#define TLS_HANDSHAKE_SIZE(H)       ((((tls_handshake_header *)(H))->handshake_size) + 4)
 
 typedef enum _tls_handshake_type
 {
@@ -108,7 +108,7 @@ typedef struct _tls_key_update
 } tls_key_update;
 
 tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *header, void *data, uint32_t size);
-uint32_t tls_handshake_write_body(tls_handshake_header *handshake, void *buffer, uint32_t size);
+uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size);
 uint32_t tls_handshake_print(tls_handshake_header *handshake, void *buffer, uint32_t size, uint32_t indent);
 
 #endif

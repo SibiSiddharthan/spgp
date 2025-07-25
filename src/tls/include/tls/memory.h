@@ -32,7 +32,7 @@ static inline void *zrealloc(void *old, size_t size)
 {
 	void *mem = NULL;
 
-	mem = malloc(old, size);
+	mem = realloc(old, size);
 
 	if (mem == NULL)
 	{
