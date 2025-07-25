@@ -40,6 +40,7 @@ typedef enum _tls_handshake_type
 
 typedef struct _tls_handshake_header
 {
+	tls_record_header header;
 	uint8_t handshake_type;
 	uint32_t handshake_size : 24;
 } tls_handshake_header;

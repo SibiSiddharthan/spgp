@@ -8,12 +8,13 @@
 #ifndef TLS_CIPHER_SPEC_H
 #define TLS_CIPHER_SPEC_H
 
-#include <tls/types.h>
+#include <tls/record.h>
 
 #define TLS_CHANGE_CIPHER_SPEC_TYPE 1
 
 typedef struct _tls_change_cipher_spec
 {
+	tls_record_header header;
 	uint8_t state;
 } tls_change_cipher_spec;
 

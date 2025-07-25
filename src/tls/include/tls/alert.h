@@ -8,7 +8,7 @@
 #ifndef TLS_ALERT_H
 #define TLS_ALERT_H
 
-#include <tls/types.h>
+#include <tls/record.h>
 
 #define TLS_ALERT_SIZE 2
 
@@ -56,6 +56,7 @@ typedef enum _tls_alert_description
 
 typedef struct _tls_alert
 {
+	tls_record_header header;
 	uint8_t level;
 	uint8_t description;
 } tls_alert;

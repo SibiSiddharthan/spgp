@@ -25,13 +25,12 @@ typedef enum _tls_content_type
 	TLS_ACK = 26
 } tls_content_type;
 
-typedef struct _tls_record
+typedef struct _tls_record_header
 {
 	tls_content_type content;
 	tls_protocol_version version;
 	uint16_t size;
-	void *data;
-} tls_record;
+} tls_record_header;
 
 void tls_record_read(tls_record **record, void *data, uint32_t size);
 uint32_t tls_record_write(tls_record *record, void *buffer, uint32_t size);
