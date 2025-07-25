@@ -22,6 +22,6 @@ typedef struct _tls_change_cipher_spec
 
 tls_error_t tls_change_cipher_spec_read_body(tls_change_cipher_spec **cs, tls_record_header *header, void *data, uint32_t size);
 uint32_t tls_change_cipher_spec_write_body(tls_change_cipher_spec *cs, void *buffer, uint32_t size);
-uint32_t tls_change_cipher_spec_print(tls_change_cipher_spec *cs, void *buffer, uint32_t size, uint32_t indent);
+uint32_t tls_change_cipher_spec_print_body(tls_change_cipher_spec *cs, void *buffer, uint32_t size, uint32_t indent);
 
 #endif

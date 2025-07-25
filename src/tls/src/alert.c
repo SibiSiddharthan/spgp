@@ -8,13 +8,10 @@
 #include <tls/alert.h>
 #include <tls/record.h>
 #include <tls/memory.h>
+#include <tls/print.h>
 
 #include <load.h>
 #include <ptr.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 tls_error_t tls_alert_read_body(tls_alert **alert, tls_record_header *header, void *data, uint32_t size)
 {
@@ -68,12 +65,12 @@ uint32_t tls_alert_write_body(tls_alert *alert, void *buffer, uint32_t size)
 	return pos;
 }
 
-uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size, uint32_t indent)
+uint32_t tls_alert_print_body(tls_alert *alert, void *buffer, uint32_t size, uint32_t indent)
 {
 	uint32_t pos = 0;
 
 	// Alert Level
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sAlert Level: ", indent * 4, "");
+	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Level: ");
 
 	switch (alert->level)
 	{
@@ -89,7 +86,7 @@ uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size, uint32_t
 	}
 
 	// Alert Description
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sAlert Description: ", indent * 4, "");
+	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Description: ");
 
 	switch (alert->description)
 	{

@@ -7,11 +7,10 @@
 
 #include <tls/cs.h>
 #include <tls/memory.h>
+#include <tls/print.h>
 
 #include <load.h>
 #include <ptr.h>
-
-#include <stdio.h>
 
 tls_error_t tls_change_cipher_spec_read_body(tls_change_cipher_spec **cs, tls_record_header *header, void *data, uint32_t size)
 {
@@ -56,15 +55,15 @@ uint32_t tls_change_cipher_spec_write_body(tls_change_cipher_spec *cs, void *buf
 	return pos;
 }
 
-uint32_t tls_change_cipher_spec_print(tls_change_cipher_spec *cs, void *buffer, uint32_t size, uint32_t indent)
+uint32_t tls_change_cipher_spec_print_body(tls_change_cipher_spec *cs, void *buffer, uint32_t size, uint32_t indent)
 {
 	// State
 	if (cs->state == TLS_CHANGE_CIPHER_SPEC_TYPE)
 	{
-		return snprintf(buffer, size, "%*sChange Cipher Spec: Yes (1)", indent * 4, "");
+		return print_format(indent, buffer, size, "Change Cipher Spec Requested (1)\n");
 	}
 	else
 	{
-		return snprintf(buffer, size, "%*sChange Cipher Spec: Unknown (%hhu)", indent * 4, "", cs->state);
+		return print_format(indent, buffer, size, "Change Cipher Spec Unknown (%hhu)\n", cs->state);
 	}
 }
