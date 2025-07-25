@@ -36,7 +36,8 @@ typedef struct _tls_record_header
 tls_error_t tls_record_header_read(tls_record_header *header, void *data, uint32_t size);
 uint32_t tls_record_header_write(tls_record_header *header, void *buffer, uint32_t size);
 
-void tls_record_read(tls_record **record, void *data, uint32_t size);
-uint32_t tls_record_print(tls_record *record, void *buffer, uint32_t size, uint32_t indent);
+tls_error_t tls_record_read(void **record, void *data, uint32_t size);
+uint32_t tls_record_write(void *record, void *buffer, uint32_t size);
+uint32_t tls_record_print(void *record, void *buffer, uint32_t size, uint32_t indent);
 
 #endif
