@@ -944,7 +944,7 @@ static uint32_t print_cipher_suite(uint32_t indent, void *buffer, uint32_t size,
 	{
 		if (tls_check_grease_value(id))
 		{
-			return print_format(indent, buffer, size, "GREASE (ID {0x%02hhX, 0x%02hhX})\n", o1, o2);
+			return print_format(indent, buffer, size, "GREASE Cipher (ID {0x%02hhX, 0x%02hhX})\n", o1, o2);
 		}
 		else
 		{

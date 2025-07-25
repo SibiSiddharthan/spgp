@@ -727,7 +727,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	{
 		if (tls_check_grease_value(header->extension))
 		{
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE (ID %04hX)\n", header->extension);
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE Extension (ID %04hX)\n", header->extension);
 		}
 		else
 		{
@@ -951,7 +951,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 			{
 				if (tls_check_grease_value(group->groups[i]))
 				{
-					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %04hX)\n", (indent + 1) * 4, "", group->groups[i]);
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE Group (ID %04hX)\n", (indent + 1) * 4, "",
+									group->groups[i]);
 				}
 				else
 				{
@@ -1098,7 +1099,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 			{
 				if (tls_check_grease_value(signatures->algorithms[i]))
 				{
-					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %04hX)\n", (indent + 1) * 4, "",
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE Signature (ID %04hX)\n", (indent + 1) * 4, "",
 									signatures->algorithms[i]);
 				}
 				else
@@ -1169,7 +1170,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 			{
 				if (tls_check_grease_value(TLS_VERSION_RAW(version->version[i])))
 				{
-					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (%02hhX, %02hhX)\n", (indent + 1) * 4, "",
+					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE Version (%02hhX, %02hhX)\n", (indent + 1) * 4, "",
 									version->version[i].major, version->version[i].minor);
 				}
 				else
@@ -1209,7 +1210,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 			case 0xA6:
 			case 0xC5:
 			case 0xE4:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE (ID %02hhX)\n", (indent + 1) * 4, "", modes->modes[i]);
+				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE PSK (ID %02hhX)\n", (indent + 1) * 4, "", modes->modes[i]);
 				break;
 			default:
 				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hhu)\n", (indent + 1) * 4, "", modes->modes[i]);
