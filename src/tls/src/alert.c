@@ -6,6 +6,7 @@
 */
 
 #include <tls/alert.h>
+#include <tls/record.h>
 #include <tls/memory.h>
 
 #include <load.h>
@@ -15,22 +16,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-void tls_alert_read(tls_alert **alert, void *data, uint32_t size)
+tls_error_t tls_alert_read_body(tls_alert **alert, tls_record_header *header, void *data, uint32_t size)
 {
 	uint8_t *in = data;
 	uint32_t pos = 0;
 
-	if (size != TLS_ALERT_SIZE)
+	if (size != TLS_ALERT_OCTETS)
 	{
-		return;
+		return TLS_MALFORMED_ALERT;
 	}
 
 	*alert = zmalloc(sizeof(tls_alert));
 
 	if (*alert == NULL)
 	{
-		return;
+		return TLS_NO_MEMORY;
 	}
+
+	// Copy the header
+	(*alert)->header = *header;
 
 	// 1 octet alert level
 	LOAD_8(&(*alert)->level, in + pos);
@@ -40,15 +44,15 @@ void tls_alert_read(tls_alert **alert, void *data, uint32_t size)
 	LOAD_8(&(*alert)->description, in + pos);
 	pos += 1;
 
-	return;
+	return TLS_SUCCESS;
 }
 
-uint32_t tls_alert_write(tls_alert *alert, void *buffer, uint32_t size)
+uint32_t tls_alert_write_body(tls_alert *alert, void *buffer, uint32_t size)
 {
 	uint8_t *out = buffer;
 	uint32_t pos = 0;
 
-	if (size < TLS_ALERT_SIZE)
+	if (size < TLS_ALERT_OCTETS)
 	{
 		return 0;
 	}

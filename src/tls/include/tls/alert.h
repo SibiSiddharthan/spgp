@@ -10,7 +10,7 @@
 
 #include <tls/record.h>
 
-#define TLS_ALERT_SIZE 2
+#define TLS_ALERT_OCTETS 2
 
 typedef enum _tls_alert_level
 {
@@ -61,8 +61,8 @@ typedef struct _tls_alert
 	uint8_t description;
 } tls_alert;
 
-void tls_alert_read(tls_alert **alert, void *data, uint32_t size);
-uint32_t tls_alert_write(tls_alert *alert, void *buffer, uint32_t size);
+tls_error_t tls_alert_read_body(tls_alert **alert, tls_record_header *header, void *data, uint32_t size);
+uint32_t tls_alert_write_body(tls_alert *alert, void *buffer, uint32_t size);
 uint32_t tls_alert_print(tls_alert *alert, void *buffer, uint32_t size, uint32_t indent);
 
 #endif

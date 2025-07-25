@@ -22,7 +22,8 @@ typedef enum _tls_error_t
 	TLS_INVALID_PARAMETER,
 
 	// Version errors
-	TLS_UNKNOWN_PROTOCOL_VERSION
+	TLS_UNKNOWN_PROTOCOL_VERSION,
+	TLS_MALFORMED_ALERT,
 
 } tls_error_t;
 

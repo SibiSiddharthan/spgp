@@ -99,7 +99,7 @@ tls_error_t tls_record_read(void **record, void *data, uint32_t size)
 		return error;
 	}
 
-	switch (result->content)
+	switch (header.type)
 	{
 	case TLS_INVALID_CONTENT:
 		break;
@@ -107,7 +107,7 @@ tls_error_t tls_record_read(void **record, void *data, uint32_t size)
 		error = tls_change_cipher_spec_read(&result->data, PTR_OFFSET(data, pos), result->size);
 		break;
 	case TLS_ALERT:
-		error = tls_alert_read(&result->data, PTR_OFFSET(data, pos), result->size);
+		error = tls_alert_read_body(record, &header, PTR_OFFSET(data, TLS_RECORD_HEADER_OCTETS), header.size);
 		break;
 	case TLS_HANDSHAKE:
 		error = tls_handshake_read(&result->data, PTR_OFFSET(data, pos), result->size);
@@ -130,6 +130,7 @@ tls_error_t tls_record_read(void **record, void *data, uint32_t size)
 uint32_t tls_record_write(void *record, void *buffer, uint32_t size)
 {
 	tls_record_header *header = record;
+	uint8_t *out = buffer;
 	uint32_t pos = 0;
 
 	if (size < (5 + header->size))
@@ -137,18 +138,20 @@ uint32_t tls_record_write(void *record, void *buffer, uint32_t size)
 		return 0;
 	}
 
+	pos += tls_record_header_write(header, out + pos, size - pos);
+
 	switch (header->type)
 	{
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		pos = tls_change_cipher_spec_write(record, buffer, size);
+		pos += tls_change_cipher_spec_write(record, out + pos, size - pos);
 		break;
 	case TLS_ALERT:
-		pos = tls_alert_write(record, buffer, size);
+		pos += tls_alert_write_body(record, out + pos, size - pos);
 		break;
 	case TLS_HANDSHAKE:
-		pos = tls_handshake_write(record, buffer, size);
+		pos += tls_handshake_write(record, out + pos, size - pos);
 		break;
 	case TLS_APPLICATION_DATA:
 	case TLS_HEARTBEAT:
@@ -202,7 +205,7 @@ uint32_t tls_record_print(void *record, void *buffer, uint32_t size, uint32_t in
 	// Protocol Version
 	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sProtocol Version: ", indent * 4, "");
 
-	switch (TLS_VERSION_RAW(record->version))
+	switch (TLS_VERSION_RAW(header->version))
 	{
 	case TLS_VERSION_1_0:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
