@@ -12,14 +12,10 @@
 #include <tls/cs.h>
 #include <tls/handshake.h>
 #include <tls/memory.h>
+#include <tls/print.h>
 
 #include <load.h>
 #include <ptr.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
 
 tls_error_t tls_record_header_read(tls_record_header *header, void *data, uint32_t size)
 {
@@ -165,21 +161,6 @@ uint32_t tls_record_write(void *record, void *buffer, uint32_t size)
 	return pos;
 }
 
-static size_t print_format(uint32_t indent, void *str, size_t size, const char *format, ...)
-{
-	size_t pos = 0;
-
-	va_list args;
-	va_start(args, format);
-
-	pos += snprintf(PTR_OFFSET(str, pos), size - pos, "%*s", indent * 4, "");
-	pos += vsnprintf(PTR_OFFSET(str, pos), size - pos, format, args);
-
-	va_end(args);
-
-	return pos;
-}
-
 static uint32_t print_record_header(tls_record_header *header, void *buffer, uint32_t size, uint32_t indent)
 {
 	uint32_t pos = 0;
@@ -254,10 +235,10 @@ uint32_t tls_record_print(void *record, void *buffer, uint32_t size, uint32_t in
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		pos += tls_change_cipher_spec_print(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_change_cipher_spec_print_body(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_ALERT:
-		pos += tls_alert_print(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_alert_print_body(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_HANDSHAKE:
 		pos += tls_handshake_print(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
