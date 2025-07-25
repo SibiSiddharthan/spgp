@@ -19,11 +19,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t size)
+static tls_error_t tls_client_hello_read(tls_client_hello **handshake, tls_handshake_header *header, void *data, uint32_t size)
 {
+	tls_client_hello *hello = NULL;
+
 	uint8_t *in = data;
 	uint32_t pos = 0;
 	uint32_t offset = 0;
+	uint32_t extra = 64;
+
+	hello = zmalloc(sizeof(tls_client_hello) + extra);
+
+	if (hello == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	hello->header = *header;
 
 	// 2 octet protocol version
 	LOAD_8(&hello->version.major, in + pos);
@@ -54,6 +67,17 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 	// N octets of cipher suites
 	if (hello->cipher_suites_size > 0)
 	{
+		if (hello->cipher_suites_size + offset > extra)
+		{
+			extra *= 2;
+			hello = zrealloc(hello, sizeof(tls_client_hello) + extra);
+
+			if (hello == NULL)
+			{
+				return TLS_NO_MEMORY;
+			}
+		}
+
 		memcpy(hello->data + offset, in + pos, hello->cipher_suites_size);
 		pos += hello->cipher_suites_size;
 		offset += hello->cipher_suites_size;
@@ -65,6 +89,17 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 
 	if (hello->compression_methods_size > 0)
 	{
+		if (hello->compression_methods_size + offset > extra)
+		{
+			extra *= 2;
+			hello = zrealloc(hello, sizeof(tls_client_hello) + extra);
+
+			if (hello == NULL)
+			{
+				return TLS_NO_MEMORY;
+			}
+		}
+
 		memcpy(hello->data + offset, in + pos, hello->compression_methods_size);
 		pos += hello->compression_methods_size;
 		offset += hello->compression_methods_size;
@@ -77,14 +112,12 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 	if (hello->extensions_size > 0)
 	{
 		hello->extensions_count = tls_extension_count(in + pos, size - pos);
-		hello->extensions = malloc(hello->extensions_count * sizeof(void *));
+		hello->extensions = zmalloc(hello->extensions_count * sizeof(void *));
 
 		if (hello->extensions == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
-
-		memset(hello->extensions, 0, hello->extensions_count * sizeof(void *));
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
@@ -92,6 +125,10 @@ static void tls_client_hello_read(tls_client_hello *hello, void *data, uint32_t 
 			pos += TLS_EXTENSION_SIZE(hello->extensions[i]);
 		}
 	}
+
+	*handshake = hello;
+
+	return TLS_SUCCESS;
 }
 
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
@@ -145,11 +182,7 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	tls_error_t error = 0;
 	tls_handshake_header handshake_header = {0};
 
-	uint8_t *in = data;
-	uint32_t pos = 0;
-
 	error = tls_handshake_header_read(&handshake_header, record_header, data, size);
-	pos += TLS_HANDSHAKE_HEADER_OCTETS;
 
 	if (error != TLS_SUCCESS)
 	{
@@ -161,7 +194,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	case TLS_HELLO_REQUEST:
 		break;
 	case TLS_CLIENT_HELLO:
-		tls_client_hello_read(result, PTR_OFFSET(data, pos), size - pos);
+		error = tls_client_hello_read((tls_client_hello **)handshake, &handshake_header, PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS),
+									  handshake_header.size);
 		break;
 	case TLS_SERVER_HELLO:
 		break;
@@ -183,6 +217,11 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	case TLS_KEY_UPDATE:
 	case TLS_MESSAGE_HASH:
 		break;
+	}
+
+	if (error != TLS_SUCCESS)
+	{
+		return TLS_SUCCESS;
 	}
 
 	return TLS_SUCCESS;
@@ -228,64 +267,6 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	}
 
 	return pos;
-}
-
-void tls_handshake_read(void **handshake, void *data, uint32_t size)
-{
-	void *result = NULL;
-
-	uint8_t *in = data;
-	uint32_t pos = 0;
-
-	tls_handshake_header header = {0};
-
-	// 1 octet handshake type
-	header.handshake_type = in[pos];
-	pos += 1;
-
-	// 3 octet handshake size
-	header.handshake_size = (in[pos] << 16) + (in[pos + 1] << 8) + in[pos + 2];
-	pos += 3;
-
-	result = zmalloc(sizeof(tls_client_hello) + 2048);
-
-	if (result == NULL)
-	{
-		return;
-	}
-
-	memcpy(result, &header, sizeof(tls_handshake_header));
-
-	switch (header.handshake_type)
-	{
-	case TLS_HELLO_REQUEST:
-		break;
-	case TLS_CLIENT_HELLO:
-		tls_client_hello_read(result, PTR_OFFSET(data, pos), size - pos);
-		break;
-	case TLS_SERVER_HELLO:
-		break;
-	case TLS_HELLO_VERIFY_REQUEST:
-	case TLS_NEW_SESSION_TICKET:
-	case TLS_END_OF_EARLY_DATA:
-	case TLS_HELLO_RETRY_REQUEST:
-	case TLS_ENCRYPTED_EXTENSIONS:
-	case TLS_CERTIFICATE:
-	case TLS_SERVER_KEY_EXCHANGE:
-	case TLS_CERTIFICATE_REQUEST:
-	case TLS_SERVER_HELLO_DONE:
-	case TLS_CERTIFICATE_VERIFY:
-	case TLS_CLIENT_KEY_EXCHANGE:
-	case TLS_FINISHED:
-	case TLS_CERTIFICATE_URL:
-	case TLS_CERTIFICATE_STATUS:
-	case TLS_SUPPLEMENTAL_DATA:
-	case TLS_KEY_UPDATE:
-	case TLS_MESSAGE_HASH:
-		break;
-	}
-
-	*handshake = result;
 }
 
 static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
