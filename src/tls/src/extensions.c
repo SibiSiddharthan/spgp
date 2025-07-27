@@ -398,7 +398,66 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_OID_FILTERS:
 	// case TLS_EXT_POST_HANDSHAKE_AUTH:
 	// case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
-	// case TLS_EXT_KEY_SHARE:
+	case TLS_EXT_KEY_SHARE:
+	{
+		tls_extension_key_share *shares = NULL;
+		tls_key_share *key = NULL;
+		uint16_t total_size = 0;
+		uint16_t count = 0;
+		uint16_t offset = 0;
+
+		// 2 octet size
+		LOAD_16BE(&total_size, in + pos);
+		pos += 2;
+
+		if ((total_size + 2) != header.size)
+		{
+			return;
+		}
+
+		// Count the number of protocols
+		while (offset < total_size)
+		{
+			offset += in[pos + offset + 1] + 2;
+			count += 1;
+		}
+
+		shares = zmalloc(sizeof(tls_extension_key_share) + (sizeof(tls_key_share) * count) + (total_size - (count * 4)));
+
+		if (shares == NULL)
+		{
+			return;
+		}
+
+		// Copy the header
+		shares->header = header;
+		shares->size = total_size;
+		shares->count = count;
+
+		key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
+		offset = (sizeof(tls_key_share) * count);
+
+		for (uint16_t i = 0; i < count; ++i)
+		{
+			// 2 octet group
+			LOAD_16BE(&key[i].group, in + pos);
+			pos += 2;
+
+			// 2 octet size
+			LOAD_16BE(&key[i].size, in + pos);
+			pos += 2;
+
+			// N octet data
+			memcpy(PTR_OFFSET(key, offset), in + pos, key[i].size);
+			pos += key[i].size;
+
+			key[i].offset = offset;
+			offset += key[i].size;
+		}
+
+		*extension = shares;
+	}
+	break;
 	// case TLS_EXT_TRANSPARENCY_INFO:
 	// case TLS_EXT_CONNECTION_INFO_LEGACY:
 	// case TLS_EXT_CONNECTION_INFO:
@@ -634,7 +693,32 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_OID_FILTERS:
 	case TLS_EXT_POST_HANDSHAKE_AUTH:
 	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
+		break;
 	case TLS_EXT_KEY_SHARE:
+	{
+		tls_extension_key_share *shares = extension;
+		tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
+
+		// 2 octet size
+		LOAD_16BE(out + pos, &shares->size);
+		pos += 2;
+
+		for (uint16_t i = 0; i < shares->count; ++i)
+		{
+			// 2 octet group
+			LOAD_16BE(out + pos, &key[i].group);
+			pos += 2;
+
+			// 2 octet size
+			LOAD_16BE(out + pos, &key[i].size);
+			pos += 2;
+
+			// N octet data
+			memcpy(out + pos, PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += key[i].size;
+		}
+	}
+	break;
 	case TLS_EXT_TRANSPARENCY_INFO:
 	case TLS_EXT_CONNECTION_INFO_LEGACY:
 	case TLS_EXT_CONNECTION_INFO:

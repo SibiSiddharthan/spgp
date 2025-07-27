@@ -162,6 +162,21 @@ typedef struct _tls_extensions_application_protocol_negotiation
 
 } tls_extensions_application_protocol_negotiation;
 
+typedef struct _tls_key_share
+{
+	uint16_t group;
+	uint16_t offset;
+	uint16_t size;
+} tls_key_share;
+
+typedef struct _tls_extension_key_share
+{
+	tls_extension_header header;
+	uint16_t size;
+	uint16_t count;
+	tls_key_share shares[];
+} tls_extension_key_share;
+
 void tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
 uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent);
