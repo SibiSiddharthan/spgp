@@ -26,6 +26,10 @@ typedef enum _tls_error_t
 	TLS_MALFORMED_ALERT,
 	TLS_MALFORMED_CHANGE_CIPHER_SPEC,
 
+	// Extension errors
+	TLS_MALFORMED_EXTENSION_SIZE,
+	TLS_INVALID_RECORD_LIMIT,
+
 } tls_error_t;
 
 #endif

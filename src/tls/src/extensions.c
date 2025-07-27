@@ -199,7 +199,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (group->size != (header.size - 2))
 		{
-			return;
+			return TLS_MALFORMED_EXTENSION_SIZE;
 		}
 
 		// N octets of data
@@ -232,7 +232,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (format->size != (header.size - 1))
 		{
-			return;
+			return TLS_MALFORMED_EXTENSION_SIZE;
 		}
 
 		// N octets of data
@@ -262,7 +262,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (signatures->size != (header.size - 2))
 		{
-			return;
+			return TLS_MALFORMED_EXTENSION_SIZE;
 		}
 
 		// N octets of data
@@ -293,7 +293,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if ((total_size + 2) != header.size)
 		{
-			return;
+			return TLS_MALFORMED_EXTENSION_SIZE;
 		}
 
 		// Count the number of protocols
@@ -367,7 +367,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (limit->limit < 64)
 		{
-			return;
+			return TLS_INVALID_RECORD_LIMIT;
 		}
 
 		*extension = limit;
@@ -401,7 +401,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (version->size != (header.size - 1))
 		{
-			return;
+			return TLS_MALFORMED_EXTENSION_SIZE;
 		}
 
 		// N octets of data
@@ -430,7 +430,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (modes->size != (header.size - 1))
 		{
-			return;
+			return TLS_MALFORMED_EXTENSION_SIZE;
 		}
 
 		// N octets of data
@@ -458,7 +458,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if ((total_size + 2) != header.size)
 		{
-			return;
+			return TLS_MALFORMED_EXTENSION_SIZE;
 		}
 
 		// Count the number of protocols
