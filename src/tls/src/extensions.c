@@ -585,6 +585,108 @@ static uint32_t tls_extension_ec_point_format_print_body(tls_extension_ec_point_
 	return pos;
 }
 
+// RFC 7301:  Transport Layer Security (TLS) Application-Layer Protocol Negotiation Extension
+// Application Layer Protocol Negotiation
+static tls_error_t tls_extension_application_protocol_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extensions_application_protocol_negotiation *protocols = NULL;
+	tls_opaque_data *name = NULL;
+	uint16_t total_size = 0;
+	uint16_t count = 0;
+	uint16_t offset = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	// 2 octet size
+	LOAD_16BE(&total_size, in + pos);
+	pos += 2;
+
+	if ((total_size + 2) != header->size)
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// Count the number of protocols
+	while (offset < total_size)
+	{
+		offset += in[pos + offset] + 1;
+		count += 1;
+	}
+
+	protocols = zmalloc(sizeof(tls_extensions_application_protocol_negotiation) + (sizeof(tls_opaque_data) * count) + (total_size - count));
+
+	if (protocols == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	protocols->header = *header;
+	protocols->size = total_size;
+	protocols->count = count;
+
+	name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
+	offset = (sizeof(tls_opaque_data) * count);
+
+	for (uint16_t i = 0; i < count; ++i)
+	{
+		// 1 octet size
+		LOAD_8(&name[i].size, in + pos);
+		pos += 1;
+
+		// N octet data
+		memcpy(PTR_OFFSET(name, offset), in + pos, name[i].size);
+		pos += name[i].size;
+
+		name[i].offset = offset;
+		offset += name[i].size;
+	}
+
+	*extension = protocols;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_application_protocol_write_body(tls_extensions_application_protocol_negotiation *protocols, void *buffer)
+{
+	tls_opaque_data *name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
+
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 2 octet size
+	LOAD_16BE(out + pos, &protocols->size);
+	pos += 2;
+
+	for (uint16_t i = 0; i < protocols->count; ++i)
+	{
+		// 1 octet size
+		LOAD_8(out + pos, &name[i].size);
+		pos += 1;
+
+		// N octet data
+		memcpy(out + pos, PTR_OFFSET(name, name[i].offset), name[i].size);
+		pos += name[i].size;
+	}
+
+	return pos;
+}
+
+static uint32_t tls_extension_application_protocol_print_body(tls_extensions_application_protocol_negotiation *protocols, void *buffer,
+															  uint32_t size, uint32_t indent)
+{
+	tls_opaque_data *name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
+	uint32_t pos = 0;
+
+	for (uint16_t i = 0; i < protocols->count; ++i)
+	{
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "%.*s\n", name[i].size, PTR_OFFSET(name, name[i].offset));
+	}
+
+	return pos;
+}
+
 // RFC 8449: Record Size Limit Extension for TLS
 // Record Size Limit
 static tls_error_t tls_extension_record_size_limit_read_body(void **extension, tls_extension_header *header, void *data)
@@ -717,62 +819,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		// case TLS_EXT_USE_SRTP:
 		// case TLS_EXT_HEARTBEAT:
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
-	{
-		tls_extensions_application_protocol_negotiation *protocols = NULL;
-		tls_opaque_data *name = NULL;
-		uint16_t total_size = 0;
-		uint16_t count = 0;
-		uint16_t offset = 0;
-
-		// 2 octet size
-		LOAD_16BE(&total_size, in + pos);
-		pos += 2;
-
-		if ((total_size + 2) != header.size)
-		{
-			return TLS_MALFORMED_EXTENSION_SIZE;
-		}
-
-		// Count the number of protocols
-		while (offset < total_size)
-		{
-			offset += in[pos + offset] + 1;
-			count += 1;
-		}
-
-		protocols =
-			zmalloc(sizeof(tls_extensions_application_protocol_negotiation) + (sizeof(tls_opaque_data) * count) + (total_size - count));
-
-		if (protocols == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		protocols->header = header;
-		protocols->size = total_size;
-		protocols->count = count;
-
-		name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
-		offset = (sizeof(tls_opaque_data) * count);
-
-		for (uint16_t i = 0; i < count; ++i)
-		{
-			// 1 octet size
-			LOAD_8(&name[i].size, in + pos);
-			pos += 1;
-
-			// N octet data
-			memcpy(PTR_OFFSET(name, offset), in + pos, name[i].size);
-			pos += name[i].size;
-
-			name[i].offset = offset;
-			offset += name[i].size;
-		}
-
-		*extension = protocols;
-	}
-	break;
+		error = tls_extension_application_protocol_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_STATUS_REQUEST_V2:
 		// case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
 		// case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
@@ -1006,7 +1054,7 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_HEARTBEAT:
 		break;
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
-		pos += tls_extension_record_size_limit_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		pos += tls_extension_application_protocol_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_STATUS_REQUEST_V2:
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
@@ -1024,14 +1072,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_COMPRESS_CERTIFICATE:
 		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
-	{
-		tls_extension_record_size_limit *limit = extension;
-
-		// 2 octet length identifier
-		LOAD_16BE(out + pos, &limit->limit);
-		pos += 2;
-	}
-	break;
+		pos += tls_extension_record_size_limit_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_PASSWORD_PROTECT:
 	case TLS_EXT_PASSWORD_CLEAR:
 	case TLS_EXT_PASSWORD_SALT:
@@ -1449,16 +1491,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_HEARTBEAT:
 		break;
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
-	{
-		tls_extensions_application_protocol_negotiation *protocols = extension;
-		tls_opaque_data *name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
-
-		for (uint16_t i = 0; i < protocols->count; ++i)
-		{
-			pos += print_format(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "%.*s\n", name[i].size, PTR_OFFSET(name, name[i].offset));
-		}
-	}
-	break;
+		pos += tls_extension_application_protocol_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_STATUS_REQUEST_V2:
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
