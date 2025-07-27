@@ -57,6 +57,156 @@ uint32_t tls_extension_header_write(tls_extension_header *header, void *buffer, 
 	return pos;
 }
 
+// RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
+// Server Name
+static tls_error_t tls_extension_server_name_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_server_name *server = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	uint32_t new_pos = 0;
+	uint16_t name_size = 0;
+	uint16_t name_count = 0;
+
+	server = zmalloc(sizeof(tls_extension_server_name));
+
+	if (server == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	server->header = *header;
+
+	// 2 octet list size
+	LOAD_16BE(&server->size, in + pos);
+	pos += 2;
+
+	while (new_pos < server->size)
+	{
+		LOAD_16BE(&name_size, in + pos + new_pos + 1);
+		new_pos += 3 + name_size;
+		name_count += 1;
+	}
+
+	server->count = name_count;
+	server->list = malloc(sizeof(void *) * server->count);
+
+	if (server->list == NULL)
+	{
+		free(server);
+		return TLS_NO_MEMORY;
+	}
+
+	memset(server->list, 0, sizeof(void *) * server->count);
+
+	for (uint16_t i = 0; i < name_count; ++i)
+	{
+		tls_server_name *name = NULL;
+		uint16_t name_size = 0;
+		tls_name_type name_type = 0;
+
+		// 1 octet name type
+		LOAD_8(&name_type, in + pos);
+		pos += 1;
+
+		switch (name_type)
+		{
+		case TLS_HOST_NAME:
+		{
+			// 2 octet name size
+			LOAD_16BE(&name_size, in + pos);
+			pos += 2;
+
+			name = zmalloc(sizeof(tls_server_name) + name_size);
+
+			if (name == NULL)
+			{
+				return TLS_NO_MEMORY;
+			}
+
+			name->name_type = name_type;
+			name->name_size = name_size;
+
+			// N octets of name
+			memcpy(name->name, in + pos, name->name_size);
+			pos += name->name_size;
+		}
+		break;
+		}
+
+		server->list[i] = name;
+	}
+
+	*extension = server;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_server_name_write_body(tls_extension_server_name *server, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 2 octet list size
+	LOAD_16BE(out + pos, &server->size);
+	pos += 2;
+
+	for (uint16_t i = 0; i < server->count; ++i)
+	{
+		tls_server_name *name = server->list[i];
+
+		// 1 octet name type
+		LOAD_8(out + pos, name->name_type);
+		pos += 1;
+
+		switch (name->name_type)
+		{
+		case TLS_HOST_NAME:
+		{
+			// 2 octet name size
+			LOAD_16BE(out + pos, &name->name_size);
+			pos += 2;
+
+			// N octets of name
+			memcpy(out + pos, name->name, name->name_size);
+			pos += name->name_size;
+		}
+		break;
+		}
+	}
+
+	return pos;
+}
+
+static uint32_t tls_extension_server_name_print_body(tls_extension_server_name *server, void *buffer, uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	for (uint16_t i = 0; i < server->count; ++i)
+	{
+		tls_server_name *name = server->list[i];
+
+		switch (name->name_type)
+		{
+		case TLS_HOST_NAME:
+		{
+			// Name Type
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Name Type: Host Name (ID 0)\n");
+
+			// Name
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Name (%hu bytes): %.*s\n", name->name_size, name->name_size,
+								name->name);
+		}
+		break;
+		}
+	}
+
+	return pos;
+}
+
 tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 {
 	tls_error_t error = 0;
@@ -73,86 +223,16 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		return error;
 	}
 
+	if (size < TLS_EXTENSION_OCTETS(&header))
+	{
+		return TLS_INSUFFICIENT_DATA;
+	}
+
 	switch (header.type)
 	{
 	case TLS_EXT_SERVER_NAME:
-	{
-		tls_extension_server_name *server = zmalloc(sizeof(tls_extension_server_name));
-		uint32_t new_pos = 0;
-		uint16_t name_size = 0;
-		uint16_t name_count = 0;
-
-		if (server == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		server->header = header;
-
-		// 2 octet list size
-		LOAD_16BE(&server->size, in + pos);
-		pos += 2;
-
-		while (new_pos < server->size)
-		{
-			LOAD_16BE(&name_size, in + pos + new_pos + 1);
-			new_pos += 3 + name_size;
-			name_count += 1;
-		}
-
-		server->count = name_count;
-		server->list = malloc(sizeof(void *) * server->count);
-
-		if (server->list == NULL)
-		{
-			free(server);
-			return TLS_NO_MEMORY;
-		}
-
-		memset(server->list, 0, sizeof(void *) * server->count);
-
-		for (uint16_t i = 0; i < name_count; ++i)
-		{
-			tls_server_name *name = NULL;
-			uint16_t name_size = 0;
-			tls_name_type name_type = 0;
-
-			// 1 octet name type
-			LOAD_8(&name_type, in + pos);
-			pos += 1;
-
-			switch (name_type)
-			{
-			case TLS_HOST_NAME:
-			{
-				// 2 octet name size
-				LOAD_16BE(&name_size, in + pos);
-				pos += 2;
-
-				name = zmalloc(sizeof(tls_server_name) + name_size);
-
-				if (name == NULL)
-				{
-					return TLS_NO_MEMORY;
-				}
-
-				name->name_type = name_type;
-				name->name_size = name_size;
-
-				// N octets of name
-				memcpy(name->name, in + pos, name->name_size);
-				pos += name->name_size;
-			}
-			break;
-			}
-
-			server->list[i] = name;
-		}
-
-		*extension = server;
-	}
-	break;
+		error = tls_extension_server_name_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
 	{
 		tls_extension_max_fragment_length *fragment = zmalloc(sizeof(tls_extension_max_fragment_length));
@@ -527,7 +607,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	break;
 	}
 
-	return TLS_SUCCESS;
+	return error;
 }
 
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
@@ -537,43 +617,18 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 
 	tls_extension_header *header = extension;
 
+	if (size < TLS_EXTENSION_OCTETS(header))
+	{
+		return 0;
+	}
+
 	pos += tls_extension_header_write(header, buffer, size);
 
 	switch (header->type)
 	{
 	case TLS_EXT_SERVER_NAME:
-	{
-		tls_extension_server_name *server = extension;
-
-		// 2 octet list size
-		LOAD_16BE(out + pos, &server->size);
-		pos += 2;
-
-		for (uint16_t i = 0; i < server->count; ++i)
-		{
-			tls_server_name *name = server->list[i];
-
-			// 1 octet name type
-			LOAD_8(out + pos, name->name_type);
-			pos += 1;
-
-			switch (name->name_type)
-			{
-			case TLS_HOST_NAME:
-			{
-				// 2 octet name size
-				LOAD_16BE(out + pos, &name->name_size);
-				pos += 2;
-
-				// N octets of name
-				memcpy(out + pos, name->name, name->name_size);
-				pos += name->name_size;
-			}
-			break;
-			}
-		}
-	}
-	break;
+		pos += tls_extension_server_name_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
 	{
 		tls_extension_max_fragment_length *fragment = extension;
@@ -958,29 +1013,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	switch (header->type)
 	{
 	case TLS_EXT_SERVER_NAME:
-	{
-		tls_extension_server_name *server = extension;
-
-		for (uint16_t i = 0; i < server->count; ++i)
-		{
-			tls_server_name *name = server->list[i];
-
-			switch (name->name_type)
-			{
-			case TLS_HOST_NAME:
-			{
-				// Name Type
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sName Type: Host Name (ID 0)\n", (indent + 1) * 4, "");
-
-				// Name
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sName (%hu bytes): %.*s\n", (indent + 1) * 4, "", name->name_size,
-								name->name_size, name->name);
-			}
-			break;
-			}
-		}
-	}
-	break;
+		pos += tls_extension_server_name_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
 	{
 		tls_extension_max_fragment_length *fragment = extension;
