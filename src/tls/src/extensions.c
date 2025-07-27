@@ -924,6 +924,101 @@ static uint32_t tls_extension_record_size_limit_print_body(tls_extension_record_
 	return print_format(indent, buffer, size, "Record Size Limit: %hu bytes\n", limit->limit);
 }
 
+// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+// Supported Versions
+static tls_error_t tls_extension_supported_versions_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_supported_version *version = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	version = zmalloc(sizeof(tls_extension_psk_exchange_mode) + (header->size - 1));
+
+	if (version == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	version->header = *header;
+
+	// 1 octet size
+	LOAD_8(&version->size, in + pos);
+	pos += 1;
+
+	if (version->size != (header->size - 1))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	memcpy(version->version, in + pos, version->size);
+	pos += version->size;
+
+	*extension = version;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_supported_versions_write_body(tls_extension_supported_version *version, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet size
+	LOAD_8(out + pos, &version->size);
+	pos += 1;
+
+	// N octets of data
+	memcpy(out + pos, version->version, version->size);
+	pos += version->size;
+
+	return pos;
+}
+
+static uint32_t tls_extension_supported_versions_print_body(tls_extension_supported_version *version, void *buffer, uint32_t size,
+															uint32_t indent)
+{
+	uint32_t pos = 0;
+	uint8_t count = version->size / 2;
+
+	for (uint8_t i = 0; i < count; ++i)
+	{
+		switch (TLS_VERSION_RAW(version->version[i]))
+		{
+		case TLS_VERSION_1_0:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
+			break;
+		case TLS_VERSION_1_1:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.1 (3, 2)\n");
+			break;
+		case TLS_VERSION_1_2:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.2 (3, 3)\n");
+			break;
+		case TLS_VERSION_1_3:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
+			break;
+		default:
+		{
+			if (tls_check_grease_value(TLS_VERSION_RAW(version->version[i])))
+			{
+				pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "GREASE Version (%02hhX, %02hhX)\n",
+									version->version[i].major, version->version[i].minor);
+			}
+			else
+			{
+				pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (%hhu, %hhu)\n", version->version[i].major,
+									version->version[i].minor);
+			}
+		}
+		break;
+		}
+	}
+
+	return pos;
+}
+
 tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 {
 	tls_error_t error = 0;
@@ -1003,33 +1098,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_PSK:
 	// case TLS_EXT_EARLY_DATA:
 	case TLS_EXT_SUPPORTED_VERSIONS:
-	{
-		tls_extension_supported_version *version = zmalloc(sizeof(tls_extension_psk_exchange_mode) + (header.size - 1));
-
-		if (version == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		version->header = header;
-
-		// 1 octet size
-		LOAD_8(&version->size, in + pos);
-		pos += 1;
-
-		if (version->size != (header.size - 1))
-		{
-			return TLS_MALFORMED_EXTENSION_SIZE;
-		}
-
-		// N octets of data
-		memcpy(version->version, in + pos, version->size);
-		pos += version->size;
-
-		*extension = version;
-	}
-	break;
+		error = tls_extension_supported_versions_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	// case TLS_EXT_COOKIE:
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
 	{
@@ -1228,18 +1298,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_EARLY_DATA:
 		break;
 	case TLS_EXT_SUPPORTED_VERSIONS:
-	{
-		tls_extension_supported_version *version = extension;
-
-		// 1 octet size
-		LOAD_8(out + pos, &version->size);
-		pos += 1;
-
-		// N octets of data
-		memcpy(out + pos, version->version, version->size);
-		pos += version->size;
-	}
-	break;
+		pos += tls_extension_supported_versions_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_COOKIE:
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
@@ -1545,44 +1605,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_EARLY_DATA:
 		break;
 	case TLS_EXT_SUPPORTED_VERSIONS:
-	{
-		tls_extension_supported_version *version = extension;
-		uint8_t count = version->size / 2;
-
-		for (uint8_t i = 0; i < count; ++i)
-		{
-			switch (TLS_VERSION_RAW(version->version[i]))
-			{
-			case TLS_VERSION_1_0:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.0 (3, 1)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_VERSION_1_1:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.1 (3, 2)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_VERSION_1_2:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.2 (3, 3)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_VERSION_1_3:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sTLS 1.3 (3, 4)\n", (indent + 1) * 4, "");
-				break;
-			default:
-			{
-				if (tls_check_grease_value(TLS_VERSION_RAW(version->version[i])))
-				{
-					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE Version (%02hhX, %02hhX)\n", (indent + 1) * 4, "",
-									version->version[i].major, version->version[i].minor);
-				}
-				else
-				{
-					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (%hhu, %hhu)\n", (indent + 1) * 4, "",
-									version->version[i].major, version->version[i].minor);
-				}
-			}
-			break;
-			}
-		}
-	}
-	break;
+		pos += tls_extension_supported_versions_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_COOKIE:
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
