@@ -233,7 +233,64 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	break;
 		// case TLS_EXT_USE_SRTP:
 		// case TLS_EXT_HEARTBEAT:
-		// case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+		break;
+	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+	{
+		tls_extensions_application_protocol_negotiation *protocols = NULL;
+		tls_opaque_data *name = NULL;
+		uint16_t total_size = 0;
+		uint16_t count = 0;
+		uint16_t offset = 0;
+
+		// 2 octet size
+		LOAD_16BE(&total_size, in + pos);
+		pos += 2;
+
+		if ((total_size + 2) != header.size)
+		{
+			return;
+		}
+
+		// Count the number of protocols
+		while (offset < total_size)
+		{
+			offset += in[pos + offset] + 1;
+			count += 1;
+		}
+
+		protocols =
+			zmalloc(sizeof(tls_extensions_application_protocol_negotiation) + (sizeof(tls_opaque_data) * count) + (total_size - count));
+
+		if (protocols == NULL)
+		{
+			return;
+		}
+
+		// Copy the header
+		protocols->header = header;
+		protocols->size = total_size;
+		protocols->count = count;
+
+		name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
+		offset = (sizeof(tls_opaque_data) * count);
+
+		for (uint16_t i = 0; i < count; ++i)
+		{
+			// 1 octet size
+			LOAD_8(&name[i].size, in + pos);
+			pos += 1;
+
+			// N octet data
+			memcpy(PTR_OFFSET(name, offset), in + pos, name[i].size);
+			pos += name[i].size;
+
+			name[i].offset = offset;
+			offset += name[i].size;
+		}
+
+		*extension = protocols;
+	}
+	break;
 		// case TLS_EXT_STATUS_REQUEST_V2:
 		// case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
 		// case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
@@ -487,7 +544,28 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	break;
 	case TLS_EXT_USE_SRTP:
 	case TLS_EXT_HEARTBEAT:
+		break;
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+	{
+		tls_extensions_application_protocol_negotiation *protocols = extension;
+		tls_opaque_data *name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
+
+		// 2 octet size
+		LOAD_16BE(out + pos, &protocols->size);
+		pos += 2;
+
+		for (uint16_t i = 0; i < protocols->count; ++i)
+		{
+			// 1 octet size
+			LOAD_8(out + pos, &name[i].size);
+			pos += 1;
+
+			// N octet data
+			memcpy(out + pos, PTR_OFFSET(name, name[i].offset), name[i].size);
+			pos += name[i].size;
+		}
+	}
+	break;
 	case TLS_EXT_STATUS_REQUEST_V2:
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
