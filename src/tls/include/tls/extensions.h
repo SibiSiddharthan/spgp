@@ -183,7 +183,7 @@ typedef struct _tls_extension_key_share
 tls_error_t tls_extension_header_read(tls_extension_header *header, void *data, uint32_t size);
 uint32_t tls_extension_header_write(tls_extension_header *header, void *buffer, uint32_t size);
 
-void tls_extension_read(void **extension, void *data, uint32_t size);
+tls_error_t tls_extension_read(void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
 uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent);
 

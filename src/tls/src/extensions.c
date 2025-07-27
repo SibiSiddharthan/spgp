@@ -57,15 +57,21 @@ uint32_t tls_extension_header_write(tls_extension_header *header, void *buffer, 
 	return pos;
 }
 
-void tls_extension_read(void **extension, void *data, uint32_t size)
+tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 {
+	tls_error_t error = 0;
 	uint8_t *in = data;
 	uint32_t pos = 0;
 
 	tls_extension_header header = {0};
 
-	tls_extension_header_read(&header, data, size);
+	error = tls_extension_header_read(&header, data, size);
 	pos += TLS_EXTENSION_HEADER_OCTETS;
+
+	if (error != TLS_SUCCESS)
+	{
+		return error;
+	}
 
 	switch (header.type)
 	{
@@ -78,7 +84,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (server == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -100,7 +106,8 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (server->list == NULL)
 		{
-			return;
+			free(server);
+			return TLS_NO_MEMORY;
 		}
 
 		memset(server->list, 0, sizeof(void *) * server->count);
@@ -127,7 +134,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 				if (name == NULL)
 				{
-					return;
+					return TLS_NO_MEMORY;
 				}
 
 				name->name_type = name_type;
@@ -152,7 +159,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (fragment == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -180,7 +187,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (group == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -213,7 +220,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (format == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -243,7 +250,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (signatures == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -301,7 +308,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (protocols == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -348,7 +355,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (limit == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -382,7 +389,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (version == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -411,7 +418,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (modes == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -465,7 +472,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (shares == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		// Copy the header
@@ -509,7 +516,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 		if (unknown == NULL)
 		{
-			return;
+			return TLS_NO_MEMORY;
 		}
 
 		unknown->type = header.type;
@@ -520,7 +527,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	break;
 	}
 
-	return;
+	return TLS_SUCCESS;
 }
 
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)

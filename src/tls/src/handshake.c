@@ -23,6 +23,7 @@
 static tls_error_t tls_client_hello_read(tls_client_hello **handshake, tls_handshake_header *header, void *data, uint32_t size)
 {
 	tls_client_hello *hello = NULL;
+	tls_error_t error = 0;
 
 	uint8_t *in = data;
 	uint32_t pos = 0;
@@ -122,7 +123,13 @@ static tls_error_t tls_client_hello_read(tls_client_hello **handshake, tls_hands
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			tls_extension_read(&hello->extensions[i], in + pos, size - pos);
+			error = tls_extension_read(&hello->extensions[i], in + pos, size - pos);
+
+			if (error != TLS_SUCCESS)
+			{
+				return error;
+			}
+
 			pos += TLS_EXTENSION_OCTETS(hello->extensions[i]);
 		}
 	}
