@@ -297,12 +297,12 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		// case TLS_EXT_PADDING:
 		// case TLS_EXT_ENCRYPT_THEN_MAC:
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
-		// empty body
+		goto empty;
 		break;
-		// case TLS_EXT_TOKEN_BINDING:
-		// case TLS_EXT_CACHED_INFO:
-		// case TLS_EXT_LTS:
-		// case TLS_EXT_COMPRESS_CERTIFICATE:
+	// case TLS_EXT_TOKEN_BINDING:
+	// case TLS_EXT_CACHED_INFO:
+	// case TLS_EXT_LTS:
+	// case TLS_EXT_COMPRESS_CERTIFICATE:
 	case TLS_EXT_RECORD_SIZE_LIMIT:
 	{
 		tls_extension_record_size_limit *limit = zmalloc(sizeof(tls_extension_record_size_limit));
@@ -333,7 +333,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_TICKET_PINNING:
 	// case TLS_EXT_DELEGATED_CREDENTIAL:
 	case TLS_EXT_SESSION_TICKET:
-		// empty body
+		goto empty;
 		break;
 	// case TLS_EXT_PSK:
 	// case TLS_EXT_EARLY_DATA:
@@ -406,6 +406,7 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_EXTERNAL_SESSION_ID:
 	default:
 	{
+	empty:
 		tls_extension_header *unknown = zmalloc(sizeof(tls_extension_header));
 
 		if (unknown == NULL)
@@ -1213,7 +1214,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 
 		for (uint16_t i = 0; i < protocols->count; ++i)
 		{
-			pos += print_format(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "%*.s\n", name[i].size, PTR_OFFSET(name, name[i].offset));
+			pos += print_format(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "%.*s\n", name[i].size, PTR_OFFSET(name, name[i].offset));
 		}
 	}
 	break;
