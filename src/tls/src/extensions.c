@@ -207,6 +207,75 @@ static uint32_t tls_extension_server_name_print_body(tls_extension_server_name *
 	return pos;
 }
 
+// RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
+// Max Fragment Length
+static tls_error_t tls_extension_max_fragment_length_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_max_fragment_length *fragment = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	fragment = zmalloc(sizeof(tls_extension_max_fragment_length));
+
+	if (fragment == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	fragment->header = *header;
+
+	// 1 octet length identifier
+	LOAD_8(&fragment->max_fragment_length, in + pos);
+	pos += 1;
+
+	*extension = fragment;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_max_fragment_length_write_body(tls_extension_max_fragment_length *fragment, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet length identifier
+	LOAD_8(out + pos, &fragment->max_fragment_length);
+	pos += 1;
+
+	return pos;
+}
+
+static uint32_t tls_extension_max_fragment_length_print_body(tls_extension_max_fragment_length *fragment, void *buffer, uint32_t size,
+															 uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Maximum Fragment Length: ");
+
+	switch (fragment->max_fragment_length)
+	{
+	case TLS_MAX_FRAGMENT_LENGTH_512:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "512 (ID 1)\n");
+		break;
+	case TLS_MAX_FRAGMENT_LENGTH_1024:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "1024 (ID 2)\n");
+		break;
+	case TLS_MAX_FRAGMENT_LENGTH_2048:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "2048 (ID 3)\n");
+		break;
+	case TLS_MAX_FRAGMENT_LENGTH_4096:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "4096 (ID 4)\n");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu) (Assuming 16384)\n", fragment->max_fragment_length);
+		break;
+	}
+
+	return pos;
+}
+
 tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 {
 	tls_error_t error = 0;
@@ -234,24 +303,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		error = tls_extension_server_name_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
-	{
-		tls_extension_max_fragment_length *fragment = zmalloc(sizeof(tls_extension_max_fragment_length));
-
-		if (fragment == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		fragment->header = header;
-
-		// 1 octet length identifier
-		LOAD_8(&fragment->max_fragment_length, in + pos);
-		pos += 1;
-
-		*extension = fragment;
-	}
-	break;
+		error = tls_extension_max_fragment_length_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_CLIENT_CERTIFICATE_URL:
 		// case TLS_EXT_TRUSTED_CA_KEYS:
 		// case TLS_EXT_TRUNCATED_HMAC:
@@ -630,14 +683,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_server_name_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
-	{
-		tls_extension_max_fragment_length *fragment = extension;
-
-		// 1 octet length identifier
-		LOAD_8(out + pos, &fragment->max_fragment_length);
-		pos += 1;
-	}
-	break;
+		pos += tls_extension_max_fragment_length_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
 	case TLS_EXT_TRUSTED_CA_KEYS:
 	case TLS_EXT_TRUNCATED_HMAC:
@@ -1016,31 +1063,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		pos += tls_extension_server_name_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
-	{
-		tls_extension_max_fragment_length *fragment = extension;
-
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sMaximum Fragment Length: ", (indent + 1) * 4, "");
-
-		switch (fragment->max_fragment_length)
-		{
-		case TLS_MAX_FRAGMENT_LENGTH_512:
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "512 (ID 1)\n");
-			break;
-		case TLS_MAX_FRAGMENT_LENGTH_1024:
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "1024 (ID 2)\n");
-			break;
-		case TLS_MAX_FRAGMENT_LENGTH_2048:
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "2048 (ID 3)\n");
-			break;
-		case TLS_MAX_FRAGMENT_LENGTH_4096:
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "4096 (ID 4)\n");
-			break;
-		default:
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu) (Assuming 16384)\n", fragment->max_fragment_length);
-			break;
-		}
-	}
-	break;
+		pos += tls_extension_max_fragment_length_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	// case TLS_EXT_CLIENT_CERTIFICATE_URL:
 	// case TLS_EXT_TRUSTED_CA_KEYS:
 	// case TLS_EXT_TRUNCATED_HMAC:
