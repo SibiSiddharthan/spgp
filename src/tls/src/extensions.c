@@ -233,7 +233,6 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	break;
 		// case TLS_EXT_USE_SRTP:
 		// case TLS_EXT_HEARTBEAT:
-		break;
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
 	{
 		tls_extensions_application_protocol_negotiation *protocols = NULL;
@@ -1206,7 +1205,18 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	break;
 	case TLS_EXT_USE_SRTP:
 	case TLS_EXT_HEARTBEAT:
+		break;
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+	{
+		tls_extensions_application_protocol_negotiation *protocols = extension;
+		tls_opaque_data *name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
+
+		for (uint16_t i = 0; i < protocols->count; ++i)
+		{
+			pos += print_format(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "%*.s\n", name[i].size, PTR_OFFSET(name, name[i].offset));
+		}
+	}
+	break;
 	case TLS_EXT_STATUS_REQUEST_V2:
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
