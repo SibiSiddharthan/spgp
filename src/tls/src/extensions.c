@@ -505,6 +505,86 @@ static uint32_t tls_extension_supported_groups_print_body(tls_extension_supporte
 	return pos;
 }
 
+// RFC 8442: Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
+// EC Point Formats
+static tls_error_t tls_extension_ec_point_format_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_ec_point_format *format = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	format = zmalloc(sizeof(tls_extension_ec_point_format) + (header->size - 1));
+
+	if (format == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	format->header = *header;
+
+	// 1 octet size
+	LOAD_8(&format->size, in + pos);
+	pos += 1;
+
+	if (format->size != (header->size - 1))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	memcpy(format->formats, in + pos, format->size);
+	pos += format->size;
+
+	*extension = format;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_ec_point_format_write_body(tls_extension_ec_point_format *format, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet size
+	LOAD_8(out + pos, &format->size);
+	pos += 1;
+
+	// N octets of data
+	memcpy(out + pos, format->formats, format->size);
+	pos += format->size;
+
+	return pos;
+}
+
+static uint32_t tls_extension_ec_point_format_print_body(tls_extension_ec_point_format *format, void *buffer, uint32_t size,
+														 uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	for (uint8_t i = 0; i < format->size; ++i)
+	{
+		switch (format->formats[i])
+		{
+		case TLS_EC_POINT_UNCOMPRESSED:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Uncompressed (ID 0)\n");
+			break;
+		case TLS_EC_POINT_ANSI_X962_COMPRESSED_PRIME:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Compressed Prime (ID 1)\n");
+			break;
+		case TLS_EC_POINT_ANSI_X962_COMPRESSED_CHAR2:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Compressed Binary (ID 2)\n");
+			break;
+		default:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", format->formats[i]);
+			break;
+		}
+	}
+
+	return pos;
+}
+
 // RFC 8449: Record Size Limit Extension for TLS
 // Record Size Limit
 static tls_error_t tls_extension_record_size_limit_read_body(void **extension, tls_extension_header *header, void *data)
@@ -597,33 +677,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		error = tls_extension_supported_groups_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_EC_POINT_FORMATS:
-	{
-		tls_extension_ec_point_format *format = zmalloc(sizeof(tls_extension_ec_point_format) + (header.size - 1));
-
-		if (format == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		format->header = header;
-
-		// 1 octet size
-		LOAD_8(&format->size, in + pos);
-		pos += 1;
-
-		if (format->size != (header.size - 1))
-		{
-			return TLS_MALFORMED_EXTENSION_SIZE;
-		}
-
-		// N octets of data
-		memcpy(format->formats, in + pos, format->size);
-		pos += format->size;
-
-		*extension = format;
-	}
-	break;
+		error = tls_extension_ec_point_format_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	// case TLS_EXT_SRP:
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
 	{
@@ -926,18 +981,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_supported_groups_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_EC_POINT_FORMATS:
-	{
-		tls_extension_ec_point_format *format = extension;
-
-		// 1 octet size
-		LOAD_8(out + pos, &format->size);
-		pos += 1;
-
-		// N octets of data
-		memcpy(out + pos, format->formats, format->size);
-		pos += format->size;
-	}
-	break;
+		pos += tls_extension_ec_point_format_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_SRP:
 		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
@@ -1273,29 +1318,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		pos += tls_extension_supported_groups_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_EC_POINT_FORMATS:
-	{
-		tls_extension_ec_point_format *format = extension;
-
-		for (uint8_t i = 0; i < format->size; ++i)
-		{
-			switch (format->formats[i])
-			{
-			case TLS_EC_POINT_UNCOMPRESSED:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUncompressed (ID 0)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_EC_POINT_ANSI_X962_COMPRESSED_PRIME:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sCompressed Prime (ID 1)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_EC_POINT_ANSI_X962_COMPRESSED_CHAR2:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sCompressed Binary (ID 2)\n", (indent + 1) * 4, "");
-				break;
-			default:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hhu)\n", (indent + 1) * 4, "", format->formats[i]);
-				break;
-			}
-		}
-	}
-	break;
+		pos += tls_extension_ec_point_format_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_SRP:
 		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
