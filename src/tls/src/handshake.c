@@ -270,39 +270,6 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	return pos;
 }
 
-static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-static uint32_t print_hex(void *buffer, void *data, uint32_t size)
-{
-	uint8_t *out = buffer;
-	uint32_t pos = 0;
-
-	for (uint32_t i = 0; i < size; ++i)
-	{
-		uint8_t a, b;
-
-		a = ((uint8_t *)data)[i] / 16;
-		b = ((uint8_t *)data)[i] % 16;
-
-		out[pos++] = hex_lower_table[a];
-		out[pos++] = hex_lower_table[b];
-	}
-
-	out[pos++] = '\n';
-
-	return pos;
-}
-
-static uint32_t print_bytes(uint32_t indent, void *buffer, uint32_t buffer_size, char *prefix, void *data, uint32_t data_size)
-{
-	uint32_t pos = 0;
-
-	pos += print_format(indent, PTR_OFFSET(buffer, pos), buffer_size, "%s (%u bytes): ", prefix, data_size);
-	pos += print_hex(PTR_OFFSET(buffer, pos), data, data_size);
-
-	return pos;
-}
-
 static uint32_t print_compression_method(uint32_t indent, void *buffer, uint32_t size, uint8_t method)
 {
 	if (method == 0)
