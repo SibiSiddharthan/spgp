@@ -585,6 +585,192 @@ static uint32_t tls_extension_ec_point_format_print_body(tls_extension_ec_point_
 	return pos;
 }
 
+// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+// Signature Algorithms
+static tls_error_t tls_extension_signature_algorithms_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_signature_algorithm *signatures = NULL;
+	uint16_t count = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	signatures = zmalloc(sizeof(tls_extension_signature_algorithm) + (header->size - 2));
+
+	if (signatures == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	signatures->header = *header;
+
+	// 2 octet size
+	LOAD_16BE(&signatures->size, in + pos);
+	pos += 2;
+
+	if (signatures->size != (header->size - 2))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	count = signatures->size / 2;
+
+	for (uint16_t i = 0; i < count; ++i)
+	{
+		LOAD_16BE(&signatures->algorithms[i], in + pos);
+		pos += 2;
+	}
+
+	*extension = signatures;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_signature_algorithms_write_body(tls_extension_signature_algorithm *signatures, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	uint16_t count = signatures->size / 2;
+
+	// 2 octet size
+	LOAD_16BE(out + pos, &signatures->size);
+	pos += 2;
+
+	// N octets of data
+	for (uint16_t i = 0; i < count; ++i)
+	{
+		LOAD_16BE(out + pos, &signatures->algorithms[i]);
+		pos += 2;
+	}
+
+	return pos;
+}
+
+static uint32_t tls_extension_signature_algorithms_print_body(tls_extension_signature_algorithm *signatures, void *buffer, uint32_t size,
+															  uint32_t indent)
+{
+	uint32_t pos = 0;
+	uint16_t count = signatures->size / 2;
+
+	for (uint16_t i = 0; i < count; ++i)
+	{
+		switch (signatures->algorithms[i])
+		{
+		case TLS_RSA_PKCS_SHA1:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pkcs1_sha1 (ID 0201)\n");
+			break;
+		case TLS_DSA_SHA1:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "dsa_sha1 (ID 0202)\n");
+			break;
+		case TLS_ECDSA_SHA1:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_secp160r1_sha1 (ID 0203)\n");
+			break;
+		case TLS_RSA_PKCS_SHA256:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pkcs1_sha256 (ID 0401)\n");
+			break;
+		case TLS_DSA_SHA256:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "dsa_sha256 (ID 0402)\n");
+			break;
+		case TLS_ECDSA_SECP256R1_SHA256:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_secp256r1_sha1 (ID 0403)\n");
+			break;
+		case TLS_RSA_PKCS_SHA384:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pkcs1_sha384 (ID 0501)\n");
+			break;
+		case TLS_DSA_SHA384:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "dsa_sha384 (ID 0502)\n");
+			break;
+		case TLS_ECDSA_SECP384R1_SHA384:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_secp384r1_sha384 (ID 0503)\n");
+			break;
+		case TLS_RSA_PKCS_SHA512:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pkcs1_sha512 (ID 0601)\n");
+			break;
+		case TLS_DSA_SHA512:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "dsa_sha512 (ID 0602)\n");
+			break;
+		case TLS_ECDSA_SECP521R1_SHA512:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_secp521r1_sha512 (ID 0603)\n");
+			break;
+		case TLS_SM2_SM3:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "sm2sig_sm3 (ID 0708)\n");
+			break;
+		case TLS_GOST_R34102012_256A:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "gostr34102012_256a (ID 0709)\n");
+			break;
+		case TLS_GOST_R34102012_256B:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "gostr34102012_256b (ID 070A)\n");
+			break;
+		case TLS_GOST_R34102012_256C:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "gostr34102012_256c (ID 070B)\n");
+			break;
+		case TLS_GOST_R34102012_256D:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "gostr34102012_256d (ID 070C)\n");
+			break;
+		case TLS_GOST_R34102012_512A:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "gostr34102012_512a (ID 070D)\n");
+			break;
+		case TLS_GOST_R34102012_512B:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "gostr34102012_512b (ID 070E)\n");
+			break;
+		case TLS_GOST_R34102012_512C:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "gostr34102012_512c (ID 070F)\n");
+			break;
+		case TLS_RSA_PSS_RSAE_SHA256:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pss_rsae_sha256 (ID 0804)\n");
+			break;
+		case TLS_RSA_PSS_RSAE_SHA384:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pss_rsae_sha384 (ID 0805)\n");
+			break;
+		case TLS_RSA_PSS_RSAE_SHA512:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pss_rsae_sha512 (ID 0806)\n");
+			break;
+		case TLS_ED25519:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ed25519 (ID 0807)\n");
+			break;
+		case TLS_ED448:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ed448 (ID 0808)\n");
+			break;
+		case TLS_RSA_PSS_PSS_SHA256:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pss_pss_sha256 (ID 0809)\n");
+			break;
+		case TLS_RSA_PSS_PSS_SHA384:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pss_pss_sha384 (ID 080A)\n");
+			break;
+		case TLS_RSA_PSS_PSS_SHA512:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "rsa_pss_pss_sha512 (ID 080B)\n");
+			break;
+		case TLS_ECDSA_BRAINPOOL_P256R1_TLS13_SHA256:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_brainpoolP256r1tls13_sha256 (ID 081A)\n");
+			break;
+		case TLS_ECDSA_BRAINPOOL_P384R1_TLS13_SHA384:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_brainpoolP384r1tls13_sha384 (ID 081B)\n");
+			break;
+		case TLS_ECDSA_BRAINPOOL_P512R1_TLS13_SHA512:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_brainpoolP512r1tls13_sha512 (ID 081C)\n");
+			break;
+		default:
+		{
+			if (tls_check_grease_value(signatures->algorithms[i]))
+			{
+				pos +=
+					print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "GREASE Signature (ID %04hX)\n", signatures->algorithms[i]);
+			}
+			else
+			{
+				pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %04hX)\n", signatures->algorithms[i]);
+			}
+		}
+		break;
+		}
+	}
+
+	return pos;
+}
+
 // RFC 7301:  Transport Layer Security (TLS) Application-Layer Protocol Negotiation Extension
 // Application Layer Protocol Negotiation
 static tls_error_t tls_extension_application_protocol_read_body(void **extension, tls_extension_header *header, void *data)
@@ -783,39 +969,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		break;
 	// case TLS_EXT_SRP:
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
-	{
-		tls_extension_signature_algorithm *signatures = zmalloc(sizeof(tls_extension_signature_algorithm) + (header.size - 2));
-		uint16_t count = 0;
-
-		if (signatures == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		signatures->header = header;
-
-		// 2 octet size
-		LOAD_16BE(&signatures->size, in + pos);
-		pos += 2;
-
-		if (signatures->size != (header.size - 2))
-		{
-			return TLS_MALFORMED_EXTENSION_SIZE;
-		}
-
-		// N octets of data
-		count = signatures->size / 2;
-
-		for (uint16_t i = 0; i < count; ++i)
-		{
-			LOAD_16BE(&signatures->algorithms[i], in + pos);
-			pos += 2;
-		}
-
-		*extension = signatures;
-	}
-	break;
+		error = tls_extension_signature_algorithms_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_USE_SRTP:
 		// case TLS_EXT_HEARTBEAT:
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
@@ -1034,22 +1189,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_SRP:
 		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
-	{
-		tls_extension_signature_algorithm *signatures = extension;
-		uint16_t count = signatures->size / 2;
-
-		// 2 octet size
-		LOAD_16BE(out + pos, &signatures->size);
-		pos += 2;
-
-		// N octets of data
-		for (uint16_t i = 0; i < count; ++i)
-		{
-			LOAD_16BE(out + pos, &signatures->algorithms[i]);
-			pos += 2;
-		}
-	}
-	break;
+		pos += tls_extension_signature_algorithms_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_USE_SRTP:
 	case TLS_EXT_HEARTBEAT:
 		break;
@@ -1365,128 +1506,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_SRP:
 		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
-	{
-		tls_extension_signature_algorithm *signatures = extension;
-		uint16_t count = signatures->size / 2;
-
-		for (uint16_t i = 0; i < count; ++i)
-		{
-			switch (signatures->algorithms[i])
-			{
-			case TLS_RSA_PKCS_SHA1:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pkcs1_sha1 (ID 0201)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_DSA_SHA1:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sdsa_sha1 (ID 0202)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ECDSA_SHA1:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*secdsa_secp160r1_sha1 (ID 0203)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PKCS_SHA256:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pkcs1_sha256 (ID 0401)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_DSA_SHA256:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sdsa_sha256 (ID 0402)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ECDSA_SECP256R1_SHA256:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*secdsa_secp256r1_sha1 (ID 0403)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PKCS_SHA384:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pkcs1_sha384 (ID 0501)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_DSA_SHA384:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sdsa_sha384 (ID 0502)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ECDSA_SECP384R1_SHA384:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*secdsa_secp384r1_sha384 (ID 0503)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PKCS_SHA512:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pkcs1_sha512 (ID 0601)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_DSA_SHA512:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sdsa_sha512 (ID 0602)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ECDSA_SECP521R1_SHA512:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*secdsa_secp521r1_sha512 (ID 0603)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_SM2_SM3:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*ssm2sig_sm3 (ID 0708)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_GOST_R34102012_256A:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sgostr34102012_256a (ID 0709)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_GOST_R34102012_256B:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sgostr34102012_256b (ID 070A)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_GOST_R34102012_256C:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sgostr34102012_256c (ID 070B)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_GOST_R34102012_256D:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sgostr34102012_256d (ID 070C)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_GOST_R34102012_512A:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sgostr34102012_512a (ID 070D)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_GOST_R34102012_512B:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sgostr34102012_512b (ID 070E)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_GOST_R34102012_512C:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sgostr34102012_512c (ID 070F)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PSS_RSAE_SHA256:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pss_rsae_sha256 (ID 0804)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PSS_RSAE_SHA384:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pss_rsae_sha384 (ID 0805)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PSS_RSAE_SHA512:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pss_rsae_sha512 (ID 0806)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ED25519:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sed25519 (ID 0807)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ED448:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sed448 (ID 0808)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PSS_PSS_SHA256:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pss_pss_sha256 (ID 0809)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PSS_PSS_SHA384:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pss_pss_sha384 (ID 080A)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_RSA_PSS_PSS_SHA512:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*srsa_pss_pss_sha512 (ID 080B)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ECDSA_BRAINPOOL_P256R1_TLS13_SHA256:
-				pos +=
-					snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*secdsa_brainpoolP256r1tls13_sha256 (ID 081A)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ECDSA_BRAINPOOL_P384R1_TLS13_SHA384:
-				pos +=
-					snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*secdsa_brainpoolP384r1tls13_sha384 (ID 081B)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_ECDSA_BRAINPOOL_P512R1_TLS13_SHA512:
-				pos +=
-					snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*secdsa_brainpoolP512r1tls13_sha512 (ID 081C)\n", (indent + 1) * 4, "");
-				break;
-			default:
-			{
-				if (tls_check_grease_value(signatures->algorithms[i]))
-				{
-					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE Signature (ID %04hX)\n", (indent + 1) * 4, "",
-									signatures->algorithms[i]);
-				}
-				else
-				{
-					pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %04hX)\n", (indent + 1) * 4, "",
-									signatures->algorithms[i]);
-				}
-			}
-			break;
-			}
-		}
-	}
-	break;
+		pos += tls_extension_signature_algorithms_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_USE_SRTP:
 	case TLS_EXT_HEARTBEAT:
 		break;
