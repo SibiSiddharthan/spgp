@@ -240,7 +240,9 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 		// case TLS_EXT_SERVER_CERTIFICATE_TYPE:
 		// case TLS_EXT_PADDING:
 		// case TLS_EXT_ENCRYPT_THEN_MAC:
-		// case TLS_EXT_EXTENDED_MASTER_SECRET:
+	case TLS_EXT_EXTENDED_MASTER_SECRET:
+		// empty body
+		break;
 		// case TLS_EXT_TOKEN_BINDING:
 		// case TLS_EXT_CACHED_INFO:
 		// case TLS_EXT_LTS:
@@ -274,7 +276,9 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_PASSWORD_SALT:
 	// case TLS_EXT_TICKET_PINNING:
 	// case TLS_EXT_DELEGATED_CREDENTIAL:
-	// case TLS_EXT_SESSION_TICKET:
+	case TLS_EXT_SESSION_TICKET:
+		// empty body
+		break;
 	// case TLS_EXT_PSK:
 	// case TLS_EXT_EARLY_DATA:
 	case TLS_EXT_SUPPORTED_VERSIONS:
@@ -490,7 +494,10 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
 	case TLS_EXT_PADDING:
 	case TLS_EXT_ENCRYPT_THEN_MAC:
+		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
+		// empty body
+		break;
 	case TLS_EXT_TOKEN_BINDING:
 	case TLS_EXT_CACHED_INFO:
 	case TLS_EXT_LTS:
@@ -510,7 +517,10 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_PASSWORD_SALT:
 	case TLS_EXT_TICKET_PINNING:
 	case TLS_EXT_DELEGATED_CREDENTIAL:
+		break;
 	case TLS_EXT_SESSION_TICKET:
+		// empty body
+		break;
 	case TLS_EXT_PSK:
 	case TLS_EXT_EARLY_DATA:
 		break;
@@ -721,8 +731,7 @@ static uint32_t print_extension_header(tls_extension_header *header, void *buffe
 	{
 		if (tls_check_grease_value(header->type))
 		{
-			pos +=
-				snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE Extension (ID %04hX) (%hu bytes)\n", header->type, header->size);
+			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE Extension (ID %04hX) (%hu bytes)\n", header->type, header->size);
 		}
 		else
 		{
@@ -1126,7 +1135,10 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
 	case TLS_EXT_PADDING:
 	case TLS_EXT_ENCRYPT_THEN_MAC:
+		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
+		// empty body
+		break;
 	case TLS_EXT_TOKEN_BINDING:
 	case TLS_EXT_CACHED_INFO:
 	case TLS_EXT_LTS:
@@ -1145,7 +1157,10 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_PASSWORD_SALT:
 	case TLS_EXT_TICKET_PINNING:
 	case TLS_EXT_DELEGATED_CREDENTIAL:
+		break;
 	case TLS_EXT_SESSION_TICKET:
+		// empty body
+		break;
 	case TLS_EXT_PSK:
 	case TLS_EXT_EARLY_DATA:
 		break;
