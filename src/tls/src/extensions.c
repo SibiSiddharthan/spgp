@@ -13,6 +13,50 @@
 #include <load.h>
 #include <ptr.h>
 
+tls_error_t tls_extension_header_read(tls_extension_header *header, void *data, uint32_t size)
+{
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	if (size < TLS_EXTENSION_HEADER_OCTETS)
+	{
+		return TLS_INSUFFICIENT_DATA;
+	}
+
+	memset(header, 0, sizeof(tls_extension_header));
+
+	// 2 octet extension type
+	LOAD_16BE(&header->type, in + pos);
+	pos += 2;
+
+	// 2 octet extension size
+	LOAD_16BE(&header->size, in + pos);
+	pos += 2;
+
+	return TLS_SUCCESS;
+}
+
+uint32_t tls_extension_header_write(tls_extension_header *header, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	if (size < TLS_EXTENSION_HEADER_OCTETS)
+	{
+		return 0;
+	}
+
+	// 2 octet extension type
+	LOAD_16BE(out + pos, &header->type);
+	pos += 2;
+
+	// 2 octet extension size
+	LOAD_16BE(out + pos, &header->size);
+	pos += 2;
+
+	return pos;
+}
+
 void tls_extension_read(void **extension, void *data, uint32_t size)
 {
 	uint8_t *in = data;
@@ -20,13 +64,8 @@ void tls_extension_read(void **extension, void *data, uint32_t size)
 
 	tls_extension_header header = {0};
 
-	// 2 octet extension type
-	LOAD_16BE(&header.type, in + pos);
-	pos += 2;
-
-	// 2 octet extension size
-	LOAD_16BE(&header.size, in + pos);
-	pos += 2;
+	tls_extension_header_read(&header, data, size);
+	pos += TLS_EXTENSION_HEADER_OCTETS;
 
 	switch (header.type)
 	{
@@ -491,13 +530,7 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 
 	tls_extension_header *header = extension;
 
-	// 2 octet extension type
-	LOAD_16BE(out + pos, &header->type);
-	pos += 2;
-
-	// 2 octet extension size
-	LOAD_16BE(out + pos, &header->size);
-	pos += 2;
+	pos += tls_extension_header_write(header, buffer, size);
 
 	switch (header->type)
 	{
