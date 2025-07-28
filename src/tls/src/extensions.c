@@ -1019,6 +1019,94 @@ static uint32_t tls_extension_supported_versions_print_body(tls_extension_suppor
 	return pos;
 }
 
+// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+// PSK Key Exchange Modes
+static tls_error_t tls_extension_psk_exchange_modes_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_psk_exchange_mode *modes = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	modes = zmalloc(sizeof(tls_extension_psk_exchange_mode) + (header->size - 1));
+
+	if (modes == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	modes->header = *header;
+
+	// 1 octet size
+	LOAD_8(&modes->size, in + pos);
+	pos += 1;
+
+	if (modes->size != (header->size - 1))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	memcpy(modes->modes, in + pos, modes->size);
+	pos += modes->size;
+
+	*extension = modes;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_psk_exchange_modes_write_body(tls_extension_psk_exchange_mode *modes, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet size
+	LOAD_8(out + pos, &modes->size);
+	pos += 1;
+
+	// N octets of data
+	memcpy(out + pos, modes->modes, modes->size);
+	pos += modes->size;
+
+	return pos;
+}
+
+static uint32_t tls_extension_psk_exchange_modes_print_body(tls_extension_psk_exchange_mode *modes, void *buffer, uint32_t size,
+															uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	for (uint8_t i = 0; i < modes->size; ++i)
+	{
+		switch (modes->modes[i])
+		{
+		case TLS_PSK_KEY_EXCHANGE:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "PSK-only key establishment (ID 0)\n");
+			break;
+		case TLS_PSK_DHE_KEY_EXCHANGE:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "PSK with (EC)DHE key establishment (ID 1)\n");
+			break;
+			// GREASE
+		case 0x0B:
+		case 0x2A:
+		case 0x49:
+		case 0x68:
+		case 0x87:
+		case 0xA6:
+		case 0xC5:
+		case 0xE4:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "GREASE PSK (ID %02hhX)\n", modes->modes[i]);
+			break;
+		default:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", modes->modes[i]);
+			break;
+		}
+	}
+
+	return pos;
+}
+
 tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 {
 	tls_error_t error = 0;
@@ -1102,33 +1190,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		break;
 	// case TLS_EXT_COOKIE:
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
-	{
-		tls_extension_psk_exchange_mode *modes = zmalloc(sizeof(tls_extension_psk_exchange_mode) + (header.size - 1));
-
-		if (modes == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		modes->header = header;
-
-		// 1 octet size
-		LOAD_8(&modes->size, in + pos);
-		pos += 1;
-
-		if (modes->size != (header.size - 1))
-		{
-			return TLS_MALFORMED_EXTENSION_SIZE;
-		}
-
-		// N octets of data
-		memcpy(modes->modes, in + pos, modes->size);
-		pos += modes->size;
-
-		*extension = modes;
-	}
-	break;
+		error = tls_extension_psk_exchange_modes_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	// case TLS_EXT_CERTIFICATE_AUTHORITIES:
 	// case TLS_EXT_OID_FILTERS:
 	// case TLS_EXT_POST_HANDSHAKE_AUTH:
@@ -1303,18 +1366,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_COOKIE:
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
-	{
-		tls_extension_psk_exchange_mode *modes = extension;
-
-		// 1 octet size
-		LOAD_8(out + pos, &modes->size);
-		pos += 1;
-
-		// N octets of data
-		memcpy(out + pos, modes->modes, modes->size);
-		pos += modes->size;
-	}
-	break;
+		pos += tls_extension_psk_exchange_modes_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_CERTIFICATE_AUTHORITIES:
 	case TLS_EXT_OID_FILTERS:
 	case TLS_EXT_POST_HANDSHAKE_AUTH:
@@ -1610,38 +1663,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_COOKIE:
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
-	{
-		tls_extension_psk_exchange_mode *modes = extension;
-
-		for (uint8_t i = 0; i < modes->size; ++i)
-		{
-			switch (modes->modes[i])
-			{
-			case TLS_PSK_KEY_EXCHANGE:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sPSK-only key establishment (ID 0)\n", (indent + 1) * 4, "");
-				break;
-			case TLS_PSK_DHE_KEY_EXCHANGE:
-				pos +=
-					snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sPSK with (EC)DHE key establishment (ID 1)\n", (indent + 1) * 4, "");
-				break;
-				// GREASE
-			case 0x0B:
-			case 0x2A:
-			case 0x49:
-			case 0x68:
-			case 0x87:
-			case 0xA6:
-			case 0xC5:
-			case 0xE4:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sGREASE PSK (ID %02hhX)\n", (indent + 1) * 4, "", modes->modes[i]);
-				break;
-			default:
-				pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sUnknown (ID %hhu)\n", (indent + 1) * 4, "", modes->modes[i]);
-				break;
-			}
-		}
-	}
-	break;
+		pos += tls_extension_psk_exchange_modes_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_CERTIFICATE_AUTHORITIES:
 	case TLS_EXT_OID_FILTERS:
 	case TLS_EXT_POST_HANDSHAKE_AUTH:
