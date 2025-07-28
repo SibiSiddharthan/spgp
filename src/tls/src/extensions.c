@@ -1107,6 +1107,296 @@ static uint32_t tls_extension_psk_exchange_modes_print_body(tls_extension_psk_ex
 	return pos;
 }
 
+// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+// Key Share
+static tls_error_t tls_extension_key_share_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_key_share *shares = NULL;
+	tls_key_share *key = NULL;
+	uint16_t total_size = 0;
+	uint16_t count = 0;
+	uint16_t offset = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	// 2 octet size
+	LOAD_16BE(&total_size, in + pos);
+	pos += 2;
+
+	if ((total_size + 2) != header->size)
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// Count the number of protocols
+	while (offset < total_size)
+	{
+		offset += (in[pos + offset + 2] << 8) + in[pos + offset + 3] + 4;
+		count += 1;
+	}
+
+	shares = zmalloc(sizeof(tls_extension_key_share) + (sizeof(tls_key_share) * count) + (total_size - (count * 4)));
+
+	if (shares == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	shares->header = *header;
+	shares->size = total_size;
+	shares->count = count;
+
+	key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
+	offset = (sizeof(tls_key_share) * count);
+
+	for (uint16_t i = 0; i < count; ++i)
+	{
+		// 2 octet group
+		LOAD_16BE(&key[i].group, in + pos);
+		pos += 2;
+
+		// 2 octet size
+		LOAD_16BE(&key[i].size, in + pos);
+		pos += 2;
+
+		// N octet data
+		memcpy(PTR_OFFSET(key, offset), in + pos, key[i].size);
+		pos += key[i].size;
+
+		key[i].offset = offset;
+		offset += key[i].size;
+	}
+
+	*extension = shares;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_key_share_write_body(tls_extension_key_share *shares, void *buffer)
+{
+	tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
+
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 2 octet size
+	LOAD_16BE(out + pos, &shares->size);
+	pos += 2;
+
+	for (uint16_t i = 0; i < shares->count; ++i)
+	{
+		// 2 octet group
+		LOAD_16BE(out + pos, &key[i].group);
+		pos += 2;
+
+		// 2 octet size
+		LOAD_16BE(out + pos, &key[i].size);
+		pos += 2;
+
+		// N octet data
+		memcpy(out + pos, PTR_OFFSET(key, key[i].offset), key[i].size);
+		pos += key[i].size;
+	}
+
+	return pos;
+}
+
+static uint32_t tls_extension_key_share_print_body(tls_extension_key_share *shares, void *buffer, uint32_t size, uint32_t indent)
+{
+	tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
+	uint32_t pos = 0;
+
+	for (uint16_t i = 0; i < shares->count; ++i)
+	{
+		switch (key[i].group)
+		{
+		case TLS_SECT_163K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163k1 (ID 1)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_163R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163r1 (ID 2)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_163R2:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163r2 (ID 3)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_193R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect193r1 (ID 4)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_193R2:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect193r2 (ID 5)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_233K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect233k1 (ID 6)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_233R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect233r1 (ID 7)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_239K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect239k1 (ID 8)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_283K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect283k1 (ID 9)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_283R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect283r1 (ID 10)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_409K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect409k1 (ID 11)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_409R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect409r1 (ID 12)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_571K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect571k1 (ID 13)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECT_571R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect571r1 (ID 14)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_160K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160k1 (ID 15)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_160R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160r1 (ID 16)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_160R2:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160r2 (ID 17)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_192K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp192k1 (ID 18)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_192R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp192r1 (ID 19)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_224K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp224k1 (ID 20)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_224R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp224r1 (ID 21)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_256K1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp256k1 (ID 22)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_256R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp256r1 (ID 23)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_384R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp384r1 (ID 24)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_521R1:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp521r1 (ID 25)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_BRAINPOOL_256R1:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (ID 26)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_BRAINPOOL_384R1:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (ID 27)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_BRAINPOOL_512R1:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (ID 28)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_X25519:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "x25519 (ID 29)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_X448:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "x448 (ID 30)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_BRAINPOOL_256R1_TLS_13:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1tls13 (ID 31)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_BRAINPOOL_384R1_TLS_13:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1tls13 (ID 32)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_BRAINPOOL_512R1_TLS_13:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1tls13 (ID 33)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_GOST_256A:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "GC256A (ID 34)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_GOST_256B:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "GC256B (ID 35)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_GOST_256C:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "GC256C (ID 36)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_GOST_256D:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "GC256D (ID 37)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_GOST_512A:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "GC512A (ID 38)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_GOST_512B:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "GC512B (ID 39)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_GOST_512C:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "GC512C (ID 40)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SM2:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "SM2 (ID 41)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_FFDHE_2048:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe2048 (ID 256)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_FFDHE_3072:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe3072 (ID 257)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_FFDHE_4096:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe4096 (ID 258)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_FFDHE_6144:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe6144 (ID 259)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_FFDHE_8192:
+			pos +=
+				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe8192 (ID 260)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		default:
+		{
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown", PTR_OFFSET(key, key[i].offset), key[i].size);
+		}
+		break;
+		}
+	}
+
+	return pos;
+}
+
 tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 {
 	tls_error_t error = 0;
@@ -1197,65 +1487,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_POST_HANDSHAKE_AUTH:
 	// case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
 	case TLS_EXT_KEY_SHARE:
-	{
-		tls_extension_key_share *shares = NULL;
-		tls_key_share *key = NULL;
-		uint16_t total_size = 0;
-		uint16_t count = 0;
-		uint16_t offset = 0;
-
-		// 2 octet size
-		LOAD_16BE(&total_size, in + pos);
-		pos += 2;
-
-		if ((total_size + 2) != header.size)
-		{
-			return TLS_MALFORMED_EXTENSION_SIZE;
-		}
-
-		// Count the number of protocols
-		while (offset < total_size)
-		{
-			offset += (in[pos + offset + 2] << 8) + in[pos + offset + 3] + 4;
-			count += 1;
-		}
-
-		shares = zmalloc(sizeof(tls_extension_key_share) + (sizeof(tls_key_share) * count) + (total_size - (count * 4)));
-
-		if (shares == NULL)
-		{
-			return TLS_NO_MEMORY;
-		}
-
-		// Copy the header
-		shares->header = header;
-		shares->size = total_size;
-		shares->count = count;
-
-		key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
-		offset = (sizeof(tls_key_share) * count);
-
-		for (uint16_t i = 0; i < count; ++i)
-		{
-			// 2 octet group
-			LOAD_16BE(&key[i].group, in + pos);
-			pos += 2;
-
-			// 2 octet size
-			LOAD_16BE(&key[i].size, in + pos);
-			pos += 2;
-
-			// N octet data
-			memcpy(PTR_OFFSET(key, offset), in + pos, key[i].size);
-			pos += key[i].size;
-
-			key[i].offset = offset;
-			offset += key[i].size;
-		}
-
-		*extension = shares;
-	}
-	break;
+		error = tls_extension_key_share_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	// case TLS_EXT_TRANSPARENCY_INFO:
 	// case TLS_EXT_CONNECTION_INFO_LEGACY:
 	// case TLS_EXT_CONNECTION_INFO:
@@ -1374,30 +1607,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
 		break;
 	case TLS_EXT_KEY_SHARE:
-	{
-		tls_extension_key_share *shares = extension;
-		tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
-
-		// 2 octet size
-		LOAD_16BE(out + pos, &shares->size);
-		pos += 2;
-
-		for (uint16_t i = 0; i < shares->count; ++i)
-		{
-			// 2 octet group
-			LOAD_16BE(out + pos, &key[i].group);
-			pos += 2;
-
-			// 2 octet size
-			LOAD_16BE(out + pos, &key[i].size);
-			pos += 2;
-
-			// N octet data
-			memcpy(out + pos, PTR_OFFSET(key, key[i].offset), key[i].size);
-			pos += key[i].size;
-		}
-	}
-	break;
+		pos += tls_extension_key_share_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_TRANSPARENCY_INFO:
 	case TLS_EXT_CONNECTION_INFO_LEGACY:
 	case TLS_EXT_CONNECTION_INFO:
@@ -1671,207 +1882,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
 		break;
 	case TLS_EXT_KEY_SHARE:
-	{
-		tls_extension_key_share *shares = extension;
-		tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
-
-		for (uint16_t i = 0; i < shares->count; ++i)
-		{
-			switch (key[i].group)
-			{
-			case TLS_SECT_163K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect163k1 (ID 1)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_163R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect163r1 (ID 2)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_163R2:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect163r2 (ID 3)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_193R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect193r1 (ID 4)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_193R2:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect193r2 (ID 5)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_233K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect233k1 (ID 6)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_233R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect233r1 (ID 7)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_239K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect239k1 (ID 8)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_283K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect283k1 (ID 9)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_283R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect283r1 (ID 10)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_409K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect409k1 (ID 11)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_409R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect409r1 (ID 12)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_571K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect571k1 (ID 13)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECT_571R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "sect571r1 (ID 14)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_160K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp160k1 (ID 15)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_160R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp160r1 (ID 16)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_160R2:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp160r2 (ID 17)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_192K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp192k1 (ID 18)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_192R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp192r1 (ID 19)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_224K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp224k1 (ID 20)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_224R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp224r1 (ID 21)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_256K1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp256k1 (ID 22)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_256R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp256r1 (ID 23)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_384R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp384r1 (ID 24)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SECP_521R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "secp521r1 (ID 25)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_BRAINPOOL_256R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (ID 26)",
-								   PTR_OFFSET(key, key[i].offset), key[i].size);
-				break;
-			case TLS_BRAINPOOL_384R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (ID 27)",
-								   PTR_OFFSET(key, key[i].offset), key[i].size);
-				break;
-			case TLS_BRAINPOOL_512R1:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (ID 28)",
-								   PTR_OFFSET(key, key[i].offset), key[i].size);
-				break;
-			case TLS_X25519:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "x25519 (ID 29)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_X448:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "x448 (ID 30)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_BRAINPOOL_256R1_TLS_13:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1tls13 (ID 31)",
-								   PTR_OFFSET(key, key[i].offset), key[i].size);
-				break;
-			case TLS_BRAINPOOL_384R1_TLS_13:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1tls13 (ID 32)",
-								   PTR_OFFSET(key, key[i].offset), key[i].size);
-				break;
-			case TLS_BRAINPOOL_512R1_TLS_13:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1tls13 (ID 33)",
-								   PTR_OFFSET(key, key[i].offset), key[i].size);
-				break;
-			case TLS_GOST_256A:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "GC256A (ID 34)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_GOST_256B:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "GC256B (ID 35)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_GOST_256C:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "GC256C (ID 36)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_GOST_256D:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "GC256D (ID 37)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_GOST_512A:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "GC512A (ID 38)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_GOST_512B:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "GC512B (ID 39)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_GOST_512C:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "GC512C (ID 40)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_SM2:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "SM2 (ID 41)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_FFDHE_2048:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "ffdhe2048 (ID 256)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_FFDHE_3072:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "ffdhe3072 (ID 257)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_FFDHE_4096:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "ffdhe4096 (ID 258)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_FFDHE_6144:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "ffdhe6144 (ID 259)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			case TLS_FFDHE_8192:
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "ffdhe8192 (ID 260)", PTR_OFFSET(key, key[i].offset),
-								   key[i].size);
-				break;
-			default:
-			{
-				pos += print_bytes(indent + 1, PTR_OFFSET(buffer, pos), size - pos, "Unknown", PTR_OFFSET(key, key[i].offset), key[i].size);
-			}
-			break;
-			}
-		}
-	}
-	break;
+		pos += tls_extension_key_share_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_TRANSPARENCY_INFO:
 	case TLS_EXT_CONNECTION_INFO_LEGACY:
 	case TLS_EXT_CONNECTION_INFO:
