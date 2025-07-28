@@ -1400,13 +1400,9 @@ static uint32_t tls_extension_key_share_print_body(tls_extension_key_share *shar
 tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 {
 	tls_error_t error = 0;
-	uint8_t *in = data;
-	uint32_t pos = 0;
-
 	tls_extension_header header = {0};
 
 	error = tls_extension_header_read(&header, data, size);
-	pos += TLS_EXTENSION_HEADER_OCTETS;
 
 	if (error != TLS_SUCCESS)
 	{
@@ -1517,10 +1513,8 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 
 uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 {
-	uint8_t *out = buffer;
-	uint32_t pos = 0;
-
 	tls_extension_header *header = extension;
+	uint32_t pos = 0;
 
 	if (size < TLS_EXTENSION_OCTETS(header))
 	{
