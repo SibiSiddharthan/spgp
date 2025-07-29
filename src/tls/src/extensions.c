@@ -1422,9 +1422,13 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
 		error = tls_extension_max_fragment_length_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
-		// case TLS_EXT_CLIENT_CERTIFICATE_URL:
-		// case TLS_EXT_TRUSTED_CA_KEYS:
-		// case TLS_EXT_TRUNCATED_HMAC:
+	case TLS_EXT_CLIENT_CERTIFICATE_URL:
+		goto empty;
+		break;
+	// case TLS_EXT_TRUSTED_CA_KEYS:
+	case TLS_EXT_TRUNCATED_HMAC:
+		goto empty;
+		break;
 		// case TLS_EXT_STATUS_REQUEST:
 		// case TLS_EXT_USER_MAPPING:
 		// case TLS_EXT_CLIENT_AUTHORIZATION:
@@ -1532,8 +1536,13 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_max_fragment_length_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
+		// empty body
+		break;
 	case TLS_EXT_TRUSTED_CA_KEYS:
+		break;
 	case TLS_EXT_TRUNCATED_HMAC:
+		// empty body
+		break;
 	case TLS_EXT_STATUS_REQUEST:
 	case TLS_EXT_USER_MAPPING:
 	case TLS_EXT_CLIENT_AUTHORIZATION:
@@ -1807,9 +1816,14 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
 		pos += tls_extension_max_fragment_length_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
-	// case TLS_EXT_CLIENT_CERTIFICATE_URL:
-	// case TLS_EXT_TRUSTED_CA_KEYS:
-	// case TLS_EXT_TRUNCATED_HMAC:
+	case TLS_EXT_CLIENT_CERTIFICATE_URL:
+		// empty body
+		break;
+	case TLS_EXT_TRUSTED_CA_KEYS:
+		break;
+	case TLS_EXT_TRUNCATED_HMAC:
+		// empty body
+		break;
 	// case TLS_EXT_STATUS_REQUEST:
 	// case TLS_EXT_USER_MAPPING:
 	// case TLS_EXT_CLIENT_AUTHORIZATION:
