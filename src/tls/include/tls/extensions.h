@@ -189,7 +189,8 @@ typedef struct _tls_extension_authorization_formats
 typedef enum _tls_certificate_type
 {
 	TLS_CERTIFICATE_X509 = 0,
-	TLS_CERTIFICATE_PGP = 1
+	TLS_CERTIFICATE_PGP = 1,
+	TLS_CERTIFICATE_RAW = 2,
 } tls_certificate_type;
 
 typedef struct _tls_extension_certificate_type

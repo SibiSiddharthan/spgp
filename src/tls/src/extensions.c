@@ -731,7 +731,10 @@ static uint32_t tls_extension_authorization_formats_print_body(tls_extension_aut
 }
 
 // RFC 6091: Using OpenPGP Keys for Transport Layer Security (TLS) Authentication
-// User Mapping
+// RFC 7250: Using Raw Public Keys in Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)
+// Certificate Type
+// Client Certificate Type
+// Server Certificate Type
 static tls_error_t tls_extension_certificate_types_read_body(void **extension, tls_extension_header *header, void *data)
 {
 	tls_extension_certificate_type *types = NULL;
@@ -797,6 +800,9 @@ static uint32_t tls_extension_certificate_types_print_body(tls_extension_certifi
 			break;
 		case TLS_CERTIFICATE_PGP:
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "PGP (ID 1)\n");
+			break;
+		case TLS_CERTIFICATE_RAW:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "RAW (ID 2)\n");
 			break;
 		default:
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", types->types[i]);
@@ -2027,8 +2033,12 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
 		error = tls_extension_signed_certificate_timestamp_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
-		// case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
-		// case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
+		error = tls_extension_certificate_types_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
+	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+		error = tls_extension_certificate_types_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_PADDING:
 		// case TLS_EXT_ENCRYPT_THEN_MAC:
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
@@ -2157,7 +2167,11 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_signed_certificate_timestamp_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
+		pos += tls_extension_certificate_types_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+		pos += tls_extension_certificate_types_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_PADDING:
 	case TLS_EXT_ENCRYPT_THEN_MAC:
 		break;
@@ -2451,7 +2465,11 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		pos += tls_extension_signed_certificate_timestamp_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
+		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
+		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_PADDING:
 	case TLS_EXT_ENCRYPT_THEN_MAC:
 		break;
