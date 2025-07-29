@@ -2183,7 +2183,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_PASSWORD_CLEAR:
 	// case TLS_EXT_PASSWORD_SALT:
 	// case TLS_EXT_TICKET_PINNING:
-	// case TLS_EXT_DELEGATED_CREDENTIAL:
+	case TLS_EXT_DELEGATED_CREDENTIAL:
+		error = tls_extension_signature_algorithms_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_SESSION_TICKET:
 		goto empty;
 		break;
@@ -2323,7 +2325,9 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_PASSWORD_CLEAR:
 	case TLS_EXT_PASSWORD_SALT:
 	case TLS_EXT_TICKET_PINNING:
+		break;
 	case TLS_EXT_DELEGATED_CREDENTIAL:
+		pos += tls_extension_signature_algorithms_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_SESSION_TICKET:
 		// empty body
@@ -2626,7 +2630,9 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_PASSWORD_CLEAR:
 	case TLS_EXT_PASSWORD_SALT:
 	case TLS_EXT_TICKET_PINNING:
+		break;
 	case TLS_EXT_DELEGATED_CREDENTIAL:
+		pos += tls_extension_signature_algorithms_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_SESSION_TICKET:
 		// empty body
