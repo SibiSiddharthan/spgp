@@ -1613,7 +1613,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
 		goto empty;
 		break;
-	// case TLS_EXT_TRUSTED_CA_KEYS:
+	case TLS_EXT_TRUSTED_CA_KEYS:
+		error = tls_extension_trusted_ca_keys_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_TRUNCATED_HMAC:
 		goto empty;
 		break;
@@ -1727,6 +1729,7 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		// empty body
 		break;
 	case TLS_EXT_TRUSTED_CA_KEYS:
+		pos += tls_extension_trusted_ca_keys_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_TRUNCATED_HMAC:
 		// empty body
@@ -2008,6 +2011,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		// empty body
 		break;
 	case TLS_EXT_TRUSTED_CA_KEYS:
+		pos += tls_extension_trusted_ca_keys_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_TRUNCATED_HMAC:
 		// empty body
