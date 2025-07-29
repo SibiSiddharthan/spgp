@@ -164,6 +164,13 @@ typedef struct _tls_extension_status_request
 
 } tls_extension_status_request;
 
+typedef struct _tls_extension_user_mapping
+{
+	tls_extension_header header;
+	uint8_t size;
+	uint8_t types[];
+} tls_extension_user_mapping;
+
 typedef struct _tls_extension_ec_point_format
 {
 	tls_extension_header header;

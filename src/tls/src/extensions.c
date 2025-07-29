@@ -576,6 +576,76 @@ static uint32_t tls_extension_status_request_print_body(tls_extension_status_req
 	return pos;
 }
 
+// RFC 4681: TLS User Mapping Extension
+// User Mapping
+static tls_error_t tls_extension_user_mapping_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_user_mapping *user = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	user = zmalloc(sizeof(tls_extension_user_mapping) + (header->size - 1));
+
+	if (user == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	user->header = *header;
+
+	// 1 octet size
+	LOAD_8(&user->size, in + pos);
+	pos += 1;
+
+	if (user->size != (header->size - 1))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	memcpy(user->types, in + pos, user->size);
+	pos += user->size;
+
+	*extension = user;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_user_mapping_write_body(tls_extension_user_mapping *user, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet size
+	LOAD_8(out + pos, &user->size);
+	pos += 1;
+
+	// N octets of data
+	memcpy(out + pos, user->types, user->size);
+	pos += user->size;
+
+	return pos;
+}
+
+static uint32_t tls_extension_user_mapping_print_body(tls_extension_user_mapping *user, void *buffer, uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	for (uint8_t i = 0; i < user->size; ++i)
+	{
+		switch (user->types[i])
+		{
+		default:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", user->types[i]);
+			break;
+		}
+	}
+
+	return pos;
+}
+
 // RFC 8442: Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 // Supported Groups
 static tls_error_t tls_extension_supported_groups_read_body(void **extension, tls_extension_header *header, void *data)
@@ -1765,7 +1835,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_STATUS_REQUEST:
 		error = tls_extension_status_request_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
-		// case TLS_EXT_USER_MAPPING:
+	case TLS_EXT_USER_MAPPING:
+		error = tls_extension_user_mapping_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_CLIENT_AUTHORIZATION:
 		// case TLS_EXT_SERVER_AUTHORIZATION:
 		// case TLS_EXT_CERTIFICATE_TYPE:
@@ -1885,6 +1957,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_status_request_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_USER_MAPPING:
+		pos += tls_extension_user_mapping_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_CLIENT_AUTHORIZATION:
 	case TLS_EXT_SERVER_AUTHORIZATION:
 	case TLS_EXT_CERTIFICATE_TYPE:
@@ -2170,7 +2244,9 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_STATUS_REQUEST:
 		pos += tls_extension_status_request_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
-	// case TLS_EXT_USER_MAPPING:
+	case TLS_EXT_USER_MAPPING:
+		pos += tls_extension_user_mapping_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	// case TLS_EXT_CLIENT_AUTHORIZATION:
 	// case TLS_EXT_SERVER_AUTHORIZATION:
 	// case TLS_EXT_CERTIFICATE_TYPE:
