@@ -470,6 +470,7 @@ typedef enum _tls_psk_exchange_mode_type
 
 typedef enum _tls_compression_algorithm
 {
+	TLS_UNCOMPRESSED = 0,
 	TLS_ZLIB = 1,
 	TLS_BROTLI = 2,
 	TLS_ZSTD = 3

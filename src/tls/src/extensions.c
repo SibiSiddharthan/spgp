@@ -1480,6 +1480,89 @@ static uint32_t tls_extension_padding_print_body(tls_extension_padding *padding,
 	return print_bytes(indent, buffer, size, "Padding", padding->pad, padding->header.size);
 }
 
+// RFC 8879: TLS Certificate Compression
+// Certificate Compression
+static tls_error_t tls_extension_compressed_certificate_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_compressed_certificate *compressed = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	compressed = zmalloc(sizeof(tls_extension_compressed_certificate) + (header->size - 1));
+
+	if (compressed == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	compressed->header = *header;
+
+	// 1 octet size
+	LOAD_8(&compressed->size, in + pos);
+	pos += 1;
+
+	if (compressed->size != (header->size - 1))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	memcpy(compressed->algorithms, in + pos, compressed->size);
+	pos += compressed->size;
+
+	*extension = compressed;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_compressed_certificate_write_body(tls_extension_compressed_certificate *compressed, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet size
+	LOAD_8(out + pos, &compressed->size);
+	pos += 1;
+
+	// N octets of data
+	memcpy(out + pos, compressed->algorithms, compressed->size);
+	pos += compressed->size;
+
+	return pos;
+}
+
+static uint32_t tls_extension_compressed_certificate_print_body(tls_extension_compressed_certificate *compressed, void *buffer,
+																uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	for (uint8_t i = 0; i < compressed->size; ++i)
+	{
+		switch (compressed->algorithms[i])
+		{
+		case TLS_UNCOMPRESSED:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Uncompressed (ID 0)\n");
+			break;
+		case TLS_ZLIB:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "zlib (ID 1)\n");
+			break;
+		case TLS_BROTLI:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brotli (ID 2)\n");
+			break;
+		case TLS_ZSTD:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "zstd (ID 3)\n");
+			break;
+		default:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", compressed->algorithms[i]);
+			break;
+		}
+	}
+
+	return pos;
+}
+
 // RFC 8449: Record Size Limit Extension for TLS
 // Record Size Limit
 static tls_error_t tls_extension_record_size_limit_read_body(void **extension, tls_extension_header *header, void *data)
@@ -2087,10 +2170,12 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
 		goto empty;
 		break;
-	// case TLS_EXT_TOKEN_BINDING:
-	// case TLS_EXT_CACHED_INFO:
-	// case TLS_EXT_LTS:
-	// case TLS_EXT_COMPRESS_CERTIFICATE:
+		// case TLS_EXT_TOKEN_BINDING:
+		// case TLS_EXT_CACHED_INFO:
+		// case TLS_EXT_LTS:
+	case TLS_EXT_COMPRESS_CERTIFICATE:
+		error = tls_extension_compressed_certificate_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
 		error = tls_extension_record_size_limit_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
@@ -2227,7 +2312,9 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_TOKEN_BINDING:
 	case TLS_EXT_CACHED_INFO:
 	case TLS_EXT_LTS:
+		break;
 	case TLS_EXT_COMPRESS_CERTIFICATE:
+		pos += tls_extension_compressed_certificate_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
 		pos += tls_extension_record_size_limit_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
@@ -2528,7 +2615,9 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_TOKEN_BINDING:
 	case TLS_EXT_CACHED_INFO:
 	case TLS_EXT_LTS:
+		break;
 	case TLS_EXT_COMPRESS_CERTIFICATE:
+		pos += tls_extension_compressed_certificate_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
 		pos += tls_extension_record_size_limit_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);

@@ -183,7 +183,7 @@ typedef struct _tls_extension_authorization_formats
 {
 	tls_extension_header header;
 	uint8_t size;
-	tls_authorization_format formats[];
+	uint8_t formats[];
 } tls_extension_authorization_formats;
 
 typedef enum _tls_certificate_type
@@ -197,7 +197,7 @@ typedef struct _tls_extension_certificate_type
 {
 	tls_extension_header header;
 	uint8_t size;
-	tls_certificate_type types[];
+	uint8_t types[];
 } tls_extension_certificate_type;
 
 typedef struct _tls_extension_ec_point_format
@@ -255,6 +255,13 @@ typedef struct _tls_extension_padding
 	tls_extension_header header;
 	uint8_t pad[];
 } tls_extension_padding;
+
+typedef struct _tls_extension_compressed_certificate
+{
+	tls_extension_header header;
+	uint8_t size;
+	uint8_t algorithms[];
+} tls_extension_compressed_certificate;
 
 typedef struct _tls_key_share
 {
