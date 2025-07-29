@@ -1441,6 +1441,45 @@ static uint32_t tls_extension_signed_certificate_timestamp_print_body(void *sct,
 	return 0;
 }
 
+// RFC 7685: A Transport Layer Security (TLS) ClientHello Padding Extension
+// Padding
+static tls_error_t tls_extension_padding_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_padding *padding = NULL;
+
+	padding = zmalloc(sizeof(tls_extension_padding) + header->size);
+
+	if (padding == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	padding->header = *header;
+
+	if (header->size > 0)
+	{
+		// Copy the padding data
+		memcpy(padding->pad, data, header->size);
+	}
+
+	*extension = padding;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_padding_write_body(tls_extension_padding *padding, void *buffer)
+{
+	// Copy the padding data
+	memcpy(buffer, padding->pad, padding->header.size);
+	return padding->header.size;
+}
+
+static uint32_t tls_extension_padding_print_body(tls_extension_padding *padding, void *buffer, uint32_t size, uint32_t indent)
+{
+	return print_bytes(indent, buffer, size, "Padding", padding->pad, padding->header.size);
+}
+
 // RFC 8449: Record Size Limit Extension for TLS
 // Record Size Limit
 static tls_error_t tls_extension_record_size_limit_read_body(void **extension, tls_extension_header *header, void *data)
@@ -2039,7 +2078,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
 		error = tls_extension_certificate_types_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
-		// case TLS_EXT_PADDING:
+	case TLS_EXT_PADDING:
+		error = tls_extension_padding_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_ENCRYPT_THEN_MAC:
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
 		goto empty;
@@ -2173,6 +2214,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_certificate_types_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_PADDING:
+		pos += tls_extension_padding_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_ENCRYPT_THEN_MAC:
 		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
@@ -2471,6 +2514,8 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_PADDING:
+		pos += tls_extension_padding_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_ENCRYPT_THEN_MAC:
 		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
