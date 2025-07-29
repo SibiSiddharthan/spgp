@@ -171,6 +171,21 @@ typedef struct _tls_extension_user_mapping
 	uint8_t types[];
 } tls_extension_user_mapping;
 
+typedef enum _tls_authorization_format
+{
+	TLS_X509_ATTR_CERT = 0,
+	TLS_SAML_ASSERTION = 1,
+	TLS_X509_ATTR_CERT_URL = 2,
+	TLS_SAML_ASSERTION_URL = 3
+} tls_authorization_format;
+
+typedef struct _tls_extension_authorization_formats
+{
+	tls_extension_header header;
+	uint8_t size;
+	tls_authorization_format formats[];
+} tls_extension_authorization_formats;
+
 typedef enum _tls_certificate_type
 {
 	TLS_CERTIFICATE_X509 = 0,

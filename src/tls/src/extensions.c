@@ -646,6 +646,90 @@ static uint32_t tls_extension_user_mapping_print_body(tls_extension_user_mapping
 	return pos;
 }
 
+// RFC 5878: Transport Layer Security (TLS) Authorization Extensions
+// Client Authorization Extensions
+// Server Authorization Extensions
+static tls_error_t tls_extension_authorization_formats_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_authorization_formats *formats = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	formats = zmalloc(sizeof(tls_extension_authorization_formats) + (header->size - 1));
+
+	if (formats == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	formats->header = *header;
+
+	// 1 octet size
+	LOAD_8(&formats->size, in + pos);
+	pos += 1;
+
+	if (formats->size != (header->size - 1))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	memcpy(formats->formats, in + pos, formats->size);
+	pos += formats->size;
+
+	*extension = formats;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_authorization_formats_write_body(tls_extension_authorization_formats *formats, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet size
+	LOAD_8(out + pos, &formats->size);
+	pos += 1;
+
+	// N octets of data
+	memcpy(out + pos, formats->formats, formats->size);
+	pos += formats->size;
+
+	return pos;
+}
+
+static uint32_t tls_extension_authorization_formats_print_body(tls_extension_authorization_formats *formats, void *buffer, uint32_t size,
+															   uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	for (uint8_t i = 0; i < formats->size; ++i)
+	{
+		switch (formats->formats[i])
+		{
+		case TLS_X509_ATTR_CERT:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X.509 Attibute Certificate (ID 0)\n");
+			break;
+		case TLS_SAML_ASSERTION:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "SAML (ID 1)\n");
+			break;
+		case TLS_X509_ATTR_CERT_URL:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X.509 Attibute Certificate URL (ID 2)\n");
+			break;
+		case TLS_SAML_ASSERTION_URL:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "SAML URL (ID 3)\n");
+			break;
+		default:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", formats->formats[i]);
+			break;
+		}
+	}
+
+	return pos;
+}
+
 // RFC 6091: Using OpenPGP Keys for Transport Layer Security (TLS) Authentication
 // User Mapping
 static tls_error_t tls_extension_certificate_types_read_body(void **extension, tls_extension_header *header, void *data)
@@ -1915,8 +1999,12 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_USER_MAPPING:
 		error = tls_extension_user_mapping_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
-		// case TLS_EXT_CLIENT_AUTHORIZATION:
-		// case TLS_EXT_SERVER_AUTHORIZATION:
+	case TLS_EXT_CLIENT_AUTHORIZATION:
+		error = tls_extension_authorization_formats_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
+	case TLS_EXT_SERVER_AUTHORIZATION:
+		error = tls_extension_authorization_formats_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_CERTIFICATE_TYPE:
 		error = tls_extension_certificate_types_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
@@ -2039,8 +2127,10 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_user_mapping_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_CLIENT_AUTHORIZATION:
+		pos += tls_extension_authorization_formats_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_SERVER_AUTHORIZATION:
+		pos += tls_extension_authorization_formats_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_CERTIFICATE_TYPE:
 		pos += tls_extension_certificate_types_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
@@ -2329,8 +2419,12 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_USER_MAPPING:
 		pos += tls_extension_user_mapping_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
-		// case TLS_EXT_CLIENT_AUTHORIZATION:
-		// case TLS_EXT_SERVER_AUTHORIZATION:
+	case TLS_EXT_CLIENT_AUTHORIZATION:
+		pos += tls_extension_authorization_formats_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
+	case TLS_EXT_SERVER_AUTHORIZATION:
+		pos += tls_extension_authorization_formats_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_CERTIFICATE_TYPE:
 		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
