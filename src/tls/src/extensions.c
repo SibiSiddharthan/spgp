@@ -1173,6 +1173,37 @@ static uint32_t tls_extension_application_protocol_print_body(tls_extensions_app
 	return pos;
 }
 
+// RFC 6962: Certificate Transparency
+// Signed Certificate Timestamp
+static tls_error_t tls_extension_signed_certificate_timestamp_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_header *sct = NULL;
+
+	sct = zmalloc(sizeof(tls_extension_header));
+
+	if (sct == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	*sct = *header;
+
+	*extension = sct;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_signed_certificate_timestamp_write_body(void *sct, void *buffer)
+{
+	return 0;
+}
+
+static uint32_t tls_extension_signed_certificate_timestamp_print_body(void *sct, void *buffer, uint32_t size, uint32_t indent)
+{
+	return 0;
+}
+
 // RFC 8449: Record Size Limit Extension for TLS
 // Record Size Limit
 static tls_error_t tls_extension_record_size_limit_read_body(void **extension, tls_extension_header *header, void *data)
@@ -1754,7 +1785,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		error = tls_extension_application_protocol_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 		// case TLS_EXT_STATUS_REQUEST_V2:
-		// case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+		error = tls_extension_signed_certificate_timestamp_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
 		// case TLS_EXT_SERVER_CERTIFICATE_TYPE:
 		// case TLS_EXT_PADDING:
@@ -1875,6 +1908,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		break;
 	case TLS_EXT_STATUS_REQUEST_V2:
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+		pos += tls_extension_signed_certificate_timestamp_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
 	case TLS_EXT_PADDING:
@@ -2157,7 +2192,10 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		pos += tls_extension_application_protocol_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_STATUS_REQUEST_V2:
+		break;
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
+		pos += tls_extension_signed_certificate_timestamp_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
 	case TLS_EXT_PADDING:
