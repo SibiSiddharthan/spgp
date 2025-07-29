@@ -122,7 +122,7 @@ typedef enum _tls_identifier_type
 	TLS_CERT_SHA1 = 3
 } tls_identifier_type;
 
-typedef struct _tls_extension_trusted_authority
+typedef struct _tls_trusted_authority
 {
 	tls_identifier_type type;
 
@@ -134,17 +134,17 @@ typedef struct _tls_extension_trusted_authority
 			uint8_t name[];
 		} distinguished_name;
 
-		uint8_t sha1_hash[20];
+		uint8_t sha1_hash[];
 	};
 
-} tls_extension_trusted_authority;
+} tls_trusted_authority;
 
 typedef struct _tls_extension_trusted_authority
 {
 	tls_extension_header header;
 	uint16_t size;
 	uint16_t count;
-	tls_extension_trusted_authority authorities[];
+	void **authorities;
 
 } tls_extension_trusted_authority;
 
@@ -157,7 +157,7 @@ typedef struct _tls_extension_status_request
 {
 	tls_extension_header header;
 	tls_certificate_status_type type;
-	
+
 	uint16_t responder_size;
 	uint16_t extension_size;
 	uint8_t data[];

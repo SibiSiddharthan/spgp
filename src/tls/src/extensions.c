@@ -276,6 +276,194 @@ static uint32_t tls_extension_max_fragment_length_print_body(tls_extension_max_f
 	return pos;
 }
 
+// RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
+// Trusted CA Keys
+static tls_error_t tls_extension_trusted_ca_keys_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_trusted_authority *authorities = NULL;
+	tls_trusted_authority *authority = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	uint8_t type = 0;
+	uint16_t size = 0;
+
+	authorities = zmalloc(sizeof(tls_extension_trusted_authority) + (4 * sizeof(void *)));
+
+	if (authorities == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	authorities->header = *header;
+	authorities->authorities = PTR_OFFSET(authorities, sizeof(tls_extension_trusted_authority));
+
+	// 2 octet size
+	LOAD_16BE(&authorities->size, in + pos);
+	pos += 2;
+
+	if ((authorities->size + 2) != header->size)
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	while (pos < header->size)
+	{
+		// 1 octet identifier type
+		LOAD_8(&type, in + pos);
+		pos += 1;
+
+		switch (type)
+		{
+		case TLS_PRE_AGREED:
+		{
+			authority = zmalloc(sizeof(tls_trusted_authority));
+
+			if (authority == NULL)
+			{
+				return TLS_NO_MEMORY;
+			}
+
+			authority->type = type;
+		}
+		break;
+		case TLS_X509_NAME:
+		{
+			// 2 octet size
+			LOAD_16BE(&size, in + pos);
+			pos += 2;
+
+			authority = zmalloc(sizeof(tls_trusted_authority) + 2 + size);
+
+			if (authority == NULL)
+			{
+				return TLS_NO_MEMORY;
+			}
+
+			authority->type = type;
+			authority->distinguished_name.size = size;
+
+			// N octets of distinguished name
+			memcpy(authority->distinguished_name.name, in + pos, authority->distinguished_name.size);
+			pos += authority->distinguished_name.size;
+		}
+		break;
+		case TLS_KEY_SHA1:
+		case TLS_CERT_SHA1:
+		{
+			authority = zmalloc(sizeof(tls_trusted_authority) + 20);
+
+			if (authority == NULL)
+			{
+				return TLS_NO_MEMORY;
+			}
+
+			authority->type = type;
+
+			// 20 octets of sha1 hash
+			memcpy(authority->sha1_hash, in + pos, 20);
+			pos += 20;
+		}
+		break;
+		default:
+			break;
+		}
+
+		authorities->authorities[authorities->count] = authority;
+		authorities->count += 1;
+	}
+
+	*extension = authorities;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_trusted_ca_keys_write_body(tls_extension_trusted_authority *authorities, void *buffer)
+{
+	tls_trusted_authority *authority = NULL;
+
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 2 octet size
+	LOAD_16BE(out + pos, &authorities->size);
+	pos += 2;
+
+	for (uint32_t i = 0; i < authorities->count; ++i)
+	{
+		authority = authorities->authorities[i];
+
+		// 1 octet identifier type
+		LOAD_8(out + pos, &authority->type);
+		pos += 1;
+
+		switch (authority->type)
+		{
+		case TLS_PRE_AGREED:
+			// empty
+			break;
+		case TLS_X509_NAME:
+		{
+			// 2 octet size
+			LOAD_16BE(out + pos, &authority->distinguished_name.name);
+			pos += 2;
+
+			// N octets of distinguished name
+			memcpy(out + pos, authority->distinguished_name.name, authority->distinguished_name.size);
+			pos += authority->distinguished_name.size;
+		}
+		break;
+		case TLS_KEY_SHA1:
+		case TLS_CERT_SHA1:
+		{
+			// 20 octets of sha1 hash
+			memcpy(out + pos, authority->sha1_hash, 20);
+			pos += 20;
+		}
+		break;
+		default:
+			break;
+		}
+	}
+
+	return pos;
+}
+
+static uint32_t tls_extension_trusted_ca_keys_print_body(tls_extension_trusted_authority *authorities, void *buffer, uint32_t size,
+														 uint32_t indent)
+{
+	tls_trusted_authority *authority = NULL;
+	uint32_t pos = 0;
+
+	for (uint32_t i = 0; i < authorities->count; ++i)
+	{
+		authority = authorities->authorities[i];
+
+		switch (authority->type)
+		{
+		case TLS_PRE_AGREED:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Pre Agreed (ID 0)\n");
+			break;
+		case TLS_KEY_SHA1:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Key SHA1-Hash (ID 1)", authority->sha1_hash, 20);
+			break;
+		case TLS_X509_NAME:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X509 Name (ID 2): %.*s\n", authority->distinguished_name.size,
+								authority->distinguished_name.name);
+			break;
+		case TLS_CERT_SHA1:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Certificate SHA1-Hash (ID 3)", authority->sha1_hash, 20);
+			break;
+		default:
+			break;
+		}
+	}
+
+	return pos;
+}
+
 // RFC 8442: Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 // Supported Groups
 static tls_error_t tls_extension_supported_groups_read_body(void **extension, tls_extension_header *header, void *data)
