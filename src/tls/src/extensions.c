@@ -646,6 +646,83 @@ static uint32_t tls_extension_user_mapping_print_body(tls_extension_user_mapping
 	return pos;
 }
 
+// RFC 6091: Using OpenPGP Keys for Transport Layer Security (TLS) Authentication
+// User Mapping
+static tls_error_t tls_extension_certificate_types_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_certificate_type *types = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	types = zmalloc(sizeof(tls_extension_certificate_type) + (header->size - 1));
+
+	if (types == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	types->header = *header;
+
+	// 1 octet size
+	LOAD_8(&types->size, in + pos);
+	pos += 1;
+
+	if (types->size != (header->size - 1))
+	{
+		return TLS_MALFORMED_EXTENSION_SIZE;
+	}
+
+	// N octets of data
+	memcpy(types->types, in + pos, types->size);
+	pos += types->size;
+
+	*extension = types;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_certificate_types_write_body(tls_extension_certificate_type *types, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet size
+	LOAD_8(out + pos, &types->size);
+	pos += 1;
+
+	// N octets of data
+	memcpy(out + pos, types->types, types->size);
+	pos += types->size;
+
+	return pos;
+}
+
+static uint32_t tls_extension_certificate_types_print_body(tls_extension_certificate_type *types, void *buffer, uint32_t size,
+														   uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	for (uint8_t i = 0; i < types->size; ++i)
+	{
+		switch (types->types[i])
+		{
+		case TLS_CERTIFICATE_X509:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X.509 (ID 0)\n");
+			break;
+		case TLS_CERTIFICATE_PGP:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "PGP (ID 1)\n");
+			break;
+		default:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", types->types[i]);
+			break;
+		}
+	}
+
+	return pos;
+}
+
 // RFC 8442: Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 // Supported Groups
 static tls_error_t tls_extension_supported_groups_read_body(void **extension, tls_extension_header *header, void *data)
@@ -1840,7 +1917,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 		break;
 		// case TLS_EXT_CLIENT_AUTHORIZATION:
 		// case TLS_EXT_SERVER_AUTHORIZATION:
-		// case TLS_EXT_CERTIFICATE_TYPE:
+	case TLS_EXT_CERTIFICATE_TYPE:
+		error = tls_extension_certificate_types_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_SUPPORTED_GROUPS:
 		error = tls_extension_supported_groups_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
@@ -1960,8 +2039,11 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_user_mapping_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_CLIENT_AUTHORIZATION:
+		break;
 	case TLS_EXT_SERVER_AUTHORIZATION:
+		break;
 	case TLS_EXT_CERTIFICATE_TYPE:
+		pos += tls_extension_certificate_types_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_SUPPORTED_GROUPS:
 		pos += tls_extension_supported_groups_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
@@ -2247,9 +2329,11 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_USER_MAPPING:
 		pos += tls_extension_user_mapping_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
-	// case TLS_EXT_CLIENT_AUTHORIZATION:
-	// case TLS_EXT_SERVER_AUTHORIZATION:
-	// case TLS_EXT_CERTIFICATE_TYPE:
+		// case TLS_EXT_CLIENT_AUTHORIZATION:
+		// case TLS_EXT_SERVER_AUTHORIZATION:
+	case TLS_EXT_CERTIFICATE_TYPE:
+		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_EXT_SUPPORTED_GROUPS:
 		pos += tls_extension_supported_groups_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;

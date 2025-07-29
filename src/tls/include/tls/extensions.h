@@ -171,6 +171,19 @@ typedef struct _tls_extension_user_mapping
 	uint8_t types[];
 } tls_extension_user_mapping;
 
+typedef enum _tls_certificate_type
+{
+	TLS_CERTIFICATE_X509 = 0,
+	TLS_CERTIFICATE_PGP = 1
+} tls_certificate_type;
+
+typedef struct _tls_extension_certificate_type
+{
+	tls_extension_header header;
+	uint8_t size;
+	tls_certificate_type types[];
+} tls_extension_certificate_type;
+
 typedef struct _tls_extension_ec_point_format
 {
 	tls_extension_header header;
