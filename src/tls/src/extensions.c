@@ -464,6 +464,118 @@ static uint32_t tls_extension_trusted_ca_keys_print_body(tls_extension_trusted_a
 	return pos;
 }
 
+// RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
+// Status Request
+static tls_error_t tls_extension_status_request_read_body(void **extension, tls_extension_header *header, void *data)
+{
+	tls_extension_status_request *status = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+	uint16_t offset = 0;
+
+	status = zmalloc(sizeof(tls_extension_status_request) + (header->size - 5));
+
+	if (status == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	status->header = *header;
+
+	// 1 octet request type
+	LOAD_8(&status->type, in + pos);
+	pos += 1;
+
+	if (status->type == TLS_CERTIFICATE_STATUS_OCSP)
+	{
+		offset = sizeof(tls_extension_status_request);
+
+		// 2 octet responder size
+		LOAD_16BE(&status->responder_size, in + pos);
+		pos += 2;
+
+		if (status->responder_size > 0)
+		{
+			memcpy(PTR_OFFSET(status, offset), in + pos, status->responder_size);
+			pos += status->responder_size;
+			offset += status->responder_size;
+		}
+
+		// 2 octet extension size
+		LOAD_16BE(&status->extension_size, in + pos);
+		pos += 2;
+
+		if (status->extension_size > 0)
+		{
+			memcpy(PTR_OFFSET(status, offset), in + pos, status->extension_size);
+			pos += status->extension_size;
+			offset += status->extension_size;
+		}
+	}
+
+	*extension = status;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_extension_status_request_write_body(tls_extension_status_request *status, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+	uint16_t offset = 0;
+
+	// 1 octet request type
+	LOAD_8(out + pos, &status->type);
+	pos += 1;
+
+	if (status->type == TLS_CERTIFICATE_STATUS_OCSP)
+	{
+		offset = sizeof(tls_extension_status_request);
+
+		// 2 octet responder size
+		LOAD_16BE(out + pos, &status->responder_size);
+		pos += 2;
+
+		if (status->responder_size > 0)
+		{
+			memcpy(out + pos, PTR_OFFSET(status, offset), status->responder_size);
+			pos += status->responder_size;
+			offset += status->responder_size;
+		}
+
+		// 2 octet extension size
+		LOAD_16BE(out + pos, &status->extension_size);
+		pos += 2;
+
+		if (status->extension_size > 0)
+		{
+			memcpy(out + pos, PTR_OFFSET(status, offset), status->extension_size);
+			pos += status->extension_size;
+			offset += status->extension_size;
+		}
+	}
+
+	return pos;
+}
+
+static uint32_t tls_extension_status_request_print_body(tls_extension_status_request *status, void *buffer, uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	if (status->type == TLS_CERTIFICATE_STATUS_OCSP)
+	{
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "OCSP (ID 1)\n");
+	}
+	else
+	{
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown Certificate Request (ID %hhu)\n", status->type);
+	}
+
+	return pos;
+}
+
 // RFC 8442: Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 // Supported Groups
 static tls_error_t tls_extension_supported_groups_read_body(void **extension, tls_extension_header *header, void *data)
@@ -1619,7 +1731,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_TRUNCATED_HMAC:
 		goto empty;
 		break;
-		// case TLS_EXT_STATUS_REQUEST:
+	case TLS_EXT_STATUS_REQUEST:
+		error = tls_extension_status_request_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 		// case TLS_EXT_USER_MAPPING:
 		// case TLS_EXT_CLIENT_AUTHORIZATION:
 		// case TLS_EXT_SERVER_AUTHORIZATION:
@@ -1735,6 +1849,8 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		// empty body
 		break;
 	case TLS_EXT_STATUS_REQUEST:
+		pos += tls_extension_status_request_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	case TLS_EXT_USER_MAPPING:
 	case TLS_EXT_CLIENT_AUTHORIZATION:
 	case TLS_EXT_SERVER_AUTHORIZATION:
@@ -2016,7 +2132,9 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_TRUNCATED_HMAC:
 		// empty body
 		break;
-	// case TLS_EXT_STATUS_REQUEST:
+	case TLS_EXT_STATUS_REQUEST:
+		pos += tls_extension_status_request_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	// case TLS_EXT_USER_MAPPING:
 	// case TLS_EXT_CLIENT_AUTHORIZATION:
 	// case TLS_EXT_SERVER_AUTHORIZATION:
