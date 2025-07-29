@@ -14,8 +14,7 @@
 #include <tls/error.h>
 
 #define TLS_EXTENSION_HEADER_OCTETS 4
-#define TLS_EXTENSION_OCTETS(H) ((((tls_extension_header *)(H))->size) + 4)
-
+#define TLS_EXTENSION_OCTETS(H)     ((((tls_extension_header *)(H))->size) + 4)
 
 typedef enum _tls_extension_type
 {
@@ -114,6 +113,56 @@ typedef struct _tls_extension_record_size_limit
 	tls_extension_header header;
 	uint16_t limit;
 } tls_extension_record_size_limit;
+
+typedef enum _tls_identifier_type
+{
+	TLS_PRE_AGREED = 0,
+	TLS_KEY_SHA1 = 1,
+	TLS_X509_NAME = 2,
+	TLS_CERT_SHA1 = 3
+} tls_identifier_type;
+
+typedef struct _tls_extension_trusted_authority
+{
+	tls_identifier_type type;
+
+	union
+	{
+		struct
+		{
+			uint16_t size;
+			uint8_t name[];
+		} distinguished_name;
+
+		uint8_t sha1_hash[20];
+	};
+
+} tls_extension_trusted_authority;
+
+typedef struct _tls_extension_trusted_authority
+{
+	tls_extension_header header;
+	uint16_t size;
+	uint16_t count;
+	tls_extension_trusted_authority authorities[];
+
+} tls_extension_trusted_authority;
+
+typedef enum _tls_certificate_status_type
+{
+	TLS_CERTIFICATE_STATUS_OCSP = 1
+} tls_certificate_status_type;
+
+typedef struct _tls_extension_status_request
+{
+	tls_extension_header header;
+	tls_certificate_status_type type;
+	
+	uint16_t responder_size;
+	uint16_t extension_size;
+	uint8_t data[];
+
+} tls_extension_status_request;
 
 typedef struct _tls_extension_ec_point_format
 {
