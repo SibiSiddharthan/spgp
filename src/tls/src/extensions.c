@@ -2081,7 +2081,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	case TLS_EXT_PADDING:
 		error = tls_extension_padding_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
-		// case TLS_EXT_ENCRYPT_THEN_MAC:
+	case TLS_EXT_ENCRYPT_THEN_MAC:
+		goto empty;
+		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
 		goto empty;
 		break;
@@ -2217,6 +2219,7 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 		pos += tls_extension_padding_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_ENCRYPT_THEN_MAC:
+		// empty body
 		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
 		// empty body
@@ -2517,6 +2520,7 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 		pos += tls_extension_padding_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_ENCRYPT_THEN_MAC:
+		// empty body
 		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
 		// empty body
