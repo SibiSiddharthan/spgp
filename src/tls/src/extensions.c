@@ -12,6 +12,7 @@
 
 #include <load.h>
 #include <ptr.h>
+#include <unused.h>
 
 tls_error_t tls_extension_header_read(tls_extension_header *header, void *data, uint32_t size)
 {
@@ -1416,6 +1417,8 @@ static tls_error_t tls_extension_signed_certificate_timestamp_read_body(void **e
 {
 	tls_extension_header *sct = NULL;
 
+	UNUSED(data);
+
 	sct = zmalloc(sizeof(tls_extension_header));
 
 	if (sct == NULL)
@@ -1433,11 +1436,19 @@ static tls_error_t tls_extension_signed_certificate_timestamp_read_body(void **e
 
 static uint32_t tls_extension_signed_certificate_timestamp_write_body(void *sct, void *buffer)
 {
+	UNUSED(sct);
+	UNUSED(buffer);
+
 	return 0;
 }
 
 static uint32_t tls_extension_signed_certificate_timestamp_print_body(void *sct, void *buffer, uint32_t size, uint32_t indent)
 {
+	UNUSED(sct);
+	UNUSED(buffer);
+	UNUSED(size);
+	UNUSED(indent);
+
 	return 0;
 }
 
