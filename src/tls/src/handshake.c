@@ -1092,6 +1092,41 @@ static uint32_t tls_server_hello_write_body(tls_server_hello *hello, void *buffe
 	return pos;
 }
 
+static uint32_t tls_server_hello_print_body(tls_server_hello *hello, void *buffer, uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	// Protocol Version
+	pos += print_handshake_version(indent, PTR_OFFSET(buffer, pos), size - pos, hello->version);
+
+	// Random
+	pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Random", hello->random, 32);
+
+	// Session ID
+	if (hello->session_id_size > 0)
+	{
+		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Session ID", hello->session_id, hello->session_id_size);
+	}
+
+	// Selected Compression Method
+	pos += print_compression_method(indent, PTR_OFFSET(buffer, pos), size - pos, hello->compression_method);
+
+	// Selected Cipher Suite
+	pos += print_cipher_suite(indent, PTR_OFFSET(buffer, pos), size - pos, (hello->cipher_suite >> 8) & 0xFF, hello->cipher_suite & 0xFF);
+
+	if (hello->extensions_count > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", hello->extensions_size);
+
+		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		{
+			pos += tls_extension_print(hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		}
+	}
+
+	return pos;
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
@@ -1327,6 +1362,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 		pos += tls_client_hello_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_SERVER_HELLO:
+		pos += tls_server_hello_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_HELLO_VERIFY_REQUEST:
 	case TLS_NEW_SESSION_TICKET:
