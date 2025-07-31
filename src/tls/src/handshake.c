@@ -939,6 +939,149 @@ static uint32_t tls_client_hello_print_body(tls_client_hello *hello, void *buffe
 	return pos;
 }
 
+static tls_error_t tls_server_hello_read_body(tls_server_hello **handshake, tls_handshake_header *header, void *data, uint32_t size)
+{
+	tls_server_hello *hello = NULL;
+	tls_error_t error = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	hello = zmalloc(sizeof(tls_server_hello));
+
+	if (hello == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	hello->header = *header;
+
+	// 2 octet protocol version
+	LOAD_8(&hello->version.major, in + pos);
+	pos += 1;
+
+	LOAD_8(&hello->version.minor, in + pos);
+	pos += 1;
+
+	// 32 octets of random data
+	memcpy(&hello->random, in + pos, 32);
+	pos += 32;
+
+	// 1 octet session id size
+	LOAD_8(&hello->session_id_size, in + pos);
+	pos += 1;
+
+	// N octets of session id
+	if (hello->session_id_size > 0)
+	{
+		memcpy(&hello->session_id, in + pos, hello->session_id_size);
+		pos += hello->session_id_size;
+	}
+
+	// 2 octet selected cipher suite
+	LOAD_16BE(&hello->cipher_suite, in + pos);
+	pos += 2;
+
+	// 1 octet selected compression method
+	LOAD_8(&hello->compression_method, in + pos);
+	pos += 1;
+
+	// Check for extensions
+	if (pos == size)
+	{
+		goto end;
+	}
+
+	// 2 octet extensions size
+	LOAD_16BE(&hello->extensions_size, in + pos);
+	pos += 2;
+
+	if (hello->extensions_size > 0)
+	{
+		hello->extensions_count = tls_extension_count(in + pos, size - pos);
+		hello->extensions = zmalloc(hello->extensions_count * sizeof(void *));
+
+		if (hello->extensions == NULL)
+		{
+			return TLS_NO_MEMORY;
+		}
+
+		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		{
+			error = tls_extension_read(&hello->extensions[i], in + pos, size - pos);
+
+			if (error != TLS_SUCCESS)
+			{
+				return error;
+			}
+
+			pos += TLS_EXTENSION_OCTETS(hello->extensions[i]);
+		}
+	}
+
+end:
+	*handshake = hello;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_server_hello_write_body(tls_server_hello *hello, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 2 octet protocol version
+	LOAD_8(out + pos, &hello->version.major);
+	pos += 1;
+
+	LOAD_8(out + pos, &hello->version.minor);
+	pos += 1;
+
+	// 32 octets of random data
+	memcpy(out + pos, &hello->random, 32);
+	pos += 32;
+
+	// 1 octet session id size
+	LOAD_8(out + pos, &hello->session_id_size);
+	pos += 1;
+
+	// N octets of session id
+	if (hello->session_id_size > 0)
+	{
+		memcpy(out + pos, &hello->session_id, hello->session_id_size);
+		pos += hello->session_id_size;
+	}
+
+	// 2 octet selected cipher suite
+	LOAD_16BE(out + pos, &hello->cipher_suite);
+	pos += 2;
+
+	// 1 octet selected compression method
+	LOAD_8(out + pos, &hello->compression_method);
+	pos += 1;
+
+	// Check for extensions
+	if (hello->extensions_size == 0)
+	{
+		return pos;
+	}
+
+	// 2 octet extensions size
+	LOAD_16BE(out + pos, &hello->extensions_size);
+	pos += 2;
+
+	if (hello->extensions_size > 0)
+	{
+		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		{
+			pos += tls_extension_write(&hello->extensions[i], out + pos, size - pos);
+		}
+	}
+
+	return pos;
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
@@ -1006,6 +1149,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 										   handshake_header.size);
 		break;
 	case TLS_SERVER_HELLO:
+		error = tls_server_hello_read_body((tls_server_hello **)handshake, &handshake_header, PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS),
+										   handshake_header.size);
 		break;
 	case TLS_HELLO_VERIFY_REQUEST:
 	case TLS_NEW_SESSION_TICKET:
@@ -1055,6 +1200,8 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		pos += tls_client_hello_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_SERVER_HELLO:
+		pos += tls_server_hello_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_HELLO_VERIFY_REQUEST:
 	case TLS_NEW_SESSION_TICKET:
 	case TLS_END_OF_EARLY_DATA:
