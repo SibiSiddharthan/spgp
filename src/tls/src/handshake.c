@@ -146,6 +146,78 @@ end:
 	return TLS_SUCCESS;
 }
 
+static uint32_t tls_client_hello_write(tls_client_hello *hello, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+	uint32_t offset = 0;
+
+	// 2 octet protocol version
+	LOAD_8(out + pos, &hello->version.major);
+	pos += 1;
+
+	LOAD_8(out + pos, &hello->version.minor);
+	pos += 1;
+
+	// 32 octets of random data
+	memcpy(out + pos, &hello->random, 32);
+	pos += 32;
+
+	// 1 octet session id size
+	LOAD_8(out + pos, &hello->session_id_size);
+	pos += 1;
+
+	// N octets of session id
+	if (hello->session_id_size > 0)
+	{
+		memcpy(out + pos, &hello->session_id, hello->session_id_size);
+		pos += hello->session_id_size;
+	}
+
+	// 2 octet cipher suites size
+	LOAD_16BE(out + pos, &hello->cipher_suites_size);
+	pos += 2;
+
+	// N octets of cipher suites
+	if (hello->cipher_suites_size > 0)
+	{
+		memcpy(out + pos, hello->data + offset, hello->cipher_suites_size);
+		pos += hello->cipher_suites_size;
+		offset += hello->cipher_suites_size;
+	}
+
+	// 1 octet compression method size
+	LOAD_8(out + pos, &hello->compression_methods_size);
+	pos += 1;
+
+	if (hello->compression_methods_size > 0)
+	{
+		memcpy(out + pos, hello->data + offset, hello->compression_methods_size);
+		pos += hello->compression_methods_size;
+		offset += hello->compression_methods_size;
+	}
+
+	// Check for extensions
+	if (hello->extensions_size == 0)
+	{
+		return pos;
+	}
+
+	// 2 octet extensions size
+	LOAD_16BE(out + pos, &hello->extensions_size);
+	pos += 2;
+
+	if (hello->extensions_size > 0)
+	{
+		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		{
+			pos += tls_extension_write(&hello->extensions[i], out + pos, size - pos);
+		}
+	}
+
+	return pos;
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
@@ -244,7 +316,6 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 
 uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 {
-	uint8_t *out = buffer;
 	uint32_t pos = 0;
 
 	tls_handshake_header *header = handshake;
@@ -254,12 +325,14 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		return 0;
 	}
 
-	pos += tls_handshake_header_write(header, out + pos, size - pos);
+	pos += tls_handshake_header_write(header, buffer, size);
 
 	switch (header->type)
 	{
 	case TLS_HELLO_REQUEST:
 	case TLS_CLIENT_HELLO:
+		pos += tls_client_hello_write(handshake, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_SERVER_HELLO:
 	case TLS_HELLO_VERIFY_REQUEST:
 	case TLS_NEW_SESSION_TICKET:
