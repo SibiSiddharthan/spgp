@@ -220,12 +220,13 @@ static uint32_t tls_client_hello_write_body(tls_client_hello *hello, void *buffe
 
 static uint32_t print_compression_method(uint32_t indent, void *buffer, uint32_t size, uint8_t method)
 {
-	if (method == 0)
+	switch (method)
 	{
+	case TLS_UNCOMPRESSED:
 		return print_format(indent, buffer, size, "NULL (ID 0)\n");
-	}
-	else
-	{
+	case TLS_ZLIB:
+		return print_format(indent, buffer, size, "DEFLATE (ID 1)\n");
+	default:
 		return print_format(indent, buffer, size, "Unknown (ID %hhu)\n", method);
 	}
 }
