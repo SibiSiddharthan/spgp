@@ -107,6 +107,12 @@ static tls_error_t tls_client_hello_read(tls_client_hello **handshake, tls_hands
 		offset += hello->compression_methods_size;
 	}
 
+	// Check for extensions
+	if (pos == size)
+	{
+		goto end;
+	}
+
 	// 2 octet extensions size
 	LOAD_16BE(&hello->extensions_size, in + pos);
 	pos += 2;
@@ -134,6 +140,7 @@ static tls_error_t tls_client_hello_read(tls_client_hello **handshake, tls_hands
 		}
 	}
 
+end:
 	*handshake = hello;
 
 	return TLS_SUCCESS;
