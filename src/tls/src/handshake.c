@@ -218,6 +218,34 @@ static uint32_t tls_client_hello_write_body(tls_client_hello *hello, void *buffe
 	return pos;
 }
 
+static uint32_t print_handshake_version(uint32_t indent, void *buffer, uint32_t size, tls_protocol_version version)
+{
+	uint32_t pos = 0;
+
+	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sProtocol Version: ", indent * 4, "");
+
+	switch (TLS_VERSION_RAW(version))
+	{
+	case TLS_VERSION_1_0:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
+		break;
+	case TLS_VERSION_1_1:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.1 (3, 2)\n");
+		break;
+	case TLS_VERSION_1_2:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.2 (3, 3)\n");
+		break;
+	case TLS_VERSION_1_3:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
+		break;
+	default:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (%hhu, %hhu)\n", version.major, version.minor);
+		break;
+	}
+
+	return pos;
+}
+
 static uint32_t print_compression_method(uint32_t indent, void *buffer, uint32_t size, uint8_t method)
 {
 	switch (method)
@@ -875,26 +903,7 @@ static uint32_t tls_client_hello_print_body(tls_client_hello *hello, void *buffe
 	uint32_t pos = 0;
 
 	// Protocol Version
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sProtocol Version: ", indent * 4, "");
-
-	switch (TLS_VERSION_RAW(hello->version))
-	{
-	case TLS_VERSION_1_0:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
-		break;
-	case TLS_VERSION_1_1:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.1 (3, 2)\n");
-		break;
-	case TLS_VERSION_1_2:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.2 (3, 3)\n");
-		break;
-	case TLS_VERSION_1_3:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
-		break;
-	default:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (%hhu, %hhu)\n", hello->version.major, hello->version.minor);
-		break;
-	}
+	pos += print_handshake_version(indent, PTR_OFFSET(buffer, pos), size - pos, hello->version);
 
 	// Random
 	pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Random", hello->random, 32);
