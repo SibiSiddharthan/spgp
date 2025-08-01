@@ -32,7 +32,7 @@ DWORD handle_requests(PVOID socket)
 		status = recv(handler, (char *)buffer, 65536, 0);
 		printf("%llu %d %d\n", handler, status, WSAGetLastError());
 
-		if (status == 0)
+		if (status == 0 || status == -1)
 		{
 			printf("Bye!.\n");
 			break;
