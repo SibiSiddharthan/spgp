@@ -355,6 +355,7 @@ typedef enum _tls_cipher_suite
 
 typedef enum _tls_signature_scheme
 {
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_RSA_PKCS_SHA1 = 0x0201,
 	TLS_DSA_SHA1 = 0x0202,
 	TLS_ECDSA_SHA1 = 0x0203,
@@ -371,8 +372,10 @@ typedef enum _tls_signature_scheme
 	TLS_DSA_SHA512 = 0x0602,
 	TLS_ECDSA_SECP521R1_SHA512 = 0x0603,
 
+	// RFC 8998: ShangMi (SM) Cipher Suites for TLS 1.3
 	TLS_SM2_SM3 = 0x0708,
 
+	// RFC 9367: GOST Cipher Suites for Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_GOST_R34102012_256A = 0x0709,
 	TLS_GOST_R34102012_256B = 0x070A,
 	TLS_GOST_R34102012_256C = 0x070B,
@@ -381,6 +384,7 @@ typedef enum _tls_signature_scheme
 	TLS_GOST_R34102012_512B = 0x070E,
 	TLS_GOST_R34102012_512C = 0x070F,
 
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_RSA_PSS_RSAE_SHA256 = 0x0804,
 	TLS_RSA_PSS_RSAE_SHA384 = 0x0805,
 	TLS_RSA_PSS_RSAE_SHA512 = 0x0806,
@@ -392,6 +396,7 @@ typedef enum _tls_signature_scheme
 	TLS_RSA_PSS_PSS_SHA384 = 0x080A,
 	TLS_RSA_PSS_PSS_SHA512 = 0x080B,
 
+	// RFC 8734: Elliptic Curve Cryptography (ECC) Brainpool Curves for Transport Layer Security (TLS) Version 1.3
 	TLS_ECDSA_BRAINPOOL_P256R1_TLS13_SHA256 = 0x081A,
 	TLS_ECDSA_BRAINPOOL_P384R1_TLS13_SHA384 = 0x081B,
 	TLS_ECDSA_BRAINPOOL_P512R1_TLS13_SHA512 = 0x081C,
