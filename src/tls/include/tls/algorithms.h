@@ -405,6 +405,7 @@ typedef enum _tls_signature_scheme
 
 typedef enum _tls_group
 {
+	// RFC 8422:  Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 	TLS_SECT_163K1 = 1,
 	TLS_SECT_163R1 = 2,
 	TLS_SECT_163R2 = 3,
@@ -431,17 +432,21 @@ typedef enum _tls_group
 	TLS_SECP_384R1 = 24,
 	TLS_SECP_521R1 = 25,
 
+	// RFC 7027: Elliptic Curve Cryptography (ECC) Brainpool Curves for Transport Layer Security (TLS)
 	TLS_BRAINPOOL_256R1 = 26,
 	TLS_BRAINPOOL_384R1 = 27,
 	TLS_BRAINPOOL_512R1 = 28,
 
+	// RFC 8422:  Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 	TLS_X25519 = 29,
 	TLS_X448 = 30,
 
+	// RFC 8734: Elliptic Curve Cryptography (ECC) Brainpool Curves for Transport Layer Security (TLS) Version 1.3
 	TLS_BRAINPOOL_256R1_TLS_13 = 31,
 	TLS_BRAINPOOL_384R1_TLS_13 = 32,
 	TLS_BRAINPOOL_512R1_TLS_13 = 33,
 
+	// RFC 9189: GOST Cipher Suites for Transport Layer Security (TLS) Protocol Version 1.2
 	TLS_GOST_256A = 34,
 	TLS_GOST_256B = 35,
 	TLS_GOST_256C = 36,
@@ -450,8 +455,10 @@ typedef enum _tls_group
 	TLS_GOST_512B = 39,
 	TLS_GOST_512C = 40,
 
+	// RFC 8998: ShangMi (SM) Cipher Suites for TLS 1.3
 	TLS_SM2 = 41,
 
+	// RFC 7919: Negotiated Finite Field Diffie-Hellman Ephemeral Parameters for Transport Layer Security (TLS)
 	TLS_FFDHE_2048 = 256,
 	TLS_FFDHE_3072 = 257,
 	TLS_FFDHE_4096 = 258,
