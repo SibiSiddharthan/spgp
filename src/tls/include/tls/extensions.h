@@ -97,12 +97,20 @@ typedef enum _tls_extension_type
 	// RFC 8672: TLS Server Identity Pinning with Tickets
 	TLS_EXT_TICKET_PINNING = 32,
 
+	// RFC 8773: TLS 1.3 Extension for Certificate-Based Authentication with an External Pre-Shared Key
+	TLS_EXT_PSK_EXTERNAL_CERTIFICATE = 33,
+
 	// RFC 9345: Delegated Credentials for TLS and DTLS
 	TLS_EXT_DELEGATED_CREDENTIAL = 34,
+
+	// RFC 5077: Transport Layer Security (TLS) Session Resumption without Server-Side State
 	TLS_EXT_SESSION_TICKET = 35,
-	TLS_EXT_PSK = 41,
+
+	// RFC 8870: Encrypted Key Transport for DTLS and Secure RTP
+	TLS_SUPPORTED_EKT_CIPHERS = 39,
 
 	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+	TLS_EXT_PSK = 41,
 	TLS_EXT_EARLY_DATA = 42,
 	TLS_EXT_SUPPORTED_VERSIONS = 43,
 	TLS_EXT_COOKIE = 44,
@@ -123,6 +131,15 @@ typedef enum _tls_extension_type
 	// RFC 8844: Unknown Key-Share Attacks on Uses of TLS with the Session Description Protocol (SDP)
 	TLS_EXT_EXTERNAL_ID_HASH = 55,
 	TLS_EXT_EXTERNAL_SESSION_ID = 56,
+
+	// RFC 9149: TLS Ticket Requests
+	TLS_EXT_TICKET_REQUEST = 58,
+
+	// RFC 9102: TLS DNSSEC Chain Extension
+	TLS_EXT_DNSSEC_CHAIN = 59,
+
+	// RFC 5746: Transport Layer Security (TLS) Renegotiation Indication Extension
+	TLS_EXT_RENEGOTIATION_INFO = 65281,
 } tls_extension_type;
 
 typedef struct _tls_extension_header
