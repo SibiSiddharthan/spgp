@@ -453,6 +453,11 @@ typedef enum _tls_group
 	TLS_FFDHE_6144 = 259,
 	TLS_FFDHE_8192 = 260,
 
+	// RFC Draft: draft-ietf-tls-mlkem
+	TLS_MLKEM_512 = 512,
+	TLS_MLKEM_768 = 513,
+	TLS_MLKEM_1024 = 514,
+
 } tls_group;
 
 typedef enum _tls_ec_point_format_type
