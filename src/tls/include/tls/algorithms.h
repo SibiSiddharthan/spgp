@@ -458,6 +458,11 @@ typedef enum _tls_group
 	TLS_MLKEM_768 = 513,
 	TLS_MLKEM_1024 = 514,
 
+	// RFC Draft: draft-ietf-tls-ecdhe-mlkem
+	TLS_SECP_256R1_MLKEM_768 = 4587,
+	TLS_X25519_MLKEM_768 = 4588,
+	TLS_SECP_384R1_MLKEM_1024 = 4589,
+
 } tls_group;
 
 typedef enum _tls_ec_point_format_type

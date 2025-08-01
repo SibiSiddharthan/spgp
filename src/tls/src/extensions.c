@@ -1034,6 +1034,15 @@ static uint32_t tls_extension_supported_groups_print_body(tls_extension_supporte
 		case TLS_MLKEM_1024:
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM1024 (ID 514)\n");
 			break;
+		case TLS_SECP_256R1_MLKEM_768:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "secP256r1MLKEM768 (ID 4587)\n");
+			break;
+		case TLS_X25519_MLKEM_768:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "x25519MLKEM768 (ID 4588)\n");
+			break;
+		case TLS_SECP_384R1_MLKEM_1024:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "secP384r1MLKEM1024 (ID 4589)\n");
+			break;
 		default:
 		{
 			if (tls_check_grease_value(group->groups[i]))
@@ -2107,6 +2116,18 @@ static uint32_t tls_extension_key_share_print_body(tls_extension_key_share *shar
 		case TLS_MLKEM_1024:
 			pos +=
 				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM1024 (ID 514)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			break;
+		case TLS_SECP_256R1_MLKEM_768:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secP256r1MLKEM768 (ID 4587)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_X25519_MLKEM_768:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "x25519MLKEM768 (ID 4588)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
+			break;
+		case TLS_SECP_384R1_MLKEM_1024:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secP384r1MLKEM1024 (ID 4589)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		default:
 		{
