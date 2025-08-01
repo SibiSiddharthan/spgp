@@ -133,6 +133,9 @@ typedef enum _tls_cipher_suite
 	TLS_SM4_GCM_SM3 = TLS_MAKE_CIPHER_SUITE(0x00, 0xC6),
 	TLS_SM4_CCM_SM3 = TLS_MAKE_CIPHER_SUITE(0x00, 0xC7),
 
+	// RFC 5746: Transport Layer Security (TLS) Renegotiation Indication Extension
+	TLS_EMPTY_RENEGOTIATION_INFO_SCSV = TLS_MAKE_CIPHER_SUITE(0x00, 0xFF),
+
 	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_AES_128_GCM_SHA256 = TLS_MAKE_CIPHER_SUITE(0x13, 0x01),
 	TLS_AES_256_GCM_SHA384 = TLS_MAKE_CIPHER_SUITE(0x13, 0x02),

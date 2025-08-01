@@ -483,6 +483,10 @@ static uint32_t print_cipher_suite(uint32_t indent, void *buffer, uint32_t size,
 	case TLS_SM4_CCM_SM3:
 		return print_format(indent, buffer, size, "TLS_SM4_CCM_SM3 (ID {0x00, 0xC7})\n");
 
+	// RFC 5746: Transport Layer Security (TLS) Renegotiation Indication Extension
+	case TLS_EMPTY_RENEGOTIATION_INFO_SCSV:
+		return print_format(indent, buffer, size, "TLS_EMPTY_RENEGOTIATION_INFO_SCSV (ID {0x00, 0xFF})\n");
+
 	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	case TLS_AES_128_GCM_SHA256:
 		return print_format(indent, buffer, size, "TLS_AES_128_GCM_SHA256 (ID {0x13, 0x01})\n");
