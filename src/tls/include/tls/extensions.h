@@ -138,6 +138,10 @@ typedef enum _tls_extension_type
 	// RFC 9102: TLS DNSSEC Chain Extension
 	TLS_EXT_DNSSEC_CHAIN = 59,
 
+	// RFC Draft: draft-ietf-tls-esni
+	TLS_EXT_ECH_OUTER_EXTENSIONS = 64768,
+	TLS_EXT_ENCRYPTED_CLIENT_HELLO = 65037,
+
 	// RFC 5746: Transport Layer Security (TLS) Renegotiation Indication Extension
 	TLS_EXT_RENEGOTIATION_INFO = 65281,
 } tls_extension_type;
