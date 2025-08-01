@@ -433,9 +433,9 @@ typedef enum _tls_group
 	TLS_SECP_521R1 = 25,
 
 	// RFC 7027: Elliptic Curve Cryptography (ECC) Brainpool Curves for Transport Layer Security (TLS)
-	TLS_BRAINPOOL_256R1 = 26,
-	TLS_BRAINPOOL_384R1 = 27,
-	TLS_BRAINPOOL_512R1 = 28,
+	TLS_BRAINPOOL_256R1_TLS_12 = 26,
+	TLS_BRAINPOOL_384R1_TLS_12 = 27,
+	TLS_BRAINPOOL_512R1_TLS_12 = 28,
 
 	// RFC 8422:  Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 	TLS_X25519 = 29,

@@ -962,14 +962,14 @@ static uint32_t tls_extension_supported_groups_print_body(tls_extension_supporte
 		case TLS_SECP_521R1:
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "secp521r1 (ID 25)\n");
 			break;
-		case TLS_BRAINPOOL_256R1:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (ID 26)\n");
+		case TLS_BRAINPOOL_256R1_TLS_12:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (TLS 1.2) (ID 26)\n");
 			break;
-		case TLS_BRAINPOOL_384R1:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (ID 27)\n");
+		case TLS_BRAINPOOL_384R1_TLS_12:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (TLS 1.2) (ID 27)\n");
 			break;
-		case TLS_BRAINPOOL_512R1:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (ID 28)\n");
+		case TLS_BRAINPOOL_512R1_TLS_12:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (TLS 1.2) (ID 28)\n");
 			break;
 		case TLS_X25519:
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "x25519 (ID 29)\n");
@@ -978,13 +978,13 @@ static uint32_t tls_extension_supported_groups_print_body(tls_extension_supporte
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "x448 (ID 30)\n");
 			break;
 		case TLS_BRAINPOOL_256R1_TLS_13:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1tls13 (ID 31)\n");
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (TLS 1.3) (ID 31)\n");
 			break;
 		case TLS_BRAINPOOL_384R1_TLS_13:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1tls13 (ID 32)\n");
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (TLS 1.3) (ID 32)\n");
 			break;
 		case TLS_BRAINPOOL_512R1_TLS_13:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1tls13 (ID 33)\n");
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (TLS 1.3) (ID 33)\n");
 			break;
 		case TLS_GOST_256A:
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "GC256A (ID 34)\n");
@@ -2040,16 +2040,16 @@ static uint32_t tls_extension_key_share_print_body(tls_extension_key_share *shar
 			pos +=
 				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp521r1 (ID 25)", PTR_OFFSET(key, key[i].offset), key[i].size);
 			break;
-		case TLS_BRAINPOOL_256R1:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (ID 26)", PTR_OFFSET(key, key[i].offset),
+		case TLS_BRAINPOOL_256R1_TLS_12:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (TLS 1.2) (ID 26)", PTR_OFFSET(key, key[i].offset),
 							   key[i].size);
 			break;
-		case TLS_BRAINPOOL_384R1:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (ID 27)", PTR_OFFSET(key, key[i].offset),
+		case TLS_BRAINPOOL_384R1_TLS_12:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (TLS 1.2)(ID 27)", PTR_OFFSET(key, key[i].offset),
 							   key[i].size);
 			break;
-		case TLS_BRAINPOOL_512R1:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (ID 28)", PTR_OFFSET(key, key[i].offset),
+		case TLS_BRAINPOOL_512R1_TLS_12:
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (TLS 1.2) (ID 28)", PTR_OFFSET(key, key[i].offset),
 							   key[i].size);
 			break;
 		case TLS_X25519:
@@ -2059,15 +2059,15 @@ static uint32_t tls_extension_key_share_print_body(tls_extension_key_share *shar
 			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "x448 (ID 30)", PTR_OFFSET(key, key[i].offset), key[i].size);
 			break;
 		case TLS_BRAINPOOL_256R1_TLS_13:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1tls13 (ID 31)", PTR_OFFSET(key, key[i].offset),
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (TLS 1.3) (ID 31)", PTR_OFFSET(key, key[i].offset),
 							   key[i].size);
 			break;
 		case TLS_BRAINPOOL_384R1_TLS_13:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1tls13 (ID 32)", PTR_OFFSET(key, key[i].offset),
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP384r1 (TLS 1.3) (ID 32)", PTR_OFFSET(key, key[i].offset),
 							   key[i].size);
 			break;
 		case TLS_BRAINPOOL_512R1_TLS_13:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1tls13 (ID 33)", PTR_OFFSET(key, key[i].offset),
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP512r1 (TLS 1.3) (ID 33)", PTR_OFFSET(key, key[i].offset),
 							   key[i].size);
 			break;
 		case TLS_GOST_256A:
