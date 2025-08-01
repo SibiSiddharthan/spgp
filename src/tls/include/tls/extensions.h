@@ -18,42 +18,91 @@
 
 typedef enum _tls_extension_type
 {
+	// RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
 	TLS_EXT_SERVER_NAME = 0,
 	TLS_EXT_MAX_FRAGMENT_LENGTH = 1,
 	TLS_EXT_CLIENT_CERTIFICATE_URL = 2,
 	TLS_EXT_TRUSTED_CA_KEYS = 3,
 	TLS_EXT_TRUNCATED_HMAC = 4,
 	TLS_EXT_STATUS_REQUEST = 5,
+
+	// RFC 4681: TLS User Mapping Extension
 	TLS_EXT_USER_MAPPING = 6,
+
+	// RFC 5878: Transport Layer Security (TLS) Authorization Extensions
 	TLS_EXT_CLIENT_AUTHORIZATION = 7,
 	TLS_EXT_SERVER_AUTHORIZATION = 8,
+
+	// RFC 6091: Using OpenPGP Keys for Transport Layer Security (TLS) Authentication
 	TLS_EXT_CERTIFICATE_TYPE = 9,
+
+	// RFC 8422: Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 	TLS_EXT_SUPPORTED_GROUPS = 10,
 	TLS_EXT_EC_POINT_FORMATS = 11,
+
+	// RFC 5054: Using the Secure Remote Password (SRP) Protocol for TLS Authentication
 	TLS_EXT_SRP = 12,
+
+	// RFC 5246: The Transport Layer Security (TLS) Protocol Version 1.2
 	TLS_EXT_SIGNATURE_ALGORITHMS = 13,
+
+	// RFC 5764: Datagram Transport Layer Security (DTLS) Extension to Establish Keys for the Secure Real-time Transport Protocol (SRTP)
 	TLS_EXT_USE_SRTP = 14,
+
+	// RFC 6520: Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS) Heartbeat Extension
 	TLS_EXT_HEARTBEAT = 15,
+
+	// RFC 7301: Transport Layer Security (TLS) Application-Layer Protocol Negotiation Extension
 	TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION = 16,
+
+	// RFC 6961: The Transport Layer Security (TLS) Multiple Certificate Status Request Extension
 	TLS_EXT_STATUS_REQUEST_V2 = 17,
+
+	// RFC 6962: Certificate Transparency
 	TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP = 18,
+
+	// RFC 7250: Using Raw Public Keys in Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)
 	TLS_EXT_CLIENT_CERTIFICATE_TYPE = 19,
 	TLS_EXT_SERVER_CERTIFICATE_TYPE = 20,
+
+	// RFC 7685: A Transport Layer Security (TLS) ClientHello Padding Extension
 	TLS_EXT_PADDING = 21,
+
+	// RFC 7366: Encrypt-then-MAC for Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)
 	TLS_EXT_ENCRYPT_THEN_MAC = 22,
+
+	// RFC 7627: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
 	TLS_EXT_EXTENDED_MASTER_SECRET = 23,
+
+	// RFC 8472: Transport Layer Security (TLS) Extension for Token Binding Protocol Negotiation
 	TLS_EXT_TOKEN_BINDING = 24,
+
+	// RFC 7924: Transport Layer Security (TLS) Cached Information Extension
 	TLS_EXT_CACHED_INFO = 25,
+
+	// RFC Draft: draft-gutmann-tls-lts
 	TLS_EXT_LTS = 26,
+
+	// RFC 8879: TLS Certificate Compression
 	TLS_EXT_COMPRESS_CERTIFICATE = 27,
+
+	// RFC 8449: Record Size Limit Extension for TLS
 	TLS_EXT_RECORD_SIZE_LIMIT = 28,
+
+	// RFC 8492: Secure Password Ciphersuites for Transport Layer Security (TLS)
 	TLS_EXT_PASSWORD_PROTECT = 29,
 	TLS_EXT_PASSWORD_CLEAR = 30,
 	TLS_EXT_PASSWORD_SALT = 31,
+
+	// RFC 8672: TLS Server Identity Pinning with Tickets
 	TLS_EXT_TICKET_PINNING = 32,
+
+	// RFC 9345: Delegated Credentials for TLS and DTLS
 	TLS_EXT_DELEGATED_CREDENTIAL = 34,
 	TLS_EXT_SESSION_TICKET = 35,
 	TLS_EXT_PSK = 41,
+
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_EXT_EARLY_DATA = 42,
 	TLS_EXT_SUPPORTED_VERSIONS = 43,
 	TLS_EXT_COOKIE = 44,
@@ -63,9 +112,15 @@ typedef enum _tls_extension_type
 	TLS_EXT_POST_HANDSHAKE_AUTH = 49,
 	TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE = 50,
 	TLS_EXT_KEY_SHARE = 51,
+
+	// RFC 9162: Certificate Transparency Version 2.0
 	TLS_EXT_TRANSPARENCY_INFO = 52,
+
+	// RFC 9146: Connection Identifier for DTLS 1.2
 	TLS_EXT_CONNECTION_INFO_LEGACY = 53,
 	TLS_EXT_CONNECTION_INFO = 54,
+
+	// RFC 8844: Unknown Key-Share Attacks on Uses of TLS with the Session Description Protocol (SDP)
 	TLS_EXT_EXTERNAL_ID_HASH = 55,
 	TLS_EXT_EXTERNAL_SESSION_ID = 56,
 } tls_extension_type;
