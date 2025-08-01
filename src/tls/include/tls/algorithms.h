@@ -396,6 +396,11 @@ typedef enum _tls_signature_scheme
 	TLS_ECDSA_BRAINPOOL_P384R1_TLS13_SHA384 = 0x081B,
 	TLS_ECDSA_BRAINPOOL_P512R1_TLS13_SHA512 = 0x081C,
 
+	// RFC Draft: draft-ietf-tls-mldsa
+	TLS_MLDSA44 = 0x0904,
+	TLS_MLDSA65 = 0x0905,
+	TLS_MLDSA87 = 0x0906,
+
 } tls_signature_scheme;
 
 typedef enum _tls_group

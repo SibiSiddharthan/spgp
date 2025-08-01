@@ -1308,6 +1308,15 @@ static uint32_t tls_extension_signature_algorithms_print_body(tls_extension_sign
 		case TLS_ECDSA_BRAINPOOL_P512R1_TLS13_SHA512:
 			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "ecdsa_brainpoolP512r1tls13_sha512 (ID 081C)\n");
 			break;
+		case TLS_MLDSA44:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "mldsa44 (ID 0904)\n");
+			break;
+		case TLS_MLDSA65:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "mldsa65 (ID 0905)\n");
+			break;
+		case TLS_MLDSA87:
+			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "mldsa87 (ID 0906)\n");
+			break;
 		default:
 		{
 			if (tls_check_grease_value(signatures->algorithms[i]))
