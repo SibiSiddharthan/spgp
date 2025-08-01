@@ -355,11 +355,20 @@ typedef enum _tls_cipher_suite
 
 typedef enum _tls_signature_scheme
 {
-	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+	// RFC 5246: The Transport Layer Security (TLS) Protocol Version 1.2
+	TLS_RSA_PKCS_MD5 = 0x0101,
+	TLS_DSA_MD5 = 0x0102,
+	TLS_ECDSA_MD5 = 0x0103,
+
 	TLS_RSA_PKCS_SHA1 = 0x0201,
 	TLS_DSA_SHA1 = 0x0202,
 	TLS_ECDSA_SHA1 = 0x0203,
 
+	TLS_RSA_PKCS_SHA224 = 0x0301,
+	TLS_DSA_SHA224 = 0x0302,
+	TLS_ECDSA_SHA224 = 0x0303,
+
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_RSA_PKCS_SHA256 = 0x0401,
 	TLS_DSA_SHA256 = 0x0402,
 	TLS_ECDSA_SECP256R1_SHA256 = 0x0403,
