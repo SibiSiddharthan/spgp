@@ -2290,6 +2290,9 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	// case TLS_EXT_CONNECTION_INFO:
 	// case TLS_EXT_EXTERNAL_ID_HASH:
 	// case TLS_EXT_EXTERNAL_SESSION_ID:
+	case TLS_EXT_APPLICATION_SETTINGS:
+		error = tls_extension_application_protocol_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	default:
 	{
 	empty:
@@ -2436,6 +2439,10 @@ uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
 	case TLS_EXT_CONNECTION_INFO:
 	case TLS_EXT_EXTERNAL_ID_HASH:
 	case TLS_EXT_EXTERNAL_SESSION_ID:
+		break;
+	case TLS_EXT_APPLICATION_SETTINGS:
+		pos += tls_extension_application_protocol_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		break;
 	default:
 		break;
 	}
@@ -2615,6 +2622,9 @@ static uint32_t print_extension_header(tls_extension_header *header, void *buffe
 	case TLS_EXT_DNSSEC_CHAIN:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "DNSSEC Chain (ID 59) (%hu bytes)\n", header->size);
 		break;
+	case TLS_EXT_APPLICATION_SETTINGS:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Application Layer Protocol Settings (ID 17613) (%hu bytes)\n", header->size);
+		break;
 	case TLS_EXT_ECH_OUTER_EXTENSIONS:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Outer Extensions (ID 64768) (%hu bytes)\n", header->size);
 		break;
@@ -2764,6 +2774,10 @@ uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint3
 	case TLS_EXT_CONNECTION_INFO:
 	case TLS_EXT_EXTERNAL_ID_HASH:
 	case TLS_EXT_EXTERNAL_SESSION_ID:
+		break;
+	case TLS_EXT_APPLICATION_SETTINGS:
+		pos += tls_extension_application_protocol_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	default:
 		break;
 	}

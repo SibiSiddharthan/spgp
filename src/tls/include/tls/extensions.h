@@ -138,6 +138,9 @@ typedef enum _tls_extension_type
 	// RFC 9102: TLS DNSSEC Chain Extension
 	TLS_EXT_DNSSEC_CHAIN = 59,
 
+	// Chrome (Private)
+	TLS_EXT_APPLICATION_SETTINGS = 17613,
+
 	// RFC Draft: draft-ietf-tls-esni
 	TLS_EXT_ECH_OUTER_EXTENSIONS = 64768,
 	TLS_EXT_ENCRYPTED_CLIENT_HELLO = 65037,
