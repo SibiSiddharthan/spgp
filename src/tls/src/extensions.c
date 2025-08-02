@@ -2550,11 +2550,19 @@ static uint32_t print_extension_header(tls_extension_header *header, void *buffe
 	case TLS_EXT_TICKET_PINNING:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Ticket Pinning (ID 32) (%hu bytes)\n", header->size);
 		break;
+	case TLS_EXT_PSK_EXTERNAL_CERTIFICATE:
+		pos +=
+			snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate With External Pre-Shared Key (ID 33) (%hu bytes)\n", header->size);
+		break;
 	case TLS_EXT_DELEGATED_CREDENTIAL:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Delegated Credential (ID 34) (%hu bytes)\n", header->size);
 		break;
 	case TLS_EXT_SESSION_TICKET:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Session Ticket (ID 35) (%hu bytes)\n", header->size);
+		break;
+	case TLS_SUPPORTED_EKT_CIPHERS:
+		pos +=
+			snprintf(PTR_OFFSET(buffer, pos), size - pos, "Supported Encrypted Key Transport CIphers (ID 39) (%hu bytes)\n", header->size);
 		break;
 	case TLS_EXT_PSK:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Pre-Shared Key (ID 41) (%hu bytes)\n", header->size);
@@ -2600,6 +2608,21 @@ static uint32_t print_extension_header(tls_extension_header *header, void *buffe
 		break;
 	case TLS_EXT_EXTERNAL_SESSION_ID:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "External Session ID (ID 56) (%hu bytes)\n", header->size);
+		break;
+	case TLS_EXT_TICKET_REQUEST:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Ticket Request (ID 58) (%hu bytes)\n", header->size);
+		break;
+	case TLS_EXT_DNSSEC_CHAIN:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "DNSSEC Chain (ID 59) (%hu bytes)\n", header->size);
+		break;
+	case TLS_EXT_ECH_OUTER_EXTENSIONS:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Outer Extensions (ID 64768) (%hu bytes)\n", header->size);
+		break;
+	case TLS_EXT_ENCRYPTED_CLIENT_HELLO:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Client Hello (ID 65037) (%hu bytes)\n", header->size);
+		break;
+	case TLS_EXT_RENEGOTIATION_INFO:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Renegotiation Info (ID 65281) (%hu bytes)\n", header->size);
 		break;
 	default:
 	{
