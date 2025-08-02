@@ -18,16 +18,24 @@
 typedef enum _tls_handshake_type
 {
 	// RFC 5246: The Transport Layer Security (TLS) Protocol Version 1.2
-	TLS_HELLO_REQUEST = 0,
-
 	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
+
+	TLS_HELLO_REQUEST = 0,
 	TLS_CLIENT_HELLO = 1,
 	TLS_SERVER_HELLO = 2,
+
+	// RFC 6347: Datagram Transport Layer Security Version 1.2
 	TLS_HELLO_VERIFY_REQUEST = 3,
+
 	TLS_NEW_SESSION_TICKET = 4,
 	TLS_END_OF_EARLY_DATA = 5,
 	TLS_HELLO_RETRY_REQUEST = 6,
 	TLS_ENCRYPTED_EXTENSIONS = 8,
+
+	// RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol Version 1.3
+	TLS_REQUEST_CONNECTION_ID = 9,
+	TLS_NEW_CONNECTION_ID = 10,
+
 	TLS_CERTIFICATE = 11,
 	TLS_SERVER_KEY_EXCHANGE = 12,
 	TLS_CERTIFICATE_REQUEST = 13,
@@ -43,9 +51,16 @@ typedef enum _tls_handshake_type
 	// RFC 4680: TLS Handshake Message for Supplemental Data
 	TLS_SUPPLEMENTAL_DATA = 23,
 
-	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_KEY_UPDATE = 24,
+
+	// RFC 8879: TLS Certificate Compression
+	TLS_COMPRESSED_CERTIFICATE = 25,
+
+	// RFC 8870: Encrypted Key Transport for DTLS and Secure RTP
+	TLS_EKT_KEY = 26,
+
 	TLS_MESSAGE_HASH = 254,
+
 } tls_handshake_type;
 
 typedef struct _tls_handshake_header
