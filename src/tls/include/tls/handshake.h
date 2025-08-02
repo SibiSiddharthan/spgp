@@ -17,7 +17,10 @@
 
 typedef enum _tls_handshake_type
 {
+	// RFC 5246: The Transport Layer Security (TLS) Protocol Version 1.2
 	TLS_HELLO_REQUEST = 0,
+
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_CLIENT_HELLO = 1,
 	TLS_SERVER_HELLO = 2,
 	TLS_HELLO_VERIFY_REQUEST = 3,
@@ -32,9 +35,15 @@ typedef enum _tls_handshake_type
 	TLS_CERTIFICATE_VERIFY = 15,
 	TLS_CLIENT_KEY_EXCHANGE = 16,
 	TLS_FINISHED = 20,
+
+	// RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
 	TLS_CERTIFICATE_URL = 21,
 	TLS_CERTIFICATE_STATUS = 22,
+
+	// RFC 4680: TLS Handshake Message for Supplemental Data
 	TLS_SUPPLEMENTAL_DATA = 23,
+
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_KEY_UPDATE = 24,
 	TLS_MESSAGE_HASH = 254,
 } tls_handshake_type;
