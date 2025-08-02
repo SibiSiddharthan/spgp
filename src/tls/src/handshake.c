@@ -1306,6 +1306,12 @@ static uint32_t print_handshake_header(tls_handshake_header *header, void *buffe
 	case TLS_ENCRYPTED_EXTENSIONS:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Extensions (ID 8) (%u bytes)\n", header->size);
 		break;
+	case TLS_REQUEST_CONNECTION_ID:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Request Connection ID (ID 9) (%u bytes)\n", header->size);
+		break;
+	case TLS_NEW_CONNECTION_ID:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "New Connection ID (ID 10) (%u bytes)\n", header->size);
+		break;
 	case TLS_CERTIFICATE:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Certificate (ID 11) (%u bytes)\n", header->size);
 		break;
@@ -1324,6 +1330,9 @@ static uint32_t print_handshake_header(tls_handshake_header *header, void *buffe
 	case TLS_CLIENT_KEY_EXCHANGE:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Key Exchange (ID 16) (%u bytes)\n", header->size);
 		break;
+	case TLS_CLIENT_CERTIFICATE_REQUEST:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Certificate Request (ID 17) (%u bytes)\n", header->size);
+		break;
 	case TLS_FINISHED:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Finished (ID 20) (%u bytes)\n", header->size);
 		break;
@@ -1338,6 +1347,12 @@ static uint32_t print_handshake_header(tls_handshake_header *header, void *buffe
 		break;
 	case TLS_KEY_UPDATE:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Key Update (ID 24) (%u bytes)\n", header->size);
+		break;
+	case TLS_COMPRESSED_CERTIFICATE:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Compressed Certificate (ID 25) (%u bytes)\n", header->size);
+		break;
+	case TLS_EKT_KEY:
+		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "EKT Key (ID 26) (%u bytes)\n", header->size);
 		break;
 	case TLS_MESSAGE_HASH:
 		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Message Hash (ID 254) (%u bytes)\n", header->size);

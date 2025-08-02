@@ -42,6 +42,10 @@ typedef enum _tls_handshake_type
 	TLS_SERVER_HELLO_DONE = 14,
 	TLS_CERTIFICATE_VERIFY = 15,
 	TLS_CLIENT_KEY_EXCHANGE = 16,
+
+	// RFC 9261: Exported Authenticators in TLS
+	TLS_CLIENT_CERTIFICATE_REQUEST = 17,
+
 	TLS_FINISHED = 20,
 
 	// RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
