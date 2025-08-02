@@ -16,14 +16,24 @@
 
 typedef enum _tls_content_type
 {
+	// RFC 5246: The Transport Layer Security (TLS) Protocol Version 1.2
 	TLS_INVALID_CONTENT = 0,
 	TLS_CHANGE_CIPHER_SPEC = 20,
+
+	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	TLS_ALERT = 21,
 	TLS_HANDSHAKE = 22,
 	TLS_APPLICATION_DATA = 23,
+
+	// RFC 6520: Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS) Heartbeat Extension
 	TLS_HEARTBEAT = 24,
+
+	// RFC 9146: Connection Identifier for DTLS 1.2
 	TLS_CID = 25,
-	TLS_ACK = 26
+
+	// RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol Version 1.3
+	TLS_ACK = 26,
+
 } tls_content_type;
 
 typedef struct _tls_record_header
