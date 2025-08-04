@@ -1275,6 +1275,42 @@ static uint32_t tls_new_session_ticket_write_body(tls_new_session_ticket *sessio
 	return pos;
 }
 
+static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *session, void *buffer, uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	// Ticket Lifetime
+	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket Lifetime: %u seconds\n", session->ticket_lifetime);
+
+	// Ticket Age Add
+	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket Age Add: %u seconds\n", session->ticket_age_add);
+
+	// Ticket Nonce
+	if (session->ticket_nonce_size > 0)
+	{
+		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket Nonce", session->data, session->ticket_nonce_size);
+	}
+
+	// Ticket
+	if (session->ticket_size > 0)
+	{
+		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket", PTR_OFFSET(session->data, session->ticket_nonce_size),
+						   session->ticket_size);
+	}
+
+	if (session->extensions_count > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", hello->extensions_size);
+
+		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		{
+			pos += tls_extension_print(hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		}
+	}
+
+	return pos;
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
