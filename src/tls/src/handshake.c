@@ -1475,6 +1475,21 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 		break;
 	case TLS_MESSAGE_HASH:
 		break;
+	default:
+	{
+		tls_handshake_header *unknown = zmalloc(sizeof(tls_handshake_header));
+
+		if (unknown == NULL)
+		{
+			return TLS_NO_MEMORY;
+		}
+
+		unknown->type = handshake_header.type;
+		unknown->size = handshake_header.size;
+
+		*handshake = unknown;
+	}
+	break;
 	}
 
 	if (error != TLS_SUCCESS)
@@ -1542,6 +1557,8 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		pos += tls_key_update_write_body(handshake, PTR_OFFSET(buffer, pos));
 		break;
 	case TLS_MESSAGE_HASH:
+		break;
+	default:
 		break;
 	}
 
@@ -1692,6 +1709,8 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 		pos += tls_key_update_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_MESSAGE_HASH:
+		break;
+	default:
 		break;
 	}
 
