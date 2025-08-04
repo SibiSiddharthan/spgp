@@ -1311,6 +1311,60 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 	return pos;
 }
 
+static tls_error_t tls_key_update_read_body(tls_key_update **handshake, tls_handshake_header *header, void *data, uint32_t size)
+{
+	tls_key_update *update = NULL;
+	tls_error_t error = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+	uint32_t offset = 0;
+
+	update = zmalloc(sizeof(tls_key_update));
+
+	if (update == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	update->header = *header;
+
+	// 1 octet request
+	LOAD_8(&update->request, in + pos);
+	pos += 1;
+
+	*handshake = update;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_key_update_write_body(tls_key_update *update, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet request
+	LOAD_8(out + pos, &update->request);
+	pos += 1;
+
+	return pos;
+}
+
+static uint32_t tls_key_update_print_body(tls_key_update *update, void *buffer, uint32_t size, uint32_t indent)
+{
+	// Update Request
+	switch (update->request)
+	{
+	case TLS_KEY_UPDATE_NOT_REQUESTED:
+		return print_format(indent, buffer, size, "Key Update Not Requested (ID 0)\n");
+	case TLS_KEY_UPDATE_REQUESTED:
+		return print_format(indent, buffer, size, "Key Update Requested (ID 1)\n");
+	default:
+		return print_format(indent, buffer, size, "Unkown Key Update Request (ID %hhu)\n", update->request);
+	}
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
