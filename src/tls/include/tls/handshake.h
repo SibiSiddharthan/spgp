@@ -144,6 +144,12 @@ typedef struct _tls_handshake_finished
 	uint8_t verify[];
 } tls_handshake_finished;
 
+typedef struct _tls_handshake_message_hash
+{
+	tls_handshake_header header;
+	uint8_t hash[];
+} tls_handshake_message_hash;
+
 tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *header, void *data, uint32_t size);
 uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size);
 uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, uint32_t indent);

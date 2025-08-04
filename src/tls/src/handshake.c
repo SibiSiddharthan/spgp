@@ -1417,6 +1417,55 @@ static uint32_t tls_handshake_finished_print_body(tls_handshake_finished *finish
 	return print_bytes(indent, buffer, size, "Verification MAC", finish->verify, finish->header.size);
 }
 
+static tls_error_t tls_handshake_message_hash_read_body(tls_handshake_message_hash **handshake, tls_handshake_header *header, void *data)
+{
+	tls_handshake_message_hash *hash = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	if (header->size > 255)
+	{
+		return TLS_INVALID_PARAMETER;
+	}
+
+	hash = zmalloc(sizeof(tls_handshake_message_hash) + header->size);
+
+	if (hash == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	hash->header = *header;
+
+	// N octets of message hash
+	memcpy(hash->hash, in + pos, hash->header.size);
+	pos += hash->header.size;
+
+	*handshake = hash;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_handshake_message_hash_write_body(tls_handshake_message_hash *hash, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// N octets of verify MAC
+	memcpy(out + pos, hash->hash, hash->header.size);
+	pos += 1;
+
+	return pos;
+}
+
+static uint32_t tls_handshake_message_hash_print_body(tls_handshake_message_hash *hash, void *buffer, uint32_t size, uint32_t indent)
+{
+	// Verify MAC
+	return print_bytes(indent, buffer, size, "Message Hash", hash->hash, hash->header.size);
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
@@ -1525,6 +1574,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 		error = tls_key_update_read_body((tls_key_update **)handshake, &handshake_header, PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS));
 		break;
 	case TLS_MESSAGE_HASH:
+		error = tls_handshake_message_hash_read_body((tls_handshake_message_hash **)handshake, &handshake_header,
+													 PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS));
 		break;
 	default:
 	{
@@ -1609,6 +1660,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		pos += tls_key_update_write_body(handshake, PTR_OFFSET(buffer, pos));
 		break;
 	case TLS_MESSAGE_HASH:
+		pos += tls_handshake_message_hash_write_body(handshake, PTR_OFFSET(buffer, pos));
 		break;
 	default:
 		break;
@@ -1762,6 +1814,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 		pos += tls_key_update_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_MESSAGE_HASH:
+		pos += tls_handshake_message_hash_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	default:
 		break;
