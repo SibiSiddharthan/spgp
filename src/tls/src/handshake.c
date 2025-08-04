@@ -1603,6 +1603,7 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 												 PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS), handshake_header.size);
 		break;
 	case TLS_END_OF_EARLY_DATA:
+		goto empty;
 		break;
 	case TLS_HELLO_RETRY_REQUEST:
 		break;
@@ -1695,6 +1696,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		pos += tls_new_session_ticket_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_END_OF_EARLY_DATA:
+		// empty body
 		break;
 	case TLS_HELLO_RETRY_REQUEST:
 		break;
@@ -1851,6 +1853,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 		pos += tls_new_session_ticket_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_END_OF_EARLY_DATA:
+		// empty body
 		break;
 	case TLS_HELLO_RETRY_REQUEST:
 		break;
