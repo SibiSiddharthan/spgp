@@ -1311,14 +1311,17 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 	return pos;
 }
 
-static tls_error_t tls_key_update_read_body(tls_key_update **handshake, tls_handshake_header *header, void *data, uint32_t size)
+static tls_error_t tls_key_update_read_body(tls_key_update **handshake, tls_handshake_header *header, void *data)
 {
 	tls_key_update *update = NULL;
-	tls_error_t error = 0;
 
 	uint8_t *in = data;
 	uint32_t pos = 0;
-	uint32_t offset = 0;
+
+	if (header->size != 1)
+	{
+		return TLS_INVALID_PARAMETER;
+	}
 
 	update = zmalloc(sizeof(tls_key_update));
 
@@ -1339,7 +1342,7 @@ static tls_error_t tls_key_update_read_body(tls_key_update **handshake, tls_hand
 	return TLS_SUCCESS;
 }
 
-static uint32_t tls_key_update_write_body(tls_key_update *update, void *buffer, uint32_t size)
+static uint32_t tls_key_update_write_body(tls_key_update *update, void *buffer)
 {
 	uint8_t *out = buffer;
 	uint32_t pos = 0;
@@ -1468,6 +1471,7 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	case TLS_SUPPLEMENTAL_DATA:
 		break;
 	case TLS_KEY_UPDATE:
+		error = tls_key_update_read_body((tls_key_update **)handshake, &handshake_header, PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS));
 		break;
 	case TLS_MESSAGE_HASH:
 		break;
@@ -1525,6 +1529,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	case TLS_CERTIFICATE_VERIFY:
 		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
+		break;
 	case TLS_FINISHED:
 		break;
 	case TLS_CERTIFICATE_URL:
@@ -1534,6 +1539,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	case TLS_SUPPLEMENTAL_DATA:
 		break;
 	case TLS_KEY_UPDATE:
+		pos += tls_key_update_write_body(handshake, PTR_OFFSET(buffer, pos));
 		break;
 	case TLS_MESSAGE_HASH:
 		break;
@@ -1683,6 +1689,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 	case TLS_SUPPLEMENTAL_DATA:
 		break;
 	case TLS_KEY_UPDATE:
+		pos += tls_key_update_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_MESSAGE_HASH:
 		break;
