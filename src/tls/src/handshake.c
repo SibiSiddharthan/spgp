@@ -1300,11 +1300,11 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 
 	if (session->extensions_count > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", hello->extensions_size);
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", session->extensions_size);
 
-		for (uint16_t i = 0; i < hello->extensions_count; ++i)
+		for (uint16_t i = 0; i < session->extensions_count; ++i)
 		{
-			pos += tls_extension_print(hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(session->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		}
 	}
 
@@ -1382,21 +1382,39 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 										   handshake_header.size);
 		break;
 	case TLS_HELLO_VERIFY_REQUEST:
+		break;
 	case TLS_NEW_SESSION_TICKET:
+		error = tls_new_session_ticket_read_body((tls_new_session_ticket **)handshake, &handshake_header,
+												 PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS), handshake_header.size);
+		break;
 	case TLS_END_OF_EARLY_DATA:
+		break;
 	case TLS_HELLO_RETRY_REQUEST:
+		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
+		break;
 	case TLS_CERTIFICATE:
+		break;
 	case TLS_SERVER_KEY_EXCHANGE:
+		break;
 	case TLS_CERTIFICATE_REQUEST:
+		break;
 	case TLS_SERVER_HELLO_DONE:
+		break;
 	case TLS_CERTIFICATE_VERIFY:
+		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
+		break;
 	case TLS_FINISHED:
+		break;
 	case TLS_CERTIFICATE_URL:
+		break;
 	case TLS_CERTIFICATE_STATUS:
+		break;
 	case TLS_SUPPLEMENTAL_DATA:
+		break;
 	case TLS_KEY_UPDATE:
+		break;
 	case TLS_MESSAGE_HASH:
 		break;
 	}
@@ -1432,21 +1450,37 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		pos += tls_server_hello_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_HELLO_VERIFY_REQUEST:
+		break;
 	case TLS_NEW_SESSION_TICKET:
+		pos += tls_new_session_ticket_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
+		break;
 	case TLS_END_OF_EARLY_DATA:
+		break;
 	case TLS_HELLO_RETRY_REQUEST:
+		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
+		break;
 	case TLS_CERTIFICATE:
+		break;
 	case TLS_SERVER_KEY_EXCHANGE:
+		break;
 	case TLS_CERTIFICATE_REQUEST:
+		break;
 	case TLS_SERVER_HELLO_DONE:
+		break;
 	case TLS_CERTIFICATE_VERIFY:
+		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
 	case TLS_FINISHED:
+		break;
 	case TLS_CERTIFICATE_URL:
+		break;
 	case TLS_CERTIFICATE_STATUS:
+		break;
 	case TLS_SUPPLEMENTAL_DATA:
+		break;
 	case TLS_KEY_UPDATE:
+		break;
 	case TLS_MESSAGE_HASH:
 		break;
 	}
@@ -1564,21 +1598,38 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 		pos += tls_server_hello_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_HELLO_VERIFY_REQUEST:
+		break;
 	case TLS_NEW_SESSION_TICKET:
+		pos += tls_new_session_ticket_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		break;
 	case TLS_END_OF_EARLY_DATA:
+		break;
 	case TLS_HELLO_RETRY_REQUEST:
+		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
+		break;
 	case TLS_CERTIFICATE:
+		break;
 	case TLS_SERVER_KEY_EXCHANGE:
+		break;
 	case TLS_CERTIFICATE_REQUEST:
+		break;
 	case TLS_SERVER_HELLO_DONE:
+		break;
 	case TLS_CERTIFICATE_VERIFY:
+		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
+		break;
 	case TLS_FINISHED:
+		break;
 	case TLS_CERTIFICATE_URL:
+		break;
 	case TLS_CERTIFICATE_STATUS:
+		break;
 	case TLS_SUPPLEMENTAL_DATA:
+		break;
 	case TLS_KEY_UPDATE:
+		break;
 	case TLS_MESSAGE_HASH:
 		break;
 	}
