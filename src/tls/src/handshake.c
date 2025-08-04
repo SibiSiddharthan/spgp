@@ -1359,10 +1359,15 @@ static uint32_t tls_certificate_verify_write_body(tls_certificate_verify *verify
 
 static uint32_t tls_certificate_verify_print_body(tls_certificate_verify *verify, void *buffer, uint32_t size, uint32_t indent)
 {
+	uint32_t pos = 0;
+
 	// Algorithm
+	pos += print_signature_algorithm(indent, PTR_OFFSET(buffer, pos), size - pos, verify->algorithm);
 
 	// Signature
-	return print_bytes(indent, buffer, size, "Signature", verify->signature, verify->header.size - 2);
+	pos += print_bytes(indent, buffer, size, "Signature", verify->signature, verify->header.size - 2);
+
+	return pos;
 }
 
 static tls_error_t tls_key_update_read_body(tls_key_update **handshake, tls_handshake_header *header, void *data)
