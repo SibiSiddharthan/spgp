@@ -1586,6 +1586,7 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	switch (handshake_header.type)
 	{
 	case TLS_HELLO_REQUEST:
+		goto empty;
 		break;
 	case TLS_CLIENT_HELLO:
 		error = tls_client_hello_read_body((tls_client_hello **)handshake, &handshake_header, PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS),
@@ -1640,6 +1641,7 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 		break;
 	default:
 	{
+	empty:
 		tls_handshake_header *unknown = zmalloc(sizeof(tls_handshake_header));
 
 		if (unknown == NULL)
@@ -1679,6 +1681,8 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	switch (header->type)
 	{
 	case TLS_HELLO_REQUEST:
+		// empty body
+		break;
 	case TLS_CLIENT_HELLO:
 		pos += tls_client_hello_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
@@ -1833,6 +1837,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 	switch (header->type)
 	{
 	case TLS_HELLO_REQUEST:
+		// empty body
 		break;
 	case TLS_CLIENT_HELLO:
 		pos += tls_client_hello_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
