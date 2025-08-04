@@ -116,10 +116,14 @@ typedef struct _tls_new_session_ticket
 
 	uint32_t ticket_lifetime;
 	uint32_t ticket_age_add;
-	uint8_t ticket_nonce[256];
+	uint8_t ticket_nonce_size;
 	uint16_t ticket_size;
 	uint16_t extensions_size;
+	uint16_t extensions_count;
+	void **extensions;
+
 	uint8_t data[];
+
 } tls_new_session_ticket;
 
 typedef enum _tls_key_update_request

@@ -1131,6 +1131,150 @@ static uint32_t tls_server_hello_print_body(tls_server_hello *hello, void *buffe
 	return pos;
 }
 
+static tls_error_t tls_new_session_ticket_read_body(tls_new_session_ticket **handshake, tls_handshake_header *header, void *data,
+													uint32_t size)
+{
+	tls_new_session_ticket *session = NULL;
+	tls_error_t error = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+	uint32_t offset = 0;
+
+	session = zmalloc(sizeof(tls_new_session_ticket) + 512);
+
+	if (session == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	session->header = *header;
+
+	// 4 octet ticket lifetime
+	LOAD_32BE(&session->ticket_lifetime, in + pos);
+	pos += 4;
+
+	// 4 octet ticket age add
+	LOAD_32BE(&session->ticket_age_add, in + pos);
+	pos += 4;
+
+	// 1 octet ticket nonce size
+	LOAD_8(&session->ticket_nonce_size, in + pos);
+	pos += 1;
+
+	if (session->ticket_nonce_size > 0)
+	{
+		memcpy(PTR_OFFSET(session->data, offset), in + pos, session->ticket_nonce_size);
+		pos += session->ticket_nonce_size;
+		offset += session->ticket_nonce_size;
+	}
+
+	// 2 octet ticket size
+	LOAD_16BE(&session->ticket_size, in + pos);
+	pos += 2;
+
+	if (session->ticket_size > 0)
+	{
+		if (session->ticket_size + session->ticket_nonce_size > 512)
+		{
+			session = zrealloc(session, sizeof(tls_new_session_ticket) + session->ticket_size + session->ticket_nonce_size);
+
+			if (session == NULL)
+			{
+				return TLS_NO_MEMORY;
+			}
+		}
+
+		memcpy(PTR_OFFSET(session->data, offset), in + pos, session->ticket_size);
+		pos += session->ticket_size;
+		offset += session->ticket_size;
+	}
+
+	// 2 octet extensions size
+	LOAD_16BE(&session->extensions_size, in + pos);
+	pos += 2;
+
+	if (session->extensions_size > 0)
+	{
+		session->extensions_count = tls_extension_count(in + pos, size - pos);
+		session->extensions = zmalloc(session->extensions_count * sizeof(void *));
+
+		if (session->extensions == NULL)
+		{
+			return TLS_NO_MEMORY;
+		}
+
+		for (uint16_t i = 0; i < session->extensions_count; ++i)
+		{
+			error = tls_extension_read(&session->extensions[i], in + pos, size - pos);
+
+			if (error != TLS_SUCCESS)
+			{
+				return error;
+			}
+
+			pos += TLS_EXTENSION_OCTETS(session->extensions[i]);
+		}
+	}
+
+	*handshake = session;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_new_session_ticket_write_body(tls_new_session_ticket *session, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+	uint32_t offset = 0;
+
+	// 4 octet ticket lifetime
+	LOAD_32BE(out + pos, &session->ticket_lifetime);
+	pos += 4;
+
+	// 4 octet ticket age add
+	LOAD_32BE(out + pos, &session->ticket_age_add);
+	pos += 4;
+
+	// 1 octet ticket nonce size
+	LOAD_8(out + pos, &session->ticket_nonce_size);
+	pos += 1;
+
+	if (session->ticket_nonce_size > 0)
+	{
+		memcpy(out + pos, PTR_OFFSET(session->data, offset), session->ticket_nonce_size);
+		pos += session->ticket_nonce_size;
+		offset += session->ticket_nonce_size;
+	}
+
+	// 2 octet ticket size
+	LOAD_16BE(out + pos, &session->ticket_size);
+	pos += 2;
+
+	if (session->ticket_size > 0)
+	{
+
+		memcpy(out + pos, PTR_OFFSET(session->data, offset), session->ticket_size);
+		pos += session->ticket_size;
+		offset += session->ticket_size;
+	}
+
+	// 2 octet extensions size
+	LOAD_16BE(out + pos, &session->extensions_size);
+	pos += 2;
+
+	if (session->extensions_size > 0)
+	{
+		for (uint16_t i = 0; i < session->extensions_count; ++i)
+		{
+			pos += tls_extension_write(&session->extensions[i], out + pos, size - pos);
+		}
+	}
+
+	return pos;
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
