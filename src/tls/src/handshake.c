@@ -1311,6 +1311,60 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 	return pos;
 }
 
+static tls_error_t tls_certificate_verify_read_body(tls_certificate_verify **handshake, tls_handshake_header *header, void *data)
+{
+	tls_certificate_verify *verify = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	verify = zmalloc(sizeof(tls_certificate_verify) + (header->size - 2));
+
+	if (verify == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	verify->header = *header;
+
+	// 2 octet signature algorithm
+	LOAD_16BE(&verify->algorithm, in + pos);
+	pos += 2;
+
+	// N octets of signature
+	memcpy(verify->signature, in + pos, verify->header.size - 2);
+	pos += verify->header.size - 2;
+
+	*handshake = verify;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_certificate_verify_write_body(tls_certificate_verify *verify, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 2 octet signature algorithm
+	LOAD_16BE(out + pos, &verify->algorithm);
+	pos += 2;
+
+	// N octets of signature
+	memcpy(out + pos, verify->signature, verify->header.size - 2);
+	pos += verify->header.size - 2;
+
+	return pos;
+}
+
+static uint32_t tls_certificate_verify_print_body(tls_certificate_verify *verify, void *buffer, uint32_t size, uint32_t indent)
+{
+	// Algorithm
+
+	// Signature
+	return print_bytes(indent, buffer, size, "Signature", verify->signature, verify->header.size - 2);
+}
+
 static tls_error_t tls_key_update_read_body(tls_key_update **handshake, tls_handshake_header *header, void *data)
 {
 	tls_key_update *update = NULL;
@@ -1453,7 +1507,7 @@ static uint32_t tls_handshake_message_hash_write_body(tls_handshake_message_hash
 	uint8_t *out = buffer;
 	uint32_t pos = 0;
 
-	// N octets of verify MAC
+	// N octets of message hash
 	memcpy(out + pos, hash->hash, hash->header.size);
 	pos += 1;
 
@@ -1462,7 +1516,7 @@ static uint32_t tls_handshake_message_hash_write_body(tls_handshake_message_hash
 
 static uint32_t tls_handshake_message_hash_print_body(tls_handshake_message_hash *hash, void *buffer, uint32_t size, uint32_t indent)
 {
-	// Verify MAC
+	// Message Hash
 	return print_bytes(indent, buffer, size, "Message Hash", hash->hash, hash->header.size);
 }
 
@@ -1557,6 +1611,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	case TLS_SERVER_HELLO_DONE:
 		break;
 	case TLS_CERTIFICATE_VERIFY:
+		error = tls_certificate_verify_read_body((tls_certificate_verify **)handshake, &handshake_header,
+												 PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS));
 		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
 		break;
@@ -1644,6 +1700,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	case TLS_SERVER_HELLO_DONE:
 		break;
 	case TLS_CERTIFICATE_VERIFY:
+		pos += tls_certificate_verify_write_body(handshake, PTR_OFFSET(buffer, pos));
 		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
 		break;
@@ -1798,6 +1855,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 	case TLS_SERVER_HELLO_DONE:
 		break;
 	case TLS_CERTIFICATE_VERIFY:
+		pos += tls_certificate_verify_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_CLIENT_KEY_EXCHANGE:
 		break;

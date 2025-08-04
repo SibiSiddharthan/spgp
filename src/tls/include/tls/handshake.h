@@ -138,6 +138,13 @@ typedef struct _tls_key_update
 	uint8_t request;
 } tls_key_update;
 
+typedef struct _tls_certificate_verify
+{
+	tls_handshake_header header;
+	uint16_t algorithm;
+	uint8_t signature[];
+} tls_certificate_verify;
+
 typedef struct _tls_handshake_finished
 {
 	tls_handshake_header header;
