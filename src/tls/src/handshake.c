@@ -1368,6 +1368,55 @@ static uint32_t tls_key_update_print_body(tls_key_update *update, void *buffer, 
 	}
 }
 
+static tls_error_t tls_handshake_finished_read_body(tls_handshake_finished **handshake, tls_handshake_header *header, void *data)
+{
+	tls_handshake_finished *finish = NULL;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	if (header->size > 255)
+	{
+		return TLS_INVALID_PARAMETER;
+	}
+
+	finish = zmalloc(sizeof(tls_handshake_finished) + header->size);
+
+	if (finish == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	finish->header = *header;
+
+	// N octets of verify MAC
+	memcpy(finish->verify, in + pos, finish->header.size);
+	pos += finish->header.size;
+
+	*handshake = finish;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_handshake_finished_write_body(tls_handshake_finished *finish, void *buffer)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// N octets of verify MAC
+	memcpy(out + pos, finish->verify, finish->header.size);
+	pos += 1;
+
+	return pos;
+}
+
+static uint32_t tls_handshake_finished_print_body(tls_handshake_finished *finish, void *buffer, uint32_t size, uint32_t indent)
+{
+	// Verify MAC
+	return print_bytes(indent, buffer, size, "Verification MAC", finish->verify, finish->header.size);
+}
+
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
 											 uint32_t size)
 {
@@ -1463,6 +1512,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	case TLS_CLIENT_KEY_EXCHANGE:
 		break;
 	case TLS_FINISHED:
+		error = tls_handshake_finished_read_body((tls_handshake_finished **)handshake, &handshake_header,
+												 PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS));
 		break;
 	case TLS_CERTIFICATE_URL:
 		break;
@@ -1546,6 +1597,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	case TLS_CLIENT_KEY_EXCHANGE:
 		break;
 	case TLS_FINISHED:
+		pos += tls_handshake_finished_write_body(handshake, PTR_OFFSET(buffer, pos));
 		break;
 	case TLS_CERTIFICATE_URL:
 		break;
@@ -1698,6 +1750,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 	case TLS_CLIENT_KEY_EXCHANGE:
 		break;
 	case TLS_FINISHED:
+		pos += tls_handshake_finished_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_CERTIFICATE_URL:
 		break;
