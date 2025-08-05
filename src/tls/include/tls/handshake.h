@@ -136,6 +136,19 @@ typedef struct _tls_encrypted_extensions
 
 } tls_encrypted_extensions;
 
+typedef struct _tls_certificate_request
+{
+	tls_handshake_header header;
+
+	uint8_t context_size;
+	uint8_t context[256];
+
+	uint16_t extensions_size;
+	uint16_t extensions_count;
+	void **extensions;
+
+} tls_certificate_request;
+
 typedef enum _tls_key_update_request
 {
 	TLS_KEY_UPDATE_NOT_REQUESTED = 0,

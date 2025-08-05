@@ -1399,6 +1399,123 @@ static uint32_t tls_encrypted_extensions_print_body(tls_encrypted_extensions *ex
 	return pos;
 }
 
+static tls_error_t tls_certificate_request_read_body(tls_certificate_request **handshake, tls_handshake_header *header, void *data,
+													 uint32_t size)
+{
+	tls_certificate_request *request = NULL;
+	tls_error_t error = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	request = zmalloc(sizeof(tls_certificate_request));
+
+	if (request == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	request->header = *header;
+
+	// 1 octet context size
+	LOAD_8(&request->context_size, in + pos);
+	pos += 1;
+
+	// N octets of context
+	if (request->context_size > 0)
+	{
+		memcpy(request->context, in + pos, request->context_size);
+		pos += request->context_size;
+	}
+
+	// 2 octet extensions size
+	LOAD_16BE(&request->extensions_size, in + pos);
+	pos += 2;
+
+	if (request->extensions_size > 0)
+	{
+		request->extensions_count = tls_extension_count(in + pos, size - pos);
+		request->extensions = zmalloc(request->extensions_count * sizeof(void *));
+
+		if (request->extensions == NULL)
+		{
+			return TLS_NO_MEMORY;
+		}
+
+		for (uint16_t i = 0; i < request->extensions_count; ++i)
+		{
+			error = tls_extension_read(&request->extensions[i], in + pos, size - pos);
+
+			if (error != TLS_SUCCESS)
+			{
+				return error;
+			}
+
+			pos += TLS_EXTENSION_OCTETS(request->extensions[i]);
+		}
+	}
+
+	*handshake = request;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_certificate_request_write_body(tls_certificate_request *request, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 1 octet context size
+	LOAD_8(out + pos, &request->context_size);
+	pos += 1;
+
+	// N octets of context
+	if (request->context_size > 0)
+	{
+		memcpy(out + pos, request->context, request->context_size);
+		pos += request->context_size;
+	}
+
+	// 2 octet extensions size
+	LOAD_16BE(out + pos, &request->extensions_size);
+	pos += 2;
+
+	if (request->extensions_size > 0)
+	{
+		for (uint16_t i = 0; i < request->extensions_count; ++i)
+		{
+			pos += tls_extension_write(&request->extensions[i], out + pos, size - pos);
+		}
+	}
+
+	return pos;
+}
+
+static uint32_t tls_certificate_request_print_body(tls_certificate_request *request, void *buffer, uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	// Request Context
+	if (request->context_size > 0)
+	{
+		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Context", request->context, request->context_size);
+	}
+
+	// Request Extensions
+	if (request->extensions_count > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", request->extensions_size);
+
+		for (uint16_t i = 0; i < request->extensions_count; ++i)
+		{
+			pos += tls_extension_print(request->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		}
+	}
+
+	return pos;
+}
+
 static tls_error_t tls_certificate_verify_read_body(tls_certificate_verify **handshake, tls_handshake_header *header, void *data)
 {
 	tls_certificate_verify *verify = NULL;
@@ -1704,6 +1821,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	case TLS_SERVER_KEY_EXCHANGE:
 		break;
 	case TLS_CERTIFICATE_REQUEST:
+		error = tls_certificate_request_read_body((tls_certificate_request **)handshake, &handshake_header,
+												  PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS), handshake_header.size);
 		break;
 	case TLS_SERVER_HELLO_DONE:
 		break;
@@ -1798,6 +1917,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	case TLS_SERVER_KEY_EXCHANGE:
 		break;
 	case TLS_CERTIFICATE_REQUEST:
+		pos += tls_certificate_request_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_SERVER_HELLO_DONE:
 		break;
@@ -1956,6 +2076,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 	case TLS_SERVER_KEY_EXCHANGE:
 		break;
 	case TLS_CERTIFICATE_REQUEST:
+		pos += tls_certificate_request_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_SERVER_HELLO_DONE:
 		break;
