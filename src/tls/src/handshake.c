@@ -1811,6 +1811,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 		goto empty;
 		break;
 	case TLS_HELLO_RETRY_REQUEST:
+		error = tls_server_hello_read_body((tls_server_hello **)handshake, &handshake_header, PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS),
+										   handshake_header.size);
 		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
 		error = tls_encrypted_extensions_read_body((tls_encrypted_extensions **)handshake, &handshake_header,
@@ -1909,6 +1911,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		// empty body
 		break;
 	case TLS_HELLO_RETRY_REQUEST:
+		pos += tls_server_hello_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
 		pos += tls_encrypted_extensions_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
@@ -2069,6 +2072,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 		// empty body
 		break;
 	case TLS_HELLO_RETRY_REQUEST:
+		pos += tls_server_hello_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
 		pos += tls_encrypted_extensions_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
