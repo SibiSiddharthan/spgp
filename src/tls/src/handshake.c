@@ -1311,6 +1311,94 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 	return pos;
 }
 
+static tls_error_t tls_encrypted_extensions_read_body(tls_encrypted_extensions **handshake, tls_handshake_header *header, void *data,
+													  uint32_t size)
+{
+	tls_encrypted_extensions *extensions = NULL;
+	tls_error_t error = 0;
+
+	uint8_t *in = data;
+	uint32_t pos = 0;
+
+	extensions = zmalloc(sizeof(tls_encrypted_extensions));
+
+	if (extensions == NULL)
+	{
+		return TLS_NO_MEMORY;
+	}
+
+	// Copy the header
+	extensions->header = *header;
+
+	// 2 octet extensions size
+	LOAD_16BE(&extensions->extensions_size, in + pos);
+	pos += 2;
+
+	if (extensions->extensions_size > 0)
+	{
+		extensions->extensions_count = tls_extension_count(in + pos, size - pos);
+		extensions->extensions = zmalloc(extensions->extensions_count * sizeof(void *));
+
+		if (extensions->extensions == NULL)
+		{
+			return TLS_NO_MEMORY;
+		}
+
+		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
+		{
+			error = tls_extension_read(&extensions->extensions[i], in + pos, size - pos);
+
+			if (error != TLS_SUCCESS)
+			{
+				return error;
+			}
+
+			pos += TLS_EXTENSION_OCTETS(extensions->extensions[i]);
+		}
+	}
+
+	*handshake = extensions;
+
+	return TLS_SUCCESS;
+}
+
+static uint32_t tls_encrypted_extensions_write_body(tls_encrypted_extensions *extensions, void *buffer, uint32_t size)
+{
+	uint8_t *out = buffer;
+	uint32_t pos = 0;
+
+	// 2 octet extensions size
+	LOAD_16BE(out + pos, &extensions->extensions_size);
+	pos += 2;
+
+	if (extensions->extensions_size > 0)
+	{
+		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
+		{
+			pos += tls_extension_write(&extensions->extensions[i], out + pos, size - pos);
+		}
+	}
+
+	return pos;
+}
+
+static uint32_t tls_encrypted_extensions_print_body(tls_encrypted_extensions *extensions, void *buffer, uint32_t size, uint32_t indent)
+{
+	uint32_t pos = 0;
+
+	if (extensions->extensions_count > 0)
+	{
+		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", extensions->extensions_size);
+
+		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
+		{
+			pos += tls_extension_print(extensions->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		}
+	}
+
+	return pos;
+}
+
 static tls_error_t tls_certificate_verify_read_body(tls_certificate_verify **handshake, tls_handshake_header *header, void *data)
 {
 	tls_certificate_verify *verify = NULL;
@@ -1608,6 +1696,8 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 	case TLS_HELLO_RETRY_REQUEST:
 		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
+		error = tls_encrypted_extensions_read_body((tls_encrypted_extensions **)handshake, &handshake_header,
+												   PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS), handshake_header.size);
 		break;
 	case TLS_CERTIFICATE:
 		break;
@@ -1701,6 +1791,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 	case TLS_HELLO_RETRY_REQUEST:
 		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
+		pos += tls_encrypted_extensions_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_CERTIFICATE:
 		break;
@@ -1858,6 +1949,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 	case TLS_HELLO_RETRY_REQUEST:
 		break;
 	case TLS_ENCRYPTED_EXTENSIONS:
+		pos += tls_encrypted_extensions_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_CERTIFICATE:
 		break;

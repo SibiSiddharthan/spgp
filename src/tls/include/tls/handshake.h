@@ -126,6 +126,16 @@ typedef struct _tls_new_session_ticket
 
 } tls_new_session_ticket;
 
+typedef struct _tls_encrypted_extensions
+{
+	tls_handshake_header header;
+
+	uint16_t extensions_size;
+	uint16_t extensions_count;
+	void **extensions;
+
+} tls_encrypted_extensions;
+
 typedef enum _tls_key_update_request
 {
 	TLS_KEY_UPDATE_NOT_REQUESTED = 0,
