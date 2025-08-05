@@ -1825,6 +1825,7 @@ tls_error_t tls_handshake_read_body(void **handshake, tls_record_header *record_
 												  PTR_OFFSET(data, TLS_HANDSHAKE_HEADER_OCTETS), handshake_header.size);
 		break;
 	case TLS_SERVER_HELLO_DONE:
+		goto empty;
 		break;
 	case TLS_CERTIFICATE_VERIFY:
 		error = tls_certificate_verify_read_body((tls_certificate_verify **)handshake, &handshake_header,
@@ -1920,6 +1921,7 @@ uint32_t tls_handshake_write_body(void *handshake, void *buffer, uint32_t size)
 		pos += tls_certificate_request_write_body(handshake, PTR_OFFSET(buffer, pos), size - pos);
 		break;
 	case TLS_SERVER_HELLO_DONE:
+		// empty body
 		break;
 	case TLS_CERTIFICATE_VERIFY:
 		pos += tls_certificate_verify_write_body(handshake, PTR_OFFSET(buffer, pos));
@@ -2079,6 +2081,7 @@ uint32_t tls_handshake_print_body(void *handshake, void *buffer, uint32_t size, 
 		pos += tls_certificate_request_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_SERVER_HELLO_DONE:
+		// empty body
 		break;
 	case TLS_CERTIFICATE_VERIFY:
 		pos += tls_certificate_verify_print_body(handshake, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
