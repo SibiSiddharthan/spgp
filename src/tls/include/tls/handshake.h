@@ -72,6 +72,9 @@ typedef struct _tls_handshake_header
 	tls_record_header header;
 	uint8_t type;
 	uint32_t size : 24;
+	uint16_t sequence;
+	uint32_t fragment_offset : 24;
+	uint32_t fragment_size : 24;
 } tls_handshake_header;
 
 typedef tls_handshake_header tls_hello_request, tls_end_of_early_data;

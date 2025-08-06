@@ -40,6 +40,8 @@ typedef struct _tls_record_header
 {
 	tls_content_type type;
 	tls_protocol_version version;
+	uint16_t epoch;
+	uint64_t sequence : 48;
 	uint16_t size;
 } tls_record_header;
 
