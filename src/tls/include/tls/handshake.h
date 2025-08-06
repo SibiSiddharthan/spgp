@@ -11,7 +11,6 @@
 #include <tls/error.h>
 #include <tls/record.h>
 #include <tls/version.h>
-#include <tls/extensions.h>
 
 #define TLS_HANDSHAKE_HEADER_OCTETS 4
 

@@ -129,7 +129,7 @@ static tls_error_t tls_client_hello_read_body(tls_client_hello **handshake, tls_
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			error = tls_extension_read(&hello->extensions[i], in + pos, size - pos);
+			error = tls_extension_read(hello->header.type, &hello->extensions[i], in + pos, size - pos);
 
 			if (error != TLS_SUCCESS)
 			{
@@ -211,7 +211,7 @@ static uint32_t tls_client_hello_write_body(tls_client_hello *hello, void *buffe
 	{
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_write(&hello->extensions[i], out + pos, size - pos);
+			pos += tls_extension_write(hello->header.type, &hello->extensions[i], out + pos, size - pos);
 		}
 	}
 
@@ -946,7 +946,7 @@ static uint32_t tls_client_hello_print_body(tls_client_hello *hello, void *buffe
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_print(hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(hello->header.type, hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		}
 	}
 
@@ -1023,7 +1023,7 @@ static tls_error_t tls_server_hello_read_body(tls_server_hello **handshake, tls_
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			error = tls_extension_read(&hello->extensions[i], in + pos, size - pos);
+			error = tls_extension_read(hello->header.type, &hello->extensions[i], in + pos, size - pos);
 
 			if (error != TLS_SUCCESS)
 			{
@@ -1089,7 +1089,7 @@ static uint32_t tls_server_hello_write_body(tls_server_hello *hello, void *buffe
 	{
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_write(&hello->extensions[i], out + pos, size - pos);
+			pos += tls_extension_write(hello->header.type, &hello->extensions[i], out + pos, size - pos);
 		}
 	}
 
@@ -1124,7 +1124,7 @@ static uint32_t tls_server_hello_print_body(tls_server_hello *hello, void *buffe
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_print(hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(hello->header.type, hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		}
 	}
 
@@ -1207,7 +1207,7 @@ static tls_error_t tls_new_session_ticket_read_body(tls_new_session_ticket **han
 
 		for (uint16_t i = 0; i < session->extensions_count; ++i)
 		{
-			error = tls_extension_read(&session->extensions[i], in + pos, size - pos);
+			error = tls_extension_read(session->header.type, &session->extensions[i], in + pos, size - pos);
 
 			if (error != TLS_SUCCESS)
 			{
@@ -1268,7 +1268,7 @@ static uint32_t tls_new_session_ticket_write_body(tls_new_session_ticket *sessio
 	{
 		for (uint16_t i = 0; i < session->extensions_count; ++i)
 		{
-			pos += tls_extension_write(&session->extensions[i], out + pos, size - pos);
+			pos += tls_extension_write(session->header.type, &session->extensions[i], out + pos, size - pos);
 		}
 	}
 
@@ -1304,7 +1304,7 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 
 		for (uint16_t i = 0; i < session->extensions_count; ++i)
 		{
-			pos += tls_extension_print(session->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(session->header.type, session->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		}
 	}
 
@@ -1346,7 +1346,7 @@ static tls_error_t tls_encrypted_extensions_read_body(tls_encrypted_extensions *
 
 		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
 		{
-			error = tls_extension_read(&extensions->extensions[i], in + pos, size - pos);
+			error = tls_extension_read(extensions->header.type, &extensions->extensions[i], in + pos, size - pos);
 
 			if (error != TLS_SUCCESS)
 			{
@@ -1375,7 +1375,7 @@ static uint32_t tls_encrypted_extensions_write_body(tls_encrypted_extensions *ex
 	{
 		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
 		{
-			pos += tls_extension_write(&extensions->extensions[i], out + pos, size - pos);
+			pos += tls_extension_write(extensions->header.type, &extensions->extensions[i], out + pos, size - pos);
 		}
 	}
 
@@ -1392,7 +1392,7 @@ static uint32_t tls_encrypted_extensions_print_body(tls_encrypted_extensions *ex
 
 		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
 		{
-			pos += tls_extension_print(extensions->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(extensions->header.type, extensions->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		}
 	}
 
@@ -1445,7 +1445,7 @@ static tls_error_t tls_certificate_request_read_body(tls_certificate_request **h
 
 		for (uint16_t i = 0; i < request->extensions_count; ++i)
 		{
-			error = tls_extension_read(&request->extensions[i], in + pos, size - pos);
+			error = tls_extension_read(request->header.type, &request->extensions[i], in + pos, size - pos);
 
 			if (error != TLS_SUCCESS)
 			{
@@ -1485,7 +1485,7 @@ static uint32_t tls_certificate_request_write_body(tls_certificate_request *requ
 	{
 		for (uint16_t i = 0; i < request->extensions_count; ++i)
 		{
-			pos += tls_extension_write(&request->extensions[i], out + pos, size - pos);
+			pos += tls_extension_write(request->header.type, &request->extensions[i], out + pos, size - pos);
 		}
 	}
 
@@ -1509,7 +1509,7 @@ static uint32_t tls_certificate_request_print_body(tls_certificate_request *requ
 
 		for (uint16_t i = 0; i < request->extensions_count; ++i)
 		{
-			pos += tls_extension_print(request->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(request->header.type, request->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		}
 	}
 

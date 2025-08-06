@@ -2032,7 +2032,7 @@ static uint32_t tls_extension_key_share_print_body(tls_extension_key_share *shar
 	return pos;
 }
 
-tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
+tls_error_t tls_extension_read(tls_handshake_type context, void **extension, void *data, uint32_t size)
 {
 	tls_error_t error = 0;
 	tls_extension_header header = {0};
@@ -2179,7 +2179,7 @@ tls_error_t tls_extension_read(void **extension, void *data, uint32_t size)
 	return error;
 }
 
-uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size)
+uint32_t tls_extension_write(tls_handshake_type context, void *extension, void *buffer, uint32_t size)
 {
 	tls_extension_header *header = extension;
 	uint32_t pos = 0;
@@ -2516,7 +2516,7 @@ static uint32_t print_extension_header(tls_extension_header *header, void *buffe
 	return pos;
 }
 
-uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent)
+uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *buffer, uint32_t size, uint32_t indent)
 {
 	uint32_t pos = 0;
 

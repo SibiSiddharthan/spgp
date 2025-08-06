@@ -12,6 +12,7 @@
 #include <tls/algorithms.h>
 #include <tls/version.h>
 #include <tls/error.h>
+#include <tls/handshake.h>
 
 #define TLS_EXTENSION_HEADER_OCTETS 4
 #define TLS_EXTENSION_OCTETS(H)     ((((tls_extension_header *)(H))->size) + 4)
@@ -360,9 +361,9 @@ typedef struct _tls_extension_key_share
 tls_error_t tls_extension_header_read(tls_extension_header *header, void *data, uint32_t size);
 uint32_t tls_extension_header_write(tls_extension_header *header, void *buffer, uint32_t size);
 
-tls_error_t tls_extension_read(void **extension, void *data, uint32_t size);
-uint32_t tls_extension_write(void *extension, void *buffer, uint32_t size);
-uint32_t tls_extension_print(void *extension, void *buffer, uint32_t size, uint32_t indent);
+tls_error_t tls_extension_read(tls_handshake_type context, void **extension, void *data, uint32_t size);
+uint32_t tls_extension_write(tls_handshake_type context, void *extension, void *buffer, uint32_t size);
+uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *buffer, uint32_t size, uint32_t indent);
 
 uint16_t tls_extension_count(void *data, uint32_t size);
 
