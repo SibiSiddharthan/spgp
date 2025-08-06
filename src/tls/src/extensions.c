@@ -1720,7 +1720,7 @@ static uint32_t tls_extension_psk_exchange_modes_print_body(tls_extension_psk_ex
 
 // RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 // Key Share
-static tls_error_t tls_extension_key_share_read_body(void **extension, tls_extension_header *header, void *data)
+static tls_error_t tls_extension_key_share_read_body(tls_handshake_type context, void **extension, tls_extension_header *header, void *data)
 {
 	tls_extension_key_share *shares = NULL;
 	tls_key_share *key = NULL;
@@ -1731,6 +1731,11 @@ static tls_error_t tls_extension_key_share_read_body(void **extension, tls_exten
 	uint8_t *in = data;
 	uint32_t pos = 0;
 
+	if (context != TLS_CLIENT_HELLO && context != TLS_SERVER_HELLO && context != TLS_HELLO_RETRY_REQUEST)
+	{
+		return TLS_INVALID_PARAMETER;
+	}
+
 	// 2 octet size
 	LOAD_16BE(&total_size, in + pos);
 	pos += 2;
@@ -1740,7 +1745,7 @@ static tls_error_t tls_extension_key_share_read_body(void **extension, tls_exten
 		return TLS_MALFORMED_EXTENSION_SIZE;
 	}
 
-	// Count the number of protocols
+	// Count the number of entries
 	while (offset < total_size)
 	{
 		offset += (in[pos + offset + 2] << 8) + in[pos + offset + 3] + 4;
@@ -1785,12 +1790,17 @@ static tls_error_t tls_extension_key_share_read_body(void **extension, tls_exten
 	return TLS_SUCCESS;
 }
 
-static uint32_t tls_extension_key_share_write_body(tls_extension_key_share *shares, void *buffer)
+static uint32_t tls_extension_key_share_write_body(tls_handshake_type context, tls_extension_key_share *shares, void *buffer)
 {
 	tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
 
 	uint8_t *out = buffer;
 	uint32_t pos = 0;
+
+	if (context != TLS_CLIENT_HELLO && context != TLS_SERVER_HELLO && context != TLS_HELLO_RETRY_REQUEST)
+	{
+		return 0;
+	}
 
 	// 2 octet size
 	LOAD_16BE(out + pos, &shares->size);
@@ -1814,10 +1824,16 @@ static uint32_t tls_extension_key_share_write_body(tls_extension_key_share *shar
 	return pos;
 }
 
-static uint32_t tls_extension_key_share_print_body(tls_extension_key_share *shares, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_extension_key_share_print_body(tls_handshake_type context, tls_extension_key_share *shares, void *buffer, uint32_t size,
+												   uint32_t indent)
 {
 	tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
 	uint32_t pos = 0;
+
+	if (context != TLS_CLIENT_HELLO && context != TLS_SERVER_HELLO && context != TLS_HELLO_RETRY_REQUEST)
+	{
+		return 0;
+	}
 
 	for (uint16_t i = 0; i < shares->count; ++i)
 	{
@@ -2148,7 +2164,7 @@ tls_error_t tls_extension_read(tls_handshake_type context, void **extension, voi
 	// case TLS_EXT_POST_HANDSHAKE_AUTH:
 	// case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
 	case TLS_EXT_KEY_SHARE:
-		error = tls_extension_key_share_read_body(extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
+		error = tls_extension_key_share_read_body(context, extension, &header, PTR_OFFSET(data, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	// case TLS_EXT_TRANSPARENCY_INFO:
 	// case TLS_EXT_CONNECTION_INFO_LEGACY:
@@ -2297,7 +2313,7 @@ uint32_t tls_extension_write(tls_handshake_type context, void *extension, void *
 	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
 		break;
 	case TLS_EXT_KEY_SHARE:
-		pos += tls_extension_key_share_write_body(extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
+		pos += tls_extension_key_share_write_body(context, extension, PTR_OFFSET(buffer, TLS_EXTENSION_HEADER_OCTETS));
 		break;
 	case TLS_EXT_TRANSPARENCY_INFO:
 	case TLS_EXT_CONNECTION_INFO_LEGACY:
@@ -2632,7 +2648,7 @@ uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *
 	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
 		break;
 	case TLS_EXT_KEY_SHARE:
-		pos += tls_extension_key_share_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_key_share_print_body(context, extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
 		break;
 	case TLS_EXT_TRANSPARENCY_INFO:
 	case TLS_EXT_CONNECTION_INFO_LEGACY:
