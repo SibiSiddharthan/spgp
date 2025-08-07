@@ -27,16 +27,12 @@ static uint32_t do_uint_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 	char temp[8] = {0};
 	uint8_t pos = 0;
 
-	while (x != 0)
+	do
 	{
 		temp[pos++] = table[x & 0x0F];
 		x >>= 4;
-	}
 
-	if (temp[pos - 1] == '0')
-	{
-		pos--;
-	}
+	} while (x != 0);
 
 	for (uint8_t i = 0; i < pos; ++i)
 	{
@@ -71,16 +67,12 @@ static uint32_t do_uint_to_oct(char buffer[32], uint64_t x)
 	char temp[8] = {0};
 	uint8_t pos = 0;
 
-	while (x != 0)
+	do
 	{
 		temp[pos++] = (x & 0x07) + '0';
 		x >>= 3;
-	}
 
-	if (temp[pos - 1] == '0')
-	{
-		pos--;
-	}
+	} while (x != 0);
 
 	for (uint8_t i = 0; i < pos; ++i)
 	{
