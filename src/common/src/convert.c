@@ -46,6 +46,30 @@ static uint32_t do_uint_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 	return pos;
 }
 
+static uint32_t do_uint_to_oct(char buffer[32], uint64_t x)
+{
+	char temp[8] = {0};
+	uint8_t pos = 0;
+
+	while (x != 0)
+	{
+		temp[pos++] = (x & 0x07) + '0';
+		x >>= 3;
+	}
+
+	if (temp[pos - 1] == '0')
+	{
+		pos--;
+	}
+
+	for (uint8_t i = 0; i < pos; ++i)
+	{
+		buffer[i] = temp[pos - i - 1];
+	}
+
+	return pos;
+}
+
 uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint8_t x)
 {
 	return do_uint_hex_to_char(buffer, upper, x);
