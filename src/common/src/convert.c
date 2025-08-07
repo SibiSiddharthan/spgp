@@ -109,3 +109,23 @@ uint32_t u64_to_oct(char buffer[32], uint64_t x)
 {
 	return do_uint_to_oct(buffer, x);
 }
+
+static uint32_t do_uint_to_bin(char buffer[64], uint64_t x)
+{
+	char temp[8] = {0};
+	uint8_t pos = 0;
+
+	do
+	{
+		temp[pos++] = (x & 0x1) + '0';
+		x >>= 1;
+
+	} while (x != 0);
+
+	for (uint8_t i = 0; i < pos; ++i)
+	{
+		buffer[i] = temp[pos - i - 1];
+	}
+
+	return pos;
+}
