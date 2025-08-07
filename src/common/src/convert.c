@@ -121,3 +121,23 @@ static uint32_t do_uint_to_bin(char buffer[64], uint64_t x)
 
 	return pos;
 }
+
+uint32_t u8_to_bin(char buffer[64], uint8_t x)
+{
+	return do_uint_to_oct(buffer, x);
+}
+
+uint32_t u16_to_bin(char buffer[64], uint16_t x)
+{
+	return do_uint_to_oct(buffer, x);
+}
+
+uint32_t u32_to_bin(char buffer[64], uint32_t x)
+{
+	return do_uint_to_oct(buffer, x);
+}
+
+uint32_t u64_to_bin(char buffer[64], uint64_t x)
+{
+	return do_uint_to_oct(buffer, x);
+}
