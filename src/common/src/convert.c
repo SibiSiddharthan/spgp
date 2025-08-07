@@ -21,7 +21,7 @@ static inline void do_u8_hex_to_char(char *buffer, char *table, uint8_t x)
 	*buffer++ = table[b];
 }
 
-uint32_t u32_hex_to_char(char buffer[8], uint32_t x, uint8_t upper)
+static uint32_t do_uint_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 {
 	const char *table = upper ? hex_upper_table : hex_lower_table;
 	char temp[8] = {0};
@@ -44,4 +44,24 @@ uint32_t u32_hex_to_char(char buffer[8], uint32_t x, uint8_t upper)
 	}
 
 	return pos;
+}
+
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint8_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
+}
+
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint16_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
+}
+
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint32_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
+}
+
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint64_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
 }
