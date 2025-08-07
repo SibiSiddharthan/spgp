@@ -46,6 +46,26 @@ static uint32_t do_uint_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 	return pos;
 }
 
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint8_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
+}
+
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint16_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
+}
+
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint32_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
+}
+
+uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint64_t x)
+{
+	return do_uint_hex_to_char(buffer, upper, x);
+}
+
 static uint32_t do_uint_to_oct(char buffer[32], uint64_t x)
 {
 	char temp[8] = {0};
@@ -70,22 +90,22 @@ static uint32_t do_uint_to_oct(char buffer[32], uint64_t x)
 	return pos;
 }
 
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint8_t x)
+uint32_t u8_to_oct(char buffer[32], uint8_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return do_uint_to_oct(buffer, x);
 }
 
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint16_t x)
+uint32_t u16_to_oct(char buffer[32], uint16_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return do_uint_to_oct(buffer, x);
 }
 
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint32_t x)
+uint32_t u32_to_oct(char buffer[32], uint32_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return do_uint_to_oct(buffer, x);
 }
 
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint64_t x)
+uint32_t u64_to_oct(char buffer[32], uint64_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return do_uint_to_oct(buffer, x);
 }
