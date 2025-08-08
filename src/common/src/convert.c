@@ -11,15 +11,22 @@
 static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-static inline void do_u8_hex_to_char(char *buffer, char *table, uint8_t x)
+uint32_t print_hex(const char *table, char *buffer, uint32_t buffer_size, void *data, uint32_t data_size)
 {
-	uint8_t a = 0, b = 0;
+	uint32_t pos = 0;
 
-	a = x / 16;
-	b = x % 16;
+	for (uint32_t i = 0; i < data_size; ++i)
+	{
+		uint8_t a, b;
 
-	*buffer++ = table[a];
-	*buffer++ = table[b];
+		a = ((uint8_t *)data)[i] / 16;
+		b = ((uint8_t *)data)[i] % 16;
+
+		buffer[pos++] = table[a];
+		buffer[pos++] = table[b];
+	}
+
+	return pos;
 }
 
 static uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
