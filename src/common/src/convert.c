@@ -124,22 +124,22 @@ static uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 
 uint32_t u8_to_bin(char buffer[64], uint8_t x)
 {
-	return uint_to_oct_common(buffer, x);
+	return uint_to_bin_common(buffer, x);
 }
 
 uint32_t u16_to_bin(char buffer[64], uint16_t x)
 {
-	return uint_to_oct_common(buffer, x);
+	return uint_to_bin_common(buffer, x);
 }
 
 uint32_t u32_to_bin(char buffer[64], uint32_t x)
 {
-	return uint_to_oct_common(buffer, x);
+	return uint_to_bin_common(buffer, x);
 }
 
 uint32_t u64_to_bin(char buffer[64], uint64_t x)
 {
-	return uint_to_oct_common(buffer, x);
+	return uint_to_bin_common(buffer, x);
 }
 
 static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
@@ -160,4 +160,24 @@ static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
 	}
 
 	return pos;
+}
+
+uint32_t u8_to_dec(char buffer[32], uint8_t x)
+{
+	return uint_to_dec_common(buffer, x);
+}
+
+uint32_t u16_to_dec(char buffer[32], uint16_t x)
+{
+	return uint_to_dec_common(buffer, x);
+}
+
+uint32_t u32_to_dec(char buffer[32], uint32_t x)
+{
+	return uint_to_dec_common(buffer, x);
+}
+
+uint32_t u64_to_dec(char buffer[32], uint64_t x)
+{
+	return uint_to_dec_common(buffer, x);
 }
