@@ -43,12 +43,12 @@ static uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
 	return pos;
 }
 
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint8_t x)
+uint32_t u8_to_hex(char buffer[32], uint8_t upper, uint8_t x)
 {
 	return uint_to_hex_common(buffer, upper, x);
 }
 
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint16_t x)
+uint32_t u16_to_hex(char buffer[32], uint8_t upper, uint16_t x)
 {
 	return uint_to_hex_common(buffer, upper, x);
 }
@@ -58,7 +58,7 @@ uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint32_t x)
 	return uint_to_hex_common(buffer, upper, x);
 }
 
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint64_t x)
+uint32_t u64_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 {
 	return uint_to_hex_common(buffer, upper, x);
 }
