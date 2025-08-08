@@ -5,10 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-include_directories(common)
+cmake_minimum_required(VERSION 3.15)
+project(common C)
 
-add_subdirectory(common)
-add_subdirectory(core)
-add_subdirectory(crypto)
-add_subdirectory(io)
-add_subdirectory(tls)
+add_library(common src/convert.c)
