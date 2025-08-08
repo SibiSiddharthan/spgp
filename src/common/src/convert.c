@@ -141,3 +141,23 @@ uint32_t u64_to_bin(char buffer[64], uint64_t x)
 {
 	return uint_to_oct_common(buffer, x);
 }
+
+static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
+{
+	char temp[8] = {0};
+	uint8_t pos = 0;
+
+	do
+	{
+		temp[pos++] = (x % 10) + '0';
+		x /= 10;
+
+	} while (x != 0);
+
+	for (uint8_t i = 0; i < pos; ++i)
+	{
+		buffer[i] = temp[pos - i - 1];
+	}
+
+	return pos;
+}
