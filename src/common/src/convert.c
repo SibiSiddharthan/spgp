@@ -6,6 +6,7 @@
 */
 
 #include <stdint.h>
+#include <string.h>
 
 static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -181,3 +182,19 @@ uint32_t u64_to_dec(char buffer[32], uint64_t x)
 {
 	return uint_to_dec_common(buffer, x);
 }
+
+static uint32_t int_to_dec_common(char buffer[32], int64_t x)
+{
+	uint8_t minus = 0;
+
+	if (x < 0)
+	{
+		x = ~x + 1;
+		minus = 1;
+		*buffer++ = '-';
+	}
+
+	return uint_to_dec_common(buffer, x) + minus;
+}
+
+
