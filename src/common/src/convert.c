@@ -21,7 +21,7 @@ static inline void do_u8_hex_to_char(char *buffer, char *table, uint8_t x)
 	*buffer++ = table[b];
 }
 
-static uint32_t do_uint_to_hex(char buffer[32], uint8_t upper, uint64_t x)
+static uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
 {
 	const char *table = upper ? hex_upper_table : hex_lower_table;
 	char temp[8] = {0};
@@ -44,25 +44,25 @@ static uint32_t do_uint_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 
 uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint8_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return uint_to_hex_common(buffer, upper, x);
 }
 
 uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint16_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return uint_to_hex_common(buffer, upper, x);
 }
 
 uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint32_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return uint_to_hex_common(buffer, upper, x);
 }
 
 uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 {
-	return do_uint_hex_to_char(buffer, upper, x);
+	return uint_to_hex_common(buffer, upper, x);
 }
 
-static uint32_t do_uint_to_oct(char buffer[32], uint64_t x)
+static uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -84,25 +84,25 @@ static uint32_t do_uint_to_oct(char buffer[32], uint64_t x)
 
 uint32_t u8_to_oct(char buffer[32], uint8_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
 
 uint32_t u16_to_oct(char buffer[32], uint16_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
 
 uint32_t u32_to_oct(char buffer[32], uint32_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
 
 uint32_t u64_to_oct(char buffer[32], uint64_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
 
-static uint32_t do_uint_to_bin(char buffer[64], uint64_t x)
+static uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -124,20 +124,20 @@ static uint32_t do_uint_to_bin(char buffer[64], uint64_t x)
 
 uint32_t u8_to_bin(char buffer[64], uint8_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
 
 uint32_t u16_to_bin(char buffer[64], uint16_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
 
 uint32_t u32_to_bin(char buffer[64], uint32_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
 
 uint32_t u64_to_bin(char buffer[64], uint64_t x)
 {
-	return do_uint_to_oct(buffer, x);
+	return uint_to_oct_common(buffer, x);
 }
