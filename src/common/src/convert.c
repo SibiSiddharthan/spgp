@@ -291,6 +291,19 @@ static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
 	return pos;
 }
 
+static uint64_t uint_from_dec_common(void *buffer, uint8_t size)
+{
+	uint8_t *in = buffer;
+	uint64_t result = 0;
+
+	while (size--)
+	{
+		result = (result * 10) + (*in++ - '0');
+	}
+
+	return result;
+}
+
 uint32_t u8_to_dec(char buffer[32], uint8_t x)
 {
 	return uint_to_dec_common(buffer, x);
