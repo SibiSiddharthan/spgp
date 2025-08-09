@@ -155,7 +155,6 @@ static uint64_t uint_from_oct_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
-	uint8_t ch = 0;
 
 	while (size--)
 	{
@@ -184,6 +183,27 @@ uint32_t u64_to_oct(char buffer[32], uint64_t x)
 {
 	return uint_to_oct_common(buffer, x);
 }
+
+uint8_t u8_from_oct(void *buffer, uint8_t size)
+{
+	return uint_from_oct_common(buffer, size);
+}
+
+uint16_t u16_from_oct(void *buffer, uint8_t size)
+{
+	return uint_from_oct_common(buffer, size);
+}
+
+uint32_t u32_from_oct(void *buffer, uint8_t size)
+{
+	return uint_from_oct_common(buffer, size);
+}
+
+uint64_t u64_from_oct(void *buffer, uint8_t size)
+{
+	return uint_from_oct_common(buffer, size);
+}
+
 
 static uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 {
