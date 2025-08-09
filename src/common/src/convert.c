@@ -198,7 +198,6 @@ uint64_t u64_from_oct(void *buffer, uint8_t size)
 	return uint_from_oct_common(buffer, size);
 }
 
-
 static uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 {
 	char temp[8] = {0};
@@ -250,6 +249,26 @@ uint32_t u32_to_bin(char buffer[64], uint32_t x)
 uint32_t u64_to_bin(char buffer[64], uint64_t x)
 {
 	return uint_to_bin_common(buffer, x);
+}
+
+uint8_t u8_from_bin(void *buffer, uint8_t size)
+{
+	return uint_from_bin_common(buffer, size);
+}
+
+uint16_t u16_from_bin(void *buffer, uint8_t size)
+{
+	return uint_from_bin_common(buffer, size);
+}
+
+uint32_t u32_from_bin(void *buffer, uint8_t size)
+{
+	return uint_from_bin_common(buffer, size);
+}
+
+uint64_t u64_from_bin(void *buffer, uint8_t size)
+{
+	return uint_from_bin_common(buffer, size);
 }
 
 static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
