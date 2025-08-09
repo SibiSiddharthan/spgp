@@ -76,7 +76,6 @@ static uint64_t uint_from_hex_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
-	uint64_t temp = 0;
 	uint8_t nibble = 0;
 
 	while (size--)
@@ -87,14 +86,6 @@ static uint64_t uint_from_hex_common(void *buffer, uint8_t size)
 		}
 
 		result = (result << 4) + nibble;
-
-		if (result < temp)
-		{
-			result = UINT64_MAX;
-			break;
-		}
-
-		temp = result;
 	}
 
 	return result;
@@ -118,6 +109,26 @@ uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint32_t x)
 uint32_t u64_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 {
 	return uint_to_hex_common(buffer, upper, x);
+}
+
+uint8_t u8_from_hex(void *buffer, uint8_t size)
+{
+	return uint_from_hex_common(buffer, size);
+}
+
+uint16_t u16_from_hex(void *buffer, uint8_t size)
+{
+	return uint_from_hex_common(buffer, size);
+}
+
+uint32_t u32_from_hex(void *buffer, uint8_t size)
+{
+	return uint_from_hex_common(buffer, size);
+}
+
+uint64_t u64_from_hex(void *buffer, uint8_t size)
+{
+	return uint_from_hex_common(buffer, size);
 }
 
 static uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
