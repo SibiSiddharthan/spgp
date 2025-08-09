@@ -219,6 +219,19 @@ static uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 	return pos;
 }
 
+static uint64_t uint_from_bin_common(void *buffer, uint8_t size)
+{
+	uint8_t *in = buffer;
+	uint64_t result = 0;
+
+	while (size--)
+	{
+		result = (result << 1) + (*in++ - '0');
+	}
+
+	return result;
+}
+
 uint32_t u8_to_bin(char buffer[64], uint8_t x)
 {
 	return uint_to_bin_common(buffer, x);
