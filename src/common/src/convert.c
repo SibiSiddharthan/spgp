@@ -151,6 +151,20 @@ static uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
 	return pos;
 }
 
+static uint64_t uint_from_oct_common(void *buffer, uint8_t size)
+{
+	uint8_t *in = buffer;
+	uint64_t result = 0;
+	uint8_t ch = 0;
+
+	while (size--)
+	{
+		result = (result << 3) + (*in++ - '0');
+	}
+
+	return result;
+}
+
 uint32_t u8_to_oct(char buffer[32], uint8_t x)
 {
 	return uint_to_oct_common(buffer, x);
