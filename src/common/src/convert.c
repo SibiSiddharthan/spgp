@@ -324,6 +324,26 @@ uint32_t u64_to_dec(char buffer[32], uint64_t x)
 	return uint_to_dec_common(buffer, x);
 }
 
+uint8_t u8_from_dec(void *buffer, uint8_t size)
+{
+	return uint_from_dec_common(buffer, size);
+}
+
+uint16_t u16_from_dec(void *buffer, uint8_t size)
+{
+	return uint_from_dec_common(buffer, size);
+}
+
+uint32_t u32_from_dec(void *buffer, uint8_t size)
+{
+	return uint_from_dec_common(buffer, size);
+}
+
+uint64_t u64_from_dec(void *buffer, uint8_t size)
+{
+	return uint_from_dec_common(buffer, size);
+}
+
 static uint32_t int_to_dec_common(char buffer[32], int64_t x)
 {
 	uint8_t minus = 0;
