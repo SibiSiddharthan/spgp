@@ -76,16 +76,10 @@ static uint64_t uint_from_hex_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
-	uint8_t nibble = 0;
 
 	while (size--)
 	{
-		if ((nibble = hex_to_nibble_table[*in++]) == 255)
-		{
-			break;
-		}
-
-		result = (result << 4) + nibble;
+		result = (result << 4) + hex_to_nibble_table[*in++];
 	}
 
 	return result;
