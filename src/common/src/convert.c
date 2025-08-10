@@ -344,7 +344,35 @@ uint64_t u64_from_dec(void *buffer, uint8_t size)
 	return uint_from_dec_common(buffer, size);
 }
 
-static uint32_t int_to_dec_common(char buffer[32], int64_t x)
+static uint32_t int_to_dec_common(void *buffer, uint8_t size)
+{
+	uint8_t *in = buffer;
+	int64_t result = 0;
+	uint8_t minus = 0;
+
+	if (*in == '-')
+	{
+		minus = 1;
+		size--;
+		in++;
+	}
+
+	while (size--)
+	{
+		if (minus)
+		{
+			result = (result * 10) - (*in++ - '0');
+		}
+		else
+		{
+			result = (result * 10) + (*in++ - '0');
+		}
+	}
+
+	return result;
+}
+
+static int64_t int_from_dec_common(char buffer[32], int64_t x)
 {
 	uint8_t minus = 0;
 
