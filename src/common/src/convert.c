@@ -360,39 +360,22 @@ static uint32_t int_to_dec_common(char buffer[32], int64_t x)
 
 uint32_t i8_to_dec(char buffer[32], int8_t x)
 {
-	if (x == INT8_MIN)
-	{
-		memcpy(buffer, "-128", 4);
-		return 4;
-	}
-
 	return int_to_dec_common(buffer, x);
 }
 
 uint32_t i16_to_dec(char buffer[32], int16_t x)
 {
-	if (x == INT16_MIN)
-	{
-		memcpy(buffer, "-32768", 6);
-		return 6;
-	}
-
 	return int_to_dec_common(buffer, x);
 }
 
 uint32_t i32_to_dec(char buffer[32], int32_t x)
 {
-	if (x == INT32_MIN)
-	{
-		memcpy(buffer, "-2147483648", 11);
-		return 11;
-	}
-
 	return int_to_dec_common(buffer, x);
 }
 
 uint32_t i64_to_dec(char buffer[32], int64_t x)
 {
+	// Catch only this conversion, rest of them will work due to type promotion.
 	if (x == INT64_MIN)
 	{
 		memcpy(buffer, "-9223372036854775808", 20);
