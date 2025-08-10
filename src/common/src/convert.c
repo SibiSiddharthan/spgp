@@ -412,3 +412,23 @@ uint32_t i64_to_dec(char buffer[32], int64_t x)
 
 	return int_to_dec_common(buffer, x);
 }
+
+int8_t i8_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+int16_t i16_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+int32_t i32_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+int64_t i64_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
