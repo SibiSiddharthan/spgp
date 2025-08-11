@@ -546,6 +546,12 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 
 		*result |= (byte & 0x3F);
 
+		// Surrogate pairs (Invalid codepoints)
+		if (*result >= 0xD800 && *result <= 0xDFFF)
+		{
+			return 0;
+		}
+
 		return 3;
 	}
 
