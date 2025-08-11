@@ -344,7 +344,21 @@ uint64_t u64_from_dec(void *buffer, uint8_t size)
 	return uint_from_dec_common(buffer, size);
 }
 
-static uint32_t int_to_dec_common(void *buffer, uint8_t size)
+static int64_t int_to_dec_common(char buffer[32], int64_t x)
+{
+	uint8_t minus = 0;
+
+	if (x < 0)
+	{
+		x = ~x + 1;
+		minus = 1;
+		*buffer++ = '-';
+	}
+
+	return uint_to_dec_common(buffer, x) + minus;
+}
+
+static uint32_t int_from_dec_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	int64_t result = 0;
@@ -370,20 +384,6 @@ static uint32_t int_to_dec_common(void *buffer, uint8_t size)
 	}
 
 	return result;
-}
-
-static int64_t int_from_dec_common(char buffer[32], int64_t x)
-{
-	uint8_t minus = 0;
-
-	if (x < 0)
-	{
-		x = ~x + 1;
-		minus = 1;
-		*buffer++ = '-';
-	}
-
-	return uint_to_dec_common(buffer, x) + minus;
 }
 
 uint32_t i8_to_dec(char buffer[32], int8_t x)
@@ -471,4 +471,8 @@ uint32_t utf8_encode(char buffer[32], uint32_t codepoint)
 
 	// Illegal codepoint
 	return 0;
+}
+
+uint32_t utf8_decode(void *buffer, uint8_t size)
+{
 }
