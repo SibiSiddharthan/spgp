@@ -486,7 +486,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 		return 1;
 	}
 
-	if ((byte & 0xC0) == 0xC0)
+	if ((byte & 0xE0) == 0xC0) // Ensure 11'0'xxxxx
 	{
 		// Illegal Octets
 		if (byte == 0xC0 || byte == 0xC1)
@@ -498,7 +498,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 		byte = *in++;
 
 		// Illegal Sequence
-		if ((byte & 0x80) != 0x80)
+		if ((byte & 0xC0) != 0x80)
 		{
 			return 0;
 		}
@@ -508,13 +508,13 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 		return 2;
 	}
 
-	if ((byte & 0xE0) == 0xE0)
+	if ((byte & 0xF0) == 0xE0) // Ensure 111'0'xxxx
 	{
 		*result |= (byte & 0x0F) << 12;
 		byte = *in++;
 
 		// Illegal Sequence
-		if ((byte & 0x80) != 0x80)
+		if ((byte & 0xC0) != 0x80)
 		{
 			return 0;
 		}
@@ -523,7 +523,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 		byte = *in++;
 
 		// Illegal Sequence
-		if ((byte & 0x80) != 0x80)
+		if ((byte & 0xC0) != 0x80)
 		{
 			return 0;
 		}
@@ -533,13 +533,19 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 		return 3;
 	}
 
-	if ((byte & 0xF0) == 0xF0)
+	if ((byte & 0xF8) == 0xF0) // Ensure 1111'0'xxx
 	{
+		// Illegal Octets
+		if (byte == 0xF5)
+		{
+			return 0;
+		}
+
 		*result |= (byte & 0x07) << 18;
 		byte = *in++;
 
 		// Illegal Sequence
-		if ((byte & 0x80) != 0x80)
+		if ((byte & 0xC0) != 0x80)
 		{
 			return 0;
 		}
@@ -548,7 +554,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 		byte = *in++;
 
 		// Illegal Sequence
-		if ((byte & 0x80) != 0x80)
+		if ((byte & 0xC0) != 0x80)
 		{
 			return 0;
 		}
@@ -557,7 +563,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 		byte = *in++;
 
 		// Illegal Sequence
-		if ((byte & 0x80) != 0x80)
+		if ((byte & 0xC0) != 0x80)
 		{
 			return 0;
 		}
