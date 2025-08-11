@@ -432,3 +432,43 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 {
 	return int_from_dec_common(buffer, size);
 }
+
+uint32_t utf8_encode(char buffer[32], uint32_t codepoint)
+{
+	if (codepoint <= 0x7F)
+	{
+		*buffer++ = codepoint & 0x7F; // 7 bits
+
+		return 1;
+	}
+
+	if (codepoint >= 0x80 && codepoint <= 0x07FF)
+	{
+		*buffer++ = 0xC0 | ((codepoint >> 6) & 0x1F); // 5 bits
+		*buffer++ = 0x80 | (codepoint & 0x3F);        // 6 bits
+
+		return 2;
+	}
+
+	if (codepoint >= 0x800 && codepoint <= 0xFFFF)
+	{
+		*buffer++ = 0xE0 | ((codepoint >> 12) & 0x0F); // 4 bits
+		*buffer++ = 0x80 | ((codepoint >> 6) & 0x3F);  // 6 bits
+		*buffer++ = 0x80 | (codepoint & 0x3F);         // 6 bits
+
+		return 3;
+	}
+
+	if (codepoint >= 0x10000 && codepoint <= 0x10FFFF)
+	{
+		*buffer++ = 0xF0 | ((codepoint >> 18) & 0x07); // 3 bits
+		*buffer++ = 0x80 | ((codepoint >> 12) & 0x3F); // 6 bits
+		*buffer++ = 0x80 | ((codepoint >> 6) & 0x3F);  // 6 bits
+		*buffer++ = 0x80 | (codepoint & 0x3F);         // 6 bits
+
+		return 4;
+	}
+
+	// Illegal codepoint
+	return 0;
+}
