@@ -476,18 +476,29 @@ uint32_t utf8_encode(char buffer[32], uint32_t codepoint)
 uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 {
 	uint8_t *in = buffer;
-	uint8_t byte = *in++;
+	uint8_t byte = 0;
 
+	if (size == 0)
+	{
+		return 0;
+	}
+
+	byte = *in++;
 	*result = 0;
 
 	if (byte <= 0x7F)
 	{
-		*result = in;
+		*result = byte;
 		return 1;
 	}
 
 	if ((byte & 0xE0) == 0xC0) // Ensure 11'0'xxxxx
 	{
+		if (size < 2)
+		{
+			return 0;
+		}
+
 		// Illegal Octets
 		if (byte == 0xC0 || byte == 0xC1)
 		{
@@ -510,6 +521,11 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 
 	if ((byte & 0xF0) == 0xE0) // Ensure 111'0'xxxx
 	{
+		if (size < 3)
+		{
+			return 0;
+		}
+
 		*result |= (byte & 0x0F) << 12;
 		byte = *in++;
 
@@ -535,6 +551,11 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 
 	if ((byte & 0xF8) == 0xF0) // Ensure 1111'0'xxx
 	{
+		if (size < 4)
+		{
+			return 0;
+		}
+
 		// Illegal Octets
 		if (byte == 0xF5)
 		{
