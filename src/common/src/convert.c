@@ -469,10 +469,103 @@ uint32_t utf8_encode(char buffer[32], uint32_t codepoint)
 		return 4;
 	}
 
-	// Illegal codepoint
+	// Illegal Codepoint
 	return 0;
 }
 
-uint32_t utf8_decode(void *buffer, uint8_t size)
+uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 {
+	uint8_t *in = buffer;
+	uint8_t byte = *in++;
+
+	*result = 0;
+
+	if (byte <= 0x7F)
+	{
+		*result = in;
+		return 1;
+	}
+
+	if ((byte & 0xC0) == 0xC0)
+	{
+		// Illegal Octets
+		if (byte == 0xC0 || byte == 0xC1)
+		{
+			return 0;
+		}
+
+		*result |= (byte & 0x1F) << 6;
+		byte = *in++;
+
+		// Illegal Sequence
+		if ((byte & 0x80) != 0x80)
+		{
+			return 0;
+		}
+
+		*result |= (byte & 0x3F);
+
+		return 2;
+	}
+
+	if ((byte & 0xE0) == 0xE0)
+	{
+		*result |= (byte & 0x0F) << 12;
+		byte = *in++;
+
+		// Illegal Sequence
+		if ((byte & 0x80) != 0x80)
+		{
+			return 0;
+		}
+
+		*result |= (byte & 0x3F) << 6;
+		byte = *in++;
+
+		// Illegal Sequence
+		if ((byte & 0x80) != 0x80)
+		{
+			return 0;
+		}
+
+		*result |= (byte & 0x3F);
+
+		return 3;
+	}
+
+	if ((byte & 0xF0) == 0xF0)
+	{
+		*result |= (byte & 0x07) << 18;
+		byte = *in++;
+
+		// Illegal Sequence
+		if ((byte & 0x80) != 0x80)
+		{
+			return 0;
+		}
+
+		*result |= (byte & 0x3F) << 12;
+		byte = *in++;
+
+		// Illegal Sequence
+		if ((byte & 0x80) != 0x80)
+		{
+			return 0;
+		}
+
+		*result |= (byte & 0x3F) << 6;
+		byte = *in++;
+
+		// Illegal Sequence
+		if ((byte & 0x80) != 0x80)
+		{
+			return 0;
+		}
+
+		*result |= (byte & 0x3F);
+
+		return 4;
+	}
+
+	return 0;
 }
