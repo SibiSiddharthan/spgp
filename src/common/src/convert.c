@@ -473,7 +473,7 @@ uint32_t utf8_encode(char buffer[32], uint32_t codepoint)
 	return 0;
 }
 
-uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
+uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *codepoint)
 {
 	uint8_t *in = buffer;
 	uint8_t byte = 0;
@@ -484,11 +484,11 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 	}
 
 	byte = *in++;
-	*result = 0;
+	*codepoint = 0;
 
 	if (byte <= 0x7F)
 	{
-		*result = byte;
+		*codepoint = byte;
 		return 1;
 	}
 
@@ -505,7 +505,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x1F) << 6;
+		*codepoint |= (byte & 0x1F) << 6;
 		byte = *in++;
 
 		// Illegal Sequence
@@ -514,7 +514,13 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x3F);
+		*codepoint |= (byte & 0x3F);
+
+		// Invalid Encoding
+		if (*codepoint < 0x80)
+		{
+			return 0;
+		}
 
 		return 2;
 	}
@@ -526,7 +532,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x0F) << 12;
+		*codepoint |= (byte & 0x0F) << 12;
 		byte = *in++;
 
 		// Illegal Sequence
@@ -535,7 +541,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x3F) << 6;
+		*codepoint |= (byte & 0x3F) << 6;
 		byte = *in++;
 
 		// Illegal Sequence
@@ -544,10 +550,16 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x3F);
+		*codepoint |= (byte & 0x3F);
 
 		// Surrogate pairs (Invalid codepoints)
-		if (*result >= 0xD800 && *result <= 0xDFFF)
+		if (*codepoint >= 0xD800 && *codepoint <= 0xDFFF)
+		{
+			return 0;
+		}
+
+		// Invalid Encoding
+		if (*codepoint < 0x800)
 		{
 			return 0;
 		}
@@ -568,7 +580,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x07) << 18;
+		*codepoint |= (byte & 0x07) << 18;
 		byte = *in++;
 
 		// Illegal Sequence
@@ -577,7 +589,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x3F) << 12;
+		*codepoint |= (byte & 0x3F) << 12;
 		byte = *in++;
 
 		// Illegal Sequence
@@ -586,7 +598,7 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x3F) << 6;
+		*codepoint |= (byte & 0x3F) << 6;
 		byte = *in++;
 
 		// Illegal Sequence
@@ -595,7 +607,13 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 			return 0;
 		}
 
-		*result |= (byte & 0x3F);
+		*codepoint |= (byte & 0x3F);
+
+		// Invalid Encoding (also catches surrogate pairs)
+		if (*codepoint < 0x10000)
+		{
+			return 0;
+		}
 
 		return 4;
 	}
