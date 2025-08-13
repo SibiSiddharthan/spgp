@@ -499,12 +499,6 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *codepoint)
 			return 0;
 		}
 
-		// Illegal Octets
-		if (byte == 0xC0 || byte == 0xC1)
-		{
-			return 0;
-		}
-
 		*codepoint |= (byte & 0x1F) << 6;
 		byte = *in++;
 
@@ -570,12 +564,6 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *codepoint)
 	if ((byte & 0xF8) == 0xF0) // Ensure 1111'0'xxx
 	{
 		if (size < 4)
-		{
-			return 0;
-		}
-
-		// Illegal Octets
-		if (byte == 0xF5)
 		{
 			return 0;
 		}
