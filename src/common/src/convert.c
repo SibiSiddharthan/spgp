@@ -602,3 +602,33 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *result)
 
 	return 0;
 }
+
+uint32_t utf16_encode(char buffer[32], uint32_t codepoint)
+{
+	uint32_t v = 0;
+	uint32_t enc = 0;
+
+	// Invalid Codepoint
+	if (codepoint > 0x10FFFF)
+	{
+		return 0;
+	}
+
+	if (codepoint <= 0xFFFF)
+	{
+		memcpy(buffer, &codepoint, 2);
+		return 2;
+	}
+
+	v = codepoint - 0x10000;
+
+	// High 16 bits
+	enc |= (0xD800 | ((v >> 10) & 0x3FF)) << 16;
+
+	// Low 16 bits
+	enc |= 0xDC00 | (v & 0x3FF);
+
+	memcpy(buffer, &enc, 4);
+
+	return 4;
+}
