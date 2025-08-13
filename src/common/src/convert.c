@@ -632,3 +632,45 @@ uint32_t utf16_encode(char buffer[32], uint32_t codepoint)
 
 	return 4;
 }
+
+uint32_t utf16_decode(void *buffer, uint8_t size, uint32_t *codepoint)
+{
+	uint16_t *in = buffer;
+	uint16_t high = 0;
+	uint16_t low = 0;
+
+	if (size < 2)
+	{
+		return 0;
+	}
+
+	*codepoint = 0;
+	high = *in++;
+
+	if (high < 0xD800 || high > 0xDFFF)
+	{
+		*codepoint = high;
+		return 2;
+	}
+
+	if (high >= 0xD800 && high <= 0xDBFF)
+	{
+		if (size < 4)
+		{
+			return 0;
+		}
+
+		low = *in++;
+
+		if (low >= 0xDC00 && low <= 0xDFFF)
+		{
+			*codepoint |= (high & 0x3FF) << 16;
+			*codepoint |= low & 0x3FF;
+
+			return 4;
+		}
+	}
+
+	// Invalid Sequence
+	return 0;
+}
