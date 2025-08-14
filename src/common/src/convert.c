@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <ptr.h>
 
 static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -685,4 +686,27 @@ uint32_t utf16_decode(void *buffer, uint8_t size, uint32_t *codepoint)
 
 	// Invalid Sequence
 	return 0;
+}
+
+size_t utf8_string_utf16_string(void *utf16, size_t utf16_size, void *utf8, size_t utf8_size)
+{
+	size_t in_pos = 0;
+	size_t out_pos = 0;
+	uint32_t result = 0;
+	uint32_t codepoint = 0;
+
+	while (utf8_size != 0)
+	{
+		result = utf8_decode(PTR_OFFSET(utf16, in_pos), utf8_size - in_pos, &codepoint);
+
+		if (result == 0)
+		{
+			return out_pos;
+		}
+
+		out_pos += utf16_encode(PTR_OFFSET(utf16, out_pos), codepoint);
+		in_pos += result;
+	}
+
+	return out_pos;
 }
