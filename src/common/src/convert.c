@@ -434,6 +434,31 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 	return int_from_dec_common(buffer, size);
 }
 
+uint32_t utf8_octets(uint32_t codepoint)
+{
+	if (codepoint <= 0x7F)
+	{
+		return 1;
+	}
+
+	if (codepoint >= 0x80 && codepoint <= 0x07FF)
+	{
+		return 2;
+	}
+
+	if (codepoint >= 0x800 && codepoint <= 0xFFFF)
+	{
+		return 3;
+	}
+
+	if (codepoint >= 0x10000 && codepoint <= 0x10FFFF)
+	{
+		return 4;
+	}
+
+	return 0;
+}
+
 uint32_t utf8_encode(char buffer[32], uint32_t codepoint)
 {
 	if (codepoint <= 0x7F)
@@ -610,6 +635,21 @@ uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *codepoint)
 	return 0;
 }
 
+uint32_t utf16_octets(uint32_t codepoint)
+{
+	if (codepoint <= 0xFFFF)
+	{
+		return 2;
+	}
+
+	if (codepoint <= 0x10FFFF)
+	{
+		return 4;
+	}
+
+	return 0;
+}
+
 uint32_t utf16_encode(char buffer[32], uint32_t codepoint)
 {
 	uint32_t v = 0;
@@ -697,7 +737,7 @@ size_t utf8_string_utf16_string(void *utf16, size_t utf16_size, void *utf8, size
 
 	while (utf8_size != 0)
 	{
-		result = utf8_decode(PTR_OFFSET(utf16, in_pos), utf8_size - in_pos, &codepoint);
+		result = utf8_decode(PTR_OFFSET(utf8, in_pos), utf8_size - in_pos, &codepoint);
 
 		if (result == 0)
 		{
