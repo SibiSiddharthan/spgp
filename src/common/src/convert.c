@@ -728,7 +728,7 @@ uint32_t utf16_decode(void *buffer, uint8_t size, uint32_t *codepoint)
 	return 0;
 }
 
-size_t utf8_string_utf16_string(void *utf16, size_t utf16_size, void *utf8, size_t utf8_size)
+void utf8_string_utf16_string(void *utf16, size_t *utf16_size, void *utf8, size_t *utf8_size)
 {
 	size_t in_pos = 0;
 	size_t out_pos = 0;
@@ -737,16 +737,25 @@ size_t utf8_string_utf16_string(void *utf16, size_t utf16_size, void *utf8, size
 
 	while (utf8_size != 0)
 	{
-		result = utf8_decode(PTR_OFFSET(utf8, in_pos), utf8_size - in_pos, &codepoint);
+		result = utf8_decode(PTR_OFFSET(utf8, in_pos), *utf8_size - in_pos, &codepoint);
 
 		if (result == 0)
 		{
-			return out_pos;
+			goto finish;
+		}
+
+		if ((out_pos + utf16_octets(codepoint)) > utf16_size)
+		{
+			goto finish;
 		}
 
 		out_pos += utf16_encode(PTR_OFFSET(utf16, out_pos), codepoint);
 		in_pos += result;
 	}
 
-	return out_pos;
+finish:
+	*utf8_size = in_pos;
+	*utf16_size = out_pos;
+
+	return;
 }
