@@ -476,6 +476,77 @@ static uint32_t print_inf(char buffer[32], uint8_t upper)
 	return 3;
 }
 
+float float32_from_hex(void *buffer, uint8_t size)
+{
+	uint8_t *in = buffer;
+	uint8_t pos = 0;
+	uint8_t count = 0;
+
+	uint32_t raw = 0x7FFFFFFF;
+	float nan = *(float *)&raw;
+	float result = 0;
+
+	uint8_t sign = 0;
+	int64_t exponent = 0;
+	uint64_t mantissa = 0;
+
+	if (in[pos] == '-')
+	{
+		sign = -1;
+		pos += 1;
+	}
+
+	if (in[pos] != '0')
+	{
+		return nan;
+	}
+
+	pos += 1;
+
+	if (in[pos] != 'x' && in[pos] != 'X')
+	{
+		return nan;
+	}
+
+	pos += 1;
+
+	if (in[pos] != '1' && in[pos] != '0')
+	{
+		return nan;
+	}
+
+	pos += 1;
+
+	if (in[pos] != '.')
+	{
+		return nan;
+	}
+
+	pos += 1;
+
+	while ((pos + count) <= size)
+	{
+		if (in[pos + count] == 'p' || in[pos + count] == 'P')
+		{
+			count += 1;
+			break;
+		}
+
+		count += 1;
+	}
+
+	mantissa = uint_from_hex_common(PTR_OFFSET(buffer, pos), count - 1);
+	pos += count;
+
+	if (in[pos] == '+' || in[pos] == '-')
+	{
+		return nan;
+	}
+
+	exponent = int_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
+	pos += 1;
+}
+
 uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 {
 	uint32_t v = *((uint32_t *)&x);
