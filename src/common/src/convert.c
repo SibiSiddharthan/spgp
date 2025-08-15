@@ -440,6 +440,11 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 #define FLOAT32_EXP_INF 255
 #define FLOAT64_EXP_INF 2047
 
+#define FLOAT32_EXP_MIN (-FLOAT32_EXP_BIAS)
+#define FLOAT32_EXP_MAX (FLOAT32_EXP_INF - FLOAT32_EXP_BIAS)
+#define FLOAT64_EXP_MIN (-FLOAT64_EXP_BIAS)
+#define FLOAT64_EXP_MAX (FLOAT64_EXP_INF - FLOAT64_EXP_BIAS)
+
 static uint32_t print_nan(char buffer[32], uint8_t upper)
 {
 	if (upper)
