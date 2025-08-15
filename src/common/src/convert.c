@@ -437,19 +437,22 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 #define FLOAT32_EXP_BIAS 127
 #define FLOAT64_EXP_BIAS 1023
 
+#define FLOAT32_EXP_INF 255
+#define FLOAT64_EXP_INF 2047
+
 static uint32_t print_nan(char buffer[32], uint8_t upper)
 {
 	if (upper)
 	{
-		buffer[0] = "N";
-		buffer[1] = "A";
-		buffer[2] = "N";
+		buffer[0] = 'N';
+		buffer[1] = 'A';
+		buffer[2] = 'N';
 	}
 	else
 	{
-		buffer[0] = "n";
-		buffer[1] = "a";
-		buffer[2] = "n";
+		buffer[0] = 'n';
+		buffer[1] = 'a';
+		buffer[2] = 'n';
 	}
 
 	return 3;
@@ -459,15 +462,15 @@ static uint32_t print_inf(char buffer[32], uint8_t upper)
 {
 	if (upper)
 	{
-		buffer[0] = "I";
-		buffer[1] = "N";
-		buffer[2] = "F";
+		buffer[0] = 'I';
+		buffer[1] = 'N';
+		buffer[2] = 'F';
 	}
 	else
 	{
-		buffer[0] = "i";
-		buffer[1] = "n";
-		buffer[2] = "f";
+		buffer[0] = 'i';
+		buffer[1] = 'n';
+		buffer[2] = 'f';
 	}
 
 	return 3;
@@ -489,6 +492,21 @@ uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 	if (sign)
 	{
 		buffer[pos++] = '-';
+	}
+
+	// Check nan or inf
+	if (exponent == FLOAT32_EXP_INF)
+	{
+		if (mantissa == 0)
+		{
+			pos += print_inf(buffer + pos, upper);
+		}
+		else
+		{
+			pos += print_nan(buffer + pos, upper);
+		}
+
+		return pos;
 	}
 
 	// Form '0x1.' or '0x0.'
@@ -544,6 +562,21 @@ uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
 	if (sign)
 	{
 		buffer[pos++] = '-';
+	}
+
+	// Check nan or inf
+	if (exponent == FLOAT64_EXP_INF)
+	{
+		if (mantissa == 0)
+		{
+			pos += print_inf(buffer + pos, upper);
+		}
+		else
+		{
+			pos += print_nan(buffer + pos, upper);
+		}
+
+		return pos;
 	}
 
 	// Form '0x1.' or '0x0.'
