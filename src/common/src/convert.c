@@ -435,6 +435,7 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 }
 
 #define FLOAT32_EXP_BIAS 127
+#define FLOAT64_EXP_BIAS 1023
 
 uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 {
@@ -486,6 +487,61 @@ uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 	{
 		buffer[pos++] = '-';
 		pos += uint_to_dec_common(buffer + pos, FLOAT32_EXP_BIAS - exponent);
+	}
+
+	return pos;
+}
+
+uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
+{
+	uint64_t v = *((uint64_t *)&x);
+	uint8_t exponent = 0;
+	uint32_t mantissa = 0;
+	uint32_t pos = 0;
+	uint8_t sign = 0;
+
+	sign = (v >> 63) & 0x1;              // 1 bit
+	exponent = ((v << 1) >> 53) & 0x7FF; // 11 bits
+	mantissa = v & 0x1FFFFFFFFFFFFF;     // 52 bits
+
+	// Sign
+	if (sign)
+	{
+		buffer[pos++] = '-';
+	}
+
+	// Form '0x1.' or '0x0.'
+	buffer[pos++] = '0';
+	buffer[pos++] = upper ? 'X' : 'x';
+
+	if (exponent != 0)
+	{
+		// Normal
+		buffer[pos++] = '1';
+	}
+	else
+	{
+		// Subnormal
+		buffer[pos++] = '0';
+	}
+
+	buffer[pos++] = '.';
+
+	// Mantissa
+	pos += uint_to_hex_common(buffer + pos, upper, mantissa);
+
+	// Exponent
+	buffer[pos++] = upper ? 'P' : 'p';
+
+	if (exponent >= FLOAT64_EXP_BIAS)
+	{
+		buffer[pos++] = '+';
+		pos += uint_to_dec_common(buffer + pos, exponent - FLOAT64_EXP_BIAS);
+	}
+	else
+	{
+		buffer[pos++] = '-';
+		pos += uint_to_dec_common(buffer + pos, FLOAT64_EXP_BIAS - exponent);
 	}
 
 	return pos;
