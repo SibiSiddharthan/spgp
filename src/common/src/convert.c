@@ -586,7 +586,7 @@ float float32_from_hex(void *buffer, uint8_t size)
 
 		if (sign)
 		{
-			raw |= (1u << 31); // -nan
+			raw |= ((uint32_t)1 << 31); // -nan
 		}
 
 		return FLOAT32_AS_UINT32(raw);
@@ -594,11 +594,11 @@ float float32_from_hex(void *buffer, uint8_t size)
 
 	if (exponent > FLOAT32_EXP_MAX)
 	{
-		raw = (0xFF << 23); // inf
+		raw = ((uint32_t)0xFF << 23); // inf
 
 		if (sign)
 		{
-			raw |= (1u << 31); // -inf
+			raw |= ((uint32_t)1 << 31); // -inf
 		}
 
 		return FLOAT32_AS_UINT32(raw);
@@ -611,7 +611,7 @@ float float32_from_hex(void *buffer, uint8_t size)
 
 	if (sign)
 	{
-		raw |= (1u << 31);
+		raw |= ((uint32_t)1 << 31);
 	}
 
 	exponent += FLOAT32_EXP_BIAS;
@@ -689,6 +689,55 @@ uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 	}
 
 	return pos;
+}
+
+double float64_from_hex(void *buffer, uint8_t size)
+{
+	uint64_t raw = 0;
+
+	uint8_t sign = 0;
+	int64_t exponent = 0;
+	uint64_t mantissa = 0;
+
+	if (parse_float_hex(buffer, size, &sign, &exponent, &mantissa) == 0)
+	{
+		raw = 0x7FFFFFFFFFFFFFFF; // nan
+
+		if (sign)
+		{
+			raw |= ((uint64_t)1 << 63); // -nan
+		}
+
+		return FLOAT64_AS_UINT64(raw);
+	}
+
+	if (exponent > FLOAT64_EXP_MAX)
+	{
+		raw = ((uint64_t)0x7FF << 52); // inf
+
+		if (sign)
+		{
+			raw |= ((uint64_t)1 << 63); // -inf
+		}
+
+		return FLOAT64_AS_UINT64(raw);
+	}
+
+	if (exponent < FLOAT64_EXP_MIN)
+	{
+		return FLOAT64_AS_UINT64(raw);
+	}
+
+	if (sign)
+	{
+		raw |= ((uint64_t)1 << 63);
+	}
+
+	exponent += FLOAT64_EXP_BIAS;
+	raw |= (exponent << 52);
+	raw |= mantissa & 0x1FFFFFFFFFFFFF;
+
+	return FLOAT64_AS_UINT64(raw);
 }
 
 uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
