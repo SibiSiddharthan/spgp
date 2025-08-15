@@ -437,6 +437,42 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 #define FLOAT32_EXP_BIAS 127
 #define FLOAT64_EXP_BIAS 1023
 
+static uint32_t print_nan(char buffer[32], uint8_t upper)
+{
+	if (upper)
+	{
+		buffer[0] = "N";
+		buffer[1] = "A";
+		buffer[2] = "N";
+	}
+	else
+	{
+		buffer[0] = "n";
+		buffer[1] = "a";
+		buffer[2] = "n";
+	}
+
+	return 3;
+}
+
+static uint32_t print_inf(char buffer[32], uint8_t upper)
+{
+	if (upper)
+	{
+		buffer[0] = "I";
+		buffer[1] = "N";
+		buffer[2] = "F";
+	}
+	else
+	{
+		buffer[0] = "i";
+		buffer[1] = "n";
+		buffer[2] = "f";
+	}
+
+	return 3;
+}
+
 uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 {
 	uint32_t v = *((uint32_t *)&x);
