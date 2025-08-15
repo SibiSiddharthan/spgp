@@ -572,7 +572,54 @@ static uint8_t parse_float_hex(void *buffer, uint8_t size, uint8_t *sign, int64_
 	return pos;
 }
 
-// float32_from_hex(void *buffer, uint8_t size);
+float float32_from_hex(void *buffer, uint8_t size)
+{
+	uint32_t raw = 0;
+
+	uint8_t sign = 0;
+	int64_t exponent = 0;
+	uint64_t mantissa = 0;
+
+	if (parse_float_hex(buffer, size, &sign, &exponent, &mantissa) == 0)
+	{
+		raw = 0x7FFFFFFF; // nan
+
+		if (sign)
+		{
+			raw |= (1u << 31); // -nan
+		}
+
+		return FLOAT32_AS_UINT32(raw);
+	}
+
+	if (exponent > FLOAT32_EXP_MAX)
+	{
+		raw = (0xFF << 23); // inf
+
+		if (sign)
+		{
+			raw |= (1u << 31); // -inf
+		}
+
+		return FLOAT32_AS_UINT32(raw);
+	}
+
+	if (exponent < FLOAT32_EXP_MIN)
+	{
+		return FLOAT32_AS_UINT32(raw);
+	}
+
+	if (sign)
+	{
+		raw |= (1u << 31);
+	}
+
+	exponent += FLOAT32_EXP_BIAS;
+	raw |= (exponent << 23);
+	raw |= mantissa & 0x7FF;
+
+	return FLOAT32_AS_UINT32(raw);
+}
 
 uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 {
