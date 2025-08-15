@@ -440,10 +440,10 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 {
 	uint32_t v = *((uint32_t *)&x);
+	uint8_t sign = 0;
 	uint8_t exponent = 0;
 	uint32_t mantissa = 0;
 	uint32_t pos = 0;
-	uint8_t sign = 0;
 
 	sign = (v >> 31) & 0x1;             // 1 bit
 	exponent = ((v << 1) >> 24) & 0xFF; // 8 bits
@@ -495,10 +495,10 @@ uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
 {
 	uint64_t v = *((uint64_t *)&x);
-	uint8_t exponent = 0;
-	uint32_t mantissa = 0;
-	uint32_t pos = 0;
 	uint8_t sign = 0;
+	uint16_t exponent = 0;
+	uint64_t mantissa = 0;
+	uint32_t pos = 0;
 
 	sign = (v >> 63) & 0x1;              // 1 bit
 	exponent = ((v << 1) >> 53) & 0x7FF; // 11 bits
