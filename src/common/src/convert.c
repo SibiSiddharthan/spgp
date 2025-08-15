@@ -445,6 +445,12 @@ int64_t i64_from_dec(void *buffer, uint8_t size)
 #define FLOAT64_EXP_MIN (-FLOAT64_EXP_BIAS)
 #define FLOAT64_EXP_MAX (FLOAT64_EXP_INF - FLOAT64_EXP_BIAS)
 
+#define FLOAT32_AS_UINT32(x) (*(float *)&(x))
+#define FLOAT64_AS_UINT64(x) (*(double *)&(x))
+
+#define UINT32_AS_FLOAT32(x) (*(uint32_t *)&(x))
+#define UINT64_AS_FLOAT64(x) (*(uint64_t *)&(x))
+
 static uint32_t print_nan(char buffer[32], uint8_t upper)
 {
 	if (upper)
@@ -554,7 +560,7 @@ float float32_from_hex(void *buffer, uint8_t size)
 
 uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 {
-	uint32_t v = *((uint32_t *)&x);
+	uint32_t v = UINT32_AS_FLOAT32(x);
 	uint8_t sign = 0;
 	uint8_t exponent = 0;
 	uint32_t mantissa = 0;
@@ -624,7 +630,7 @@ uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 
 uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
 {
-	uint64_t v = *((uint64_t *)&x);
+	uint64_t v = UINT64_AS_FLOAT64(x);
 	uint8_t sign = 0;
 	uint16_t exponent = 0;
 	uint64_t mantissa = 0;
