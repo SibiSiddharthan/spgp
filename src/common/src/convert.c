@@ -487,50 +487,56 @@ static uint32_t print_inf(char buffer[32], uint8_t upper)
 	return 3;
 }
 
-float float32_from_hex(void *buffer, uint8_t size)
+static uint8_t parse_float_hex(void *buffer, uint8_t size, uint8_t *sign, int64_t *exponent, uint64_t *mantissa)
 {
 	uint8_t *in = buffer;
 	uint8_t pos = 0;
 	uint8_t count = 0;
 
-	uint32_t raw = 0x7FFFFFFF;
-	float nan = *(float *)&raw;
-	float result = 0;
+	*sign = 0;
+	*exponent = 0;
+	*mantissa = 0;
 
-	uint8_t sign = 0;
-	int64_t exponent = 0;
-	uint64_t mantissa = 0;
+	if (size < 1)
+	{
+		return 0;
+	}
 
 	if (in[pos] == '-')
 	{
-		sign = -1;
+		*sign = 1;
 		pos += 1;
+	}
+
+	if (size < 8 + pos) // 0x1.0p+0
+	{
+		return 0;
 	}
 
 	if (in[pos] != '0')
 	{
-		return nan;
+		return 0;
 	}
 
 	pos += 1;
 
 	if (in[pos] != 'x' && in[pos] != 'X')
 	{
-		return nan;
+		return 0;
 	}
 
 	pos += 1;
 
 	if (in[pos] != '1' && in[pos] != '0')
 	{
-		return nan;
+		return 0;
 	}
 
 	pos += 1;
 
 	if (in[pos] != '.')
 	{
-		return nan;
+		return 0;
 	}
 
 	pos += 1;
@@ -546,17 +552,27 @@ float float32_from_hex(void *buffer, uint8_t size)
 		count += 1;
 	}
 
-	mantissa = uint_from_hex_common(PTR_OFFSET(buffer, pos), count - 1);
+	*mantissa = uint_from_hex_common(PTR_OFFSET(buffer, pos), count - 1);
 	pos += count;
+
+	// atleast 1 exponent digit
+	if (size < pos + 2)
+	{
+		return 0;
+	}
 
 	if (in[pos] == '+' || in[pos] == '-')
 	{
-		return nan;
+		return 0;
 	}
 
-	exponent = int_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
-	pos += 1;
+	*exponent = int_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
+	pos += size - pos;
+
+	return pos;
 }
+
+// float32_from_hex(void *buffer, uint8_t size);
 
 uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
 {
