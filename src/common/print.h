@@ -11,8 +11,12 @@
 #include <stdarg.h>
 #include <buffer.h>
 
-uint32_t vsprint(void *buffer, uint32_t size, const char *format, va_list args);
 uint32_t vxprint(buffer_t *buffer, const char *format, va_list args);
+
+static inline uint32_t vsprint(void *buffer, uint32_t size, const char *format, va_list args)
+{
+	return vxprint(&(buffer_t){.data = buffer, .size = size}, format, args);
+}
 
 static inline uint32_t sprint(void *buffer, uint32_t size, const char *format, ...)
 {
