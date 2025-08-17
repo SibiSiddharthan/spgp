@@ -950,6 +950,16 @@ static double float_from_scientific_common(void *buffer, uint8_t size)
 	return result;
 }
 
+float float32_from_scientific(void *buffer, uint8_t size)
+{
+	return (float)float_from_scientific_common(buffer, size);
+}
+
+double float64_from_scientific(void *buffer, uint8_t size)
+{
+	return (double)float_from_scientific_common(buffer, size);
+}
+
 uint32_t utf8_octets(uint32_t codepoint)
 {
 	if (codepoint <= 0x7F)
