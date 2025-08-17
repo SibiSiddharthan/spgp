@@ -810,6 +810,51 @@ uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
 	return pos;
 }
 
+static double float_from_normal(void *buffer, uint8_t size)
+{
+	uint8_t *in = buffer;
+	uint8_t pos = 0;
+	uint8_t minus = 0;
+
+	double result = 0.0;
+	double integer = 0.0;
+	double fraction = 0.0;
+	double div = 10.0;
+
+	if (in[pos] == '-')
+	{
+		minus = 1;
+		pos += 1;
+	}
+
+	while (pos < size)
+	{
+		if (in[pos] == '.')
+		{
+			pos += 1;
+			break;
+		}
+
+		integer = (integer * 10.0) + (double)(in[pos] - '0');
+		pos += 1;
+	}
+
+	while (pos < size)
+	{
+		fraction += (double)(in[pos] - '0') / div;
+		div *= 10.0;
+	}
+
+	result = integer + fraction;
+
+	if (minus)
+	{
+		result *= -1.0;
+	}
+
+	return result;
+}
+
 uint32_t utf8_octets(uint32_t codepoint)
 {
 	if (codepoint <= 0x7F)
