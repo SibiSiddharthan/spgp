@@ -23,18 +23,29 @@ typedef enum _print_type
 	PRINT_DOUBLE_SCIENTIFIC,
 	PRINT_DOUBLE_HEX,
 
-	PRINT_U8CHAR,
-	PRINT_U16CHAR,
-	PRINT_U32CHAR,
-
-	PRINT_U8STRING,
-	PRINT_U16STRING,
-	PRINT_U32STRING,
+	PRINT_CHAR,
+	PRINT_STRING,
 
 	PRINT_POINTER,
 	PRINT_RESULT,
 
 } print_type;
+
+typedef enum _print_modifier
+{
+	PRINT_MOD_NONE = 0,
+
+	PRINT_MOD_INT16,
+	PRINT_MOD_INT64,
+	PRINT_MOD_INT8,
+
+	PRINT_MOD_U16CHAR,
+	PRINT_MOD_U32CHAR,
+
+	PRINT_MOD_U16STRING,
+	PRINT_MOD_U32STRING,
+
+} print_modifier;
 
 static uint32_t parse_print_specifier(const char *format)
 {
