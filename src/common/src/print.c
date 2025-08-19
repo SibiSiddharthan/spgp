@@ -47,6 +47,15 @@ typedef enum _print_modifier
 
 } print_modifier;
 
+typedef struct _print_config
+{
+	print_type type;
+	print_modifier modifier;
+	uint32_t flags;
+	uint32_t width;
+	uint32_t precision;
+} print_config;
+
 static uint32_t parse_print_specifier(const char *format)
 {
 }
