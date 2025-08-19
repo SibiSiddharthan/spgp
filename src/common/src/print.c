@@ -31,6 +31,9 @@ typedef enum _print_type
 	PRINT_U16STRING,
 	PRINT_U32STRING,
 
+	PRINT_POINTER,
+	PRINT_RESULT,
+
 } print_type;
 
 static uint32_t parse_print_specifier(const char *format)
