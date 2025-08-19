@@ -10,6 +10,14 @@
 
 #include <stdlib.h>
 
+#define PRINT_ALTERNATE_FORM 0x01 // '#'
+#define PRINT_ZERO_PADDED    0x02 // '0'
+#define PRINT_SPACE_PADDED   0x04 // ' '
+#define PRINT_LEFT_JUSTIFY   0x08 // '-'
+#define PRINT_FORCE_SIGN     0x10 // '+'
+#define PRINT_UPPER_CASE     0x20 // 'X|G|A|E'
+#define PRINT_GROUP_DIGITS   0x40 // '''
+
 typedef enum _print_type
 {
 	PRINT_INT_NUMBER = 1,
