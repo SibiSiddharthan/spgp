@@ -228,6 +228,19 @@ static inline size_t readline(buffer_t *buffer, void *out, size_t size)
 	return MIN(size, copy_size);
 }
 
+static inline size_t writebyte(buffer_t *buffer, byte_t byte)
+{
+	if ((buffer->pos + 1) > buffer->size)
+	{
+		return 0;
+	}
+
+	buffer->data[buffer->pos] = byte;
+	buffer->pos += 1;
+
+	return 1;
+}
+
 static inline size_t writen(buffer_t *buffer, void *in, size_t size)
 {
 	if ((buffer->pos + size) > buffer->size)
