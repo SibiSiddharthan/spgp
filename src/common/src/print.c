@@ -10,6 +10,29 @@
 
 #include <stdlib.h>
 
+typedef enum _print_type
+{
+	PRINT_INT_NUMBER = 1,
+
+	PRINT_UINT_BINARY,
+	PRINT_UINT_OCTAL,
+	PRINT_UINT_HEX,
+	PRINT_UINT_NUMBER,
+
+	PRINT_DOUBLE_NORMAL,
+	PRINT_DOUBLE_SCIENTIFIC,
+	PRINT_DOUBLE_HEX,
+
+	PRINT_U8CHAR,
+	PRINT_U16CHAR,
+	PRINT_U32CHAR,
+
+	PRINT_U8STRING,
+	PRINT_U16STRING,
+	PRINT_U32STRING,
+
+} print_type;
+
 static uint32_t parse_print_specifier(const char *format)
 {
 }
