@@ -64,12 +64,16 @@ typedef struct _print_config
 	uint32_t precision;
 } print_config;
 
+#define VARIADIC_ARGS_DEFAULT_SIZE 64
+
 typedef struct _variadic_args
 {
-	va_list source;
-	void **args;
+	va_list list;
 	uint32_t count;
-	uint32_t capacity;
+	void *args[VARIADIC_ARGS_DEFAULT_SIZE];
+
+	uint32_t extra_capacity;
+	void **extra_args;
 } variadic_args;
 
 static uint32_t parse_print_specifier(const char *format)
