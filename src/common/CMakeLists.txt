@@ -8,4 +8,4 @@
 cmake_minimum_required(VERSION 3.15)
 project(common C)
 
-add_library(common src/convert.c src/print.c)
+add_library(common src/convert.c src/print.c src/varargs.h)
