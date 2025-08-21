@@ -78,6 +78,20 @@ typedef struct _variadic_args
 	void **extra_args;
 } variadic_args;
 
+static void variadic_args_init(variadic_args *args, va_list list)
+{
+	memset(args, 0, sizeof(variadic_args));
+	args->list = list;
+}
+
+static void variadic_args_free(variadic_args *args)
+{
+	if (args->extra_args != NULL)
+	{
+		free(args->extra_args);
+	}
+}
+
 static void *variadic_args_get(variadic_args *args, uint32_t index)
 {
 	// NOTE : index starts from 1
