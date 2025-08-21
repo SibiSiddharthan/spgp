@@ -7,6 +7,8 @@
 
 #include <print.h>
 #include <buffer.h>
+#include <minmax.h>
+#include <round.h>
 
 #include <stdlib.h>
 
@@ -75,6 +77,46 @@ typedef struct _variadic_args
 	uint32_t extra_capacity;
 	void **extra_args;
 } variadic_args;
+
+static void *variadic_args_get(variadic_args *args, uint32_t index)
+{
+	// NOTE : index starts from 1
+	if (index <= VARIADIC_ARGS_DEFAULT_SIZE)
+	{
+		// Read the args upto index
+		for (uint32_t i = args->count; i < index; ++i)
+		{
+			args->args[args->count++] = va_arg(args->list, void *);
+		}
+
+		return args->args[index - 1];
+	}
+
+	// Read the args into the static storage first
+	for (uint32_t i = args->count; i < VARIADIC_ARGS_DEFAULT_SIZE; ++i)
+	{
+		args->args[args->count++] = va_arg(args->list, void *);
+	}
+
+	if (args->extra_args == NULL || (index - VARIADIC_ARGS_DEFAULT_SIZE) > args->extra_capacity)
+	{
+		args->extra_capacity = MAX(4, ROUND_UP(index - VARIADIC_ARGS_DEFAULT_SIZE, 4));
+		args->extra_args = realloc(args->extra_args, sizeof(void *) * args->extra_capacity);
+
+		if (args->extra_args == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	// Read upto index args in extra space
+	for (uint32_t i = args->count; i < index; ++i)
+	{
+		args->extra_args[args->count++ - VARIADIC_ARGS_DEFAULT_SIZE] = va_arg(args->list, void *);
+	}
+
+	return args->extra_args[index - VARIADIC_ARGS_DEFAULT_SIZE - 1];
+}
 
 static uint32_t parse_print_specifier(const char *format)
 {
