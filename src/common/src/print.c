@@ -158,6 +158,28 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 		break;
 	}
 
+	// width
+	byte = format[pos];
+
+	if (byte == '*')
+	{
+		
+	}
+
+	// precision
+	byte = format[pos];
+
+	if (byte == '.')
+	{
+		pos++;
+
+		byte = format[pos];
+
+		if (byte == '*')
+		{
+		}
+	}
+
 	// length modifiers
 	byte = format[pos++];
 
