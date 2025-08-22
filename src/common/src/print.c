@@ -69,8 +69,76 @@ typedef struct _print_config
 	uint32_t precision;
 } print_config;
 
-static uint32_t parse_print_specifier(const char *format)
+static uint32_t parse_print_specifier(const char *format, print_config *config)
 {
+	uint32_t pos = 0;
+	byte_t byte = 0;
+
+	byte = format[pos];
+	pos += 1;
+
+	// conversion
+	switch (byte)
+	{
+	// integer
+	case 'i':
+	case 'd':
+		config->type = PRINT_INT_NUMBER;
+		break;
+	case 'b':
+		config->type = PRINT_UINT_BINARY;
+		break;
+	case 'o':
+		config->type = PRINT_UINT_OCTAL;
+		break;
+	case 'X':
+		config->flags |= PRINT_UPPER_CASE;
+	case 'x':
+		config->type = PRINT_UINT_HEX;
+		break;
+
+	// float
+	case 'A':
+		config->flags |= PRINT_UPPER_CASE;
+	case 'a':
+		config->type = PRINT_DOUBLE_HEX;
+		break;
+	case 'F':
+		config->flags |= PRINT_UPPER_CASE;
+	case 'f':
+		config->type = PRINT_DOUBLE_NORMAL;
+		break;
+	case 'E':
+		config->flags |= PRINT_UPPER_CASE;
+	case 'e':
+		config->type = PRINT_DOUBLE_SCIENTIFIC;
+		break;
+	case 'G':
+		config->flags |= PRINT_UPPER_CASE;
+	case 'g':
+		config->type = PRINT_DOUBLE_SCIENTIFIC_SHORT;
+		break;
+
+	// misc
+	case 'c':
+		config->type = PRINT_CHAR;
+		break;
+	case 's':
+		config->type = PRINT_STRING;
+		break;
+	case 'p':
+		config->type = PRINT_POINTER;
+		break;
+	case 'n':
+		config->type = PRINT_RESULT;
+		break;
+
+	default:
+		config->type = PRINT_UNKNOWN;
+		break;
+	}
+
+	return pos;
 }
 
 uint32_t vxprint(buffer_t *buffer, const char *format, va_list args)
@@ -97,11 +165,6 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list args)
 
 			while ((byte = *format++) != '\0')
 			{
-
-				// ll and hh
-				if (byte == 'l' || byte == 'h')
-				{
-				}
 			}
 
 			continue;
