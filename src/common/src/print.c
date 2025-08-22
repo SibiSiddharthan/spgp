@@ -74,10 +74,54 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	uint32_t pos = 0;
 	byte_t byte = 0;
 
-	byte = format[pos];
-	pos += 1;
+	// length modifiers
+	byte = format[pos++];
+
+	switch (byte)
+	{
+	case 'h':
+	{
+		if (format[pos + 1] == 'h')
+		{
+			config->modifier = PRINT_MOD_SHORT_SHORT;
+			pos += 1;
+		}
+		else
+		{
+			config->modifier = PRINT_MOD_SHORT;
+		}
+	}
+	break;
+	case 'l':
+	{
+		if (format[pos + 1] == 'l')
+		{
+			config->modifier = PRINT_MOD_LONG_LONG;
+			pos += 1;
+		}
+		else
+		{
+			config->modifier = PRINT_MOD_LONG;
+		}
+	}
+	break;
+	case 'L':
+		config->modifier = PRINT_MOD_LONG_DOUBLE;
+		break;
+	case 'j':
+		config->modifier = PRINT_MOD_INTMAX;
+		break;
+	case 'z':
+		config->modifier = PRINT_MOD_SIZE;
+		break;
+	case 't':
+		config->modifier = PRINT_MOD_PTRDIFF;
+		break;
+	}
 
 	// conversion
+	byte = format[pos++];
+
 	switch (byte)
 	{
 	// integer
