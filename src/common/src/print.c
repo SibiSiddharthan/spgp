@@ -69,10 +69,45 @@ typedef struct _print_config
 	uint32_t precision;
 } print_config;
 
+static uint32_t parse_argument_index(const char *format, uint32_t *index)
+{
+	byte_t byte = 0;
+	uint32_t pos = 0;
+
+	*index = 0;
+
+	while ((byte = *format++) != '\0')
+	{
+		if (byte >= '0' && byte <= '9')
+		{
+			*index = (*index * 10) + (byte - '0');
+		}
+		else
+		{
+			if (byte == '$')
+			{
+				pos++;
+				break;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		pos++;
+	}
+
+	return pos;
+}
+
 static uint32_t parse_print_specifier(const char *format, print_config *config)
 {
 	uint32_t pos = 0;
+	uint32_t index = 0;
 	byte_t byte = 0;
+
+	// argument
 
 	// flags
 	while (1)
