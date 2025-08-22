@@ -67,6 +67,7 @@ typedef struct _print_config
 	uint32_t flags;
 	uint32_t width;
 	uint32_t precision;
+	void *data;
 } print_config;
 
 static uint32_t parse_argument_index(const char *format, uint32_t *index)
