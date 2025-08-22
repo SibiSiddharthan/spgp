@@ -74,6 +74,55 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	uint32_t pos = 0;
 	byte_t byte = 0;
 
+	// flags
+	while (1)
+	{
+		byte = format[pos];
+
+		if (byte == '#')
+		{
+			config->flags |= PRINT_ALTERNATE_FORM;
+			pos++;
+			continue;
+		}
+
+		if (byte == '0')
+		{
+			config->flags |= PRINT_ZERO_PADDED;
+			pos++;
+			continue;
+		}
+
+		if (byte == ' ')
+		{
+			config->flags |= PRINT_SPACE_PADDED;
+			pos++;
+			continue;
+		}
+
+		if (byte == '-')
+		{
+			config->flags |= PRINT_LEFT_JUSTIFY;
+			pos++;
+			continue;
+		}
+
+		if (byte == '+')
+		{
+			config->flags |= PRINT_FORCE_SIGN;
+			pos++;
+			continue;
+		}
+		if (byte == '\'')
+		{
+			config->flags |= PRINT_GROUP_DIGITS;
+			pos++;
+			continue;
+		}
+
+		break;
+	}
+
 	// length modifiers
 	byte = format[pos++];
 
