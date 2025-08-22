@@ -107,6 +107,8 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	uint32_t index = 0;
 	byte_t byte = 0;
 
+	memset(config, 0, sizeof(print_config));
+
 	// argument
 
 	// flags
@@ -163,7 +165,6 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 
 	if (byte == '*')
 	{
-		
 	}
 
 	// precision
@@ -294,6 +295,7 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
+	print_config config = {0};
 
 	uint32_t result = 0;
 	byte_t byte = 0;
@@ -308,6 +310,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 
 			if (byte == '\0')
 			{
+				result += writebyte(buffer, '%');
 				break;
 			}
 
@@ -317,9 +320,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 				continue;
 			}
 
-			while ((byte = *format++) != '\0')
-			{
-			}
+			parse_print_specifier(format, &config);
 
 			continue;
 		}
