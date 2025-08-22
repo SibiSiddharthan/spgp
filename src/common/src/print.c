@@ -269,10 +269,14 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	return pos;
 }
 
-uint32_t vxprint(buffer_t *buffer, const char *format, va_list args)
+uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 {
+	variadic_args args = {0};
+
 	uint32_t result = 0;
 	byte_t byte = 0;
+
+	variadic_args_init(&args, list);
 
 	while ((byte = *format++) != '\0')
 	{
@@ -300,6 +304,8 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list args)
 
 		result += writebyte(buffer, byte);
 	}
+
+	variadic_args_free(&args);
 
 	return result;
 }
