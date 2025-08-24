@@ -185,9 +185,15 @@ uintmax_t uint_from_dec_common(void *buffer, uint8_t size)
 	return result;
 }
 
-static int64_t int_to_dec_common(char buffer[32], int64_t x)
+uint32_t int_to_dec_common(char buffer[32], intmax_t x)
 {
 	uint8_t minus = 0;
+
+	if (x == INT64_MIN)
+	{
+		memcpy(buffer, "-9223372036854775808", 20);
+		return 20;
+	}
 
 	if (x < 0)
 	{
@@ -199,7 +205,7 @@ static int64_t int_to_dec_common(char buffer[32], int64_t x)
 	return uint_to_dec_common(buffer, x) + minus;
 }
 
-static uint32_t int_from_dec_common(void *buffer, uint8_t size)
+intmax_t int_from_dec_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	int64_t result = 0;
@@ -225,53 +231,6 @@ static uint32_t int_from_dec_common(void *buffer, uint8_t size)
 	}
 
 	return result;
-}
-
-uint32_t i8_to_dec(char buffer[32], int8_t x)
-{
-	return int_to_dec_common(buffer, x);
-}
-
-uint32_t i16_to_dec(char buffer[32], int16_t x)
-{
-	return int_to_dec_common(buffer, x);
-}
-
-uint32_t i32_to_dec(char buffer[32], int32_t x)
-{
-	return int_to_dec_common(buffer, x);
-}
-
-uint32_t i64_to_dec(char buffer[32], int64_t x)
-{
-	// Catch only this conversion, rest of them will work due to type promotion.
-	if (x == INT64_MIN)
-	{
-		memcpy(buffer, "-9223372036854775808", 20);
-		return 20;
-	}
-
-	return int_to_dec_common(buffer, x);
-}
-
-int8_t i8_from_dec(void *buffer, uint8_t size)
-{
-	return int_from_dec_common(buffer, size);
-}
-
-int16_t i16_from_dec(void *buffer, uint8_t size)
-{
-	return int_from_dec_common(buffer, size);
-}
-
-int32_t i32_from_dec(void *buffer, uint8_t size)
-{
-	return int_from_dec_common(buffer, size);
-}
-
-int64_t i64_from_dec(void *buffer, uint8_t size)
-{
-	return int_from_dec_common(buffer, size);
 }
 
 #define FLOAT32_EXP_BIAS 127

@@ -302,4 +302,77 @@ static inline uintptr_t uptr_from_dec(void *buffer, uint8_t size)
 	return uint_from_dec_common(buffer, size);
 }
 
+uint32_t int_to_dec_common(char buffer[32], intmax_t x);
+intmax_t int_from_dec_common(void *buffer, uint8_t size);
+
+static inline uint32_t i8_to_dec(char buffer[32], int8_t x)
+{
+	return int_to_dec_common(buffer, x);
+}
+
+static inline uint32_t i16_to_dec(char buffer[32], int16_t x)
+{
+	return int_to_dec_common(buffer, x);
+}
+
+static inline uint32_t i32_to_dec(char buffer[32], int32_t x)
+{
+	return int_to_dec_common(buffer, x);
+}
+
+static inline uint32_t i64_to_dec(char buffer[32], int64_t x)
+{
+	return int_to_dec_common(buffer, x);
+}
+
+static inline uint32_t imax_to_dec(char buffer[32], intmax_t x)
+{
+	return int_to_dec_common(buffer, x);
+}
+
+static inline uint32_t isize_to_dec(char buffer[32], intmax_t x) // TODO: should be ssize_t
+{
+	return int_to_dec_common(buffer, x);
+}
+
+static inline uint32_t iptr_to_dec(char buffer[32], intptr_t x)
+{
+	return int_to_dec_common(buffer, x);
+}
+
+static inline int8_t i8_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+static inline int16_t i16_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+static inline int32_t i32_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+static inline int64_t i64_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+static inline intmax_t imax_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
+static inline intptr_t isize_from_dec(void *buffer, uint8_t size) // TODO: should be ssize_t
+{
+	return int_from_dec_common(buffer, size);
+}
+
+static inline intptr_t iptr_from_dec(void *buffer, uint8_t size)
+{
+	return int_from_dec_common(buffer, size);
+}
+
 #endif
