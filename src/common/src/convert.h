@@ -106,6 +106,21 @@ static inline uint32_t u64_to_oct(char buffer[32], uint64_t x)
 	return uint_to_oct_common(buffer, x);
 }
 
+static inline uint32_t umax_to_oct(char buffer[32], uintmax_t x)
+{
+	return uint_to_oct_common(buffer, x);
+}
+
+static inline uint32_t usize_to_oct(char buffer[32], size_t x)
+{
+	return uint_to_oct_common(buffer, x);
+}
+
+static inline uint32_t uptr_to_oct(char buffer[32], uintptr_t x)
+{
+	return uint_to_oct_common(buffer, x);
+}
+
 static inline uint8_t u8_from_oct(void *buffer, uint8_t size)
 {
 	return uint_from_oct_common(buffer, size);
@@ -122,6 +137,21 @@ static inline uint32_t u32_from_oct(void *buffer, uint8_t size)
 }
 
 static inline uint64_t u64_from_oct(void *buffer, uint8_t size)
+{
+	return uint_from_oct_common(buffer, size);
+}
+
+static inline uintmax_t umax_from_oct(void *buffer, uint8_t size)
+{
+	return uint_from_oct_common(buffer, size);
+}
+
+static inline size_t usize_from_oct(void *buffer, uint8_t size)
+{
+	return uint_from_oct_common(buffer, size);
+}
+
+static inline uintptr_t uptr_from_oct(void *buffer, uint8_t size)
 {
 	return uint_from_oct_common(buffer, size);
 }
@@ -149,6 +179,21 @@ static inline uint32_t u64_to_bin(char buffer[64], uint64_t x)
 	return uint_to_bin_common(buffer, x);
 }
 
+static inline uint32_t umax_to_bin(char buffer[32], uintmax_t x)
+{
+	return uint_to_bin_common(buffer, x);
+}
+
+static inline uint32_t usize_to_bin(char buffer[32], size_t x)
+{
+	return uint_to_bin_common(buffer, x);
+}
+
+static inline uint32_t uptr_to_bin(char buffer[32], uintptr_t x)
+{
+	return uint_to_bin_common(buffer, x);
+}
+
 static inline uint8_t u8_from_bin(void *buffer, uint8_t size)
 {
 	return uint_from_bin_common(buffer, size);
@@ -165,6 +210,21 @@ static inline uint32_t u32_from_bin(void *buffer, uint8_t size)
 }
 
 static inline uint64_t u64_from_bin(void *buffer, uint8_t size)
+{
+	return uint_from_bin_common(buffer, size);
+}
+
+static inline uintmax_t umax_from_bin(void *buffer, uint8_t size)
+{
+	return uint_from_bin_common(buffer, size);
+}
+
+static inline size_t usize_from_bin(void *buffer, uint8_t size)
+{
+	return uint_from_bin_common(buffer, size);
+}
+
+static inline uintptr_t uptr_from_bin(void *buffer, uint8_t size)
 {
 	return uint_from_bin_common(buffer, size);
 }
