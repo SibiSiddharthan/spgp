@@ -137,6 +137,16 @@ static inline size_t readn(buffer_t *buffer, void *out, size_t size)
 	return size;
 }
 
+static inline byte_t peekbyte(buffer_t *buffer, uint32_t offset)
+{
+	if ((buffer->pos + offset) >= buffer->size)
+	{
+		return 0;
+	}
+
+	return buffer->data[buffer->pos + offset];
+}
+
 static inline size_t peekline(buffer_t *buffer, void *out, size_t size)
 {
 	void *result = NULL;
