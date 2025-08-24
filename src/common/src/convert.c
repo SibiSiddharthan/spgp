@@ -86,7 +86,7 @@ uintmax_t uint_from_hex_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
+uint32_t uint_to_oct_common(char buffer[32], uintmax_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -106,7 +106,7 @@ uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
 	return pos;
 }
 
-uint64_t uint_from_oct_common(void *buffer, uint8_t size)
+uintmax_t uint_from_oct_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
@@ -119,7 +119,7 @@ uint64_t uint_from_oct_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
+uint32_t uint_to_bin_common(char buffer[64], uintmax_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -139,7 +139,7 @@ uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 	return pos;
 }
 
-uint64_t uint_from_bin_common(void *buffer, uint8_t size)
+uintmax_t uint_from_bin_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;

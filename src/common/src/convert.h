@@ -83,8 +83,8 @@ static inline uintptr_t uptr_from_hex(void *buffer, uint8_t size)
 	return uint_from_hex_common(buffer, size);
 }
 
-uint32_t uint_to_oct_common(char buffer[32], uint64_t x);
-uint64_t uint_from_oct_common(void *buffer, uint8_t size);
+uint32_t uint_to_oct_common(char buffer[32], uintmax_t x);
+uintmax_t uint_from_oct_common(void *buffer, uint8_t size);
 
 static inline uint32_t u8_to_oct(char buffer[32], uint8_t x)
 {
@@ -156,8 +156,8 @@ static inline uintptr_t uptr_from_oct(void *buffer, uint8_t size)
 	return uint_from_oct_common(buffer, size);
 }
 
-uint32_t uint_to_bin_common(char buffer[64], uint64_t x);
-uint64_t uint_from_bin_common(void *buffer, uint8_t size);
+uint32_t uint_to_bin_common(char buffer[64], uintmax_t x);
+uintmax_t uint_from_bin_common(void *buffer, uint8_t size);
 
 static inline uint32_t u8_to_bin(char buffer[64], uint8_t x)
 {
