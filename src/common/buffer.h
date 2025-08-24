@@ -114,6 +114,16 @@ static inline size_t read64_be(buffer_t *buffer, void *out)
 	return 8;
 }
 
+static inline byte_t readbyte(buffer_t *buffer)
+{
+	if ((buffer->pos + 1) > buffer->size)
+	{
+		return 0;
+	}
+
+	return buffer->data[buffer->pos++];
+}
+
 static inline size_t readn(buffer_t *buffer, void *out, size_t size)
 {
 	if ((buffer->pos + size) > buffer->size)
