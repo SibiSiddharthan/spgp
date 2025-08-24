@@ -10,8 +10,8 @@
 
 #include <stdint.h>
 
-uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x);
-uint64_t uint_from_hex_common(void *buffer, uint8_t size);
+uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uintmax_t x);
+uintmax_t uint_from_hex_common(void *buffer, uint8_t size);
 
 static inline uint32_t u8_to_hex(char buffer[32], uint8_t upper, uint8_t x)
 {
@@ -33,6 +33,21 @@ static inline uint32_t u64_to_hex(char buffer[32], uint8_t upper, uint64_t x)
 	return uint_to_hex_common(buffer, upper, x);
 }
 
+static inline uint32_t umax_to_hex(char buffer[32], uint8_t upper, uintmax_t x)
+{
+	return uint_to_hex_common(buffer, upper, x);
+}
+
+static inline uint32_t usize_to_hex(char buffer[32], uint8_t upper, size_t x)
+{
+	return uint_to_hex_common(buffer, upper, x);
+}
+
+static inline uint32_t uptr_to_hex(char buffer[32], uint8_t upper, uintptr_t x)
+{
+	return uint_to_hex_common(buffer, upper, x);
+}
+
 static inline uint8_t u8_from_hex(void *buffer, uint8_t size)
 {
 	return uint_from_hex_common(buffer, size);
@@ -49,6 +64,21 @@ static inline uint32_t u32_from_hex(void *buffer, uint8_t size)
 }
 
 static inline uint64_t u64_from_hex(void *buffer, uint8_t size)
+{
+	return uint_from_hex_common(buffer, size);
+}
+
+static inline uintmax_t umax_from_hex(void *buffer, uint8_t size)
+{
+	return uint_from_hex_common(buffer, size);
+}
+
+static inline size_t usize_from_hex(void *buffer, uint8_t size)
+{
+	return uint_from_hex_common(buffer, size);
+}
+
+static inline uintptr_t uptr_from_hex(void *buffer, uint8_t size)
 {
 	return uint_from_hex_common(buffer, size);
 }

@@ -52,7 +52,7 @@ uint32_t print_hex(const char *table, char *buffer, uint32_t buffer_size, void *
 	return pos;
 }
 
-uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
+uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uintmax_t x)
 {
 	const char *table = upper ? hex_upper_table : hex_lower_table;
 	char temp[8] = {0};
@@ -73,7 +73,7 @@ uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
 	return pos;
 }
 
-uint64_t uint_from_hex_common(void *buffer, uint8_t size)
+uintmax_t uint_from_hex_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
