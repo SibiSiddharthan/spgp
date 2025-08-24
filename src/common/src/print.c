@@ -331,18 +331,18 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
 	print_config config = {0};
-	buffer_t in = {.data = format, .pos = 0, .size = strnlen(format, 65536)};
+	buffer_t in = {.data = (void *)format, .pos = 0, .size = strnlen(format, 65536)};
 
 	uint32_t result = 0;
 	byte_t byte = 0;
 
 	variadic_args_init(&args, list);
 
-	while ((byte = readbyte(&buffer)) != '\0')
+	while ((byte = readbyte(&in)) != '\0')
 	{
 		if (byte == '%')
 		{
-			byte = readbyte(&buffer);
+			byte = readbyte(&in);
 
 			if (byte == '\0')
 			{
@@ -356,7 +356,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 				continue;
 			}
 
-			parse_print_specifier(format, &config, &args);
+			parse_print_specifier(&in, &config, &args);
 
 			continue;
 		}
