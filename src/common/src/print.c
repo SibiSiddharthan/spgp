@@ -73,7 +73,6 @@ typedef struct _print_config
 
 static void parse_number(buffer_t *format, uint32_t *index)
 {
-	size_t pos = format->pos;
 	byte_t byte = 0;
 
 	*index = 0;
@@ -89,11 +88,6 @@ static void parse_number(buffer_t *format, uint32_t *index)
 		{
 			break;
 		}
-	}
-
-	if (*index == 0)
-	{
-		format->pos = pos;
 	}
 }
 
@@ -121,48 +115,52 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 			format->pos = pos;
 		}
 	}
+	else
+	{
+		format->pos = pos;
+	}
 
 	// flags
-	while ((byte = readbyte(format)) != '\0')
+	while ((byte = peekbyte(format, 0)) != '\0')
 	{
 		if (byte == '#')
 		{
 			config->flags |= PRINT_ALTERNATE_FORM;
-			pos++;
+			readbyte(format);
 			continue;
 		}
 
 		if (byte == '0')
 		{
 			config->flags |= PRINT_ZERO_PADDED;
-			pos++;
+			readbyte(format);
 			continue;
 		}
 
 		if (byte == ' ')
 		{
 			config->flags |= PRINT_SPACE_PADDED;
-			pos++;
+			readbyte(format);
 			continue;
 		}
 
 		if (byte == '-')
 		{
 			config->flags |= PRINT_LEFT_JUSTIFY;
-			pos++;
+			readbyte(format);
 			continue;
 		}
 
 		if (byte == '+')
 		{
 			config->flags |= PRINT_FORCE_SIGN;
-			pos++;
+			readbyte(format);
 			continue;
 		}
 		if (byte == '\'')
 		{
 			config->flags |= PRINT_GROUP_DIGITS;
-			pos++;
+			readbyte(format);
 			continue;
 		}
 
@@ -192,8 +190,6 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	}
 
 	// precision
-	byte = readbyte(format);
-
 	if (peekbyte(format, 0) == '.')
 	{
 		readbyte(format);
@@ -221,10 +217,12 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	}
 
 	// length modifiers
-	switch (byte = readbyte(format))
+	switch (byte = peekbyte(format, 0))
 	{
 	case 'h':
 	{
+		readbyte(format);
+
 		if (peekbyte(format, 0) == 'h')
 		{
 			config->modifier = PRINT_MOD_SHORT_SHORT;
@@ -238,6 +236,8 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	break;
 	case 'l':
 	{
+		readbyte(format);
+
 		if (peekbyte(format, 0) == 'l')
 		{
 			config->modifier = PRINT_MOD_LONG_LONG;
@@ -250,15 +250,19 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	}
 	break;
 	case 'L':
+		readbyte(format);
 		config->modifier = PRINT_MOD_LONG_DOUBLE;
 		break;
 	case 'j':
+		readbyte(format);
 		config->modifier = PRINT_MOD_INTMAX;
 		break;
 	case 'z':
+		readbyte(format);
 		config->modifier = PRINT_MOD_SIZE;
 		break;
 	case 't':
+		readbyte(format);
 		config->modifier = PRINT_MOD_PTRDIFF;
 		break;
 	}
@@ -339,6 +343,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 
 	uint32_t result = 0;
 	byte_t byte = 0;
+	size_t pos = 0;
 
 	variadic_args_init(&args, list);
 
@@ -346,7 +351,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 	{
 		if (byte == '%')
 		{
-			byte = readbyte(&in);
+			byte = peekbyte(&in, 0);
 
 			if (byte == '\0')
 			{
@@ -357,13 +362,19 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 			if (byte == '%')
 			{
 				result += writebyte(buffer, '%');
+				readbyte(&in);
+
 				continue;
 			}
 
+			pos = in.pos;
 			parse_print_specifier(&in, &config, &args);
 
-			if (config.type != PRINT_UNKNOWN)
+			if (config.type == PRINT_UNKNOWN)
 			{
+				in.pos = pos;
+				result += writebyte(buffer, byte);
+
 				continue;
 			}
 		}
