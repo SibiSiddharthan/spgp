@@ -10,6 +10,10 @@
 
 #include <stdint.h>
 
+#ifdef _WIN32
+typedef long long ssize_t;
+#endif
+
 uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uintmax_t x);
 uintmax_t uint_from_hex_common(void *buffer, uint8_t size);
 
@@ -330,7 +334,7 @@ static inline uint32_t imax_to_dec(char buffer[32], intmax_t x)
 	return int_to_dec_common(buffer, x);
 }
 
-static inline uint32_t isize_to_dec(char buffer[32], intmax_t x) // TODO: should be ssize_t
+static inline uint32_t isize_to_dec(char buffer[32], ssize_t x)
 {
 	return int_to_dec_common(buffer, x);
 }
@@ -365,7 +369,7 @@ static inline intmax_t imax_from_dec(void *buffer, uint8_t size)
 	return int_from_dec_common(buffer, size);
 }
 
-static inline intptr_t isize_from_dec(void *buffer, uint8_t size) // TODO: should be ssize_t
+static inline ssize_t isize_from_dec(void *buffer, uint8_t size)
 {
 	return int_from_dec_common(buffer, size);
 }
