@@ -152,7 +152,7 @@ uintmax_t uint_from_bin_common(void *buffer, uint8_t size)
 	return result;
 }
 
-static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
+uint32_t uint_to_dec_common(char buffer[32], uintmax_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -172,7 +172,7 @@ static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
 	return pos;
 }
 
-static uint64_t uint_from_dec_common(void *buffer, uint8_t size)
+uintmax_t uint_from_dec_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
@@ -183,46 +183,6 @@ static uint64_t uint_from_dec_common(void *buffer, uint8_t size)
 	}
 
 	return result;
-}
-
-uint32_t u8_to_dec(char buffer[32], uint8_t x)
-{
-	return uint_to_dec_common(buffer, x);
-}
-
-uint32_t u16_to_dec(char buffer[32], uint16_t x)
-{
-	return uint_to_dec_common(buffer, x);
-}
-
-uint32_t u32_to_dec(char buffer[32], uint32_t x)
-{
-	return uint_to_dec_common(buffer, x);
-}
-
-uint32_t u64_to_dec(char buffer[32], uint64_t x)
-{
-	return uint_to_dec_common(buffer, x);
-}
-
-uint8_t u8_from_dec(void *buffer, uint8_t size)
-{
-	return uint_from_dec_common(buffer, size);
-}
-
-uint16_t u16_from_dec(void *buffer, uint8_t size)
-{
-	return uint_from_dec_common(buffer, size);
-}
-
-uint32_t u32_from_dec(void *buffer, uint8_t size)
-{
-	return uint_from_dec_common(buffer, size);
-}
-
-uint64_t u64_from_dec(void *buffer, uint8_t size)
-{
-	return uint_from_dec_common(buffer, size);
 }
 
 static int64_t int_to_dec_common(char buffer[32], int64_t x)
