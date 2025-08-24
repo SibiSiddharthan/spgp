@@ -70,7 +70,7 @@ typedef struct _print_config
 	void *data;
 } print_config;
 
-static uint32_t parse_argument_index(const char *format, uint32_t *index)
+static uint32_t parse_argument_index_or_number(const char *format, print_config *config)
 {
 	byte_t byte = 0;
 	uint32_t pos = 0;
@@ -102,7 +102,7 @@ static uint32_t parse_argument_index(const char *format, uint32_t *index)
 	return pos;
 }
 
-static uint32_t parse_print_specifier(const char *format, print_config *config)
+static uint32_t parse_print_specifier(buffer_t *format, print_config *config)
 {
 	uint32_t pos = 0;
 	uint32_t index = 0;
@@ -113,10 +113,8 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	// argument
 
 	// flags
-	while (1)
+	while ((byte = readbyte(format)) != '\0')
 	{
-		byte = format[pos];
-
 		if (byte == '#')
 		{
 			config->flags |= PRINT_ALTERNATE_FORM;
@@ -162,20 +160,20 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	}
 
 	// width
-	byte = format[pos];
+	byte = readbyte(format);
 
 	if (byte == '*')
 	{
 	}
 
 	// precision
-	byte = format[pos];
+	byte = readbyte(format);
 
 	if (byte == '.')
 	{
 		pos++;
 
-		byte = format[pos];
+		byte = readbyte(format);
 
 		if (byte == '*')
 		{
@@ -183,16 +181,14 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	}
 
 	// length modifiers
-	byte = format[pos++];
-
-	switch (byte)
+	switch (byte = readbyte(format))
 	{
 	case 'h':
 	{
-		if (format[pos + 1] == 'h')
+		if (peekbyte(format, 0) == 'h')
 		{
 			config->modifier = PRINT_MOD_SHORT_SHORT;
-			pos += 1;
+			readbyte(format);
 		}
 		else
 		{
@@ -202,10 +198,10 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	break;
 	case 'l':
 	{
-		if (format[pos + 1] == 'l')
+		if (peekbyte(format, 0) == 'l')
 		{
 			config->modifier = PRINT_MOD_LONG_LONG;
-			pos += 1;
+			readbyte(format);
 		}
 		else
 		{
@@ -228,9 +224,7 @@ static uint32_t parse_print_specifier(const char *format, print_config *config)
 	}
 
 	// conversion
-	byte = format[pos++];
-
-	switch (byte)
+	switch (byte = readbyte(format))
 	{
 	// integer
 	case 'i':
@@ -297,17 +291,18 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
 	print_config config = {0};
+	buffer_t in = {.data = format, .pos = 0, .size = strnlen(format, 65536)};
 
 	uint32_t result = 0;
 	byte_t byte = 0;
 
 	variadic_args_init(&args, list);
 
-	while ((byte = *format++) != '\0')
+	while ((byte = readbyte(&buffer)) != '\0')
 	{
 		if (byte == '%')
 		{
-			byte = *format++;
+			byte = readbyte(&buffer);
 
 			if (byte == '\0')
 			{
