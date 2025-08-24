@@ -67,50 +67,60 @@ typedef struct _print_config
 	uint32_t flags;
 	uint32_t width;
 	uint32_t precision;
+	uint32_t index;
 	void *data;
 } print_config;
 
-static uint32_t parse_argument_index_or_number(const char *format, print_config *config)
+static void parse_number(buffer_t *format, uint32_t *index)
 {
+	size_t pos = format->pos;
 	byte_t byte = 0;
-	uint32_t pos = 0;
 
 	*index = 0;
 
-	while ((byte = *format++) != '\0')
+	while ((byte = peekbyte(format, 0)) != '\0')
 	{
 		if (byte >= '0' && byte <= '9')
 		{
 			*index = (*index * 10) + (byte - '0');
+			readbyte(format);
 		}
 		else
 		{
-			if (byte == '$')
-			{
-				pos++;
-				break;
-			}
-			else
-			{
-				return 0;
-			}
+			break;
 		}
-
-		pos++;
 	}
 
-	return pos;
+	if (*index == 0)
+	{
+		format->pos = pos;
+	}
 }
 
-static uint32_t parse_print_specifier(buffer_t *format, print_config *config)
+static uint32_t parse_print_specifier(buffer_t *format, print_config *config, variadic_args *args)
 {
-	uint32_t pos = 0;
 	uint32_t index = 0;
 	byte_t byte = 0;
+	size_t pos = 0;
 
 	memset(config, 0, sizeof(print_config));
 
 	// argument
+	pos = format->pos;
+	parse_number(format, &index);
+
+	if (index != 0)
+	{
+		if (peekbyte(format, 0) == '$')
+		{
+			config->index = index;
+			readbyte(format);
+		}
+		else
+		{
+			format->pos = pos;
+		}
+	}
 
 	// flags
 	while ((byte = readbyte(format)) != '\0')
@@ -316,7 +326,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 				continue;
 			}
 
-			parse_print_specifier(format, &config);
+			parse_print_specifier(format, &config, &args);
 
 			continue;
 		}
