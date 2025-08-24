@@ -5,6 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#ifndef COMMON_VARARGS_H
+#define COMMON_VARARGS_H
+
 #include <minmax.h>
 #include <round.h>
 
@@ -112,3 +115,5 @@ static void *variadic_args_get(variadic_args *args, uint32_t index)
 
 	return args->extra_args[index - VARIADIC_ARGS_DEFAULT_SIZE - 1];
 }
+
+#endif
