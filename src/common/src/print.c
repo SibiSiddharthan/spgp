@@ -97,7 +97,7 @@ static void parse_number(buffer_t *format, uint32_t *index)
 	}
 }
 
-static uint32_t parse_print_specifier(buffer_t *format, print_config *config, variadic_args *args)
+static void parse_print_specifier(buffer_t *format, print_config *config, variadic_args *args)
 {
 	uint32_t index = 0;
 	byte_t byte = 0;
@@ -324,7 +324,11 @@ static uint32_t parse_print_specifier(buffer_t *format, print_config *config, va
 		break;
 	}
 
-	return pos;
+	if (config->type != PRINT_UNKNOWN)
+	{
+		// get the argument from the list
+		config->data = variadic_args_get(args, config->index);
+	}
 }
 
 uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
@@ -358,7 +362,10 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 
 			parse_print_specifier(&in, &config, &args);
 
-			continue;
+			if (config.type != PRINT_UNKNOWN)
+			{
+				continue;
+			}
 		}
 
 		result += writebyte(buffer, byte);
