@@ -52,7 +52,7 @@ uint32_t print_hex(const char *table, char *buffer, uint32_t buffer_size, void *
 	return pos;
 }
 
-static uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
+uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
 {
 	const char *table = upper ? hex_upper_table : hex_lower_table;
 	char temp[8] = {0};
@@ -73,7 +73,7 @@ static uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uint64_t x)
 	return pos;
 }
 
-static uint64_t uint_from_hex_common(void *buffer, uint8_t size)
+uint64_t uint_from_hex_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
@@ -86,47 +86,7 @@ static uint64_t uint_from_hex_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t u8_to_hex(char buffer[32], uint8_t upper, uint8_t x)
-{
-	return uint_to_hex_common(buffer, upper, x);
-}
-
-uint32_t u16_to_hex(char buffer[32], uint8_t upper, uint16_t x)
-{
-	return uint_to_hex_common(buffer, upper, x);
-}
-
-uint32_t u32_to_hex(char buffer[32], uint8_t upper, uint32_t x)
-{
-	return uint_to_hex_common(buffer, upper, x);
-}
-
-uint32_t u64_to_hex(char buffer[32], uint8_t upper, uint64_t x)
-{
-	return uint_to_hex_common(buffer, upper, x);
-}
-
-uint8_t u8_from_hex(void *buffer, uint8_t size)
-{
-	return uint_from_hex_common(buffer, size);
-}
-
-uint16_t u16_from_hex(void *buffer, uint8_t size)
-{
-	return uint_from_hex_common(buffer, size);
-}
-
-uint32_t u32_from_hex(void *buffer, uint8_t size)
-{
-	return uint_from_hex_common(buffer, size);
-}
-
-uint64_t u64_from_hex(void *buffer, uint8_t size)
-{
-	return uint_from_hex_common(buffer, size);
-}
-
-static uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
+uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -146,7 +106,7 @@ static uint32_t uint_to_oct_common(char buffer[32], uint64_t x)
 	return pos;
 }
 
-static uint64_t uint_from_oct_common(void *buffer, uint8_t size)
+uint64_t uint_from_oct_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
@@ -159,47 +119,7 @@ static uint64_t uint_from_oct_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t u8_to_oct(char buffer[32], uint8_t x)
-{
-	return uint_to_oct_common(buffer, x);
-}
-
-uint32_t u16_to_oct(char buffer[32], uint16_t x)
-{
-	return uint_to_oct_common(buffer, x);
-}
-
-uint32_t u32_to_oct(char buffer[32], uint32_t x)
-{
-	return uint_to_oct_common(buffer, x);
-}
-
-uint32_t u64_to_oct(char buffer[32], uint64_t x)
-{
-	return uint_to_oct_common(buffer, x);
-}
-
-uint8_t u8_from_oct(void *buffer, uint8_t size)
-{
-	return uint_from_oct_common(buffer, size);
-}
-
-uint16_t u16_from_oct(void *buffer, uint8_t size)
-{
-	return uint_from_oct_common(buffer, size);
-}
-
-uint32_t u32_from_oct(void *buffer, uint8_t size)
-{
-	return uint_from_oct_common(buffer, size);
-}
-
-uint64_t u64_from_oct(void *buffer, uint8_t size)
-{
-	return uint_from_oct_common(buffer, size);
-}
-
-static uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
+uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -219,7 +139,7 @@ static uint32_t uint_to_bin_common(char buffer[64], uint64_t x)
 	return pos;
 }
 
-static uint64_t uint_from_bin_common(void *buffer, uint8_t size)
+uint64_t uint_from_bin_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint64_t result = 0;
@@ -230,46 +150,6 @@ static uint64_t uint_from_bin_common(void *buffer, uint8_t size)
 	}
 
 	return result;
-}
-
-uint32_t u8_to_bin(char buffer[64], uint8_t x)
-{
-	return uint_to_bin_common(buffer, x);
-}
-
-uint32_t u16_to_bin(char buffer[64], uint16_t x)
-{
-	return uint_to_bin_common(buffer, x);
-}
-
-uint32_t u32_to_bin(char buffer[64], uint32_t x)
-{
-	return uint_to_bin_common(buffer, x);
-}
-
-uint32_t u64_to_bin(char buffer[64], uint64_t x)
-{
-	return uint_to_bin_common(buffer, x);
-}
-
-uint8_t u8_from_bin(void *buffer, uint8_t size)
-{
-	return uint_from_bin_common(buffer, size);
-}
-
-uint16_t u16_from_bin(void *buffer, uint8_t size)
-{
-	return uint_from_bin_common(buffer, size);
-}
-
-uint32_t u32_from_bin(void *buffer, uint8_t size)
-{
-	return uint_from_bin_common(buffer, size);
-}
-
-uint64_t u64_from_bin(void *buffer, uint8_t size)
-{
-	return uint_from_bin_common(buffer, size);
 }
 
 static uint32_t uint_to_dec_common(char buffer[32], uint64_t x)
