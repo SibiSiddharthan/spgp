@@ -489,6 +489,34 @@ static void print_arg(buffer_t *buffer, print_config *config)
 				break;
 			}
 		}
+
+		if (config->flags & PRINT_ALTERNATE_FORM)
+		{
+			byte_t byte = 0;
+
+			if (config->type == PRINT_UINT_HEX)
+			{
+				byte = 'x';
+			}
+
+			if (config->type == PRINT_UINT_OCTAL)
+			{
+				byte = 'o';
+			}
+
+			if (config->type == PRINT_UINT_BINARY)
+			{
+				byte = 'b';
+			}
+
+			if (config->flags & PRINT_UPPER_CASE)
+			{
+				byte &= ~0x20;
+			}
+
+			writebyte(buffer, '0');
+			writebyte(buffer, byte);
+		}
 	}
 }
 
