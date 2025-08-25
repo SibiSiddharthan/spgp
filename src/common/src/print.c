@@ -366,10 +366,10 @@ static void print_arg(buffer_t *buffer, print_config *config)
 				umax_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SIZE:
-				usize_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
+				usize_to_bin(temp, (size_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_PTRDIFF:
-				uptr_to_bin(temp, (uint32_t)(uintptr_t)config->data);
+				uptr_to_bin(temp, (uintptr_t)config->data);
 				break;
 			}
 		}
