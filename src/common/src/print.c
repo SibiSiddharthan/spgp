@@ -13,6 +13,7 @@
 #include "convert.h"
 #include "varargs.h"
 
+// Flags
 #define PRINT_ALTERNATE_FORM 0x01 // '#'
 #define PRINT_ZERO_PADDED    0x02 // '0'
 #define PRINT_SPACE_PADDED   0x04 // ' '
@@ -20,6 +21,19 @@
 #define PRINT_FORCE_SIGN     0x10 // '+'
 #define PRINT_UPPER_CASE     0x20 // 'X|G|A|E'
 #define PRINT_GROUP_DIGITS   0x40 // '''
+
+// Modifiers
+#define PRINT_MOD_NONE        0
+#define PRINT_MOD_SHORT_SHORT 1 // hh
+#define PRINT_MOD_SHORT       2 // h
+#define PRINT_MOD_LONG        3 // l
+#define PRINT_MOD_LONG_LONG   4 // ll
+
+#define PRINT_MOD_MAX     5 // j
+#define PRINT_MOD_SIZE    6 // z
+#define PRINT_MOD_PTRDIFF 7 // t
+
+#define PRINT_MOD_LONG_DOUBLE 8
 
 typedef enum _print_type
 {
@@ -45,27 +59,11 @@ typedef enum _print_type
 
 } print_type;
 
-typedef enum _print_modifier
-{
-	PRINT_MOD_NONE = 0,
-
-	PRINT_MOD_SHORT_SHORT,
-	PRINT_MOD_SHORT,
-	PRINT_MOD_LONG,
-	PRINT_MOD_LONG_LONG,
-
-	PRINT_MOD_LONG_DOUBLE,
-
-	PRINT_MOD_INTMAX,
-	PRINT_MOD_SIZE,
-	PRINT_MOD_PTRDIFF,
-} print_modifier;
-
 typedef struct _print_config
 {
 	print_type type;
-	print_modifier modifier;
-	uint32_t flags;
+	uint16_t modifier;
+	uint16_t flags;
 	uint32_t width;
 	uint32_t precision;
 	uint32_t index;
@@ -256,7 +254,7 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		break;
 	case 'j':
 		readbyte(format);
-		config->modifier = PRINT_MOD_INTMAX;
+		config->modifier = PRINT_MOD_MAX;
 		break;
 	case 'z':
 		readbyte(format);
@@ -360,7 +358,7 @@ static void print_arg(buffer_t *buffer, print_config *config)
 				u64_to_bin(temp, (uint64_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG_LONG:
-			case PRINT_MOD_INTMAX:
+			case PRINT_MOD_MAX:
 				umax_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SIZE:
