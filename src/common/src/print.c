@@ -460,6 +460,35 @@ static void print_arg(buffer_t *buffer, print_config *config)
 				break;
 			}
 		}
+
+		if (config->type == PRINT_INT_NUMBER)
+		{
+			switch (config->modifier)
+			{
+			case PRINT_MOD_NONE:
+				i32_to_dec(temp, (int32_t)(intptr_t)config->data);
+				break;
+			case PRINT_MOD_SHORT:
+				i16_to_dec(temp, (int16_t)(intptr_t)config->data);
+				break;
+			case PRINT_MOD_SHORT_SHORT:
+				i8_to_dec(temp, (int8_t)(intptr_t)config->data);
+				break;
+			case PRINT_MOD_LONG:
+				i64_to_dec(temp, (int64_t)(intptr_t)config->data);
+				break;
+			case PRINT_MOD_LONG_LONG:
+			case PRINT_MOD_MAX:
+				imax_to_dec(temp, (intmax_t)(intptr_t)config->data);
+				break;
+			case PRINT_MOD_SIZE:
+				isize_to_dec(temp, (ssize_t)(intptr_t)config->data);
+				break;
+			case PRINT_MOD_PTRDIFF:
+				iptr_to_dec(temp, (intptr_t)config->data);
+				break;
+			}
+		}
 	}
 }
 
