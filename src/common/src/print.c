@@ -341,6 +341,8 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 static void print_arg(buffer_t *buffer, print_config *config)
 {
 	char temp[128] = {0};
+	uint32_t size = 0;
+	uint32_t extra = 0;
 
 	if (config->type == PRINT_UINT_BINARY || config->type == PRINT_UINT_OCTAL || config->type == PRINT_UINT_HEX ||
 		config->type == PRINT_UINT_NUMBER || config->type == PRINT_INT_NUMBER)
@@ -350,26 +352,26 @@ static void print_arg(buffer_t *buffer, print_config *config)
 			switch (config->modifier)
 			{
 			case PRINT_MOD_NONE:
-				u32_to_bin(temp, (uint32_t)(uintptr_t)config->data);
+				size = u32_to_bin(temp, (uint32_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT:
-				u16_to_bin(temp, (uint16_t)(uintptr_t)config->data);
+				size = u16_to_bin(temp, (uint16_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT_SHORT:
-				u8_to_bin(temp, (uint8_t)(uintptr_t)config->data);
+				size = u8_to_bin(temp, (uint8_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG:
-				u64_to_bin(temp, (uint64_t)(uintptr_t)config->data);
+				size = u64_to_bin(temp, (uint64_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG_LONG:
 			case PRINT_MOD_MAX:
-				umax_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
+				size = umax_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SIZE:
-				usize_to_bin(temp, (size_t)(uintptr_t)config->data);
+				size = usize_to_bin(temp, (size_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_PTRDIFF:
-				uptr_to_bin(temp, (uintptr_t)config->data);
+				size = uptr_to_bin(temp, (uintptr_t)config->data);
 				break;
 			}
 		}
@@ -379,26 +381,26 @@ static void print_arg(buffer_t *buffer, print_config *config)
 			switch (config->modifier)
 			{
 			case PRINT_MOD_NONE:
-				u32_to_oct(temp, (uint32_t)(uintptr_t)config->data);
+				size = u32_to_oct(temp, (uint32_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT:
-				u16_to_oct(temp, (uint16_t)(uintptr_t)config->data);
+				size = u16_to_oct(temp, (uint16_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT_SHORT:
-				u8_to_oct(temp, (uint8_t)(uintptr_t)config->data);
+				size = u8_to_oct(temp, (uint8_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG:
-				u64_to_oct(temp, (uint64_t)(uintptr_t)config->data);
+				size = u64_to_oct(temp, (uint64_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG_LONG:
 			case PRINT_MOD_MAX:
-				umax_to_oct(temp, (uintmax_t)(uintptr_t)config->data);
+				size = umax_to_oct(temp, (uintmax_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SIZE:
-				usize_to_oct(temp, (size_t)(uintptr_t)config->data);
+				size = usize_to_oct(temp, (size_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_PTRDIFF:
-				uptr_to_oct(temp, (uintptr_t)config->data);
+				size = uptr_to_oct(temp, (uintptr_t)config->data);
 				break;
 			}
 		}
@@ -408,26 +410,26 @@ static void print_arg(buffer_t *buffer, print_config *config)
 			switch (config->modifier)
 			{
 			case PRINT_MOD_NONE:
-				u32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint32_t)(uintptr_t)config->data);
+				size = u32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint32_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT:
-				u16_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint16_t)(uintptr_t)config->data);
+				size = u16_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint16_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT_SHORT:
-				u8_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint8_t)(uintptr_t)config->data);
+				size = u8_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint8_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG:
-				u64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint64_t)(uintptr_t)config->data);
+				size = u64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint64_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG_LONG:
 			case PRINT_MOD_MAX:
-				umax_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uintmax_t)(uintptr_t)config->data);
+				size = umax_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uintmax_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SIZE:
-				usize_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (size_t)(uintptr_t)config->data);
+				size = usize_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (size_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_PTRDIFF:
-				uptr_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uintptr_t)config->data);
+				size = uptr_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uintptr_t)config->data);
 				break;
 			}
 		}
@@ -437,26 +439,26 @@ static void print_arg(buffer_t *buffer, print_config *config)
 			switch (config->modifier)
 			{
 			case PRINT_MOD_NONE:
-				u32_to_dec(temp, (uint32_t)(uintptr_t)config->data);
+				size = u32_to_dec(temp, (uint32_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT:
-				u16_to_dec(temp, (uint16_t)(uintptr_t)config->data);
+				size = u16_to_dec(temp, (uint16_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT_SHORT:
-				u8_to_dec(temp, (uint8_t)(uintptr_t)config->data);
+				size = u8_to_dec(temp, (uint8_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG:
-				u64_to_dec(temp, (uint64_t)(uintptr_t)config->data);
+				size = u64_to_dec(temp, (uint64_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG_LONG:
 			case PRINT_MOD_MAX:
-				umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data);
+				size = umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_SIZE:
-				usize_to_dec(temp, (size_t)(uintptr_t)config->data);
+				size = usize_to_dec(temp, (size_t)(uintptr_t)config->data);
 				break;
 			case PRINT_MOD_PTRDIFF:
-				uptr_to_dec(temp, (uintptr_t)config->data);
+				size = uptr_to_dec(temp, (uintptr_t)config->data);
 				break;
 			}
 		}
@@ -466,27 +468,79 @@ static void print_arg(buffer_t *buffer, print_config *config)
 			switch (config->modifier)
 			{
 			case PRINT_MOD_NONE:
-				i32_to_dec(temp, (int32_t)(intptr_t)config->data);
+				size = i32_to_dec(temp, (int32_t)(intptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT:
-				i16_to_dec(temp, (int16_t)(intptr_t)config->data);
+				size = i16_to_dec(temp, (int16_t)(intptr_t)config->data);
 				break;
 			case PRINT_MOD_SHORT_SHORT:
-				i8_to_dec(temp, (int8_t)(intptr_t)config->data);
+				size = i8_to_dec(temp, (int8_t)(intptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG:
-				i64_to_dec(temp, (int64_t)(intptr_t)config->data);
+				size = i64_to_dec(temp, (int64_t)(intptr_t)config->data);
 				break;
 			case PRINT_MOD_LONG_LONG:
 			case PRINT_MOD_MAX:
-				imax_to_dec(temp, (intmax_t)(intptr_t)config->data);
+				size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data);
 				break;
 			case PRINT_MOD_SIZE:
-				isize_to_dec(temp, (ssize_t)(intptr_t)config->data);
+				size = isize_to_dec(temp, (ssize_t)(intptr_t)config->data);
 				break;
 			case PRINT_MOD_PTRDIFF:
-				iptr_to_dec(temp, (intptr_t)config->data);
+				size = iptr_to_dec(temp, (intptr_t)config->data);
 				break;
+			}
+		}
+
+		if (config->flags & PRINT_ALTERNATE_FORM)
+		{
+			if (config->type == PRINT_UINT_HEX || config->type == PRINT_UINT_OCTAL || config->type == PRINT_UINT_BINARY)
+			{
+				extra += 2;
+			}
+		}
+
+		if (config->flags & PRINT_FORCE_SIGN)
+		{
+			if (config->type == PRINT_UINT_NUMBER || config->type == PRINT_INT_NUMBER)
+			{
+				extra += 1;
+			}
+		}
+
+		if (size + extra < MAX(config->precision, config->width))
+		{
+			if (config->precision < config->width)
+			{
+				if (config->flags & PRINT_ZERO_PADDED)
+				{
+				}
+				else
+				{
+				}
+			}
+			else
+			{
+			}
+		}
+
+		if (config->flags & PRINT_FORCE_SIGN)
+		{
+			if (config->type == PRINT_UINT_NUMBER)
+			{
+				writebyte(buffer, '+');
+			}
+
+			if (config->type == PRINT_INT_NUMBER)
+			{
+				if ((intmax_t)(intptr_t)config->data < 0)
+				{
+					writebyte(buffer, '-');
+				}
+				else
+				{
+					writebyte(buffer, '+');
+				}
 			}
 		}
 
