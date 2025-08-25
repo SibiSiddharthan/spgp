@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 
+#include "convert.h"
 #include "varargs.h"
 
 #define PRINT_ALTERNATE_FORM 0x01 // '#'
@@ -335,6 +336,44 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	}
 }
 
+static void print_arg(buffer_t *buffer, print_config *config)
+{
+	char temp[128] = {0};
+
+	if (config->type == PRINT_UINT_BINARY || config->type == PRINT_UINT_OCTAL || config->type == PRINT_UINT_HEX ||
+		config->type == PRINT_UINT_NUMBER || config->type == PRINT_INT_NUMBER)
+	{
+		if (config->type == PRINT_UINT_BINARY)
+		{
+			switch (config->modifier)
+			{
+			case PRINT_MOD_NONE:
+				u32_to_bin(temp, (uint32_t)(uintptr_t)config->data);
+				break;
+			case PRINT_MOD_SHORT:
+				u16_to_bin(temp, (uint16_t)(uintptr_t)config->data);
+				break;
+			case PRINT_MOD_SHORT_SHORT:
+				u8_to_bin(temp, (uint8_t)(uintptr_t)config->data);
+				break;
+			case PRINT_MOD_LONG:
+				u64_to_bin(temp, (uint64_t)(uintptr_t)config->data);
+				break;
+			case PRINT_MOD_LONG_LONG:
+			case PRINT_MOD_INTMAX:
+				umax_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
+				break;
+			case PRINT_MOD_SIZE:
+				usize_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
+				break;
+			case PRINT_MOD_PTRDIFF:
+				uptr_to_bin(temp, (uint32_t)(uintptr_t)config->data);
+				break;
+			}
+		}
+	}
+}
+
 uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
@@ -377,6 +416,9 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 
 				continue;
 			}
+
+			print_arg(buffer, &config);
+			continue;
 		}
 
 		result += writebyte(buffer, byte);
