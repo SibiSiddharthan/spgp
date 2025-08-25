@@ -274,9 +274,13 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	case 'd':
 		config->type = PRINT_INT_NUMBER;
 		break;
+	case 'B':
+		config->flags |= PRINT_UPPER_CASE;
 	case 'b':
 		config->type = PRINT_UINT_BINARY;
 		break;
+	case 'O':
+		config->flags |= PRINT_UPPER_CASE;
 	case 'o':
 		config->type = PRINT_UINT_OCTAL;
 		break;
