@@ -8,8 +8,6 @@
 #include <print.h>
 #include <buffer.h>
 
-#include <stdlib.h>
-
 #include "convert.h"
 #include "varargs.h"
 
