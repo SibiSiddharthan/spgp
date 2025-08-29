@@ -336,6 +336,24 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		// get the argument from the list
 		config->data = variadic_args_get(args, config->index);
 	}
+
+	// If both '-' and '0' are given '0' is ignored.
+	if (config->flags & PRINT_LEFT_JUSTIFY)
+	{
+		config->flags &= ~PRINT_ZERO_PADDED;
+	}
+
+	// Ignore '0' if precision is greater than 0
+	if (config->precision > 0)
+	{
+		config->flags &= ~PRINT_ZERO_PADDED;
+	}
+
+	//  If both '+' and ' ' are given ' ' is ignored.
+	if (config->flags & PRINT_FORCE_SIGN)
+	{
+		config->flags &= ~PRINT_SPACE_PADDED;
+	}
 }
 
 static void print_arg(buffer_t *buffer, print_config *config)
