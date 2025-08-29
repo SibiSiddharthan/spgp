@@ -379,4 +379,10 @@ static inline intptr_t iptr_from_dec(void *buffer, uint8_t size)
 	return int_from_dec_common(buffer, size);
 }
 
+float float32_from_hex(void *buffer, uint8_t size);
+uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x);
+
+double float64_from_hex(void *buffer, uint8_t size);
+uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x);
+
 #endif
