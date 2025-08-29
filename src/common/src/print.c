@@ -16,7 +16,7 @@
 // Flags
 #define PRINT_ALTERNATE_FORM 0x01 // '#'
 #define PRINT_ZERO_PADDED    0x02 // '0'
-#define PRINT_SPACE_PADDED   0x04 // ' '
+#define PRINT_EMPTY_SPACE    0x04 // ' '
 #define PRINT_LEFT_JUSTIFY   0x08 // '-'
 #define PRINT_FORCE_SIGN     0x10 // '+'
 #define PRINT_UPPER_CASE     0x20 // 'X|G|A|E'
@@ -138,7 +138,7 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 
 		if (byte == ' ')
 		{
-			config->flags |= PRINT_SPACE_PADDED;
+			config->flags |= PRINT_EMPTY_SPACE;
 			readbyte(format);
 			continue;
 		}
@@ -352,7 +352,7 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	//  If both '+' and ' ' are given ' ' is ignored.
 	if (config->flags & PRINT_FORCE_SIGN)
 	{
-		config->flags &= ~PRINT_SPACE_PADDED;
+		config->flags &= ~PRINT_EMPTY_SPACE;
 	}
 }
 
