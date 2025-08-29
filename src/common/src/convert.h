@@ -385,4 +385,28 @@ uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x);
 double float64_from_hex(void *buffer, uint8_t size);
 uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x);
 
+double float_from_normal_common(void *buffer, uint8_t size);
+
+static inline float float32_from_normal(void *buffer, uint8_t size)
+{
+	return (float)float_from_normal_common(buffer, size);
+}
+
+static inline double float64_from_normal(void *buffer, uint8_t size)
+{
+	return (double)float_from_normal_common(buffer, size);
+}
+
+double float_from_scientific_common(void *buffer, uint8_t size);
+
+static inline float float32_from_scientific(void *buffer, uint8_t size)
+{
+	return (float)float_from_scientific_common(buffer, size);
+}
+
+static inline double float64_from_scientific(void *buffer, uint8_t size)
+{
+	return (double)float_from_scientific_common(buffer, size);
+}
+
 #endif

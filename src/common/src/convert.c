@@ -609,7 +609,7 @@ uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
 	return pos;
 }
 
-static double float_from_normal_common(void *buffer, uint8_t size)
+double float_from_normal_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint8_t pos = 0;
@@ -654,17 +654,7 @@ static double float_from_normal_common(void *buffer, uint8_t size)
 	return result;
 }
 
-float float32_from_normal(void *buffer, uint8_t size)
-{
-	return (float)float_from_normal_common(buffer, size);
-}
-
-double float64_from_normal(void *buffer, uint8_t size)
-{
-	return (double)float_from_normal_common(buffer, size);
-}
-
-static double float_from_scientific_common(void *buffer, uint8_t size)
+double float_from_scientific_common(void *buffer, uint8_t size)
 {
 	uint8_t *in = buffer;
 	uint8_t pos = 0;
@@ -747,16 +737,6 @@ static double float_from_scientific_common(void *buffer, uint8_t size)
 	}
 
 	return result;
-}
-
-float float32_from_scientific(void *buffer, uint8_t size)
-{
-	return (float)float_from_scientific_common(buffer, size);
-}
-
-double float64_from_scientific(void *buffer, uint8_t size)
-{
-	return (double)float_from_scientific_common(buffer, size);
 }
 
 uint32_t utf8_octets(uint32_t codepoint)
