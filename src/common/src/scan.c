@@ -11,6 +11,44 @@
 #include "convert.h"
 #include "varargs.h"
 
+// Modifiers
+#define SCAN_MOD_NONE        0
+#define SCAN_MOD_SHORT_SHORT 1 // hh
+#define SCAN_MOD_SHORT       2 // h
+#define SCAN_MOD_LONG        3 // l
+#define SCAN_MOD_LONG_LONG   4 // ll
+
+#define SCAN_MOD_MAX     5 // j
+#define SCAN_MOD_SIZE    6 // z
+#define SCAN_MOD_PTRDIFF 7 // t
+
+#define PRINT_MOD_LONG_DOUBLE 8
+
+typedef enum _scan_type
+{
+	SCAN_INT_NUMBER = 1,
+
+	SCAN_UINT_BINARY,
+	SCAN_UINT_OCTAL,
+	SCAN_UINT_HEX,
+	SCAN_UINT_NUMBER,
+
+	SCAN_DOUBLE_NORMAL,
+	SCAN_DOUBLE_HEX,
+	SCAN_DOUBLE_SCIENTIFIC,
+	SCAN_DOUBLE_SCIENTIFIC_SHORT,
+
+	SCAN_CHAR,
+	SCAN_STRING,
+
+	SCAN_POINTER,
+	SCAN_RESULT,
+
+	SCAN_UNKNOWN
+
+} scan_type;
+
+
 uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
