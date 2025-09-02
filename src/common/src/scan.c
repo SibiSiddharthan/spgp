@@ -11,6 +11,9 @@
 #include "convert.h"
 #include "varargs.h"
 
+// Flags
+#define SCAN_ALLOC_STRING 1 // m
+
 // Modifiers
 #define SCAN_MOD_NONE        0
 #define SCAN_MOD_SHORT_SHORT 1 // hh
@@ -47,7 +50,6 @@ typedef enum _scan_type
 	SCAN_UNKNOWN
 
 } scan_type;
-
 
 uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 {
