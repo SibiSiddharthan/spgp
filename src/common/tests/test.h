@@ -23,7 +23,7 @@ uint32_t check_value_string(const char *actual, const char *expected, const char
 	return 0;
 }
 
-uint32_t check_value(uint32_t actual, uint32_t expected, const char *expression, const char *function, int32_t line)
+uint32_t check_result(uint32_t actual, uint32_t expected, const char *expression, const char *function, int32_t line)
 {
 	if (actual != expected)
 	{

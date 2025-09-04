@@ -18,6 +18,7 @@ uint32_t test_simple(void)
 	result = sprint(buffer, 256, "abcd");
 
 	status += CHECK_STRING(buffer, "abcd");
+	status += CHECK_RESULT(result, 4);
 
 	return status;
 }
