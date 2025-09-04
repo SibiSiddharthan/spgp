@@ -53,7 +53,27 @@ uint32_t test_simple(void)
 	return status;
 }
 
+uint32_t test_char(void)
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%c", 'd');
+	status += CHECK_STRING(buffer, "abcd");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%c%c", 'd', 'e');
+	status += CHECK_STRING(buffer, "abcde");
+	status += CHECK_RESULT(result, 5);
+
+	return status;
+}
+
 int main()
 {
-	return test_simple();
+	return test_simple() + test_char();
 }
