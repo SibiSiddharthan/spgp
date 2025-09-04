@@ -354,7 +354,7 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	}
 }
 
-static void print_arg(buffer_t *buffer, print_config *config)
+static uint32_t print_arg(buffer_t *buffer, print_config *config)
 {
 	char temp[128] = {0};
 	uint32_t size = 0;
@@ -588,6 +588,16 @@ static void print_arg(buffer_t *buffer, print_config *config)
 			writebyte(buffer, byte);
 		}
 	}
+
+	if (config->type == PRINT_CHAR)
+	{
+		byte_t ch = (byte_t)(uintptr_t)config->data;
+		writebyte(buffer, ch);
+
+		return 1;
+	}
+
+	return 0;
 }
 
 uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
@@ -631,12 +641,13 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 			if (config.type == PRINT_UNKNOWN)
 			{
 				in.pos = pos;
-				result += writebyte(buffer, byte);
+				writebyte(buffer, byte);
+				result += 1;
 
 				continue;
 			}
 
-			print_arg(buffer, &config);
+			result += print_arg(buffer, &config);
 			continue;
 		}
 
