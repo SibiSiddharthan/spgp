@@ -356,7 +356,9 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 
 static uint32_t print_arg(buffer_t *buffer, print_config *config)
 {
-	char temp[128] = {0};
+	byte_t temp[128] = {0};
+	uint32_t result = 0;
+	uint32_t pos = 0;
 	uint32_t size = 0;
 	uint32_t extra = 0;
 
@@ -592,9 +594,37 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	if (config->type == PRINT_CHAR)
 	{
 		byte_t ch = (byte_t)(uintptr_t)config->data;
-		writebyte(buffer, ch);
 
-		return 1;
+		if (config->width > 1)
+		{
+			if (config->flags & PRINT_LEFT_JUSTIFY)
+			{
+				temp[pos++] = ch;
+
+				for (uint32_t i = 1; i < config->width; ++i)
+				{
+					temp[pos++] = ' ';
+				}
+			}
+			else
+			{
+				for (uint32_t i = 0; i < config->width - 1; ++i)
+				{
+					temp[pos++] = ' ';
+				}
+
+				temp[pos++] = ch;
+			}
+
+			writen(buffer, temp, pos);
+		}
+		else
+		{
+			writebyte(buffer, ch);
+			pos = 1;
+		}
+
+		return pos;
 	}
 
 	return 0;
