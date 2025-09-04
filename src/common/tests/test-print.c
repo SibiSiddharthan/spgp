@@ -17,6 +17,11 @@ uint32_t test_simple(void)
 	char buffer[256] = {0};
 
 	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "");
+	status += CHECK_STRING(buffer, "");
+	status += CHECK_RESULT(result, 0);
+
+	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "abcd");
 	status += CHECK_STRING(buffer, "abcd");
 	status += CHECK_RESULT(result, 4);
@@ -35,6 +40,11 @@ uint32_t test_simple(void)
 	result = sprint(buffer, 256, "%%%%%%");
 	status += CHECK_STRING(buffer, "%%%");
 	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%");
+	status += CHECK_STRING(buffer, "%");
+	status += CHECK_RESULT(result, 1);
 
 	return status;
 }
