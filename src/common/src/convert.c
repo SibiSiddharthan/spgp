@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdint.h>
+#include <types.h>
 #include <string.h>
 #include <ptr.h>
 
@@ -52,7 +52,7 @@ uint32_t print_hex(const char *table, char *buffer, uint32_t buffer_size, void *
 	return pos;
 }
 
-uint32_t uint_to_hex_common(char buffer[32], uint8_t upper, uintmax_t x)
+uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x)
 {
 	const char *table = upper ? hex_upper_table : hex_lower_table;
 	char temp[8] = {0};
@@ -86,7 +86,7 @@ uintmax_t uint_from_hex_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t uint_to_oct_common(char buffer[32], uintmax_t x)
+uint32_t uint_to_oct_common(byte_t buffer[32], uintmax_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -119,7 +119,7 @@ uintmax_t uint_from_oct_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t uint_to_bin_common(char buffer[64], uintmax_t x)
+uint32_t uint_to_bin_common(byte_t buffer[64], uintmax_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -152,7 +152,7 @@ uintmax_t uint_from_bin_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t uint_to_dec_common(char buffer[32], uintmax_t x)
+uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
@@ -185,7 +185,7 @@ uintmax_t uint_from_dec_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t int_to_dec_common(char buffer[32], intmax_t x)
+uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x)
 {
 	uint8_t minus = 0;
 
@@ -250,7 +250,7 @@ intmax_t int_from_dec_common(void *buffer, uint8_t size)
 #define UINT32_AS_FLOAT32(x) (*(uint32_t *)&(x))
 #define UINT64_AS_FLOAT64(x) (*(uint64_t *)&(x))
 
-static uint32_t print_nan(char buffer[32], uint8_t upper)
+static uint32_t print_nan(byte_t buffer[32], uint8_t upper)
 {
 	if (upper)
 	{
@@ -268,7 +268,7 @@ static uint32_t print_nan(char buffer[32], uint8_t upper)
 	return 3;
 }
 
-static uint32_t print_inf(char buffer[32], uint8_t upper)
+static uint32_t print_inf(byte_t buffer[32], uint8_t upper)
 {
 	if (upper)
 	{
@@ -420,7 +420,7 @@ float float32_from_hex(void *buffer, uint8_t size)
 	return FLOAT32_AS_UINT32(raw);
 }
 
-uint32_t float32_to_hex(char buffer[64], uint8_t upper, float x)
+uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x)
 {
 	uint32_t v = UINT32_AS_FLOAT32(x);
 	uint8_t sign = 0;
@@ -539,7 +539,7 @@ double float64_from_hex(void *buffer, uint8_t size)
 	return FLOAT64_AS_UINT64(raw);
 }
 
-uint32_t float64_to_hex(char buffer[64], uint8_t upper, double x)
+uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
 {
 	uint64_t v = UINT64_AS_FLOAT64(x);
 	uint8_t sign = 0;
@@ -764,7 +764,7 @@ uint32_t utf8_octets(uint32_t codepoint)
 	return 0;
 }
 
-uint32_t utf8_encode(char buffer[32], uint32_t codepoint)
+uint32_t utf8_encode(byte_t buffer[32], uint32_t codepoint)
 {
 	if (codepoint <= 0x7F)
 	{
@@ -955,7 +955,7 @@ uint32_t utf16_octets(uint32_t codepoint)
 	return 0;
 }
 
-uint32_t utf16_encode(char buffer[32], uint32_t codepoint)
+uint32_t utf16_encode(byte_t buffer[32], uint32_t codepoint)
 {
 	uint32_t v = 0;
 	uint32_t enc = 0;
