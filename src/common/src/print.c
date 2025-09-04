@@ -603,7 +603,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			size = 1;
 			break;
 		case PRINT_MOD_LONG:
-			if (utf16_decode(config->data, 8, &codepoint) != 0)
+			if (utf16_decode(&config->data, 8, &codepoint) != 0)
 				size = utf8_encode(pre_temp, codepoint);
 			break;
 		case PRINT_MOD_LONG_LONG:
@@ -616,43 +616,40 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		}
 
-		if (config->modifier == PRINT_MOD_NONE)
+		if (config->width > 1)
 		{
-			if (config->width > 1)
+			if (config->flags & PRINT_LEFT_JUSTIFY)
 			{
-				if (config->flags & PRINT_LEFT_JUSTIFY)
+				for (uint32_t i = 0; i < size; ++i)
 				{
-					for (uint32_t i = 0; i < size; ++i)
-					{
-						temp[pos++] = pre_temp[i];
-					}
-
-					for (uint32_t i = 1; i < config->width; ++i)
-					{
-						temp[pos++] = ' ';
-					}
-				}
-				else
-				{
-					for (uint32_t i = 0; i < config->width - 1; ++i)
-					{
-						temp[pos++] = ' ';
-					}
-
-					for (uint32_t i = 0; i < size; ++i)
-					{
-						temp[pos++] = pre_temp[i];
-					}
+					temp[pos++] = pre_temp[i];
 				}
 
-				writen(buffer, temp, pos);
-				result = pos;
+				for (uint32_t i = 1; i < config->width; ++i)
+				{
+					temp[pos++] = ' ';
+				}
 			}
 			else
 			{
-				writen(buffer, pre_temp, size);
-				result = size;
+				for (uint32_t i = 0; i < config->width - 1; ++i)
+				{
+					temp[pos++] = ' ';
+				}
+
+				for (uint32_t i = 0; i < size; ++i)
+				{
+					temp[pos++] = pre_temp[i];
+				}
 			}
+
+			writen(buffer, temp, pos);
+			result = pos;
+		}
+		else
+		{
+			writen(buffer, pre_temp, size);
+			result = size;
 		}
 
 		return result;
