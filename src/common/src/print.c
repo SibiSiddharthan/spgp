@@ -610,14 +610,17 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 
 			if (byte == '\0')
 			{
-				result += writebyte(buffer, '%');
+				writebyte(buffer, '%');
+				result += 1;
 				break;
 			}
 
 			if (byte == '%')
 			{
-				result += writebyte(buffer, '%');
 				readbyte(&in);
+
+				writebyte(buffer, '%');
+				result += 1;
 
 				continue;
 			}
@@ -637,7 +640,8 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 			continue;
 		}
 
-		result += writebyte(buffer, byte);
+		writebyte(buffer, byte);
+		result += 1;
 	}
 
 	variadic_args_free(&args);

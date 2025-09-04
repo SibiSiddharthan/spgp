@@ -46,6 +46,10 @@ uint32_t test_simple(void)
 	status += CHECK_STRING(buffer, "%");
 	status += CHECK_RESULT(result, 1);
 
+	memset(buffer, 0, 256);
+	result = sprint(NULL, 0, "abcd");
+	status += CHECK_RESULT(result, 4);
+
 	return status;
 }
 
