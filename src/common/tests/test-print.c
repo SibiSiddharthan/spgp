@@ -70,6 +70,21 @@ uint32_t test_char(void)
 	status += CHECK_STRING(buffer, "abcde");
 	status += CHECK_RESULT(result, 5);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%4c%4c", 'd', 'e');
+	status += CHECK_STRING(buffer, "abc   d   e");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%4c%-5c", 'd', 'e');
+	status += CHECK_STRING(buffer, "abc   de    ");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%#02.4c", 'd');
+	status += CHECK_STRING(buffer, "abc d");
+	status += CHECK_RESULT(result, 5);
+
 	return status;
 }
 
