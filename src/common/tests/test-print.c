@@ -6,6 +6,7 @@
 */
 
 #include <print.h>
+#include <string.h>
 #include "test.h"
 
 uint32_t test_simple(void)
@@ -15,10 +16,25 @@ uint32_t test_simple(void)
 	uint32_t result = 0;
 	char buffer[256] = {0};
 
+	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "abcd");
-
 	status += CHECK_STRING(buffer, "abcd");
 	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%%");
+	status += CHECK_STRING(buffer, "abc%");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%%abc");
+	status += CHECK_STRING(buffer, "%abc");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%%%%%%");
+	status += CHECK_STRING(buffer, "%%%");
+	status += CHECK_RESULT(result, 3);
 
 	return status;
 }
