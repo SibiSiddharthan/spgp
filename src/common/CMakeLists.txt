@@ -11,6 +11,10 @@ project(common C)
 add_library(common src/convert.c src/print.c src/scan.c src/varargs.h)
 
 #tests
-add_executable(test-print tests/test-print.c)
-target_link_libraries(test-print common)
-add_test(NAME test-print COMMAND test-print WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+if(BUILD_TESTING)
+include(CTest)
+
+	add_executable(test-print tests/test-print.c)
+	target_link_libraries(test-print common)
+	add_test(NAME test-print COMMAND test-print WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif()
