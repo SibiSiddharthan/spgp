@@ -23,6 +23,17 @@ uint32_t check_value_string(const char *actual, const char *expected, const char
 	return 0;
 }
 
-#define CHECK_STRING(ACTUAL, EXPECT) check_value_string(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+uint32_t check_value(uint32_t actual, uint32_t expected, const char *expression, const char *function, int32_t line)
+{
+	if (actual != expected)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%u == %u)\n", function, line, expression, actual, expected);
+		return 1;
+	}
 
+	return 0;
+}
+
+#define CHECK_STRING(ACTUAL, EXPECT) check_value_string(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_RESULT(ACTUAL, EXPECT) check_result(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #endif
