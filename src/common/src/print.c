@@ -199,11 +199,11 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 			if (peekbyte(format, 0) == '$')
 			{
 				readbyte(format);
-				config->width = (uint32_t)(uintptr_t)variadic_args_get(args, index);
+				config->precision = (uint32_t)(uintptr_t)variadic_args_get(args, index);
 			}
 			else
 			{
-				config->width = (uint32_t)(uintptr_t)variadic_args_get(args, 0);
+				config->precision = (uint32_t)(uintptr_t)variadic_args_get(args, 0);
 			}
 		}
 		else
