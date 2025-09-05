@@ -105,6 +105,11 @@ uint32_t test_char(void)
 	status += CHECK_STRING(buffer, "abc   😊");
 	status += CHECK_RESULT(result, 10);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%hc", 'd');
+	status += CHECK_STRING(buffer, "abcd");
+	status += CHECK_RESULT(result, 4);
+
 	return status;
 }
 
