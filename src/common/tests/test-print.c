@@ -110,6 +110,31 @@ uint32_t test_char(void)
 	status += CHECK_STRING(buffer, "abcd");
 	status += CHECK_RESULT(result, 4);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%*c%-*c", 4, 'd', 5, 'e');
+	status += CHECK_STRING(buffer, "abc   de    ");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%*c%-*.*c", 4, 'd', 5, 6, 'e');
+	status += CHECK_STRING(buffer, "abc   de    ");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%2$*1$c%4$-*3$c", 4, 'd', 5, 'e');
+	status += CHECK_STRING(buffer, "abc   de    ");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%2$*1$c%4$-*1$c", 4, 'd', 'e');
+	status += CHECK_STRING(buffer, "abc   de   ");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%2$*1$c%3$-*1$.*4$c", 4, 'd', 'e', 5);
+	status += CHECK_STRING(buffer, "abc   de   ");
+	status += CHECK_RESULT(result, 11);
+
 	return status;
 }
 
