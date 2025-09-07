@@ -19,6 +19,7 @@
 #define PRINT_FORCE_SIGN     0x10 // '+'
 #define PRINT_UPPER_CASE     0x20 // 'X|G|A|E'
 #define PRINT_GROUP_DIGITS   0x40 // '''
+#define PRINT_PRECISION      0x80 // precision specified
 
 // Modifiers
 #define PRINT_MOD_NONE        0
@@ -211,6 +212,8 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 			parse_number(format, &index);
 			config->precision = index;
 		}
+
+		config->flags |= PRINT_PRECISION;
 	}
 
 	// length modifiers
