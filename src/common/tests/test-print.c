@@ -138,7 +138,33 @@ uint32_t test_char(void)
 	return status;
 }
 
+uint32_t test_pointer(void)
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	void *ptr = (void *)0x800800800;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%p", ptr);
+	status += CHECK_STRING(buffer, "abc0x0000000800800800");
+	status += CHECK_RESULT(result, 21);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%-20p", ptr);
+	status += CHECK_STRING(buffer, "abc0x0000000800800800  ");
+	status += CHECK_RESULT(result, 23);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "abc%21p", ptr);
+	status += CHECK_STRING(buffer, "abc   0x0000000800800800");
+	status += CHECK_RESULT(result, 24);
+
+	return status;
+}
+
 int main()
 {
-	return test_simple() + test_char();
+	return test_simple() + test_char() + test_pointer();
 }
