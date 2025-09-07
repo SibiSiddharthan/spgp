@@ -658,6 +658,60 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		return result;
 	}
 
+	if (config->type == PRINT_STRING)
+	{
+		size_t count = 0;
+		uint32_t codepoint = 0;
+
+		if ((config->flags & PRINT_PRECISION) == 0)
+		{
+			config->precision = UINT32_MAX;
+		}
+
+		switch (config->modifier)
+		{
+		case PRINT_MOD_NONE:
+		{
+			byte_t *ch = config->data;
+
+			while (*ch++ != 0 && count < config->precision)
+			{
+				++count;
+			}
+		}
+		break;
+		case PRINT_MOD_LONG:
+		{
+			uint16_t *ch = config->data;
+
+			while (*ch++ != 0 && count < config->precision)
+			{
+				++count;
+			}
+		}
+		case PRINT_MOD_LONG_LONG:
+		{
+			uint32_t *ch = config->data;
+
+			while (*ch++ != 0 && count < config->precision)
+			{
+				++count;
+			}
+		}
+		break;
+		default:
+		{
+			byte_t *ch = config->data;
+
+			while (*ch++ != 0 && count < config->precision)
+			{
+				++count;
+			}
+		}
+		break;
+		}
+	}
+
 	if (config->type == PRINT_POINTER)
 	{
 		size = pointer_encode(temp, config->data);
