@@ -14,7 +14,7 @@ static const byte_t hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7
 static const byte_t hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 // clang-format off
-static const uint8_t hex_to_nibble_table[256] = 
+static const byte_t hex_to_nibble_table[256] = 
 {
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -41,10 +41,10 @@ uint32_t print_hex(const byte_t *table, byte_t *buffer, uint32_t buffer_size, vo
 
 	for (uint32_t i = 0; i < data_size; ++i)
 	{
-		uint8_t a, b;
+		byte_t a, b;
 
-		a = ((uint8_t *)data)[i] / 16;
-		b = ((uint8_t *)data)[i] % 16;
+		a = ((byte_t *)data)[i] / 16;
+		b = ((byte_t *)data)[i] % 16;
 
 		buffer[pos++] = table[a];
 		buffer[pos++] = table[b];
@@ -764,6 +764,23 @@ uint32_t pointer_encode(byte_t buffer[32], void *ptr)
 	}
 
 	return 2 + (2 * sizeof(void *));
+}
+
+void *pointer_decode(void *buffer, uint8_t size)
+{
+	byte_t *in = buffer;
+
+	if (size < 3)
+	{
+		return NULL;
+	}
+
+	if (in[0] != '0' && (in[1] != 'x' || in[1] != 'X'))
+	{
+		return NULL;
+	}
+
+	return (void *)(uintptr_t)uint_from_hex_common(PTR_OFFSET(buffer, 2), size - 2);
 }
 
 uint32_t utf8_octets(uint32_t codepoint)
