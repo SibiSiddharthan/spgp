@@ -138,6 +138,53 @@ uint32_t test_char(void)
 	return status;
 }
 
+uint32_t test_string()
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	intmax_t out = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %s\n", "World");
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %.6s\n", "World");
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %.4s\n", "World");
+	status += CHECK_STRING(buffer, "Hello Worl\n");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %6.3s\n", "World");
+	status += CHECK_STRING(buffer, "Hello    Wor\n");
+	status += CHECK_RESULT(result, 13);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %.*s\n", 5, "World");
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %2$.*1$s\n", 5, "World");
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %2$.*1$s\n%3$jn", 5, "World", &out);
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+	status += CHECK_RESULT(out, 12);
+
+	return status;
+}
+
 uint32_t test_pointer(void)
 {
 	uint32_t status = 0;
@@ -192,5 +239,5 @@ uint32_t test_result(void)
 
 int main()
 {
-	return test_simple() + test_char() + test_pointer() + test_result();
+	return test_simple() + test_char() + test_string() + test_pointer() + test_result();
 }
