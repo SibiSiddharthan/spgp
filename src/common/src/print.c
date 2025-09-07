@@ -655,6 +655,39 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		return result;
 	}
 
+	if (config->type == PRINT_RESULT)
+	{
+		switch (config->modifier)
+		{
+		case PRINT_MOD_NONE:
+			*(int32_t *)config->data = (int32_t)buffer->pos;
+			break;
+		case PRINT_MOD_SHORT:
+			*(int16_t *)config->data = (int16_t)buffer->pos;
+			break;
+		case PRINT_MOD_SHORT_SHORT:
+			*(int8_t *)config->data = (int8_t)buffer->pos;
+			break;
+		case PRINT_MOD_LONG:
+			*(int64_t *)config->data = (int64_t)buffer->pos;
+			break;
+		case PRINT_MOD_LONG_LONG:
+			*(int64_t *)config->data = (int64_t)buffer->pos;
+			break;
+		case PRINT_MOD_MAX:
+			*(intmax_t *)config->data = (intmax_t)buffer->pos;
+			break;
+		case PRINT_MOD_SIZE:
+			*(size_t *)config->data = (size_t)buffer->pos;
+			break;
+		case PRINT_MOD_PTRDIFF:
+			*(ptrdiff_t *)config->data = (ptrdiff_t)buffer->pos;
+			break;
+		}
+
+		return 0;
+	}
+
 	return 0;
 }
 
