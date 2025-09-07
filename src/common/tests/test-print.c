@@ -164,7 +164,33 @@ uint32_t test_pointer(void)
 	return status;
 }
 
+uint32_t test_result(void)
+{
+	uint32_t status = 0;
+
+	int32_t out2 = 0;
+	int32_t out1 = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%n", &out1);
+	status += CHECK_STRING(buffer, "");
+	status += CHECK_RESULT(result, 0);
+	status += CHECK_RESULT(out1, 0);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "a%nbc%c%n", &out1, 'd', &out2);
+	status += CHECK_STRING(buffer, "abcd");
+	status += CHECK_RESULT(result, 4);
+	status += CHECK_RESULT(out1, 1);
+	status += CHECK_RESULT(out2, 4);
+
+	return status;
+}
+
 int main()
 {
-	return test_simple() + test_char() + test_pointer();
+	return test_simple() + test_char() + test_pointer() + test_result();
 }
