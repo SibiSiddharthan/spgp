@@ -409,6 +409,9 @@ static inline double float64_from_scientific(void *buffer, uint8_t size)
 	return (double)float_from_scientific_common(buffer, size);
 }
 
+uint32_t pointer_encode(byte_t buffer[32], void *ptr);
+void *pointer_decode(void *buffer, uint8_t size);
+
 uint32_t utf8_encode(byte_t buffer[32], uint32_t codepoint);
 uint32_t utf8_decode(void *buffer, uint8_t size, uint32_t *codepoint);
 

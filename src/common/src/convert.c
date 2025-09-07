@@ -7,10 +7,11 @@
 
 #include <types.h>
 #include <string.h>
+#include <byteswap.h>
 #include <ptr.h>
 
-static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+static const byte_t hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+static const byte_t hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 // clang-format off
 static const uint8_t hex_to_nibble_table[256] = 
@@ -34,7 +35,7 @@ static const uint8_t hex_to_nibble_table[256] =
 };
 // clang-format on
 
-uint32_t print_hex(const char *table, char *buffer, uint32_t buffer_size, void *data, uint32_t data_size)
+uint32_t print_hex(const byte_t *table, byte_t *buffer, uint32_t buffer_size, void *data, uint32_t data_size)
 {
 	uint32_t pos = 0;
 
@@ -54,7 +55,7 @@ uint32_t print_hex(const char *table, char *buffer, uint32_t buffer_size, void *
 
 uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x)
 {
-	const char *table = upper ? hex_upper_table : hex_lower_table;
+	const byte_t *table = upper ? hex_upper_table : hex_lower_table;
 	char temp[8] = {0};
 	uint8_t pos = 0;
 
@@ -737,6 +738,32 @@ double float_from_scientific_common(void *buffer, uint8_t size)
 	}
 
 	return result;
+}
+
+uint32_t pointer_encode(byte_t buffer[32], void *ptr)
+{
+	uintptr_t value = (uintptr_t)ptr;
+
+	*buffer++ = '0';
+	*buffer++ = 'x';
+
+	if (sizeof(void *) == 8)
+	{
+		value = BSWAP_64(value);
+		print_hex(hex_lower_table, buffer, 30, &value, 8);
+	}
+	else if (sizeof(void *) == 4)
+	{
+		value = BSWAP_32(value);
+		print_hex(hex_lower_table, buffer, 30, &value, 4);
+	}
+	else // 2
+	{
+		value = BSWAP_16(value);
+		print_hex(hex_lower_table, buffer, 30, &value, 2);
+	}
+
+	return 2 + (2 * sizeof(void *));
 }
 
 uint32_t utf8_octets(uint32_t codepoint)
