@@ -182,6 +182,31 @@ uint32_t test_string()
 	status += CHECK_RESULT(result, 12);
 	status += CHECK_RESULT(out, 12);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %ls\n", L"World");
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %.6ls\n", L"World");
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %.4ls\n", L"World");
+	status += CHECK_STRING(buffer, "Hello Worl\n");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %6.3ls\n", L"World");
+	status += CHECK_STRING(buffer, "Hello    Wor\n");
+	status += CHECK_RESULT(result, 13);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %.*ls\n", 5, L"World");
+	status += CHECK_STRING(buffer, "Hello World\n");
+	status += CHECK_RESULT(result, 12);
+
 	return status;
 }
 
