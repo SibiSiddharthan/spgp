@@ -661,7 +661,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	if (config->type == PRINT_STRING)
 	{
 		size_t count = 0;
-		uint32_t codepoint = 0;
 
 		if ((config->flags & PRINT_PRECISION) == 0)
 		{
@@ -733,13 +732,39 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		break;
 		case PRINT_MOD_LONG:
 		{
-			writen(buffer, config->data, count * sizeof(uint16_t));
-			result += count * sizeof(uint16_t);
+			uint32_t codepoint = 0;
+			pos = 0;
+
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				size = utf16_decode(PTR_OFFSET(config->data, pos), 4, &codepoint);
+				pos += size;
+
+				if (size == 4)
+				{
+					++i;
+				}
+
+				if (codepoint == 0)
+				{
+					break;
+				}
+
+				size = utf8_encode(temp, codepoint);
+				writen(buffer, temp, size);
+				result += size;
+			}
 		}
 		case PRINT_MOD_LONG_LONG:
 		{
-			writen(buffer, config->data, count * sizeof(uint32_t));
-			result += count * sizeof(uint32_t);
+			uint32_t *ch = config->data;
+
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				size = utf8_encode(temp, *ch++);
+				writen(buffer, temp, size);
+				result += size;
+			}
 		}
 		break;
 		default:
