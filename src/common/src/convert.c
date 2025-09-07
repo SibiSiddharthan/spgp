@@ -1060,14 +1060,9 @@ uint32_t utf16_decode(void *buffer, uint8_t size, uint32_t *codepoint)
 
 		if (low >= 0xDC00 && low <= 0xDFFF)
 		{
-			*codepoint |= (high & 0x3FF) << 16;
+			*codepoint |= (high & 0x3FF) << 10;
 			*codepoint |= low & 0x3FF;
-
-			// Invalid Encoding (also catches surrogate pairs)
-			if (*codepoint < 0x10000)
-			{
-				return 0;
-			}
+			*codepoint += 0x10000;
 
 			return 4;
 		}
