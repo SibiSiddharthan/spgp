@@ -710,6 +710,59 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		}
 		break;
 		}
+
+		if (config->width > count)
+		{
+			if ((config->flags & PRINT_LEFT_JUSTIFY) == 0)
+			{
+				for (uint32_t i = 0; i < config->width - count; ++i)
+				{
+					writebyte(buffer, ' ');
+					result += 1;
+				}
+			}
+		}
+
+		switch (config->modifier)
+		{
+		case PRINT_MOD_NONE:
+		{
+			writen(buffer, config->data, count * sizeof(byte_t));
+			result += count * sizeof(byte_t);
+		}
+		break;
+		case PRINT_MOD_LONG:
+		{
+			writen(buffer, config->data, count * sizeof(uint16_t));
+			result += count * sizeof(uint16_t);
+		}
+		case PRINT_MOD_LONG_LONG:
+		{
+			writen(buffer, config->data, count * sizeof(uint32_t));
+			result += count * sizeof(uint32_t);
+		}
+		break;
+		default:
+		{
+			writen(buffer, config->data, count * sizeof(byte_t));
+			result += count * sizeof(byte_t);
+		}
+		break;
+		}
+
+		if (config->width > count)
+		{
+			if (config->flags & PRINT_LEFT_JUSTIFY)
+			{
+				for (uint32_t i = 0; i < config->width - count; ++i)
+				{
+					writebyte(buffer, ' ');
+					result += 1;
+				}
+			}
+		}
+
+		return result;
 	}
 
 	if (config->type == PRINT_POINTER)
