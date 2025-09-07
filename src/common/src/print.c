@@ -688,6 +688,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 				++count;
 			}
 		}
+		break;
 		case PRINT_MOD_LONG_LONG:
 		{
 			uint32_t *ch = config->data;
@@ -755,6 +756,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 				result += size;
 			}
 		}
+		break;
 		case PRINT_MOD_LONG_LONG:
 		{
 			uint32_t *ch = config->data;
