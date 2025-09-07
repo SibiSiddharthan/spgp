@@ -655,6 +655,45 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		return result;
 	}
 
+	if (config->type == PRINT_POINTER)
+	{
+		size = pointer_encode(temp, config->data);
+
+		if (config->width > size)
+		{
+			if (config->flags & PRINT_LEFT_JUSTIFY)
+			{
+				writen(buffer, temp, size);
+
+				for (uint32_t i = size; i < config->width; ++i)
+				{
+					writebyte(buffer, ' ');
+					size += 1;
+				}
+			}
+			else
+			{
+				for (uint32_t i = 0; i < config->width - size; ++i)
+				{
+					writebyte(buffer, ' ');
+					pos += 1;
+				}
+
+				writen(buffer, temp, size);
+				size += pos;
+			}
+
+			result = size;
+		}
+		else
+		{
+			writen(buffer, temp, size);
+			result = size;
+		}
+
+		return result;
+	}
+
 	if (config->type == PRINT_RESULT)
 	{
 		switch (config->modifier)
