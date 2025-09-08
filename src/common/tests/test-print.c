@@ -53,6 +53,46 @@ uint32_t test_simple(void)
 	return status;
 }
 
+uint32_t test_uint(void)
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%u", 10);
+	status += CHECK_STRING(buffer, "10");
+	status += CHECK_RESULT(result, 2);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%u %u", 10, 100);
+	status += CHECK_STRING(buffer, "10 100");
+	status += CHECK_RESULT(result, 6);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$u %1$u", 10, 100);
+	status += CHECK_STRING(buffer, "10 10");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.5u", 55);
+	status += CHECK_STRING(buffer, "00055");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%5u", 55);
+	status += CHECK_STRING(buffer, "   55");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%05u", 55);
+	status += CHECK_STRING(buffer, "00055");
+	status += CHECK_RESULT(result, 5);
+
+	return status;
+}
+
 uint32_t test_char(void)
 {
 	uint32_t status = 0;
@@ -288,5 +328,5 @@ uint32_t test_result(void)
 
 int main()
 {
-	return test_simple() + test_char() + test_string() + test_pointer() + test_result();
+	return test_simple() + test_uint() + test_char() + test_string() + test_pointer() + test_result();
 }
