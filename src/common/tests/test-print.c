@@ -90,6 +90,36 @@ uint32_t test_uint(void)
 	status += CHECK_STRING(buffer, "00055");
 	status += CHECK_RESULT(result, 5);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%b", 10);
+	status += CHECK_STRING(buffer, "1010");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%b %b", 10, 100);
+	status += CHECK_STRING(buffer, "1010 1100100");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$b %1$b", 10, 100);
+	status += CHECK_STRING(buffer, "1010 1010");
+	status += CHECK_RESULT(result, 9);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.9u", 55);
+	status += CHECK_STRING(buffer, "000110111");
+	status += CHECK_RESULT(result, 9);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%9u", 55);
+	status += CHECK_STRING(buffer, "   110111");
+	status += CHECK_RESULT(result, 9);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%09u", 55);
+	status += CHECK_STRING(buffer, "000110111");
+	status += CHECK_RESULT(result, 9);
+
 	return status;
 }
 
