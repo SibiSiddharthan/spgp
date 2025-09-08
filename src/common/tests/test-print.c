@@ -58,6 +58,7 @@ uint32_t test_uint(void)
 	uint32_t status = 0;
 
 	uint32_t result = 0;
+	int16_t outs = 0;
 	char buffer[256] = {0};
 
 	memset(buffer, 0, 256);
@@ -84,6 +85,12 @@ uint32_t test_uint(void)
 	result = sprint(buffer, 256, "%.5u", 55);
 	status += CHECK_STRING(buffer, "00055");
 	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.5u%hn", 55, &outs);
+	status += CHECK_STRING(buffer, "00055");
+	status += CHECK_RESULT(result, 5);
+	status += CHECK_RESULT(outs, 5);
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%5u", 55);
@@ -114,6 +121,12 @@ uint32_t test_uint(void)
 	result = sprint(buffer, 256, "%b %b", 10, 100);
 	status += CHECK_STRING(buffer, "1010 1100100");
 	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%b %b%hn", 10, 100, &outs);
+	status += CHECK_STRING(buffer, "1010 1100100");
+	status += CHECK_RESULT(result, 12);
+	status += CHECK_RESULT(outs, 12);
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%1$b %1$b", 10, 100);
@@ -167,8 +180,14 @@ uint32_t test_uint(void)
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%3o", 55);
-	status += CHECK_STRING(buffer, " 65");
+	status += CHECK_STRING(buffer, " 67");
 	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%3o%hn", 55, &outs);
+	status += CHECK_STRING(buffer, " 67");
+	status += CHECK_RESULT(result, 3);
+	status += CHECK_RESULT(outs, 3);
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%03o", 55);
@@ -224,6 +243,17 @@ uint32_t test_uint(void)
 	result = sprint(buffer, 256, "%03x", 55);
 	status += CHECK_STRING(buffer, "037");
 	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#03x", 55);
+	status += CHECK_STRING(buffer, "0x37");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#03x%hn", 55, &outs);
+	status += CHECK_STRING(buffer, "0x37");
+	status += CHECK_RESULT(result, 4);
+	status += CHECK_RESULT(outs, 4);
 
 	return status;
 }
