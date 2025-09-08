@@ -150,6 +150,46 @@ uint32_t test_uint(void)
 	status += CHECK_STRING(buffer, "067");
 	status += CHECK_RESULT(result, 3);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%x", 10);
+	status += CHECK_STRING(buffer, "a");
+	status += CHECK_RESULT(result, 1);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%X", 10);
+	status += CHECK_STRING(buffer, "A");
+	status += CHECK_RESULT(result, 1);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%x %x", 10, 100);
+	status += CHECK_STRING(buffer, "a 64");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$x %1$x", 10, 100);
+	status += CHECK_STRING(buffer, "a a");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$X %1$x", 10, 100);
+	status += CHECK_STRING(buffer, "A a");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.3x", 55);
+	status += CHECK_STRING(buffer, "037");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%3x", 55);
+	status += CHECK_STRING(buffer, " 37");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%03x", 55);
+	status += CHECK_STRING(buffer, "037");
+	status += CHECK_RESULT(result, 3);
+
 	return status;
 }
 
