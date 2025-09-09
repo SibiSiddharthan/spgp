@@ -363,7 +363,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	uint32_t result = 0;
 	uint32_t pos = 0;
 	uint32_t size = 0;
-	uint32_t extra = 0;
 
 	if (config->type == PRINT_INT_NUMBER)
 	{
@@ -433,32 +432,128 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 	if (config->type == PRINT_UINT_BINARY)
 	{
+		uint32_t extra = 0;
+
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = u32_to_bin(temp, (uint32_t)(uintptr_t)config->data);
+			size = u32_to_bin(temp + pos, (uint32_t)(uintptr_t)config->data);
 			break;
 		case PRINT_MOD_SHORT:
-			size = u16_to_bin(temp, (uint16_t)(uintptr_t)config->data);
+			size = u16_to_bin(temp + pos, (uint16_t)(uintptr_t)config->data);
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = u8_to_bin(temp, (uint8_t)(uintptr_t)config->data);
+			size = u8_to_bin(temp + pos, (uint8_t)(uintptr_t)config->data);
 			break;
 		case PRINT_MOD_LONG:
-			size = u64_to_bin(temp, (uint64_t)(uintptr_t)config->data);
+			size = u64_to_bin(temp + pos, (uint64_t)(uintptr_t)config->data);
 			break;
 		case PRINT_MOD_LONG_LONG:
-			size = umax_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_bin(temp + pos, (uintmax_t)(uintptr_t)config->data);
 			break;
 		case PRINT_MOD_MAX:
-			size = umax_to_bin(temp, (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_bin(temp + pos, (uintmax_t)(uintptr_t)config->data);
 			break;
 		case PRINT_MOD_SIZE:
-			size = usize_to_bin(temp, (size_t)(uintptr_t)config->data);
+			size = usize_to_bin(temp + pos, (size_t)(uintptr_t)config->data);
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = uptr_to_bin(temp, (uintptr_t)config->data);
+			size = uptr_to_bin(temp + pos, (uintptr_t)config->data);
 			break;
+		}
+
+		if (config->flags & PRINT_LEFT_JUSTIFY)
+		{
+			if (config->flags & PRINT_ALTERNATE_FORM)
+			{
+				writebyte(buffer, '0');
+				writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
+
+				pos += 2;
+			}
+
+			while (size < config->precision)
+			{
+				writebyte(buffer, '0');
+				size += 1;
+			}
+
+			size += pos;
+
+			while (size < config->width)
+			{
+				writebyte(buffer, ' ');
+				size += 1;
+			}
+
+			result = size;
+
+			return result;
+		}
+
+		if (config->width > MAX(config->precision, size))
+		{
+			if (config->flags & PRINT_ZERO_PADDED)
+			{
+				if (config->flags & PRINT_ALTERNATE_FORM)
+				{
+					writebyte(buffer, '0');
+					writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
+
+					pos += 2;
+				}
+
+				while (pos + size < config->width)
+				{
+					writebyte(buffer, '0');
+					pos += 1;
+				}
+
+				writen(buffer, temp, size);
+				result = pos + size;
+			}
+			else
+			{
+				uint32_t count = MAX(config->precision, size) + (config->flags & PRINT_ALTERNATE_FORM ? 2 : 0);
+
+				while (pos + config->width < count)
+				{
+					writebyte(buffer, ' ');
+					pos += 1;
+				}
+
+				if (config->flags & PRINT_ALTERNATE_FORM)
+				{
+					writebyte(buffer, '0');
+					writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
+
+					pos += 2;
+				}
+
+				writen(buffer, temp, size);
+				result = size + pos;
+			}
+		}
+		else
+		{
+			uint32_t extra = 0;
+
+			if (config->flags & PRINT_ALTERNATE_FORM)
+			{
+				writebyte(buffer, '0');
+				writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
+
+				extra += 2;
+			}
+
+			while (pos + size < config->precision)
+			{
+				writebyte(buffer, '0');
+				pos += 1;
+			}
+
+			writen(buffer, temp, size);
+			result = pos + size + extra;
 		}
 
 		return result;
@@ -532,7 +627,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		{
 			if (config->type == PRINT_UINT_HEX || config->type == PRINT_UINT_OCTAL || config->type == PRINT_UINT_BINARY)
 			{
-				extra += 2;
 			}
 		}
 
@@ -540,11 +634,10 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		{
 			if (config->type == PRINT_UINT_NUMBER || config->type == PRINT_INT_NUMBER)
 			{
-				extra += 1;
 			}
 		}
 
-		if (size + extra < MAX(config->precision, config->width))
+		if (size < MAX(config->precision, config->width))
 		{
 			if (config->precision < config->width)
 			{
