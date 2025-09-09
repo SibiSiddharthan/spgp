@@ -134,17 +134,17 @@ uint32_t test_uint(void)
 	status += CHECK_RESULT(result, 9);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%.9u", 55);
+	result = sprint(buffer, 256, "%.9b", 55);
 	status += CHECK_STRING(buffer, "000110111");
 	status += CHECK_RESULT(result, 9);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%9u", 55);
+	result = sprint(buffer, 256, "%9b", 55);
 	status += CHECK_STRING(buffer, "   110111");
 	status += CHECK_RESULT(result, 9);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%09u", 55);
+	result = sprint(buffer, 256, "%09b", 55);
 	status += CHECK_STRING(buffer, "000110111");
 	status += CHECK_RESULT(result, 9);
 
@@ -176,7 +176,7 @@ uint32_t test_uint(void)
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%.3o", 55);
 	status += CHECK_STRING(buffer, "067");
-	status += CHECK_RESULT(result, 5);
+	status += CHECK_RESULT(result, 3);
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%3o", 55);
