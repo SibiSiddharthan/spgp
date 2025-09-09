@@ -608,7 +608,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		}
 
-		return result;
+		return print_uint_formatted(config, buffer, temp, size);
 	}
 
 	if (config->type == PRINT_UINT_HEX)
@@ -639,7 +639,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		}
 
-		return result;
+		return print_uint_formatted(config, buffer, temp, size);
 	}
 
 	if (config->type == PRINT_UINT_OCTAL || config->type == PRINT_UINT_HEX)
