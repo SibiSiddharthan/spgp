@@ -344,8 +344,8 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		config->flags &= ~PRINT_ZERO_PADDED;
 	}
 
-	// Ignore '0' if precision is greater than 0
-	if (config->precision > 0)
+	// Ignore '0' if precision is given
+	if (config->flags & PRINT_PRECISION)
 	{
 		config->flags &= ~PRINT_ZERO_PADDED;
 	}
