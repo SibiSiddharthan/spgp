@@ -382,21 +382,24 @@ static uint32_t print_uint_formatted(print_config *config, buffer_t *buffer, byt
 
 	if (config->flags & PRINT_LEFT_JUSTIFY)
 	{
+		uint32_t extra = 0;
+
 		if (config->flags & PRINT_ALTERNATE_FORM)
 		{
 			writebyte(buffer, '0');
 			writebyte(buffer, alternate_form_char(config));
 
-			pos += 2;
+			extra = 2;
 		}
 
-		while (size < config->precision)
+		while (pos < config->precision)
 		{
 			writebyte(buffer, '0');
-			size += 1;
+			pos += 1;
 		}
 
-		size += pos;
+		writen(buffer, temp, size);
+		size += pos + extra;
 
 		while (size < config->width)
 		{
