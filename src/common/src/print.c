@@ -275,6 +275,9 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	case 'd':
 		config->type = PRINT_INT_NUMBER;
 		break;
+	case 'u':
+		config->type = PRINT_UINT_NUMBER;
+		break;
 	case 'B':
 		config->flags |= PRINT_UPPER_CASE;
 	case 'b':
@@ -372,7 +375,7 @@ static byte_t alternate_form_char(print_config *config)
 	}
 }
 
-static uint32_t print_uint_formatted(print_config *config, buffer_t *buffer, byte_t temp, uint32_t size)
+static uint32_t print_uint_formatted(print_config *config, buffer_t *buffer, byte_t *temp, uint32_t size)
 {
 	uint32_t result = 0;
 	uint32_t pos = 0;
@@ -431,7 +434,7 @@ static uint32_t print_uint_formatted(print_config *config, buffer_t *buffer, byt
 		{
 			uint32_t count = MAX(config->precision, size) + (config->flags & PRINT_ALTERNATE_FORM ? 2 : 0);
 
-			while (pos + config->width < count)
+			while (pos + count < config->width)
 			{
 				writebyte(buffer, ' ');
 				pos += 1;
