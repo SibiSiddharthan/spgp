@@ -357,6 +357,123 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	}
 }
 
+static byte_t alternate_form_char(print_config *config)
+{
+	switch (config->type)
+	{
+	case PRINT_UINT_BINARY:
+		return config->flags & PRINT_UPPER_CASE ? 'B' : 'b';
+	case PRINT_UINT_OCTAL:
+		return config->flags & PRINT_UPPER_CASE ? 'O' : 'o';
+	case PRINT_UINT_HEX:
+		return config->flags & PRINT_UPPER_CASE ? 'X' : 'x';
+	default:
+		return 0;
+	}
+}
+
+static uint32_t print_uint_formatted(print_config *config, buffer_t *buffer, byte_t temp, uint32_t size)
+{
+	uint32_t result = 0;
+	uint32_t pos = 0;
+
+	if (config->flags & PRINT_LEFT_JUSTIFY)
+	{
+		if (config->flags & PRINT_ALTERNATE_FORM)
+		{
+			writebyte(buffer, '0');
+			writebyte(buffer, alternate_form_char(config));
+
+			pos += 2;
+		}
+
+		while (size < config->precision)
+		{
+			writebyte(buffer, '0');
+			size += 1;
+		}
+
+		size += pos;
+
+		while (size < config->width)
+		{
+			writebyte(buffer, ' ');
+			size += 1;
+		}
+
+		result = size;
+
+		return result;
+	}
+
+	if (config->width > MAX(config->precision, size))
+	{
+		if (config->flags & PRINT_ZERO_PADDED)
+		{
+			if (config->flags & PRINT_ALTERNATE_FORM)
+			{
+				writebyte(buffer, '0');
+				writebyte(buffer, alternate_form_char(config));
+
+				pos += 2;
+			}
+
+			while (pos + size < config->width)
+			{
+				writebyte(buffer, '0');
+				pos += 1;
+			}
+
+			writen(buffer, temp, size);
+			result = pos + size;
+		}
+		else
+		{
+			uint32_t count = MAX(config->precision, size) + (config->flags & PRINT_ALTERNATE_FORM ? 2 : 0);
+
+			while (pos + config->width < count)
+			{
+				writebyte(buffer, ' ');
+				pos += 1;
+			}
+
+			if (config->flags & PRINT_ALTERNATE_FORM)
+			{
+				writebyte(buffer, '0');
+				writebyte(buffer, alternate_form_char(config));
+
+				pos += 2;
+			}
+
+			writen(buffer, temp, size);
+			result = size + pos;
+		}
+	}
+	else
+	{
+		uint32_t extra = 0;
+
+		if (config->flags & PRINT_ALTERNATE_FORM)
+		{
+			writebyte(buffer, '0');
+			writebyte(buffer, alternate_form_char(config));
+
+			extra += 2;
+		}
+
+		while (pos + size < config->precision)
+		{
+			writebyte(buffer, '0');
+			pos += 1;
+		}
+
+		writen(buffer, temp, size);
+		result = pos + size + extra;
+	}
+
+	return result;
+}
+
 static uint32_t print_arg(buffer_t *buffer, print_config *config)
 {
 	byte_t temp[128] = {0};
@@ -432,8 +549,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 	if (config->type == PRINT_UINT_BINARY)
 	{
-		uint32_t extra = 0;
-
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
@@ -462,101 +577,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		}
 
-		if (config->flags & PRINT_LEFT_JUSTIFY)
-		{
-			if (config->flags & PRINT_ALTERNATE_FORM)
-			{
-				writebyte(buffer, '0');
-				writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
-
-				pos += 2;
-			}
-
-			while (size < config->precision)
-			{
-				writebyte(buffer, '0');
-				size += 1;
-			}
-
-			size += pos;
-
-			while (size < config->width)
-			{
-				writebyte(buffer, ' ');
-				size += 1;
-			}
-
-			result = size;
-
-			return result;
-		}
-
-		if (config->width > MAX(config->precision, size))
-		{
-			if (config->flags & PRINT_ZERO_PADDED)
-			{
-				if (config->flags & PRINT_ALTERNATE_FORM)
-				{
-					writebyte(buffer, '0');
-					writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
-
-					pos += 2;
-				}
-
-				while (pos + size < config->width)
-				{
-					writebyte(buffer, '0');
-					pos += 1;
-				}
-
-				writen(buffer, temp, size);
-				result = pos + size;
-			}
-			else
-			{
-				uint32_t count = MAX(config->precision, size) + (config->flags & PRINT_ALTERNATE_FORM ? 2 : 0);
-
-				while (pos + config->width < count)
-				{
-					writebyte(buffer, ' ');
-					pos += 1;
-				}
-
-				if (config->flags & PRINT_ALTERNATE_FORM)
-				{
-					writebyte(buffer, '0');
-					writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
-
-					pos += 2;
-				}
-
-				writen(buffer, temp, size);
-				result = size + pos;
-			}
-		}
-		else
-		{
-			uint32_t extra = 0;
-
-			if (config->flags & PRINT_ALTERNATE_FORM)
-			{
-				writebyte(buffer, '0');
-				writebyte(buffer, config->flags & PRINT_UPPER_CASE ? 'B' : 'b');
-
-				extra += 2;
-			}
-
-			while (pos + size < config->precision)
-			{
-				writebyte(buffer, '0');
-				pos += 1;
-			}
-
-			writen(buffer, temp, size);
-			result = pos + size + extra;
-		}
-
-		return result;
+		return print_uint_formatted(config, buffer, temp, size);
 	}
 
 	if (config->type == PRINT_UINT_OCTAL)
