@@ -53,6 +53,133 @@ uint32_t test_simple(void)
 	return status;
 }
 
+uint32_t test_int(void)
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	int16_t outs = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%d", 10);
+	status += CHECK_STRING(buffer, "10");
+	status += CHECK_RESULT(result, 2);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%+d", 10);
+	status += CHECK_STRING(buffer, "+10");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#d", 10);
+	status += CHECK_STRING(buffer, "10");
+	status += CHECK_RESULT(result, 2);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%i %d", 10, 100);
+	status += CHECK_STRING(buffer, "10 100");
+	status += CHECK_RESULT(result, 6);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%i %d", -10, -100);
+	status += CHECK_STRING(buffer, "-10 -100");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$d %1$d", -10, -100);
+	status += CHECK_STRING(buffer, "-10 -10");
+	status += CHECK_RESULT(result, 7);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.5d", 55);
+	status += CHECK_STRING(buffer, "00055");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.5d%hn", 55, &outs);
+	status += CHECK_STRING(buffer, "00055");
+	status += CHECK_RESULT(result, 5);
+	status += CHECK_RESULT(outs, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%5d", -55);
+	status += CHECK_STRING(buffer, "  -55");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%05d", -55);
+	status += CHECK_STRING(buffer, "-0055");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%-05d", 55);
+	status += CHECK_STRING(buffer, "55   ");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%-05d", -55);
+	status += CHECK_STRING(buffer, "-55  ");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%+05d", 55);
+	status += CHECK_STRING(buffer, "+0055");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%-7.5d", 55);
+	status += CHECK_STRING(buffer, "00055  ");
+	status += CHECK_RESULT(result, 7);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%-7.5d", -55);
+	status += CHECK_STRING(buffer, "-00055 ");
+	status += CHECK_RESULT(result, 7);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%8.5d", 55);
+	status += CHECK_STRING(buffer, "   00055");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%+8.5d", 55);
+	status += CHECK_STRING(buffer, "  +00055");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%+8.5d", -55);
+	status += CHECK_STRING(buffer, "  -00055");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%8.1d", 55);
+	status += CHECK_STRING(buffer, "      55");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#2.5d", 55);
+	status += CHECK_STRING(buffer, "00055");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#+2.5d", 55);
+	status += CHECK_STRING(buffer, "+00055");
+	status += CHECK_RESULT(result, 6);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#+2.5d", -55);
+	status += CHECK_STRING(buffer, "-00055");
+	status += CHECK_RESULT(result, 6);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%-4.5d", 55);
+	status += CHECK_STRING(buffer, "00055");
+	status += CHECK_RESULT(result, 5);
+
+	return status;
+}
+
 uint32_t test_uint(void)
 {
 	uint32_t status = 0;
@@ -598,5 +725,5 @@ uint32_t test_result(void)
 
 int main()
 {
-	return test_simple() + test_uint() + test_char() + test_string() + test_pointer() + test_result();
+	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_result();
 }
