@@ -492,28 +492,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = i32_to_dec(temp, (int32_t)(intptr_t)config->data);
+			size = i32_to_dec(temp, (int32_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		case PRINT_MOD_SHORT:
-			size = i16_to_dec(temp, (int16_t)(intptr_t)config->data);
+			size = i16_to_dec(temp, (int16_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = i8_to_dec(temp, (int8_t)(intptr_t)config->data);
+			size = i8_to_dec(temp, (int8_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		case PRINT_MOD_LONG:
-			size = i64_to_dec(temp, (int64_t)(intptr_t)config->data);
+			size = i64_to_dec(temp, (int64_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		case PRINT_MOD_LONG_LONG:
-			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data);
+			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		case PRINT_MOD_MAX:
-			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data);
+			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		case PRINT_MOD_SIZE:
-			size = isize_to_dec(temp, (ssize_t)(intptr_t)config->data);
+			size = isize_to_dec(temp, (ssize_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = iptr_to_dec(temp, (intptr_t)config->data);
+			size = iptr_to_dec(temp, (intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
 			break;
 		}
 
@@ -525,28 +525,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = u32_to_dec(temp, (uint32_t)(uintptr_t)config->data);
+			size = u32_to_dec(temp, (uint32_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_SHORT:
-			size = u16_to_dec(temp, (uint16_t)(uintptr_t)config->data);
+			size = u16_to_dec(temp, (uint16_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = u8_to_dec(temp, (uint8_t)(uintptr_t)config->data);
+			size = u8_to_dec(temp, (uint8_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_LONG:
-			size = u64_to_dec(temp, (uint64_t)(uintptr_t)config->data);
+			size = u64_to_dec(temp, (uint64_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_LONG_LONG:
-			size = umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_MAX:
-			size = umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_SIZE:
-			size = usize_to_dec(temp, (size_t)(uintptr_t)config->data);
+			size = usize_to_dec(temp, (size_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = uptr_to_dec(temp, (uintptr_t)config->data);
+			size = uptr_to_dec(temp, (uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
 			break;
 		}
 
