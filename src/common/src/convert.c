@@ -5,7 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <types.h>
+#include "convert.h"
+
 #include <string.h>
 #include <byteswap.h>
 #include <ptr.h>
@@ -153,15 +154,27 @@ uintmax_t uint_from_bin_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x)
+uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags)
 {
 	char temp[8] = {0};
 	uint8_t pos = 0;
+	uint8_t sep = 0;
 
 	do
 	{
+		if (sep == 3)
+		{
+			sep = 0;
+
+			if (flags & CONVERT_GROUP_DIGITS)
+			{
+				temp[pos++] = ',';
+			}
+		}
+
 		temp[pos++] = (x % 10) + '0';
 		x /= 10;
+		sep++;
 
 	} while (x != 0);
 
@@ -186,9 +199,9 @@ uintmax_t uint_from_dec_common(void *buffer, uint8_t size)
 	return result;
 }
 
-uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x)
+uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags)
 {
-	uint8_t minus = 0;
+	uint8_t sign = 0;
 
 	if (x == INT64_MIN)
 	{
@@ -199,11 +212,19 @@ uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x)
 	if (x < 0)
 	{
 		x = ~x + 1;
-		minus = 1;
+		sign = 1;
 		*buffer++ = '-';
 	}
+	else
+	{
+		if (flags & CONVERT_FORCE_SIGN)
+		{
+			sign = 1;
+			*buffer++ = '+';
+		}
+	}
 
-	return uint_to_dec_common(buffer, x) + minus;
+	return uint_to_dec_common(buffer, x, flags) + sign;
 }
 
 intmax_t int_from_dec_common(void *buffer, uint8_t size)
@@ -480,12 +501,12 @@ uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x)
 	if (exponent >= FLOAT32_EXP_BIAS)
 	{
 		buffer[pos++] = '+';
-		pos += uint_to_dec_common(buffer + pos, exponent - FLOAT32_EXP_BIAS);
+		pos += uint_to_dec_common(buffer + pos, exponent - FLOAT32_EXP_BIAS, 0);
 	}
 	else
 	{
 		buffer[pos++] = '-';
-		pos += uint_to_dec_common(buffer + pos, FLOAT32_EXP_BIAS - exponent);
+		pos += uint_to_dec_common(buffer + pos, FLOAT32_EXP_BIAS - exponent, 0);
 	}
 
 	return pos;
@@ -599,12 +620,12 @@ uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
 	if (exponent >= FLOAT64_EXP_BIAS)
 	{
 		buffer[pos++] = '+';
-		pos += uint_to_dec_common(buffer + pos, exponent - FLOAT64_EXP_BIAS);
+		pos += uint_to_dec_common(buffer + pos, exponent - FLOAT64_EXP_BIAS, 0);
 	}
 	else
 	{
 		buffer[pos++] = '-';
-		pos += uint_to_dec_common(buffer + pos, FLOAT64_EXP_BIAS - exponent);
+		pos += uint_to_dec_common(buffer + pos, FLOAT64_EXP_BIAS - exponent, 0);
 	}
 
 	return pos;
