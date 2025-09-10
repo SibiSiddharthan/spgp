@@ -440,8 +440,16 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 				pos += 1;
 			}
 
+			count = 0;
+
+			while (count + size < config->precision)
+			{
+				writebyte(buffer, '0');
+				count += 1;
+			}
+
 			writen(buffer, temp, size);
-			result = size + pos;
+			result = size + pos + count;
 		}
 	}
 	else
