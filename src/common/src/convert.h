@@ -14,6 +14,10 @@
 typedef long long ssize_t;
 #endif
 
+// Flags
+#define CONVERT_FORCE_SIGN   0x10
+#define CONVERT_GROUP_DIGITS 0x40
+
 uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x);
 uintmax_t uint_from_hex_common(void *buffer, uint8_t size);
 
@@ -233,42 +237,42 @@ static inline uintptr_t uptr_from_bin(void *buffer, uint8_t size)
 	return uint_from_bin_common(buffer, size);
 }
 
-uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x);
+uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags);
 uintmax_t uint_from_dec_common(void *buffer, uint8_t size);
 
-static inline uint32_t u8_to_dec(byte_t buffer[32], uint8_t x)
+static inline uint32_t u8_to_dec(byte_t buffer[32], uint8_t x, uint32_t flags)
 {
-	return uint_to_dec_common(buffer, x);
+	return uint_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t u16_to_dec(byte_t buffer[32], uint16_t x)
+static inline uint32_t u16_to_dec(byte_t buffer[32], uint16_t x, uint32_t flags)
 {
-	return uint_to_dec_common(buffer, x);
+	return uint_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t u32_to_dec(byte_t buffer[32], uint32_t x)
+static inline uint32_t u32_to_dec(byte_t buffer[32], uint32_t x, uint32_t flags)
 {
-	return uint_to_dec_common(buffer, x);
+	return uint_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t u64_to_dec(byte_t buffer[32], uint64_t x)
+static inline uint32_t u64_to_dec(byte_t buffer[32], uint64_t x, uint32_t flags)
 {
-	return uint_to_dec_common(buffer, x);
+	return uint_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t umax_to_dec(byte_t buffer[32], uintmax_t x)
+static inline uint32_t umax_to_dec(byte_t buffer[32], uintmax_t x, uint32_t flags)
 {
-	return uint_to_dec_common(buffer, x);
+	return uint_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t usize_to_dec(byte_t buffer[32], size_t x)
+static inline uint32_t usize_to_dec(byte_t buffer[32], size_t x, uint32_t flags)
 {
-	return uint_to_dec_common(buffer, x);
+	return uint_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t uptr_to_dec(byte_t buffer[32], uintptr_t x)
+static inline uint32_t uptr_to_dec(byte_t buffer[32], uintptr_t x, uint32_t flags)
 {
-	return uint_to_dec_common(buffer, x);
+	return uint_to_dec_common(buffer, x, flags);
 }
 
 static inline uint8_t u8_from_dec(void *buffer, uint8_t size)
@@ -306,42 +310,42 @@ static inline uintptr_t uptr_from_dec(void *buffer, uint8_t size)
 	return uint_from_dec_common(buffer, size);
 }
 
-uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x);
+uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags);
 intmax_t int_from_dec_common(void *buffer, uint8_t size);
 
-static inline uint32_t i8_to_dec(byte_t buffer[32], int8_t x)
+static inline uint32_t i8_to_dec(byte_t buffer[32], int8_t x, uint32_t flags)
 {
-	return int_to_dec_common(buffer, x);
+	return int_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t i16_to_dec(byte_t buffer[32], int16_t x)
+static inline uint32_t i16_to_dec(byte_t buffer[32], int16_t x, uint32_t flags)
 {
-	return int_to_dec_common(buffer, x);
+	return int_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t i32_to_dec(byte_t buffer[32], int32_t x)
+static inline uint32_t i32_to_dec(byte_t buffer[32], int32_t x, uint32_t flags)
 {
-	return int_to_dec_common(buffer, x);
+	return int_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t i64_to_dec(byte_t buffer[32], int64_t x)
+static inline uint32_t i64_to_dec(byte_t buffer[32], int64_t x, uint32_t flags)
 {
-	return int_to_dec_common(buffer, x);
+	return int_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t imax_to_dec(byte_t buffer[32], intmax_t x)
+static inline uint32_t imax_to_dec(byte_t buffer[32], intmax_t x, uint32_t flags)
 {
-	return int_to_dec_common(buffer, x);
+	return int_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t isize_to_dec(byte_t buffer[32], ssize_t x)
+static inline uint32_t isize_to_dec(byte_t buffer[32], ssize_t x, uint32_t flags)
 {
-	return int_to_dec_common(buffer, x);
+	return int_to_dec_common(buffer, x, flags);
 }
 
-static inline uint32_t iptr_to_dec(byte_t buffer[32], intptr_t x)
+static inline uint32_t iptr_to_dec(byte_t buffer[32], intptr_t x, uint32_t flags)
 {
-	return int_to_dec_common(buffer, x);
+	return int_to_dec_common(buffer, x, flags);
 }
 
 static inline int8_t i8_from_dec(void *buffer, uint8_t size)
