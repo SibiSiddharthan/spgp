@@ -379,6 +379,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 {
 	uint32_t result = 0;
 	uint32_t pos = 0;
+	uint32_t extra = 0;
 
 	if (config->flags & PRINT_LEFT_JUSTIFY)
 	{
@@ -387,6 +388,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 			writebyte(buffer, temp[0]);
 			temp++;
 			size--;
+			extra = 1;
 		}
 
 		while (pos + size < config->precision)
@@ -397,6 +399,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 
 		writen(buffer, temp, size);
 		size += pos;
+		size += extra;
 
 		while (size < config->width)
 		{
@@ -432,12 +435,20 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 		}
 		else
 		{
-			uint32_t count = MAX(config->precision, size);
+			uint32_t count = MAX(config->precision, size - (temp[0] == '-' || temp[0] == '+')) + (temp[0] == '-' || temp[0] == '+');
 
 			while (pos + count < config->width)
 			{
 				writebyte(buffer, ' ');
 				pos += 1;
+			}
+
+			if (temp[0] == '-' || temp[0] == '+')
+			{
+				writebyte(buffer, temp[0]);
+				temp++;
+				size--;
+				pos++;
 			}
 
 			count = 0;
@@ -459,6 +470,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 			writebyte(buffer, temp[0]);
 			temp++;
 			size--;
+			extra = 1;
 		}
 
 		while (pos + size < config->precision)
@@ -468,7 +480,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 		}
 
 		writen(buffer, temp, size);
-		result = pos + size;
+		result = pos + size + extra;
 	}
 
 	return result;

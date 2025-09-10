@@ -69,7 +69,7 @@ uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x)
 
 	for (uint8_t i = 0; i < pos; ++i)
 	{
-		buffer[i] = temp[pos - i - 1];
+		buffer[i] = temp[(pos - i) - 1];
 	}
 
 	return pos;
