@@ -375,6 +375,97 @@ static byte_t alternate_form_char(print_config *config)
 	}
 }
 
+static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte_t *temp, uint32_t size)
+{
+	uint32_t result = 0;
+	uint32_t pos = 0;
+
+	if (config->flags & PRINT_LEFT_JUSTIFY)
+	{
+		if (temp[0] == '-' || temp[0] == '+')
+		{
+			writebyte(buffer, temp[0]);
+			temp++;
+			size--;
+		}
+
+		while (pos + size < config->precision)
+		{
+			writebyte(buffer, '0');
+			pos += 1;
+		}
+
+		writen(buffer, temp, size);
+		size += pos;
+
+		while (size < config->width)
+		{
+			writebyte(buffer, ' ');
+			size += 1;
+		}
+
+		result = size;
+
+		return result;
+	}
+
+	if (config->width > MAX(config->precision, size))
+	{
+		if (config->flags & PRINT_ZERO_PADDED)
+		{
+			if (temp[0] == '-' || temp[0] == '+')
+			{
+				writebyte(buffer, temp[0]);
+				temp++;
+				size--;
+				pos++;
+			}
+
+			while (pos + size < config->width)
+			{
+				writebyte(buffer, '0');
+				pos += 1;
+			}
+
+			writen(buffer, temp, size);
+			result = pos + size;
+		}
+		else
+		{
+			uint32_t count = MAX(config->precision, size);
+
+			while (pos + count < config->width)
+			{
+				writebyte(buffer, ' ');
+				pos += 1;
+			}
+
+			writen(buffer, temp, size);
+			result = size + pos;
+		}
+	}
+	else
+	{
+		if (temp[0] == '-' || temp[0] == '+')
+		{
+			writebyte(buffer, temp[0]);
+			temp++;
+			size--;
+		}
+
+		while (pos + size < config->precision)
+		{
+			writebyte(buffer, '0');
+			pos += 1;
+		}
+
+		writen(buffer, temp, size);
+		result = pos + size;
+	}
+
+	return result;
+}
+
 static uint32_t print_uint_formatted(print_config *config, buffer_t *buffer, byte_t *temp, uint32_t size)
 {
 	uint32_t result = 0;
@@ -392,7 +483,7 @@ static uint32_t print_uint_formatted(print_config *config, buffer_t *buffer, byt
 			extra = 2;
 		}
 
-		while (pos < config->precision)
+		while (pos + size < config->precision)
 		{
 			writebyte(buffer, '0');
 			pos += 1;
@@ -517,7 +608,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		}
 
-		return result;
+		return print_int_formatted(config, buffer, temp, size);
 	}
 
 	if (config->type == PRINT_UINT_NUMBER)
@@ -550,7 +641,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		}
 
-		return result;
+		return print_int_formatted(config, buffer, temp, size);
 	}
 
 	if (config->type == PRINT_UINT_BINARY)
