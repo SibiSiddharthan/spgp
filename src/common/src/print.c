@@ -384,7 +384,21 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 
 	if (temp[0] == '-' || temp[0] == '+')
 	{
-		sign = temp[0];
+		if (config->flags & PRINT_EMPTY_SPACE)
+		{
+			if (temp[0] == '+')
+			{
+				sign = ' ';
+			}
+			else
+			{
+				sign = '-';
+			}
+		}
+		else
+		{
+			sign = temp[0];
+		}
 
 		temp++;
 		size--;
@@ -608,31 +622,38 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 	if (config->type == PRINT_INT_NUMBER)
 	{
+		uint32_t flags = config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS);
+
+		if (config->flags & PRINT_EMPTY_SPACE)
+		{
+			flags |= PRINT_FORCE_SIGN;
+		}
+
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = i32_to_dec(temp, (int32_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = i32_to_dec(temp, (int32_t)(intptr_t)config->data, flags);
 			break;
 		case PRINT_MOD_SHORT:
-			size = i16_to_dec(temp, (int16_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = i16_to_dec(temp, (int16_t)(intptr_t)config->data, flags);
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = i8_to_dec(temp, (int8_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = i8_to_dec(temp, (int8_t)(intptr_t)config->data, flags);
 			break;
 		case PRINT_MOD_LONG:
-			size = i64_to_dec(temp, (int64_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = i64_to_dec(temp, (int64_t)(intptr_t)config->data, flags);
 			break;
 		case PRINT_MOD_LONG_LONG:
-			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, flags);
 			break;
 		case PRINT_MOD_MAX:
-			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, flags);
 			break;
 		case PRINT_MOD_SIZE:
-			size = isize_to_dec(temp, (ssize_t)(intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = isize_to_dec(temp, (ssize_t)(intptr_t)config->data, flags);
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = iptr_to_dec(temp, (intptr_t)config->data, config->flags & (PRINT_FORCE_SIGN | PRINT_GROUP_DIGITS));
+			size = iptr_to_dec(temp, (intptr_t)config->data, flags);
 			break;
 		}
 
