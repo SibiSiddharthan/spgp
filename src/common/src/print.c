@@ -380,15 +380,22 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 	uint32_t result = 0;
 	uint32_t pos = 0;
 	uint32_t extra = 0;
+	byte_t sign = 0;
+
+	if (temp[0] == '-' || temp[0] == '+')
+	{
+		sign = temp[0];
+
+		temp++;
+		size--;
+		extra++;
+	}
 
 	if (config->flags & PRINT_LEFT_JUSTIFY)
 	{
-		if (temp[0] == '-' || temp[0] == '+')
+		if (sign != 0)
 		{
-			writebyte(buffer, temp[0]);
-			temp++;
-			size--;
-			extra = 1;
+			writebyte(buffer, sign);
 		}
 
 		while (pos + size < config->precision)
@@ -416,12 +423,10 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 	{
 		if (config->flags & PRINT_ZERO_PADDED)
 		{
-			if (temp[0] == '-' || temp[0] == '+')
+			if (sign != 0)
 			{
-				writebyte(buffer, temp[0]);
-				temp++;
-				size--;
-				pos++;
+				writebyte(buffer, sign);
+				pos += extra;
 			}
 
 			while (pos + size < config->width)
@@ -435,7 +440,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 		}
 		else
 		{
-			uint32_t count = MAX(config->precision, size - (temp[0] == '-' || temp[0] == '+')) + (temp[0] == '-' || temp[0] == '+');
+			uint32_t count = MAX(config->precision, size) + (sign != 0);
 
 			while (pos + count < config->width)
 			{
@@ -443,12 +448,10 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 				pos += 1;
 			}
 
-			if (temp[0] == '-' || temp[0] == '+')
+			if (sign != 0)
 			{
-				writebyte(buffer, temp[0]);
-				temp++;
-				size--;
-				pos++;
+				writebyte(buffer, sign);
+				pos += extra;
 			}
 
 			count = 0;
@@ -465,12 +468,9 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 	}
 	else
 	{
-		if (temp[0] == '-' || temp[0] == '+')
+		if (sign != 0)
 		{
-			writebyte(buffer, temp[0]);
-			temp++;
-			size--;
-			extra = 1;
+			writebyte(buffer, sign);
 		}
 
 		while (pos + size < config->precision)
