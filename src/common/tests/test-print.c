@@ -252,6 +252,16 @@ uint32_t test_int(void)
 	status += CHECK_STRING(buffer, "+0005,555,555");
 	status += CHECK_RESULT(result, 13);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+13.10d", 5555555);
+	status += CHECK_STRING(buffer, "+0005,555,555");
+	status += CHECK_RESULT(result, 13);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+13.8d", 5555555);
+	status += CHECK_STRING(buffer, "  +05,555,555");
+	status += CHECK_RESULT(result, 13);
+
 	return status;
 }
 

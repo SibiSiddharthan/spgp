@@ -156,7 +156,7 @@ uintmax_t uint_from_bin_common(void *buffer, uint8_t size)
 
 uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags)
 {
-	char temp[8] = {0};
+	char temp[32] = {0};
 	uint8_t pos = 0;
 	uint8_t sep = 0;
 

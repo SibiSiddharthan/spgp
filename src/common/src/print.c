@@ -380,6 +380,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 	uint32_t result = 0;
 	uint32_t pos = 0;
 	uint32_t extra = 0;
+	uint32_t period = 0;
 	byte_t sign = 0;
 
 	if (temp[0] == '-' || temp[0] == '+')
@@ -405,6 +406,11 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 		extra++;
 	}
 
+	if (config->flags & PRINT_GROUP_DIGITS)
+	{
+		period = (size - 1) / 3;
+	}
+
 	if (config->flags & PRINT_LEFT_JUSTIFY)
 	{
 		if (sign != 0)
@@ -412,7 +418,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 			writebyte(buffer, sign);
 		}
 
-		while (pos + size < config->precision)
+		while (pos + (size - period) < config->precision)
 		{
 			writebyte(buffer, '0');
 			pos += 1;
@@ -454,7 +460,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 		}
 		else
 		{
-			uint32_t count = MAX(config->precision, size) + (sign != 0);
+			uint32_t count = MAX(config->precision, size - period) + (sign != 0) + period;
 
 			while (pos + count < config->width)
 			{
@@ -470,7 +476,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 
 			count = 0;
 
-			while (count + size < config->precision)
+			while (count + (size - period) < config->precision)
 			{
 				writebyte(buffer, '0');
 				count += 1;
@@ -487,7 +493,7 @@ static uint32_t print_int_formatted(print_config *config, buffer_t *buffer, byte
 			writebyte(buffer, sign);
 		}
 
-		while (pos + size < config->precision)
+		while (pos + (size - period) < config->precision)
 		{
 			writebyte(buffer, '0');
 			pos += 1;
