@@ -217,6 +217,41 @@ uint32_t test_int(void)
 	status += CHECK_STRING(buffer, "+00055");
 	status += CHECK_RESULT(result, 6);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'d", 5555555);
+	status += CHECK_STRING(buffer, "5,555,555");
+	status += CHECK_RESULT(result, 9);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'d", -5555555);
+	status += CHECK_STRING(buffer, "-5,555,555");
+	status += CHECK_RESULT(result, 10);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+d", 5555555);
+	status += CHECK_STRING(buffer, "+5,555,555");
+	status += CHECK_RESULT(result, 10);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+.10d", 5555555);
+	status += CHECK_STRING(buffer, "+0005,555,555");
+	status += CHECK_RESULT(result, 13);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+10d", 5555555);
+	status += CHECK_STRING(buffer, "+5,555,555");
+	status += CHECK_RESULT(result, 10);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+13d", 5555555);
+	status += CHECK_STRING(buffer, "   +5,555,555");
+	status += CHECK_RESULT(result, 13);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+013d", 5555555);
+	status += CHECK_STRING(buffer, "+0005,555,555");
+	status += CHECK_RESULT(result, 13);
+
 	return status;
 }
 
@@ -298,6 +333,21 @@ uint32_t test_uint(void)
 	result = sprint(buffer, 256, "%-4.5u", 55);
 	status += CHECK_STRING(buffer, "00055");
 	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'u", 5555555);
+	status += CHECK_STRING(buffer, "5,555,555");
+	status += CHECK_RESULT(result, 9);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'.10u", 5555555);
+	status += CHECK_STRING(buffer, "0005,555,555");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'+10u", 5555555);
+	status += CHECK_STRING(buffer, " 5,555,555");
+	status += CHECK_RESULT(result, 10);
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%b", 10);
