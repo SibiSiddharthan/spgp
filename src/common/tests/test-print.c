@@ -831,17 +831,17 @@ uint32_t test_overflow()
 	char buffer[256] = {0};
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%llu", 18446744073709551615u);
+	result = sprint(buffer, 256, "%llu", 18446744073709551615);
 	status += CHECK_STRING(buffer, "18446744073709551615");
 	status += CHECK_RESULT(result, 20);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%lu", 18446744073709551615u);
+	result = sprint(buffer, 256, "%lu", 18446744073709551615);
 	status += CHECK_STRING(buffer, "18446744073709551615");
 	status += CHECK_RESULT(result, 20);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%u", 18446744073709551615u);
+	result = sprint(buffer, 256, "%u", 18446744073709551615);
 	status += CHECK_STRING(buffer, "4294967295");
 	status += CHECK_RESULT(result, 10);
 
@@ -851,7 +851,7 @@ uint32_t test_overflow()
 	status += CHECK_RESULT(result, 10);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%hu", UINT32_MAX);
+	result = sprint(buffer, 256, "%hu", 4294967295);
 	status += CHECK_STRING(buffer, "65535");
 	status += CHECK_RESULT(result, 5);
 
@@ -861,7 +861,7 @@ uint32_t test_overflow()
 	status += CHECK_RESULT(result, 5);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "%hhu", UINT32_MAX);
+	result = sprint(buffer, 256, "%hhu", 4294967295);
 	status += CHECK_STRING(buffer, "255");
 	status += CHECK_RESULT(result, 3);
 
@@ -869,6 +869,56 @@ uint32_t test_overflow()
 	result = sprint(buffer, 256, "%hhu", 255);
 	status += CHECK_STRING(buffer, "255");
 	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%lld", -9223372036854775808);
+	status += CHECK_STRING(buffer, "-9223372036854775808");
+	status += CHECK_RESULT(result, 20);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%ld", -9223372036854775808);
+	status += CHECK_STRING(buffer, "-9223372036854775808");
+	status += CHECK_RESULT(result, 20);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%lld", 9223372036854775807);
+	status += CHECK_STRING(buffer, "9223372036854775807");
+	status += CHECK_RESULT(result, 19);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%ld", 9223372036854775807);
+	status += CHECK_STRING(buffer, "9223372036854775807");
+	status += CHECK_RESULT(result, 19);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%d", -2147483648);
+	status += CHECK_STRING(buffer, "-2147483648");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%d", 2147483647);
+	status += CHECK_STRING(buffer, "2147483647");
+	status += CHECK_RESULT(result, 10);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hd", 32767);
+	status += CHECK_STRING(buffer, "32767");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hd", -32768);
+	status += CHECK_STRING(buffer, "-32768");
+	status += CHECK_RESULT(result, 6);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hhd", 127);
+	status += CHECK_STRING(buffer, "127");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hhd", -128);
+	status += CHECK_STRING(buffer, "-128");
+	status += CHECK_RESULT(result, 4);
 
 	return status;
 }
