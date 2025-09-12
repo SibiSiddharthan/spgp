@@ -823,7 +823,57 @@ uint32_t test_result(void)
 	return status;
 }
 
+uint32_t test_overflow()
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%llu", 18446744073709551615u);
+	status += CHECK_STRING(buffer, "18446744073709551615");
+	status += CHECK_RESULT(result, 20);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%lu", 18446744073709551615u);
+	status += CHECK_STRING(buffer, "18446744073709551615");
+	status += CHECK_RESULT(result, 20);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%u", 18446744073709551615u);
+	status += CHECK_STRING(buffer, "4294967295");
+	status += CHECK_RESULT(result, 10);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%u", 4294967295);
+	status += CHECK_STRING(buffer, "4294967295");
+	status += CHECK_RESULT(result, 10);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hu", UINT32_MAX);
+	status += CHECK_STRING(buffer, "65535");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hu", 65535);
+	status += CHECK_STRING(buffer, "65535");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hhu", UINT32_MAX);
+	status += CHECK_STRING(buffer, "255");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%hhu", 255);
+	status += CHECK_STRING(buffer, "255");
+	status += CHECK_RESULT(result, 3);
+
+	return status;
+}
+
 int main()
 {
-	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_result();
+	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_result() + test_overflow();
 }
