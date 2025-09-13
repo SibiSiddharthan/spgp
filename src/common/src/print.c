@@ -11,6 +11,8 @@
 #include "convert.h"
 #include "varargs.h"
 
+#define VIEW_AS(ARG, TYPE) (*(TYPE *)(&(ARG)))
+
 // Flags
 #define PRINT_ALTERNATE_FORM 0x01 // '#'
 #define PRINT_ZERO_PADDED    0x02 // '0'
@@ -639,28 +641,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = i32_to_dec(temp, (int32_t)(intptr_t)config->data, flags);
+			size = i32_to_dec(temp, VIEW_AS(config->data, int32_t), flags);
 			break;
 		case PRINT_MOD_SHORT:
-			size = i16_to_dec(temp, (int16_t)(intptr_t)config->data, flags);
+			size = i16_to_dec(temp, VIEW_AS(config->data, int16_t), flags);
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = i8_to_dec(temp, (int8_t)(intptr_t)config->data, flags);
+			size = i8_to_dec(temp, VIEW_AS(config->data, int8_t), flags);
 			break;
 		case PRINT_MOD_LONG:
-			size = i64_to_dec(temp, (int64_t)(intptr_t)config->data, flags);
+			size = i64_to_dec(temp, VIEW_AS(config->data, int64_t), flags);
 			break;
 		case PRINT_MOD_LONG_LONG:
-			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, flags);
+			size = imax_to_dec(temp, VIEW_AS(config->data, int64_t), flags);
 			break;
 		case PRINT_MOD_MAX:
-			size = imax_to_dec(temp, (intmax_t)(intptr_t)config->data, flags);
+			size = imax_to_dec(temp, VIEW_AS(config->data, intmax_t), flags);
 			break;
 		case PRINT_MOD_SIZE:
-			size = isize_to_dec(temp, (ssize_t)(intptr_t)config->data, flags);
+			size = isize_to_dec(temp, VIEW_AS(config->data, ssize_t), flags);
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = iptr_to_dec(temp, (intptr_t)config->data, flags);
+			size = iptr_to_dec(temp, VIEW_AS(config->data, intptr_t), flags);
 			break;
 		}
 
@@ -672,28 +674,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = u32_to_dec(temp, (uint32_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = u32_to_dec(temp, VIEW_AS(config->data, uint32_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_SHORT:
-			size = u16_to_dec(temp, (uint16_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = u16_to_dec(temp, VIEW_AS(config->data, uint16_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = u8_to_dec(temp, (uint8_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = u8_to_dec(temp, VIEW_AS(config->data, uint8_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_LONG:
-			size = u64_to_dec(temp, (uint64_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = u64_to_dec(temp, VIEW_AS(config->data, uint64_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_LONG_LONG:
-			size = umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = umax_to_dec(temp, VIEW_AS(config->data, uint64_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_MAX:
-			size = umax_to_dec(temp, (uintmax_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = umax_to_dec(temp, VIEW_AS(config->data, uintmax_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_SIZE:
-			size = usize_to_dec(temp, (size_t)(uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = usize_to_dec(temp, VIEW_AS(config->data, size_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = uptr_to_dec(temp, (uintptr_t)config->data, config->flags & PRINT_GROUP_DIGITS);
+			size = uptr_to_dec(temp, VIEW_AS(config->data, uintptr_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		}
 
@@ -705,28 +707,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = u32_to_bin(temp + pos, (uint32_t)(uintptr_t)config->data);
+			size = u32_to_bin(temp + pos, VIEW_AS(config->data, uint32_t));
 			break;
 		case PRINT_MOD_SHORT:
-			size = u16_to_bin(temp + pos, (uint16_t)(uintptr_t)config->data);
+			size = u16_to_bin(temp + pos, VIEW_AS(config->data, uint16_t));
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = u8_to_bin(temp + pos, (uint8_t)(uintptr_t)config->data);
+			size = u8_to_bin(temp + pos, VIEW_AS(config->data, uint8_t));
 			break;
 		case PRINT_MOD_LONG:
-			size = u64_to_bin(temp + pos, (uint64_t)(uintptr_t)config->data);
+			size = u64_to_bin(temp + pos, VIEW_AS(config->data, uint64_t));
 			break;
 		case PRINT_MOD_LONG_LONG:
-			size = umax_to_bin(temp + pos, (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_bin(temp + pos, VIEW_AS(config->data, uint64_t));
 			break;
 		case PRINT_MOD_MAX:
-			size = umax_to_bin(temp + pos, (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_bin(temp + pos, VIEW_AS(config->data, uintmax_t));
 			break;
 		case PRINT_MOD_SIZE:
-			size = usize_to_bin(temp + pos, (size_t)(uintptr_t)config->data);
+			size = usize_to_bin(temp + pos, VIEW_AS(config->data, size_t));
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = uptr_to_bin(temp + pos, (uintptr_t)config->data);
+			size = uptr_to_bin(temp + pos, VIEW_AS(config->data, uintptr_t));
 			break;
 		}
 
@@ -738,26 +740,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = u32_to_oct(temp, (uint32_t)(uintptr_t)config->data);
+			size = u32_to_oct(temp, VIEW_AS(config->data, uint32_t));
 			break;
 		case PRINT_MOD_SHORT:
-			size = u16_to_oct(temp, (uint16_t)(uintptr_t)config->data);
+			size = u16_to_oct(temp, VIEW_AS(config->data, uint16_t));
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = u8_to_oct(temp, (uint8_t)(uintptr_t)config->data);
+			size = u8_to_oct(temp, VIEW_AS(config->data, uint8_t));
 			break;
 		case PRINT_MOD_LONG:
-			size = u64_to_oct(temp, (uint64_t)(uintptr_t)config->data);
+			size = u64_to_oct(temp, VIEW_AS(config->data, uint64_t));
 			break;
 		case PRINT_MOD_LONG_LONG:
+			size = umax_to_oct(temp, VIEW_AS(config->data, uint64_t));
+			break;
 		case PRINT_MOD_MAX:
-			size = umax_to_oct(temp, (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_oct(temp, VIEW_AS(config->data, uintmax_t));
 			break;
 		case PRINT_MOD_SIZE:
-			size = usize_to_oct(temp, (size_t)(uintptr_t)config->data);
+			size = usize_to_oct(temp, VIEW_AS(config->data, size_t));
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = uptr_to_oct(temp, (uintptr_t)config->data);
+			size = uptr_to_oct(temp, VIEW_AS(config->data, uintptr_t));
 			break;
 		}
 
@@ -769,26 +773,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			size = u32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint32_t)(uintptr_t)config->data);
+			size = u32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint32_t));
 			break;
 		case PRINT_MOD_SHORT:
-			size = u16_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint16_t)(uintptr_t)config->data);
+			size = u16_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint16_t));
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			size = u8_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint8_t)(uintptr_t)config->data);
+			size = u8_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint8_t));
 			break;
 		case PRINT_MOD_LONG:
-			size = u64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uint64_t)(uintptr_t)config->data);
+			size = u64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint64_t));
 			break;
 		case PRINT_MOD_LONG_LONG:
+			size = umax_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint64_t));
+			break;
 		case PRINT_MOD_MAX:
-			size = umax_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uintmax_t)(uintptr_t)config->data);
+			size = umax_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uintmax_t));
 			break;
 		case PRINT_MOD_SIZE:
-			size = usize_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (size_t)(uintptr_t)config->data);
+			size = usize_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, size_t));
 			break;
 		case PRINT_MOD_PTRDIFF:
-			size = uptr_to_hex(temp, (config->flags & PRINT_UPPER_CASE), (uintptr_t)config->data);
+			size = uptr_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uintptr_t));
 			break;
 		}
 
