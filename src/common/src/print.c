@@ -66,6 +66,7 @@ typedef struct _print_config
 	uint32_t width;
 	uint32_t precision;
 	uint32_t index;
+	size_t result;
 	void *data;
 } print_config;
 
@@ -1117,28 +1118,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		switch (config->modifier)
 		{
 		case PRINT_MOD_NONE:
-			*(int32_t *)config->data = (int32_t)buffer->pos;
+			*(int32_t *)config->data = (int32_t)config->result;
 			break;
 		case PRINT_MOD_SHORT:
-			*(int16_t *)config->data = (int16_t)buffer->pos;
+			*(int16_t *)config->data = (int16_t)config->result;
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			*(int8_t *)config->data = (int8_t)buffer->pos;
+			*(int8_t *)config->data = (int8_t)config->result;
 			break;
 		case PRINT_MOD_LONG:
-			*(int64_t *)config->data = (int64_t)buffer->pos;
+			*(int64_t *)config->data = (int64_t)config->result;
 			break;
 		case PRINT_MOD_LONG_LONG:
-			*(int64_t *)config->data = (int64_t)buffer->pos;
+			*(int64_t *)config->data = (int64_t)config->result;
 			break;
 		case PRINT_MOD_MAX:
-			*(intmax_t *)config->data = (intmax_t)buffer->pos;
+			*(intmax_t *)config->data = (intmax_t)config->result;
 			break;
 		case PRINT_MOD_SIZE:
-			*(size_t *)config->data = (size_t)buffer->pos;
+			*(size_t *)config->data = (size_t)config->result;
 			break;
 		case PRINT_MOD_PTRDIFF:
-			*(ptrdiff_t *)config->data = (ptrdiff_t)buffer->pos;
+			*(ptrdiff_t *)config->data = (ptrdiff_t)config->result;
 			break;
 		}
 
@@ -1195,6 +1196,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 				continue;
 			}
 
+			config.result = result;
 			result += print_arg(buffer, &config);
 			continue;
 		}
