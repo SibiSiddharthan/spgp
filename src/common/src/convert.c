@@ -162,17 +162,27 @@ uint32_t uint_to_bin_common(byte_t buffer[64], uintmax_t x)
 	return pos;
 }
 
-uintmax_t uint_from_bin_common(void *buffer, uint8_t size)
+uint32_t uint_from_bin_common(buffer_t *buffer, uintmax_t *value)
 {
-	uint8_t *in = buffer;
-	uint64_t result = 0;
+	uint32_t count = 0;
+	byte_t byte = 0;
 
-	while (size--)
+	*value = 0;
+
+	while ((byte = peekbyte(buffer, 0)) != '\0')
 	{
-		result = (result << 1) + (*in++ - '0');
+		if (byte == '0' || byte == '1')
+		{
+			*value = (*value << 1) + (byte - '0');
+			readbyte(buffer);
+
+			continue;
+		}
+
+		break;
 	}
 
-	return result;
+	return count;
 }
 
 uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags)
