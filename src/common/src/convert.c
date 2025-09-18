@@ -235,13 +235,13 @@ uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags)
 	return uint_to_dec_common(buffer, x, flags) + sign;
 }
 
-uint32_t int_from_dec_common(buffer_t *buffer, void *value)
+uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value)
 {
-	intmax_t result = 0;
 	uint32_t count = 0;
 	uint8_t minus = 0;
 	byte_t byte = 0;
 
+	*value = 0;
 	byte = peekbyte(buffer, 0);
 
 	if (byte == '+' || byte == '-')
@@ -261,11 +261,11 @@ uint32_t int_from_dec_common(buffer_t *buffer, void *value)
 		{
 			if (minus)
 			{
-				result = (count * 10) - (byte - '0');
+				*value = (*value * 10) - (byte - '0');
 			}
 			else
 			{
-				result = (count * 10) + (byte - '0');
+				*value = (*value * 10) + (byte - '0');
 			}
 
 			readbyte(buffer);
@@ -284,8 +284,6 @@ uint32_t int_from_dec_common(buffer_t *buffer, void *value)
 
 		break;
 	}
-
-	*(intmax_t *)value = result;
 
 	return count;
 }
