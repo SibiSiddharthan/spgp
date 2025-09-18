@@ -12,7 +12,9 @@
 #include "varargs.h"
 
 // Flags
-#define SCAN_ALLOC_STRING 1 // m
+#define SCAN_SUPPRESS_INPUT  0x1 // *
+#define SCAN_GROUP_DIGITS    0x2 // '
+#define SCAN_ALLOCATE_STRING 0x4 // m
 
 // Modifiers
 #define SCAN_MOD_NONE        0
@@ -31,10 +33,10 @@ typedef enum _scan_type
 {
 	SCAN_INT_NUMBER = 1,
 
+	SCAN_UINT_NUMBER,
 	SCAN_UINT_BINARY,
 	SCAN_UINT_OCTAL,
 	SCAN_UINT_HEX,
-	SCAN_UINT_NUMBER,
 
 	SCAN_DOUBLE_NORMAL,
 	SCAN_DOUBLE_HEX,
@@ -43,6 +45,7 @@ typedef enum _scan_type
 
 	SCAN_CHAR,
 	SCAN_STRING,
+	SCAN_SET,
 
 	SCAN_POINTER,
 	SCAN_RESULT,
