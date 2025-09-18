@@ -193,7 +193,14 @@ uintmax_t uint_from_dec_common(void *buffer, uint8_t size)
 
 	while (size--)
 	{
-		result = (result * 10) + (*in++ - '0');
+		if (*in == ',')
+		{
+			in++;
+			continue;
+		}
+
+		result = (result * 10) + (*in - '0');
+		in++;
 	}
 
 	return result;
@@ -242,14 +249,22 @@ intmax_t int_from_dec_common(void *buffer, uint8_t size)
 
 	while (size--)
 	{
+		if (*in == ',')
+		{
+			in++;
+			continue;
+		}
+
 		if (minus)
 		{
-			result = (result * 10) - (*in++ - '0');
+			result = (result * 10) - (*in - '0');
 		}
 		else
 		{
-			result = (result * 10) + (*in++ - '0');
+			result = (result * 10) + (*in - '0');
 		}
+
+		in++;
 	}
 
 	return result;
