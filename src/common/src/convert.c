@@ -187,24 +187,47 @@ uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags)
 	return pos;
 }
 
-uintmax_t uint_from_dec_common(void *buffer, uint8_t size)
+uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags)
 {
-	uint8_t *in = buffer;
-	uint64_t result = 0;
+	uint32_t count = 0;
+	byte_t byte = 0;
 
-	while (size--)
+	*value = 0;
+	byte = peekbyte(buffer, 0);
+
+	if (byte == '+')
 	{
-		if (*in == ',')
+		readbyte(buffer);
+		count++;
+	}
+
+	while ((byte = peekbyte(buffer, 0)) != '\0')
+	{
+		if (byte >= '0' && byte <= '9')
 		{
-			in++;
+			*value = (*value * 10) + (byte - '0');
+
+			readbyte(buffer);
+			count++;
+
 			continue;
 		}
 
-		result = (result * 10) + (*in - '0');
-		in++;
+		if (byte == ',')
+		{
+			if (flags & CONVERT_GROUP_DIGITS)
+			{
+				readbyte(buffer);
+				count++;
+
+				continue;
+			}
+		}
+
+		break;
 	}
 
-	return result;
+	return count;
 }
 
 uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags)
@@ -765,7 +788,7 @@ double float_from_scientific_common(void *buffer, uint8_t size)
 		pos += 1;
 	}
 
-	exponent = uint_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
+	//exponent = uint_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
 	div = 1.0;
 
 	result = integer + fraction;

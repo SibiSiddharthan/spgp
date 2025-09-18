@@ -239,7 +239,7 @@ static inline uintptr_t uptr_from_bin(void *buffer, uint8_t size)
 }
 
 uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags);
-uintmax_t uint_from_dec_common(void *buffer, uint8_t size);
+uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags);
 
 static inline uint32_t u8_to_dec(byte_t buffer[32], uint8_t x, uint32_t flags)
 {
@@ -276,39 +276,81 @@ static inline uint32_t uptr_to_dec(byte_t buffer[32], uintptr_t x, uint32_t flag
 	return uint_to_dec_common(buffer, x, flags);
 }
 
-static inline uint8_t u8_from_dec(void *buffer, uint8_t size)
+static inline uint32_t u8_from_dec(buffer_t *buffer, uint8_t *value, uint32_t flags)
 {
-	return uint_from_dec_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_dec_common(buffer, &result, flags);
+	*value = (uint8_t)result;
+
+	return count;
 }
 
-static inline uint16_t u16_from_dec(void *buffer, uint8_t size)
+static inline uint32_t u16_from_dec(buffer_t *buffer, uint16_t *value, uint32_t flags)
 {
-	return uint_from_dec_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_dec_common(buffer, &result, flags);
+	*value = (uint16_t)result;
+
+	return count;
 }
 
-static inline uint32_t u32_from_dec(void *buffer, uint8_t size)
+static inline uint32_t u32_from_dec(buffer_t *buffer, uint32_t *value, uint32_t flags)
 {
-	return uint_from_dec_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_dec_common(buffer, &result, flags);
+	*value = (uint32_t)result;
+
+	return count;
 }
 
-static inline uint64_t u64_from_dec(void *buffer, uint8_t size)
+static inline uint32_t u64_from_dec(buffer_t *buffer, uint64_t *value, uint32_t flags)
 {
-	return uint_from_dec_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_dec_common(buffer, &result, flags);
+	*value = (uint64_t)result;
+
+	return count;
 }
 
-static inline uintmax_t umax_from_dec(void *buffer, uint8_t size)
+static inline uint32_t umax_from_dec(buffer_t *buffer, uintmax_t *value, uint32_t flags)
 {
-	return uint_from_dec_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_dec_common(buffer, &result, flags);
+	*value = (uintmax_t)result;
+
+	return count;
 }
 
-static inline size_t usize_from_dec(void *buffer, uint8_t size)
+static inline uint32_t usize_from_dec(buffer_t *buffer, size_t *value, uint32_t flags)
 {
-	return uint_from_dec_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_dec_common(buffer, &result, flags);
+	*value = (size_t)result;
+
+	return count;
 }
 
-static inline uintptr_t uptr_from_dec(void *buffer, uint8_t size)
+static inline uint32_t uptr_from_dec(buffer_t *buffer, uintptr_t *value, uint32_t flags)
 {
-	return uint_from_dec_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_dec_common(buffer, &result, flags);
+	*value = (uintptr_t)result;
+
+	return count;
 }
 
 uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags);
@@ -354,7 +396,7 @@ static inline uint32_t i8_from_dec(buffer_t *buffer, int8_t *value, uint32_t fla
 	intmax_t result = 0;
 	uint32_t count = 0;
 
-	count = int_from_dec_common(buffer, &result,flags);
+	count = int_from_dec_common(buffer, &result, flags);
 	*value = (int8_t)result;
 
 	return count;
@@ -365,7 +407,7 @@ static inline uint32_t i16_from_dec(buffer_t *buffer, int16_t *value, uint32_t f
 	intmax_t result = 0;
 	uint32_t count = 0;
 
-	count = int_from_dec_common(buffer, &result,flags);
+	count = int_from_dec_common(buffer, &result, flags);
 	*value = (int16_t)result;
 
 	return count;
@@ -376,7 +418,7 @@ static inline uint32_t i32_from_dec(buffer_t *buffer, int32_t *value, uint32_t f
 	intmax_t result = 0;
 	uint32_t count = 0;
 
-	count = int_from_dec_common(buffer, &result,flags);
+	count = int_from_dec_common(buffer, &result, flags);
 	*value = (int32_t)result;
 
 	return count;
@@ -387,7 +429,7 @@ static inline uint32_t i64_from_dec(buffer_t *buffer, int64_t *value, uint32_t f
 	intmax_t result = 0;
 	uint32_t count = 0;
 
-	count = int_from_dec_common(buffer, &result,flags);
+	count = int_from_dec_common(buffer, &result, flags);
 	*value = (int64_t)result;
 
 	return count;
@@ -398,7 +440,7 @@ static inline uint32_t imax_from_dec(buffer_t *buffer, intmax_t *value, uint32_t
 	intmax_t result = 0;
 	uint32_t count = 0;
 
-	count = int_from_dec_common(buffer, &result,flags);
+	count = int_from_dec_common(buffer, &result, flags);
 	*value = (intmax_t)result;
 
 	return count;
@@ -409,7 +451,7 @@ static inline uint32_t isize_from_dec(buffer_t *buffer, ssize_t *value, uint32_t
 	intmax_t result = 0;
 	uint32_t count = 0;
 
-	count = int_from_dec_common(buffer, &result,flags);
+	count = int_from_dec_common(buffer, &result, flags);
 	*value = (ssize_t)result;
 
 	return count;
@@ -420,7 +462,7 @@ static inline uint32_t iptr_from_dec(buffer_t *buffer, intptr_t *value, uint32_t
 	intmax_t result = 0;
 	uint32_t count = 0;
 
-	count = int_from_dec_common(buffer, &result,flags);
+	count = int_from_dec_common(buffer, &result, flags);
 	*value = (intptr_t)result;
 
 	return count;
