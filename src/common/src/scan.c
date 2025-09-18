@@ -295,6 +295,55 @@ static uint32_t consume_whitespaces(buffer_t *buffer)
 
 static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 {
+	uint32_t result = 0;
+	size_t old_size = 0;
+
+	if (config->type == SCAN_INT_NUMBER)
+	{
+		consume_whitespaces(buffer);
+
+		if (config->width > 0)
+		{
+			old_size = buffer->size;
+			buffer->size = buffer->pos + config->width;
+		}
+
+		switch (config->modifier)
+		{
+		case SCAN_MOD_NONE:
+			result = i32_from_dec(buffer, config->data);
+			break;
+		case SCAN_MOD_SHORT:
+			result = i16_from_dec(buffer, config->data);
+			break;
+		case SCAN_MOD_SHORT_SHORT:
+			result = i8_from_dec(buffer, config->data);
+			break;
+		case SCAN_MOD_LONG:
+			result = i64_from_dec(buffer, config->data);
+			break;
+		case SCAN_MOD_LONG_LONG:
+			result = imax_from_dec(buffer, config->data);
+			break;
+		case SCAN_MOD_MAX:
+			result = imax_from_dec(buffer, config->data);
+			break;
+		case SCAN_MOD_SIZE:
+			result = isize_from_dec(buffer, config->data);
+			break;
+		case SCAN_MOD_PTRDIFF:
+			result = iptr_from_dec(buffer, config->data);
+			break;
+		}
+
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
+		}
+
+		return result;
+	}
+
 	if (config->type == SCAN_RESULT)
 	{
 		switch (config->modifier)
