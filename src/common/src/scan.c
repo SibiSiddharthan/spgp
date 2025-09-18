@@ -54,6 +54,18 @@ typedef enum _scan_type
 
 } scan_type;
 
+typedef struct _scan_config
+{
+	scan_type type;
+	uint16_t modifier;
+	uint16_t flags;
+	uint32_t width;
+	uint32_t index;
+	size_t result;
+	void *data;
+} scan_config;
+
+
 uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
