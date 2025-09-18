@@ -20,7 +20,7 @@ typedef long long ssize_t;
 #define CONVERT_GROUP_DIGITS 0x40
 
 uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x);
-uintmax_t uint_from_hex_common(void *buffer, uint8_t size);
+uint32_t uint_from_hex_common(buffer_t *buffer, uintmax_t *value);
 
 static inline uint32_t u8_to_hex(byte_t buffer[32], uint8_t upper, uint8_t x)
 {
@@ -57,39 +57,81 @@ static inline uint32_t uptr_to_hex(byte_t buffer[32], uint8_t upper, uintptr_t x
 	return uint_to_hex_common(buffer, upper, x);
 }
 
-static inline uint8_t u8_from_hex(void *buffer, uint8_t size)
+static inline uint32_t u8_from_hex(buffer_t *buffer, uint8_t *value)
 {
-	return uint_from_hex_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_hex_common(buffer, &result);
+	*value = (uint8_t)result;
+
+	return count;
 }
 
-static inline uint16_t u16_from_hex(void *buffer, uint8_t size)
+static inline uint32_t u16_from_hex(buffer_t *buffer, uint16_t *value)
 {
-	return uint_from_hex_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_hex_common(buffer, &result);
+	*value = (uint16_t)result;
+
+	return count;
 }
 
-static inline uint32_t u32_from_hex(void *buffer, uint8_t size)
+static inline uint32_t u32_from_hex(buffer_t *buffer, uint32_t *value)
 {
-	return uint_from_hex_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_hex_common(buffer, &result);
+	*value = (uint32_t)result;
+
+	return count;
 }
 
-static inline uint64_t u64_from_hex(void *buffer, uint8_t size)
+static inline uint32_t u64_from_hex(buffer_t *buffer, uint64_t *value)
 {
-	return uint_from_hex_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_hex_common(buffer, &result);
+	*value = (uint64_t)result;
+
+	return count;
 }
 
-static inline uintmax_t umax_from_hex(void *buffer, uint8_t size)
+static inline uint32_t umax_from_hex(buffer_t *buffer, uintmax_t *value)
 {
-	return uint_from_hex_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_hex_common(buffer, &result);
+	*value = (uintmax_t)result;
+
+	return count;
 }
 
-static inline size_t usize_from_hex(void *buffer, uint8_t size)
+static inline uint32_t usize_from_hex(buffer_t *buffer, size_t *value)
 {
-	return uint_from_hex_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_hex_common(buffer, &result);
+	*value = (size_t)result;
+
+	return count;
 }
 
-static inline uintptr_t uptr_from_hex(void *buffer, uint8_t size)
+static inline uint32_t uptr_from_hex(buffer_t *buffer, uintptr_t *value)
 {
-	return uint_from_hex_common(buffer, size);
+	uintmax_t result = 0;
+	uint32_t count = 0;
+
+	count = uint_from_hex_common(buffer, &result);
+	*value = (uintptr_t)result;
+
+	return count;
 }
 
 uint32_t uint_to_oct_common(byte_t buffer[32], uintmax_t x);

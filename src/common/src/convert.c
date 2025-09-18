@@ -76,17 +76,27 @@ uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x)
 	return pos;
 }
 
-uintmax_t uint_from_hex_common(void *buffer, uint8_t size)
+uint32_t uint_from_hex_common(buffer_t *buffer, uintmax_t *value)
 {
-	uint8_t *in = buffer;
-	uint64_t result = 0;
+	uint32_t count = 0;
+	byte_t byte = 0;
 
-	while (size--)
+	*value = 0;
+
+	while ((byte = peekbyte(buffer, 0)) != '\0')
 	{
-		result = (result << 4) + hex_to_nibble_table[*in++];
+		uint8_t nibble = hex_to_nibble_table[byte];
+
+		if (byte == 255)
+		{
+			break;
+		}
+
+		*value = (*value << 4) + nibble;
+		readbyte(buffer);
 	}
 
-	return result;
+	return count;
 }
 
 uint32_t uint_to_oct_common(byte_t buffer[32], uintmax_t x)
@@ -432,7 +442,7 @@ static uint8_t parse_float_hex(void *buffer, uint8_t size, uint8_t *sign, int64_
 		count += 1;
 	}
 
-	*mantissa = uint_from_hex_common(PTR_OFFSET(buffer, pos), count - 1);
+	//*mantissa = uint_from_hex_common(PTR_OFFSET(buffer, pos), count - 1);
 	pos += count;
 
 	// atleast 1 exponent digit
@@ -788,7 +798,7 @@ double float_from_scientific_common(void *buffer, uint8_t size)
 		pos += 1;
 	}
 
-	//exponent = uint_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
+	// exponent = uint_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
 	div = 1.0;
 
 	result = integer + fraction;
@@ -860,7 +870,7 @@ void *pointer_decode(void *buffer, uint8_t size)
 		return NULL;
 	}
 
-	return (void *)(uintptr_t)uint_from_hex_common(PTR_OFFSET(buffer, 2), size - 2);
+	return 0; //(void *)(uintptr_t)uint_from_hex_common(PTR_OFFSET(buffer, 2), size - 2);
 }
 
 uint32_t utf8_octets(uint32_t codepoint)
