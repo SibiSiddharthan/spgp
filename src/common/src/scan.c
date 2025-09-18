@@ -272,14 +272,20 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 	}
 }
 
+static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
+{
+	return 0;
+}
+
 uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
+	scan_config config = {0};
 	buffer_t in = {.data = (void *)format, .pos = 0, .size = strnlen(format, 65536)};
 
-	uint32_t result = 0;
+	uint32_t processed = 0;
+	uint32_t count = 0;
 	byte_t byte = 0;
-	size_t pos = 0;
 
 	variadic_args_init(&args, list);
 
@@ -304,7 +310,24 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 				readbyte(&in);
 				readbyte(buffer);
 
+				processed += 1;
+
 				continue;
+			}
+
+			parse_scan_specifier(&in, &config, &args);
+
+			if (config.type == SCAN_UNKNOWN)
+			{
+				break;
+			}
+
+			config.result = processed;
+			processed += scan_arg(buffer, &config);
+
+			if (config.type != SCAN_RESULT)
+			{
+				count += 1;
 			}
 
 			continue;
@@ -322,10 +345,11 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 			}
 
 			readbyte(buffer);
+			processed += 1;
 		}
 	}
 
 	variadic_args_free(&args);
 
-	return result;
+	return count;
 }
