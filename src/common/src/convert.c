@@ -7,9 +7,10 @@
 
 #include "convert.h"
 
-#include <string.h>
 #include <byteswap.h>
 #include <ptr.h>
+
+#include <string.h>
 
 static const byte_t hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 static const byte_t hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -234,40 +235,59 @@ uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags)
 	return uint_to_dec_common(buffer, x, flags) + sign;
 }
 
-intmax_t int_from_dec_common(void *buffer, uint8_t size)
+uint32_t int_from_dec_common(buffer_t *buffer, void *value)
 {
-	uint8_t *in = buffer;
-	int64_t result = 0;
+	intmax_t result = 0;
+	uint32_t count = 0;
 	uint8_t minus = 0;
+	byte_t byte = 0;
 
-	if (*in == '-')
+	byte = peekbyte(buffer, 0);
+
+	if (byte == '+' || byte == '-')
 	{
-		minus = 1;
-		size--;
-		in++;
+		if (byte == '-')
+		{
+			minus = 1;
+		}
+
+		readbyte(buffer);
+		count++;
 	}
 
-	while (size--)
+	while ((byte = peekbyte(buffer, 0)) != '\0')
 	{
-		if (*in == ',')
+		if (byte >= '0' && byte <= '9')
 		{
-			in++;
+			if (minus)
+			{
+				result = (count * 10) - (byte - '0');
+			}
+			else
+			{
+				result = (count * 10) + (byte - '0');
+			}
+
+			readbyte(buffer);
+			count++;
+
 			continue;
 		}
 
-		if (minus)
+		if (byte == ',')
 		{
-			result = (result * 10) - (*in - '0');
-		}
-		else
-		{
-			result = (result * 10) + (*in - '0');
+			readbyte(buffer);
+			count++;
+
+			continue;
 		}
 
-		in++;
+		break;
 	}
 
-	return result;
+	*(intmax_t *)value = result;
+
+	return count;
 }
 
 #define FLOAT32_EXP_BIAS 127
@@ -402,7 +422,7 @@ static uint8_t parse_float_hex(void *buffer, uint8_t size, uint8_t *sign, int64_
 		return 0;
 	}
 
-	*exponent = int_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
+	// *exponent = int_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
 	pos += size - pos;
 
 	return pos;

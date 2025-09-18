@@ -9,6 +9,7 @@
 #define COMMON_CONVERT_H
 
 #include <types.h>
+#include <buffer.h>
 
 #ifdef _WIN32
 typedef long long ssize_t;
@@ -311,7 +312,7 @@ static inline uintptr_t uptr_from_dec(void *buffer, uint8_t size)
 }
 
 uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags);
-intmax_t int_from_dec_common(void *buffer, uint8_t size);
+uint32_t int_from_dec_common(buffer_t *buffer, void *value);
 
 static inline uint32_t i8_to_dec(byte_t buffer[32], int8_t x, uint32_t flags)
 {
@@ -348,39 +349,39 @@ static inline uint32_t iptr_to_dec(byte_t buffer[32], intptr_t x, uint32_t flags
 	return int_to_dec_common(buffer, x, flags);
 }
 
-static inline int8_t i8_from_dec(void *buffer, uint8_t size)
+static inline uint32_t i8_from_dec(buffer_t *buffer, int8_t *value)
 {
-	return int_from_dec_common(buffer, size);
+	return int_from_dec_common(buffer, value);
 }
 
-static inline int16_t i16_from_dec(void *buffer, uint8_t size)
+static inline uint32_t i16_from_dec(buffer_t *buffer, int16_t *value)
 {
-	return int_from_dec_common(buffer, size);
+	return int_from_dec_common(buffer, value);
 }
 
-static inline int32_t i32_from_dec(void *buffer, uint8_t size)
+static inline uint32_t i32_from_dec(buffer_t *buffer, int32_t *value)
 {
-	return int_from_dec_common(buffer, size);
+	return int_from_dec_common(buffer, value);
 }
 
-static inline int64_t i64_from_dec(void *buffer, uint8_t size)
+static inline uint32_t i64_from_dec(buffer_t *buffer, int64_t *value)
 {
-	return int_from_dec_common(buffer, size);
+	return int_from_dec_common(buffer, value);
 }
 
-static inline intmax_t imax_from_dec(void *buffer, uint8_t size)
+static inline uint32_t imax_from_dec(buffer_t *buffer, intmax_t *value)
 {
-	return int_from_dec_common(buffer, size);
+	return int_from_dec_common(buffer, value);
 }
 
-static inline ssize_t isize_from_dec(void *buffer, uint8_t size)
+static inline uint32_t isize_from_dec(buffer_t *buffer, ssize_t *value)
 {
-	return int_from_dec_common(buffer, size);
+	return int_from_dec_common(buffer, value);
 }
 
-static inline intptr_t iptr_from_dec(void *buffer, uint8_t size)
+static inline uint32_t iptr_from_dec(buffer_t *buffer, intptr_t *value)
 {
-	return int_from_dec_common(buffer, size);
+	return int_from_dec_common(buffer, value);
 }
 
 float float32_from_hex(void *buffer, uint8_t size);
