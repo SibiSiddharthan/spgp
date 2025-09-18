@@ -12,10 +12,10 @@
 #include "varargs.h"
 
 // Flags
-#define SCAN_SUPPRESS_INPUT  0x1 // *
-#define SCAN_GROUP_DIGITS    0x2 // '
-#define SCAN_ALLOCATE_STRING 0x4 // m
-#define SCAN_UPPER_CASE      0x8 // 'X|G|A|E'
+#define SCAN_SUPPRESS_INPUT  0x01 // *
+#define SCAN_ALLOCATE_STRING 0x02 // m
+#define SCAN_UPPER_CASE      0x20 // 'X|G|A|E'
+#define SCAN_GROUP_DIGITS    0x40 // '
 
 // Modifiers
 #define SCAN_MOD_NONE        0
@@ -311,28 +311,28 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
-			result = i32_from_dec(buffer, config->data);
+			result = i32_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_SHORT:
-			result = i16_from_dec(buffer, config->data);
+			result = i16_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_SHORT_SHORT:
-			result = i8_from_dec(buffer, config->data);
+			result = i8_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_LONG:
-			result = i64_from_dec(buffer, config->data);
+			result = i64_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_LONG_LONG:
-			result = imax_from_dec(buffer, config->data);
+			result = imax_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_MAX:
-			result = imax_from_dec(buffer, config->data);
+			result = imax_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_SIZE:
-			result = isize_from_dec(buffer, config->data);
+			result = isize_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_PTRDIFF:
-			result = iptr_from_dec(buffer, config->data);
+			result = iptr_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		}
 

@@ -235,7 +235,7 @@ uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags)
 	return uint_to_dec_common(buffer, x, flags) + sign;
 }
 
-uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value)
+uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 {
 	uint32_t count = 0;
 	uint8_t minus = 0;
@@ -276,10 +276,13 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value)
 
 		if (byte == ',')
 		{
-			readbyte(buffer);
-			count++;
+			if (flags & CONVERT_GROUP_DIGITS)
+			{
+				readbyte(buffer);
+				count++;
 
-			continue;
+				continue;
+			}
 		}
 
 		break;
