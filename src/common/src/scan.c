@@ -30,6 +30,8 @@
 
 #define SCAN_MOD_LONG_DOUBLE 8
 
+#define IS_SPACE(x) ((x) == ' ' || ((x) >= '\t' && (x) <= '\r'))
+
 typedef enum _scan_type
 {
 	SCAN_INT_NUMBER = 1,
@@ -309,6 +311,10 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 		}
 		else
 		{
+			if (IS_SPACE(byte))
+			{
+				continue;
+			}
 
 			if (peekbyte(buffer, 0) != byte)
 			{
