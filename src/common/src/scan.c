@@ -272,6 +272,27 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 	}
 }
 
+static uint32_t consume_whitespaces(buffer_t *buffer)
+{
+	uint32_t count = 0;
+	byte_t byte = 0;
+
+	while ((byte = peekbyte(buffer, 0)) != '\0')
+	{
+		if (IS_SPACE(byte))
+		{
+			readbyte(buffer);
+			count += 1;
+
+			continue;
+		}
+
+		break;
+	}
+
+	return count;
+}
+
 static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 {
 	if (config->type == SCAN_RESULT)
