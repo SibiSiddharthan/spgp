@@ -294,11 +294,28 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 
 			if (byte == '%')
 			{
+				if (peekbyte(buffer, 0) != byte)
+				{
+					break;
+				}
+
 				readbyte(&in);
+				readbyte(buffer);
+
 				continue;
 			}
 
 			continue;
+		}
+		else
+		{
+
+			if (peekbyte(buffer, 0) != byte)
+			{
+				break;
+			}
+
+			readbyte(buffer);
 		}
 	}
 
