@@ -550,6 +550,52 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
+	if (config->type == SCAN_CHAR)
+	{
+		uint32_t codepoint = 0;
+
+		switch (config->modifier)
+		{
+		case SCAN_MOD_NONE:
+			*(byte_t *)config->data = readbyte(buffer);
+			result = 1;
+			break;
+		case SCAN_MOD_LONG:
+		{
+			byte_t data[8] = {0};
+
+			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
+			buffer->pos += result;
+
+			if (codepoint != 0)
+			{
+				utf16_encode(data, codepoint);
+				memcpy(config->data, data, 2);
+			}
+		}
+		break;
+		case SCAN_MOD_LONG_LONG:
+		{
+			byte_t data[8] = {0};
+
+			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
+			buffer->pos += result;
+
+			if (codepoint != 0)
+			{
+				utf16_encode(data, codepoint);
+				memcpy(config->data, data, 4);
+			}
+		}
+		default:
+			*(byte_t *)config->data = readbyte(buffer);
+			result = 1;
+			break;
+		}
+
+		return result;
+	}
+
 	if (config->type == SCAN_POINTER)
 	{
 		result += consume_whitespaces(buffer);
