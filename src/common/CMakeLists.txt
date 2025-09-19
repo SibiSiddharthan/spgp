@@ -17,4 +17,8 @@ include(CTest)
 	add_executable(test-print tests/test-print.c)
 	target_link_libraries(test-print common)
 	add_test(NAME test-print COMMAND test-print WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+	add_executable(test-scan tests/test-scan.c)
+	target_link_libraries(test-scan common)
+	add_test(NAME test-scan COMMAND test-scan WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
