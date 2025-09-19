@@ -498,6 +498,58 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
+	if (config->type == SCAN_UINT_HEX)
+	{
+		result += consume_whitespaces(buffer);
+
+		if (config->width > 0)
+		{
+			old_size = buffer->size;
+			buffer->size = buffer->pos + config->width;
+		}
+
+		if (peekbyte(buffer, 0) == '0' && (peekbyte(buffer, 1) == 'x' || peekbyte(buffer, 1) == 'X'))
+		{
+			readbyte(buffer);
+			readbyte(buffer);
+		}
+
+		switch (config->modifier)
+		{
+		case SCAN_MOD_NONE:
+			result += u32_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_SHORT:
+			result += u16_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_SHORT_SHORT:
+			result += u8_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_LONG:
+			result += u64_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_LONG_LONG:
+			result += umax_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_MAX:
+			result += umax_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_SIZE:
+			result += usize_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_PTRDIFF:
+			result += uptr_from_hex(buffer, config->data);
+			break;
+		}
+
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
+		}
+
+		return result;
+	}
+
 	if (config->type == SCAN_RESULT)
 	{
 		switch (config->modifier)
