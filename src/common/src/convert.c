@@ -876,21 +876,35 @@ uint32_t pointer_encode(byte_t buffer[32], void *ptr)
 	return 2 + (2 * sizeof(void *));
 }
 
-void *pointer_decode(void *buffer, uint8_t size)
+uint32_t pointer_decode(buffer_t *buffer, void **value)
 {
-	byte_t *in = buffer;
+	uintmax_t result = 0;
+	uint32_t count = 0;
+	byte_t byte = 0;
 
-	if (size < 3)
+	*value = NULL;
+	byte = peekbyte(buffer, 0);
+
+	if (byte == '0')
 	{
-		return NULL;
+		readbyte(buffer);
+		count += 1;
+
+		byte = peekbyte(buffer, 0);
+
+		if (byte == 'x' || byte == 'X')
+		{
+			readbyte(buffer);
+			count += 1;
+
+			count += uint_from_hex_common(buffer, &result);
+			*value = (void *)result;
+
+			return count;
+		}
 	}
 
-	if (in[0] != '0' && (in[1] != 'x' || in[1] != 'X'))
-	{
-		return NULL;
-	}
-
-	return 0; //(void *)(uintptr_t)uint_from_hex_common(PTR_OFFSET(buffer, 2), size - 2);
+	return 0;
 }
 
 uint32_t utf8_octets(uint32_t codepoint)

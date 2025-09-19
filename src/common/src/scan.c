@@ -456,7 +456,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		{
 			readbyte(buffer);
 
-			if (peekbyte(buffer, 1) == 'o' || peekbyte(buffer, 1) == 'O')
+			if (peekbyte(buffer, 0) == 'o' || peekbyte(buffer, 0) == 'O')
 			{
 				readbyte(buffer);
 			}
@@ -541,6 +541,26 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			result += uptr_from_hex(buffer, config->data);
 			break;
 		}
+
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
+		}
+
+		return result;
+	}
+
+	if (config->type == SCAN_POINTER)
+	{
+		result += consume_whitespaces(buffer);
+
+		if (config->width > 0)
+		{
+			old_size = buffer->size;
+			buffer->size = buffer->pos + config->width;
+		}
+
+		result += pointer_decode(buffer, config->data);
 
 		if (config->width > 0)
 		{
