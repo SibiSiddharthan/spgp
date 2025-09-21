@@ -573,8 +573,14 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
 			buffer->pos += result;
 
-			if (result != 0 && codepoint != 0)
+			if (result != 0)
 			{
+				if (codepoint > UINT16_MAX)
+				{
+					*(uint16_t *)config->data = UINT16_MAX;
+					return result;
+				}
+
 				count = utf16_encode(data, codepoint);
 				memcpy(config->data, data, count);
 			}
@@ -585,11 +591,12 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
 			buffer->pos += result;
 
-			if (result != 0 && codepoint != 0)
+			if (result != 0)
 			{
 				*(uint32_t *)config->data = codepoint;
 			}
 		}
+		break;
 		default:
 			*(byte_t *)config->data = readbyte(buffer);
 			result = 1;
