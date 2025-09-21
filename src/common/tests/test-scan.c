@@ -78,6 +78,72 @@ uint32_t test_simple(void)
 	return status;
 }
 
+uint32_t test_int()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	int32_t i = 0, j = 0;
+	uint32_t n = 0;
+
+	result = sscan("123", 3, "%d%n", &i, &n);
+	status += CHECK_IVALUE(i, 123);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-123", 4, "%d%n", &i, &n);
+	status += CHECK_IVALUE(i, -123);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-123", 4, "%1d%n", &i, &n);
+	status += CHECK_IVALUE(i, 0);
+	status += CHECK_UVALUE(n, 1);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("000000000000123", 15, "%d%n", &i, &n);
+	status += CHECK_IVALUE(i, 123);
+	status += CHECK_UVALUE(n, 15);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("000000000000123", 15, "%5d%n", &i, &n);
+	status += CHECK_IVALUE(i, 0);
+	status += CHECK_UVALUE(n, 5);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("123", 3, "%2d %d%n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 12);
+	status += CHECK_IVALUE(j, 3);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("123", 3, "%2$2d %1$d%3$n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 3);
+	status += CHECK_IVALUE(j, 12);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("000000000000123", 15, "%5d%2d%n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 0);
+	status += CHECK_IVALUE(j, 0);
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("123-56", 6, "%d %d%n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 123);
+	status += CHECK_IVALUE(j, -56);
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("456  -089", 9, "%d %d%n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 456);
+	status += CHECK_IVALUE(j, -89);
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 2);
+
+	return status;
+}
+
 uint32_t test_char()
 {
 	uint32_t status = 0;
@@ -155,5 +221,5 @@ uint32_t test_pointer(void)
 
 int main()
 {
-	return test_simple() + test_char() + test_pointer();
+	return test_simple() + test_int() + test_char() + test_pointer();
 }
