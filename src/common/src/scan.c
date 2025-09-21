@@ -646,7 +646,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		return 0;
+		return result;
 	}
 
 	return 0;
@@ -711,6 +711,7 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 		{
 			if (IS_SPACE(byte))
 			{
+				processed += consume_whitespaces(buffer);
 				continue;
 			}
 
