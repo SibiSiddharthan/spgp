@@ -87,13 +87,14 @@ uint32_t uint_from_hex_common(buffer_t *buffer, uintmax_t *value)
 	{
 		uint8_t nibble = hex_to_nibble_table[byte];
 
-		if (byte == 255)
+		if (nibble == 255)
 		{
 			break;
 		}
 
 		*value = (*value << 4) + nibble;
 		readbyte(buffer);
+		count += 1;
 	}
 
 	return count;
@@ -132,6 +133,7 @@ uint32_t uint_from_oct_common(buffer_t *buffer, uintmax_t *value)
 		{
 			*value = (*value << 3) + (byte - '0');
 			readbyte(buffer);
+			count += 1;
 
 			continue;
 		}
@@ -175,6 +177,7 @@ uint32_t uint_from_bin_common(buffer_t *buffer, uintmax_t *value)
 		{
 			*value = (*value << 1) + (byte - '0');
 			readbyte(buffer);
+			count += 1;
 
 			continue;
 		}
