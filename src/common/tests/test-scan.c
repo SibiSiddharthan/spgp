@@ -14,41 +14,65 @@ uint32_t test_simple(void)
 	uint32_t status = 0;
 	uint32_t result = 0;
 
-	char c1 = 0, c2 = 0;
+	byte_t c1 = 0, c2 = 0;
+	uint32_t n = 0;
 
 	result = sscan("", 0, "");
 	status += CHECK_RESULT(result, 0);
 
-	result = sscan("", 0, "%c");
+	result = sscan("", 0, "%c", &c1);
 	status += CHECK_RESULT(result, 0);
 
-	result = sscan("a", 0, "%c", &c1);
+	result = sscan("a", 1, "%c", &c1);
 	status += CHECK_UVALUE(c1, 'a');
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("bc", 0, "%c%c", &c1, &c2);
+	result = sscan("bc", 2, "%c%c", &c1, &c2);
 	status += CHECK_UVALUE(c1, 'b');
 	status += CHECK_UVALUE(c2, 'c');
 	status += CHECK_RESULT(result, 2);
 
-	result = sscan("de", 0, "%c  %c", &c1, &c2);
+	result = sscan("de", 2, "%c  %c", &c1, &c2);
 	status += CHECK_UVALUE(c1, 'd');
 	status += CHECK_UVALUE(c2, 'e');
 	status += CHECK_RESULT(result, 2);
 
-	result = sscan("f  g", 0, "%c%c", &c1, &c2);
-	status += CHECK_UVALUE(c1, 'f');
-	status += CHECK_UVALUE(c2, 'g');
-	status += CHECK_RESULT(result, 2);
-
-	result = sscan("h  i", 0, "%c %c", &c1, &c2);
+	result = sscan("h  i", 4, "%c %c", &c1, &c2);
 	status += CHECK_UVALUE(c1, 'h');
 	status += CHECK_UVALUE(c2, 'i');
 	status += CHECK_RESULT(result, 2);
 
-	result = sscan("jh   gk", 0, "%ch g%c", &c1, &c2);
+	result = sscan("jh   gk", 7, "%ch g%c", &c1, &c2);
 	status += CHECK_UVALUE(c1, 'j');
 	status += CHECK_UVALUE(c2, 'k');
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("lh   gl", 7, "%ch l%c", &c1, &c2);
+	status += CHECK_UVALUE(c1, 'l');
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("jh   gk", 7, "%ch g%c%n", &c1, &c2, &n);
+	status += CHECK_UVALUE(c1, 'j');
+	status += CHECK_UVALUE(c2, 'k');
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("jh   gk", 7, "%ch g%c  %n", &c1, &c2, &n);
+	status += CHECK_UVALUE(c1, 'j');
+	status += CHECK_UVALUE(c2, 'k');
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("jh   gk    ", 11, "%ch g%c%n", &c1, &c2, &n);
+	status += CHECK_UVALUE(c1, 'j');
+	status += CHECK_UVALUE(c2, 'k');
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("jh   gk    ", 11, "%ch g%c  %n", &c1, &c2, &n);
+	status += CHECK_UVALUE(c1, 'j');
+	status += CHECK_UVALUE(c2, 'k');
+	status += CHECK_UVALUE(n, 11);
 	status += CHECK_RESULT(result, 2);
 
 	return status;
@@ -56,5 +80,5 @@ uint32_t test_simple(void)
 
 int main()
 {
-	return 0;
+	return test_simple();
 }
