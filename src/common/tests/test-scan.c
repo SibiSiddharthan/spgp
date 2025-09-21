@@ -78,7 +78,48 @@ uint32_t test_simple(void)
 	return status;
 }
 
+uint32_t test_pointer(void)
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	uintptr_t p = 0;
+	uint32_t n = 0;
+
+	result = sscan("0x22", 4, "%p%n", &p, &n);
+	status += CHECK_UVALUE(p, 0x22);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x22", 4, "%2p%n", &p, &n);
+	status += CHECK_UVALUE(p, 0x0);
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x22", 4, "%3p%n", &p, &n);
+	status += CHECK_UVALUE(p, 0x2);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x22", 4, "%4p%n", &p, &n);
+	status += CHECK_UVALUE(p, 0x22);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x22", 4, "%5p%n", &p, &n);
+	status += CHECK_UVALUE(p, 0x22);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x22  ", 6, "%5p%n", &p, &n);
+	status += CHECK_UVALUE(p, 0x22);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	return status;
+}
+
 int main()
 {
-	return test_simple();
+	return test_simple() + test_pointer();
 }
