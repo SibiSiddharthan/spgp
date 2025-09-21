@@ -563,28 +563,26 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_LONG:
 		{
 			byte_t data[8] = {0};
+			uint32_t count = 0;
 
 			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
 			buffer->pos += result;
 
-			if (codepoint != 0)
+			if (result != 0 && codepoint != 0)
 			{
-				utf16_encode(data, codepoint);
-				memcpy(config->data, data, 2);
+				count = utf16_encode(data, codepoint);
+				memcpy(config->data, data, count);
 			}
 		}
 		break;
 		case SCAN_MOD_LONG_LONG:
 		{
-			byte_t data[8] = {0};
-
 			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
 			buffer->pos += result;
 
-			if (codepoint != 0)
+			if (result != 0 && codepoint != 0)
 			{
-				utf16_encode(data, codepoint);
-				memcpy(config->data, data, 4);
+				*(uint32_t *)config->data = codepoint;
 			}
 		}
 		default:
