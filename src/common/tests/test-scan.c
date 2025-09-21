@@ -78,6 +78,40 @@ uint32_t test_simple(void)
 	return status;
 }
 
+uint32_t test_char()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	byte_t utf8_ch = 0;
+	uint16_t utf16_ch = 0;
+	uint32_t utf32_ch = 0;
+
+	uint32_t n = 0;
+
+	result = sscan("a", 1, "%c%n", &utf8_ch, &n);
+	status += CHECK_UVALUE(utf8_ch, 'a');
+	status += CHECK_UVALUE(n, 1);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("€", 3, "%lc%n", &utf16_ch, &n);
+	status += CHECK_UVALUE(utf16_ch, u'€');
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("€", 3, "%llc%n", &utf32_ch, &n);
+	status += CHECK_UVALUE(utf32_ch, U'€');
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("😊", 4, "%llc%n", &utf32_ch, &n);
+	status += CHECK_UVALUE(utf32_ch, U'😊');
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	return status;
+}
+
 uint32_t test_pointer(void)
 {
 	uint32_t status = 0;
@@ -121,5 +155,5 @@ uint32_t test_pointer(void)
 
 int main()
 {
-	return test_simple() + test_pointer();
+	return test_simple() + test_char() + test_pointer();
 }
