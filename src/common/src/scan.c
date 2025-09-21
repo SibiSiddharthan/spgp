@@ -554,6 +554,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 	{
 		uint32_t codepoint = 0;
 
+		if (buffer->pos == buffer->size)
+		{
+			return 0;
+		}
+
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
@@ -644,7 +649,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		return result;
+		return 0;
 	}
 
 	return 0;
@@ -657,6 +662,7 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 	buffer_t in = {.data = (void *)format, .pos = 0, .size = strnlen(format, 65536)};
 
 	uint32_t processed = 0;
+	uint32_t result = 0;
 	uint32_t count = 0;
 	byte_t byte = 0;
 
@@ -696,12 +702,19 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 			}
 
 			config.result = processed;
-			processed += scan_arg(buffer, &config);
+			count = scan_arg(buffer, &config);
 
 			if (config.type != SCAN_RESULT)
 			{
-				count += 1;
+				if (count == 0)
+				{
+					break;
+				}
+
+				result += 1;
 			}
+
+			processed += count;
 
 			continue;
 		}
@@ -725,5 +738,5 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 
 	variadic_args_free(&args);
 
-	return count;
+	return result;
 }
