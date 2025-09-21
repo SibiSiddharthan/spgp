@@ -66,6 +66,7 @@ typedef struct _scan_config
 	uint32_t index;
 	size_t result;
 	void *data;
+	void *suppress;
 } scan_config;
 
 static void parse_number(buffer_t *format, uint32_t *index)
@@ -267,8 +268,14 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 
 	if (config->type != SCAN_UNKNOWN)
 	{
-		// get the argument from the list
-		config->data = variadic_args_get(args, config->index);
+		if (config->flags & SCAN_SUPPRESS_INPUT)
+		{
+			config->data = &config->suppress;
+		}
+		else
+		{
+			config->data = variadic_args_get(args, config->index);
+		}
 	}
 }
 
