@@ -34,6 +34,30 @@ uint32_t check_result(uint32_t actual, uint32_t expected, const char *expression
 	return 0;
 }
 
+uint32_t check_value_signed(intmax_t actual, intmax_t expected, const char *expression, const char *function, int32_t line)
+{
+	if (actual != expected)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%jd == %jd)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
+uint32_t check_value_unsigned(uintmax_t actual, uintmax_t expected, const char *expression, const char *function, int32_t line)
+{
+	if (actual != expected)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%ju == %ju)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
 #define CHECK_STRING(ACTUAL, EXPECT) check_value_string(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_RESULT(ACTUAL, EXPECT) check_result(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_UVALUE(ACTUAL, EXPECT) check_value_unsigned(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_IVALUE(ACTUAL, EXPECT) check_value_signed(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #endif
