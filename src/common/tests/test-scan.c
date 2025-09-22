@@ -144,6 +144,35 @@ uint32_t test_int()
 	return status;
 }
 
+uint32_t test_uint()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	uint32_t u = 0, o = 0, b = 0, x = 0;
+	uint32_t n = 0;
+
+	result = sscan("123", 3, "%u%n", &u, &n);
+	status += CHECK_IVALUE(u, 123);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("000000000000123", 15, "%u%n", &u, &n);
+	status += CHECK_IVALUE(u, 123);
+	status += CHECK_UVALUE(n, 15);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-123", 4, "%u%n", &u, &n);
+	status += CHECK_RESULT(result, 0);
+
+	result = sscan("123", 4, "%2u%n", &u, &n);
+	status += CHECK_IVALUE(u, 12);
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	return status;
+}
+
 uint32_t test_char()
 {
 	uint32_t status = 0;
@@ -221,5 +250,5 @@ uint32_t test_pointer(void)
 
 int main()
 {
-	return test_simple() + test_int() + test_char() + test_pointer();
+	return test_simple() + test_int() + test_uint() + test_char() + test_pointer();
 }
