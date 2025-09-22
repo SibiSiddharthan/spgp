@@ -165,9 +165,47 @@ uint32_t test_uint()
 	result = sscan("-123", 4, "%u%n", &u, &n);
 	status += CHECK_RESULT(result, 0);
 
-	result = sscan("123", 4, "%2u%n", &u, &n);
+	result = sscan("123", 3, "%2u%n", &u, &n);
 	status += CHECK_IVALUE(u, 12);
 	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("123", 3, "%o%n", &o, &n);
+	status += CHECK_IVALUE(o, 83);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("000000000000123", 15, "%o%n", &o, &n);
+	status += CHECK_IVALUE(o, 83);
+	status += CHECK_UVALUE(n, 15);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0456", 4, "%o%n", &o, &n);
+	status += CHECK_IVALUE(o, 302);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0o457", 5, "%o%n", &o, &n);
+	status += CHECK_IVALUE(o, 303);
+	status += CHECK_UVALUE(n, 5);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0O455", 5, "%o%n", &o, &n);
+	status += CHECK_IVALUE(o, 301);
+	status += CHECK_UVALUE(n, 5);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0O458", 5, "%2o%n", &o, &n);
+	status += CHECK_IVALUE(o, 0);
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-123", 4, "%o%n", &o, &n);
+	status += CHECK_RESULT(result, 0);
+
+	result = sscan("789", 3, "%2o%n", &o, &n);
+	status += CHECK_IVALUE(o, 7);
+	status += CHECK_UVALUE(n, 1);
 	status += CHECK_RESULT(result, 1);
 
 	return status;
