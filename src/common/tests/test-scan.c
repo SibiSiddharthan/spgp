@@ -170,6 +170,31 @@ uint32_t test_uint()
 	status += CHECK_UVALUE(n, 2);
 	status += CHECK_RESULT(result, 1);
 
+	result = sscan("00010", 5, "%b%n", &b, &n);
+	status += CHECK_IVALUE(b, 2);
+	status += CHECK_UVALUE(n, 5);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1000010", 7, "%b%n", &b, &n);
+	status += CHECK_IVALUE(b, 66);
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1000010", 7, "%3b%n", &b, &n);
+	status += CHECK_IVALUE(b, 4);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0b1000010", 9, "%b%n", &b, &n);
+	status += CHECK_IVALUE(b, 66);
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0b1000010", 9, "%4b%n", &b, &n);
+	status += CHECK_IVALUE(b, 2);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
 	result = sscan("123", 3, "%o%n", &o, &n);
 	status += CHECK_IVALUE(o, 83);
 	status += CHECK_UVALUE(n, 3);
