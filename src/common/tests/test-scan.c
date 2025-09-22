@@ -141,6 +141,32 @@ uint32_t test_int()
 	status += CHECK_UVALUE(n, 9);
 	status += CHECK_RESULT(result, 2);
 
+	result = sscan("123,456", 7, "%d%n", &i, &n);
+	status += CHECK_IVALUE(i, 123);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("123,4,567", 9, "%'d%'d%n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 123);
+	status += CHECK_IVALUE(j, 0);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("123,4,567", 9, "%'4d%'d%n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 123);
+	status += CHECK_IVALUE(j, 4567);
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("123,456", 7, "%'d%n", &i, &n);
+	status += CHECK_IVALUE(i, 123456);
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-123,456", 8, "%'d%n", &i, &n);
+	status += CHECK_IVALUE(i, -123456);
+	status += CHECK_UVALUE(n, 8);
+	status += CHECK_RESULT(result, 1);
+
 	return status;
 }
 
@@ -168,6 +194,16 @@ uint32_t test_uint()
 	result = sscan("123", 3, "%2u%n", &u, &n);
 	status += CHECK_IVALUE(u, 12);
 	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("123,456", 7, "%'5u%n", &u, &n);
+	status += CHECK_IVALUE(u, 123);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("123,456", 7, "%'u%n", &u, &n);
+	status += CHECK_IVALUE(u, 123456);
+	status += CHECK_UVALUE(n, 7);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscan("00010", 5, "%b%n", &b, &n);
