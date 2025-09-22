@@ -411,6 +411,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		{
 			readbyte(buffer);
 			readbyte(buffer);
+
+			result += 2;
 		}
 
 		switch (config->modifier)
@@ -462,10 +464,12 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		if (peekbyte(buffer, 0) == '0')
 		{
 			readbyte(buffer);
+			result += 1;
 
 			if (peekbyte(buffer, 0) == 'o' || peekbyte(buffer, 0) == 'O')
 			{
 				readbyte(buffer);
+				result += 1;
 			}
 		}
 
@@ -519,6 +523,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		{
 			readbyte(buffer);
 			readbyte(buffer);
+
+			result += 2;
 		}
 
 		switch (config->modifier)
