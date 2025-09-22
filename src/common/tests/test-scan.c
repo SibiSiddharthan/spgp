@@ -341,7 +341,61 @@ uint32_t test_pointer(void)
 	return status;
 }
 
+uint32_t test_overflow()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	int8_t i8 = 0;
+	int16_t i16 = 0;
+	int32_t i32 = 0;
+	int64_t i64 = 0;
+	intmax_t imax = 0;
+	intptr_t iptr = 0;
+
+	uint8_t u8 = 0;
+	uint16_t u16 = 0;
+	uint32_t u32 = 0;
+	uint64_t u64 = 0;
+	uintmax_t umax = 0;
+	uintptr_t uptr = 0;
+	size_t usize = 0;
+
+	result = sscan("-128 -32768 -2147483648 -9223372036854775808 -9223372036854775808 -9223372036854775808", 86, "%hhi %hi %i %li %ji %ti",
+				   &i8, &i16, &i32, &i64, &imax, &iptr);
+	status += CHECK_RESULT(result, 6);
+	status += CHECK_IVALUE(i8, INT8_MIN);
+	status += CHECK_IVALUE(i16, INT16_MIN);
+	status += CHECK_IVALUE(i32, INT32_MIN);
+	status += CHECK_IVALUE(i64, INT64_MIN);
+	status += CHECK_IVALUE(imax, INTMAX_MIN);
+	status += CHECK_IVALUE(iptr, INTPTR_MIN);
+
+	result = sscan("127 32767 2147483647 9223372036854775807 9223372036854775807 9223372036854775807", 80, "%hhi %hi %i %li %ji %ti", &i8,
+				   &i16, &i32, &i64, &imax, &iptr);
+	status += CHECK_RESULT(result, 6);
+	status += CHECK_IVALUE(i8, INT8_MAX);
+	status += CHECK_IVALUE(i16, INT16_MAX);
+	status += CHECK_IVALUE(i32, INT32_MAX);
+	status += CHECK_IVALUE(i64, INT64_MAX);
+	status += CHECK_IVALUE(imax, INTMAX_MAX);
+	status += CHECK_IVALUE(iptr, INTPTR_MAX);
+
+	result = sscan("255 65535 4294967295 18446744073709551615 18446744073709551615 18446744073709551615 18446744073709551615", 104,
+				   "%hhu %hu %u %lu %ju %tu %zu", &u8, &u16, &u32, &u64, &umax, &uptr, &usize);
+	status += CHECK_RESULT(result, 7);
+	status += CHECK_IVALUE(u8, UINT8_MAX);
+	status += CHECK_IVALUE(u16, UINT16_MAX);
+	status += CHECK_IVALUE(u32, UINT32_MAX);
+	status += CHECK_IVALUE(u64, UINT64_MAX);
+	status += CHECK_IVALUE(umax, UINTMAX_MAX);
+	status += CHECK_IVALUE(uptr, UINTPTR_MAX);
+	status += CHECK_IVALUE(usize, UINT64_MAX);
+
+	return status;
+}
+
 int main()
 {
-	return test_simple() + test_int() + test_uint() + test_char() + test_pointer();
+	return test_simple() + test_int() + test_uint() + test_char() + test_pointer() + test_overflow();
 }
