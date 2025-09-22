@@ -233,6 +233,36 @@ uint32_t test_uint()
 	status += CHECK_UVALUE(n, 1);
 	status += CHECK_RESULT(result, 1);
 
+	result = sscan("123", 3, "%x%n", &x, &n);
+	status += CHECK_IVALUE(x, 291);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("000000000000123", 15, "%x%n", &x, &n);
+	status += CHECK_IVALUE(x, 291);
+	status += CHECK_UVALUE(n, 15);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x45Bf", 6, "%x%n", &x, &n);
+	status += CHECK_IVALUE(x, 17855);
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x45Bf", 6, "%3x%n", &x, &n);
+	status += CHECK_IVALUE(x, 4);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0X45cf", 6, "%8x%n", &x, &n);
+	status += CHECK_IVALUE(x, 17871);
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0X45df", 6, "%8X%n", &x, &n);
+	status += CHECK_IVALUE(x, 17887);
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
 	return status;
 }
 
