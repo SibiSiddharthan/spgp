@@ -250,10 +250,27 @@ uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags
 		{
 			if (flags & CONVERT_GROUP_DIGITS)
 			{
-				readbyte(buffer);
-				count++;
+				byte_t b1 = 0, b2 = 0, b3 = 0;
 
-				continue;
+				if (peekbyte(buffer, 1) == '\0')
+				{
+					readbyte(buffer);
+					count++;
+
+					break;
+				}
+
+				b1 = peekbyte(buffer, 1);
+				b2 = peekbyte(buffer, 2);
+				b3 = peekbyte(buffer, 3);
+
+				if ((b1 >= '0' && b1 <= '9') && (b2 >= '0' && b2 <= '9') && (b3 >= '0' && b3 <= '9'))
+				{
+					readbyte(buffer);
+					count++;
+
+					continue;
+				}
 			}
 		}
 
@@ -334,10 +351,27 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 		{
 			if (flags & CONVERT_GROUP_DIGITS)
 			{
-				readbyte(buffer);
-				count++;
+				byte_t b1 = 0, b2 = 0, b3 = 0;
 
-				continue;
+				if (peekbyte(buffer, 1) == '\0')
+				{
+					readbyte(buffer);
+					count++;
+
+					break;
+				}
+
+				b1 = peekbyte(buffer, 1);
+				b2 = peekbyte(buffer, 2);
+				b3 = peekbyte(buffer, 3);
+
+				if ((b1 >= '0' && b1 <= '9') && (b2 >= '0' && b2 <= '9') && (b3 >= '0' && b3 <= '9'))
+				{
+					readbyte(buffer);
+					count++;
+
+					continue;
+				}
 			}
 		}
 
