@@ -619,6 +619,80 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
+	if (config->type == SCAN_STRING)
+	{
+		byte_t byte = 0;
+		uint32_t count = 0;
+
+		result += consume_whitespaces(buffer);
+
+		if (config->width == 0)
+		{
+			config->width = UINT32_MAX;
+		}
+
+		if (config->flags & SCAN_SUPPRESS_INPUT)
+		{
+			while ((byte = peekbyte(buffer, 0)) != '\0')
+			{
+				if (IS_SPACE(byte))
+				{
+					break;
+				}
+
+				count += 1;
+				result += 1;
+
+				if (count == config->width)
+				{
+					break;
+				}
+
+				readbyte(buffer);
+			}
+		}
+
+		if (config->modifier == SCAN_MOD_LONG)
+		{
+		}
+
+		if (config->modifier == SCAN_MOD_LONG_LONG)
+		{
+		}
+
+		byte_t *str = config->data;
+
+		while ((byte = peekbyte(buffer, 0)) != '\0')
+		{
+			if (IS_SPACE(byte))
+			{
+				break;
+			}
+
+			if (config->flags & SCAN_SUPPRESS_INPUT)
+			{
+				goto loop;
+			}
+
+			*str++ = byte;
+
+		loop:
+			count += 1;
+			result += 1;
+
+			if (count == config->width)
+			{
+				break;
+			}
+
+			readbyte(buffer);
+		}
+
+		*str = '\0';
+
+		return result;
+	}
+
 	if (config->type == SCAN_POINTER)
 	{
 		result += consume_whitespaces(buffer);
