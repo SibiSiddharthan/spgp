@@ -23,6 +23,16 @@ typedef struct _buffer_t
 	size_t capacity;
 } buffer_t;
 
+static inline void advance(buffer_t *buffer, size_t step)
+{
+	buffer->pos = MIN(buffer->pos + step, buffer->size);
+}
+
+static inline void *current(buffer_t *buffer)
+{
+	return PTR_OFFSET(buffer->data, buffer->pos);
+}
+
 static inline size_t read8(buffer_t *buffer, void *out)
 {
 	if ((buffer->pos + 1) > buffer->size)
