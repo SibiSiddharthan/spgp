@@ -336,6 +336,34 @@ uint32_t test_char()
 	return status;
 }
 
+uint32_t test_string()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	char u8_str1[256] = {0}, u8_str2[256] = {0};
+
+	uint32_t n = 0;
+
+	result = sscan("abcd efgh", 9, "%s%s%n", u8_str1, u8_str2, &n);
+	status += CHECK_STRING(u8_str1, "abcd");
+	status += CHECK_STRING(u8_str2, "efgh");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("€", 3, "%s%n", &u8_str1, &n);
+	status += CHECK_STRING(u8_str1, "€");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("😊", 4, "%s%n", &u8_str2, &n);
+	status += CHECK_STRING(u8_str2, "😊");
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	return status;
+}
+
 uint32_t test_pointer(void)
 {
 	uint32_t status = 0;
@@ -433,5 +461,5 @@ uint32_t test_overflow()
 
 int main()
 {
-	return test_simple() + test_int() + test_uint() + test_char() + test_pointer() + test_overflow();
+	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_overflow();
 }
