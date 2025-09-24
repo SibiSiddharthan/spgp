@@ -622,13 +622,20 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 	if (config->type == SCAN_STRING)
 	{
 		byte_t byte = 0;
+
+		byte_t *str = config->data;
+		uint32_t *u32_str = config->data;
+
 		uint32_t count = 0;
+		uint32_t codepoint = 0;
+		uint32_t pos = 0;
 
 		result += consume_whitespaces(buffer);
 
-		if (config->width == 0)
+		if (config->width > 0)
 		{
-			config->width = UINT32_MAX;
+			old_size = buffer->size;
+			buffer->size = buffer->pos + config->width;
 		}
 
 		if (config->flags & SCAN_SUPPRESS_INPUT)
@@ -640,27 +647,12 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 					break;
 				}
 
-				count += 1;
-				result += 1;
-
-				if (count == config->width)
-				{
-					break;
-				}
-
 				readbyte(buffer);
+				result += 1;
 			}
-		}
 
-		if (config->modifier == SCAN_MOD_LONG)
-		{
+			goto end;
 		}
-
-		if (config->modifier == SCAN_MOD_LONG_LONG)
-		{
-		}
-
-		byte_t *str = config->data;
 
 		while ((byte = peekbyte(buffer, 0)) != '\0')
 		{
@@ -669,19 +661,44 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 				break;
 			}
 
-			if (config->flags & SCAN_SUPPRESS_INPUT)
+			switch (config->modifier)
 			{
-				goto loop;
+			case SCAN_MOD_NONE:
+				*str++ = byte;
+				result += 1;
+				break;
+			case SCAN_MOD_LONG:
+			{
+				count = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
+				buffer->pos += count;
+				result += count;
+
+				if (count == 0)
+				{
+					goto end;
+				}
+
+				count = utf16_encode(PTR_OFFSET(str, pos), codepoint);
+				pos += count;
 			}
-
-			*str++ = byte;
-
-		loop:
-			count += 1;
-			result += 1;
-
-			if (count == config->width)
+			break;
+			case SCAN_MOD_LONG_LONG:
 			{
+				count = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
+				buffer->pos += count;
+				result += count;
+
+				if (count == 0)
+				{
+					goto end;
+				}
+
+				*u32_str++ = codepoint;
+			}
+			break;
+			default:
+				*str++ = byte;
+				result += 1;
 				break;
 			}
 
@@ -689,6 +706,12 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		}
 
 		*str = '\0';
+
+	end:
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
+		}
 
 		return result;
 	}
