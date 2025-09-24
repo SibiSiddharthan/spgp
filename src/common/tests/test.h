@@ -56,8 +56,21 @@ uint32_t check_value_unsigned(uintmax_t actual, uintmax_t expected, const char *
 	return 0;
 }
 
+uint32_t check_value_wstring(void *actual, void *expected, size_t size, const char *expression, const char *function, int32_t line)
+{
+	if (memcmp(actual, expected, size) != 0)
+	{
+		printf("Value does not match in %s:%d.\n(%s)", function, line, expression);
+		return 1;
+	}
+
+	return 0;
+}
+
 #define CHECK_STRING(ACTUAL, EXPECT) check_value_string(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_RESULT(ACTUAL, EXPECT) check_result(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_UVALUE(ACTUAL, EXPECT) check_value_unsigned(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_IVALUE(ACTUAL, EXPECT) check_value_signed(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+
+#define CHECK_WSTRING(ACTUAL, EXPECT, SIZE) check_value_wstring(ACTUAL, EXPECT, SIZE, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #endif
