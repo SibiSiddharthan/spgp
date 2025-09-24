@@ -583,8 +583,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			byte_t data[8] = {0};
 			uint32_t count = 0;
 
-			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
-			buffer->pos += result;
+			result = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
+			advance(buffer, result);
 
 			if (result != 0)
 			{
@@ -601,8 +601,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		break;
 		case SCAN_MOD_LONG_LONG:
 		{
-			result = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
-			buffer->pos += result;
+			result = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
+			advance(buffer, result);
 
 			if (result != 0)
 			{
@@ -669,8 +669,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 				break;
 			case SCAN_MOD_LONG:
 			{
-				count = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
-				buffer->pos += count;
+				count = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
+				advance(buffer, count);
 				result += count;
 
 				if (count == 0)
@@ -684,8 +684,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 			case SCAN_MOD_LONG_LONG:
 			{
-				count = utf8_decode(PTR_OFFSET(buffer->data, buffer->pos), buffer->size - buffer->pos, &codepoint);
-				buffer->pos += count;
+				count = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
+				advance(buffer, count);
 				result += count;
 
 				if (count == 0)
