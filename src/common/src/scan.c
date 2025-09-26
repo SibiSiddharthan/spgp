@@ -817,11 +817,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		byte_t byte = 0;
 
 		byte_t *str = config->data;
+		uint32_t *u16_str = config->data;
 		uint32_t *u32_str = config->data;
-
-		uint32_t count = 0;
-		uint32_t pos = 0;
-		uint32_t codepoint = 0;
 
 		if (config->width > 0)
 		{
@@ -833,6 +830,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		{
 			while ((byte = peekbyte(buffer, 0)) != '\0')
 			{
+				if (byte > 127)
+				{
+					break;
+				}
+
 				if (!GET_BIT(config->set, byte))
 				{
 					break;
@@ -847,6 +849,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 
 		while ((byte = peekbyte(buffer, 0)) != '\0')
 		{
+			if (byte > 127)
+			{
+				break;
+			}
+
 			if (!GET_BIT(config->set, byte))
 			{
 				break;
@@ -856,47 +863,41 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			{
 			case SCAN_MOD_NONE:
 				*str++ = byte;
-				result += 1;
 				break;
 			case SCAN_MOD_LONG:
-			{
-				count = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
-				advance(buffer, count);
-				result += count;
-
-				if (count == 0)
-				{
-					goto set_end;
-				}
-
-				count = utf16_encode(PTR_OFFSET(str, pos), codepoint);
-				pos += count;
-			}
-			break;
+				*u16_str++ = (uint16_t)byte;
+				break;
+				break;
 			case SCAN_MOD_LONG_LONG:
-			{
-				count = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
-				advance(buffer, count);
-				result += count;
-
-				if (count == 0)
-				{
-					goto set_end;
-				}
-
-				*u32_str++ = codepoint;
-			}
-			break;
+				*u32_str++ = (uint32_t)byte;
+				break;
+				break;
 			default:
 				*str++ = byte;
-				result += 1;
 				break;
 			}
 
+			result += 1;
 			readbyte(buffer);
 		}
 
-		*str = '\0';
+		switch (config->modifier)
+		{
+		case SCAN_MOD_NONE:
+			*str = 0;
+			break;
+		case SCAN_MOD_LONG:
+			*u16_str = (uint16_t)0;
+			break;
+			break;
+		case SCAN_MOD_LONG_LONG:
+			*u32_str = (uint32_t)0;
+			break;
+			break;
+		default:
+			*str = 0;
+			break;
+		}
 
 	set_end:
 		if (config->width > 0)
