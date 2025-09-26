@@ -721,7 +721,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 				result += 1;
 			}
 
-			goto end;
+			goto str_end;
 		}
 
 		while ((byte = peekbyte(buffer, 0)) != '\0')
@@ -745,7 +745,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 
 				if (count == 0)
 				{
-					goto end;
+					goto str_end;
 				}
 
 				count = utf16_encode(PTR_OFFSET(str, pos), codepoint);
@@ -760,7 +760,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 
 				if (count == 0)
 				{
-					goto end;
+					goto str_end;
 				}
 
 				*u32_str++ = codepoint;
@@ -777,7 +777,102 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 
 		*str = '\0';
 
-	end:
+	str_end:
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
+		}
+
+		return result;
+	}
+
+	if (config->type == SCAN_SET)
+	{
+		byte_t byte = 0;
+
+		byte_t *str = config->data;
+		uint32_t *u32_str = config->data;
+
+		uint32_t count = 0;
+		uint32_t pos = 0;
+		uint32_t codepoint = 0;
+
+		if (config->width > 0)
+		{
+			old_size = buffer->size;
+			buffer->size = buffer->pos + config->width;
+		}
+
+		if (config->flags & SCAN_SUPPRESS_INPUT)
+		{
+			while ((byte = peekbyte(buffer, 0)) != '\0')
+			{
+				if (!GET_BIT(config->set, byte))
+				{
+					break;
+				}
+
+				readbyte(buffer);
+				result += 1;
+			}
+
+			goto set_end;
+		}
+
+		while ((byte = peekbyte(buffer, 0)) != '\0')
+		{
+			if (!GET_BIT(config->set, byte))
+			{
+				break;
+			}
+
+			switch (config->modifier)
+			{
+			case SCAN_MOD_NONE:
+				*str++ = byte;
+				result += 1;
+				break;
+			case SCAN_MOD_LONG:
+			{
+				count = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
+				advance(buffer, count);
+				result += count;
+
+				if (count == 0)
+				{
+					goto set_end;
+				}
+
+				count = utf16_encode(PTR_OFFSET(str, pos), codepoint);
+				pos += count;
+			}
+			break;
+			case SCAN_MOD_LONG_LONG:
+			{
+				count = utf8_decode(current(buffer), buffer->size - buffer->pos, &codepoint);
+				advance(buffer, count);
+				result += count;
+
+				if (count == 0)
+				{
+					goto set_end;
+				}
+
+				*u32_str++ = codepoint;
+			}
+			break;
+			default:
+				*str++ = byte;
+				result += 1;
+				break;
+			}
+
+			readbyte(buffer);
+		}
+
+		*str = '\0';
+
+	set_end:
 		if (config->width > 0)
 		{
 			buffer->size = old_size;
