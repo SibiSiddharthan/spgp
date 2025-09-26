@@ -32,6 +32,9 @@
 
 #define IS_SPACE(x) ((x) == ' ' || ((x) >= '\t' && (x) <= '\r'))
 
+#define GET_BIT(s, x) (s[(x) / 64] >> ((x) % 64) & 1)
+#define SET_BIT(s, x) (s[(x) / 64] |= ((uint64_t)1 << ((x) % 64)))
+
 typedef enum _scan_type
 {
 	SCAN_INT_NUMBER = 1,
@@ -67,6 +70,7 @@ typedef struct _scan_config
 	size_t result;
 	void *data;
 	void *suppress;
+	uint64_t set[2];
 } scan_config;
 
 static void parse_number(buffer_t *format, uint32_t *index)
