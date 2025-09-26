@@ -316,6 +316,32 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 			// only ascii 128 character set
 			if (byte < 128)
 			{
+				if (peekbyte(format, 1) == '-')
+				{
+					byte_t from = byte;
+					byte_t to = peekbyte(format, 2);
+
+					if (to != ']')
+					{
+						while (from <= to)
+						{
+							if (exclude)
+							{
+								UNSET_BIT(config->set, from);
+							}
+							else
+							{
+								SET_BIT(config->set, from);
+							}
+
+							++from;
+						}
+
+						advance(format, 3);
+						continue;
+					}
+				}
+
 				if (exclude)
 				{
 					UNSET_BIT(config->set, byte);
