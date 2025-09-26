@@ -32,8 +32,9 @@
 
 #define IS_SPACE(x) ((x) == ' ' || ((x) >= '\t' && (x) <= '\r'))
 
-#define GET_BIT(s, x) (s[(x) / 64] >> ((x) % 64) & 1)
-#define SET_BIT(s, x) (s[(x) / 64] |= ((uint64_t)1 << ((x) % 64)))
+#define GET_BIT(s, x)   (s[(x) / 64] >> ((x) % 64) & 1)
+#define SET_BIT(s, x)   (s[(x) / 64] |= ((uint64_t)1 << ((x) % 64)))
+#define UNSET_BIT(s, x) (s[(x) / 64] &= (~((uint64_t)1 << ((x) % 64))))
 
 typedef enum _scan_type
 {
@@ -258,6 +259,9 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 	case 's':
 		config->type = SCAN_STRING;
 		break;
+	case '[':
+		config->type = SCAN_SET;
+		break;
 	case 'p':
 		config->type = SCAN_POINTER;
 		break;
@@ -268,6 +272,68 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 	default:
 		config->type = SCAN_UNKNOWN;
 		break;
+	}
+
+	// parse the set
+	if (config->type == SCAN_SET)
+	{
+		byte_t first = 0;
+		byte_t exclude = 0;
+		byte_t closed = 0;
+
+		while ((byte = peekbyte(format, 0)) != '\0')
+		{
+			if (first == 0)
+			{
+				first = 1;
+
+				if (byte == '^')
+				{
+					exclude = 1;
+					config->set[0] = 1;
+					config->set[1] = 1;
+				}
+
+				// check to see if next byte is ']'
+				if (peekbyte(format, 1) == ']')
+				{
+					UNSET_BIT(config->set, ']');
+					readbyte(format);
+				}
+
+				readbyte(format);
+				continue;
+			}
+
+			if (byte == ']')
+			{
+				closed = 1;
+				readbyte(format);
+
+				break;
+			}
+
+			// only ascii 128 character set
+			if (byte < 128)
+			{
+				if (exclude)
+				{
+					UNSET_BIT(config->set, byte);
+				}
+				else
+				{
+					SET_BIT(config->set, byte);
+				}
+			}
+
+			readbyte(format);
+		}
+
+		// set to unknown on invalid parse
+		if (!closed)
+		{
+			config->type = SCAN_UNKNOWN;
+		}
 	}
 
 	if (config->type != SCAN_UNKNOWN)
