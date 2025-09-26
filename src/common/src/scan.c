@@ -801,7 +801,22 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			readbyte(buffer);
 		}
 
-		*str = '\0';
+		switch (config->modifier)
+		{
+		case SCAN_MOD_NONE:
+			*str = 0;
+			break;
+		case SCAN_MOD_LONG:
+			*str++ = 0;
+			*str = 0;
+			break;
+		case SCAN_MOD_LONG_LONG:
+			*u32_str = (uint32_t)0;
+			break;
+		default:
+			*str = 0;
+			break;
+		}
 
 	str_end:
 		if (config->width > 0)
@@ -867,10 +882,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			case SCAN_MOD_LONG:
 				*u16_str++ = (uint16_t)byte;
 				break;
-				break;
 			case SCAN_MOD_LONG_LONG:
 				*u32_str++ = (uint32_t)byte;
-				break;
 				break;
 			default:
 				*str++ = byte;
@@ -889,10 +902,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_LONG:
 			*u16_str = (uint16_t)0;
 			break;
-			break;
 		case SCAN_MOD_LONG_LONG:
 			*u32_str = (uint32_t)0;
-			break;
 			break;
 		default:
 			*str = 0;
