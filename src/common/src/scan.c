@@ -287,22 +287,30 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 			{
 				first = 1;
 
+				if (byte == ']')
+				{
+					SET_BIT(config->set, byte);
+
+					readbyte(format);
+					continue;
+				}
+
 				if (byte == '^')
 				{
 					exclude = 1;
-					config->set[0] = 1;
-					config->set[1] = 1;
-				}
+					config->set[0] = 0xFFFFFFFFFFFFFFFF;
+					config->set[1] = 0xFFFFFFFFFFFFFFFF;
 
-				// check to see if next byte is ']'
-				if (peekbyte(format, 1) == ']')
-				{
-					UNSET_BIT(config->set, ']');
+					// check to see if next byte is ']'
+					if (peekbyte(format, 1) == ']')
+					{
+						UNSET_BIT(config->set, ']');
+						readbyte(format);
+					}
+
 					readbyte(format);
+					continue;
 				}
-
-				readbyte(format);
-				continue;
 			}
 
 			if (byte == ']')
