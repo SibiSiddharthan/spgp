@@ -364,6 +364,83 @@ uint32_t test_string()
 	return status;
 }
 
+uint32_t test_set()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	char u8_str[256] = {0};
+
+	uint32_t n = 0;
+
+	result = sscan("abcd", 4, "%[abc]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "abc");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcdefg", 7, "%[a-f]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "abcdef");
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd abcd", 9, "%[a-f ]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "abcd abcd");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd-abcd", 9, "%[a-f -]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "abcd-abcd");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd-abcd", 9, "%6[a-f -]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "abcd-a");
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("][]]", 4, "%[][]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "][]]");
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]][]]", 7, "%[[]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "[[");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd abcd", 9, "%[^d]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "abc");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1234978", 7, "%[^5-8]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "12349");
+	status += CHECK_UVALUE(n, 5);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1234978", 7, "%2[^5-8]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "12");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]]", 4, "%[^]]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "[[");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]]", 4, "%[^][]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "");
+	status += CHECK_UVALUE(n, 0);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("ab-", 3, "%[^-]%n", u8_str, &n);
+	status += CHECK_STRING(u8_str, "ab");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	return status;
+}
+
 uint32_t test_pointer(void)
 {
 	uint32_t status = 0;
@@ -461,5 +538,5 @@ uint32_t test_overflow()
 
 int main()
 {
-	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_overflow();
+	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_set() + test_pointer() + test_overflow();
 }
