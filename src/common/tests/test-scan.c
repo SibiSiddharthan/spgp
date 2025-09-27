@@ -342,6 +342,8 @@ uint32_t test_string()
 	uint32_t result = 0;
 
 	char u8_str1[256] = {0}, u8_str2[256] = {0};
+	uint16_t u16_str1[256] = {0}, u16_str2[256] = {0};
+	uint32_t u32_str1[256] = {0}, u32_str2[256] = {0};
 
 	uint32_t n = 0;
 
@@ -358,6 +360,38 @@ uint32_t test_string()
 
 	result = sscan("😊", 4, "%s%n", &u8_str2, &n);
 	status += CHECK_STRING(u8_str2, "😊");
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd efgh", 9, "%ls%ls%n", u16_str1, u16_str2, &n);
+	status += CHECK_WSTRING(u16_str1, u"abcd");
+	status += CHECK_WSTRING(u16_str2, u"efgh");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("€", 3, "%ls%n", &u16_str1, &n);
+	status += CHECK_WSTRING(u16_str1, u"€");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("😊", 4, "%ls%n", &u16_str2, &n);
+	status += CHECK_WSTRING(u16_str2, u"😊");
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd efgh", 9, "%lls%lls%n", u32_str1, u32_str2, &n);
+	status += CHECK_WSTRING(u32_str1, U"abcd");
+	status += CHECK_WSTRING(u32_str2, U"efgh");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("€", 3, "%lls%n", &u32_str1, &n);
+	status += CHECK_WSTRING(u32_str1, U"€");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("😊", 4, "%lls%n", &u32_str2, &n);
+	status += CHECK_WSTRING(u32_str2, U"😊");
 	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
