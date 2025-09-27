@@ -1036,7 +1036,10 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 			{
 				if (count == 0)
 				{
-					break;
+					if (config.type != SCAN_SET)
+					{
+						break;
+					}
 				}
 
 				result += 1;
