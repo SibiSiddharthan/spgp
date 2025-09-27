@@ -347,6 +347,8 @@ uint32_t test_string()
 
 	uint32_t n = 0;
 
+	// ------------------------------------------------------------------------------------
+
 	result = sscan("abcd efgh", 9, "%s%s%n", u8_str1, u8_str2, &n);
 	status += CHECK_STRING(u8_str1, "abcd");
 	status += CHECK_STRING(u8_str2, "efgh");
@@ -362,6 +364,8 @@ uint32_t test_string()
 	status += CHECK_STRING(u8_str2, "😊");
 	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
+
+	// ------------------------------------------------------------------------------------
 
 	result = sscan("abcd efgh", 9, "%ls%ls%n", u16_str1, u16_str2, &n);
 	status += CHECK_WSTRING(u16_str1, u"abcd");
@@ -379,6 +383,8 @@ uint32_t test_string()
 	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
+	// ------------------------------------------------------------------------------------
+
 	result = sscan("abcd efgh", 9, "%lls%lls%n", u32_str1, u32_str2, &n);
 	status += CHECK_WSTRING(u32_str1, U"abcd");
 	status += CHECK_WSTRING(u32_str2, U"efgh");
@@ -395,6 +401,8 @@ uint32_t test_string()
 	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
+	// ------------------------------------------------------------------------------------
+
 	return status;
 }
 
@@ -404,8 +412,12 @@ uint32_t test_set()
 	uint32_t result = 0;
 
 	char u8_str[256] = {0};
+	char u16_str[256] = {0};
+	char u32_str[256] = {0};
 
 	uint32_t n = 0;
+
+	// ------------------------------------------------------------------------------------
 
 	result = sscan("abcd", 4, "%[abc]%n", u8_str, &n);
 	status += CHECK_STRING(u8_str, "abc");
@@ -471,6 +483,142 @@ uint32_t test_set()
 	status += CHECK_STRING(u8_str, "ab");
 	status += CHECK_UVALUE(n, 2);
 	status += CHECK_RESULT(result, 1);
+
+	// ------------------------------------------------------------------------------------
+
+	result = sscan("abcd", 4, "%l[abc]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"abc");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcdefg", 7, "%l[a-f]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"abcdef");
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd abcd", 9, "%l[a-f ]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"abcd abcd");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd-abcd", 9, "%l[a-f -]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"abcd-abcd");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd-abcd", 9, "%6l[a-f -]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"abcd-a");
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("][]]", 4, "%l[][]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"][]]");
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]][]]", 7, "%l[[]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"[[");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd abcd", 9, "%l[^d]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"abc");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1234978", 7, "%l[^5-8]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"12349");
+	status += CHECK_UVALUE(n, 5);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1234978", 7, "%2l[^5-8]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"12");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]]", 4, "%l[^]]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"[[");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]]", 4, "%l[^][]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"");
+	status += CHECK_UVALUE(n, 0);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("ab-", 3, "%l[^-]%n", u16_str, &n);
+	status += CHECK_WSTRING(u16_str, u"ab");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	// ------------------------------------------------------------------------------------
+
+	result = sscan("abcd", 4, "%ll[abc]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"abc");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcdefg", 7, "%ll[a-f]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"abcdef");
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd abcd", 9, "%ll[a-f ]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"abcd abcd");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd-abcd", 9, "%ll[a-f -]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"abcd-abcd");
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd-abcd", 9, "%6ll[a-f -]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"abcd-a");
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("][]]", 4, "%ll[][]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"][]]");
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]][]]", 7, "%ll[[]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"[[");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("abcd abcd", 9, "%ll[^d]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"abc");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1234978", 7, "%ll[^5-8]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"12349");
+	status += CHECK_UVALUE(n, 5);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1234978", 7, "%2ll[^5-8]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"12");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]]", 4, "%ll[^]]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"[[");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("[[]]", 4, "%ll[^][]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"");
+	status += CHECK_UVALUE(n, 0);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("ab-", 3, "%ll[^-]%n", u32_str, &n);
+	status += CHECK_WSTRING(u32_str, U"ab");
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	// ------------------------------------------------------------------------------------
 
 	return status;
 }
