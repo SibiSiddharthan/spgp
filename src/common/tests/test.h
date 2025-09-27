@@ -60,7 +60,7 @@ uint32_t check_value_wstring(void *actual, void *expected, size_t size, const ch
 {
 	if (memcmp(actual, expected, size) != 0)
 	{
-		printf("Value does not match in %s:%d.\n(%s)", function, line, expression);
+		printf("Value does not match in %s:%d.\n(%s)\n", function, line, expression);
 		return 1;
 	}
 
@@ -72,5 +72,5 @@ uint32_t check_value_wstring(void *actual, void *expected, size_t size, const ch
 #define CHECK_UVALUE(ACTUAL, EXPECT) check_value_unsigned(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_IVALUE(ACTUAL, EXPECT) check_value_signed(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 
-#define CHECK_WSTRING(ACTUAL, EXPECT, SIZE) check_value_wstring(ACTUAL, EXPECT, SIZE, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_WSTRING(ACTUAL, EXPECT) check_value_wstring(ACTUAL, EXPECT, sizeof(EXPECT), #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #endif
