@@ -759,6 +759,35 @@ uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
 	return pos;
 }
 
+static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
+{
+	byte_t b1 = 0, b2 = 0, b3 = 0;
+
+	b1 = peekbyte(buffer, 0);
+	b2 = peekbyte(buffer, 1);
+	b3 = peekbyte(buffer, 2);
+
+	if ((b1 == 'i' || b1 == 'I') && (b2 == 'n' || b2 == 'N') && (b3 == 'f' || b3 == 'F'))
+	{
+		uint64_t out = ((uint64_t)0x7FF << 52);
+		*value = *(double *)&out;
+
+		advance(buffer, 3);
+		return 3;
+	}
+
+	if ((b1 == 'n' || b1 == 'N') && (b2 == 'a' || b2 == 'A') && (b3 == 'n' || b3 == 'N'))
+	{
+		uint64_t out = 0x7FFFFFFFFFFFFFFF;
+		*value = *(double *)&out;
+
+		advance(buffer, 3);
+		return 3;
+	}
+
+	return 0;
+}
+
 uint32_t float_from_normal_common(buffer_t *buffer, double *value)
 {
 	byte_t byte = 0;
@@ -781,6 +810,16 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value)
 
 		readbyte(buffer);
 		count += 1;
+	}
+
+	if (parse_float_inf_or_nan(buffer, value))
+	{
+		if (minus)
+		{
+			*(uint64_t *)value |= ((uint64_t)1 << 63);
+		}
+
+		return count + 3;
 	}
 
 	while ((byte = peekbyte(buffer, 0)) != '\0')
