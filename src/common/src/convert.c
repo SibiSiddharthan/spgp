@@ -225,6 +225,8 @@ uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags)
 uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags)
 {
 	uint32_t count = 0;
+	uint8_t period = 0;
+	uint8_t grouping = 0;
 	byte_t byte = 0;
 
 	*value = 0;
@@ -240,10 +242,16 @@ uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags
 	{
 		if (IS_DIGIT(byte))
 		{
+			if (grouping && period == 3)
+			{
+				break;
+			}
+
 			*value = (*value * 10) + (byte - '0');
 
 			readbyte(buffer);
 			count++;
+			period++;
 
 			continue;
 		}
@@ -261,6 +269,24 @@ uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags
 
 					break;
 				}
+
+				if (grouping)
+				{
+					if (period != 3)
+					{
+						break;
+					}
+				}
+				else
+				{
+					if (period > 3)
+					{
+						break;
+					}
+				}
+
+				grouping = 1;
+				period = 0;
 
 				b1 = peekbyte(buffer, 1);
 				b2 = peekbyte(buffer, 2);
@@ -313,6 +339,8 @@ uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags)
 uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 {
 	uint32_t count = 0;
+	uint8_t period = 0;
+	uint8_t grouping = 0;
 	uint8_t minus = 0;
 	byte_t byte = 0;
 
@@ -334,6 +362,11 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 	{
 		if (IS_DIGIT(byte))
 		{
+			if (grouping && period == 3)
+			{
+				break;
+			}
+
 			if (minus)
 			{
 				*value = (*value * 10) - (byte - '0');
@@ -345,6 +378,7 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 
 			readbyte(buffer);
 			count++;
+			period++;
 
 			continue;
 		}
@@ -362,6 +396,24 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 
 					break;
 				}
+
+				if (grouping)
+				{
+					if (period != 3)
+					{
+						break;
+					}
+				}
+				else
+				{
+					if (period > 3)
+					{
+						break;
+					}
+				}
+
+				grouping = 1;
+				period = 0;
 
 				b1 = peekbyte(buffer, 1);
 				b2 = peekbyte(buffer, 2);
