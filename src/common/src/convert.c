@@ -1163,7 +1163,8 @@ uint32_t utf16_octets(uint32_t codepoint)
 uint32_t utf16_encode(byte_t buffer[32], uint32_t codepoint)
 {
 	uint32_t v = 0;
-	uint32_t enc = 0;
+	uint16_t high = 0, low = 0;
+	uint16_t *out = (uint16_t *)buffer;
 
 	// Invalid Codepoint
 	if (codepoint > 0x10FFFF)
@@ -1180,12 +1181,13 @@ uint32_t utf16_encode(byte_t buffer[32], uint32_t codepoint)
 	v = codepoint - 0x10000;
 
 	// High 16 bits
-	enc |= (0xD800 | ((v >> 10) & 0x3FF)) << 16;
+	high |= 0xD800 | ((v >> 10) & 0x3FF);
 
 	// Low 16 bits
-	enc |= 0xDC00 | (v & 0x3FF);
+	low |= 0xDC00 | (v & 0x3FF);
 
-	memcpy(buffer, &enc, 4);
+	out[0] = high;
+	out[1] = low;
 
 	return 4;
 }
