@@ -663,7 +663,7 @@ uint32_t test_char(void)
 	status += CHECK_RESULT(result, 12);
 
 	memset(buffer, 0, 256);
-	result = sprint(buffer, 256, "abc%2$*1$c%4$-*1$c", 4, 'd', 'e');
+	result = sprint(buffer, 256, "abc%2$*1$c%3$-*1$c", 4, 'd', 'e');
 	status += CHECK_STRING(buffer, "abc   de   ");
 	status += CHECK_RESULT(result, 11);
 
