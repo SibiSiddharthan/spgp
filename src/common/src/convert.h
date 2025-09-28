@@ -618,18 +618,6 @@ static inline uint32_t float64_from_normal(buffer_t *buffer, double *value)
 	return float_from_normal_common(buffer, value);
 }
 
-double float_from_scientific_common(void *buffer, uint8_t size);
-
-static inline float float32_from_scientific(void *buffer, uint8_t size)
-{
-	return (float)float_from_scientific_common(buffer, size);
-}
-
-static inline double float64_from_scientific(void *buffer, uint8_t size)
-{
-	return (double)float_from_scientific_common(buffer, size);
-}
-
 uint32_t pointer_encode(byte_t buffer[32], void *ptr);
 uint32_t pointer_decode(buffer_t *buffer, void **value);
 
