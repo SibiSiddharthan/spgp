@@ -923,7 +923,48 @@ uint32_t test_overflow()
 	return status;
 }
 
+uint32_t test_error()
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%k");
+	status += CHECK_STRING(buffer, "%k");
+	status += CHECK_RESULT(result, 2);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$k");
+	status += CHECK_STRING(buffer, "%1$k");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%*k");
+	status += CHECK_STRING(buffer, "%*k");
+	status += CHECK_RESULT(result, 3);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#2k");
+	status += CHECK_STRING(buffer, "%#2k");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#2.5k");
+	status += CHECK_STRING(buffer, "%#2.5k");
+	status += CHECK_RESULT(result, 6);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%#2$1$.3$k");
+	status += CHECK_STRING(buffer, "%#2$1$.3$k");
+	status += CHECK_RESULT(result, 10);
+
+	return status;
+}
+
 int main()
 {
-	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_result() + test_overflow();
+	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_result() + test_overflow() +
+		   test_error();
 }
