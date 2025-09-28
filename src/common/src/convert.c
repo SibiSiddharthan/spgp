@@ -757,49 +757,146 @@ uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
 	return pos;
 }
 
-double float_from_normal_common(void *buffer, uint8_t size)
+uint32_t float_from_normal_common(buffer_t *buffer, double *value)
 {
-	uint8_t *in = buffer;
-	uint8_t pos = 0;
+	byte_t byte = 0;
+	uint32_t count = 0;
+
 	uint8_t minus = 0;
+	uint8_t fraction = 0;
+	uint8_t exponent = 0;
 
-	double result = 0.0;
-	double integer = 0.0;
-	double fraction = 0.0;
-	double div = 10.0;
+	*value = 0;
 
-	if (in[pos] == '-')
+	byte = peekbyte(buffer, 0);
+
+	if (byte == '-' || byte == '+')
 	{
-		minus = 1;
-		pos += 1;
+		if (byte == '-')
+		{
+			minus = 1;
+		}
+
+		readbyte(buffer);
+		count += 1;
 	}
 
-	while (pos < size)
+	while ((byte = peekbyte(buffer, 0)) != '\0')
 	{
-		if (in[pos] == '.')
+		if (byte == '.')
 		{
-			pos += 1;
+			fraction = 1;
+
+			readbyte(buffer);
+			count += 1;
+
 			break;
 		}
 
-		integer = (integer * 10.0) + (double)(in[pos] - '0');
-		pos += 1;
+		if (byte == 'e' || byte == 'E')
+		{
+			exponent = 1;
+
+			readbyte(buffer);
+			count += 1;
+
+			break;
+		}
+
+		if (byte >= '0' && byte <= '9')
+		{
+			*value = (*value * 10.0) + (double)(byte - '0');
+
+			readbyte(buffer);
+			count += 1;
+
+			continue;
+		}
+
+		break;
 	}
 
-	while (pos < size)
+	if (fraction)
 	{
-		fraction += (double)(in[pos] - '0') / div;
-		div *= 10.0;
+		double div = 10.0;
+
+		while ((byte = peekbyte(buffer, 0)) != '\0')
+		{
+			if (byte == 'e' || byte == 'E')
+			{
+				exponent = 1;
+
+				readbyte(buffer);
+				count += 1;
+
+				break;
+			}
+
+			if (byte >= '0' && byte <= '9')
+			{
+				*value += (double)(byte - '0') / div;
+				div *= 10.0;
+
+				readbyte(buffer);
+				count += 1;
+
+				continue;
+			}
+
+			break;
+		}
 	}
 
-	result = integer + fraction;
+	if (exponent)
+	{
+		intmax_t exp = 0;
+		uint8_t sign = 0;
+		double factor = 1.0;
+		double temp = 10.0;
+
+		count += int_from_dec_common(buffer, &exp, 0);
+
+		if (exp < 0)
+		{
+			exp = ~exp + 1;
+			sign = 1;
+		}
+
+		if (exp & 1)
+		{
+			factor = 10.0;
+		}
+
+		exp >>= 1;
+
+		while (exp != 0)
+		{
+			temp *= temp;
+
+			if (exp & 1)
+			{
+				factor *= temp;
+			}
+
+			exp >>= 1;
+		}
+
+		if (sign)
+		{
+			*value /= factor;
+		}
+		else
+		{
+			*value *= factor;
+		}
+	}
 
 	if (minus)
 	{
-		result *= -1.0;
+		*value *= -1.0;
 	}
 
-	return result;
+	return count;
 }
 
 double float_from_scientific_common(void *buffer, uint8_t size)
