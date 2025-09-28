@@ -67,7 +67,6 @@ typedef struct _print_config
 	uint16_t flags;
 	uint32_t width;
 	uint32_t precision;
-	uint32_t index;
 	size_t result;
 	void *data;
 } print_config;
@@ -98,6 +97,10 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	byte_t byte = 0;
 	size_t pos = 0;
 
+	uint32_t arg_index = 0;
+	uint32_t width_index = UINT32_MAX;
+	uint32_t precision_index = UINT32_MAX;
+
 	memset(config, 0, sizeof(print_config));
 
 	// argument
@@ -108,7 +111,7 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	{
 		if (peekbyte(format, 0) == '$')
 		{
-			config->index = index;
+			arg_index = index;
 			readbyte(format);
 		}
 		else
@@ -177,11 +180,11 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		if (peekbyte(format, 0) == '$')
 		{
 			readbyte(format);
-			config->width = (uint32_t)(uintptr_t)variadic_args_get(args, index);
+			width_index = index;
 		}
 		else
 		{
-			config->width = (uint32_t)(uintptr_t)variadic_args_get(args, 0);
+			width_index = 0;
 		}
 	}
 	else
@@ -203,11 +206,11 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 			if (peekbyte(format, 0) == '$')
 			{
 				readbyte(format);
-				config->precision = (uint32_t)(uintptr_t)variadic_args_get(args, index);
+				precision_index = index;
 			}
 			else
 			{
-				config->precision = (uint32_t)(uintptr_t)variadic_args_get(args, 0);
+				precision_index = 0;
 			}
 		}
 		else
@@ -271,7 +274,7 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	}
 
 	// conversion
-	switch (byte = readbyte(format))
+	switch (byte = peekbyte(format, 0))
 	{
 	// integer
 	case 'i':
@@ -341,7 +344,19 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	if (config->type != PRINT_UNKNOWN)
 	{
 		// get the argument from the list
-		config->data = variadic_args_get(args, config->index);
+		readbyte(format);
+
+		if (width_index != UINT32_MAX)
+		{
+			config->width = (uint32_t)(uintptr_t)variadic_args_get(args, width_index);
+		}
+
+		if (precision_index != UINT32_MAX)
+		{
+			config->precision = (uint32_t)(uintptr_t)variadic_args_get(args, precision_index);
+		}
+
+		config->data = variadic_args_get(args, arg_index);
 	}
 
 	// If both '-' and '0' are given '0' is ignored.
@@ -1115,7 +1130,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 			if (config.type == PRINT_UNKNOWN)
 			{
 				in.pos = pos;
-				writebyte(buffer, byte);
+				writebyte(buffer, '%');
 				result += 1;
 
 				continue;
