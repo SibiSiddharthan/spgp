@@ -667,6 +667,27 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
+	if (config->type == SCAN_DOUBLE_NORMAL || config->type == SCAN_DOUBLE_SCIENTIFIC || config->type == SCAN_DOUBLE_SCIENTIFIC_SHORT)
+	{
+		double value = 0;
+		result += consume_whitespaces(buffer);
+
+		if (config->width > 0)
+		{
+			old_size = buffer->size;
+			buffer->size = buffer->pos + config->width;
+		}
+
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
+		}
+
+		result += float_from_normal_common(buffer, &value);
+
+		return result;
+	}
+
 	if (config->type == SCAN_CHAR)
 	{
 		uint32_t codepoint = 0;
