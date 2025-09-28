@@ -770,6 +770,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			case SCAN_MOD_NONE:
 				*str++ = byte;
 				result += 1;
+				readbyte(buffer);
 				break;
 			case SCAN_MOD_LONG:
 			{
@@ -803,10 +804,9 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			default:
 				*str++ = byte;
 				result += 1;
+				readbyte(buffer);
 				break;
 			}
-
-			readbyte(buffer);
 		}
 
 		switch (config->modifier)
@@ -815,8 +815,8 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			*str = 0;
 			break;
 		case SCAN_MOD_LONG:
-			*str++ = 0;
-			*str = 0;
+			str[pos++] = 0;
+			str[pos++] = 0;
 			break;
 		case SCAN_MOD_LONG_LONG:
 			*u32_str = (uint32_t)0;
@@ -840,7 +840,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		byte_t byte = 0;
 
 		byte_t *str = config->data;
-		uint32_t *u16_str = config->data;
+		uint16_t *u16_str = config->data;
 		uint32_t *u32_str = config->data;
 
 		if (config->width > 0)
@@ -1036,7 +1036,7 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 			{
 				if (count == 0)
 				{
-					if (config.type != SCAN_SET)
+					if (config.type != SCAN_SET || peekbyte(&in, 0) == 0)
 					{
 						break;
 					}
