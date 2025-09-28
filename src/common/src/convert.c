@@ -840,7 +840,7 @@ static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
 	return 0;
 }
 
-uint32_t float_from_normal_common(buffer_t *buffer, double *value)
+uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flags)
 {
 	byte_t byte = 0;
 	uint32_t count = 0;

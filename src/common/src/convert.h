@@ -600,22 +600,22 @@ uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x);
 double float64_from_hex(void *buffer, uint8_t size);
 uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x);
 
-uint32_t float_from_normal_common(buffer_t *buffer, double *value);
+uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flags);
 
-static inline uint32_t float32_from_normal(buffer_t *buffer, float *value)
+static inline uint32_t float32_from_normal(buffer_t *buffer, float *value, uint32_t flags)
 {
 	uint32_t count = 0;
 	double result = 0;
 
-	count = float_from_normal_common(buffer, &result);
+	count = float_from_normal_common(buffer, &result, flags);
 	*value = (float)result;
 
 	return count;
 }
 
-static inline uint32_t float64_from_normal(buffer_t *buffer, double *value)
+static inline uint32_t float64_from_normal(buffer_t *buffer, double *value, uint32_t flags)
 {
-	return float_from_normal_common(buffer, value);
+	return float_from_normal_common(buffer, value, flags);
 }
 
 uint32_t pointer_encode(byte_t buffer[32], void *ptr);

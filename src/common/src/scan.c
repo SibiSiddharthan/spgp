@@ -683,7 +683,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			buffer->size = old_size;
 		}
 
-		result += float_from_normal_common(buffer, &value);
+		result += float_from_normal_common(buffer, &value, config->flags & SCAN_GROUP_DIGITS);
 
 		return result;
 	}
