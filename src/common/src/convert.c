@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
+
 static const byte_t hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 static const byte_t hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
@@ -236,7 +238,7 @@ uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags
 
 	while ((byte = peekbyte(buffer, 0)) != '\0')
 	{
-		if (byte >= '0' && byte <= '9')
+		if (IS_DIGIT(byte))
 		{
 			*value = (*value * 10) + (byte - '0');
 
@@ -264,7 +266,7 @@ uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags
 				b2 = peekbyte(buffer, 2);
 				b3 = peekbyte(buffer, 3);
 
-				if ((b1 >= '0' && b1 <= '9') && (b2 >= '0' && b2 <= '9') && (b3 >= '0' && b3 <= '9'))
+				if (IS_DIGIT(b1) && IS_DIGIT(b2) && IS_DIGIT(b3))
 				{
 					readbyte(buffer);
 					count++;
@@ -330,7 +332,7 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 
 	while ((byte = peekbyte(buffer, 0)) != '\0')
 	{
-		if (byte >= '0' && byte <= '9')
+		if (IS_DIGIT(byte))
 		{
 			if (minus)
 			{
@@ -365,7 +367,7 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 				b2 = peekbyte(buffer, 2);
 				b3 = peekbyte(buffer, 3);
 
-				if ((b1 >= '0' && b1 <= '9') && (b2 >= '0' && b2 <= '9') && (b3 >= '0' && b3 <= '9'))
+				if (IS_DIGIT(b1) && IS_DIGIT(b2) && IS_DIGIT(b3))
 				{
 					readbyte(buffer);
 					count++;
@@ -803,7 +805,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value)
 			break;
 		}
 
-		if (byte >= '0' && byte <= '9')
+		if (IS_DIGIT(byte))
 		{
 			*value = (*value * 10.0) + (double)(byte - '0');
 
@@ -832,7 +834,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value)
 				break;
 			}
 
-			if (byte >= '0' && byte <= '9')
+			if (IS_DIGIT(byte))
 			{
 				*value += (double)(byte - '0') / div;
 				div *= 10.0;
