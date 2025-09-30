@@ -117,12 +117,6 @@ uint32_t test_int()
 	status += CHECK_UVALUE(n, 3);
 	status += CHECK_RESULT(result, 2);
 
-	result = sscan("123", 3, "%2$2d %1$d%3$n", &i, &j, &n);
-	status += CHECK_IVALUE(i, 3);
-	status += CHECK_IVALUE(j, 12);
-	status += CHECK_UVALUE(n, 3);
-	status += CHECK_RESULT(result, 2);
-
 	result = sscan("000000000000123", 15, "%5d%2d%n", &i, &j, &n);
 	status += CHECK_IVALUE(i, 0);
 	status += CHECK_IVALUE(j, 0);
@@ -923,6 +917,39 @@ uint32_t test_pointer(void)
 	return status;
 }
 
+uint32_t test_position()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	uint32_t i = 0, j = 0;
+	double x = 0, y = 0;
+	uint32_t n = 0, m= 0;
+
+	result = sscan("123", 3, "%2$2d %1$d%3$n", &i, &j, &n);
+	status += CHECK_IVALUE(i, 3);
+	status += CHECK_IVALUE(j, 12);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("123e457e-2", 10, "%2$5lf%4$n%1$lf%3$n", &x, &y, &n, &m);
+	status += CHECK_FLOAT64(x, 57e-2);
+	status += CHECK_FLOAT64(y, 123e+4);
+	status += CHECK_UVALUE(n, 10);
+	status += CHECK_UVALUE(m, 5);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("123 567 4e2", 11, "%1$d %5$n %3$d %2$lf %4$n", &i, &x, &j, &n, &m);
+	status += CHECK_IVALUE(i, 123);
+	status += CHECK_IVALUE(j, 567);
+	status += CHECK_FLOAT64(x, 4e2);
+	status += CHECK_UVALUE(n, 11);
+	status += CHECK_UVALUE(m, 4);
+	status += CHECK_RESULT(result, 3);
+
+	return status;
+}
+
 uint32_t test_overflow()
 {
 	uint32_t status = 0;
@@ -980,5 +1007,5 @@ uint32_t test_overflow()
 int main()
 {
 	return test_simple() + test_int() + test_uint() + test_float() + test_char() + test_string() + test_set() + test_pointer() +
-		   test_overflow();
+		   test_position() + test_overflow();
 }
