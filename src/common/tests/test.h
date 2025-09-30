@@ -59,6 +59,17 @@ uint32_t check_value_unsigned(uintmax_t actual, uintmax_t expected, const char *
 	return 0;
 }
 
+uint32_t check_value_float(float actual, float expected, const char *expression, const char *function, int32_t line)
+{
+	if ((MAX(actual, expected) - MIN(actual, expected)) > FLT_EPSILON)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%.20f == %.20f)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
 uint32_t check_value_double(double actual, double expected, const char *expression, const char *function, int32_t line)
 {
 	if ((MAX(actual, expected) - MIN(actual, expected)) > DBL_EPSILON)
@@ -86,6 +97,7 @@ uint32_t check_value_wstring(void *actual, void *expected, size_t size, const ch
 #define CHECK_RESULT(ACTUAL, EXPECT)  check_result(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_UVALUE(ACTUAL, EXPECT)  check_value_unsigned(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 #define CHECK_IVALUE(ACTUAL, EXPECT)  check_value_signed(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
-#define CHECK_DOUBLE(ACTUAL, EXPECT)  check_value_double(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_FLOAT32(ACTUAL, EXPECT) check_value_float(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_FLOAT64(ACTUAL, EXPECT) check_value_double(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
 
 #endif
