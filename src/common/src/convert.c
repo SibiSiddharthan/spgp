@@ -325,9 +325,9 @@ uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags)
 uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags)
 {
 	uint32_t count = 0;
-	uint8_t period = 0;
-	uint8_t grouping = 0;
 	byte_t byte = 0;
+
+	digit_parse_state state = {.flags = flags};
 
 	*value = 0;
 	byte = peekbyte(buffer, 0);
@@ -338,71 +338,9 @@ uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags
 		count++;
 	}
 
-	while ((byte = peekbyte(buffer, 0)) != '\0')
+	while ((byte = parse_digits(&state, buffer, &count)) != '\0')
 	{
-		if (IS_DIGIT(byte))
-		{
-			if (grouping && period == 3)
-			{
-				break;
-			}
-
-			*value = (*value * 10) + (byte - '0');
-
-			readbyte(buffer);
-			count++;
-			period++;
-
-			continue;
-		}
-
-		if (byte == ',')
-		{
-			if (flags & CONVERT_GROUP_DIGITS)
-			{
-				byte_t b1 = 0, b2 = 0, b3 = 0;
-
-				if (peekbyte(buffer, 1) == '\0')
-				{
-					readbyte(buffer);
-					count++;
-
-					break;
-				}
-
-				if (grouping)
-				{
-					if (period != 3)
-					{
-						break;
-					}
-				}
-				else
-				{
-					if (period > 3)
-					{
-						break;
-					}
-				}
-
-				grouping = 1;
-				period = 0;
-
-				b1 = peekbyte(buffer, 1);
-				b2 = peekbyte(buffer, 2);
-				b3 = peekbyte(buffer, 3);
-
-				if (IS_DIGIT(b1) && IS_DIGIT(b2) && IS_DIGIT(b3))
-				{
-					readbyte(buffer);
-					count++;
-
-					continue;
-				}
-			}
-		}
-
-		break;
+		*value = (*value * 10) + (byte - '0');
 	}
 
 	return count;
@@ -439,10 +377,10 @@ uint32_t int_to_dec_common(byte_t buffer[32], intmax_t x, uint32_t flags)
 uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 {
 	uint32_t count = 0;
-	uint8_t period = 0;
-	uint8_t grouping = 0;
 	uint8_t minus = 0;
 	byte_t byte = 0;
+
+	digit_parse_state state = {.flags = flags};
 
 	*value = 0;
 	byte = peekbyte(buffer, 0);
@@ -458,78 +396,16 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 		count++;
 	}
 
-	while ((byte = peekbyte(buffer, 0)) != '\0')
+	while ((byte = parse_digits(&state, buffer, &count)) != '\0')
 	{
-		if (IS_DIGIT(byte))
+		if (minus)
 		{
-			if (grouping && period == 3)
-			{
-				break;
-			}
-
-			if (minus)
-			{
-				*value = (*value * 10) - (byte - '0');
-			}
-			else
-			{
-				*value = (*value * 10) + (byte - '0');
-			}
-
-			readbyte(buffer);
-			count++;
-			period++;
-
-			continue;
+			*value = (*value * 10) - (byte - '0');
 		}
-
-		if (byte == ',')
+		else
 		{
-			if (flags & CONVERT_GROUP_DIGITS)
-			{
-				byte_t b1 = 0, b2 = 0, b3 = 0;
-
-				if (peekbyte(buffer, 1) == '\0')
-				{
-					readbyte(buffer);
-					count++;
-
-					break;
-				}
-
-				if (grouping)
-				{
-					if (period != 3)
-					{
-						break;
-					}
-				}
-				else
-				{
-					if (period > 3)
-					{
-						break;
-					}
-				}
-
-				grouping = 1;
-				period = 0;
-
-				b1 = peekbyte(buffer, 1);
-				b2 = peekbyte(buffer, 2);
-				b3 = peekbyte(buffer, 3);
-
-				if (IS_DIGIT(b1) && IS_DIGIT(b2) && IS_DIGIT(b3))
-				{
-					readbyte(buffer);
-					count++;
-
-					continue;
-				}
-			}
+			*value = (*value * 10) + (byte - '0');
 		}
-
-		break;
 	}
 
 	return count;
@@ -949,8 +825,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 	uint8_t fraction = 0;
 	uint8_t exponent = 0;
 
-	uint8_t period = 0;
-	uint8_t grouping = 0;
+	digit_parse_state state = {0};
 
 	*value = 0;
 
@@ -977,17 +852,46 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 		return count + 3;
 	}
 
-	while ((byte = peekbyte(buffer, 0)) != '\0')
+	state = (digit_parse_state){.flags = flags};
+
+	while ((byte = parse_digits(&state, buffer, &count)) != '\0')
 	{
-		if (byte == '.')
+		*value = (*value * 10.0) + (double)(byte - '0');
+	}
+
+	byte = peekbyte(buffer, 0);
+
+	if (byte == '.')
+	{
+		fraction = 1;
+
+		readbyte(buffer);
+		count += 1;
+	}
+	else
+	{
+		if (byte == 'e' || byte == 'E')
 		{
-			fraction = 1;
+			exponent = 1;
 
 			readbyte(buffer);
-			count += 1;
-
-			break;
+			count++;
 		}
+	}
+
+	if (fraction)
+	{
+		double div = 10.0;
+
+		state = (digit_parse_state){.fraction = 1, .flags = flags};
+
+		while ((byte = parse_digits(&state, buffer, &count)) != '\0')
+		{
+			*value += (double)(byte - '0') / div;
+			div *= 10.0;
+		}
+
+		byte = peekbyte(buffer, 0);
 
 		if (byte == 'e' || byte == 'E')
 		{
@@ -995,139 +899,6 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 
 			readbyte(buffer);
 			count++;
-
-			break;
-		}
-
-		if (IS_DIGIT(byte))
-		{
-			if (grouping && period == 3)
-			{
-				break;
-			}
-
-			*value = (*value * 10.0) + (double)(byte - '0');
-
-			readbyte(buffer);
-			count++;
-			period++;
-
-			continue;
-		}
-
-		if (byte == ',')
-		{
-			if (flags & CONVERT_GROUP_DIGITS)
-			{
-				byte_t b1 = 0, b2 = 0, b3 = 0;
-
-				if (peekbyte(buffer, 1) == '\0')
-				{
-					readbyte(buffer);
-					count++;
-
-					break;
-				}
-
-				if (grouping)
-				{
-					if (period != 3)
-					{
-						break;
-					}
-				}
-				else
-				{
-					if (period > 3)
-					{
-						break;
-					}
-				}
-
-				grouping = 1;
-				period = 0;
-
-				b1 = peekbyte(buffer, 1);
-				b2 = peekbyte(buffer, 2);
-				b3 = peekbyte(buffer, 3);
-
-				if (IS_DIGIT(b1) && IS_DIGIT(b2) && IS_DIGIT(b3))
-				{
-					readbyte(buffer);
-					count++;
-
-					continue;
-				}
-			}
-		}
-
-		break;
-	}
-
-	grouping = 0;
-	period = 0;
-
-	if (fraction)
-	{
-		double div = 10.0;
-
-		while ((byte = peekbyte(buffer, 0)) != '\0')
-		{
-			if (byte == 'e' || byte == 'E')
-			{
-				exponent = 1;
-
-				readbyte(buffer);
-				count++;
-
-				break;
-			}
-
-			if (IS_DIGIT(byte))
-			{
-				if (grouping && period == 3)
-				{
-					break;
-				}
-
-				*value += (double)(byte - '0') / div;
-				div *= 10.0;
-
-				readbyte(buffer);
-				count++;
-				period++;
-
-				continue;
-			}
-
-			if (byte == ',')
-			{
-				if (flags & CONVERT_GROUP_DIGITS)
-				{
-					if (peekbyte(buffer, 1) == '\0')
-					{
-						readbyte(buffer);
-						count++;
-
-						break;
-					}
-
-					if (period != 3)
-					{
-						break;
-					}
-
-					grouping = 1;
-					period = 0;
-
-					readbyte(buffer);
-					count++;
-
-					continue;
-				}
-			}
-
-			break;
 		}
 	}
 
