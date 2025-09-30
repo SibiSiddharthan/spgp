@@ -692,11 +692,6 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			buffer->size = buffer->pos + config->width;
 		}
 
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
@@ -710,6 +705,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		default:
 			result += float32_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
+		}
+
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
 		}
 
 		return result;

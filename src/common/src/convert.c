@@ -849,6 +849,9 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 	uint8_t fraction = 0;
 	uint8_t exponent = 0;
 
+	uint8_t period = 0;
+	uint8_t grouping = 0;
+
 	*value = 0;
 
 	byte = peekbyte(buffer, 0);
@@ -861,7 +864,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 		}
 
 		readbyte(buffer);
-		count += 1;
+		count++;
 	}
 
 	if (parse_float_inf_or_nan(buffer, value))
@@ -891,23 +894,78 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 			exponent = 1;
 
 			readbyte(buffer);
-			count += 1;
+			count++;
 
 			break;
 		}
 
 		if (IS_DIGIT(byte))
 		{
+			if (grouping && period == 3)
+			{
+				break;
+			}
+
 			*value = (*value * 10.0) + (double)(byte - '0');
 
 			readbyte(buffer);
-			count += 1;
+			count++;
+			period++;
 
 			continue;
 		}
 
+		if (byte == ',')
+		{
+			if (flags & CONVERT_GROUP_DIGITS)
+			{
+				byte_t b1 = 0, b2 = 0, b3 = 0;
+
+				if (peekbyte(buffer, 1) == '\0')
+				{
+					readbyte(buffer);
+					count++;
+
+					break;
+				}
+
+				if (grouping)
+				{
+					if (period != 3)
+					{
+						break;
+					}
+				}
+				else
+				{
+					if (period > 3)
+					{
+						break;
+					}
+				}
+
+				grouping = 1;
+				period = 0;
+
+				b1 = peekbyte(buffer, 1);
+				b2 = peekbyte(buffer, 2);
+				b3 = peekbyte(buffer, 3);
+
+				if (IS_DIGIT(b1) && IS_DIGIT(b2) && IS_DIGIT(b3))
+				{
+					readbyte(buffer);
+					count++;
+
+					continue;
+				}
+			}
+		}
+
 		break;
 	}
+
+	grouping = 0;
+	period = 0;
 
 	if (fraction)
 	{
@@ -920,20 +978,53 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 				exponent = 1;
 
 				readbyte(buffer);
-				count += 1;
+				count++;
 
 				break;
 			}
 
 			if (IS_DIGIT(byte))
 			{
+				if (grouping && period == 3)
+				{
+					break;
+				}
+
 				*value += (double)(byte - '0') / div;
 				div *= 10.0;
 
 				readbyte(buffer);
-				count += 1;
+				count++;
+				period++;
 
 				continue;
+			}
+
+			if (byte == ',')
+			{
+				if (flags & CONVERT_GROUP_DIGITS)
+				{
+					if (peekbyte(buffer, 1) == '\0')
+					{
+						readbyte(buffer);
+						count++;
+
+						break;
+					}
+
+					if (period != 3)
+					{
+						break;
+					}
+
+					grouping = 1;
+					period = 0;
+
+					readbyte(buffer);
+					count++;
+
+					continue;
+				}
 			}
 
 			break;
@@ -960,6 +1051,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 			count += 1;
 		}
 
+		// no grouping for exponents
 		count += uint_from_dec_common(buffer, &exp, 0);
 
 		if (exp & 1)
