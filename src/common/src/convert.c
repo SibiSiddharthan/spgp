@@ -57,6 +57,106 @@ uint32_t print_hex(const byte_t *table, byte_t *buffer, uint32_t buffer_size, vo
 	return pos;
 }
 
+typedef struct _digit_parse_state
+{
+	uint8_t period;
+	uint8_t grouping;
+	uint8_t fraction;
+	uint8_t flags;
+} digit_parse_state;
+
+static byte_t parse_digits(digit_parse_state *state, buffer_t *buffer, uint32_t *count)
+{
+	byte_t byte = 0;
+
+begin:
+	byte = peekbyte(buffer, 0);
+
+	if (byte == 0)
+	{
+		return 0;
+	}
+
+	if (IS_DIGIT(byte))
+	{
+		if (state->grouping && state->period == 3)
+		{
+			return 0;
+		}
+
+		readbyte(buffer);
+		state->period += 1;
+		*count += 1;
+
+		return byte;
+	}
+
+	if (byte == ',')
+	{
+		if (state->flags & CONVERT_GROUP_DIGITS)
+		{
+			byte_t b1 = 0, b2 = 0, b3 = 0;
+
+			// consume trailing periods
+			if (peekbyte(buffer, 1) == '\0')
+			{
+				readbyte(buffer);
+				*count += 1;
+
+				return 0;
+			}
+
+			if (state->fraction)
+			{
+				if (state->period != 3)
+				{
+					return 0;
+				}
+
+				state->grouping = 1;
+				state->period = 0;
+
+				readbyte(buffer);
+				*count += 1;
+
+				goto begin;
+			}
+
+			if (state->grouping)
+			{
+				if (state->period != 3)
+				{
+					return 0;
+				}
+			}
+			else
+			{
+				if (state->period > 3)
+				{
+					return 0;
+				}
+			}
+
+			state->grouping = 1;
+			state->period = 0;
+
+			b1 = peekbyte(buffer, 1);
+			b2 = peekbyte(buffer, 2);
+			b3 = peekbyte(buffer, 3);
+
+			if (IS_DIGIT(b1) && IS_DIGIT(b2) && IS_DIGIT(b3))
+			{
+				readbyte(buffer);
+				*count += 1;
+
+				goto begin;
+			}
+		}
+	}
+
+	return 0;
+}
+
 uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x)
 {
 	const byte_t *table = upper ? hex_upper_table : hex_lower_table;
