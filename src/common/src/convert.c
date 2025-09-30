@@ -942,18 +942,25 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 
 	if (exponent)
 	{
-		intmax_t exp = 0;
+		uintmax_t exp = 0;
 		uint8_t sign = 0;
 		double factor = 1.0;
 		double temp = 10.0;
 
-		count += int_from_dec_common(buffer, &exp, 0);
+		byte = peekbyte(buffer, 0);
 
-		if (exp < 0)
+		if (byte == '+' || byte == '-')
 		{
-			exp = ~exp + 1;
-			sign = 1;
+			if (byte == '-')
+			{
+				sign = 1;
+			}
+
+			readbyte(buffer);
+			count += 1;
 		}
+
+		count += uint_from_dec_common(buffer, &exp, 0);
 
 		if (exp & 1)
 		{
