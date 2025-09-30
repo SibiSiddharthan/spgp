@@ -445,6 +445,9 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_PTRDIFF:
 			result += iptr_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
+		default:
+			result += i32_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
+			break;
 		}
 
 		if (config->width > 0)
@@ -490,6 +493,9 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
+			break;
+		default:
+			result += u32_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		}
 
@@ -544,6 +550,9 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_bin(buffer, config->data);
+			break;
+		default:
+			result += u32_from_bin(buffer, config->data);
 			break;
 		}
 
@@ -603,6 +612,9 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_oct(buffer, config->data);
 			break;
+		default:
+			result += u32_from_oct(buffer, config->data);
+			break;
 		}
 
 		if (config->width > 0)
@@ -656,6 +668,9 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_hex(buffer, config->data);
+			break;
+		default:
+			result += u32_from_hex(buffer, config->data);
 			break;
 		}
 
@@ -1007,6 +1022,9 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		case SCAN_MOD_PTRDIFF:
 			*(ptrdiff_t *)config->data = (ptrdiff_t)config->result;
+			break;
+		default:
+			*(uint32_t *)config->data = (uint32_t)config->result;
 			break;
 		}
 

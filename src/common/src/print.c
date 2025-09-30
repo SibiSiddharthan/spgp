@@ -679,6 +679,9 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = iptr_to_dec(temp, VIEW_AS(config->data, intptr_t), flags);
 			break;
+		default:
+			size = i32_to_dec(temp, VIEW_AS(config->data, int32_t), flags);
+			break;
 		}
 
 		return print_int_formatted(config, buffer, temp, size);
@@ -711,6 +714,9 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_dec(temp, VIEW_AS(config->data, uintptr_t), config->flags & PRINT_GROUP_DIGITS);
+			break;
+		default:
+			size = u32_to_dec(temp, VIEW_AS(config->data, uint32_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
 		}
 
@@ -745,6 +751,9 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_bin(temp + pos, VIEW_AS(config->data, uintptr_t));
 			break;
+		default:
+			size = u32_to_bin(temp + pos, VIEW_AS(config->data, uint32_t));
+			break;
 		}
 
 		return print_uint_formatted(config, buffer, temp, size);
@@ -778,6 +787,9 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_oct(temp, VIEW_AS(config->data, uintptr_t));
 			break;
+		default:
+			size = u32_to_oct(temp, VIEW_AS(config->data, uint32_t));
+			break;
 		}
 
 		return print_uint_formatted(config, buffer, temp, size);
@@ -810,6 +822,9 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uintptr_t));
+			break;
+		default:
+			size = u32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint32_t));
 			break;
 		}
 
@@ -1080,6 +1095,9 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		case PRINT_MOD_PTRDIFF:
 			*(ptrdiff_t *)config->data = (ptrdiff_t)config->result;
+			break;
+		default:
+			*(int32_t *)config->data = (int32_t)config->result;
 			break;
 		}
 
