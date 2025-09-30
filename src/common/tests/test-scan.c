@@ -343,76 +343,148 @@ uint32_t test_float()
 	uint32_t status = 0;
 	uint32_t result = 0;
 
-	float a = 0;
+	float f32 = 0;
+	double f64 = 0;
+
 	uint32_t n = 0;
 
-	result = sscan("1.00", 3, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 1.00);
+	result = sscan("1.00", 3, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1.00);
 	status += CHECK_UVALUE(n, 3);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-1.00", 4, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, -1.00);
+	result = sscan("-1.00", 4, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, -1.00);
 	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("1.5788987434987", 15, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 1.5788987434987);
+	result = sscan("1.5788987434987", 15, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1.5788987434987);
 	status += CHECK_UVALUE(n, 15);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("13786492.5788987434987", 22, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 13786492.5788987434987);
+	result = sscan("13786492.5788987434987", 22, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 13786492.5788987434987);
 	status += CHECK_UVALUE(n, 22);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-13786492.5788987434987", 23, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, -13786492.5788987434987);
+	result = sscan("-13786492.5788987434987", 23, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, -13786492.5788987434987);
 	status += CHECK_UVALUE(n, 23);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("0.000000000000000000000000000000000001", 38, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 0.000000000000000000000000000000000001);
+	result = sscan("0.000000000000000000000000000000000001", 38, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 0.000000000000000000000000000000000001);
 	status += CHECK_UVALUE(n, 38);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("100000000000000000000000000000000000.0", 38, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 100000000000000000000000000000000000.0);
+	result = sscan("100000000000000000000000000000000000.0", 38, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 100000000000000000000000000000000000.0);
 	status += CHECK_UVALUE(n, 38);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-0.000000000000000000000000000000000001", 39, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, -0.000000000000000000000000000000000001);
+	result = sscan("-0.000000000000000000000000000000000001", 39, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, -0.000000000000000000000000000000000001);
 	status += CHECK_UVALUE(n, 39);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-100000000000000000000000000000000000.0", 39, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, -100000000000000000000000000000000000.0);
+	result = sscan("-100000000000000000000000000000000000.0", 39, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, -100000000000000000000000000000000000.0);
 	status += CHECK_UVALUE(n, 39);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("1.647e+28", 9, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 1.647e+28);
+	result = sscan("1.647e+28", 9, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1.647e+28);
 	status += CHECK_UVALUE(n, 9);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("1.647e-28", 9, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 1.647e-28);
+	result = sscan("1.647e-28", 9, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1.647e-28);
 	status += CHECK_UVALUE(n, 9);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-1.647E+28", 10, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, -1.647e+28);
+	result = sscan("-1.647E+28", 10, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, -1.647e+28);
 	status += CHECK_UVALUE(n, 10);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-1.647E-28", 10, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, -1.647e-28);
+	result = sscan("-1.647E-28", 10, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, -1.647e-28);
 	status += CHECK_UVALUE(n, 10);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("123.647e+20", 11, "%f%n", &a, &n);
-	status += CHECK_FLOAT32(a, 123.647e+20);
+	result = sscan("123.647e+20", 11, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 123.647e+20);
+	status += CHECK_UVALUE(n, 11);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1.00", 3, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1.00);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-1.00", 4, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, -1.00);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1.5788987434987", 15, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1.5788987434987);
+	status += CHECK_UVALUE(n, 15);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("13786492.5788987434987", 22, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 13786492.5788987434987);
+	status += CHECK_UVALUE(n, 22);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-13786492.5788987434987", 23, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, -13786492.5788987434987);
+	status += CHECK_UVALUE(n, 23);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0.000000000000000000000000000000000001", 38, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 0.000000000000000000000000000000000001);
+	status += CHECK_UVALUE(n, 38);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("100000000000000000000000000000000000.0", 38, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 100000000000000000000000000000000000.0);
+	status += CHECK_UVALUE(n, 38);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-0.000000000000000000000000000000000001", 39, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, -0.000000000000000000000000000000000001);
+	status += CHECK_UVALUE(n, 39);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-100000000000000000000000000000000000.0", 39, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, -100000000000000000000000000000000000.0);
+	status += CHECK_UVALUE(n, 39);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1.647e+28", 9, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1.647e+28);
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1.647e-28", 9, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1.647e-28);
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-1.647E+28", 10, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, -1.647e+28);
+	status += CHECK_UVALUE(n, 10);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-1.647E-28", 10, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, -1.647e-28);
+	status += CHECK_UVALUE(n, 10);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("123.647e+20", 11, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 123.647e+20);
 	status += CHECK_UVALUE(n, 11);
 	status += CHECK_RESULT(result, 1);
 
