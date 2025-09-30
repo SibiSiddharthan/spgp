@@ -156,9 +156,19 @@ uint32_t test_int()
 	status += CHECK_UVALUE(n, 7);
 	status += CHECK_RESULT(result, 1);
 
+	result = sscan("654321", 6, "%'d%n", &i, &n);
+	status += CHECK_IVALUE(i, 654321);
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
 	result = sscan("-123,456", 8, "%'d%n", &i, &n);
 	status += CHECK_IVALUE(i, -123456);
 	status += CHECK_UVALUE(n, 8);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-654321", 7, "%'d%n", &i, &n);
+	status += CHECK_IVALUE(i, -654321);
+	status += CHECK_UVALUE(n, 7);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscan("123,4567,890", 12, "%'d%'d%n", &i, &j, &n);
@@ -222,6 +232,11 @@ uint32_t test_uint()
 	result = sscan("123,456", 7, "%'u%n", &u, &n);
 	status += CHECK_IVALUE(u, 123456);
 	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("654321", 6, "%'u%n", &u, &n);
+	status += CHECK_IVALUE(u, 654321);
+	status += CHECK_UVALUE(n, 6);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscan("123,4567,890", 12, "%'u%'u%n", &u, &v, &n);
@@ -412,6 +427,11 @@ uint32_t test_float()
 	status += CHECK_UVALUE(n, 11);
 	status += CHECK_RESULT(result, 1);
 
+	result = sscan("3321.647e+15", 12, "%'f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 3321.647e+15);
+	status += CHECK_UVALUE(n, 12);
+	status += CHECK_RESULT(result, 1);
+
 	result = sscan("1,234.647e20", 12, "%'f%n", &f32, &n);
 	status += CHECK_FLOAT32(f32, 1234.647e+20);
 	status += CHECK_UVALUE(n, 12);
@@ -550,6 +570,11 @@ uint32_t test_float()
 	result = sscan("1,234.6478987e+20", 17, "%'16lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 123464.78987);
 	status += CHECK_UVALUE(n, 16);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("3321.647e+15", 12, "%'lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 3321.647e+15);
+	status += CHECK_UVALUE(n, 12);
 	status += CHECK_RESULT(result, 1);
 
 	return status;
@@ -924,7 +949,7 @@ uint32_t test_position()
 
 	uint32_t i = 0, j = 0;
 	double x = 0, y = 0;
-	uint32_t n = 0, m= 0;
+	uint32_t n = 0, m = 0;
 
 	result = sscan("123", 3, "%2$2d %1$d%3$n", &i, &j, &n);
 	status += CHECK_IVALUE(i, 3);
