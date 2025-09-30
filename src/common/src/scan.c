@@ -682,7 +682,20 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			buffer->size = old_size;
 		}
 
-		result += float_from_normal_common(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
+		switch (config->modifier)
+		{
+		case SCAN_MOD_NONE:
+			result += float32_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
+			break;
+		case SCAN_MOD_LONG:
+		case SCAN_MOD_LONG_LONG:
+		case SCAN_MOD_LONG_DOUBLE:
+			result += float64_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
+			break;
+		default:
+			result += float32_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
+			break;
+		}
 
 		return result;
 	}
