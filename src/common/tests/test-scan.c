@@ -443,6 +443,16 @@ uint32_t test_float()
 	status += CHECK_UVALUE(n, 8);
 	status += CHECK_RESULT(result, 1);
 
+	result = sscan("1,234.64,789,87e+20", 18, "%'7f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1234.6);
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.6478987e+20", 17, "%'16f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 123464.78987);
+	status += CHECK_UVALUE(n, 16);
+	status += CHECK_RESULT(result, 1);
+
 	result = sscan("1.00", 3, "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 1.00);
 	status += CHECK_UVALUE(n, 3);
@@ -536,6 +546,16 @@ uint32_t test_float()
 	result = sscan("1,234.64,789,87e+20", 18, "%'lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 1234.64);
 	status += CHECK_UVALUE(n, 8);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.64,789,87e+20", 18, "%'7lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1234.6);
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.6478987e+20", 17, "%'16lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 123464.78987);
+	status += CHECK_UVALUE(n, 16);
 	status += CHECK_RESULT(result, 1);
 
 	return status;
