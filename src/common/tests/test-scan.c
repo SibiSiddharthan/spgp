@@ -418,6 +418,31 @@ uint32_t test_float()
 	status += CHECK_UVALUE(n, 11);
 	status += CHECK_RESULT(result, 1);
 
+	result = sscan("1,234.647e20", 12, "%'f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1234.647e+20);
+	status += CHECK_UVALUE(n, 12);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1111,234.647e20", 12, "%'f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1111.0);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.647,898,7e+20", 19, "%'f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1234.6478987e+20);
+	status += CHECK_UVALUE(n, 19);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.647,8987e+20", 18, "%'f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1234.647898);
+	status += CHECK_UVALUE(n, 13);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.64,789,87e+20", 18, "%'f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 1234.64);
+	status += CHECK_UVALUE(n, 8);
+	status += CHECK_RESULT(result, 1);
+
 	result = sscan("1.00", 3, "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 1.00);
 	status += CHECK_UVALUE(n, 3);
@@ -486,6 +511,31 @@ uint32_t test_float()
 	result = sscan("123.647e+20", 11, "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 123.647e+20);
 	status += CHECK_UVALUE(n, 11);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.647e20", 12, "%'lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1234.647e+20);
+	status += CHECK_UVALUE(n, 12);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1111,234.647e20", 12, "%'lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1111.0);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.647,898,7e+20", 19, "%'lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1234.6478987e+20);
+	status += CHECK_UVALUE(n, 19);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.647,8987e+20", 18, "%'lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1234.647898);
+	status += CHECK_UVALUE(n, 13);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("1,234.64,789,87e+20", 18, "%'lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 1234.64);
+	status += CHECK_UVALUE(n, 8);
 	status += CHECK_RESULT(result, 1);
 
 	return status;
