@@ -669,7 +669,6 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 
 	if (config->type == SCAN_DOUBLE_NORMAL || config->type == SCAN_DOUBLE_SCIENTIFIC || config->type == SCAN_DOUBLE_SCIENTIFIC_SHORT)
 	{
-		double value = 0;
 		result += consume_whitespaces(buffer);
 
 		if (config->width > 0)
@@ -683,7 +682,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			buffer->size = old_size;
 		}
 
-		result += float_from_normal_common(buffer, &value, config->flags & SCAN_GROUP_DIGITS);
+		result += float_from_normal_common(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 
 		return result;
 	}

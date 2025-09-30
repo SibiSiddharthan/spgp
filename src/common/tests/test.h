@@ -63,7 +63,7 @@ uint32_t check_value_double(double actual, double expected, const char *expressi
 {
 	if ((MAX(actual, expected) - MIN(actual, expected)) > DBL_EPSILON)
 	{
-		printf("Value does not match in %s:%d.\n(%s) -> (%f == %f)\n", function, line, expression, actual, expected);
+		printf("Value does not match in %s:%d.\n(%s) -> (%.20f == %.20f)\n", function, line, expression, actual, expected);
 		return 1;
 	}
 
