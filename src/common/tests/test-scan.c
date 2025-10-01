@@ -467,6 +467,26 @@ uint32_t test_float()
 	status += CHECK_UVALUE(n, 16);
 	status += CHECK_RESULT(result, 1);
 
+	result = sscan("0x105.12p+2", 11, "%a%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 0x105.12p+2);
+	status += CHECK_UVALUE(n, 11);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-0x105.12p2", 11, "%a%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, -0x105.12p+2);
+	status += CHECK_UVALUE(n, 11);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0xa05.1cp-12", 12, "%a%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 0xa05.1cp-12);
+	status += CHECK_UVALUE(n, 12);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0xfe5.dcp+12", 12, "%a%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 0xfe5.dcp+12);
+	status += CHECK_UVALUE(n, 12);
+	status += CHECK_RESULT(result, 1);
+
 	result = sscan("1.00", 3, "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 1.00);
 	status += CHECK_UVALUE(n, 3);
@@ -574,6 +594,26 @@ uint32_t test_float()
 
 	result = sscan("3321.647e+15", 12, "%'lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 3321.647e+15);
+	status += CHECK_UVALUE(n, 12);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0x105.12p+2", 11, "%la%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 0x105.12p+2);
+	status += CHECK_UVALUE(n, 11);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-0x105.12p2", 11, "%la%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, -0x105.12p+2);
+	status += CHECK_UVALUE(n, 11);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0xa05.1cp-12", 12, "%la%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 0xa05.1cp-12);
+	status += CHECK_UVALUE(n, 12);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0xfe5.dcp+12", 12, "%la%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 0xfe5.dcp+12);
 	status += CHECK_UVALUE(n, 12);
 	status += CHECK_RESULT(result, 1);
 
