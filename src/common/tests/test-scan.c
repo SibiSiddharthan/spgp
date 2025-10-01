@@ -620,6 +620,102 @@ uint32_t test_float()
 	return status;
 }
 
+uint32_t test_float_special()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	float f32 = 0;
+	double f64 = 0;
+
+	uint32_t a32 = 0;
+	uint64_t a64 = 0;
+
+	uint32_t pinf32 = ((uint32_t)0xFF << 23);
+	uint32_t pnan32 = 0x7FFFFFFF;
+	uint32_t ninf32 = pinf32 | ((uint32_t)1 << 31);
+	uint32_t nnan32 = pnan32 | ((uint32_t)1 << 31);
+
+	uint64_t pinf64 = ((uint64_t)0x7FF << 52);
+	uint64_t pnan64 = 0x7FFFFFFFFFFFFFFF;
+	uint64_t ninf64 = pinf64 | ((uint64_t)1 << 63);
+	uint64_t nnan64 = pnan64 | ((uint64_t)1 << 63);
+
+	uint32_t n = 0;
+
+	result = sscan("0", 1, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 0);
+	status += CHECK_UVALUE(n, 1);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-0", 2, "%f%n", &f32, &n);
+	status += CHECK_FLOAT32(f32, 0);
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("inf", 3, "%f%n", &a32, &n);
+	status += CHECK_UVALUE(a32, pinf32);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-inf", 4, "%f%n", &a32, &n);
+	status += CHECK_UVALUE(a32, ninf32);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("nan", 3, "%f%n", &a32, &n);
+	status += CHECK_UVALUE(a32, pnan32);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-nan", 4, "%f%n", &a32, &n);
+	status += CHECK_UVALUE(a32, nnan32);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("infinity", 8, "%f%n", &a32, &n);
+	status += CHECK_UVALUE(a32, pinf32);
+	status += CHECK_UVALUE(n, 8);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("0", 1, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 0);
+	status += CHECK_UVALUE(n, 1);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-0", 2, "%lf%n", &f64, &n);
+	status += CHECK_FLOAT64(f64, 0);
+	status += CHECK_UVALUE(n, 2);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("INF", 3, "%lf%n", &a64, &n);
+	status += CHECK_UVALUE(a64, pinf64);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-inf", 4, "%lf%n", &a64, &n);
+	status += CHECK_UVALUE(a64, ninf64);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("NaN", 3, "%lf%n", &a64, &n);
+	status += CHECK_UVALUE(a64, pnan64);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-nan", 4, "%lf%n", &a64, &n);
+	status += CHECK_UVALUE(a64, nnan64);
+	status += CHECK_UVALUE(n, 4);
+	status += CHECK_RESULT(result, 1);
+
+	result = sscan("-INFINITY", 9, "%lf%n", &a64, &n);
+	status += CHECK_UVALUE(a64, ninf64);
+	status += CHECK_UVALUE(n, 9);
+	status += CHECK_RESULT(result, 1);
+
+	return status;
+}
+
 uint32_t test_char()
 {
 	uint32_t status = 0;
@@ -1071,6 +1167,6 @@ uint32_t test_overflow()
 
 int main()
 {
-	return test_simple() + test_int() + test_uint() + test_float() + test_char() + test_string() + test_set() + test_pointer() +
-		   test_position() + test_overflow();
+	return test_simple() + test_int() + test_uint() + test_float() + test_float_special() + test_char() + test_string() + test_set() +
+		   test_pointer() + test_position() + test_overflow();
 }
