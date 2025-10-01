@@ -594,10 +594,26 @@ static inline uint32_t iptr_from_dec(buffer_t *buffer, intptr_t *value, uint32_t
 	return count;
 }
 
-float float32_from_hex(void *buffer, uint8_t size);
+uint32_t float_from_hex_common(buffer_t *buffer, double *value);
+
+static inline uint32_t float32_from_hex(buffer_t *buffer, float *value)
+{
+	uint32_t count = 0;
+	double result = 0;
+
+	count = float_from_hex_common(buffer, &result);
+	*value = (float)result;
+
+	return count;
+}
+
 uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x);
 
-double float64_from_hex(void *buffer, uint8_t size);
+static inline uint32_t float64_from_hex(buffer_t *buffer, double *value)
+{
+	return float_from_hex_common(buffer, value);
+}
+
 uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x);
 
 uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flags);

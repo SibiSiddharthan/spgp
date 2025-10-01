@@ -464,140 +464,6 @@ static uint32_t print_inf(byte_t buffer[32], uint8_t upper)
 	return 3;
 }
 
-static uint8_t parse_float_hex(void *buffer, uint8_t size, uint8_t *sign, int64_t *exponent, uint64_t *mantissa)
-{
-	uint8_t *in = buffer;
-	uint8_t pos = 0;
-	uint8_t count = 0;
-
-	*sign = 0;
-	*exponent = 0;
-	*mantissa = 0;
-
-	if (size < 1)
-	{
-		return 0;
-	}
-
-	if (in[pos] == '-')
-	{
-		*sign = 1;
-		pos += 1;
-	}
-
-	if (size < 8 + pos) // 0x1.0p+0
-	{
-		return 0;
-	}
-
-	if (in[pos] != '0')
-	{
-		return 0;
-	}
-
-	pos += 1;
-
-	if (in[pos] != 'x' && in[pos] != 'X')
-	{
-		return 0;
-	}
-
-	pos += 1;
-
-	if (in[pos] != '1' && in[pos] != '0')
-	{
-		return 0;
-	}
-
-	pos += 1;
-
-	if (in[pos] != '.')
-	{
-		return 0;
-	}
-
-	pos += 1;
-
-	while ((pos + count) <= size)
-	{
-		if (in[pos + count] == 'p' || in[pos + count] == 'P')
-		{
-			count += 1;
-			break;
-		}
-
-		count += 1;
-	}
-
-	//*mantissa = uint_from_hex_common(PTR_OFFSET(buffer, pos), count - 1);
-	pos += count;
-
-	// atleast 1 exponent digit
-	if (size < pos + 2)
-	{
-		return 0;
-	}
-
-	if (in[pos] == '+' || in[pos] == '-')
-	{
-		return 0;
-	}
-
-	// *exponent = int_from_dec_common(PTR_OFFSET(buffer, pos), size - pos);
-	pos += size - pos;
-
-	return pos;
-}
-
-float float32_from_hex(void *buffer, uint8_t size)
-{
-	uint32_t raw = 0;
-
-	uint8_t sign = 0;
-	int64_t exponent = 0;
-	uint64_t mantissa = 0;
-
-	if (parse_float_hex(buffer, size, &sign, &exponent, &mantissa) == 0)
-	{
-		raw = 0x7FFFFFFF; // nan
-
-		if (sign)
-		{
-			raw |= ((uint32_t)1 << 31); // -nan
-		}
-
-		return FLOAT32_AS_UINT32(raw);
-	}
-
-	if (exponent > FLOAT32_EXP_MAX)
-	{
-		raw = ((uint32_t)0xFF << 23); // inf
-
-		if (sign)
-		{
-			raw |= ((uint32_t)1 << 31); // -inf
-		}
-
-		return FLOAT32_AS_UINT32(raw);
-	}
-
-	if (exponent < FLOAT32_EXP_MIN)
-	{
-		return FLOAT32_AS_UINT32(raw);
-	}
-
-	if (sign)
-	{
-		raw |= ((uint32_t)1 << 31);
-	}
-
-	exponent += FLOAT32_EXP_BIAS;
-	raw |= (exponent << 23);
-	raw |= mantissa & 0x7FF;
-
-	return FLOAT32_AS_UINT32(raw);
-}
-
 uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x)
 {
 	uint32_t v = UINT32_AS_FLOAT32(x);
@@ -666,55 +532,6 @@ uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x)
 	}
 
 	return pos;
-}
-
-double float64_from_hex(void *buffer, uint8_t size)
-{
-	uint64_t raw = 0;
-
-	uint8_t sign = 0;
-	int64_t exponent = 0;
-	uint64_t mantissa = 0;
-
-	if (parse_float_hex(buffer, size, &sign, &exponent, &mantissa) == 0)
-	{
-		raw = 0x7FFFFFFFFFFFFFFF; // nan
-
-		if (sign)
-		{
-			raw |= ((uint64_t)1 << 63); // -nan
-		}
-
-		return FLOAT64_AS_UINT64(raw);
-	}
-
-	if (exponent > FLOAT64_EXP_MAX)
-	{
-		raw = ((uint64_t)0x7FF << 52); // inf
-
-		if (sign)
-		{
-			raw |= ((uint64_t)1 << 63); // -inf
-		}
-
-		return FLOAT64_AS_UINT64(raw);
-	}
-
-	if (exponent < FLOAT64_EXP_MIN)
-	{
-		return FLOAT64_AS_UINT64(raw);
-	}
-
-	if (sign)
-	{
-		raw |= ((uint64_t)1 << 63);
-	}
-
-	exponent += FLOAT64_EXP_BIAS;
-	raw |= (exponent << 52);
-	raw |= mantissa & 0x1FFFFFFFFFFFFF;
-
-	return FLOAT64_AS_UINT64(raw);
 }
 
 uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
@@ -814,6 +631,144 @@ static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
 	}
 
 	return 0;
+}
+
+uint32_t float_from_hex_common(buffer_t *buffer, double *value)
+{
+	byte_t byte = 0;
+	uint32_t count = 0;
+
+	uint8_t minus = 0;
+
+	*value = 0;
+
+	byte = peekbyte(buffer, 0);
+
+	if (byte == '+' || byte == '-')
+	{
+		if (byte == '-')
+		{
+			minus = 1;
+		}
+
+		readbyte(buffer);
+		count++;
+	}
+
+	byte = readbyte(buffer);
+	count++;
+
+	if (byte != '0')
+	{
+		return 0;
+	}
+
+	byte = readbyte(buffer);
+	count++;
+
+	if (byte != 'x' && byte != 'X')
+	{
+		return 0;
+	}
+
+	while ((byte = peekbyte(buffer, 0)) != '\0')
+	{
+		uint8_t nibble = hex_to_nibble_table[byte];
+
+		if (nibble == 255)
+		{
+			break;
+		}
+
+		*value = (*value * 4) + nibble;
+
+		readbyte(buffer);
+		count++;
+	}
+
+	if (byte == '.')
+	{
+		double div = 1.0 / 16;
+
+		readbyte(buffer);
+		count++;
+
+		while ((byte = peekbyte(buffer, 0)) != '\0')
+		{
+			uint8_t nibble = hex_to_nibble_table[byte];
+
+			if (nibble == 255)
+			{
+				break;
+			}
+
+			*value = *value + (nibble / div);
+
+			readbyte(buffer);
+			count++;
+		}
+	}
+
+	if (byte == 'p' || byte == 'P')
+	{
+		uintmax_t exp = 0;
+		uint8_t sign = 0;
+		double factor = 1.0;
+		double temp = 2.0;
+
+		readbyte(buffer);
+		count++;
+
+		byte = peekbyte(buffer, 0);
+
+		if (byte == '+' || byte == '-')
+		{
+			if (byte == '-')
+			{
+				sign = 1;
+			}
+
+			readbyte(buffer);
+			count++;
+		}
+
+		count += uint_from_dec_common(buffer, &exp, 0);
+
+		if (exp & 1)
+		{
+			factor = 2.0;
+		}
+
+		exp >>= 1;
+
+		while (exp != 0)
+		{
+			temp *= temp;
+
+			if (exp & 1)
+			{
+				factor *= temp;
+			}
+
+			exp >>= 1;
+		}
+
+		if (sign)
+		{
+			*value /= factor;
+		}
+		else
+		{
+			*value *= factor;
+		}
+	}
+
+	if (minus)
+	{
+		*value *= -1.0;
+	}
+
+	return count;
 }
 
 uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flags)
