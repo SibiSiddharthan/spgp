@@ -606,7 +606,7 @@ uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
 
 static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
 {
-	byte_t b1 = 0, b2 = 0, b3 = 0;
+	byte_t b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0;
 
 	b1 = peekbyte(buffer, 0);
 	b2 = peekbyte(buffer, 1);
@@ -618,6 +618,20 @@ static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
 		*value = *(double *)&out;
 
 		advance(buffer, 3);
+
+		b1 = peekbyte(buffer, 0);
+		b2 = peekbyte(buffer, 1);
+		b3 = peekbyte(buffer, 2);
+		b4 = peekbyte(buffer, 3);
+		b5 = peekbyte(buffer, 4);
+
+		if ((b1 == 'i' || b1 == 'I') && (b2 == 'n' || b2 == 'N') && (b3 == 'i' || b3 == 'I') && (b4 == 't' || b4 == 'T') &&
+			(b5 == 'y' || b5 == 'Y'))
+		{
+			advance(buffer, 5);
+			return 8;
+		}
+
 		return 3;
 	}
 
@@ -637,6 +651,7 @@ uint32_t float_from_hex_common(buffer_t *buffer, double *value)
 {
 	byte_t byte = 0;
 	uint32_t count = 0;
+	uint32_t inf_or_nan = 0;
 
 	uint8_t minus = 0;
 
@@ -653,6 +668,18 @@ uint32_t float_from_hex_common(buffer_t *buffer, double *value)
 
 		readbyte(buffer);
 		count++;
+	}
+
+	inf_or_nan = parse_float_inf_or_nan(buffer, value);
+
+	if (inf_or_nan)
+	{
+		if (minus)
+		{
+			*(uint64_t *)value |= ((uint64_t)1 << 63);
+		}
+
+		return count + inf_or_nan;
 	}
 
 	byte = readbyte(buffer);
@@ -775,6 +802,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 {
 	byte_t byte = 0;
 	uint32_t count = 0;
+	uint32_t inf_or_nan = 0;
 
 	uint8_t minus = 0;
 	uint8_t fraction = 0;
@@ -797,14 +825,16 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 		count++;
 	}
 
-	if (parse_float_inf_or_nan(buffer, value))
+	inf_or_nan = parse_float_inf_or_nan(buffer, value);
+
+	if (inf_or_nan)
 	{
 		if (minus)
 		{
 			*(uint64_t *)value |= ((uint64_t)1 << 63);
 		}
 
-		return count + 3;
+		return count + inf_or_nan;
 	}
 
 	state = (digit_parse_state){.flags = flags};
