@@ -707,7 +707,7 @@ uint32_t float_from_hex_common(buffer_t *buffer, double *value)
 			break;
 		}
 
-		*value = (*value * 4) + nibble;
+		*value = (*value * 16.0) + nibble;
 
 		readbyte(buffer);
 		count++;
@@ -715,7 +715,7 @@ uint32_t float_from_hex_common(buffer_t *buffer, double *value)
 
 	if (byte == '.')
 	{
-		double div = 1.0 / 16;
+		double div = 16.0;
 
 		readbyte(buffer);
 		count++;
@@ -730,6 +730,7 @@ uint32_t float_from_hex_common(buffer_t *buffer, double *value)
 			}
 
 			*value = *value + (nibble / div);
+			div *= 16.0;
 
 			readbyte(buffer);
 			count++;
