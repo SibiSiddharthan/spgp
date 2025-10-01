@@ -715,6 +715,39 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
+	if (config->type == SCAN_DOUBLE_HEX)
+	{
+		result += consume_whitespaces(buffer);
+
+		if (config->width > 0)
+		{
+			old_size = buffer->size;
+			buffer->size = buffer->pos + config->width;
+		}
+
+		switch (config->modifier)
+		{
+		case SCAN_MOD_NONE:
+			result += float32_from_hex(buffer, config->data);
+			break;
+		case SCAN_MOD_LONG:
+		case SCAN_MOD_LONG_LONG:
+		case SCAN_MOD_LONG_DOUBLE:
+			result += float64_from_hex(buffer, config->data);
+			break;
+		default:
+			result += float32_from_hex(buffer, config->data);
+			break;
+		}
+
+		if (config->width > 0)
+		{
+			buffer->size = old_size;
+		}
+
+		return result;
+	}
+
 	if (config->type == SCAN_CHAR)
 	{
 		uint32_t codepoint = 0;
