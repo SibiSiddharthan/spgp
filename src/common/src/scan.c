@@ -404,21 +404,12 @@ static uint32_t consume_whitespaces(buffer_t *buffer)
 	return count;
 }
 
-static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
+static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 {
 	uint32_t result = 0;
-	size_t old_size = 0;
 
 	if (config->type == SCAN_INT_NUMBER)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
@@ -450,24 +441,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
 		return result;
 	}
 
 	if (config->type == SCAN_UINT_NUMBER)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
@@ -499,24 +477,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
 		return result;
 	}
 
 	if (config->type == SCAN_UINT_BINARY)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
 		if (peekbyte(buffer, 0) == '0' && (peekbyte(buffer, 1) == 'b' || peekbyte(buffer, 1) == 'B'))
 		{
 			readbyte(buffer);
@@ -556,24 +521,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
 		return result;
 	}
 
 	if (config->type == SCAN_UINT_OCTAL)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
 		if (peekbyte(buffer, 0) == '0')
 		{
 			readbyte(buffer);
@@ -617,24 +569,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
 		return result;
 	}
 
 	if (config->type == SCAN_UINT_HEX)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
 		if (peekbyte(buffer, 0) == '0' && (peekbyte(buffer, 1) == 'x' || peekbyte(buffer, 1) == 'X'))
 		{
 			readbyte(buffer);
@@ -674,24 +613,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
 		return result;
 	}
 
 	if (config->type == SCAN_DOUBLE_NORMAL || config->type == SCAN_DOUBLE_SCIENTIFIC || config->type == SCAN_DOUBLE_SCIENTIFIC_SHORT)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
@@ -707,24 +633,11 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 			break;
 		}
 
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
 		return result;
 	}
 
 	if (config->type == SCAN_DOUBLE_HEX)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
@@ -738,11 +651,6 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		default:
 			result += float32_from_hex(buffer, config->data);
 			break;
-		}
-
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
 		}
 
 		return result;
@@ -814,14 +722,6 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		uint32_t count = 0;
 		uint32_t codepoint = 0;
 		uint32_t pos = 0;
-
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
 
 		if (config->flags & SCAN_SUPPRESS_INPUT)
 		{
@@ -908,10 +808,6 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		}
 
 	str_end:
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
 
 		return result;
 	}
@@ -923,12 +819,6 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		byte_t *str = config->data;
 		uint16_t *u16_str = config->data;
 		uint32_t *u32_str = config->data;
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
 
 		if (config->flags & SCAN_SUPPRESS_INPUT)
 		{
@@ -1000,32 +890,13 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 		}
 
 	set_end:
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
 
 		return result;
 	}
 
 	if (config->type == SCAN_POINTER)
 	{
-		result += consume_whitespaces(buffer);
-
-		if (config->width > 0)
-		{
-			old_size = buffer->size;
-			buffer->size = buffer->pos + config->width;
-		}
-
-		result += pointer_decode(buffer, config->data);
-
-		if (config->width > 0)
-		{
-			buffer->size = old_size;
-		}
-
-		return result;
+		return pointer_decode(buffer, config->data);
 	}
 
 	if (config->type == SCAN_RESULT)
@@ -1065,6 +936,32 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 	}
 
 	return 0;
+}
+
+static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
+{
+	uint32_t result = 0;
+	size_t old_size = 0;
+
+	if (config->type != SCAN_RESULT && config->type != SCAN_CHAR && config->type != SCAN_SET)
+	{
+		result += consume_whitespaces(buffer);
+	}
+
+	if (config->width > 0)
+	{
+		old_size = buffer->size;
+		buffer->size = buffer->pos + config->width;
+	}
+
+	result += do_scan(buffer, config);
+
+	if (config->width > 0)
+	{
+		buffer->size = old_size;
+	}
+
+	return result;
 }
 
 uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
