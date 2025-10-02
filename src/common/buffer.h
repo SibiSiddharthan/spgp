@@ -20,6 +20,11 @@ typedef struct _buffer_t
 	byte_t *data;
 	size_t pos;
 	size_t size;
+
+	void *ctx;
+	size_t (*read)(struct _buffer_t *buffer, void *ctx, size_t size);
+	size_t (*write)(struct _buffer_t *buffer, void *ctx, size_t size);
+	uint32_t error;
 } buffer_t;
 
 static inline void advance(buffer_t *buffer, size_t step)
