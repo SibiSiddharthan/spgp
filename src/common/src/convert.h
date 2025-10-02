@@ -610,13 +610,12 @@ static inline uint32_t float32_from_hex(buffer_t *buffer, float *value)
 }
 
 uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x);
+uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x);
 
 static inline uint32_t float64_from_hex(buffer_t *buffer, double *value)
 {
 	return float_from_hex_common(buffer, value);
 }
-
-uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x);
 
 uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flags);
 

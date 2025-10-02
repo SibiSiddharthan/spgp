@@ -831,6 +831,28 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		return print_uint_formatted(config, buffer, temp, size);
 	}
 
+	if (config->type == PRINT_DOUBLE_NORMAL)
+	{
+		return 0;
+	}
+
+	if (config->type == PRINT_DOUBLE_SCIENTIFIC || config->type == PRINT_DOUBLE_SCIENTIFIC_SHORT)
+	{
+		if (config->type == PRINT_DOUBLE_SCIENTIFIC_SHORT)
+		{
+		}
+
+		return 0;
+	}
+
+	if (config->type == PRINT_DOUBLE_HEX)
+	{
+		size = float64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, double));
+		writen(buffer, temp, size);
+
+		return size;
+	}
+
 	if (config->type == PRINT_CHAR)
 	{
 		byte_t pre_temp[8] = {0};
