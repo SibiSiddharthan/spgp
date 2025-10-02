@@ -160,7 +160,7 @@ begin:
 uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x)
 {
 	const byte_t *table = upper ? hex_upper_table : hex_lower_table;
-	char temp[8] = {0};
+	byte_t temp[32] = {0};
 	uint8_t pos = 0;
 
 	do
@@ -204,7 +204,7 @@ uint32_t uint_from_hex_common(buffer_t *buffer, uintmax_t *value)
 
 uint32_t uint_to_oct_common(byte_t buffer[32], uintmax_t x)
 {
-	char temp[8] = {0};
+	byte_t temp[32] = {0};
 	uint8_t pos = 0;
 
 	do
@@ -248,7 +248,7 @@ uint32_t uint_from_oct_common(buffer_t *buffer, uintmax_t *value)
 
 uint32_t uint_to_bin_common(byte_t buffer[64], uintmax_t x)
 {
-	char temp[8] = {0};
+	byte_t temp[32] = {0};
 	uint8_t pos = 0;
 
 	do
@@ -292,7 +292,7 @@ uint32_t uint_from_bin_common(buffer_t *buffer, uintmax_t *value)
 
 uint32_t uint_to_dec_common(byte_t buffer[32], uintmax_t x, uint32_t flags)
 {
-	char temp[32] = {0};
+	byte_t temp[32] = {0};
 	uint8_t pos = 0;
 	uint8_t sep = 0;
 
@@ -474,7 +474,7 @@ uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x)
 
 	sign = (v >> 31) & 0x1;             // 1 bit
 	exponent = ((v << 1) >> 24) & 0xFF; // 8 bits
-	mantissa = v & 0x7FF;               // 23 bits
+	mantissa = v & 0x7FFFFF;            // 23 bits
 
 	// Sign
 	if (sign)
@@ -517,6 +517,16 @@ uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x)
 	// Mantissa
 	pos += uint_to_hex_common(buffer + pos, upper, mantissa);
 
+	while (buffer[pos - 1] == '0')
+	{
+		if (buffer[pos - 2] == '.')
+		{
+			break;
+		}
+
+		--pos;
+	}
+
 	// Exponent
 	buffer[pos++] = upper ? 'P' : 'p';
 
@@ -544,7 +554,7 @@ uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
 
 	sign = (v >> 63) & 0x1;              // 1 bit
 	exponent = ((v << 1) >> 53) & 0x7FF; // 11 bits
-	mantissa = v & 0x1FFFFFFFFFFFFF;     // 52 bits
+	mantissa = v & 0xFFFFFFFFFFFFF;      // 52 bits
 
 	// Sign
 	if (sign)
@@ -586,6 +596,16 @@ uint32_t float64_to_hex(byte_t buffer[64], uint8_t upper, double x)
 
 	// Mantissa
 	pos += uint_to_hex_common(buffer + pos, upper, mantissa);
+
+	while (buffer[pos - 1] == '0')
+	{
+		if (buffer[pos - 2] == '.')
+		{
+			break;
+		}
+
+		--pos;
+	}
 
 	// Exponent
 	buffer[pos++] = upper ? 'P' : 'p';
