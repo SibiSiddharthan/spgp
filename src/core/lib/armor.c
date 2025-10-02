@@ -59,7 +59,7 @@ armor_status armor_read(armor_options *options, armor_marker *markers, uint16_t 
 						uint32_t *output_size)
 {
 	void *result = NULL;
-	buffer_t in = {.pos = 0, .size = *input_size, .capacity = *input_size, .data = input};
+	buffer_t in = {.pos = 0, .size = *input_size, .data = input};
 
 	byte_t *out = output;
 	uint32_t output_pos = 0;
@@ -291,7 +291,7 @@ armor_status armor_write(armor_options *options, void *input, uint32_t input_siz
 	size_t line_count = 0;
 	byte_t crlf = 0;
 
-	buffer_t out = {.pos = 0, .size = *output_size, .capacity = *output_size, .data = output};
+	buffer_t out = {.pos = 0, .size = *output_size, .data = output};
 	byte_t *in = input;
 	uint32_t input_pos = 0;
 

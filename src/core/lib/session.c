@@ -698,7 +698,7 @@ pgp_error_t pgp_pkesk_packet_read_with_header(pgp_pkesk_packet **packet, pgp_pac
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	session->header = *header;
@@ -1373,7 +1373,7 @@ pgp_error_t pgp_skesk_packet_read_with_header(pgp_skesk_packet **packet, pgp_pac
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	session->header = *header;

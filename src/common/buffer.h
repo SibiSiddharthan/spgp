@@ -20,7 +20,6 @@ typedef struct _buffer_t
 	byte_t *data;
 	size_t pos;
 	size_t size;
-	size_t capacity;
 } buffer_t;
 
 static inline void advance(buffer_t *buffer, size_t step)

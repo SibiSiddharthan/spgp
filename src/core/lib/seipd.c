@@ -933,7 +933,7 @@ pgp_error_t pgp_seipd_packet_read_with_header(pgp_seipd_packet **packet, pgp_pac
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	seipd->header = *header;
@@ -1455,7 +1455,7 @@ pgp_error_t pgp_aead_packet_read_with_header(pgp_aead_packet **packet, pgp_packe
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	aead->header = *header;

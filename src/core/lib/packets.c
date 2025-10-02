@@ -237,7 +237,7 @@ pgp_error_t pgp_compressed_packet_read_with_header(pgp_compresed_packet **packet
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	compressed->header = *header;
@@ -1120,7 +1120,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 {
 	pgp_error_t status = 0;
 
-	buffer_t in = {.data = buffer, .pos = 0, .size = *size, .capacity = *size};
+	buffer_t in = {.data = buffer, .pos = 0, .size = *size};
 	byte_t line_buffer[1024] = {0};
 
 	uint16_t line_size = 0;
@@ -1198,7 +1198,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 	data_size = in.pos - old_pos;
 
 	in.pos = old_pos;
-	in.size = in.capacity = (in.pos + data_size);
+	in.size = (in.pos + data_size);
 
 	*size = in.size;
 
@@ -1323,7 +1323,7 @@ pgp_error_t pgp_literal_packet_read_with_header(pgp_literal_packet **packet, pgp
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	literal->header = *header;
@@ -2002,7 +2002,7 @@ pgp_error_t pgp_user_attribute_packet_read_with_header(pgp_user_attribute_packet
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	uat->header = *header;
@@ -3074,7 +3074,7 @@ pgp_error_t pgp_keyring_packet_read_with_header(pgp_keyring_packet **packet, pgp
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	keyring->header = *header;

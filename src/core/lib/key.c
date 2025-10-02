@@ -1443,7 +1443,7 @@ pgp_error_t pgp_public_key_packet_read_with_header(pgp_key_packet **packet, pgp_
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	key->header = *header;
@@ -2573,7 +2573,7 @@ pgp_error_t pgp_secret_key_packet_read_with_header(pgp_key_packet **packet, pgp_
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	key->header = *header;
@@ -3506,7 +3506,7 @@ pgp_error_t pgp_key_packet_read_with_header(pgp_key_packet **packet, pgp_packet_
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	key->header = *header;

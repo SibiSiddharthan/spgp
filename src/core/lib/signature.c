@@ -209,7 +209,7 @@ pgp_error_t pgp_one_pass_signature_packet_read_with_header(pgp_one_pass_signatur
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	ops->header = *header;
@@ -1845,7 +1845,7 @@ pgp_error_t pgp_signature_packet_read_with_header(pgp_signature_packet **packet,
 
 	buffer.data = data;
 	buffer.pos = header->header_size;
-	buffer.size = buffer.capacity = PGP_PACKET_OCTETS(*header);
+	buffer.size = PGP_PACKET_OCTETS(*header);
 
 	// Copy the header
 	signature->header = *header;
