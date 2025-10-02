@@ -590,6 +590,36 @@ uint32_t test_uint(void)
 	return status;
 }
 
+uint32_t test_float(void)
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%a", 0x1.5p+2);
+	status += CHECK_STRING(buffer, "0x1.5p+2");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%a", -0x1.5p-3);
+	status += CHECK_STRING(buffer, "-0x1.5p-3");
+	status += CHECK_RESULT(result, 9);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%a", 0x1.5ab9p-3);
+	status += CHECK_STRING(buffer, "0x1.5ab9p-3");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%a", 0x1.5ab904p+11);
+	status += CHECK_STRING(buffer, "0x1.5ab904p+11");
+	status += CHECK_RESULT(result, 14);
+
+	return status;
+}
+
 uint32_t test_char(void)
 {
 	uint32_t status = 0;
@@ -965,6 +995,6 @@ uint32_t test_error()
 
 int main()
 {
-	return test_simple() + test_int() + test_uint() + test_char() + test_string() + test_pointer() + test_result() + test_overflow() +
-		   test_error();
+	return test_simple() + test_int() + test_uint() + test_float() + test_char() + test_string() + test_pointer() + test_result() +
+		   test_overflow() + test_error();
 }
