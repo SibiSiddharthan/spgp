@@ -19,6 +19,8 @@ typedef long long ssize_t;
 #define CONVERT_FORCE_SIGN   0x10
 #define CONVERT_GROUP_DIGITS 0x40
 
+#define TO_LOWER(x) ((x) | 0x20)
+
 uint32_t uint_to_hex_common(byte_t buffer[32], uint8_t upper, uintmax_t x);
 uint32_t uint_from_hex_common(buffer_t *buffer, uintmax_t *value);
 

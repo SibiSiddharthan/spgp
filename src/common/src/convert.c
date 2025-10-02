@@ -612,7 +612,7 @@ static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
 	b2 = peekbyte(buffer, 1);
 	b3 = peekbyte(buffer, 2);
 
-	if ((b1 == 'i' || b1 == 'I') && (b2 == 'n' || b2 == 'N') && (b3 == 'f' || b3 == 'F'))
+	if ((TO_LOWER(b1) == 'i') && (TO_LOWER(b2) == 'n') && (TO_LOWER(b3) == 'f'))
 	{
 		uint64_t out = ((uint64_t)0x7FF << 52);
 		*value = *(double *)&out;
@@ -625,8 +625,7 @@ static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
 		b4 = peekbyte(buffer, 3);
 		b5 = peekbyte(buffer, 4);
 
-		if ((b1 == 'i' || b1 == 'I') && (b2 == 'n' || b2 == 'N') && (b3 == 'i' || b3 == 'I') && (b4 == 't' || b4 == 'T') &&
-			(b5 == 'y' || b5 == 'Y'))
+		if ((TO_LOWER(b1) == 'i') && (TO_LOWER(b2) == 'n') && (TO_LOWER(b3) == 'i') && (TO_LOWER(b4) == 't') && (TO_LOWER(b5) == 'y'))
 		{
 			advance(buffer, 5);
 			return 8;
@@ -635,7 +634,7 @@ static uint32_t parse_float_inf_or_nan(buffer_t *buffer, double *value)
 		return 3;
 	}
 
-	if ((b1 == 'n' || b1 == 'N') && (b2 == 'a' || b2 == 'A') && (b3 == 'n' || b3 == 'N'))
+	if ((TO_LOWER(b1) == 'n') && (TO_LOWER(b2) == 'a') && (TO_LOWER(b3) == 'n'))
 	{
 		uint64_t out = 0x7FFFFFFFFFFFFFFF;
 		*value = *(double *)&out;
@@ -693,7 +692,7 @@ uint32_t float_from_hex_common(buffer_t *buffer, double *value)
 	byte = readbyte(buffer);
 	count++;
 
-	if (byte != 'x' && byte != 'X')
+	if (TO_LOWER(byte) != 'x')
 	{
 		return 0;
 	}
@@ -737,7 +736,7 @@ uint32_t float_from_hex_common(buffer_t *buffer, double *value)
 		}
 	}
 
-	if (byte == 'p' || byte == 'P')
+	if (TO_LOWER(byte) == 'p')
 	{
 		uintmax_t exp = 0;
 		uint8_t sign = 0;
@@ -856,7 +855,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 	}
 	else
 	{
-		if (byte == 'e' || byte == 'E')
+		if (TO_LOWER(byte) == 'e')
 		{
 			exponent = 1;
 
@@ -879,7 +878,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 
 		byte = peekbyte(buffer, 0);
 
-		if (byte == 'e' || byte == 'E')
+		if (TO_LOWER(byte) == 'e')
 		{
 			exponent = 1;
 
@@ -990,7 +989,7 @@ uint32_t pointer_decode(buffer_t *buffer, void **value)
 
 		byte = peekbyte(buffer, 0);
 
-		if (byte == 'x' || byte == 'X')
+		if (TO_LOWER(byte) == 'x')
 		{
 			readbyte(buffer);
 			count += 1;

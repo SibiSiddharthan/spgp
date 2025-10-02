@@ -482,11 +482,9 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 	if (config->type == SCAN_UINT_BINARY)
 	{
-		if (peekbyte(buffer, 0) == '0' && (peekbyte(buffer, 1) == 'b' || peekbyte(buffer, 1) == 'B'))
+		if (peekbyte(buffer, 0) == '0' && (TO_LOWER(peekbyte(buffer, 1)) == 'b'))
 		{
-			readbyte(buffer);
-			readbyte(buffer);
-
+			advance(buffer, 2);
 			result += 2;
 		}
 
@@ -531,7 +529,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			readbyte(buffer);
 			result += 1;
 
-			if (peekbyte(buffer, 0) == 'o' || peekbyte(buffer, 0) == 'O')
+			if (TO_LOWER(peekbyte(buffer, 0)) == 'o')
 			{
 				readbyte(buffer);
 				result += 1;
@@ -574,11 +572,9 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 	if (config->type == SCAN_UINT_HEX)
 	{
-		if (peekbyte(buffer, 0) == '0' && (peekbyte(buffer, 1) == 'x' || peekbyte(buffer, 1) == 'X'))
+		if (peekbyte(buffer, 0) == '0' && (TO_LOWER(peekbyte(buffer, 1)) == 'x'))
 		{
-			readbyte(buffer);
-			readbyte(buffer);
-
+			advance(buffer, 2);
 			result += 2;
 		}
 
