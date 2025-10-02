@@ -28,6 +28,11 @@ static inline void advance(buffer_t *buffer, size_t step)
 	buffer->pos = MIN(buffer->pos + step, buffer->size);
 }
 
+static inline size_t pending(buffer_t *buffer)
+{
+	return buffer->size - buffer->pos;
+}
+
 static inline void *current(buffer_t *buffer)
 {
 	return PTR_OFFSET(buffer->data, buffer->pos);
