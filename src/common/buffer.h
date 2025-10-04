@@ -306,7 +306,17 @@ static inline size_t writebyte(buffer_t *buffer, byte_t byte)
 {
 	if ((buffer->pos + 1) > buffer->size)
 	{
-		return 0;
+		if (buffer->write == NULL)
+		{
+			return 0;
+		}
+
+		buffer->write(buffer);
+
+		if (buffer->error)
+		{
+			return 0;
+		}
 	}
 
 	buffer->data[buffer->pos] = byte;
@@ -319,7 +329,17 @@ static inline size_t writen(buffer_t *buffer, void *in, size_t size)
 {
 	if ((buffer->pos + size) > buffer->size)
 	{
-		return 0;
+		if (buffer->write == NULL)
+		{
+			return 0;
+		}
+
+		buffer->write(buffer);
+
+		if (buffer->error)
+		{
+			return 0;
+		}
 	}
 
 	memcpy(buffer->data + buffer->pos, in, size);
@@ -334,7 +354,17 @@ static inline size_t writeline(buffer_t *buffer, void *in, size_t size, byte_t c
 
 	if ((buffer->pos + required_size) > buffer->size)
 	{
-		return 0;
+		if (buffer->write == NULL)
+		{
+			return 0;
+		}
+
+		buffer->write(buffer);
+
+		if (buffer->error)
+		{
+			return 0;
+		}
 	}
 
 	memcpy(buffer->data + buffer->pos, in, size);
