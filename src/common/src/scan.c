@@ -720,7 +720,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		}
 		else
 		{
-			out.write = memory_buffer_write;
+			out.write = (size_t (*)(struct _buffer_t *buffer))memory_buffer_write;
 		}
 
 		uint32_t count = 0;
@@ -817,7 +817,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 		if (config->flags & SCAN_ALLOCATE_STRING)
 		{
-			config->data = out.data;
+			*(void **)(config->data) = out.data;
 		}
 
 		return result;
@@ -835,7 +835,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		}
 		else
 		{
-			out.write = memory_buffer_write;
+			out.write = (size_t (*)(struct _buffer_t *buffer))memory_buffer_write;
 		}
 
 		if (config->flags & SCAN_SUPPRESS_INPUT)
@@ -919,7 +919,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 		if (config->flags & SCAN_ALLOCATE_STRING)
 		{
-			config->data = out.data;
+			*(void **)(config->data) = out.data;
 		}
 
 		return result;

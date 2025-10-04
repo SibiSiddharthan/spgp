@@ -755,6 +755,7 @@ uint32_t test_string(void)
 	uint32_t status = 0;
 	uint32_t result = 0;
 
+	char *str = NULL;
 	char u8_str1[256] = {0}, u8_str2[256] = {0};
 	uint16_t u16_str1[256] = {0}, u16_str2[256] = {0};
 	uint32_t u32_str1[256] = {0}, u32_str2[256] = {0};
@@ -817,6 +818,15 @@ uint32_t test_string(void)
 
 	// ------------------------------------------------------------------------------------
 
+	result = sscan("abcdef", 6, "%ms%n", &str, &n);
+	status += CHECK_STRING(str, "abcdef");
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 1);
+
+	free(str);
+
+	// ------------------------------------------------------------------------------------
+
 	return status;
 }
 
@@ -825,6 +835,7 @@ uint32_t test_set(void)
 	uint32_t status = 0;
 	uint32_t result = 0;
 
+	char *str = NULL;
 	char u8_str[256] = {0};
 	char u16_str[256] = {0};
 	char u32_str[256] = {0};
@@ -1031,6 +1042,15 @@ uint32_t test_set(void)
 	status += CHECK_WSTRING(u32_str, U"ab");
 	status += CHECK_UVALUE(n, 2);
 	status += CHECK_RESULT(result, 1);
+
+	// ------------------------------------------------------------------------------------
+
+	result = sscan("abcd", 4, "%m[abc]%n", &str, &n);
+	status += CHECK_STRING(str, "abc");
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 1);
+
+	free(str);
 
 	// ------------------------------------------------------------------------------------
 
