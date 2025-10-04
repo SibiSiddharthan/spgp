@@ -711,13 +711,20 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 	if (config->type == SCAN_STRING)
 	{
 		byte_t byte = 0;
+		buffer_t out = {0};
 
-		byte_t *str = config->data;
-		uint32_t *u32_str = config->data;
+		if ((config->flags & SCAN_ALLOCATE_STRING) == 0)
+		{
+			out.data = config->data;
+			out.size = UINT64_MAX;
+		}
+		else
+		{
+			out.write = memory_buffer_write;
+		}
 
 		uint32_t count = 0;
 		uint32_t codepoint = 0;
-		uint32_t pos = 0;
 
 		if (config->flags & SCAN_SUPPRESS_INPUT)
 		{
@@ -745,9 +752,9 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			switch (config->modifier)
 			{
 			case SCAN_MOD_NONE:
-				*str++ = byte;
-				result += 1;
+				writebyte(&out, byte);
 				readbyte(buffer);
+				result += 1;
 				break;
 			case SCAN_MOD_LONG:
 			{
@@ -760,8 +767,8 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 					goto str_end;
 				}
 
-				count = utf16_encode(PTR_OFFSET(str, pos), codepoint);
-				pos += count;
+				count = utf16_encode(current(&out), codepoint);
+				advance(&out, count);
 			}
 			break;
 			case SCAN_MOD_LONG_LONG:
@@ -775,13 +782,13 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 					goto str_end;
 				}
 
-				*u32_str++ = codepoint;
+				writen(&out, &codepoint, 4);
 			}
 			break;
 			default:
-				*str++ = byte;
-				result += 1;
+				writebyte(&out, byte);
 				readbyte(buffer);
+				result += 1;
 				break;
 			}
 		}
@@ -789,21 +796,29 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
-			*str = 0;
+			writebyte(&out, 0);
 			break;
 		case SCAN_MOD_LONG:
-			str[pos++] = 0;
-			str[pos++] = 0;
+			writebyte(&out, 0);
+			writebyte(&out, 0);
 			break;
 		case SCAN_MOD_LONG_LONG:
-			*u32_str = (uint32_t)0;
+			writebyte(&out, 0);
+			writebyte(&out, 0);
+			writebyte(&out, 0);
+			writebyte(&out, 0);
 			break;
 		default:
-			*str = 0;
+			writebyte(&out, 0);
 			break;
 		}
 
 	str_end:
+
+		if (config->flags & SCAN_ALLOCATE_STRING)
+		{
+			config->data = out.data;
+		}
 
 		return result;
 	}
@@ -811,10 +826,17 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 	if (config->type == SCAN_SET)
 	{
 		byte_t byte = 0;
+		buffer_t out = {0};
 
-		byte_t *str = config->data;
-		uint16_t *u16_str = config->data;
-		uint32_t *u32_str = config->data;
+		if ((config->flags & SCAN_ALLOCATE_STRING) == 0)
+		{
+			out.data = config->data;
+			out.size = UINT64_MAX;
+		}
+		else
+		{
+			out.write = memory_buffer_write;
+		}
 
 		if (config->flags & SCAN_SUPPRESS_INPUT)
 		{
@@ -852,16 +874,20 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			switch (config->modifier)
 			{
 			case SCAN_MOD_NONE:
-				*str++ = byte;
+				writebyte(&out, byte);
 				break;
 			case SCAN_MOD_LONG:
-				*u16_str++ = (uint16_t)byte;
+				writebyte(&out, byte);
+				writebyte(&out, 0);
 				break;
 			case SCAN_MOD_LONG_LONG:
-				*u32_str++ = (uint32_t)byte;
+				writebyte(&out, byte);
+				writebyte(&out, 0);
+				writebyte(&out, 0);
+				writebyte(&out, 0);
 				break;
 			default:
-				*str++ = byte;
+				writebyte(&out, byte);
 				break;
 			}
 
@@ -872,20 +898,29 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		switch (config->modifier)
 		{
 		case SCAN_MOD_NONE:
-			*str = 0;
+			writebyte(&out, 0);
 			break;
 		case SCAN_MOD_LONG:
-			*u16_str = (uint16_t)0;
+			writebyte(&out, 0);
+			writebyte(&out, 0);
 			break;
 		case SCAN_MOD_LONG_LONG:
-			*u32_str = (uint32_t)0;
+			writebyte(&out, 0);
+			writebyte(&out, 0);
+			writebyte(&out, 0);
+			writebyte(&out, 0);
 			break;
 		default:
-			*str = 0;
+			writebyte(&out, 0);
 			break;
 		}
 
 	set_end:
+
+		if (config->flags & SCAN_ALLOCATE_STRING)
+		{
+			config->data = out.data;
+		}
 
 		return result;
 	}
