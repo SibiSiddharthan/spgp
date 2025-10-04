@@ -13,6 +13,8 @@
 #include <byteswap.h>
 #include <load.h>
 #include <ptr.h>
+
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct _buffer_t
@@ -22,10 +24,43 @@ typedef struct _buffer_t
 	size_t size;
 
 	void *ctx;
-	size_t (*read)(struct _buffer_t *buffer, void *ctx, size_t size);
-	size_t (*write)(struct _buffer_t *buffer, void *ctx, size_t size);
+	size_t (*read)(struct _buffer_t *buffer);
+	size_t (*write)(struct _buffer_t *buffer);
 	uint32_t error;
 } buffer_t;
+
+static inline void memory_buffer_write(buffer_t *buffer)
+{
+	if (buffer->size == 0)
+	{
+		buffer->pos = 0;
+		buffer->size = 64;
+
+		buffer->data = malloc(buffer->size);
+
+		if (buffer->data == NULL)
+		{
+			buffer->error = 1; // placeholder
+			return;
+		}
+
+		memset(buffer->data, 0, buffer->size);
+		return;
+	}
+
+	buffer->data = realloc(buffer->data, buffer->size * 2);
+
+	if (buffer->data == NULL)
+	{
+		buffer->error = 1; // placeholder
+		return;
+	}
+
+	memset(PTR_OFFSET(buffer->data, buffer->size), 0, buffer->size);
+	buffer->size *= 2;
+
+	return;
+}
 
 static inline void advance(buffer_t *buffer, size_t step)
 {
