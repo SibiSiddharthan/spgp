@@ -78,7 +78,7 @@ uint32_t test_simple(void)
 	return status;
 }
 
-uint32_t test_int()
+uint32_t test_int(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -198,7 +198,7 @@ uint32_t test_int()
 	return status;
 }
 
-uint32_t test_uint()
+uint32_t test_uint(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -347,7 +347,7 @@ uint32_t test_uint()
 	return status;
 }
 
-uint32_t test_float()
+uint32_t test_float(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -620,7 +620,7 @@ uint32_t test_float()
 	return status;
 }
 
-uint32_t test_float_special()
+uint32_t test_float_special(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -716,7 +716,7 @@ uint32_t test_float_special()
 	return status;
 }
 
-uint32_t test_char()
+uint32_t test_char(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -750,7 +750,7 @@ uint32_t test_char()
 	return status;
 }
 
-uint32_t test_string()
+uint32_t test_string(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -820,7 +820,7 @@ uint32_t test_string()
 	return status;
 }
 
-uint32_t test_set()
+uint32_t test_set(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -1078,7 +1078,7 @@ uint32_t test_pointer(void)
 	return status;
 }
 
-uint32_t test_position()
+uint32_t test_position(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -1111,7 +1111,7 @@ uint32_t test_position()
 	return status;
 }
 
-uint32_t test_overflow()
+uint32_t test_overflow(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
@@ -1165,7 +1165,7 @@ uint32_t test_overflow()
 	return status;
 }
 
-uint32_t test_suppress()
+uint32_t test_suppress(void)
 {
 	uint32_t status = 0;
 	uint32_t result = 0;
