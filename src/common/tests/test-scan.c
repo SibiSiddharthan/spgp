@@ -1165,8 +1165,45 @@ uint32_t test_overflow()
 	return status;
 }
 
+uint32_t test_suppress()
+{
+	uint32_t status = 0;
+	uint32_t result = 0;
+
+	uint32_t a = 0;
+	byte_t c = 0;
+	uint32_t n = 0;
+
+	result = sscan("123 567", 7, "%*u%n%u", &n, &a);
+	status += CHECK_UVALUE(a, 567);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("123567", 6, "%*4u%u%n", &a, &n);
+	status += CHECK_UVALUE(a, 67);
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("1234567", 7, "%4$*4u%2$u%1$n", &n, &a);
+	status += CHECK_UVALUE(a, 567);
+	status += CHECK_UVALUE(n, 7);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("abcdef 123", 10, "%*s%u%n", &a, &n);
+	status += CHECK_UVALUE(a, 123);
+	status += CHECK_UVALUE(n, 10);
+	status += CHECK_RESULT(result, 2);
+
+	result = sscan("abcdef 123", 10, "%*[a-e]%c%n", &c, &n);
+	status += CHECK_UVALUE(c, 'f');
+	status += CHECK_UVALUE(n, 6);
+	status += CHECK_RESULT(result, 2);
+
+	return status;
+}
+
 int main()
 {
 	return test_simple() + test_int() + test_uint() + test_float() + test_float_special() + test_char() + test_string() + test_set() +
-		   test_pointer() + test_position() + test_overflow();
+		   test_pointer() + test_position() + test_overflow() + test_suppress();
 }
