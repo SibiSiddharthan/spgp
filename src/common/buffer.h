@@ -31,21 +31,33 @@ typedef struct _buffer_t
 
 static inline size_t memory_buffer_write(buffer_t *buffer, size_t size)
 {
+	size_t old_size = buffer->size;
+
+	buffer->error = 0;
+
 	if (size == 0)
 	{
-		size = buffer->size * 2;
+		// nop
+		return 0;
 	}
 
 	if (buffer->size == 0)
 	{
+		// Allocate 64 bytes initially
 		buffer->pos = 0;
 		buffer->size = 64;
+
+		// Grow to power of 2
+		while (size > buffer->size)
+		{
+			buffer->size *= 2;
+		}
 
 		buffer->data = malloc(buffer->size);
 
 		if (buffer->data == NULL)
 		{
-			buffer->error = 1; // placeholder
+			buffer->error = 1;
 			return 0;
 		}
 
@@ -53,16 +65,21 @@ static inline size_t memory_buffer_write(buffer_t *buffer, size_t size)
 		return buffer->size;
 	}
 
-	buffer->data = realloc(buffer->data, size);
+	// Grow to power of 2
+	while (size > buffer->size - buffer->pos)
+	{
+		buffer->size *= 2;
+	}
+
+	buffer->data = realloc(buffer->data, buffer->size);
 
 	if (buffer->data == NULL)
 	{
-		buffer->error = 1; // placeholder
+		buffer->error = 1;
 		return 0;
 	}
 
-	memset(PTR_OFFSET(buffer->data, buffer->size), 0, size - buffer->size);
-	buffer->size = size;
+	memset(PTR_OFFSET(buffer->data, old_size), 0, buffer->size - old_size);
 
 	return buffer->size;
 }
@@ -321,7 +338,7 @@ static inline size_t writebyte(buffer_t *buffer, byte_t byte)
 			return 0;
 		}
 
-		buffer->write(buffer, 0);
+		buffer->write(buffer, 1);
 
 		if (buffer->error)
 		{
