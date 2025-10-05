@@ -11,10 +11,6 @@
 #include <types.h>
 #include <buffer.h>
 
-#ifdef _WIN32
-typedef long long ssize_t;
-#endif
-
 // Flags
 #define CONVERT_FORCE_SIGN   0x10
 #define CONVERT_GROUP_DIGITS 0x40

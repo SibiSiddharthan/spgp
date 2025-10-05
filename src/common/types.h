@@ -13,4 +13,8 @@
 
 typedef uint8_t byte_t;
 
+#ifdef _WIN32
+typedef long long ssize_t;
+#endif
+
 #endif
