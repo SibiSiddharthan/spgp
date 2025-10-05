@@ -24,13 +24,18 @@ typedef struct _buffer_t
 	size_t size;
 
 	void *ctx;
-	size_t (*read)(struct _buffer_t *buffer);
-	size_t (*write)(struct _buffer_t *buffer);
+	size_t (*read)(struct _buffer_t *buffer, size_t size);
+	size_t (*write)(struct _buffer_t *buffer, size_t size);
 	uint32_t error;
 } buffer_t;
 
-static inline void memory_buffer_write(buffer_t *buffer)
+static inline size_t memory_buffer_write(buffer_t *buffer, size_t size)
 {
+	if (size == 0)
+	{
+		size = buffer->size * 2;
+	}
+
 	if (buffer->size == 0)
 	{
 		buffer->pos = 0;
@@ -41,25 +46,25 @@ static inline void memory_buffer_write(buffer_t *buffer)
 		if (buffer->data == NULL)
 		{
 			buffer->error = 1; // placeholder
-			return;
+			return 0;
 		}
 
 		memset(buffer->data, 0, buffer->size);
-		return;
+		return buffer->size;
 	}
 
-	buffer->data = realloc(buffer->data, buffer->size * 2);
+	buffer->data = realloc(buffer->data, size);
 
 	if (buffer->data == NULL)
 	{
 		buffer->error = 1; // placeholder
-		return;
+		return 0;
 	}
 
-	memset(PTR_OFFSET(buffer->data, buffer->size), 0, buffer->size);
-	buffer->size *= 2;
+	memset(PTR_OFFSET(buffer->data, buffer->size), 0, size - buffer->size);
+	buffer->size = size;
 
-	return;
+	return buffer->size;
 }
 
 static inline void advance(buffer_t *buffer, size_t step)
@@ -311,7 +316,7 @@ static inline size_t writebyte(buffer_t *buffer, byte_t byte)
 			return 0;
 		}
 
-		buffer->write(buffer);
+		buffer->write(buffer, 0);
 
 		if (buffer->error)
 		{
@@ -334,7 +339,7 @@ static inline size_t writen(buffer_t *buffer, void *in, size_t size)
 			return 0;
 		}
 
-		buffer->write(buffer);
+		buffer->write(buffer, size);
 
 		if (buffer->error)
 		{
@@ -359,7 +364,7 @@ static inline size_t writeline(buffer_t *buffer, void *in, size_t size, byte_t c
 			return 0;
 		}
 
-		buffer->write(buffer);
+		buffer->write(buffer, required_size);
 
 		if (buffer->error)
 		{
