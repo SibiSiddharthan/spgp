@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(common C)
 
-add_library(common src/convert.c src/print.c src/scan.c src/varargs.h)
+add_library(common src/buffer.c src/convert.c src/print.c src/scan.c src/varargs.h)
 
 #tests
 if(BUILD_TESTING)
