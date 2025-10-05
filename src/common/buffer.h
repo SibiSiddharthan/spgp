@@ -82,6 +82,11 @@ static inline void *current(buffer_t *buffer)
 	return PTR_OFFSET(buffer->data, buffer->pos);
 }
 
+static inline void flush(buffer_t *buffer)
+{
+	buffer->write(buffer, 0);
+}
+
 static inline size_t read8(buffer_t *buffer, void *out)
 {
 	if ((buffer->pos + 1) > buffer->size)
