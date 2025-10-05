@@ -1197,27 +1197,27 @@ uint32_t test_suppress(void)
 	result = sscan("123 567", 7, "%*u%n%u", &n, &a);
 	status += CHECK_UVALUE(a, 567);
 	status += CHECK_UVALUE(n, 3);
-	status += CHECK_RESULT(result, 2);
+	status += CHECK_RESULT(result, 1);
 
 	result = sscan("123567", 6, "%*4u%u%n", &a, &n);
 	status += CHECK_UVALUE(a, 67);
 	status += CHECK_UVALUE(n, 6);
-	status += CHECK_RESULT(result, 2);
+	status += CHECK_RESULT(result, 1);
 
 	result = sscan("1234567", 7, "%4$*4u%2$u%1$n", &n, &a);
 	status += CHECK_UVALUE(a, 567);
 	status += CHECK_UVALUE(n, 7);
-	status += CHECK_RESULT(result, 2);
+	status += CHECK_RESULT(result, 1);
 
 	result = sscan("abcdef 123", 10, "%*s%u%n", &a, &n);
 	status += CHECK_UVALUE(a, 123);
 	status += CHECK_UVALUE(n, 10);
-	status += CHECK_RESULT(result, 2);
+	status += CHECK_RESULT(result, 1);
 
 	result = sscan("abcdef 123", 10, "%*[a-e]%c%n", &c, &n);
 	status += CHECK_UVALUE(c, 'f');
 	status += CHECK_UVALUE(n, 6);
-	status += CHECK_RESULT(result, 2);
+	status += CHECK_RESULT(result, 1);
 
 	return status;
 }

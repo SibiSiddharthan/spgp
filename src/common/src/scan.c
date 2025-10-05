@@ -1044,7 +1044,7 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 			config.result = processed;
 			count = scan_arg(buffer, &config);
 
-			if (config.type != SCAN_RESULT)
+			if ((config.type != SCAN_RESULT) && ((config.flags & SCAN_SUPPRESS_INPUT) == 0))
 			{
 				if (count == 0)
 				{
