@@ -32,10 +32,12 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 						/wd4200 # nonstandard extension used: zero-sized array in struct/union
 						/wd4244 # conversion possible loss of data
 						/wd4267 # conversion possible loss of data
+						/wd4305 # truncation from 'double' to 'float'
 						/wd4334 # '<<': result of 32-bit shift implicitly converted to 64 bits
 						/wd4389 # '==': signed/unsigned mismatch
 						/wd4702 # unreachable code
-						/std:clatest)
+						/std:clatest
+						/utf-8)
 endif()
 
 option(ENABLE_ASAN "Use address sanitizer" OFF)
