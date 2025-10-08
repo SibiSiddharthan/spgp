@@ -12,7 +12,6 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-fcolor-diagnostics -fansi-escape-codes
 						-Wall -Wextra
 						-Wno-cast-function-type-mismatch
-						-Wno-implicitly-unsigned-literal
 						-std=c23)
 endif()
 

@@ -853,6 +853,12 @@ uint32_t test_result(void)
 	return status;
 }
 
+#ifdef __clang__
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wimplicitly-unsigned-literal"
+#endif
+
+
 uint32_t test_overflow()
 {
 	uint32_t status = 0;
@@ -952,6 +958,10 @@ uint32_t test_overflow()
 
 	return status;
 }
+
+#ifdef __clang__
+#	pragma clang diagnostic pop
+#endif
 
 uint32_t test_error()
 {
