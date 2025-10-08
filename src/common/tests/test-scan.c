@@ -357,14 +357,14 @@ uint32_t test_float(void)
 
 	uint32_t n = 0;
 
-	result = sscan("1.00", 3, "%f%n", &f32, &n);
+	result = sscan("1.00", 4, "%f%n", &f32, &n);
 	status += CHECK_FLOAT32(f32, 1.00);
-	status += CHECK_UVALUE(n, 3);
+	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-1.00", 4, "%f%n", &f32, &n);
+	result = sscan("-1.00", 5, "%f%n", &f32, &n);
 	status += CHECK_FLOAT32(f32, -1.00);
-	status += CHECK_UVALUE(n, 4);
+	status += CHECK_UVALUE(n, 5);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscan("1.5788987434987", 15, "%f%n", &f32, &n);
@@ -487,14 +487,14 @@ uint32_t test_float(void)
 	status += CHECK_UVALUE(n, 12);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("1.00", 3, "%lf%n", &f64, &n);
+	result = sscan("1.00", 4, "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 1.00);
-	status += CHECK_UVALUE(n, 3);
+	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("-1.00", 4, "%lf%n", &f64, &n);
+	result = sscan("-1.00", 5, "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, -1.00);
-	status += CHECK_UVALUE(n, 4);
+	status += CHECK_UVALUE(n, 5);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscan("1.5788987434987", 15, "%lf%n", &f64, &n);
