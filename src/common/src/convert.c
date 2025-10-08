@@ -974,6 +974,11 @@ uint32_t pointer_encode(byte_t buffer[32], void *ptr)
 	*buffer++ = '0';
 	*buffer++ = 'x';
 
+#ifdef _WIN32
+#	pragma warning(push)
+#	pragma warning(disable : 4127) // conditional expression is constant
+#endif
+
 	if (sizeof(void *) == 8)
 	{
 		value = BSWAP_64(value);
@@ -989,6 +994,10 @@ uint32_t pointer_encode(byte_t buffer[32], void *ptr)
 		value = BSWAP_16(value);
 		print_hex(hex_lower_table, buffer, 30, &value, 2);
 	}
+
+#ifdef _WIN32
+#	pragma warning(pop)
+#endif
 
 	return 2 + (2 * sizeof(void *));
 }
