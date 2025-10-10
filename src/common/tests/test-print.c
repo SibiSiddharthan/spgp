@@ -617,6 +617,26 @@ uint32_t test_float(void)
 	status += CHECK_STRING(buffer, "0x1.5ab904p+11");
 	status += CHECK_RESULT(result, 14);
 
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%la", 0x1.5p+2);
+	status += CHECK_STRING(buffer, "0x1.5p+2");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%la", -0x1.5p-3);
+	status += CHECK_STRING(buffer, "-0x1.5p-3");
+	status += CHECK_RESULT(result, 9);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%la", 0x1.5ab9p-3);
+	status += CHECK_STRING(buffer, "0x1.5ab9p-3");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%la", 0x1.5ab904p+11);
+	status += CHECK_STRING(buffer, "0x1.5ab904p+11");
+	status += CHECK_RESULT(result, 14);
+
 	return status;
 }
 
@@ -857,7 +877,6 @@ uint32_t test_result(void)
 #	pragma clang diagnostic push
 #	pragma clang diagnostic ignored "-Wimplicitly-unsigned-literal"
 #endif
-
 
 uint32_t test_overflow()
 {

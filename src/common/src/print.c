@@ -827,8 +827,16 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 	if (config->type == PRINT_FLOAT_HEX)
 	{
-		size = float64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, double));
-		writen(buffer, temp, size);
+		if (config->modifier == PRINT_MOD_LONG)
+		{
+			size = float64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, double));
+			writen(buffer, temp, size);
+		}
+		else
+		{
+			size = float32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, double));
+			writen(buffer, temp, size);
+		}
 
 		return size;
 	}
