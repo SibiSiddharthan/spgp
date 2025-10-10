@@ -851,8 +851,8 @@ uint32_t test_result(void)
 {
 	uint32_t status = 0;
 
-	int32_t out2 = 0;
-	int32_t out1 = 0;
+	uint32_t out2 = 0;
+	uint32_t out1 = 0;
 
 	uint32_t result = 0;
 	char buffer[256] = {0};

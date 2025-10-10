@@ -1057,22 +1057,22 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		{
 		default:
 		case PRINT_MOD_NONE:
-			*(int32_t *)config->data = (int32_t)config->result;
+			*(uint32_t *)config->data = (uint32_t)config->result;
 			break;
 		case PRINT_MOD_SHORT:
-			*(int16_t *)config->data = (int16_t)config->result;
+			*(uint16_t *)config->data = (uint16_t)config->result;
 			break;
 		case PRINT_MOD_SHORT_SHORT:
-			*(int8_t *)config->data = (int8_t)config->result;
+			*(uint8_t *)config->data = (uint8_t)config->result;
 			break;
 		case PRINT_MOD_LONG:
-			*(int64_t *)config->data = (int64_t)config->result;
+			*(uint64_t *)config->data = (uint64_t)config->result;
 			break;
 		case PRINT_MOD_LONG_LONG:
-			*(int64_t *)config->data = (int64_t)config->result;
+			*(uint64_t *)config->data = (uint64_t)config->result;
 			break;
 		case PRINT_MOD_MAX:
-			*(intmax_t *)config->data = (intmax_t)config->result;
+			*(uintmax_t *)config->data = (uintmax_t)config->result;
 			break;
 		case PRINT_MOD_SIZE:
 			*(size_t *)config->data = (size_t)config->result;
