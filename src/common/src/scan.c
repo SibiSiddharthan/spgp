@@ -43,9 +43,9 @@ typedef enum _scan_type
 	SCAN_UINT_OCTAL,
 	SCAN_UINT_HEX,
 
-	SCAN_DOUBLE_NORMAL,
-	SCAN_DOUBLE_HEX,
-	SCAN_DOUBLE_SCIENTIFIC,
+	SCAN_FLOAT_NORMAL,
+	SCAN_FLOAT_HEX,
+	SCAN_FLOAT_SCIENTIFIC,
 
 	SCAN_CHAR,
 	SCAN_STRING,
@@ -219,13 +219,13 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 
 	// float
 	case 'a':
-		config->type = SCAN_DOUBLE_HEX;
+		config->type = SCAN_FLOAT_HEX;
 		break;
 	case 'f':
-		config->type = SCAN_DOUBLE_NORMAL;
+		config->type = SCAN_FLOAT_NORMAL;
 		break;
 	case 'e':
-		config->type = SCAN_DOUBLE_SCIENTIFIC;
+		config->type = SCAN_FLOAT_SCIENTIFIC;
 		break;
 
 	// misc
@@ -588,7 +588,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
-	if (config->type == SCAN_DOUBLE_NORMAL || config->type == SCAN_DOUBLE_SCIENTIFIC)
+	if (config->type == SCAN_FLOAT_NORMAL || config->type == SCAN_FLOAT_SCIENTIFIC)
 	{
 		switch (config->modifier)
 		{
@@ -607,7 +607,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
-	if (config->type == SCAN_DOUBLE_HEX)
+	if (config->type == SCAN_FLOAT_HEX)
 	{
 		switch (config->modifier)
 		{

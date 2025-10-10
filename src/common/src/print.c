@@ -43,9 +43,9 @@ typedef enum _print_type
 	PRINT_UINT_OCTAL,
 	PRINT_UINT_HEX,
 
-	PRINT_DOUBLE_NORMAL,
-	PRINT_DOUBLE_HEX,
-	PRINT_DOUBLE_SCIENTIFIC,
+	PRINT_FLOAT_NORMAL,
+	PRINT_FLOAT_HEX,
+	PRINT_FLOAT_SCIENTIFIC,
 
 	PRINT_CHAR,
 	PRINT_STRING,
@@ -297,13 +297,13 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 
 	// float
 	case 'a':
-		config->type = PRINT_DOUBLE_HEX;
+		config->type = PRINT_FLOAT_HEX;
 		break;
 	case 'f':
-		config->type = PRINT_DOUBLE_NORMAL;
+		config->type = PRINT_FLOAT_NORMAL;
 		break;
 	case 'e':
-		config->type = PRINT_DOUBLE_SCIENTIFIC;
+		config->type = PRINT_FLOAT_SCIENTIFIC;
 		break;
 
 	// misc
@@ -815,17 +815,17 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		return print_uint_formatted(config, buffer, temp, size);
 	}
 
-	if (config->type == PRINT_DOUBLE_NORMAL)
+	if (config->type == PRINT_FLOAT_NORMAL)
 	{
 		return 0;
 	}
 
-	if (config->type == PRINT_DOUBLE_SCIENTIFIC)
+	if (config->type == PRINT_FLOAT_SCIENTIFIC)
 	{
 		return 0;
 	}
 
-	if (config->type == PRINT_DOUBLE_HEX)
+	if (config->type == PRINT_FLOAT_HEX)
 	{
 		size = float64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, double));
 		writen(buffer, temp, size);
