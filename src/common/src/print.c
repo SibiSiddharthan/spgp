@@ -34,8 +34,6 @@
 #define PRINT_MOD_SIZE    6 // z
 #define PRINT_MOD_PTRDIFF 7 // t
 
-#define PRINT_MOD_LONG_DOUBLE 8
-
 typedef enum _print_type
 {
 	PRINT_INT_NUMBER = 1,
@@ -255,10 +253,6 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		}
 	}
 	break;
-	case 'L':
-		readbyte(format);
-		config->modifier = PRINT_MOD_LONG_DOUBLE;
-		break;
 	case 'j':
 		readbyte(format);
 		config->modifier = PRINT_MOD_MAX;

@@ -28,8 +28,6 @@
 #define SCAN_MOD_SIZE    6 // z
 #define SCAN_MOD_PTRDIFF 7 // t
 
-#define SCAN_MOD_LONG_DOUBLE 8
-
 #define IS_SPACE(x) ((x) == ' ' || ((x) >= '\t' && (x) <= '\r'))
 
 #define GET_BIT(s, x)   (s[(x) / 64] >> ((x) % 64) & 1)
@@ -185,10 +183,6 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 		}
 	}
 	break;
-	case 'L':
-		readbyte(format);
-		config->modifier = SCAN_MOD_LONG_DOUBLE;
-		break;
 	case 'j':
 		readbyte(format);
 		config->modifier = SCAN_MOD_MAX;
@@ -621,7 +615,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			break;
 		case SCAN_MOD_LONG:
 		case SCAN_MOD_LONG_LONG:
-		case SCAN_MOD_LONG_DOUBLE:
 			result += float64_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		default:
@@ -641,7 +634,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			break;
 		case SCAN_MOD_LONG:
 		case SCAN_MOD_LONG_LONG:
-		case SCAN_MOD_LONG_DOUBLE:
 			result += float64_from_hex(buffer, config->data);
 			break;
 		default:
