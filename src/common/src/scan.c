@@ -46,7 +46,6 @@ typedef enum _scan_type
 	SCAN_DOUBLE_NORMAL,
 	SCAN_DOUBLE_HEX,
 	SCAN_DOUBLE_SCIENTIFIC,
-	SCAN_DOUBLE_SCIENTIFIC_SHORT,
 
 	SCAN_CHAR,
 	SCAN_STRING,
@@ -227,9 +226,6 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 		break;
 	case 'e':
 		config->type = SCAN_DOUBLE_SCIENTIFIC;
-		break;
-	case 'g':
-		config->type = SCAN_DOUBLE_SCIENTIFIC_SHORT;
 		break;
 
 	// misc
@@ -592,7 +588,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		return result;
 	}
 
-	if (config->type == SCAN_DOUBLE_NORMAL || config->type == SCAN_DOUBLE_SCIENTIFIC || config->type == SCAN_DOUBLE_SCIENTIFIC_SHORT)
+	if (config->type == SCAN_DOUBLE_NORMAL || config->type == SCAN_DOUBLE_SCIENTIFIC)
 	{
 		switch (config->modifier)
 		{

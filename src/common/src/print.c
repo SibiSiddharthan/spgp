@@ -46,7 +46,6 @@ typedef enum _print_type
 	PRINT_DOUBLE_NORMAL,
 	PRINT_DOUBLE_HEX,
 	PRINT_DOUBLE_SCIENTIFIC,
-	PRINT_DOUBLE_SCIENTIFIC_SHORT,
 
 	PRINT_CHAR,
 	PRINT_STRING,
@@ -305,9 +304,6 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		break;
 	case 'e':
 		config->type = PRINT_DOUBLE_SCIENTIFIC;
-		break;
-	case 'g':
-		config->type = PRINT_DOUBLE_SCIENTIFIC_SHORT;
 		break;
 
 	// misc
@@ -824,12 +820,8 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		return 0;
 	}
 
-	if (config->type == PRINT_DOUBLE_SCIENTIFIC || config->type == PRINT_DOUBLE_SCIENTIFIC_SHORT)
+	if (config->type == PRINT_DOUBLE_SCIENTIFIC)
 	{
-		if (config->type == PRINT_DOUBLE_SCIENTIFIC_SHORT)
-		{
-		}
-
 		return 0;
 	}
 
