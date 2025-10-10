@@ -159,9 +159,17 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 			readbyte(format);
 			continue;
 		}
+
 		if (byte == '\'')
 		{
 			config->flags |= PRINT_GROUP_DIGITS;
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '^')
+		{
+			config->flags |= PRINT_UPPER_CASE;
 			readbyte(format);
 			continue;
 		}
@@ -278,40 +286,26 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	case 'u':
 		config->type = PRINT_UINT_NUMBER;
 		break;
-	case 'B':
-		config->flags |= PRINT_UPPER_CASE;
 	case 'b':
 		config->type = PRINT_UINT_BINARY;
 		break;
-	case 'O':
-		config->flags |= PRINT_UPPER_CASE;
 	case 'o':
 		config->type = PRINT_UINT_OCTAL;
 		break;
-	case 'X':
-		config->flags |= PRINT_UPPER_CASE;
 	case 'x':
 		config->type = PRINT_UINT_HEX;
 		break;
 
 	// float
-	case 'A':
-		config->flags |= PRINT_UPPER_CASE;
 	case 'a':
 		config->type = PRINT_DOUBLE_HEX;
 		break;
-	case 'F':
-		config->flags |= PRINT_UPPER_CASE;
 	case 'f':
 		config->type = PRINT_DOUBLE_NORMAL;
 		break;
-	case 'E':
-		config->flags |= PRINT_UPPER_CASE;
 	case 'e':
 		config->type = PRINT_DOUBLE_SCIENTIFIC;
 		break;
-	case 'G':
-		config->flags |= PRINT_UPPER_CASE;
 	case 'g':
 		config->type = PRINT_DOUBLE_SCIENTIFIC_SHORT;
 		break;

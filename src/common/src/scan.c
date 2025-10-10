@@ -208,40 +208,26 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 	case 'u':
 		config->type = SCAN_UINT_NUMBER;
 		break;
-	case 'B':
-		config->flags |= SCAN_UPPER_CASE;
 	case 'b':
 		config->type = SCAN_UINT_BINARY;
 		break;
-	case 'O':
-		config->flags |= SCAN_UPPER_CASE;
 	case 'o':
 		config->type = SCAN_UINT_OCTAL;
 		break;
-	case 'X':
-		config->flags |= SCAN_UPPER_CASE;
 	case 'x':
 		config->type = SCAN_UINT_HEX;
 		break;
 
 	// float
-	case 'A':
-		config->flags |= SCAN_UPPER_CASE;
 	case 'a':
 		config->type = SCAN_DOUBLE_HEX;
 		break;
-	case 'F':
-		config->flags |= SCAN_UPPER_CASE;
 	case 'f':
 		config->type = SCAN_DOUBLE_NORMAL;
 		break;
-	case 'E':
-		config->flags |= SCAN_UPPER_CASE;
 	case 'e':
 		config->type = SCAN_DOUBLE_SCIENTIFIC;
 		break;
-	case 'G':
-		config->flags |= SCAN_UPPER_CASE;
 	case 'g':
 		config->type = SCAN_DOUBLE_SCIENTIFIC_SHORT;
 		break;

@@ -339,7 +339,7 @@ uint32_t test_uint(void)
 	status += CHECK_UVALUE(n, 6);
 	status += CHECK_RESULT(result, 1);
 
-	result = sscan("0X45df", 6, "%8X%n", &x, &n);
+	result = sscan("0X45df", 6, "%8x%n", &x, &n);
 	status += CHECK_IVALUE(x, 17887);
 	status += CHECK_UVALUE(n, 6);
 	status += CHECK_RESULT(result, 1);
