@@ -388,6 +388,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			result += i32_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
@@ -412,9 +413,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_PTRDIFF:
 			result += iptr_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
-		default:
-			result += i32_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
-			break;
 		}
 
 		return result;
@@ -424,6 +422,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			result += u32_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
@@ -448,9 +447,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
-		default:
-			result += u32_from_dec(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
-			break;
 		}
 
 		return result;
@@ -466,6 +462,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			result += u32_from_bin(buffer, config->data);
 			break;
@@ -490,9 +487,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_bin(buffer, config->data);
 			break;
-		default:
-			result += u32_from_bin(buffer, config->data);
-			break;
 		}
 
 		return result;
@@ -514,6 +508,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			result += u32_from_oct(buffer, config->data);
 			break;
@@ -538,9 +533,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_oct(buffer, config->data);
 			break;
-		default:
-			result += u32_from_oct(buffer, config->data);
-			break;
 		}
 
 		return result;
@@ -556,6 +548,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			result += u32_from_hex(buffer, config->data);
 			break;
@@ -580,9 +573,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		case SCAN_MOD_PTRDIFF:
 			result += uptr_from_hex(buffer, config->data);
 			break;
-		default:
-			result += u32_from_hex(buffer, config->data);
-			break;
 		}
 
 		return result;
@@ -592,15 +582,13 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			result += float32_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		case SCAN_MOD_LONG:
 		case SCAN_MOD_LONG_LONG:
 			result += float64_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
-			break;
-		default:
-			result += float32_from_normal(buffer, config->data, config->flags & SCAN_GROUP_DIGITS);
 			break;
 		}
 
@@ -611,15 +599,13 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			result += float32_from_hex(buffer, config->data);
 			break;
 		case SCAN_MOD_LONG:
 		case SCAN_MOD_LONG_LONG:
 			result += float64_from_hex(buffer, config->data);
-			break;
-		default:
-			result += float32_from_hex(buffer, config->data);
 			break;
 		}
 
@@ -637,6 +623,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			*(byte_t *)config->data = readbyte(buffer);
 			result = 1;
@@ -673,10 +660,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			}
 		}
 		break;
-		default:
-			*(byte_t *)config->data = readbyte(buffer);
-			result = 1;
-			break;
 		}
 
 		return result;
@@ -725,6 +708,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 			switch (config->modifier)
 			{
+			default:
 			case SCAN_MOD_NONE:
 				writebyte(&out, byte);
 				readbyte(buffer);
@@ -759,16 +743,12 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 				writen(&out, &codepoint, 4);
 			}
 			break;
-			default:
-				writebyte(&out, byte);
-				readbyte(buffer);
-				result += 1;
-				break;
 			}
 		}
 
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			writebyte(&out, 0);
 			break;
@@ -780,9 +760,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			writebyte(&out, 0);
 			writebyte(&out, 0);
 			writebyte(&out, 0);
-			writebyte(&out, 0);
-			break;
-		default:
 			writebyte(&out, 0);
 			break;
 		}
@@ -847,6 +824,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 			switch (config->modifier)
 			{
+			default:
 			case SCAN_MOD_NONE:
 				writebyte(&out, byte);
 				break;
@@ -860,9 +838,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 				writebyte(&out, 0);
 				writebyte(&out, 0);
 				break;
-			default:
-				writebyte(&out, byte);
-				break;
 			}
 
 			result += 1;
@@ -871,6 +846,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			writebyte(&out, 0);
 			break;
@@ -882,9 +858,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			writebyte(&out, 0);
 			writebyte(&out, 0);
 			writebyte(&out, 0);
-			writebyte(&out, 0);
-			break;
-		default:
 			writebyte(&out, 0);
 			break;
 		}
@@ -908,6 +881,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case SCAN_MOD_NONE:
 			*(uint32_t *)config->data = (uint32_t)config->result;
 			break;
@@ -931,9 +905,6 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			break;
 		case SCAN_MOD_PTRDIFF:
 			*(ptrdiff_t *)config->data = (ptrdiff_t)config->result;
-			break;
-		default:
-			*(uint32_t *)config->data = (uint32_t)config->result;
 			break;
 		}
 

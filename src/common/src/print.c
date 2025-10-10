@@ -639,6 +639,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 			size = i32_to_dec(temp, VIEW_AS(config->data, int32_t), flags);
 			break;
@@ -663,9 +664,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = iptr_to_dec(temp, VIEW_AS(config->data, intptr_t), flags);
 			break;
-		default:
-			size = i32_to_dec(temp, VIEW_AS(config->data, int32_t), flags);
-			break;
 		}
 
 		return print_int_formatted(config, buffer, temp, size);
@@ -675,6 +673,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 			size = u32_to_dec(temp, VIEW_AS(config->data, uint32_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
@@ -699,9 +698,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_dec(temp, VIEW_AS(config->data, uintptr_t), config->flags & PRINT_GROUP_DIGITS);
 			break;
-		default:
-			size = u32_to_dec(temp, VIEW_AS(config->data, uint32_t), config->flags & PRINT_GROUP_DIGITS);
-			break;
 		}
 
 		return print_int_formatted(config, buffer, temp, size);
@@ -711,6 +707,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 			size = u32_to_bin(temp + pos, VIEW_AS(config->data, uint32_t));
 			break;
@@ -735,9 +732,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_bin(temp + pos, VIEW_AS(config->data, uintptr_t));
 			break;
-		default:
-			size = u32_to_bin(temp + pos, VIEW_AS(config->data, uint32_t));
-			break;
 		}
 
 		return print_uint_formatted(config, buffer, temp, size);
@@ -747,6 +741,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 			size = u32_to_oct(temp, VIEW_AS(config->data, uint32_t));
 			break;
@@ -771,9 +766,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_oct(temp, VIEW_AS(config->data, uintptr_t));
 			break;
-		default:
-			size = u32_to_oct(temp, VIEW_AS(config->data, uint32_t));
-			break;
 		}
 
 		return print_uint_formatted(config, buffer, temp, size);
@@ -783,6 +775,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 			size = u32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint32_t));
 			break;
@@ -807,9 +800,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_PTRDIFF:
 			size = uptr_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uintptr_t));
 			break;
-		default:
-			size = u32_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, uint32_t));
-			break;
 		}
 
 		return print_uint_formatted(config, buffer, temp, size);
@@ -827,7 +817,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 	if (config->type == PRINT_FLOAT_HEX)
 	{
-		if (config->modifier == PRINT_MOD_LONG)
+		if (config->modifier == PRINT_MOD_LONG || config->modifier == PRINT_MOD_LONG_LONG)
 		{
 			size = float64_to_hex(temp, (config->flags & PRINT_UPPER_CASE), VIEW_AS(config->data, double));
 			writen(buffer, temp, size);
@@ -848,6 +838,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 			pre_temp[0] = (byte_t)(uintptr_t)config->data;
 			size = 1;
@@ -859,10 +850,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_LONG_LONG:
 			codepoint = (uint32_t)(uintptr_t)config->data;
 			size = utf8_encode(pre_temp, codepoint);
-			break;
-		default:
-			pre_temp[0] = (byte_t)(uintptr_t)config->data;
-			size = 1;
 			break;
 		}
 
@@ -916,6 +903,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 		{
 			byte_t *ch = config->data;
@@ -946,16 +934,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			}
 		}
 		break;
-		default:
-		{
-			byte_t *ch = config->data;
-
-			while (*ch++ != 0 && count < config->precision)
-			{
-				++count;
-			}
-		}
-		break;
 		}
 
 		if (config->width > count)
@@ -972,6 +950,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 		{
 			writen(buffer, config->data, count * sizeof(byte_t));
@@ -1014,12 +993,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 				writen(buffer, temp, size);
 				result += size;
 			}
-		}
-		break;
-		default:
-		{
-			writen(buffer, config->data, count * sizeof(byte_t));
-			result += count * sizeof(byte_t);
 		}
 		break;
 		}
@@ -1082,6 +1055,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	{
 		switch (config->modifier)
 		{
+		default:
 		case PRINT_MOD_NONE:
 			*(int32_t *)config->data = (int32_t)config->result;
 			break;
@@ -1105,9 +1079,6 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			break;
 		case PRINT_MOD_PTRDIFF:
 			*(ptrdiff_t *)config->data = (ptrdiff_t)config->result;
-			break;
-		default:
-			*(int32_t *)config->data = (int32_t)config->result;
 			break;
 		}
 
