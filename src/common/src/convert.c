@@ -474,7 +474,7 @@ uint32_t float32_to_hex(byte_t buffer[64], uint8_t upper, float x)
 
 	sign = (v >> 31) & 0x1;             // 1 bit
 	exponent = ((v << 1) >> 24) & 0xFF; // 8 bits
-	mantissa = v & 0x7FFFFF;            // 23 bits
+	mantissa = (v << 1) & 0xFFFFFF;     // 23 bits
 
 	// Sign
 	if (sign)
