@@ -734,6 +734,11 @@ uint32_t test_string()
 	char buffer[256] = {0};
 
 	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %s\n", NULL);
+	status += CHECK_STRING(buffer, "Hello \n");
+	status += CHECK_RESULT(result, 7);
+
+	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "Hello %s\n", "World");
 	status += CHECK_STRING(buffer, "Hello World\n");
 	status += CHECK_RESULT(result, 12);
@@ -768,6 +773,11 @@ uint32_t test_string()
 	status += CHECK_STRING(buffer, "Hello World\n");
 	status += CHECK_RESULT(result, 12);
 	status += CHECK_RESULT(out, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %ls\n", NULL);
+	status += CHECK_STRING(buffer, "Hello \n");
+	status += CHECK_RESULT(result, 7);
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "Hello %ls\n", L"World");
@@ -811,6 +821,11 @@ uint32_t test_string()
 	status += CHECK_STRING(buffer, "Hello World😊\n");
 	status += CHECK_RESULT(result, 16);
 	status += CHECK_RESULT(out, 16);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "Hello %lls\n", NULL);
+	status += CHECK_STRING(buffer, "Hello \n");
+	status += CHECK_RESULT(result, 7);
 
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "Hello %lls\n%jn", U"World😊", &out);

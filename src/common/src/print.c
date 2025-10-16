@@ -901,6 +901,12 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 			config->precision = UINT32_MAX;
 		}
 
+		// Handle NULL without crashing
+		if (config->data == NULL)
+		{
+			config->data = "\0\0\0"; // 4th zero is implicit
+		}
+
 		switch (config->modifier)
 		{
 		default:
