@@ -39,22 +39,24 @@ static const byte_t hex_to_nibble_table[256] =
 };
 // clang-format on
 
-uint32_t print_hex(const byte_t *table, byte_t *buffer, uint32_t buffer_size, void *data, uint32_t data_size)
+uint32_t print_raw_hex(buffer_t *buffer, void *data, size_t size, uint8_t upper)
 {
-	uint32_t pos = 0;
+	const byte_t *table = upper ? hex_upper_table : hex_lower_table;
+	uint32_t result = 0;
 
-	for (uint32_t i = 0; i < data_size; ++i)
+	for (uint32_t i = 0; i < size; ++i)
 	{
 		byte_t a, b;
 
 		a = ((byte_t *)data)[i] / 16;
 		b = ((byte_t *)data)[i] % 16;
 
-		buffer[pos++] = table[a];
-		buffer[pos++] = table[b];
+		writebyte(buffer, table[a]);
+		writebyte(buffer, table[b]);
+		result += 2;
 	}
 
-	return pos;
+	return result;
 }
 
 typedef struct _digit_parse_state

@@ -1113,6 +1113,43 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		return 0;
 	}
 
+	if (config->type == PRINT_RAW_HEX)
+	{
+		size = config->count * 2;
+
+		if ((config->flags & PRINT_LEFT_JUSTIFY) == 0)
+		{
+			if (config->width > size)
+			{
+				uint32_t count = config->width - size;
+
+				while (count--)
+				{
+					writebyte(buffer, ' ');
+					result += 1;
+				}
+			}
+		}
+
+		result += print_raw_hex(buffer, config->data, config->count, config->flags & PRINT_UPPER_CASE);
+
+		if (config->flags & PRINT_LEFT_JUSTIFY)
+		{
+			if (config->width > size)
+			{
+				uint32_t count = config->width - size;
+
+				while (count--)
+				{
+					writebyte(buffer, ' ');
+					result += 1;
+				}
+			}
+		}
+
+		return result;
+	}
+
 	return 0;
 }
 
