@@ -355,6 +355,12 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 		else
 		{
 			config->data = variadic_args_get(args, config->index);
+
+			// Don't crash on null pointer (assume same behaviour as suppress)
+			if (config->data == NULL)
+			{
+				config->data = &config->suppress;
+			}
 		}
 	}
 }
