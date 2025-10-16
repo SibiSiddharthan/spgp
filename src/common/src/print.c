@@ -53,6 +53,8 @@ typedef enum _print_type
 	PRINT_POINTER,
 	PRINT_RESULT,
 
+	PRINT_RAW_HEX,
+
 	PRINT_UNKNOWN
 
 } print_type;
@@ -65,7 +67,9 @@ typedef struct _print_config
 	uint32_t width;
 	uint32_t precision;
 	size_t result;
+	uint32_t count;
 	void *data;
+
 } print_config;
 
 static void parse_number(buffer_t *format, uint32_t *index)
@@ -320,6 +324,11 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		config->type = PRINT_RESULT;
 		break;
 
+	// extensions
+	case 'R':
+		config->type = PRINT_RAW_HEX;
+		break;
+
 	default:
 		config->type = PRINT_UNKNOWN;
 		break;
@@ -341,6 +350,19 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		}
 
 		config->data = variadic_args_get(args, arg_index);
+
+		// If precision was specified use it as count, else read the next argument for count
+		if (config->type == PRINT_RAW_HEX)
+		{
+			if (config->flags & PRINT_PRECISION)
+			{
+				config->count = config->precision;
+			}
+			else
+			{
+				config->count = (uint32_t)(uintptr_t)variadic_args_get(args, arg_index);
+			}
+		}
 	}
 
 	// If both '-' and '0' are given '0' is ignored.
