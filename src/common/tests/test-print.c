@@ -893,7 +893,7 @@ uint32_t test_result(void)
 #	pragma clang diagnostic ignored "-Wimplicitly-unsigned-literal"
 #endif
 
-uint32_t test_overflow()
+uint32_t test_overflow(void)
 {
 	uint32_t status = 0;
 
@@ -997,7 +997,7 @@ uint32_t test_overflow()
 #	pragma clang diagnostic pop
 #endif
 
-uint32_t test_error()
+uint32_t test_error(void)
 {
 	uint32_t status = 0;
 
@@ -1037,8 +1037,53 @@ uint32_t test_error()
 	return status;
 }
 
+uint32_t test_hex(void)
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%R", "\x01\x02\xAA\xAF\xBF\xED", 6);
+	status += CHECK_STRING(buffer, "0102aaafbfed");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%^R", "\x01\x02\xAA\xAF\xBF\xED", 6);
+	status += CHECK_STRING(buffer, "0102AAAFBFED");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.*R", 5, "\x01\x02\xAA\xAF\xBF\xED");
+	status += CHECK_STRING(buffer, "0102aaafbf");
+	status += CHECK_RESULT(result, 10);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$12.*2$R", "\x01\x02\xAA\xAF\xBF\xED", 5);
+	status += CHECK_STRING(buffer, "  0102aaafbf");
+	status += CHECK_RESULT(result, 12);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$.4R", "\x01\x02\xAA\xAF\xBF\xED");
+	status += CHECK_STRING(buffer, "0102aaaf");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%^.4R", "\x01\x02\xAA\xAF\xBF\xED");
+	status += CHECK_STRING(buffer, "0102AAAF");
+	status += CHECK_RESULT(result, 8);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%-^10.4R", "\x01\x02\xAA\xAF\xBF\xED");
+	status += CHECK_STRING(buffer, "0102AAAF  ");
+	status += CHECK_RESULT(result, 10);
+
+	return status;
+}
+
 int main()
 {
 	return test_simple() + test_int() + test_uint() + test_float() + test_char() + test_string() + test_pointer() + test_result() +
-		   test_overflow() + test_error();
+		   test_overflow() + test_error() + test_hex();
 }
