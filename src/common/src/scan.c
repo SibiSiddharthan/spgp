@@ -992,6 +992,11 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 				break;
 			}
 
+			if ((config.data == &config.suppress) && ((config.flags & SCAN_SUPPRESS_INPUT) == 0) )
+			{
+				break;
+			}
+
 			config.result = processed;
 			count = scan_arg(buffer, &config);
 

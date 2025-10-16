@@ -1194,6 +1194,10 @@ uint32_t test_suppress(void)
 	byte_t c = 0;
 	uint32_t n = 0;
 
+	result = sscan("123 567", 7, "%*u%n%u", &n, NULL);
+	status += CHECK_UVALUE(n, 3);
+	status += CHECK_RESULT(result, 0);
+
 	result = sscan("123 567", 7, "%*u%n%u", &n, &a);
 	status += CHECK_UVALUE(a, 567);
 	status += CHECK_UVALUE(n, 3);
