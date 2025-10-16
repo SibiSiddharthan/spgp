@@ -36,23 +36,23 @@
 
 typedef enum _scan_type
 {
-	SCAN_INT_NUMBER = 1,
+	SCAN_INT_NUMBER = 1, // i,d
 
-	SCAN_UINT_NUMBER,
-	SCAN_UINT_BINARY,
-	SCAN_UINT_OCTAL,
-	SCAN_UINT_HEX,
+	SCAN_UINT_NUMBER, // u
+	SCAN_UINT_BINARY, // b
+	SCAN_UINT_OCTAL,  // o
+	SCAN_UINT_HEX,    // x
 
-	SCAN_FLOAT_NORMAL,
-	SCAN_FLOAT_HEX,
-	SCAN_FLOAT_SCIENTIFIC,
+	SCAN_FLOAT_NORMAL,     // f
+	SCAN_FLOAT_HEX,        // a
+	SCAN_FLOAT_SCIENTIFIC, // e
 
-	SCAN_CHAR,
-	SCAN_STRING,
-	SCAN_SET,
+	SCAN_CHAR,   // c
+	SCAN_STRING, // s
+	SCAN_SET,    // []
 
-	SCAN_POINTER,
-	SCAN_RESULT,
+	SCAN_POINTER, // p
+	SCAN_RESULT,  // n
 
 	SCAN_UNKNOWN
 
@@ -992,7 +992,7 @@ uint32_t vxscan(buffer_t *buffer, const char *format, va_list list)
 				break;
 			}
 
-			if ((config.data == &config.suppress) && ((config.flags & SCAN_SUPPRESS_INPUT) == 0) )
+			if ((config.data == &config.suppress) && ((config.flags & SCAN_SUPPRESS_INPUT) == 0))
 			{
 				break;
 			}
