@@ -970,6 +970,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 uint32_t pointer_encode(byte_t buffer[32], void *ptr)
 {
 	uintptr_t value = (uintptr_t)ptr;
+	uint8_t size = 0;
 
 	*buffer++ = '0';
 	*buffer++ = 'x';
@@ -982,22 +983,33 @@ uint32_t pointer_encode(byte_t buffer[32], void *ptr)
 	if (sizeof(void *) == 8)
 	{
 		value = BSWAP_64(value);
-		print_hex(hex_lower_table, buffer, 30, &value, 8);
+		size = 8;
 	}
 	else if (sizeof(void *) == 4)
 	{
 		value = BSWAP_32(value);
-		print_hex(hex_lower_table, buffer, 30, &value, 4);
+		size = 4;
 	}
 	else // 2
 	{
 		value = BSWAP_16(value);
-		print_hex(hex_lower_table, buffer, 30, &value, 2);
+		size = 2;
 	}
 
 #ifdef _WIN32
 #	pragma warning(pop)
 #endif
+
+	for (uint8_t i = 0; i < size; ++i)
+	{
+		uint8_t a, b;
+
+		a = ((uint8_t *)&value)[i] / 16;
+		b = ((uint8_t *)&value)[i] % 16;
+
+		*buffer++ = hex_lower_table[a];
+		*buffer++ = hex_lower_table[b];
+	}
 
 	return 2 + (2 * sizeof(void *));
 }
