@@ -5,10 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <rsa.h>
 #include <sha.h>
 #include <test.h>

@@ -5,10 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
 #include <shake.h>
-
 #include <test.h>
 
 // Test vectors taken from NIST

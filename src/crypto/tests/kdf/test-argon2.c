@@ -5,9 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
-
 #include <argon2.h>
 #include <test.h>
 

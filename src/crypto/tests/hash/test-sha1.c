@@ -5,10 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
 #include <sha.h>
-
 #include <test.h>
 
 int32_t sha1_test_suite(void)

@@ -5,9 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
-
 #include <drbg.h>
 #include <test.h>
 #include <unused.h>

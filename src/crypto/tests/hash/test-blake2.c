@@ -5,10 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
 #include <blake2.h>
-
 #include <test.h>
 
 // See RFC 7693 : The BLAKE2 Cryptographic Hash and Message Authentication Code, Appendix E
