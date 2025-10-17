@@ -143,6 +143,33 @@ size_t writeline(buffer_t *buffer, void *in, size_t size, byte_t crlf)
 	return required_size;
 }
 
+void memory_buffer_init(buffer_t *buffer, size_t size)
+{
+	size_t min_size = 256;
+
+	memset(buffer, 0, sizeof(buffer_t));
+
+	while (min_size < size)
+	{
+		min_size *= 2;
+	}
+
+	buffer->size = min_size;
+	buffer->data = malloc(buffer->size);
+	buffer->write = memory_buffer_write;
+
+	if (buffer->data != NULL)
+	{
+		memset(buffer->data, 0, buffer->size);
+	}
+}
+
+void memory_buffer_free(buffer_t *buffer)
+{
+	free(buffer->data);
+	memset(buffer, 0, sizeof(buffer_t));
+}
+
 size_t memory_buffer_write(buffer_t *buffer, size_t size)
 {
 	size_t old_size = buffer->size;

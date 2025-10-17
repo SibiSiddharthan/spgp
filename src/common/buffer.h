@@ -223,6 +223,8 @@ size_t peekline(buffer_t *buffer, void *out, size_t size);
 size_t readline(buffer_t *buffer, void *out, size_t size);
 size_t writeline(buffer_t *buffer, void *in, size_t size, byte_t crlf);
 
+void memory_buffer_init(buffer_t *buffer, size_t size);
+void memory_buffer_free(buffer_t *buffer);
 size_t memory_buffer_write(buffer_t *buffer, size_t size);
 
 #define CHECK_READ(read, error) \
