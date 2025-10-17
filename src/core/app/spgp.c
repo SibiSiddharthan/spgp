@@ -14,11 +14,6 @@
 #include <os.h>
 #include <io.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
 spgp_command command = {0};
 
 static const char *version = "\

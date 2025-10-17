@@ -12,10 +12,6 @@
 #include <pgp/signature.h>
 #include <pgp/crypto.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #define IS_NUM(c)   ((c) >= 48 && (c) <= 57)
 #define TO_NUM(c)   ((c) - 48)
 #define TO_UPPER(c) ((c) & ~0x20)

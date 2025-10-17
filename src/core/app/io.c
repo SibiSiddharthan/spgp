@@ -10,10 +10,6 @@
 
 #include <pgp/packet.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 static status_t spgp_read_disk_file(handle_t handle, size_t size, void **buffer, size_t *result)
 {
 	status_t status = 0;

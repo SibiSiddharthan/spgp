@@ -10,10 +10,6 @@
 
 #include <pgp/packet.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 pgp_stream_t *spgp_preprocess_stream(pgp_stream_t *stream)
 {
 	// First collate any partials

@@ -14,10 +14,6 @@
 #include <pgp/seipd.h>
 #include <pgp/signature.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 static pgp_stream_t *spgp_encrypt_sed(pgp_key_packet **keys, uint32_t recipient_count, void **passphrases, uint32_t passphrase_count,
 									  pgp_symmetric_key_algorithms algorithm, pgp_stream_t *stream)
 {

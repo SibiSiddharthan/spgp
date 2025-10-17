@@ -29,6 +29,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
 
 // Configuration
 #define SPGP_DEFAULT_HOME ".spgp"
