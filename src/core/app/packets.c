@@ -64,7 +64,7 @@ void spgp_list_packets(void)
 			return;
 		}
 
-		pgp_packet_stream_print(stream, str, 65536, options);
+		// pgp_packet_stream_print(stream, str, 65536, options);
 		pgp_stream_delete(stream, pgp_packet_delete);
 		printf("%s", str);
 	}

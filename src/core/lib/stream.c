@@ -642,7 +642,7 @@ size_t pgp_packet_stream_octets(pgp_stream_t *stream)
 	return size;
 }
 
-size_t pgp_packet_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options)
+size_t pgp_packet_stream_print(pgp_stream_t *stream, buffer_t *buffer, uint32_t indent, uint16_t options)
 {
 	size_t pos = 0;
 
@@ -650,11 +650,11 @@ size_t pgp_packet_stream_print(pgp_stream_t *stream, void *buffer, size_t size, 
 	{
 		if (options & PGP_PRINT_HEADER_ONLY)
 		{
-			pos += pgp_packet_header_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos);
+			pos += pgp_packet_header_print(stream->packets[i], buffer, indent);
 			continue;
 		}
 
-		pos += pgp_packet_print(stream->packets[i], PTR_OFFSET(buffer, pos), size - pos, options & PGP_PRINT_MPI_MINIMAL);
+		pos += pgp_packet_print(stream->packets[i], buffer, indent, options & PGP_PRINT_MPI_MINIMAL);
 	}
 
 	return pos;

@@ -41,7 +41,7 @@ pgp_error_t pgp_packet_stream_read_armor(pgp_stream_t **stream, void *buffer, ui
 pgp_error_t pgp_packet_stream_write_armor(pgp_stream_t *stream, armor_options *options, void **buffer, size_t *size);
 
 size_t pgp_packet_stream_octets(pgp_stream_t *stream);
-size_t pgp_packet_stream_print(pgp_stream_t *stream, void *buffer, size_t size, uint16_t options);
+size_t pgp_packet_stream_print(pgp_stream_t *stream, buffer_t *buffer, uint32_t indent, uint16_t options);
 
 pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream);
 pgp_stream_t *pgp_packet_stream_filter_marker_packets(pgp_stream_t *stream);
