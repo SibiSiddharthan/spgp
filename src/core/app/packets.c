@@ -8,10 +8,6 @@
 #include <spgp.h>
 #include <pgp/packet.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 void spgp_dearmor(void)
 {
 	pgp_stream_t *stream = NULL;
@@ -35,9 +31,9 @@ void spgp_dearmor(void)
 void spgp_list_packets(void)
 {
 	pgp_stream_t *stream = NULL;
-
-	char str[65536] = {0};
+	buffer_t buffer = {0};
 	uint16_t options = 0;
+	size_t result = 0;
 
 	if (command.list_packets == 1 && command.dump_packets == 0)
 	{
@@ -64,8 +60,13 @@ void spgp_list_packets(void)
 			return;
 		}
 
-		// pgp_packet_stream_print(stream, str, 65536, options);
+		memory_buffer_init(&buffer, 4096);
+
+		pgp_packet_stream_print(stream, &buffer, 0, options);
 		pgp_stream_delete(stream, pgp_packet_delete);
-		printf("%s", str);
+
+		OS_CALL(os_write(STDOUT_HANDLE, buffer.data, buffer.size, &result), printf("Unable to write to stdout"));
+
+		memory_buffer_free(&buffer);
 	}
 }
