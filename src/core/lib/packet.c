@@ -921,64 +921,64 @@ size_t pgp_packet_write(void *packet, void *ptr, size_t size)
 	}
 }
 
-size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options)
+size_t pgp_packet_print(void *packet, buffer_t *buffer, uint32_t indent, uint32_t options)
 {
 	pgp_packet_header *header = packet;
 	pgp_packet_type ptype = pgp_packet_type_from_tag(header->tag);
 
 	if (header->partial_continue || header->partial_end)
 	{
-		return pgp_partial_packet_print(packet, str, size);
+		return pgp_partial_packet_print(packet, buffer, indent);
 	}
 
 	switch (ptype)
 	{
 	case PGP_PKESK:
-		return pgp_pkesk_packet_print(packet, str, size, options);
+		return pgp_pkesk_packet_print(packet, buffer, indent, options);
 	case PGP_SIG:
-		return pgp_signature_packet_print(packet, str, size, options);
+		return pgp_signature_packet_print(packet, buffer, indent, options);
 	case PGP_SKESK:
-		return pgp_skesk_packet_print(packet, str, size);
+		return pgp_skesk_packet_print(packet, buffer, indent);
 	case PGP_OPS:
-		return pgp_one_pass_signature_packet_print(packet, str, size);
+		return pgp_one_pass_signature_packet_print(packet, buffer, indent);
 	case PGP_SECKEY:
-		return pgp_secret_key_packet_print(packet, str, size, options);
+		return pgp_secret_key_packet_print(packet, buffer, indent, options);
 	case PGP_PUBKEY:
-		return pgp_public_key_packet_print(packet, str, size, options);
+		return pgp_public_key_packet_print(packet, buffer, indent, options);
 	case PGP_SECSUBKEY:
-		return pgp_secret_key_packet_print(packet, str, size, options);
+		return pgp_secret_key_packet_print(packet, buffer, indent, options);
 	case PGP_COMP:
-		return pgp_compressed_packet_print(packet, str, size);
+		return pgp_compressed_packet_print(packet, buffer, indent);
 	case PGP_SED:
-		return pgp_sed_packet_print(packet, str, size);
+		return pgp_sed_packet_print(packet, buffer, indent);
 	case PGP_MARKER:
-		return pgp_marker_packet_print(packet, str, size);
+		return pgp_marker_packet_print(packet, buffer, indent);
 	case PGP_LIT:
-		return pgp_literal_packet_print(packet, str, size);
+		return pgp_literal_packet_print(packet, buffer, indent);
 	case PGP_TRUST:
-		return pgp_trust_packet_print(packet, str, size);
+		return pgp_trust_packet_print(packet, buffer, indent);
 	case PGP_UID:
-		return pgp_user_id_packet_print(packet, str, size);
+		return pgp_user_id_packet_print(packet, buffer, indent);
 	case PGP_PUBSUBKEY:
-		return pgp_public_key_packet_print(packet, str, size, options);
+		return pgp_public_key_packet_print(packet, buffer, indent, options);
 	case PGP_UAT:
-		return pgp_user_attribute_packet_print(packet, str, size);
+		return pgp_user_attribute_packet_print(packet, buffer, indent);
 	case PGP_SEIPD:
-		return pgp_seipd_packet_print(packet, str, size);
+		return pgp_seipd_packet_print(packet, buffer, indent);
 	case PGP_MDC:
-		return pgp_mdc_packet_print(packet, str, size);
+		return pgp_mdc_packet_print(packet, buffer, indent);
 	case PGP_AEAD:
-		return pgp_aead_packet_print(packet, str, size);
+		return pgp_aead_packet_print(packet, buffer, indent);
 	case PGP_PADDING:
-		return pgp_padding_packet_print(packet, str, size);
+		return pgp_padding_packet_print(packet, buffer, indent);
 	case PGP_KEYDEF:
-		return pgp_key_packet_print(packet, str, size, options);
+		return pgp_key_packet_print(packet, buffer, indent, options);
 	case PGP_KEYRING:
-		return pgp_keyring_packet_print(packet, str, size);
+		return pgp_keyring_packet_print(packet, buffer, indent);
 	case PGP_ARMOR:
-		return pgp_armor_packet_print(packet, str, size);
+		return pgp_armor_packet_print(packet, buffer, indent);
 	default:
-		return pgp_unknown_packet_print(packet, str, size);
+		return pgp_unknown_packet_print(packet, buffer, indent);
 	}
 }
 
