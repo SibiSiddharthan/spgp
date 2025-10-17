@@ -113,7 +113,7 @@ pgp_error_t pgp_pkesk_packet_session_key_decrypt(pgp_pkesk_packet *packet, pgp_k
 
 pgp_error_t pgp_pkesk_packet_read(pgp_pkesk_packet **packet, void *data, size_t size);
 size_t pgp_pkesk_packet_write(pgp_pkesk_packet *packet, void *ptr, size_t size);
-size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, void *str, size_t size, uint32_t options);
+size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 // Symmetric Key Encrypted Session Key Packet (Tag 3)
 pgp_error_t pgp_skesk_packet_new(pgp_skesk_packet **packet, byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
@@ -127,6 +127,6 @@ pgp_error_t pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void 
 
 pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t size);
 size_t pgp_skesk_packet_write(pgp_skesk_packet *packet, void *ptr, size_t size);
-size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, void *str, size_t size);
+size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32_t indent);
 
 #endif

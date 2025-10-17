@@ -301,7 +301,7 @@ typedef struct _pgp_signature_packet pgp_signature_packet;
 
 pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t size);
 uint32_t pgp_packet_header_write(pgp_packet_header *header, void *ptr);
-size_t pgp_packet_header_print(pgp_packet_header *header, void *str, size_t size);
+size_t pgp_packet_header_print(pgp_packet_header *header, buffer_t *buffer, uint32_t indent);
 
 pgp_error_t pgp_subpacket_header_read(pgp_subpacket_header *header, void *data, size_t size);
 uint32_t pgp_subpacket_header_write(pgp_subpacket_header *header, void *ptr);
@@ -318,7 +318,7 @@ pgp_packet_type pgp_packet_type_from_tag(byte_t tag);
 
 pgp_error_t pgp_packet_read(void **packet, void *data, size_t size);
 size_t pgp_packet_write(void *packet, void *ptr, size_t size);
-size_t pgp_packet_print(void *packet, void *str, size_t size, uint32_t options);
+size_t pgp_packet_print(void *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 void pgp_packet_delete(void *packet);
 
@@ -327,7 +327,7 @@ void pgp_partial_packet_delete(pgp_partial_packet *packet);
 
 pgp_error_t pgp_partial_packet_read(void **packet, void *data, size_t size);
 size_t pgp_partial_packet_write(pgp_partial_packet *packet, void *ptr, size_t size);
-size_t pgp_partial_packet_print(pgp_partial_packet *packet, void *str, size_t size);
+size_t pgp_partial_packet_print(pgp_partial_packet *packet, buffer_t *buffer, uint32_t indent);
 
 pgp_error_t pgp_data_packet_collate(pgp_data_packet *packet);
 pgp_error_t pgp_data_packet_split(pgp_data_packet *packet, byte_t split);
@@ -344,7 +344,7 @@ pgp_error_t pgp_compressed_packet_split(pgp_compresed_packet *packet, byte_t spl
 
 pgp_error_t pgp_compressed_packet_read(pgp_compresed_packet **packet, void *data, size_t size);
 size_t pgp_compressed_packet_write(pgp_compresed_packet *packet, void *ptr, size_t size);
-size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, void *str, size_t size);
+size_t pgp_compressed_packet_print(pgp_compresed_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Marker Packet (Tag 10)
 pgp_error_t pgp_marker_packet_new(pgp_marker_packet **packet, byte_t header_format);
@@ -352,7 +352,7 @@ void pgp_marker_packet_delete(pgp_marker_packet *packet);
 
 pgp_error_t pgp_marker_packet_read(pgp_marker_packet **packet, void *data, size_t size);
 size_t pgp_marker_packet_write(pgp_marker_packet *packet, void *ptr, size_t size);
-size_t pgp_marker_packet_print(pgp_marker_packet *packet, void *str, size_t size);
+size_t pgp_marker_packet_print(pgp_marker_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Literal Data Packet (Tag 11)
 pgp_error_t pgp_literal_packet_new(pgp_literal_packet **packet, byte_t header_format, uint32_t date, void *filename, byte_t filename_size);
@@ -370,7 +370,7 @@ pgp_error_t pgp_literal_packet_cleartext_decode(pgp_literal_packet **packet, voi
 
 pgp_error_t pgp_literal_packet_read(pgp_literal_packet **packet, void *data, size_t size);
 size_t pgp_literal_packet_write(pgp_literal_packet *packet, void *ptr, size_t size);
-size_t pgp_literal_packet_print(pgp_literal_packet *packet, void *str, size_t size);
+size_t pgp_literal_packet_print(pgp_literal_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // User ID Packet (Tag 13)
 uint32_t pgp_user_id_generate(void *buffer, uint32_t size, void *user_name, uint16_t user_name_size, void *user_comment,
@@ -381,7 +381,7 @@ void pgp_user_id_packet_delete(pgp_user_id_packet *packet);
 
 pgp_error_t pgp_user_id_packet_read(pgp_user_id_packet **packet, void *data, size_t size);
 size_t pgp_user_id_packet_write(pgp_user_id_packet *packet, void *ptr, size_t size);
-size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, void *str, size_t size);
+size_t pgp_user_id_packet_print(pgp_user_id_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // User Attribute Packet (Tag 17)
 pgp_error_t pgp_user_attribute_packet_new(pgp_user_attribute_packet **packet);
@@ -395,7 +395,7 @@ pgp_error_t pgp_user_attribute_packet_set_uid(pgp_user_attribute_packet *packet,
 
 pgp_error_t pgp_user_attribute_packet_read(pgp_user_attribute_packet **packet, void *data, size_t size);
 size_t pgp_user_attribute_packet_write(pgp_user_attribute_packet *packet, void *ptr, size_t size);
-size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, void *str, size_t size);
+size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Padding Packet (Tag 21)
 pgp_error_t pgp_padding_packet_new(pgp_padding_packet **packet, void *data, uint32_t size);
@@ -403,7 +403,7 @@ void pgp_padding_packet_delete(pgp_padding_packet *packet);
 
 pgp_error_t pgp_padding_packet_read(pgp_padding_packet **packet, void *data, size_t size);
 size_t pgp_padding_packet_write(pgp_padding_packet *packet, void *ptr, size_t size);
-size_t pgp_padding_packet_print(pgp_padding_packet *packet, void *str, size_t size);
+size_t pgp_padding_packet_print(pgp_padding_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Modification Detection Code Packet (Tag 19)
 pgp_error_t pgp_mdc_packet_new(pgp_mdc_packet **packet, byte_t hash[20]);
@@ -411,7 +411,7 @@ void pgp_mdc_packet_delete(pgp_mdc_packet *packet);
 
 pgp_error_t pgp_mdc_packet_read(pgp_mdc_packet **packet, void *data, size_t size);
 size_t pgp_mdc_packet_write(pgp_mdc_packet *packet, void *ptr, size_t size);
-size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, void *str, size_t size);
+size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Trust Packet (Tag 12)
 pgp_error_t pgp_trust_packet_new(pgp_trust_packet **packet, byte_t header_format, byte_t trust_level);
@@ -419,7 +419,7 @@ void pgp_trust_packet_delete(pgp_trust_packet *packet);
 
 pgp_error_t pgp_trust_packet_read(pgp_trust_packet **packet, void *data, size_t size);
 size_t pgp_trust_packet_write(pgp_trust_packet *packet, void *ptr, size_t size);
-size_t pgp_trust_packet_print(pgp_trust_packet *packet, void *str, size_t size);
+size_t pgp_trust_packet_print(pgp_trust_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Keyring Packet
 pgp_error_t pgp_keyring_packet_new(pgp_keyring_packet **packet, byte_t key_version,
@@ -436,18 +436,18 @@ pgp_user_info *pgp_keyring_packet_search(pgp_keyring_packet *packet, void *input
 
 pgp_error_t pgp_keyring_packet_read(pgp_keyring_packet **packet, void *data, size_t size);
 size_t pgp_keyring_packet_write(pgp_keyring_packet *packet, void *ptr, size_t size);
-size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, void *str, size_t size);
+size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Armor Packet
 pgp_error_t pgp_armor_packet_new(pgp_armor_packet **packet, void *marker, uint16_t marker_size, void *headers, uint16_t headers_size);
 void pgp_armor_packet_delete(pgp_armor_packet *packet);
 
-size_t pgp_armor_packet_print(pgp_armor_packet *packet, void *str, size_t size);
+size_t pgp_armor_packet_print(pgp_armor_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // Unknown Packet
 pgp_error_t pgp_unknown_packet_read(pgp_unknown_packet **packet, void *data, size_t size);
 size_t pgp_unknown_packet_write(pgp_unknown_packet *packet, void *ptr, size_t size);
-size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, void *str, size_t size);
+size_t pgp_unknown_packet_print(pgp_unknown_packet *packet, buffer_t *buffer, uint32_t indent);
 
 // User Info
 pgp_error_t pgp_user_info_new(pgp_user_info **info, void *uid, uint32_t uid_size, void *server, uint32_t server_size, byte_t trust,

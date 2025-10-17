@@ -350,7 +350,7 @@ void pgp_one_pass_signature_packet_delete(pgp_one_pass_signature_packet *packet)
 
 pgp_error_t pgp_one_pass_signature_packet_read(pgp_one_pass_signature_packet **packet, void *data, size_t size);
 size_t pgp_one_pass_signature_packet_write(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
-size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, void *ptr, size_t size);
+size_t pgp_one_pass_signature_packet_print(pgp_one_pass_signature_packet *packet, buffer_t *buffer, uint32_t indent);
 
 pgp_error_t pgp_signature_packet_new(pgp_signature_packet **packet, byte_t version, byte_t type, byte_t public_key_algorithm_id,
 									 byte_t hash_algorithm_id);
@@ -358,7 +358,7 @@ void pgp_signature_packet_delete(pgp_signature_packet *packet);
 
 pgp_error_t pgp_signature_packet_read(pgp_signature_packet **packet, void *data, size_t size);
 size_t pgp_signature_packet_write(pgp_signature_packet *packet, void *ptr, size_t size);
-size_t pgp_signature_packet_print(pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
+size_t pgp_signature_packet_print(pgp_signature_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 pgp_signature_creation_time_subpacket *pgp_signature_creation_time_subpacket_new(uint32_t timestamp);
 void pgp_signature_creation_time_subpacket_delete(pgp_signature_creation_time_subpacket *subpacket);

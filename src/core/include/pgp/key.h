@@ -218,15 +218,15 @@ pgp_error_t pgp_key_packet_decrypt_check(pgp_key_packet *packet, void *passphras
 
 pgp_error_t pgp_public_key_packet_read(pgp_key_packet **packet, void *data, size_t size);
 size_t pgp_public_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
-size_t pgp_public_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
+size_t pgp_public_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 pgp_error_t pgp_secret_key_packet_read(pgp_key_packet **packet, void *data, size_t size);
 size_t pgp_secret_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
-size_t pgp_secret_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
+size_t pgp_secret_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 pgp_error_t pgp_key_packet_read(pgp_key_packet **packet, void *data, size_t size);
 size_t pgp_key_packet_write(pgp_key_packet *packet, void *ptr, size_t size);
-size_t pgp_key_packet_print(pgp_key_packet *packet, void *str, size_t size, uint32_t options);
+size_t pgp_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 byte_t pgp_key_fingerprint_size(byte_t version);
 

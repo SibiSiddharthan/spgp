@@ -76,7 +76,7 @@ pgp_error_t pgp_sed_packet_split(pgp_sed_packet *packet, byte_t split);
 
 pgp_error_t pgp_sed_packet_read(pgp_sed_packet **packet, void *data, size_t size);
 size_t pgp_sed_packet_write(pgp_sed_packet *packet, void *ptr, size_t size);
-size_t pgp_sed_packet_print(pgp_sed_packet *packet, void *str, size_t size);
+size_t pgp_sed_packet_print(pgp_sed_packet *packet, buffer_t *buffer, uint32_t indent);
 
 pgp_error_t pgp_seipd_packet_new(pgp_seipd_packet **packet, byte_t version, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id,
 								 byte_t chunk_size);
@@ -91,7 +91,7 @@ pgp_error_t pgp_seipd_packet_split(pgp_seipd_packet *packet, byte_t split);
 
 pgp_error_t pgp_seipd_packet_read(pgp_seipd_packet **packet, void *data, size_t size);
 size_t pgp_seipd_packet_write(pgp_seipd_packet *packet, void *ptr, size_t size);
-size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, void *str, size_t size);
+size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, buffer_t *buffer, uint32_t indent);
 
 pgp_error_t pgp_aead_packet_new(pgp_aead_packet **packet, byte_t symmetric_key_algorithm_id, byte_t aead_algorithm_id, byte_t chunk_size);
 void pgp_aead_packet_delete(pgp_aead_packet *packet);
@@ -105,6 +105,6 @@ pgp_error_t pgp_aead_packet_split(pgp_aead_packet *packet, byte_t split);
 
 pgp_error_t pgp_aead_packet_read(pgp_aead_packet **packet, void *data, size_t size);
 size_t pgp_aead_packet_write(pgp_aead_packet *packet, void *ptr, size_t size);
-size_t pgp_aead_packet_print(pgp_aead_packet *packet, void *str, size_t size);
+size_t pgp_aead_packet_print(pgp_aead_packet *packet, buffer_t *buffer, uint32_t indent);
 
 #endif
