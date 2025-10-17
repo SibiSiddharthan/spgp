@@ -46,10 +46,10 @@ static size_t print_key(buffer_t *buffer, uint32_t indent, void *data, size_t si
 {
 	if (size == PGP_KEY_ID_SIZE)
 	{
-		return print_format(buffer, indent, "Key ID: %^R", data, size);
+		return print_format(buffer, indent, "Key ID: %^R\n", data, size);
 	}
 
-	return print_format(buffer, indent, "Key Fingerprint: %^R", data, size);
+	return print_format(buffer, indent, "Key Fingerprint: %^R\n", data, size);
 }
 
 static size_t print_mpi(buffer_t *buffer, uint32_t indent, char *prefix, mpi_t *mpi, uint32_t options)
