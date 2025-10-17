@@ -18,9 +18,6 @@
 #include <string.h>
 #include <time.h>
 
-static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-static const char hex_upper_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-
 static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
 
 static size_t print_indent(buffer_t *buffer, uint32_t indent)
@@ -39,38 +36,6 @@ static size_t print_format(buffer_t *buffer, uint32_t indent, const char *format
 	pos += vxprint(buffer, format, args);
 
 	va_end(args);
-
-	return pos;
-}
-
-static size_t print_hex(const char *table, void *str, void *data, size_t data_size)
-{
-	byte_t *out = str;
-	size_t pos = 0;
-
-	for (uint32_t i = 0; i < data_size; ++i)
-	{
-		byte_t a, b;
-
-		a = ((byte_t *)data)[i] / 16;
-		b = ((byte_t *)data)[i] % 16;
-
-		out[pos++] = table[a];
-		out[pos++] = table[b];
-	}
-
-	out[pos++] = '\n';
-
-	return pos;
-}
-
-static size_t print_bytes(uint32_t indent, char *prefix, void *str, size_t str_size, void *data, size_t data_size)
-{
-	size_t pos = 0;
-
-	// Print prefix
-	// pos += print_format(indent, buffer, "%s", prefix);
-	pos += print_hex(hex_lower_table, PTR_OFFSET(str, pos), data, data_size);
 
 	return pos;
 }
