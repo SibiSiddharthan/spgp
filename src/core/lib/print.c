@@ -5,6 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <pgp/pgp.h>
 #include <pgp/algorithms.h>
 #include <pgp/packet.h>
@@ -18,7 +20,7 @@
 #include <string.h>
 #include <time.h>
 
-static size_t pgp_signature_packet_body_print(uint32_t indent, pgp_signature_packet *packet, void *ptr, size_t size, uint32_t options);
+static size_t pgp_signature_packet_body_print(pgp_signature_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 static size_t print_indent(buffer_t *buffer, uint32_t indent)
 {
@@ -1601,7 +1603,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, u
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
 	{
 		pgp_embedded_signature_subpacket *embedded_subpacket = subpacket;
-		pos += pgp_signature_packet_body_print(indent + 1, embedded_subpacket, buffer, options);
+		pos += pgp_signature_packet_body_print(embedded_subpacket, buffer, indent + 1, options);
 	}
 	break;
 	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
@@ -1832,7 +1834,7 @@ static size_t pgp_signature_packet_body_print(pgp_signature_packet *packet, buff
 
 		if (packet->version == PGP_SIGNATURE_V6)
 		{
-			pos += print_format(indent, "Salt: %R\n", packet->salt, packet->salt_size);
+			pos += print_format(buffer, indent, "Salt: %R\n", packet->salt, packet->salt_size);
 		}
 
 		pos += pgp_signature_print(packet->public_key_algorithm_id, packet->signature, packet->signature_octets, buffer, indent, options);
@@ -2168,20 +2170,20 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, buffer
 			uint32_t image_size = image_subpacket->header.body_size - 16;
 
 			pos += print_format(buffer, indent + 1, "User Attribute Image Subpacket (Tag 1)\n");
-			pos += print_format(2, buffer, "Image Header Version: %hhu\n", image_subpacket->image_header_version);
+			pos += print_format(buffer, indent + 2, "Image Header Version: %hhu\n", image_subpacket->image_header_version);
 
 			switch (image_subpacket->image_encoding)
 			{
 			case PGP_USER_ATTRIBUTE_IMAGE_JPEG:
 			{
-				pos += print_format(2, buffer, "Image Encoding: JPEG (Tag 1)\n");
+				pos += print_format(buffer, indent + 2, "Image Encoding: JPEG (Tag 1)\n");
 			}
 			break;
 			default:
-				pos += print_format(2, buffer, "Unknown Image Encoding (Tag %hhu)\n", image_subpacket->image_encoding);
+				pos += print_format(buffer, indent + 2, "Unknown Image Encoding (Tag %hhu)\n", image_subpacket->image_encoding);
 			}
 
-			pos += print_format(2, buffer, "Image Size: %u bytes\n", image_size);
+			pos += print_format(buffer, indent + 2, "Image Size: %u bytes\n", image_size);
 		}
 		break;
 		case PGP_USER_ATTRIBUTE_UID:
@@ -2190,7 +2192,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, buffer
 			uint32_t uid_size = uid_subpacket->header.body_size;
 
 			pos += print_format(buffer, indent + 1, "User Attribute Image User ID Subpacket (Tag 2)\n");
-			pos += print_format(2, buffer, "User ID: %.*s\n", uid_size, uid_subpacket->user_data);
+			pos += print_format(buffer, indent + 2, "User ID: %.*s\n", uid_size, uid_subpacket->user_data);
 		}
 		break;
 		default:
