@@ -75,56 +75,33 @@ static size_t print_bytes(uint32_t indent, char *prefix, void *str, size_t str_s
 	return pos;
 }
 
-static size_t print_key(uint32_t indent, void *str, size_t str_size, void *data, size_t data_size)
+static size_t print_key(buffer_t *buffer, uint32_t indent, void *data, size_t size)
 {
-	size_t pos = 0;
-
-	switch (data_size)
+	if (size == PGP_KEY_ID_SIZE)
 	{
-	case PGP_KEY_ID_SIZE:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key ID: ");
-		break;
-	case PGP_KEY_V3_FINGERPRINT_SIZE:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
-		break;
-	case PGP_KEY_V4_FINGERPRINT_SIZE:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
-		break;
-	case PGP_KEY_V6_FINGERPRINT_SIZE:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
-		break;
-	default:
-		pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "Key Fingerprint: ");
-		break;
+		return print_format(buffer, indent, "Key ID: %^R", data, size);
 	}
 
-	pos += print_hex(hex_upper_table, PTR_OFFSET(str, pos), data, data_size);
-
-	return pos;
+	return print_format(buffer, indent, "Key Fingerprint: %^R", data, size);
 }
 
-static size_t print_mpi(uint32_t indent, char *prefix, mpi_t *mpi, void *str, size_t str_size, uint32_t options)
+static size_t print_mpi(buffer_t *buffer, uint32_t indent, char *prefix, mpi_t *mpi, uint32_t options)
 {
-	size_t pos = 0;
-
 	if (options & PGP_PRINT_MPI_MINIMAL)
 	{
-		return print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s (%hu bits): ...\n", prefix, mpi->bits);
+		return print_format(buffer, indent, "%s (%hu bits): ...\n", prefix, mpi->bits);
 	}
 
-	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s (%hu bits): ", prefix, mpi->bits);
-	pos += print_hex(hex_lower_table, PTR_OFFSET(str, pos), mpi->bytes, CEIL_DIV(mpi->bits, 8));
-
-	return pos;
+	return print_format(buffer, indent, "%s (%hu bits): %R\n", prefix, mpi->bits, mpi->bytes, CEIL_DIV(mpi->bits, 8));
 }
 
-static size_t print_timestamp(uint32_t indent, char *prefix, time_t timestamp, void *str, size_t str_size)
+static size_t print_timestamp(buffer_t *buffer, uint32_t indent, char *prefix, time_t timestamp)
 {
 	size_t pos = 0;
 	char date_buffer[64] = {0};
 
 	strftime(date_buffer, 64, "%B %d, %Y, %I:%M:%S %p (%z)", localtime(&timestamp));
-	pos += print_format(indent, PTR_OFFSET(str, pos), str_size - pos, "%s: %s\n", prefix, date_buffer);
+	pos += print_format(buffer, indent, "%s: %s\n", prefix, date_buffer);
 
 	return pos;
 }
