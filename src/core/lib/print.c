@@ -601,17 +601,17 @@ static size_t pgp_s2k_print(pgp_s2k *s2k, buffer_t *buffer, uint32_t indent)
 	case PGP_S2K_SALTED:
 		pos += xprint(buffer, "Salted S2K (Tag 1)\n");
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, buffer, indent + 1);
-		pos += print_format(buffer, indent + 1, "Salt: %R", buffer, s2k->salted.salt, 8);
+		pos += print_format(buffer, indent + 1, "Salt: %R", s2k->salted.salt, 8);
 		break;
 	case PGP_S2K_ITERATED:
 		pos += xprint(buffer, "Iterated and Salted S2K (Tag 3)\n");
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, buffer, indent + 1);
-		pos += print_format(buffer, indent + 1, "Salt: %R", buffer, s2k->iterated.salt, 8);
+		pos += print_format(buffer, indent + 1, "Salt: %R", s2k->iterated.salt, 8);
 		pos += print_format(buffer, indent + 1, "Count: %u (Code %hhu)\n", IT_COUNT(s2k->iterated.count), s2k->iterated.count);
 		break;
 	case PGP_S2K_ARGON2:
 		pos += xprint(buffer, "Argon2 S2K (Tag 4)\n");
-		pos += print_format(buffer, indent + 1, "Salt: %R", buffer, s2k->argon2.salt, 16);
+		pos += print_format(buffer, indent + 1, "Salt: %R", s2k->argon2.salt, 16);
 		pos += print_format(buffer, indent + 1, "Iterations: %hhu\n", s2k->argon2.t);
 		pos += print_format(buffer, indent + 1, "Parallelism: %hhu\n", s2k->argon2.p);
 		pos += print_format(buffer, indent + 1, "Memory: %hhu\n", s2k->argon2.m);
@@ -1689,7 +1689,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, u
 	{
 		pgp_literal_data_meta_hash_subpacket *meta_subpacket = subpacket;
 		pos += print_format(buffer, indent + 1, "Octet: %hhu\n", meta_subpacket->octet);
-		pos += print_format(buffer, indent + 1, "SHA256 Hash: %R\n", buffer, meta_subpacket->hash, 32);
+		pos += print_format(buffer, indent + 1, "SHA256 Hash: %R\n", meta_subpacket->hash, 32);
 	}
 	break;
 	case PGP_TRUST_ALIAS_SUBPACKET:

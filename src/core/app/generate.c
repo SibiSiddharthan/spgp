@@ -11,11 +11,6 @@
 #include <pgp/signature.h>
 #include <pgp/crypto.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
 typedef struct _key_specfication
 {
 	byte_t algorithm;
