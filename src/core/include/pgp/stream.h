@@ -44,7 +44,7 @@ size_t pgp_packet_stream_octets(pgp_stream_t *stream);
 size_t pgp_packet_stream_print(pgp_stream_t *stream, buffer_t *buffer, uint32_t indent, uint16_t options);
 
 pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream);
-pgp_stream_t *pgp_packet_stream_filter_marker_packets(pgp_stream_t *stream);
+pgp_stream_t *pgp_packet_stream_filter_armor_packets(pgp_stream_t *stream);
 pgp_stream_t *pgp_packet_stream_filter_non_exportable_signatures(pgp_stream_t *stream);
 pgp_stream_t *pgp_packet_stream_collate_partials(pgp_stream_t *stream);
 

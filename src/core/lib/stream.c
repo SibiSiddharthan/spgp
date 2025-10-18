@@ -680,7 +680,7 @@ pgp_stream_t *pgp_packet_stream_filter_padding_packets(pgp_stream_t *stream)
 	return stream;
 }
 
-pgp_stream_t *pgp_packet_stream_filter_marker_packets(pgp_stream_t *stream)
+pgp_stream_t *pgp_packet_stream_filter_armor_packets(pgp_stream_t *stream)
 {
 	pgp_packet_header *header = NULL;
 
@@ -688,7 +688,7 @@ pgp_stream_t *pgp_packet_stream_filter_marker_packets(pgp_stream_t *stream)
 	{
 		header = stream->packets[i];
 
-		if (pgp_packet_type_from_tag(header->tag) == PGP_MARKER || pgp_packet_type_from_tag(header->tag) == PGP_ARMOR)
+		if (pgp_packet_type_from_tag(header->tag) == PGP_ARMOR)
 		{
 			pgp_stream_remove(stream, i);
 			pgp_packet_delete(header);

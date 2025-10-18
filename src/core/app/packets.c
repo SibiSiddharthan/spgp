@@ -15,7 +15,7 @@ void spgp_dearmor(void)
 	for (uint32_t i = 0; i < command.args->count; ++i)
 	{
 		stream = spgp_read_pgp_packets(command.args->data[i]);
-		stream = pgp_packet_stream_filter_marker_packets(stream);
+		stream = pgp_packet_stream_filter_armor_packets(stream);
 
 		if (command.output != NULL)
 		{
@@ -52,7 +52,7 @@ void spgp_list_packets(void)
 		// Remove the armor packets if we don't need it
 		if (command.print_armor_info == 0)
 		{
-			stream = pgp_packet_stream_filter_marker_packets(stream);
+			stream = pgp_packet_stream_filter_armor_packets(stream);
 		}
 
 		if (stream->count == 0)
