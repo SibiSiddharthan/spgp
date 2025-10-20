@@ -1022,183 +1022,158 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 
 static size_t pgp_signature_type_print(pgp_signature_type type, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Signature Type: ");
+	const char *name = NULL;
 
 	switch (type)
 	{
 	case PGP_BINARY_SIGNATURE:
-		pos += xprint(buffer, "Binary Signature (Tag 0x00)\n");
+		name = "Binary Signature";
 		break;
 	case PGP_TEXT_SIGNATURE:
-		pos += xprint(buffer, "Text Signature (Tag 0x01)\n");
+		name = "Text Signature";
 		break;
 	case PGP_STANDALONE_SIGNATURE:
-		pos += xprint(buffer, "Standalone Signature (Tag 0x02)\n");
+		name = "Standalone Signature";
 		break;
 	case PGP_GENERIC_CERTIFICATION_SIGNATURE:
-		pos += xprint(buffer, "Generic Certification Signature (Tag 0x10)\n");
+		name = "Generic Certification Signature";
 		break;
 	case PGP_PERSONA_CERTIFICATION_SIGNATURE:
-		pos += xprint(buffer, "Persona Certification Signature (Tag 0x11)\n");
+		name = "Persona Certification Signature";
 		break;
 	case PGP_CASUAL_CERTIFICATION_SIGNATURE:
-		pos += xprint(buffer, "Casual Certification Signature (Tag 0x12)\n");
+		name = "Casual Certification Signature";
 		break;
 	case PGP_POSITIVE_CERTIFICATION_SIGNATURE:
-		pos += xprint(buffer, "Positive Certification Signature (Tag 0x13)\n");
+		name = "Positive Certification Signature";
 		break;
 	case PGP_ATTESTED_KEY_SIGNATURE:
-		pos += xprint(buffer, "Attested Key Signature (Tag 0x16)\n");
+		name = "Attested Key Signature";
 		break;
 	case PGP_SUBKEY_BINDING_SIGNATURE:
-		pos += xprint(buffer, "Subkey Binding Signature (Tag 0x18)\n");
+		name = "Subkey Binding Signature";
 		break;
 	case PGP_PRIMARY_KEY_BINDING_SIGNATURE:
-		pos += xprint(buffer, "Primary Key Binding Signature (Tag 0x19)\n");
+		name = "Primary Key Binding Signature";
 		break;
 	case PGP_DIRECT_KEY_SIGNATURE:
-		pos += xprint(buffer, "Direct Key Signature (Tag 0x1F)\n");
+		name = "Direct Key Signature";
 		break;
 	case PGP_KEY_REVOCATION_SIGNATURE:
-		pos += xprint(buffer, "Key Revocation Signature (Tag 0x20)\n");
+		name = "Key Revocation Signature";
 		break;
 	case PGP_SUBKEY_REVOCATION_SIGNATURE:
-		pos += xprint(buffer, "Subkey Revocation Signature (Tag 0x28)\n");
+		name = "Subkey Revocation Signature";
 		break;
 	case PGP_CERTIFICATION_REVOCATION_SIGNATURE:
-		pos += xprint(buffer, "Certificate Revocation Signature (Tag 0x30)\n");
+		name = "Certificate Revocation Signature";
 		break;
 	case PGP_TIMESTAMP_SIGNATURE:
-		pos += xprint(buffer, "Timestamp Signature (Tag 0x40)\n");
+		name = "Timestamp Signature";
 		break;
 	case PGP_THIRD_PARTY_CONFIRMATION_SIGNATURE:
-		pos += xprint(buffer, "Third Party Confirmation Signature (Tag 0x50)\n");
+		name = "Third Party Confirmation Signature";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown Signature Type (Tag 0x%02X)\n", type);
+		name = "Unknown Signature Type";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Signature Type: %s (Tag %#^.2x)\n", name, type);
+}
+
+static const char *pgp_signature_subpacket_name(pgp_signature_subpacket_type type)
+{
+	switch (type)
+	{
+	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
+		return "Signature Creation Time";
+	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
+		return "Signature Expiration Time";
+	case PGP_EXPORTABLE_SUBPACKET:
+		return "Exportable Certification";
+	case PGP_TRUST_SIGNATURE_SUBPACKET:
+		return "Trust Signature";
+	case PGP_REGULAR_EXPRESSION_SUBPACKET:
+		return "Regular Expression";
+	case PGP_REVOCABLE_SUBPACKET:
+		return "Revocable";
+	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
+		return "Key Expiration Time";
+	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
+		return "Preferred Symmetric Ciphers";
+	case PGP_REVOCATION_KEY_SUBPACKET:
+		return "Revocation Key";
+	case PGP_ISSUER_KEY_ID_SUBPACKET:
+		return "Issuer Key ID";
+	case PGP_NOTATION_DATA_SUBPACKET:
+		return "Notation Data";
+	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
+		return "Preferred Hash Algorithms";
+	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
+		return "Preferred Compression Algorithms";
+	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
+		return "Key Server Preferences";
+	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
+		return "Preferred Key Server";
+	case PGP_PRIMARY_USER_ID_SUBPACKET:
+		return "Primary User ID";
+	case PGP_POLICY_URI_SUBPACKET:
+		return "Policy URI";
+	case PGP_KEY_FLAGS_SUBPACKET:
+		return "Key Flags";
+	case PGP_SIGNER_USER_ID_SUBPACKET:
+		return "Signer's User ID";
+	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
+		return "Reason for Revocation";
+	case PGP_FEATURES_SUBPACKET:
+		return "Features";
+	case PGP_SIGNATURE_TARGET_SUBPACKET:
+		return "Signature Target";
+	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
+		return "Embedded Signature";
+	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
+		return "Issuer Fingerprint";
+	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
+		return "Preferred Encryption Modes";
+	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
+		return "Intended Recipient Fingerprint";
+	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
+		return "Attested Certifications";
+	case PGP_KEY_BLOCK_SUBPACKET:
+		return "Key Block";
+	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
+		return "Preferred AEAD Ciphersuites";
+	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
+		return "Literal Data Mesh";
+	case PGP_TRUST_ALIAS_SUBPACKET:
+		return "Trust Alias";
+	default:
+		return "Unkown Signature Subpacket";
+	}
 }
 
 static size_t pgp_signature_subpacket_header_print(pgp_subpacket_header header, buffer_t *buffer, uint32_t indent)
 {
 	pgp_signature_subpacket_type type = header.tag & PGP_SUBPACKET_TAG_MASK;
-	size_t pos = 0;
 
-	switch (type)
-	{
-	case PGP_SIGNATURE_CREATION_TIME_SUBPACKET:
-		pos += print_format(buffer, indent, "Signature Creation Time (Tag 2)");
-		break;
-	case PGP_SIGNATURE_EXPIRY_TIME_SUBPACKET:
-		pos += print_format(buffer, indent, "Signature Expiration Time (Tag 3)");
-		break;
-	case PGP_EXPORTABLE_SUBPACKET:
-		pos += print_format(buffer, indent, "Exportable Certification (Tag 4)");
-		break;
-	case PGP_TRUST_SIGNATURE_SUBPACKET:
-		pos += print_format(buffer, indent, "Trust Signature (Tag 5)");
-		break;
-	case PGP_REGULAR_EXPRESSION_SUBPACKET:
-		pos += print_format(buffer, indent, "Regular Expression (Tag 6)");
-		break;
-	case PGP_REVOCABLE_SUBPACKET:
-		pos += print_format(buffer, indent, "Revocable (Tag 7)");
-		break;
-	case PGP_KEY_EXPIRATION_TIME_SUBPACKET:
-		pos += print_format(buffer, indent, "Key Expiration Time (Tag 9)");
-		break;
-	case PGP_PREFERRED_SYMMETRIC_CIPHERS_SUBPACKET:
-		pos += print_format(buffer, indent, "Preferred Symmetric Ciphers (Tag 11)");
-		break;
-	case PGP_REVOCATION_KEY_SUBPACKET:
-		pos += print_format(buffer, indent, "Revocation Key (Tag 12)");
-		break;
-	case PGP_ISSUER_KEY_ID_SUBPACKET:
-		pos += print_format(buffer, indent, "Issuer Key ID (Tag 16)");
-		break;
-	case PGP_NOTATION_DATA_SUBPACKET:
-		pos += print_format(buffer, indent, "Notation Data (Tag 20)");
-		break;
-	case PGP_PREFERRED_HASH_ALGORITHMS_SUBPACKET:
-		pos += print_format(buffer, indent, "Preferred Hash Algorithms (Tag 21)");
-		break;
-	case PGP_PREFERRED_COMPRESSION_ALGORITHMS_SUBPACKET:
-		pos += print_format(buffer, indent, "Preferred Compression Algorithms (Tag 22)");
-		break;
-	case PGP_KEY_SERVER_PREFERENCES_SUBPACKET:
-		pos += print_format(buffer, indent, "Key Server Preferences (Tag 23)");
-		break;
-	case PGP_PREFERRED_KEY_SERVER_SUBPACKET:
-		pos += print_format(buffer, indent, "Preferred Key Server (Tag 24)");
-		break;
-	case PGP_PRIMARY_USER_ID_SUBPACKET:
-		pos += print_format(buffer, indent, "Primary User ID (Tag 25)");
-		break;
-	case PGP_POLICY_URI_SUBPACKET:
-		pos += print_format(buffer, indent, "Policy URI (Tag 26)");
-		break;
-	case PGP_KEY_FLAGS_SUBPACKET:
-		pos += print_format(buffer, indent, "Key Flags (Tag 27)");
-		break;
-	case PGP_SIGNER_USER_ID_SUBPACKET:
-		pos += print_format(buffer, indent, "Signer's User ID (Tag 28)");
-		break;
-	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
-		pos += print_format(buffer, indent, "Reason for Revocation (Tag 29)");
-		break;
-	case PGP_FEATURES_SUBPACKET:
-		pos += print_format(buffer, indent, "Features (Tag 30)");
-		break;
-	case PGP_SIGNATURE_TARGET_SUBPACKET:
-		pos += print_format(buffer, indent, "Signature Target (Tag 31)");
-		break;
-	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
-		pos += print_format(buffer, indent, "Embedded Signature (Tag 32)");
-		break;
-	case PGP_ISSUER_FINGERPRINT_SUBPACKET:
-		pos += print_format(buffer, indent, "Issuer Fingerprint (Tag 33)");
-		break;
-	case PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET:
-		pos += print_format(buffer, indent, "Preferred Encryption Modes (Tag 33) (Deprecated)");
-		break;
-	case PGP_RECIPIENT_FINGERPRINT_SUBPACKET:
-		pos += print_format(buffer, indent, "Intended Recipient Fingerprint (Tag 35)");
-		break;
-	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
-		pos += print_format(buffer, indent, "Attested Certifications (Tag 37) (Deprecated)");
-		break;
-	case PGP_KEY_BLOCK_SUBPACKET:
-		pos += print_format(buffer, indent, "Key Block (Tag 38)");
-		break;
-	case PGP_PREFERRED_AEAD_CIPHERSUITES_SUBPACKET:
-		pos += print_format(buffer, indent, "Preferred AEAD Ciphersuites (Tag 39)");
-		break;
-	case PGP_LITERAL_DATA_META_HASH_SUBPACKET:
-		pos += print_format(buffer, indent, "Literal Data Mesh (Tag 40)");
-		break;
-	case PGP_TRUST_ALIAS_SUBPACKET:
-		pos += print_format(buffer, indent, "Trust Alias (Tag 41)");
-		break;
-	default:
-		pos += print_format(buffer, indent, "Unkown Signature Subpacket (Tag %hhu)", type);
-		break;
-	}
+	const char *name = pgp_signature_subpacket_name(type);
+	const char *critical = NULL;
+	const char *deprecated = NULL;
 
 	// Add critical bit
 	if (header.tag & 0x80)
 	{
-		pos += xprint(buffer, " (Critical)");
+		critical = " (Critical)";
 	}
 
-	// Add packet size
-	pos += xprint(buffer, " (%zu bytes)\n", header.body_size);
+	// Add deprecated notifcation
+	if (type == PGP_PREFERRED_ENCRYPTION_MODES_SUBPACKET || type == PGP_ATTESTED_CERTIFICATIONS_SUBPACKET)
+	{
+		deprecated = " (Deprecated)";
+	}
 
-	return pos;
+	return print_format(buffer, indent, "%s (Tag %hhu) (%zu bytes)%s%s\n", name, type, header.body_size, critical, deprecated);
 }
 
 static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, uint32_t indent, uint32_t options)
