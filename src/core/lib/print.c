@@ -345,145 +345,139 @@ static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, buffer_t *
 	return print_format(buffer, indent, "AEAD Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
-static size_t pgp_cipher_aead_algorithm_pair_print(pgp_symmetric_key_algorithms symmetric_algorithm, pgp_aead_algorithms aead_algorithm,
+static size_t pgp_cipher_aead_algorithm_pair_print(pgp_symmetric_key_algorithms cipher_algorithm, pgp_aead_algorithms aead_algorithm,
 												   buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
+	const char *cipher_name = NULL;
+	const char *aead_name = NULL;
 
-	pos += print_format(buffer, indent, "AEAD Ciphersuite: ");
-
-	switch (symmetric_algorithm)
+	switch (cipher_algorithm)
 	{
 	case PGP_PLAINTEXT:
-		pos += xprint(buffer, "Plaintext ");
+		cipher_name = "Plaintext";
 		break;
 	case PGP_IDEA:
-		pos += xprint(buffer, "IDEA ");
+		cipher_name = "IDEA";
 		break;
 	case PGP_TDES:
-		pos += xprint(buffer, "TDES ");
+		cipher_name = "TDES";
 		break;
 	case PGP_CAST5_128:
-		pos += xprint(buffer, "CAST5 ");
+		cipher_name = "CAST5";
 		break;
 	case PGP_BLOWFISH:
-		pos += xprint(buffer, "Blowfish ");
+		cipher_name = "Blowfish";
 		break;
 	case PGP_AES_128:
-		pos += xprint(buffer, "AES-128 ");
+		cipher_name = "AES-128";
 		break;
 	case PGP_AES_192:
-		pos += xprint(buffer, "AES-192 ");
+		cipher_name = "AES-192";
 		break;
 	case PGP_AES_256:
-		pos += xprint(buffer, "AES-256 ");
+		cipher_name = "AES-256";
 		break;
 	case PGP_TWOFISH:
-		pos += xprint(buffer, "Twofish-256 ");
+		cipher_name = "Twofish-256";
 		break;
 	case PGP_CAMELLIA_128:
-		pos += xprint(buffer, "Camellia-128 ");
+		cipher_name = "Camellia-128";
 		break;
 	case PGP_CAMELLIA_192:
-		pos += xprint(buffer, "Camellia-192 ");
+		cipher_name = "Camellia-192";
 		break;
 	case PGP_CAMELLIA_256:
-		pos += xprint(buffer, "Camellia-256 ");
+		cipher_name = "Camellia-256";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown ");
+		cipher_name = "Unknown";
 		break;
 	}
 
 	switch (aead_algorithm)
 	{
 	case PGP_AEAD_EAX:
-		pos += xprint(buffer, "EAX ");
+		aead_name = "EAX";
 		break;
 	case PGP_AEAD_OCB:
-		pos += xprint(buffer, "OCB ");
+		aead_name = "OCB";
 		break;
 	case PGP_AEAD_GCM:
-		pos += xprint(buffer, "GCM ");
+		aead_name = "GCM";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown ");
+		aead_name = "Unknown";
 		break;
 	}
 
-	pos += xprint(buffer, "(%02hhx %02hhx)\n", symmetric_algorithm, aead_algorithm);
-
-	return pos;
+	return print_format(buffer, indent, "AEAD Ciphersuite: %s %s (%hhu %hhu)\n", cipher_name, aead_name, cipher_algorithm, aead_algorithm);
 }
 
 static size_t pgp_hash_algorithm_print(pgp_hash_algorithms algorithm, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Hash Algorithm: ");
+	const char *name = NULL;
 
 	switch (algorithm)
 	{
 	case PGP_MD5:
-		pos += xprint(buffer, "MD5 (Tag 1)\n");
+		name = "MD5";
 		break;
 	case PGP_SHA1:
-		pos += xprint(buffer, "SHA-1 (Tag 2)\n");
+		name = "SHA-1";
 		break;
 	case PGP_RIPEMD_160:
-		pos += xprint(buffer, "RIPEMD-160 (Tag 3)\n");
+		name = "RIPEMD-160";
 		break;
 	case PGP_SHA2_256:
-		pos += xprint(buffer, "SHA-256 (Tag 8)\n");
+		name = "SHA-256";
 		break;
 	case PGP_SHA2_384:
-		pos += xprint(buffer, "SHA-384 (Tag 9)\n");
+		name = "SHA-384";
 		break;
 	case PGP_SHA2_512:
-		pos += xprint(buffer, "SHA-512 (Tag 10)\n");
+		name = "SHA-512";
 		break;
 	case PGP_SHA2_224:
-		pos += xprint(buffer, "SHA-224 (Tag 11)\n");
+		name = "SHA-224";
 		break;
 	case PGP_SHA3_256:
-		pos += xprint(buffer, "SHA3-256 (Tag 12)\n");
+		name = "SHA3-256";
 		break;
 	case PGP_SHA3_512:
-		pos += xprint(buffer, "SHA3-512 (Tag 14)\n");
+		name = "SHA3-512";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown Hash Algorithm (Tag %hhu)\n", algorithm);
+		name = "Unknown Hash Algorithm";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Hash Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
 static size_t pgp_compression_algorithm_print(pgp_compression_algorithms algorithm, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Compression Algorithm: ");
+	const char *name = NULL;
 
 	switch (algorithm)
 	{
 	case PGP_UNCOMPRESSED:
-		pos += xprint(buffer, "Uncompressed (Tag 0)\n");
+		name = "Uncompressed";
 		break;
 	case PGP_DEFALTE:
-		pos += xprint(buffer, "Deflate (Tag 1)\n");
+		name = "Deflate";
 		break;
 	case PGP_ZLIB:
-		pos += xprint(buffer, "ZLIB (Tag 2)\n");
+		name = "ZLIB";
 		break;
 	case PGP_BZIP2:
-		pos += xprint(buffer, "BZIP2 (Tag 3)\n");
+		name = "BZIP2";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown (Tag %hhu)\n", algorithm);
+		name = "Unknown";
+		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Compression Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
 static size_t pgp_curve_print(pgp_elliptic_curve_id curve, byte_t *oid, byte_t size, buffer_t *buffer, uint32_t indent)
@@ -554,30 +548,46 @@ static size_t pgp_curve_print(pgp_elliptic_curve_id curve, byte_t *oid, byte_t s
 
 static size_t pgp_s2k_print(pgp_s2k *s2k, buffer_t *buffer, uint32_t indent)
 {
+	const char *name = NULL;
 	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "S2K Specifier: ");
 
 	switch (s2k->id)
 	{
 	case PGP_S2K_SIMPLE:
-		pos += xprint(buffer, "Simple S2K (Tag 0)\n");
+		name = "Simple S2K";
+		break;
+	case PGP_S2K_SALTED:
+		name = "Salted S2K";
+		break;
+	case PGP_S2K_ITERATED:
+		name = "Iterated and Salted S2K";
+		break;
+	case PGP_S2K_ARGON2:
+		name = "Argon2 S2K";
+		break;
+	default:
+		name = "Unknown S2K Specifier";
+		break;
+	}
+
+	pos += print_format(buffer, indent, "S2K Specifier: %s (Tag %hhu)\n", name, s2k->id);
+
+	switch (s2k->id)
+	{
+	case PGP_S2K_SIMPLE:
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, buffer, indent + 1);
 		break;
 	case PGP_S2K_SALTED:
-		pos += xprint(buffer, "Salted S2K (Tag 1)\n");
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, buffer, indent + 1);
-		pos += print_format(buffer, indent + 1, "Salt: %R", s2k->salted.salt, 8);
+		pos += print_format(buffer, indent + 1, "Salt: %R\n", s2k->salted.salt, 8);
 		break;
 	case PGP_S2K_ITERATED:
-		pos += xprint(buffer, "Iterated and Salted S2K (Tag 3)\n");
 		pos += pgp_hash_algorithm_print(s2k->simple.hash_id, buffer, indent + 1);
-		pos += print_format(buffer, indent + 1, "Salt: %R", s2k->iterated.salt, 8);
+		pos += print_format(buffer, indent + 1, "Salt: %R\n", s2k->iterated.salt, 8);
 		pos += print_format(buffer, indent + 1, "Count: %u (Code %hhu)\n", IT_COUNT(s2k->iterated.count), s2k->iterated.count);
 		break;
 	case PGP_S2K_ARGON2:
-		pos += xprint(buffer, "Argon2 S2K (Tag 4)\n");
-		pos += print_format(buffer, indent + 1, "Salt: %R", s2k->argon2.salt, 16);
+		pos += print_format(buffer, indent + 1, "Salt: %R\n", s2k->argon2.salt, 16);
 		pos += print_format(buffer, indent + 1, "Iterations: %hhu\n", s2k->argon2.t);
 		pos += print_format(buffer, indent + 1, "Parallelism: %hhu\n", s2k->argon2.p);
 		pos += print_format(buffer, indent + 1, "Memory: %hhu\n", s2k->argon2.m);
