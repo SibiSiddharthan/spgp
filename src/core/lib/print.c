@@ -157,202 +157,192 @@ size_t pgp_packet_header_print(pgp_packet_header *header, buffer_t *buffer, uint
 
 static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Public-Key Algorithm: ");
+	const char *name = NULL;
 
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		pos += xprint(buffer, "RSA Encrypt or Sign (Tag 1)\n");
+		name = "RSA Encrypt or Sign";
 		break;
 	case PGP_RSA_ENCRYPT_ONLY:
-		pos += xprint(buffer, "RSA (Encrypt Only) (Tag 2)\n");
+		name = "RSA (Encrypt Only)";
 		break;
 	case PGP_RSA_SIGN_ONLY:
-		pos += xprint(buffer, "RSA (Sign Only) (Tag 2)\n");
+		name = "RSA (Sign Only)";
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		pos += xprint(buffer, "Elgamal (Encrypt Only) (Tag 16)\n");
+		name = "Elgamal (Encrypt Only)";
 		break;
 	case PGP_DSA:
-		pos += xprint(buffer, "DSA (Tag 17)\n");
+		name = "DSA";
 		break;
 	case PGP_ECDH:
-		pos += xprint(buffer, "ECDH (Tag 18)\n");
+		name = "ECDH";
 		break;
 	case PGP_ECDSA:
-		pos += xprint(buffer, "ECDSA (Tag 19)\n");
+		name = "ECDSA";
 		break;
 	case PGP_EDDSA:
-		pos += xprint(buffer, "EdDSA (Tag 22)\n");
+		name = "EdDSA";
 		break;
 	case PGP_X25519:
-		pos += xprint(buffer, "X25519 (Tag 22)\n");
+		name = "X25519";
 		break;
 	case PGP_X448:
-		pos += xprint(buffer, "X448 (Tag 23)\n");
+		name = "X448";
 		break;
 	case PGP_ED25519:
-		pos += xprint(buffer, "Ed25519 (Tag 27)\n");
+		name = "Ed25519";
 		break;
 	case PGP_ED448:
-		pos += xprint(buffer, "Ed448 (Tag 28)\n");
+		name = "Ed448";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown Public Key Algorithm (Tag %hhu)\n", algorithm);
+		name = "Unknown Public Key Algorithm";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Public-Key Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
 static size_t pgp_kex_algorithm_print(pgp_public_key_algorithms algorithm, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Key Exchange Algorithm: ");
+	const char *name = NULL;
 
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		pos += xprint(buffer, "RSA Encrypt or Sign (Tag 1)\n");
+		name = "RSA Encrypt or Sign";
 		break;
 	case PGP_RSA_ENCRYPT_ONLY:
-		pos += xprint(buffer, "RSA (Encrypt Only) (Tag 2)\n");
+		name = "RSA (Encrypt Only)";
 		break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
-		pos += xprint(buffer, "Elgamal (Encrypt Only) (Tag 16)\n");
+		name = "Elgamal (Encrypt Only)";
 		break;
 	case PGP_ECDH:
-		pos += xprint(buffer, "ECDH (Tag 18)\n");
+		name = "ECDH";
 		break;
 	case PGP_X25519:
-		pos += xprint(buffer, "X25519 (Tag 22)\n");
+		name = "X25519";
 		break;
 	case PGP_X448:
-		pos += xprint(buffer, "X448 (Tag 23)\n");
+		name = "X448";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown Key Exchange Algorithm (Tag %hhu)\n", algorithm);
+		name = "Unknown Key Exchange Algorithm";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Key Exchange Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
 static size_t pgp_signature_algorithm_print(pgp_public_key_algorithms algorithm, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Signature Algorithm: ");
+	const char *name = NULL;
 
 	switch (algorithm)
 	{
 	case PGP_RSA_ENCRYPT_OR_SIGN:
-		pos += xprint(buffer, "RSA Encrypt or Sign (Tag 1)\n");
+		name = "RSA Encrypt or Sign";
 		break;
 	case PGP_RSA_SIGN_ONLY:
-		pos += xprint(buffer, "RSA (Sign Only) (Tag 2)\n");
+		name = "RSA (Sign Only)";
 		break;
 	case PGP_DSA:
-		pos += xprint(buffer, "DSA (Tag 17)\n");
+		name = "DSA";
 		break;
 	case PGP_ECDSA:
-		pos += xprint(buffer, "ECDSA (Tag 19)\n");
+		name = "ECDSA";
 		break;
 	case PGP_EDDSA:
-		pos += xprint(buffer, "EdDSA (Tag 22)\n");
+		name = "EdDSA";
 		break;
 	case PGP_ED25519:
-		pos += xprint(buffer, "Ed25519 (Tag 27)\n");
+		name = "Ed25519";
 		break;
 	case PGP_ED448:
-		pos += xprint(buffer, "Ed448 (Tag 28)\n");
+		name = "Ed448";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown Signature algorithm (Tag %hhu)\n", algorithm);
+		name = "Unknown Signature algorithm";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Signature Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
 static size_t pgp_symmetric_key_algorithm_print(pgp_symmetric_key_algorithms algorithm, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Cipher Algorithm: ");
+	const char *name = NULL;
 
 	switch (algorithm)
 	{
 	case PGP_PLAINTEXT:
-		pos += xprint(buffer, "Plaintext (Tag 0)\n");
+		name = "Plaintext";
 		break;
 	case PGP_IDEA:
-		pos += xprint(buffer, "IDEA (Tag 1)\n");
+		name = "IDEA";
 		break;
 	case PGP_TDES:
-		pos += xprint(buffer, "TDES (Tag 2)\n");
+		name = "TDES";
 		break;
 	case PGP_CAST5_128:
-		pos += xprint(buffer, "CAST5 (Tag 3)\n");
+		name = "CAST5";
 		break;
 	case PGP_BLOWFISH:
-		pos += xprint(buffer, "Blowfish (Tag 4)\n");
+		name = "Blowfish";
 		break;
 	case PGP_AES_128:
-		pos += xprint(buffer, "AES-128 (Tag 7)\n");
+		name = "AES-128";
 		break;
 	case PGP_AES_192:
-		pos += xprint(buffer, "AES-192 (Tag 8)\n");
+		name = "AES-192";
 		break;
 	case PGP_AES_256:
-		pos += xprint(buffer, "AES-256 (Tag 9)\n");
+		name = "AES-256";
 		break;
 	case PGP_TWOFISH:
-		pos += xprint(buffer, "Twofish-256 (Tag 10)\n");
+		name = "Twofish-256";
 		break;
 	case PGP_CAMELLIA_128:
-		pos += xprint(buffer, "Camellia-128 (Tag 11)\n");
+		name = "Camellia-128";
 		break;
 	case PGP_CAMELLIA_192:
-		pos += xprint(buffer, "Camellia-192 (Tag 12)\n");
+		name = "Camellia-192";
 		break;
 	case PGP_CAMELLIA_256:
-		pos += xprint(buffer, "Camellia-256 (Tag 13)\n");
+		name = "Camellia-256";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown Symmetric Key Algorithm (Tag %hhu)\n", algorithm);
+		name = "Unknown Symmetric Key Algorithm";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Cipher Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
 static size_t pgp_aead_algorithm_print(pgp_aead_algorithms algorithm, buffer_t *buffer, uint32_t indent)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "AEAD Algorithm: ");
+	const char *name = NULL;
 
 	switch (algorithm)
 	{
 	case PGP_AEAD_EAX:
-		pos += xprint(buffer, "EAX (Tag 1)\n");
+		name = "EAX";
 		break;
 	case PGP_AEAD_OCB:
-		pos += xprint(buffer, "OCB (Tag 2)\n");
+		name = "OCB";
 		break;
 	case PGP_AEAD_GCM:
-		pos += xprint(buffer, "GCM (Tag 3)\n");
+		name = "GCM";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown AEAD Algorithm (Tag %hhu)\n", algorithm);
+		name = "Unknown AEAD Algorithm";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "AEAD Algorithm: %s (Tag %hhu)\n", name, algorithm);
 }
 
 static size_t pgp_cipher_aead_algorithm_pair_print(pgp_symmetric_key_algorithms symmetric_algorithm, pgp_aead_algorithms aead_algorithm,
