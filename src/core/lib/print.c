@@ -73,110 +73,86 @@ static size_t print_timestamp(buffer_t *buffer, uint32_t indent, char *prefix, t
 	return pos;
 }
 
+static const char *pgp_packet_header_name(pgp_packet_type type)
+{
+	switch (type)
+	{
+	case PGP_PKESK:
+		return "Public Key Encrypted Session Key Packet";
+	case PGP_SIG:
+		return "Signature Packet";
+	case PGP_SKESK:
+		return "Symmetric Key Encrypted Session Key Packet";
+	case PGP_OPS:
+		return "One-Pass Signature Packet";
+	case PGP_SECKEY:
+		return "Secret Key Packet";
+	case PGP_PUBKEY:
+		return "Public Key Packet";
+	case PGP_SECSUBKEY:
+		return "Secret Subkey Packet";
+	case PGP_COMP:
+		return "Compressed Data Packet";
+	case PGP_SED:
+		return "Symmetrically Encrypted Data Packet (Obsolete)";
+	case PGP_MARKER:
+		return "Marker Packet";
+	case PGP_LIT:
+		return "Literal Data Packet";
+	case PGP_TRUST:
+		return "Trust Packet";
+	case PGP_UID:
+		return "User ID Packet";
+	case PGP_PUBSUBKEY:
+		return "Public Subkey Packet";
+	case PGP_UAT:
+		return "User Attribute Packet";
+	case PGP_SEIPD:
+		return "Symmetrically Encrypted and Integrity Protected Data Packet";
+	case PGP_MDC:
+		return "Modification Detection Code Packet (Deprecated)";
+	case PGP_AEAD:
+		return "Authenticated Encryption Data Packet Packet";
+	case PGP_PADDING:
+		return "Padding Packet";
+	case PGP_KEYDEF:
+		return "Key definition Packet (Private)";
+	case PGP_KEYRING:
+		return "Keyring Packet (Private)";
+	case PGP_ARMOR:
+		return "Armor Packet (Private)";
+	default:
+		return "Unknown Packet";
+	}
+}
+
 size_t pgp_packet_header_print(pgp_packet_header *header, buffer_t *buffer, uint32_t indent)
 {
 	pgp_packet_header_format format = PGP_PACKET_HEADER_FORMAT(header->tag);
 	pgp_packet_type type = pgp_packet_type_from_tag(header->tag);
 
-	size_t pos = 0;
+	const char *name = pgp_packet_header_name(type);
+	const char *old = NULL;
+	const char *partial = NULL;
 
 	if (header->partial_continue || header->partial_end)
 	{
 		return pgp_partial_packet_print((pgp_partial_packet *)header, buffer, indent);
 	}
 
-	pos += print_indent(buffer, indent);
-
-	switch (type)
-	{
-	case PGP_PKESK:
-		pos += xprint(buffer, "Public Key Encrypted Session Key Packet (Tag 1)");
-		break;
-	case PGP_SIG:
-		pos += xprint(buffer, "Signature Packet (Tag 2)");
-		break;
-	case PGP_SKESK:
-		pos += xprint(buffer, "Symmetric Key Encrypted Session Key Packet (Tag 3)");
-		break;
-	case PGP_OPS:
-		pos += xprint(buffer, "One-Pass Signature Packet (Tag 4)");
-		break;
-	case PGP_SECKEY:
-		pos += xprint(buffer, "Secret Key Packet (Tag 5)");
-		break;
-	case PGP_PUBKEY:
-		pos += xprint(buffer, "Public Key Packet (Tag 6)");
-		break;
-	case PGP_SECSUBKEY:
-		pos += xprint(buffer, "Secret Subkey Packet (Tag 7)");
-		break;
-	case PGP_COMP:
-		pos += xprint(buffer, "Compressed Data Packet (Tag 8)");
-		break;
-	case PGP_SED:
-		pos += xprint(buffer, "Symmetrically Encrypted Data Packet (Obsolete) (Tag 9)");
-		break;
-	case PGP_MARKER:
-		pos += xprint(buffer, "Marker Packet (Tag 10)");
-		break;
-	case PGP_LIT:
-		pos += xprint(buffer, "Literal Data Packet (Tag 11)");
-		break;
-	case PGP_TRUST:
-		pos += xprint(buffer, "Trust Packet (Tag 12)");
-		break;
-	case PGP_UID:
-		pos += xprint(buffer, "User ID Packet (Tag 13)");
-		break;
-	case PGP_PUBSUBKEY:
-		pos += xprint(buffer, "Public Subkey Packet (Tag 14)");
-		break;
-	case PGP_UAT:
-		pos += xprint(buffer, "User Attribute Packet (Tag 17)");
-		break;
-	case PGP_SEIPD:
-		pos += xprint(buffer, "Symmetrically Encrypted and Integrity Protected Data Packet (Tag 18)");
-		break;
-	case PGP_MDC:
-		pos += xprint(buffer, "Modification Detection Code Packet (Deprecated) (Tag 19)");
-		break;
-	case PGP_AEAD:
-		pos += xprint(buffer, "Authenticated Encryption Data Packet Packet (Tag 20)");
-		break;
-	case PGP_PADDING:
-		pos += xprint(buffer, "Padding Packet (Tag 21)");
-		break;
-	case PGP_KEYDEF:
-		pos += xprint(buffer, "Key definition Packet (Private)");
-		break;
-	case PGP_KEYRING:
-		pos += xprint(buffer, "Keyring Packet (Private)");
-		break;
-	case PGP_ARMOR:
-		pos += xprint(buffer, "Armor Packet (Private)");
-		break;
-	default:
-		pos += xprint(buffer, "Unknown Packet (Tag %hhu)", header->tag);
-	}
-
-	// Add packet size
-	pos += xprint(buffer, " (%zu bytes)", header->body_size);
-
 	// Mention if packet is having legacy header format
 	if (format == PGP_LEGACY_HEADER)
 	{
-		pos += xprint(buffer, "%s", " (Old)");
+		old = " (Old)";
 	}
 
 	// Mention if packet is having partial data
 	if (header->partial)
 	{
-		pos += xprint(buffer, "%s", " (Partial)");
+		partial = " (Partial)";
 	}
 
-	pos += xprint(buffer, "\n");
-
-	return pos;
+	return print_format(buffer, indent, "%s (Tag %hhu) (%zu bytes)%s%s\n", name, type, header->body_size, old, partial);
 }
 
 static size_t pgp_public_key_algorithm_print(pgp_public_key_algorithms algorithm, buffer_t *buffer, uint32_t indent)
