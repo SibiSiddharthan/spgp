@@ -227,49 +227,19 @@ pgp_partial_header pgp_partial_header_encode(uint32_t body_size)
 
 pgp_packet_type pgp_packet_type_from_tag(byte_t tag)
 {
-	pgp_packet_type ptype = 0;
+	pgp_packet_type type = 0;
 
 	// Bit 6 and 7 are set
 	if ((tag & 0xC0) == 0xC0)
 	{
-		ptype = tag & 0x3F;
+		type = tag & 0x3F;
 	}
 	else
 	{
-		ptype = (tag >> 2) & 0x0F;
+		type = (tag >> 2) & 0x0F;
 	}
 
-	switch (ptype)
-	{
-	case PGP_PKESK:
-	case PGP_SIG:
-	case PGP_SKESK:
-	case PGP_OPS:
-	case PGP_SECKEY:
-	case PGP_PUBKEY:
-	case PGP_SECSUBKEY:
-	case PGP_COMP:
-	case PGP_SED:
-	case PGP_MARKER:
-	case PGP_LIT:
-	case PGP_TRUST:
-	case PGP_UID:
-	case PGP_PUBSUBKEY:
-	case PGP_UAT:
-	case PGP_SEIPD:
-	case PGP_MDC:
-	case PGP_AEAD:
-	case PGP_PADDING:
-	case PGP_KEYDEF:
-	case PGP_KEYRING:
-	case PGP_ARMOR:
-		break;
-	default:
-		// Error
-		ptype = PGP_RESERVED;
-	}
-
-	return ptype;
+	return type;
 }
 
 pgp_error_t pgp_packet_header_read(pgp_packet_header *header, void *data, size_t size)
@@ -748,11 +718,6 @@ pgp_error_t pgp_packet_read(void **packet, void *data, size_t size)
 	}
 
 	type = pgp_packet_type_from_tag(header.tag);
-
-	if (type == PGP_RESERVED)
-	{
-		return PGP_UNKNOWN_PACKET_TAG;
-	}
 
 	if (header.body_size == 0)
 	{
