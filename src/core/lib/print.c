@@ -52,7 +52,7 @@ static size_t print_key(buffer_t *buffer, uint32_t indent, void *data, size_t si
 	return print_format(buffer, indent, "Key Fingerprint: %^R\n", data, size);
 }
 
-static size_t print_mpi(buffer_t *buffer, uint32_t indent, char *prefix, mpi_t *mpi, uint32_t options)
+static size_t print_mpi(buffer_t *buffer, uint32_t indent, uint32_t options, char *prefix, mpi_t *mpi)
 {
 	if (options & PGP_PRINT_MPI_MINIMAL)
 	{
@@ -647,20 +647,20 @@ static size_t pgp_kex_print(pgp_public_key_algorithms algorithm, void *kex, uint
 	case PGP_RSA_ENCRYPT_ONLY:
 	{
 		pgp_rsa_kex *sk = kex;
-		pos += print_mpi(buffer, indent + 1, "RSA m^e mod n", sk->c, options);
+		pos += print_mpi(buffer, indent + 1, options, "RSA m^e mod n", sk->c);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_kex *sk = kex;
-		pos += print_mpi(buffer, indent + 1, "Elgamal g^k mod p", sk->r, options);
-		pos += print_mpi(buffer, indent + 1, "Elgamal m*(y^k) mod p", sk->r, options);
+		pos += print_mpi(buffer, indent + 1, options, "Elgamal g^k mod p", sk->r);
+		pos += print_mpi(buffer, indent + 1, options, "Elgamal m*(y^k) mod p", sk->r);
 	}
 	break;
 	case PGP_ECDH:
 	{
 		pgp_ecdh_kex *sk = kex;
-		pos += print_mpi(buffer, indent + 1, "ECDH Ephemeral Point", sk->ephemeral_point, options);
+		pos += print_mpi(buffer, indent + 1, options, "ECDH Ephemeral Point", sk->ephemeral_point);
 		pos += print_format(buffer, indent + 1, "ECDH Encrypted Session Key: %R\n", sk->encoded_session_key, sk->encoded_session_key_size);
 	}
 	break;
@@ -717,28 +717,28 @@ static size_t pgp_signature_print(pgp_public_key_algorithms algorithm, void *sig
 	case PGP_RSA_SIGN_ONLY:
 	{
 		pgp_rsa_signature *sg = sign;
-		pos += print_mpi(buffer, indent + 1, "RSA m^d mod n", sg->e, options);
+		pos += print_mpi(buffer, indent + 1, options, "RSA m^d mod n", sg->e);
 	}
 	break;
 	case PGP_DSA:
 	{
 		pgp_dsa_signature *sg = sign;
-		pos += print_mpi(buffer, indent + 1, "DSA r", sg->r, options);
-		pos += print_mpi(buffer, indent + 1, "DSA s", sg->s, options);
+		pos += print_mpi(buffer, indent + 1, options, "DSA r", sg->r);
+		pos += print_mpi(buffer, indent + 1, options, "DSA s", sg->s);
 	}
 	break;
 	case PGP_ECDSA:
 	{
 		pgp_ecdsa_signature *sg = sign;
-		pos += print_mpi(buffer, indent + 1, "ECDSA r", sg->r, options);
-		pos += print_mpi(buffer, indent + 1, "ECDSA s", sg->s, options);
+		pos += print_mpi(buffer, indent + 1, options, "ECDSA r", sg->r);
+		pos += print_mpi(buffer, indent + 1, options, "ECDSA s", sg->s);
 	}
 	break;
 	case PGP_EDDSA:
 	{
 		pgp_eddsa_signature *sg = sign;
-		pos += print_mpi(buffer, indent + 1, "EdDSA r", sg->r, options);
-		pos += print_mpi(buffer, indent + 1, "EdDSA s", sg->s, options);
+		pos += print_mpi(buffer, indent + 1, options, "EdDSA r", sg->r);
+		pos += print_mpi(buffer, indent + 1, options, "EdDSA s", sg->s);
 	}
 	break;
 	case PGP_ED25519:
@@ -776,32 +776,32 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	case PGP_RSA_SIGN_ONLY:
 	{
 		pgp_rsa_key *key = public_key;
-		pos += print_mpi(buffer, indent + 1, "RSA modulus n", key->n, options);
-		pos += print_mpi(buffer, indent + 1, "RSA public exponent e", key->e, options);
+		pos += print_mpi(buffer, indent + 1, options, "RSA modulus n", key->n);
+		pos += print_mpi(buffer, indent + 1, options, "RSA public exponent e", key->e);
 	}
 	break;
 	case PGP_ELGAMAL_ENCRYPT_ONLY:
 	{
 		pgp_elgamal_key *key = public_key;
-		pos += print_mpi(buffer, indent + 1, "Elgamal prime p", key->p, options);
-		pos += print_mpi(buffer, indent + 1, "Elgamal group generator g", key->g, options);
-		pos += print_mpi(buffer, indent + 1, "Elgamal public key y", key->y, options);
+		pos += print_mpi(buffer, indent + 1, options, "Elgamal prime p", key->p);
+		pos += print_mpi(buffer, indent + 1, options, "Elgamal group generator g", key->g);
+		pos += print_mpi(buffer, indent + 1, options, "Elgamal public key y", key->y);
 	}
 	break;
 	case PGP_DSA:
 	{
 		pgp_dsa_key *key = public_key;
-		pos += print_mpi(buffer, indent + 1, "DSA prime p", key->p, options);
-		pos += print_mpi(buffer, indent + 1, "DSA group order q", key->q, options);
-		pos += print_mpi(buffer, indent + 1, "DSA group generator g", key->g, options);
-		pos += print_mpi(buffer, indent + 1, "DSA public key y", key->y, options);
+		pos += print_mpi(buffer, indent + 1, options, "DSA prime p", key->p);
+		pos += print_mpi(buffer, indent + 1, options, "DSA group order q", key->q);
+		pos += print_mpi(buffer, indent + 1, options, "DSA group generator g", key->g);
+		pos += print_mpi(buffer, indent + 1, options, "DSA public key y", key->y);
 	}
 	break;
 	case PGP_ECDH:
 	{
 		pgp_ecdh_key *key = public_key;
 		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, buffer, indent + 1);
-		pos += print_mpi(buffer, indent + 1, "MPI of public point", key->point, options);
+		pos += print_mpi(buffer, indent + 1, options, "MPI of public point", key->point);
 		pos += pgp_kdf_print(&key->kdf, buffer, indent);
 	}
 	break;
@@ -809,14 +809,14 @@ static size_t pgp_public_key_print(pgp_public_key_algorithms public_key_algorith
 	{
 		pgp_ecdsa_key *key = public_key;
 		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, buffer, indent + 1);
-		pos += print_mpi(buffer, indent + 1, "MPI of public point", key->point, options);
+		pos += print_mpi(buffer, indent + 1, options, "MPI of public point", key->point);
 	}
 	break;
 	case PGP_EDDSA:
 	{
 		pgp_eddsa_key *key = public_key;
 		pos += pgp_curve_print(key->curve, key->oid, key->oid_size, buffer, indent + 1);
-		pos += print_mpi(buffer, indent + 1, "MPI of public point", key->point, options);
+		pos += print_mpi(buffer, indent + 1, options, "MPI of public point", key->point);
 	}
 	break;
 	case PGP_X25519:
@@ -875,10 +875,10 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(buffer, indent + 1, "RSA secret exponent d", key->d, options);
-			pos += print_mpi(buffer, indent + 1, "RSA secret prime p", key->p, options);
-			pos += print_mpi(buffer, indent + 1, "RSA secret prime q", key->q, options);
-			pos += print_mpi(buffer, indent + 1, "RSA (1/p mod q) u", key->u, options);
+			pos += print_mpi(buffer, indent + 1, options, "RSA secret exponent d", key->d);
+			pos += print_mpi(buffer, indent + 1, options, "RSA secret prime p", key->p);
+			pos += print_mpi(buffer, indent + 1, options, "RSA secret prime q", key->q);
+			pos += print_mpi(buffer, indent + 1, options, "RSA (1/p mod q) u", key->u);
 		}
 	}
 	break;
@@ -892,7 +892,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(buffer, indent + 1, "Elgamal secret exponent x", key->x, options);
+			pos += print_mpi(buffer, indent + 1, options, "Elgamal secret exponent x", key->x);
 		}
 	}
 	break;
@@ -906,7 +906,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(buffer, indent + 1, "DSA secret exponent x", key->x, options);
+			pos += print_mpi(buffer, indent + 1, options, "DSA secret exponent x", key->x);
 		}
 	}
 	break;
@@ -920,7 +920,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(buffer, indent + 1, "ECDH secret scalar x", key->x, options);
+			pos += print_mpi(buffer, indent + 1, options, "ECDH secret scalar x", key->x);
 		}
 	}
 	break;
@@ -934,7 +934,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(buffer, indent + 1, "ECDSA secret scalar x", key->x, options);
+			pos += print_mpi(buffer, indent + 1, options, "ECDSA secret scalar x", key->x);
 		}
 	}
 	break;
@@ -948,7 +948,7 @@ static size_t pgp_private_key_print(pgp_public_key_algorithms public_key_algorit
 		}
 		else
 		{
-			pos += print_mpi(buffer, indent + 1, "EdDSA secret scalar x", key->x, options);
+			pos += print_mpi(buffer, indent + 1, options, "EdDSA secret scalar x", key->x);
 		}
 	}
 	break;
