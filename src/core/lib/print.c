@@ -62,6 +62,16 @@ static size_t print_mpi(buffer_t *buffer, uint32_t indent, uint32_t options, cha
 	return print_format(buffer, indent, "%s (%hu bits): %R\n", prefix, mpi->bits, mpi->bytes, CEIL_DIV(mpi->bits, 8));
 }
 
+static size_t print_bytes(buffer_t *buffer, uint32_t indent, uint32_t options, char *prefix, void *data, uint32_t size)
+{
+	if (options & PGP_PRINT_MPI_MINIMAL)
+	{
+		return print_format(buffer, indent, "%s (%u bytes): ...\n", prefix, size);
+	}
+
+	return print_format(buffer, indent, "%1$s (%2$u bytes): %3$.*2$R\n", prefix, size, data);
+}
+
 static size_t print_timestamp(buffer_t *buffer, uint32_t indent, char *prefix, time_t timestamp)
 {
 	size_t pos = 0;
