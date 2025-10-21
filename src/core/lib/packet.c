@@ -903,7 +903,7 @@ size_t pgp_packet_print(void *packet, buffer_t *buffer, uint32_t indent, uint32_
 	case PGP_SIG:
 		return pgp_signature_packet_print(packet, buffer, indent, options);
 	case PGP_SKESK:
-		return pgp_skesk_packet_print(packet, buffer, indent);
+		return pgp_skesk_packet_print(packet, buffer, indent, options);
 	case PGP_OPS:
 		return pgp_one_pass_signature_packet_print(packet, buffer, indent);
 	case PGP_SECKEY:

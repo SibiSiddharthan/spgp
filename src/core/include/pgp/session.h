@@ -127,6 +127,6 @@ pgp_error_t pgp_skesk_packet_session_key_decrypt(pgp_skesk_packet *packet, void 
 
 pgp_error_t pgp_skesk_packet_read(pgp_skesk_packet **packet, void *data, size_t size);
 size_t pgp_skesk_packet_write(pgp_skesk_packet *packet, void *ptr, size_t size);
-size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32_t indent);
+size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options);
 
 #endif

@@ -556,7 +556,7 @@ static size_t pgp_curve_print(buffer_t *buffer, uint32_t indent, pgp_elliptic_cu
 	return pos;
 }
 
-static size_t pgp_s2k_print(buffer_t *buffer, uint32_t indent, pgp_s2k *s2k)
+static size_t pgp_s2k_print(buffer_t *buffer, uint32_t indent, uint32_t options, pgp_s2k *s2k)
 {
 	const char *name = NULL;
 	size_t pos = 0;
@@ -590,15 +590,15 @@ static size_t pgp_s2k_print(buffer_t *buffer, uint32_t indent, pgp_s2k *s2k)
 		break;
 	case PGP_S2K_SALTED:
 		pos += pgp_hash_algorithm_print(buffer, indent, s2k->simple.hash_id);
-		pos += print_format(buffer, indent, "Salt: %R\n", s2k->salted.salt, 8);
+		pos += print_bytes(buffer, indent, options, "Salt", s2k->salted.salt, 8);
 		break;
 	case PGP_S2K_ITERATED:
 		pos += pgp_hash_algorithm_print(buffer, indent, s2k->simple.hash_id);
-		pos += print_format(buffer, indent, "Salt: %R\n", s2k->iterated.salt, 8);
+		pos += print_bytes(buffer, indent, options, "Salt", s2k->iterated.salt, 8);
 		pos += print_format(buffer, indent, "Count: %u (Code %hhu)\n", IT_COUNT(s2k->iterated.count), s2k->iterated.count);
 		break;
 	case PGP_S2K_ARGON2:
-		pos += print_format(buffer, indent, "Salt: %R\n", s2k->argon2.salt, 16);
+		pos += print_bytes(buffer, indent, options, "Salt", s2k->argon2.salt, 16);
 		pos += print_format(buffer, indent, "Iterations: %hhu\n", s2k->argon2.t);
 		pos += print_format(buffer, indent, "Parallelism: %hhu\n", s2k->argon2.p);
 		pos += print_format(buffer, indent, "Memory: %hhu\n", s2k->argon2.m);
@@ -608,7 +608,7 @@ static size_t pgp_s2k_print(buffer_t *buffer, uint32_t indent, pgp_s2k *s2k)
 	return pos;
 }
 
-static size_t pgp_s2k_usage_print(buffer_t *buffer, uint32_t indent, pgp_key_packet *packet)
+static size_t pgp_s2k_usage_print(buffer_t *buffer, uint32_t indent, uint32_t options, pgp_key_packet *packet)
 {
 	size_t pos = 0;
 	const char *name = NULL;
@@ -649,7 +649,7 @@ static size_t pgp_s2k_usage_print(buffer_t *buffer, uint32_t indent, pgp_key_pac
 
 		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
 		{
-			pos += pgp_s2k_print(buffer, indent, &packet->s2k);
+			pos += pgp_s2k_print(buffer, indent, options, &packet->s2k);
 		}
 
 		pos += print_format(buffer, indent, "IV: %R\n", packet->iv, packet->iv_size);
@@ -1741,7 +1741,7 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, buffer_t *buffer, uint32
 	return pos;
 }
 
-size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32_t indent)
+size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -1760,7 +1760,7 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32
 	{
 		pos += pgp_symmetric_key_algorithm_print(buffer, indent, packet->symmetric_key_algorithm_id);
 		pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
-		pos += pgp_s2k_print(buffer, indent, &packet->s2k);
+		pos += pgp_s2k_print(buffer, indent, options, &packet->s2k);
 
 		pos += print_format(buffer, indent, "IV: %R\n", packet->iv, packet->iv_size);
 		pos += print_format(buffer, indent, "Tag: %R\n", packet->tag, packet->tag_size);
@@ -1769,7 +1769,7 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32
 	else // (packet->version == PGP_SKESK_V4)
 	{
 		pos += pgp_symmetric_key_algorithm_print(buffer, indent, packet->symmetric_key_algorithm_id);
-		pos += pgp_s2k_print(buffer, indent, &packet->s2k);
+		pos += pgp_s2k_print(buffer, indent, options, &packet->s2k);
 
 		if (packet->session_key_size > 0)
 		{
@@ -1944,7 +1944,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uin
 	}
 
 	pos += pgp_public_key_algorithm_print(buffer, indent, packet->public_key_algorithm_id);
-	pos += pgp_s2k_usage_print(buffer, indent, packet);
+	pos += pgp_s2k_usage_print(buffer, indent, options, packet);
 	pos += pgp_private_key_print(buffer, indent, options, packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets);
 
 	if (packet->s2k_usage == 0)
@@ -2364,7 +2364,7 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t i
 		return pos;
 	}
 
-	pos += pgp_s2k_usage_print(buffer, indent, packet);
+	pos += pgp_s2k_usage_print(buffer, indent, options, packet);
 	pos += pgp_private_key_print(buffer, indent, options, packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets);
 
 	return pos;
