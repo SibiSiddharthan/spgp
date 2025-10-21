@@ -1472,8 +1472,8 @@ static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, u
 	case PGP_SIGNER_USER_ID_SUBPACKET:
 	{
 		pgp_signer_user_id_subpacket *signer_uid_subpacket = subpacket;
-		pos +=
-			print_format(buffer, indent + 1, "Signer User ID: %.*s\n", signer_uid_subpacket->header.body_size, signer_uid_subpacket->uid);
+		pos += print_format(buffer, indent + 1, "Signer User ID: %.*s\n", signer_uid_subpacket->header.body_size,
+							signer_uid_subpacket->uid);
 	}
 	break;
 	case PGP_REASON_FOR_REVOCATION_SUBPACKET:
@@ -1646,8 +1646,8 @@ static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, u
 	case PGP_TRUST_ALIAS_SUBPACKET:
 	{
 		pgp_trust_alias_subpacket *trust_alias_subpacket = subpacket;
-		pos +=
-			print_format(buffer, indent + 1, "Trust Alias: %.*s\n", trust_alias_subpacket->header.body_size, trust_alias_subpacket->alias);
+		pos += print_format(buffer, indent + 1, "Trust Alias: %.*s\n", trust_alias_subpacket->header.body_size,
+							trust_alias_subpacket->alias);
 	}
 	break;
 	default:
@@ -1869,8 +1869,8 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uin
 		pos += print_format(buffer, indent + 1, "Version: %hhu\n", packet->version);
 		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
 		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos +=
-			pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets);
+		pos += pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
+									packet->public_key_data_octets);
 	}
 	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
 	{
@@ -1878,8 +1878,8 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uin
 		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
 		pos += print_format(buffer, indent + 1, "Key Expiry: %hu days\n", packet->key_expiry_days);
 		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos +=
-			pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets);
+		pos += pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
+									packet->public_key_data_octets);
 	}
 	else
 	{
@@ -2066,8 +2066,8 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, buffer_t *buffer, ui
 	if (packet->cleartext == 0)
 	{
 		pos += print_timestamp(buffer, indent + 1, "Date", packet->date);
-		pos +=
-			print_format(buffer, indent + 1, "Filename (%u bytes): %.*s\n", packet->filename_size, packet->filename_size, packet->filename);
+		pos += print_format(buffer, indent + 1, "Filename (%u bytes): %.*s\n", packet->filename_size, packet->filename_size,
+							packet->filename);
 	}
 	else
 	{
@@ -2363,8 +2363,8 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t i
 
 	if (packet->type == PGP_KEY_TYPE_PUBLIC)
 	{
-		pos +=
-			pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets);
+		pos += pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
+									packet->public_key_data_octets);
 
 		return pos;
 	}
@@ -2403,8 +2403,8 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t i
 		pos += print_format(buffer, indent + 2, "IV: %R\n", packet->iv, packet->iv_size);
 	}
 
-	pos +=
-		pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets);
+	pos += pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
+								 packet->private_key_data_octets);
 
 	return pos;
 }
