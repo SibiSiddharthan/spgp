@@ -571,30 +571,78 @@ static size_t pgp_s2k_print(buffer_t *buffer, uint32_t indent, pgp_s2k *s2k)
 	}
 
 	pos += print_format(buffer, indent, "S2K Specifier: %s (Tag %hhu)\n", name, s2k->id);
+	indent += 1;
 
 	switch (s2k->id)
 	{
 	case PGP_S2K_SIMPLE:
-		pos += pgp_hash_algorithm_print(buffer, indent + 1, s2k->simple.hash_id);
+		pos += pgp_hash_algorithm_print(buffer, indent, s2k->simple.hash_id);
 		break;
 	case PGP_S2K_SALTED:
-		pos += pgp_hash_algorithm_print(buffer, indent + 1, s2k->simple.hash_id);
-		pos += print_format(buffer, indent + 1, "Salt: %R\n", s2k->salted.salt, 8);
+		pos += pgp_hash_algorithm_print(buffer, indent, s2k->simple.hash_id);
+		pos += print_format(buffer, indent, "Salt: %R\n", s2k->salted.salt, 8);
 		break;
 	case PGP_S2K_ITERATED:
-		pos += pgp_hash_algorithm_print(buffer, indent + 1, s2k->simple.hash_id);
-		pos += print_format(buffer, indent + 1, "Salt: %R\n", s2k->iterated.salt, 8);
-		pos += print_format(buffer, indent + 1, "Count: %u (Code %hhu)\n", IT_COUNT(s2k->iterated.count), s2k->iterated.count);
+		pos += pgp_hash_algorithm_print(buffer, indent, s2k->simple.hash_id);
+		pos += print_format(buffer, indent, "Salt: %R\n", s2k->iterated.salt, 8);
+		pos += print_format(buffer, indent, "Count: %u (Code %hhu)\n", IT_COUNT(s2k->iterated.count), s2k->iterated.count);
 		break;
 	case PGP_S2K_ARGON2:
-		pos += print_format(buffer, indent + 1, "Salt: %R\n", s2k->argon2.salt, 16);
-		pos += print_format(buffer, indent + 1, "Iterations: %hhu\n", s2k->argon2.t);
-		pos += print_format(buffer, indent + 1, "Parallelism: %hhu\n", s2k->argon2.p);
-		pos += print_format(buffer, indent + 1, "Memory: %hhu\n", s2k->argon2.m);
+		pos += print_format(buffer, indent, "Salt: %R\n", s2k->argon2.salt, 16);
+		pos += print_format(buffer, indent, "Iterations: %hhu\n", s2k->argon2.t);
+		pos += print_format(buffer, indent, "Parallelism: %hhu\n", s2k->argon2.p);
+		pos += print_format(buffer, indent, "Memory: %hhu\n", s2k->argon2.m);
+		break;
+	}
+
+	return pos;
+}
+
+static size_t pgp_s2k_usage_print(buffer_t *buffer, uint32_t indent, pgp_key_packet *packet)
+{
+	size_t pos = 0;
+	const char *name = NULL;
+	const char *deprecated = NULL;
+
+	switch (packet->s2k_usage)
+	{
+	case 253:
+		name = "AEAD";
+		break;
+	case 254:
+		name = "CFB";
+		break;
+	case 255:
+		name = "Malleable CFB";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown S2K Specifier (Tag %hhu)\n", s2k->id);
+		name = "Legacy CFB";
 		break;
+	}
+
+	if (packet->s2k_usage != 253 && packet->s2k_usage != 254)
+	{
+		deprecated = " (Deprecated)";
+	}
+
+	if (packet->s2k_usage != 0)
+	{
+		pos += print_format(buffer, indent, "S2K Usage: %s (Tag %hhu)%s\n", name, packet->s2k_usage, deprecated);
+		indent += 1;
+
+		pos += pgp_symmetric_key_algorithm_print(buffer, indent, packet->symmetric_key_algorithm_id);
+
+		if (packet->s2k_usage == 253)
+		{
+			pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
+		}
+
+		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
+		{
+			pos += pgp_s2k_print(buffer, indent, &packet->s2k);
+		}
+
+		pos += print_format(buffer, indent, "IV: %R\n", packet->iv, packet->iv_size);
 	}
 
 	return pos;
@@ -1906,40 +1954,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uin
 		pos += print_format(buffer, indent + 1, "Version: %hhu\n", packet->version);
 		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
 		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-
-		if (packet->s2k_usage != 0)
-		{
-			pos += print_format(buffer, indent + 1, "S2K Usage: ");
-			switch (packet->s2k_usage)
-			{
-			case 253:
-				pos += xprint(buffer, "AEAD (Tag 253)\n");
-				break;
-			case 254:
-				pos += xprint(buffer, "CFB (Tag 254)\n");
-				break;
-			case 255:
-				pos += xprint(buffer, "Malleable CFB (Tag 255) (Deprecated)\n");
-				break;
-			default:
-				pos += xprint(buffer, "Legacy CFB (Tag 255) (Deprecated)\n");
-				break;
-			}
-
-			pos += pgp_symmetric_key_algorithm_print(buffer, indent + 2, packet->symmetric_key_algorithm_id);
-
-			if (packet->s2k_usage == 253)
-			{
-				pos += pgp_aead_algorithm_print(buffer, indent + 2, packet->aead_algorithm_id);
-			}
-
-			if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
-			{
-				pos += pgp_s2k_print(buffer, indent + 2, &packet->s2k);
-			}
-
-			pos += print_format(buffer, indent + 2, "IV: %R\n", packet->iv, packet->iv_size);
-		}
+		pos += pgp_s2k_usage_print(buffer, indent + 1, packet);
 
 		pos += pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
 									 packet->private_key_data_octets);
@@ -1958,40 +1973,7 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uin
 		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
 		pos += xprint(buffer, "Key Expiry: %hu days\n", packet->key_expiry_days);
 		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-
-		if (packet->s2k_usage != 0)
-		{
-			pos += print_format(buffer, indent + 1, "S2K Usage: ");
-			switch (packet->s2k_usage)
-			{
-			case 253:
-				pos += xprint(buffer, "AEAD (Tag 253)\n");
-				break;
-			case 254:
-				pos += xprint(buffer, "CFB (Tag 254)\n");
-				break;
-			case 255:
-				pos += xprint(buffer, "Malleable CFB (Tag 255) (Deprecated)\n");
-				break;
-			default:
-				pos += xprint(buffer, "Legacy CFB (Tag 255) (Deprecated)\n");
-				break;
-			}
-
-			pos += pgp_symmetric_key_algorithm_print(buffer, indent + 2, packet->symmetric_key_algorithm_id);
-
-			if (packet->s2k_usage == 253)
-			{
-				pos += pgp_aead_algorithm_print(buffer, indent + 2, packet->aead_algorithm_id);
-			}
-
-			if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
-			{
-				pos += pgp_s2k_print(buffer, indent + 2, &packet->s2k);
-			}
-
-			pos += print_format(buffer, indent + 2, "IV: %R\n", packet->iv, packet->iv_size);
-		}
+		pos += pgp_s2k_usage_print(buffer, indent + 1, packet);
 
 		pos += pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
 									 packet->private_key_data_octets);
@@ -2375,40 +2357,7 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t i
 		return pos;
 	}
 
-	if (packet->s2k_usage != 0)
-	{
-		pos += print_format(buffer, indent + 1, "S2K Usage: ");
-		switch (packet->s2k_usage)
-		{
-		case 253:
-			pos += xprint(buffer, "AEAD (Tag 253)\n");
-			break;
-		case 254:
-			pos += xprint(buffer, "CFB (Tag 254)\n");
-			break;
-		case 255:
-			pos += xprint(buffer, "Malleable CFB (Tag 255) (Deprecated)\n");
-			break;
-		default:
-			pos += xprint(buffer, "Legacy CFB (Tag 255) (Deprecated)\n");
-			break;
-		}
-
-		pos += pgp_symmetric_key_algorithm_print(buffer, indent + 2, packet->symmetric_key_algorithm_id);
-
-		if (packet->s2k_usage == 253)
-		{
-			pos += pgp_aead_algorithm_print(buffer, indent + 2, packet->aead_algorithm_id);
-		}
-
-		if (packet->s2k_usage == 253 || packet->s2k_usage == 254 || packet->s2k_usage == 255)
-		{
-			pos += pgp_s2k_print(buffer, indent + 2, &packet->s2k);
-		}
-
-		pos += print_format(buffer, indent + 2, "IV: %R\n", packet->iv, packet->iv_size);
-	}
-
+	pos += pgp_s2k_usage_print(buffer, indent + 1, packet);
 	pos += pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
 								 packet->private_key_data_octets);
 
