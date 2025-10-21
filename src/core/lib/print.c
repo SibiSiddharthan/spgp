@@ -2411,7 +2411,7 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t i
 	return pos;
 }
 
-static size_t pgp_user_info_print(pgp_user_info *user, buffer_t *buffer, uint32_t indent)
+static size_t pgp_user_info_print(buffer_t *buffer, uint32_t indent, pgp_user_info *user)
 {
 	size_t pos = 0;
 
@@ -2421,23 +2421,26 @@ static size_t pgp_user_info_print(pgp_user_info *user, buffer_t *buffer, uint32_
 	if (user->features != 0)
 	{
 		pos += print_format(buffer, indent, "Supported Features:\n");
+		indent += 1;
 
 		if (user->features & PGP_FEATURE_MDC)
 		{
-			pos += print_format(buffer, indent + 1, "Feature: SEIPD-V1 (MDC) Supported (0x01)\n");
+			pos += print_format(buffer, indent, "Feature: SEIPD-V1 (MDC) Supported (0x01)\n");
 		}
 		if (user->features & PGP_FEATURE_AEAD)
 		{
-			pos += print_format(buffer, indent + 1, "Feature: AEAD Supported (0x02)\n");
+			pos += print_format(buffer, indent, "Feature: AEAD Supported (0x02)\n");
 		}
 		if (user->features & PGP_FEATURE_KEY_V5)
 		{
-			pos += print_format(buffer, indent + 1, "Feature: V5 Keys Supported (0x04)\n");
+			pos += print_format(buffer, indent, "Feature: V5 Keys Supported (0x04)\n");
 		}
 		if (user->features & PGP_FEATURE_SEIPD_V2)
 		{
-			pos += print_format(buffer, indent + 1, "Feature: SEIPD-V2 Supported (0x08)\n");
+			pos += print_format(buffer, indent, "Feature: SEIPD-V2 Supported (0x08)\n");
 		}
+
+		indent -= 1;
 	}
 
 	if (user->flags & PGP_KEY_SERVER_NO_MODIFY)
@@ -2453,52 +2456,67 @@ static size_t pgp_user_info_print(pgp_user_info *user, buffer_t *buffer, uint32_
 	if (user->hash_algorithm_preferences_octets > 0)
 	{
 		pos += print_format(buffer, indent, "Hash Alogrithm Preferences:\n");
+		indent += 1;
 
 		for (byte_t i = 0; i < user->hash_algorithm_preferences_octets; ++i)
 		{
-			pos += pgp_hash_algorithm_print(buffer, indent + 1, user->hash_algorithm_preferences[i]);
+			pos += pgp_hash_algorithm_print(buffer, indent, user->hash_algorithm_preferences[i]);
 		}
+
+		indent -= 1;
 	}
 
 	if (user->cipher_algorithm_preferences_octets > 0)
 	{
 		pos += print_format(buffer, indent, "Cipher Alogrithm Preferences:\n");
+		indent += 1;
 
 		for (byte_t i = 0; i < user->cipher_algorithm_preferences_octets; ++i)
 		{
-			pos += pgp_symmetric_key_algorithm_print(buffer, indent + 1, user->cipher_algorithm_preferences[i]);
+			pos += pgp_symmetric_key_algorithm_print(buffer, indent, user->cipher_algorithm_preferences[i]);
 		}
+
+		indent -= 1;
 	}
 
 	if (user->compression_algorithm_preferences_octets > 0)
 	{
 		pos += print_format(buffer, indent, "Compression Alogrithm Preferences:\n");
+		indent += 1;
 
 		for (byte_t i = 0; i < user->compression_algorithm_preferences_octets; ++i)
 		{
-			pos += pgp_compression_algorithm_print(buffer, indent + 1, user->compression_algorithm_preferences[i]);
+			pos += pgp_compression_algorithm_print(buffer, indent, user->compression_algorithm_preferences[i]);
 		}
+
+		indent -= 1;
 	}
 
 	if (user->cipher_modes_preferences_octets > 0)
 	{
 		pos += print_format(buffer, indent, "Encryption Mode Preferences:\n");
+		indent += 1;
 
 		for (byte_t i = 0; i < user->cipher_modes_preferences_octets; ++i)
 		{
-			pos += pgp_aead_algorithm_print(buffer, indent + 1, user->cipher_modes_preferences[i]);
+			pos += pgp_aead_algorithm_print(buffer, indent, user->cipher_modes_preferences[i]);
 		}
+
+		indent -= 1;
 	}
 
 	if (user->aead_algorithm_preferences_octets > 0)
 	{
 		pos += print_format(buffer, indent, "AEAD Preferences:\n");
+		indent += 1;
 
 		for (byte_t i = 0; i < user->aead_algorithm_preferences_octets; i += 2)
 		{
-			pos += pgp_cipher_aead_algorithm_pair_print(buffer, indent + 1, user->aead_algorithm_preferences[i / 2][0],
+			pos += pgp_cipher_aead_algorithm_pair_print(buffer, indent, user->aead_algorithm_preferences[i / 2][0],
 														user->aead_algorithm_preferences[i / 2][1]);
 		}
+
+		indent -= 1;
 	}
 
 	return pos;
@@ -2509,28 +2527,36 @@ size_t pgp_keyring_packet_print(pgp_keyring_packet *packet, buffer_t *buffer, ui
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
-	pos += print_format(buffer, indent + 1, "Key Version: %hhu\n", packet->key_version);
-	pos += print_format(buffer, indent + 1, "Primary Key: %^R\n", packet->primary_fingerprint, packet->fingerprint_size);
+	indent += 1;
+
+	pos += print_format(buffer, indent, "Key Version: %hhu\n", packet->key_version);
+	pos += print_format(buffer, indent, "Primary Key: %^R\n", packet->primary_fingerprint, packet->fingerprint_size);
 
 	if (packet->subkey_count > 0)
 	{
-		pos += print_format(buffer, indent + 1, "Subkeys:\n");
+		pos += print_format(buffer, indent, "Subkeys:\n");
+		indent += 1;
 
 		for (byte_t i = 0; i < packet->subkey_count; ++i)
 		{
-			pos += print_format(buffer, indent + 2, "%^R\n", PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size),
+			pos += print_format(buffer, indent, "%^R\n", PTR_OFFSET(packet->subkey_fingerprints, i * packet->fingerprint_size),
 								packet->fingerprint_size);
 		}
+
+		indent -= 1;
 	}
 
 	if (packet->users->count > 0)
 	{
-		pos += print_format(buffer, indent + 1, "User Information:\n");
+		pos += print_format(buffer, indent, "User Information:\n");
+		indent += 1;
 
 		for (uint32_t i = 0; i < packet->users->count; ++i)
 		{
-			pos += pgp_user_info_print(packet->users->packets[i], buffer, indent + 2);
+			pos += pgp_user_info_print(buffer, indent, packet->users->packets[i]);
 		}
+
+		indent -= 1;
 	}
 
 	return pos;
@@ -2551,8 +2577,9 @@ size_t pgp_armor_packet_print(pgp_armor_packet *packet, buffer_t *buffer, uint32
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
 
-	pos += print_format(buffer, indent + 1, "Marker: %.*s\n", packet->marker_size, packet->marker);
+	pos += print_format(buffer, indent, "Marker: %.*s\n", packet->marker_size, packet->marker);
 
 	if ((packet->comment_size + packet->version_size + packet->charset_size + packet->message_id_size) == 0)
 	{
@@ -2560,12 +2587,13 @@ size_t pgp_armor_packet_print(pgp_armor_packet *packet, buffer_t *buffer, uint32
 		return pos;
 	}
 
-	pos += print_format(buffer, indent + 1, "Headers:\n");
+	pos += print_format(buffer, indent, "Headers:\n");
+	indent += 1;
 
-	pos += pgp_armor_header_print("Version", packet->version, packet->version_size, buffer, indent + 2);
-	pos += pgp_armor_header_print("Comment", packet->comment, packet->comment_size, buffer, indent + 2);
-	pos += pgp_armor_header_print("Charset", packet->charset, packet->charset_size, buffer, indent + 2);
-	pos += pgp_armor_header_print("MessageID", packet->message_id, packet->message_id_size, buffer, indent + 2);
+	pos += pgp_armor_header_print("Version", packet->version, packet->version_size, buffer, indent);
+	pos += pgp_armor_header_print("Comment", packet->comment, packet->comment_size, buffer, indent);
+	pos += pgp_armor_header_print("Charset", packet->charset, packet->charset_size, buffer, indent);
+	pos += pgp_armor_header_print("MessageID", packet->message_id, packet->message_id_size, buffer, indent);
 
 	return pos;
 }
