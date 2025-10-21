@@ -1917,28 +1917,24 @@ size_t pgp_public_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uin
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
 
-	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5 || packet->version == PGP_KEY_V4)
+	if (packet->version < PGP_KEY_V2 || packet->version > PGP_KEY_V6)
 	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu\n", packet->version);
-		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
-		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos += pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
-									packet->public_key_data_octets);
+		pos += print_format(buffer, indent, "Version: %hhu (Unknown)\n", packet->version);
+		return pos;
 	}
-	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
+
+	pos += print_format(buffer, indent, "Version: %hhu%s\n", packet->version, (packet->version < PGP_KEY_V4) ? " (Deprecated)" : NULL);
+	pos += print_timestamp(buffer, indent, "Key Creation Time", packet->key_creation_time);
+
+	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
 	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu (Deprecated)\n", packet->version);
-		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
-		pos += print_format(buffer, indent + 1, "Key Expiry: %hu days\n", packet->key_expiry_days);
-		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos += pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
-									packet->public_key_data_octets);
+		pos += print_format(buffer, indent, "Key Expiry: %hu days\n", packet->key_expiry_days);
 	}
-	else
-	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu (Unknown)\n", packet->version);
-	}
+
+	pos += pgp_public_key_algorithm_print(buffer, indent, packet->public_key_algorithm_id);
+	pos += pgp_public_key_print(buffer, indent, options, packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets);
 
 	return pos;
 }
@@ -1948,44 +1944,32 @@ size_t pgp_secret_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uin
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
 
-	if (packet->version == PGP_KEY_V6 || packet->version == PGP_KEY_V5 || packet->version == PGP_KEY_V4)
+	if (packet->version < PGP_KEY_V2 || packet->version > PGP_KEY_V6)
 	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu\n", packet->version);
-		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
-		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos += pgp_s2k_usage_print(buffer, indent + 1, packet);
-
-		pos += pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
-									 packet->private_key_data_octets);
-
-		if (packet->s2k_usage == 0)
-		{
-			if (packet->version != PGP_KEY_V6)
-			{
-				pos += print_format(buffer, indent + 1, "Checksum: %R\n", &packet->key_checksum, 2);
-			}
-		}
+		pos += print_format(buffer, indent, "Version: %hhu (Unknown)\n", packet->version);
+		return pos;
 	}
-	else if (packet->version == PGP_KEY_V3 || packet->version == PGP_KEY_V2)
+
+	pos += print_format(buffer, indent, "Version: %hhu%s\n", packet->version, (packet->version < PGP_KEY_V4) ? " (Deprecated)" : NULL);
+	pos += print_timestamp(buffer, indent, "Key Creation Time", packet->key_creation_time);
+
+	if (packet->version == PGP_KEY_V2 || packet->version == PGP_KEY_V3)
 	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu (Deprecated)\n", packet->version);
-		pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
-		pos += xprint(buffer, "Key Expiry: %hu days\n", packet->key_expiry_days);
-		pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos += pgp_s2k_usage_print(buffer, indent + 1, packet);
-
-		pos += pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
-									 packet->private_key_data_octets);
-
-		if (packet->s2k_usage == 0)
-		{
-			pos += print_format(buffer, indent + 1, "Checksum: %R\n", &packet->key_checksum, 2);
-		}
+		pos += print_format(buffer, indent, "Key Expiry: %hu days\n", packet->key_expiry_days);
 	}
-	else
+
+	pos += pgp_public_key_algorithm_print(buffer, indent, packet->public_key_algorithm_id);
+	pos += pgp_s2k_usage_print(buffer, indent, packet);
+	pos += pgp_private_key_print(buffer, indent, options, packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets);
+
+	if (packet->s2k_usage == 0)
 	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu (Unknown)\n", packet->version);
+		if (packet->version != PGP_KEY_V6)
+		{
+			pos += print_format(buffer, indent, "Checksum: %R\n", &packet->key_checksum, 2);
+		}
 	}
 
 	return pos;
@@ -2320,46 +2304,45 @@ size_t pgp_key_packet_print(pgp_key_packet *packet, buffer_t *buffer, uint32_t i
 	byte_t fingerprint_size = PGP_KEY_MAX_FINGERPRINT_SIZE;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
 
-	pos += print_format(buffer, indent + 1, "Version: %hhu\n", packet->version);
-	pos += print_format(buffer, indent + 1, "Type: %s\n", packet->type == PGP_KEY_TYPE_PUBLIC ? "Public Key" : "Secret Key");
-	pos += print_capabilities(packet->capabilities, buffer, indent + 1);
-	pos += print_flags(packet->flags, buffer, indent + 1);
+	pos += print_format(buffer, indent, "Version: %hhu\n", packet->version);
+	pos += print_format(buffer, indent, "Type: %s\n", packet->type == PGP_KEY_TYPE_PUBLIC ? "Public Key" : "Secret Key");
+	pos += print_capabilities(packet->capabilities, buffer, indent);
+	pos += print_flags(packet->flags, buffer, indent);
 
 	if (pgp_key_fingerprint(packet, fingerprint, &fingerprint_size) == PGP_SUCCESS)
 	{
-		pos += print_key(buffer, indent + 1, fingerprint, fingerprint_size);
+		pos += print_key(buffer, indent, fingerprint, fingerprint_size);
 	}
 
-	pos += print_timestamp(buffer, indent + 1, "Key Creation Time", packet->key_creation_time);
+	pos += print_timestamp(buffer, indent, "Key Creation Time", packet->key_creation_time);
 
 	if (packet->key_revocation_time != 0)
 	{
-		pos += print_timestamp(buffer, indent + 1, "Key Revocation Time", packet->key_revocation_time);
+		pos += print_timestamp(buffer, indent, "Key Revocation Time", packet->key_revocation_time);
 	}
 
 	if (packet->key_expiry_seconds != 0)
 	{
-		pos += print_timestamp(buffer, indent + 1, "Key Expiry Time", packet->key_creation_time + packet->key_expiry_seconds);
+		pos += print_timestamp(buffer, indent, "Key Expiry Time", packet->key_creation_time + packet->key_expiry_seconds);
 	}
 	else
 	{
-		pos += print_format(buffer, indent + 1, "Key Expiry Time: None\n");
+		pos += print_format(buffer, indent, "Key Expiry Time: None\n");
 	}
 
-	pos += pgp_public_key_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
+	pos += pgp_public_key_algorithm_print(buffer, indent, packet->public_key_algorithm_id);
 
 	if (packet->type == PGP_KEY_TYPE_PUBLIC)
 	{
-		pos += pgp_public_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
-									packet->public_key_data_octets);
+		pos += pgp_public_key_print(buffer, indent, options, packet->public_key_algorithm_id, packet->key, packet->public_key_data_octets);
 
 		return pos;
 	}
 
-	pos += pgp_s2k_usage_print(buffer, indent + 1, packet);
-	pos += pgp_private_key_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->key,
-								 packet->private_key_data_octets);
+	pos += pgp_s2k_usage_print(buffer, indent, packet);
+	pos += pgp_private_key_print(buffer, indent, options, packet->public_key_algorithm_id, packet->key, packet->private_key_data_octets);
 
 	return pos;
 }
