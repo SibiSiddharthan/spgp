@@ -54,6 +54,7 @@ typedef enum _print_type
 	PRINT_RESULT,  // n
 
 	PRINT_RAW_HEX, // R
+	PRINT_ARRAY,   // A
 
 	PRINT_UNKNOWN
 
@@ -66,9 +67,19 @@ typedef struct _print_config
 	uint16_t flags;
 	uint32_t width;
 	uint32_t precision;
+
 	size_t result;
-	uint32_t count;
 	void *data;
+
+	// Array
+	uint32_t count;
+	byte_t separator;
+
+	print_type subtype;
+	uint16_t submodifier;
+	uint16_t subflags;
+	uint32_t subwidth;
+	uint32_t subprecision;
 
 } print_config;
 
@@ -329,6 +340,10 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		config->type = PRINT_RAW_HEX;
 		break;
 
+	case 'A':
+		config->type = PRINT_ARRAY;
+		break;
+
 	default:
 		config->type = PRINT_UNKNOWN;
 		break;
@@ -352,7 +367,7 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 		config->data = variadic_args_get(args, arg_index);
 
 		// If precision was specified use it as count, else read the next argument for count
-		if (config->type == PRINT_RAW_HEX)
+		if (config->type == PRINT_RAW_HEX || config->type == PRINT_ARRAY)
 		{
 			if (config->flags & PRINT_PRECISION)
 			{
@@ -382,6 +397,228 @@ static void parse_print_specifier(buffer_t *format, print_config *config, variad
 	{
 		config->flags &= ~PRINT_EMPTY_SPACE;
 	}
+}
+
+static void parse_array_specifier(buffer_t *format, print_config *config)
+{
+	uint32_t index = 0;
+	byte_t byte = 0;
+
+	if (peekbyte(format, 0) != '[')
+	{
+		goto fail;
+	}
+
+	readbyte(format);
+
+	while ((byte = peekbyte(format, 0)) != '\0')
+	{
+		if (byte == ' ')
+		{
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '%')
+		{
+			readbyte(format);
+			break;
+		}
+
+		goto fail;
+	}
+
+	// flags
+	while ((byte = peekbyte(format, 0)) != '\0')
+	{
+		if (byte == '#')
+		{
+			config->subflags |= PRINT_ALTERNATE_FORM;
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '0')
+		{
+			config->subflags |= PRINT_ZERO_PADDED;
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == ' ')
+		{
+			config->subflags |= PRINT_EMPTY_SPACE;
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '-')
+		{
+			config->subflags |= PRINT_LEFT_JUSTIFY;
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '+')
+		{
+			config->subflags |= PRINT_FORCE_SIGN;
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '\'')
+		{
+			config->subflags |= PRINT_GROUP_DIGITS;
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '^')
+		{
+			config->subflags |= PRINT_UPPER_CASE;
+			readbyte(format);
+			continue;
+		}
+
+		break;
+	}
+
+	// width
+	parse_number(format, &index);
+	config->subwidth = index;
+
+	// precision
+	if (peekbyte(format, 0) == '.')
+	{
+		readbyte(format);
+
+		parse_number(format, &index);
+		config->subprecision = index;
+
+		config->subflags |= PRINT_PRECISION;
+	}
+
+	// length modifiers
+	switch (byte = peekbyte(format, 0))
+	{
+	case 'h':
+	{
+		readbyte(format);
+
+		if (peekbyte(format, 0) == 'h')
+		{
+			config->submodifier = PRINT_MOD_SHORT_SHORT;
+			readbyte(format);
+		}
+		else
+		{
+			config->submodifier = PRINT_MOD_SHORT;
+		}
+	}
+	break;
+	case 'l':
+	{
+		readbyte(format);
+
+		if (peekbyte(format, 0) == 'l')
+		{
+			config->submodifier = PRINT_MOD_LONG_LONG;
+			readbyte(format);
+		}
+		else
+		{
+			config->submodifier = PRINT_MOD_LONG;
+		}
+	}
+	break;
+	case 'j':
+		readbyte(format);
+		config->submodifier = PRINT_MOD_MAX;
+		break;
+	case 'z':
+		readbyte(format);
+		config->submodifier = PRINT_MOD_SIZE;
+		break;
+	case 't':
+		readbyte(format);
+		config->submodifier = PRINT_MOD_PTRDIFF;
+		break;
+	}
+
+	// conversion
+	switch (byte = peekbyte(format, 0))
+	{
+	// integer
+	case 'i':
+	case 'd':
+		config->subtype = PRINT_INT_NUMBER;
+		break;
+	case 'u':
+		config->subtype = PRINT_UINT_NUMBER;
+		break;
+	case 'b':
+		config->subtype = PRINT_UINT_BINARY;
+		break;
+	case 'o':
+		config->subtype = PRINT_UINT_OCTAL;
+		break;
+	case 'x':
+		config->subtype = PRINT_UINT_HEX;
+		break;
+
+	// float
+	case 'a':
+		config->subtype = PRINT_FLOAT_HEX;
+		break;
+	case 'f':
+		config->subtype = PRINT_FLOAT_NORMAL;
+		break;
+	case 'e':
+		config->subtype = PRINT_FLOAT_SCIENTIFIC;
+		break;
+
+	// misc
+	case 'c':
+		config->subtype = PRINT_CHAR;
+		break;
+	case 's':
+		config->subtype = PRINT_STRING;
+		break;
+	case 'p':
+		config->subtype = PRINT_POINTER;
+		break;
+
+	default:
+		goto fail;
+	}
+
+	if (peekbyte(format, 0) != ']')
+	{
+		goto fail;
+	}
+
+	readbyte(format);
+
+	// If both '-' and '0' are given '0' is ignored.
+	if (config->subflags & PRINT_LEFT_JUSTIFY)
+	{
+		config->subflags &= ~PRINT_ZERO_PADDED;
+	}
+
+	// Ignore '0' if precision is given
+	if (config->subflags & PRINT_PRECISION)
+	{
+		config->subflags &= ~PRINT_ZERO_PADDED;
+	}
+
+	//  If both '+' and ' ' are given ' ' is ignored.
+	if (config->subflags & PRINT_FORCE_SIGN)
+	{
+		config->subflags &= ~PRINT_EMPTY_SPACE;
+	}
+
+fail:
+	config->type = PRINT_UNKNOWN;
 }
 
 static byte_t alternate_form_char(print_config *config)
@@ -1190,6 +1427,25 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 
 			pos = in.pos;
 			parse_print_specifier(&in, &config, &args);
+
+			if (config.type == PRINT_ARRAY)
+			{
+				parse_array_specifier(&in, &config);
+
+				if (config.type == PRINT_UNKNOWN) // error
+				{
+					size_t npos = in.pos;
+					in.pos = pos;
+
+					while (pos < npos)
+					{
+						writebyte(buffer, readbyte(&in));
+						result += 1;
+					}
+
+					continue;
+				}
+			}
 
 			if (config.type == PRINT_UNKNOWN)
 			{
