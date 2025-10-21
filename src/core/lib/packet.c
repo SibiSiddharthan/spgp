@@ -929,11 +929,11 @@ size_t pgp_packet_print(void *packet, buffer_t *buffer, uint32_t indent, uint32_
 	case PGP_UAT:
 		return pgp_user_attribute_packet_print(packet, buffer, indent);
 	case PGP_SEIPD:
-		return pgp_seipd_packet_print(packet, buffer, indent);
+		return pgp_seipd_packet_print(packet, buffer, indent, options);
 	case PGP_MDC:
 		return pgp_mdc_packet_print(packet, buffer, indent);
 	case PGP_AEAD:
-		return pgp_aead_packet_print(packet, buffer, indent);
+		return pgp_aead_packet_print(packet, buffer, indent, options);
 	case PGP_PADDING:
 		return pgp_padding_packet_print(packet, buffer, indent);
 	case PGP_KEYDEF:

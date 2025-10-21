@@ -652,7 +652,7 @@ static size_t pgp_s2k_usage_print(buffer_t *buffer, uint32_t indent, uint32_t op
 			pos += pgp_s2k_print(buffer, indent, options, &packet->s2k);
 		}
 
-		pos += print_format(buffer, indent, "IV: %R\n", packet->iv, packet->iv_size);
+		pos += print_bytes(buffer, indent, options, "IV", packet->iv, packet->iv_size);
 	}
 
 	return pos;
@@ -720,7 +720,7 @@ static size_t pgp_kex_print(buffer_t *buffer, uint32_t indent, uint32_t options,
 	{
 		pgp_ecdh_kex *sk = kex;
 		pos += print_mpi(buffer, indent, options, "ECDH Ephemeral Point", sk->ephemeral_point);
-		pos += print_format(buffer, indent, "ECDH Encrypted Session Key: %R\n", sk->encoded_session_key, sk->encoded_session_key_size);
+		pos += print_bytes(buffer, indent, options, "ECDH Encrypted Session Key", sk->encoded_session_key, sk->encoded_session_key_size);
 	}
 	break;
 	case PGP_X25519:
@@ -734,8 +734,8 @@ static size_t pgp_kex_print(buffer_t *buffer, uint32_t indent, uint32_t options,
 			octet_count -= 1;
 		}
 
-		pos += print_format(buffer, indent, "X25519 Ephemeral Key: %R\n", sk->ephemeral_key, 32);
-		pos += print_format(buffer, indent, "X25519 Encrypted Session Key: %R\n", sk->encrypted_session_key, octet_count);
+		pos += print_bytes(buffer, indent, options, "X25519 Ephemeral Key", sk->ephemeral_key, 32);
+		pos += print_bytes(buffer, indent, options, "X25519 Encrypted Session Key", sk->encrypted_session_key, octet_count);
 	}
 	break;
 	case PGP_X448:
@@ -749,8 +749,8 @@ static size_t pgp_kex_print(buffer_t *buffer, uint32_t indent, uint32_t options,
 			octet_count -= 1;
 		}
 
-		pos += print_format(buffer, indent, "X448 Ephemeral Key: %R\n", sk->ephemeral_key, 56);
-		pos += print_format(buffer, indent, "X448 Encrypted Session Key: %R\n", sk->encrypted_session_key, octet_count);
+		pos += print_bytes(buffer, indent, options, "X448 Ephemeral Key", sk->ephemeral_key, 56);
+		pos += print_bytes(buffer, indent, options, "X448 Encrypted Session Key", sk->encrypted_session_key, octet_count);
 	}
 	break;
 	default:
@@ -804,13 +804,13 @@ static size_t pgp_signature_print(buffer_t *buffer, uint32_t indent, uint32_t op
 	case PGP_ED25519:
 	{
 		pgp_ed25519_signature *sg = sign;
-		pos += print_format(buffer, indent, "Ed25519 Signature: %R\n", sg->sig, 64);
+		pos += print_bytes(buffer, indent, options, "Ed25519 Signature", sg->sig, 64);
 	}
 	break;
 	case PGP_ED448:
 	{
 		pgp_ed448_signature *sg = sign;
-		pos += print_format(buffer, indent, "Ed448 Signature: %R\n", sg->sig, 114);
+		pos += print_bytes(buffer, indent, options, "Ed448 Signature", sg->sig, 114);
 	}
 	break;
 	default:
@@ -883,25 +883,25 @@ static size_t pgp_public_key_print(buffer_t *buffer, uint32_t indent, uint32_t o
 	case PGP_X25519:
 	{
 		pgp_x25519_key *key = public_key;
-		pos += print_format(buffer, indent, "X25519 Public Key: %R\n", key->public_key, 32);
+		pos += print_bytes(buffer, indent, options, "X25519 Public Key", key->public_key, 32);
 	}
 	break;
 	case PGP_X448:
 	{
 		pgp_x448_key *key = public_key;
-		pos += print_format(buffer, indent, "X448 Public Key: %R\n", key->public_key, 56);
+		pos += print_bytes(buffer, indent, options, "X448 Public Key", key->public_key, 56);
 	}
 	break;
 	case PGP_ED25519:
 	{
 		pgp_ed25519_key *key = public_key;
-		pos += print_format(buffer, indent, "Ed25519 Public Key: %R\n", key->public_key, 32);
+		pos += print_bytes(buffer, indent, options, "Ed25519 Public Key", key->public_key, 32);
 	}
 	break;
 	case PGP_ED448:
 	{
 		pgp_ed448_key *key = public_key;
-		pos += print_format(buffer, indent, "Ed448 Public Key: %R\n", key->public_key, 57);
+		pos += print_bytes(buffer, indent, options, "Ed448 Public Key", key->public_key, 57);
 	}
 	break;
 	default:
@@ -1025,7 +1025,7 @@ static size_t pgp_private_key_print(buffer_t *buffer, uint32_t indent, uint32_t 
 		}
 		else
 		{
-			pos += print_format(buffer, indent, "X25519 Secret Key: %R\n", key->private_key, 32);
+			pos += print_bytes(buffer, indent, options, "X25519 Secret Key", key->private_key, 32);
 		}
 	}
 	break;
@@ -1040,7 +1040,7 @@ static size_t pgp_private_key_print(buffer_t *buffer, uint32_t indent, uint32_t 
 		}
 		else
 		{
-			pos += print_format(buffer, indent, "X448 Secret Key: %R\n", key->private_key, 56);
+			pos += print_bytes(buffer, indent, options, "X448 Secret Key", key->private_key, 56);
 		}
 	}
 	break;
@@ -1055,7 +1055,7 @@ static size_t pgp_private_key_print(buffer_t *buffer, uint32_t indent, uint32_t 
 		}
 		else
 		{
-			pos += print_format(buffer, indent, "Ed25519 Secret Key: %R\n", key->private_key, 32);
+			pos += print_bytes(buffer, indent, options, "Ed25519 Secret Key", key->private_key, 32);
 		}
 	}
 	break;
@@ -1070,7 +1070,7 @@ static size_t pgp_private_key_print(buffer_t *buffer, uint32_t indent, uint32_t 
 		}
 		else
 		{
-			pos += print_format(buffer, indent, "Ed448 Secret Key: %R\n", key->private_key, 57);
+			pos += print_bytes(buffer, indent, options, "Ed448 Secret Key", key->private_key, 57);
 		}
 	}
 	break;
@@ -1610,7 +1610,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, u
 
 		pos += pgp_signature_algorithm_print(buffer, indent, target_subpacket->public_key_algorithm_id);
 		pos += pgp_hash_algorithm_print(buffer, indent, target_subpacket->hash_algorithm_id);
-		pos += print_format(buffer, indent, "Hash: %R\n", buffer, target_subpacket->hash, target_subpacket->header.body_size - 2);
+		pos += print_bytes(buffer, indent, options, "Hash", target_subpacket->hash, target_subpacket->header.body_size - 2);
 	}
 	break;
 	case PGP_EMBEDDED_SIGNATURE_SUBPACKET:
@@ -1648,7 +1648,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, u
 	case PGP_ATTESTED_CERTIFICATIONS_SUBPACKET:
 	{
 		pgp_attested_certifications_subpacket *attestation_subpacket = subpacket;
-		pos += print_format(buffer, indent, "Attestations: %R\n", attestation_subpacket->hash, header->body_size);
+		pos += print_bytes(buffer, indent, options, "Attestations", attestation_subpacket->hash, header->body_size);
 	}
 	break;
 	case PGP_KEY_BLOCK_SUBPACKET:
@@ -1675,7 +1675,7 @@ static size_t pgp_signature_subpacket_print(void *subpacket, buffer_t *buffer, u
 	{
 		pgp_literal_data_meta_hash_subpacket *meta_subpacket = subpacket;
 		pos += print_format(buffer, indent, "Octet: %hhu\n", meta_subpacket->octet);
-		pos += print_format(buffer, indent, "SHA256 Hash: %R\n", meta_subpacket->hash, 32);
+		pos += print_bytes(buffer, indent, options, "SHA256 Hash", meta_subpacket->hash, 32);
 	}
 	break;
 	case PGP_TRUST_ALIAS_SUBPACKET:
@@ -1762,9 +1762,9 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32
 		pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
 		pos += pgp_s2k_print(buffer, indent, options, &packet->s2k);
 
-		pos += print_format(buffer, indent, "IV: %R\n", packet->iv, packet->iv_size);
-		pos += print_format(buffer, indent, "Tag: %R\n", packet->tag, packet->tag_size);
-		pos += print_format(buffer, indent, "Encrypted Session Key: %R\n", packet->session_key, packet->session_key_size);
+		pos += print_bytes(buffer, indent, options, "IV", packet->iv, packet->iv_size);
+		pos += print_bytes(buffer, indent, options, "Tag", packet->tag, packet->tag_size);
+		pos += print_bytes(buffer, indent, options, "Encrypted Session Key", packet->session_key, packet->session_key_size);
 	}
 	else // (packet->version == PGP_SKESK_V4)
 	{
@@ -1773,7 +1773,7 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32
 
 		if (packet->session_key_size > 0)
 		{
-			pos += print_format(buffer, indent, "Encrypted Session Key: %R\n", packet->session_key, packet->session_key_size);
+			pos += print_bytes(buffer, indent, options, "Encrypted Session Key", packet->session_key, packet->session_key_size);
 		}
 	}
 
@@ -1841,7 +1841,7 @@ static size_t pgp_signature_packet_body_print(pgp_signature_packet *packet, buff
 
 	if (packet->version == PGP_SIGNATURE_V6)
 	{
-		pos += print_format(buffer, indent, "Salt: %R\n", packet->salt, packet->salt_size);
+		pos += print_bytes(buffer, indent, options, "Salt", packet->salt, packet->salt_size);
 	}
 
 	pos += print_format(buffer, indent, "Hash Check: %R\n", packet->quick_hash, 2);
@@ -2113,7 +2113,7 @@ size_t pgp_user_attribute_packet_print(pgp_user_attribute_packet *packet, buffer
 	return pos;
 }
 
-size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, buffer_t *buffer, uint32_t indent)
+size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -2134,8 +2134,8 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, buffer_t *buffer, uint32
 		pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
 		pos += print_format(buffer, indent, "Chunk Size: %u Code (%hhu)\n", PGP_CHUNK_SIZE(packet->chunk_size), packet->chunk_size);
 
-		pos += print_format(buffer, indent, "Salt: %R\n", packet->salt, 32);
-		pos += print_format(buffer, indent, "Tag: %R\n", packet->tag, packet->tag_size);
+		pos += print_bytes(buffer, indent, options, "Salt", packet->salt, 32);
+		pos += print_bytes(buffer, indent, options, "Tag", packet->tag, packet->tag_size);
 	}
 
 	pos += print_format(buffer, indent, "Encrypted Data (%u bytes)\n", packet->data_size);
@@ -2153,7 +2153,7 @@ size_t pgp_mdc_packet_print(pgp_mdc_packet *packet, buffer_t *buffer, uint32_t i
 	return pos;
 }
 
-size_t pgp_aead_packet_print(pgp_aead_packet *packet, buffer_t *buffer, uint32_t indent)
+size_t pgp_aead_packet_print(pgp_aead_packet *packet, buffer_t *buffer, uint32_t indent, uint32_t options)
 {
 	size_t pos = 0;
 
@@ -2172,8 +2172,8 @@ size_t pgp_aead_packet_print(pgp_aead_packet *packet, buffer_t *buffer, uint32_t
 	pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
 	pos += print_format(buffer, indent, "Chunk Size: %u Code (%hhu)\n", PGP_CHUNK_SIZE(packet->chunk_size), packet->chunk_size);
 
-	pos += print_format(buffer, indent, "IV: %R\n", packet->iv, pgp_aead_iv_size(packet->aead_algorithm_id));
-	pos += print_format(buffer, indent, "Tag: %R\n", packet->tag, packet->tag_size);
+	pos += print_bytes(buffer, indent, options, "IV", packet->iv, pgp_aead_iv_size(packet->aead_algorithm_id));
+	pos += print_bytes(buffer, indent, options, "Tag", packet->tag, packet->tag_size);
 
 	pos += print_format(buffer, indent, "Encrypted Data (%u bytes)\n", packet->data_size);
 
