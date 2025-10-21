@@ -2165,29 +2165,27 @@ size_t pgp_seipd_packet_print(pgp_seipd_packet *packet, buffer_t *buffer, uint32
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
+
+	if (packet->version != PGP_SEIPD_V2 && packet->version != PGP_SEIPD_V1)
+	{
+		pos += print_format(buffer, indent, "Version: %hhu (Unknown)\n", packet->version);
+		return pos;
+	}
+
+	pos += print_format(buffer, indent, "Version: %hhu\n", packet->version);
 
 	if (packet->version == PGP_SEIPD_V2)
 	{
-		pos += print_format(buffer, indent + 1, "Version: 2\n");
+		pos += pgp_symmetric_key_algorithm_print(buffer, indent, packet->symmetric_key_algorithm_id);
+		pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
+		pos += print_format(buffer, indent, "Chunk Size: %u Code (%hhu)\n", PGP_CHUNK_SIZE(packet->chunk_size), packet->chunk_size);
 
-		pos += pgp_symmetric_key_algorithm_print(buffer, indent + 1, packet->symmetric_key_algorithm_id);
-		pos += pgp_aead_algorithm_print(buffer, indent + 1, packet->aead_algorithm_id);
-		pos += print_format(buffer, indent + 1, "Chunk Size: %u Code (%hhu)\n", PGP_CHUNK_SIZE(packet->chunk_size), packet->chunk_size);
+		pos += print_format(buffer, indent, "Salt: %R\n", packet->salt, 32);
+		pos += print_format(buffer, indent, "Tag: %R\n", packet->tag, packet->tag_size);
+	}
 
-		pos += print_format(buffer, indent + 1, "Salt: %R\n", packet->salt, 32);
-		pos += print_format(buffer, indent + 1, "Tag: %R\n", packet->tag, packet->tag_size);
-
-		pos += print_format(buffer, indent + 1, "Encrypted Data (%u bytes)\n", packet->data_size);
-	}
-	else if (packet->version == PGP_SEIPD_V1)
-	{
-		pos += print_format(buffer, indent + 1, "Version: 1\n");
-		pos += print_format(buffer, indent + 1, "Encrypted Data (%u bytes)\n", packet->header.body_size - 1);
-	}
-	else
-	{
-		pos += print_format(buffer, indent + 1, "%hhu (Unknown)\n", packet->version);
-	}
+	pos += print_format(buffer, indent, "Encrypted Data (%u bytes)\n", packet->data_size);
 
 	return pos;
 }
@@ -2207,24 +2205,24 @@ size_t pgp_aead_packet_print(pgp_aead_packet *packet, buffer_t *buffer, uint32_t
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
 
-	if (packet->version == PGP_AEAD_V1)
+	if (packet->version != PGP_AEAD_V1)
 	{
-		pos += print_format(buffer, indent + 1, "Version: 1\n");
-
-		pos += pgp_symmetric_key_algorithm_print(buffer, indent + 1, packet->symmetric_key_algorithm_id);
-		pos += pgp_aead_algorithm_print(buffer, indent + 1, packet->aead_algorithm_id);
-		pos += print_format(buffer, indent + 1, "Chunk Size: %u Code (%hhu)\n", PGP_CHUNK_SIZE(packet->chunk_size), packet->chunk_size);
-
-		pos += print_format(buffer, indent + 1, "IV: %R\n", packet->iv, pgp_aead_iv_size(packet->aead_algorithm_id));
-		pos += print_format(buffer, indent + 1, "Tag: %R\n", packet->tag, packet->tag_size);
-
-		pos += print_format(buffer, indent + 1, "Encrypted Data (%u bytes)\n", packet->data_size);
+		pos += print_format(buffer, indent, "Version: %hhu (Unknown)\n", packet->version);
+		return pos;
 	}
-	else
-	{
-		pos += print_format(buffer, indent + 1, "%hhu (Unknown)\n", packet->version);
-	}
+
+	pos += print_format(buffer, indent, "Version: %hhu\n", packet->version);
+
+	pos += pgp_symmetric_key_algorithm_print(buffer, indent, packet->symmetric_key_algorithm_id);
+	pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
+	pos += print_format(buffer, indent, "Chunk Size: %u Code (%hhu)\n", PGP_CHUNK_SIZE(packet->chunk_size), packet->chunk_size);
+
+	pos += print_format(buffer, indent, "IV: %R\n", packet->iv, pgp_aead_iv_size(packet->aead_algorithm_id));
+	pos += print_format(buffer, indent, "Tag: %R\n", packet->tag, packet->tag_size);
+
+	pos += print_format(buffer, indent, "Encrypted Data (%u bytes)\n", packet->data_size);
 
 	return pos;
 }
