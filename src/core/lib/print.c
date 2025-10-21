@@ -2039,41 +2039,43 @@ size_t pgp_marker_packet_print(pgp_marker_packet *packet, buffer_t *buffer, uint
 size_t pgp_literal_packet_print(pgp_literal_packet *packet, buffer_t *buffer, uint32_t indent)
 {
 	size_t pos = 0;
-
-	pos += pgp_packet_header_print(&packet->header, buffer, indent);
-
-	pos += print_format(buffer, indent + 1, "Format: ");
+	const char *name = NULL;
 
 	switch (packet->format)
 	{
 	case PGP_LITERAL_DATA_BINARY:
-		pos += xprint(buffer, "Binary (Tag 'b')\n");
+		name = "Binary";
 		break;
 	case PGP_LITERAL_DATA_MIME:
-		pos += xprint(buffer, "Mime (Tag 'm')\n");
+		name = "Mime";
 		break;
 	case PGP_LITERAL_DATA_LOCAL:
-		pos += xprint(buffer, "Local (Tag 'l') (Deprecated)\n");
+		name = "Local";
 		break;
 	case PGP_LITERAL_DATA_TEXT:
-		pos += xprint(buffer, "Text (Tag 't')\n");
+		name = "Text";
 		break;
 	case PGP_LITERAL_DATA_UTF8:
-		pos += xprint(buffer, "UTF-8 (Tag 'u')\n");
+		name = "UTF";
 		break;
 	default:
-		pos += xprint(buffer, "Unknown (Tag %hhu)\n", packet->format);
+		name = "Unknown";
+		break;
 	}
+
+	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
+
+	pos += print_format(buffer, indent, "Format: %s (Tag '%c')\n", name, packet->format);
 
 	if (packet->cleartext == 0)
 	{
-		pos += print_timestamp(buffer, indent + 1, "Date", packet->date);
-		pos += print_format(buffer, indent + 1, "Filename (%u bytes): %.*s\n", packet->filename_size, packet->filename_size,
-							packet->filename);
+		pos += print_timestamp(buffer, indent, "Date", packet->date);
+		pos += print_format(buffer, indent, "Filename (%u bytes): %.*s\n", packet->filename_size, packet->filename_size, packet->filename);
 	}
 	else
 	{
-		pos += print_format(buffer, indent + 1, "Cleartext: True\n");
+		pos += print_format(buffer, indent, "Cleartext: True\n");
 
 		if (packet->hash_algorithm != 0)
 		{
@@ -2081,7 +2083,7 @@ size_t pgp_literal_packet_print(pgp_literal_packet *packet, buffer_t *buffer, ui
 		}
 	}
 
-	pos += print_format(buffer, indent + 1, "Data (%u bytes)\n", packet->data_size);
+	pos += print_format(buffer, indent, "Data (%u bytes)\n", packet->data_size);
 
 	return pos;
 }
