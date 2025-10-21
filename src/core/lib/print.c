@@ -1662,48 +1662,47 @@ size_t pgp_pkesk_packet_print(pgp_pkesk_packet *packet, buffer_t *buffer, uint32
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
+
+	if (packet->version != PGP_PKESK_V6 && packet->version != PGP_PKESK_V3)
+	{
+		pos += print_format(buffer, indent, "Version: %hhu (Unknown)\n", packet->version);
+		return pos;
+	}
+
+	pos += print_format(buffer, indent, "Version: %hhu\n", packet->version);
 
 	if (packet->version == PGP_PKESK_V6)
 	{
-		pos += print_format(buffer, indent + 1, "Version: 6\n");
-
 		switch (packet->key_version)
 		{
 		case PGP_KEY_V2:
 		case PGP_KEY_V3:
-			pos += print_format(buffer, indent + 1, "Key Version: %hhu (Deprecated)\n", packet->key_version);
-			pos += print_key(buffer, indent + 1, packet->key_fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
+			pos += print_format(buffer, indent, "Key Version: %hhu (Deprecated)\n", packet->key_version);
+			pos += print_key(buffer, indent, packet->key_fingerprint, PGP_KEY_V3_FINGERPRINT_SIZE);
 			break;
 		case PGP_KEY_V4:
-			pos += print_format(buffer, indent + 1, "Key Version: %hhu\n", packet->key_version);
-			pos += print_key(buffer, indent + 1, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
+			pos += print_format(buffer, indent, "Key Version: %hhu\n", packet->key_version);
+			pos += print_key(buffer, indent, packet->key_fingerprint, PGP_KEY_V4_FINGERPRINT_SIZE);
 			break;
 		case PGP_KEY_V5:
 		case PGP_KEY_V6:
-			pos += print_format(buffer, indent + 1, "Key Version: %hhu\n", packet->key_version);
-			pos += print_key(buffer, indent + 1, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
+			pos += print_format(buffer, indent, "Key Version: %hhu\n", packet->key_version);
+			pos += print_key(buffer, indent, packet->key_fingerprint, PGP_KEY_V6_FINGERPRINT_SIZE);
 			break;
 		default:
-			pos += print_format(buffer, indent + 1, "Key Version: %hhu (Unknown)\n", packet->key_version);
+			pos += print_format(buffer, indent, "Key Version: %hhu (Unknown)\n", packet->key_version);
 			break;
 		}
+	}
+	else //(packet->version == PGP_PKESK_V3)
+	{
+		pos += print_key(buffer, indent, packet->key_id, 8);
+	}
 
-		pos += pgp_kex_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos += pgp_kex_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->encrypted_session_key,
-							 packet->encrypted_session_key_octets);
-	}
-	else if (packet->version == PGP_PKESK_V3)
-	{
-		pos += print_format(buffer, indent + 1, "Version: 3\n");
-		pos += print_key(buffer, indent + 1, packet->key_id, 8);
-		pos += pgp_kex_algorithm_print(buffer, indent + 1, packet->public_key_algorithm_id);
-		pos += pgp_kex_print(buffer, indent + 1, options, packet->public_key_algorithm_id, packet->encrypted_session_key,
-							 packet->encrypted_session_key_octets);
-	}
-	else
-	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu (Unknown)\n", packet->version);
-	}
+	pos += pgp_kex_algorithm_print(buffer, indent, packet->public_key_algorithm_id);
+	pos += pgp_kex_print(buffer, indent, options, packet->public_key_algorithm_id, packet->encrypted_session_key,
+						 packet->encrypted_session_key_octets);
 
 	return pos;
 }
@@ -1713,32 +1712,35 @@ size_t pgp_skesk_packet_print(pgp_skesk_packet *packet, buffer_t *buffer, uint32
 	size_t pos = 0;
 
 	pos += pgp_packet_header_print(&packet->header, buffer, indent);
+	indent += 1;
+
+	if (packet->version != PGP_SKESK_V6 && packet->version != PGP_SKESK_V5 && packet->version != PGP_SKESK_V4)
+	{
+		pos += print_format(buffer, indent, "Version: %hhu (Unknown)\n", packet->version);
+		return pos;
+	}
+
+	pos += print_format(buffer, indent, "Version: %hhu\n", packet->version);
 
 	if (packet->version == PGP_SKESK_V6 || packet->version == PGP_SKESK_V5)
 	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu\n", packet->version);
-		pos += pgp_symmetric_key_algorithm_print(buffer, indent + 1, packet->symmetric_key_algorithm_id);
-		pos += pgp_aead_algorithm_print(buffer, indent + 1, packet->aead_algorithm_id);
-		pos += pgp_s2k_print(buffer, indent + 1, &packet->s2k);
+		pos += pgp_symmetric_key_algorithm_print(buffer, indent, packet->symmetric_key_algorithm_id);
+		pos += pgp_aead_algorithm_print(buffer, indent, packet->aead_algorithm_id);
+		pos += pgp_s2k_print(buffer, indent, &packet->s2k);
 
-		pos += print_format(buffer, indent + 1, "IV: %R\n", packet->iv, packet->iv_size);
-		pos += print_format(buffer, indent + 1, "Tag: %R\n", packet->tag, packet->tag_size);
-		pos += print_format(buffer, indent + 1, "Encrypted Session Key: %R\n", packet->session_key, packet->session_key_size);
+		pos += print_format(buffer, indent, "IV: %R\n", packet->iv, packet->iv_size);
+		pos += print_format(buffer, indent, "Tag: %R\n", packet->tag, packet->tag_size);
+		pos += print_format(buffer, indent, "Encrypted Session Key: %R\n", packet->session_key, packet->session_key_size);
 	}
-	else if (packet->version == PGP_SKESK_V4)
+	else // (packet->version == PGP_SKESK_V4)
 	{
-		pos += print_format(buffer, indent + 1, "Version: 4\n");
-		pos += pgp_symmetric_key_algorithm_print(buffer, indent + 1, packet->symmetric_key_algorithm_id);
-		pos += pgp_s2k_print(buffer, indent + 1, &packet->s2k);
+		pos += pgp_symmetric_key_algorithm_print(buffer, indent, packet->symmetric_key_algorithm_id);
+		pos += pgp_s2k_print(buffer, indent, &packet->s2k);
 
 		if (packet->session_key_size > 0)
 		{
-			pos += print_format(buffer, indent + 1, "Encrypted Session Key: %R\n", packet->session_key, packet->session_key_size);
+			pos += print_format(buffer, indent, "Encrypted Session Key: %R\n", packet->session_key, packet->session_key_size);
 		}
-	}
-	else
-	{
-		pos += print_format(buffer, indent + 1, "Version: %hhu (Unknown)\n", packet->version);
 	}
 
 	return pos;
