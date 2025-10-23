@@ -17,14 +17,12 @@
 #include <tls/algorithms.h>
 #include <tls/grease.h>
 
-static const char hex_lower_table[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-static size_t print_indent(buffer_t *buffer, uint32_t indent)
+static inline size_t print_indent(buffer_t *buffer, uint32_t indent)
 {
 	return xprint(buffer, "%*s", indent * 4, "");
 }
 
-static size_t print_format(buffer_t *buffer, uint32_t indent, const char *format, ...)
+static inline size_t print_format(buffer_t *buffer, uint32_t indent, const char *format, ...)
 {
 	size_t pos = 0;
 
@@ -35,26 +33,6 @@ static size_t print_format(buffer_t *buffer, uint32_t indent, const char *format
 	pos += vxprint(buffer, format, args);
 
 	va_end(args);
-
-	return pos;
-}
-static inline uint32_t print_hex(void *buffer, void *data, uint32_t size)
-{
-	uint8_t *out = buffer;
-	uint32_t pos = 0;
-
-	for (uint32_t i = 0; i < size; ++i)
-	{
-		uint8_t a, b;
-
-		a = ((uint8_t *)data)[i] / 16;
-		b = ((uint8_t *)data)[i] % 16;
-
-		out[pos++] = hex_lower_table[a];
-		out[pos++] = hex_lower_table[b];
-	}
-
-	out[pos++] = '\n';
 
 	return pos;
 }

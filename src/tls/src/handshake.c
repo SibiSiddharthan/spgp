@@ -1193,47 +1193,56 @@ static uint32_t tls_client_hello_print_body(tls_client_hello *hello, buffer_t *b
 	uint32_t pos = 0;
 
 	// Protocol Version
-	pos += print_handshake_version(indent, PTR_OFFSET(buffer, pos), size - pos, hello->version);
+	pos += print_handshake_version(buffer, indent, hello->version);
 
 	// Random
-	pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Random", hello->random, 32);
+	pos += print_bytes(buffer, indent, "Random", hello->random, 32);
 
 	// Session ID
 	if (hello->session_id_size > 0)
 	{
-		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Session ID", hello->session_id, hello->session_id_size);
+		pos += print_bytes(buffer, indent, "Session ID", hello->session_id, hello->session_id_size);
 	}
 
 	// Compression Methods
 	if (hello->compression_methods_size > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Compression Methods:\n");
+		pos += print_format(buffer, indent, "Compression Methods:\n");
+		indent += 1;
 
 		for (uint32_t i = 0; i < hello->compression_methods_size; ++i)
 		{
-			pos += print_compression_method(indent + 1, PTR_OFFSET(buffer, pos), size - pos, hello->data[hello->cipher_suites_size + i]);
+			pos += print_compression_method(buffer, indent, hello->data[hello->cipher_suites_size + i]);
 		}
+
+		indent -= 1;
 	}
 
 	// Cipher Suites
 	if (hello->cipher_suites_size > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Preferred Cipher Suites:\n");
+		pos += print_format(buffer, indent, "Preferred Cipher Suites:\n");
+		indent += 1;
 
 		for (uint32_t i = 0; i < hello->cipher_suites_size; i += 2)
 		{
-			pos += print_cipher_suite(indent + 1, PTR_OFFSET(buffer, pos), size - pos, hello->data[i], hello->data[i + 1]);
+			pos += print_cipher_suite(buffer, indent, hello->data[i], hello->data[i + 1]);
 		}
+
+		indent -= 1;
 	}
 
 	if (hello->extensions_count > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", hello->extensions_size);
+		pos += print_format(buffer, indent, "Extensions (%hu bytes):\n", hello->extensions_size);
+		indent += 1;
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_print(hello->header.type, hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(hello->header.type, hello->extensions[i], indent);
 		}
+
+		indent -= 1;
 	}
 
 	return pos;
@@ -1387,30 +1396,31 @@ static uint32_t tls_server_hello_print_body(tls_server_hello *hello, buffer_t *b
 	uint32_t pos = 0;
 
 	// Protocol Version
-	pos += print_handshake_version(indent, PTR_OFFSET(buffer, pos), size - pos, hello->version);
+	pos += print_handshake_version(buffer, indent, hello->version);
 
 	// Random
-	pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Random", hello->random, 32);
+	pos += print_bytes(buffer, indent, "Random", hello->random, 32);
 
 	// Session ID
 	if (hello->session_id_size > 0)
 	{
-		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Session ID", hello->session_id, hello->session_id_size);
+		pos += print_bytes(buffer, indent, "Session ID", hello->session_id, hello->session_id_size);
 	}
 
 	// Selected Compression Method
-	pos += print_compression_method(indent, PTR_OFFSET(buffer, pos), size - pos, hello->compression_method);
+	pos += print_compression_method(buffer, indent, hello->compression_method);
 
 	// Selected Cipher Suite
-	pos += print_cipher_suite(indent, PTR_OFFSET(buffer, pos), size - pos, (hello->cipher_suite >> 8) & 0xFF, hello->cipher_suite & 0xFF);
+	pos += print_cipher_suite(buffer, indent, (hello->cipher_suite >> 8) & 0xFF, hello->cipher_suite & 0xFF);
 
 	if (hello->extensions_count > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", hello->extensions_size);
+		pos += print_format(buffer, indent, "Extensions (%hu bytes):\n", hello->extensions_size);
+		indent += 1;
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_print(hello->header.type, hello->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(hello->header.type, hello->extensions[i], indent);
 		}
 	}
 
@@ -1566,31 +1576,31 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 	uint32_t pos = 0;
 
 	// Ticket Lifetime
-	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket Lifetime: %u seconds\n", session->ticket_lifetime);
+	pos += print_format(buffer, indent, "Ticket Lifetime: %u seconds\n", session->ticket_lifetime);
 
 	// Ticket Age Add
-	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket Age Add: %u seconds\n", session->ticket_age_add);
+	pos += print_format(buffer, indent, "Ticket Age Add: %u seconds\n", session->ticket_age_add);
 
 	// Ticket Nonce
 	if (session->ticket_nonce_size > 0)
 	{
-		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket Nonce", session->data, session->ticket_nonce_size);
+		pos += print_bytes(buffer, indent, "Ticket Nonce", session->data, session->ticket_nonce_size);
 	}
 
 	// Ticket
 	if (session->ticket_size > 0)
 	{
-		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Ticket", PTR_OFFSET(session->data, session->ticket_nonce_size),
-						   session->ticket_size);
+		pos += print_bytes(buffer, indent, "Ticket", PTR_OFFSET(session->data, session->ticket_nonce_size), session->ticket_size);
 	}
 
 	if (session->extensions_count > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", session->extensions_size);
+		pos += print_format(buffer, indent, "Extensions (%hu bytes):\n", session->extensions_size);
+		indent += 1;
 
 		for (uint16_t i = 0; i < session->extensions_count; ++i)
 		{
-			pos += tls_extension_print(session->header.type, session->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(session->header.type, session->extensions[i], indent);
 		}
 	}
 
@@ -1674,11 +1684,12 @@ static uint32_t tls_encrypted_extensions_print_body(tls_encrypted_extensions *ex
 
 	if (extensions->extensions_count > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", extensions->extensions_size);
+		pos += print_format(buffer, indent, "Extensions (%hu bytes):\n", extensions->extensions_size);
+		indent += 1;
 
 		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
 		{
-			pos += tls_extension_print(extensions->header.type, extensions->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(extensions->header.type, extensions->extensions[i], indent);
 		}
 	}
 
@@ -1785,17 +1796,18 @@ static uint32_t tls_certificate_request_print_body(tls_certificate_request *requ
 	// Request Context
 	if (request->context_size > 0)
 	{
-		pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Context", request->context, request->context_size);
+		pos += print_bytes(buffer, indent, "Context", request->context, request->context_size);
 	}
 
 	// Request Extensions
 	if (request->extensions_count > 0)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Extensions (%hu bytes):\n", request->extensions_size);
+		pos += print_format(buffer, indent, "Extensions (%hu bytes):\n", request->extensions_size);
+		indent += 1;
 
 		for (uint16_t i = 0; i < request->extensions_count; ++i)
 		{
-			pos += tls_extension_print(request->header.type, request->extensions[i], PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+			pos += tls_extension_print(request->header.type, request->extensions[i], indent);
 		}
 	}
 
@@ -1853,10 +1865,10 @@ static uint32_t tls_certificate_verify_print_body(tls_certificate_verify *verify
 	uint32_t pos = 0;
 
 	// Algorithm
-	pos += print_signature_algorithm(indent, PTR_OFFSET(buffer, pos), size - pos, verify->algorithm);
+	pos += print_signature_algorithm(buffer, indent, verify->algorithm);
 
 	// Signature
-	pos += print_bytes(indent, buffer, size, "Signature", verify->signature, verify->header.size - 2);
+	pos += print_bytes(buffer, indent, "Signature", verify->signature, verify->header.size - 2);
 
 	return pos;
 }
@@ -1910,11 +1922,11 @@ static uint32_t tls_key_update_print_body(tls_key_update *update, buffer_t *buff
 	switch (update->request)
 	{
 	case TLS_KEY_UPDATE_NOT_REQUESTED:
-		return print_format(indent, buffer, size, "Key Update Not Requested (ID 0)\n");
+		return print_format(buffer, indent, "Key Update Not Requested (ID %hhu)\n", update->header);
 	case TLS_KEY_UPDATE_REQUESTED:
-		return print_format(indent, buffer, size, "Key Update Requested (ID 1)\n");
+		return print_format(buffer, indent, "Key Update Requested (ID %hhu)\n", update->header);
 	default:
-		return print_format(indent, buffer, size, "Unkown Key Update Request (ID %hhu)\n", update->request);
+		return print_format(buffer, indent, "Unkown Key Update Request (ID %hhu)\n", update->request);
 	}
 }
 
@@ -1964,7 +1976,7 @@ static uint32_t tls_handshake_finished_write_body(tls_handshake_finished *finish
 static uint32_t tls_handshake_finished_print_body(tls_handshake_finished *finish, buffer_t *buffer, uint32_t indent)
 {
 	// Verify MAC
-	return print_bytes(indent, buffer, size, "Verification MAC", finish->verify, finish->header.size);
+	return print_bytes(buffer, indent, "Verification MAC", finish->verify, finish->header.size);
 }
 
 static tls_error_t tls_handshake_message_hash_read_body(tls_handshake_message_hash **handshake, tls_handshake_header *header, void *data)
@@ -2013,7 +2025,7 @@ static uint32_t tls_handshake_message_hash_write_body(tls_handshake_message_hash
 static uint32_t tls_handshake_message_hash_print_body(tls_handshake_message_hash *hash, buffer_t *buffer, uint32_t indent)
 {
 	// Message Hash
-	return print_bytes(indent, buffer, size, "Message Hash", hash->hash, hash->header.size);
+	return print_bytes(buffer, indent, "Message Hash", hash->hash, hash->header.size);
 }
 
 static tls_error_t tls_handshake_header_read(tls_handshake_header *handshake_header, tls_record_header *record_header, void *data,
