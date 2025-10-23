@@ -1544,6 +1544,8 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 					size_t npos = in.pos;
 					in.pos = pos;
 
+					writebyte(buffer, '%');
+
 					while (pos < npos)
 					{
 						writebyte(buffer, readbyte(&in));
