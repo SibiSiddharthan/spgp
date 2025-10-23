@@ -73,6 +73,7 @@ typedef struct _print_config
 
 	// Array
 	uint32_t count;
+	byte_t stride;
 	byte_t separator;
 
 	print_type subtype;
@@ -611,10 +612,21 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 		config->subflags &= ~PRINT_ZERO_PADDED;
 	}
 
-	//  If both '+' and ' ' are given ' ' is ignored.
+	// If both '+' and ' ' are given ' ' is ignored.
 	if (config->subflags & PRINT_FORCE_SIGN)
 	{
 		config->subflags &= ~PRINT_EMPTY_SPACE;
+	}
+
+	// Prefer space over comma
+	if (config->flags & PRINT_GROUP_DIGITS)
+	{
+		config->separator = ',';
+	}
+
+	if (config->flags & PRINT_EMPTY_SPACE)
+	{
+		config->separator = ' ';
 	}
 
 fail:
@@ -1385,6 +1397,32 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		}
 
 		return result;
+	}
+
+	if (config->type == PRINT_ARRAY)
+	{
+		print_config subconfig = {0};
+
+		subconfig.flags = config->subflags;
+		subconfig.modifier = config->submodifier;
+		subconfig.width = config->subwidth;
+		subconfig.precision = config->subprecision;
+		subconfig.flags = config->subflags;
+
+		for (uint32_t i = 0; i < config->count; ++i)
+		{
+			subconfig.data = PTR_OFFSET(config->data, i * config->stride);
+			result += print_arg(buffer, &subconfig);
+
+			if (i + 1 < config->count)
+			{
+				if (config->separator != 0)
+				{
+					writebyte(buffer, config->separator);
+					result += 1;
+				}
+			}
+		}
 	}
 
 	return 0;
