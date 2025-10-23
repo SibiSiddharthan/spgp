@@ -55,15 +55,15 @@ uint32_t tls_change_cipher_spec_write_body(tls_change_cipher_spec *cs, void *buf
 	return pos;
 }
 
-uint32_t tls_change_cipher_spec_print_body(tls_change_cipher_spec *cs, void *buffer, uint32_t size, uint32_t indent)
+uint32_t tls_change_cipher_spec_print_body(tls_change_cipher_spec *cs, buffer_t *buffer, uint32_t indent)
 {
 	// State
 	if (cs->state == TLS_CHANGE_CIPHER_SPEC_TYPE)
 	{
-		return print_format(indent, buffer, size, "Change Cipher Spec Requested (1)\n");
+		return print_format(buffer, indent, "Change Cipher Spec Requested (1)\n");
 	}
 	else
 	{
-		return print_format(indent, buffer, size, "Change Cipher Spec Unknown (%hhu)\n", cs->state);
+		return print_format(buffer, indent, "Change Cipher Spec Unknown (%hhu)\n", cs->state);
 	}
 }
