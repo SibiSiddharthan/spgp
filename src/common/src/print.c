@@ -584,13 +584,63 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 		break;
 	case 's':
 		config->subtype = PRINT_STRING;
+		config->stride = 8;
 		break;
 	case 'p':
 		config->subtype = PRINT_POINTER;
+		config->stride = 8;
 		break;
 
 	default:
 		goto fail;
+	}
+
+	// Set the stride
+	if (config->subtype == PRINT_INT_NUMBER || config->subtype == PRINT_UINT_NUMBER || config->subtype == PRINT_UINT_BINARY ||
+		config->subtype == PRINT_UINT_OCTAL || config->subtype == PRINT_UINT_HEX)
+	{
+		config->stride = 4;
+
+		if (config->modifier == PRINT_MOD_LONG || config->modifier == PRINT_MOD_LONG_LONG || config->modifier == PRINT_MOD_MAX ||
+			config->modifier == PRINT_MOD_SIZE || config->modifier == PRINT_MOD_PTRDIFF)
+		{
+			config->stride = 8;
+		}
+
+		if (config->modifier == PRINT_MOD_SHORT)
+		{
+			config->stride = 2;
+		}
+
+		if (config->modifier == PRINT_MOD_SHORT_SHORT)
+		{
+			config->stride = 1;
+		}
+	}
+
+	if (config->subtype == PRINT_FLOAT_HEX || config->subtype == PRINT_FLOAT_NORMAL || config->subtype == PRINT_FLOAT_SCIENTIFIC)
+	{
+		config->stride = 4;
+
+		if (config->modifier == PRINT_MOD_LONG || config->modifier == PRINT_MOD_LONG_LONG)
+		{
+			config->stride = 8;
+		}
+	}
+
+	if (config->subtype == PRINT_CHAR)
+	{
+		config->stride = 1;
+
+		if (config->modifier == PRINT_MOD_LONG)
+		{
+			config->stride = 2;
+		}
+
+		if (config->modifier == PRINT_MOD_LONG_LONG)
+		{
+			config->stride = 4;
+		}
 	}
 
 	// Read optional separator
