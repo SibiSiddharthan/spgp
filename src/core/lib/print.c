@@ -492,68 +492,49 @@ static size_t pgp_compression_algorithm_print(buffer_t *buffer, uint32_t indent,
 
 static size_t pgp_curve_print(buffer_t *buffer, uint32_t indent, pgp_elliptic_curve_id curve, byte_t *oid, byte_t size)
 {
-	size_t pos = 0;
-
-	pos += print_format(buffer, indent, "Elliptic Curve: ");
+	const char *name = NULL;
+	const char *legacy = NULL;
 
 	switch (curve)
 	{
 	case PGP_EC_NIST_P256:
-		pos += xprint(buffer, "NIST-P256 (2A 86 48 CE 3D 03 01 07)\n");
+		name = "NIST-P256";
 		break;
 	case PGP_EC_NIST_P384:
-		pos += xprint(buffer, "NIST-P384 (2B 81 04 00 22)\n");
+		name = "NIST-P384";
 		break;
 	case PGP_EC_NIST_P521:
-		pos += xprint(buffer, "NIST-P521 (2B 81 04 00 23)\n");
+		name = "NIST-P521";
 		break;
 	case PGP_EC_BRAINPOOL_256R1:
-		pos += xprint(buffer, "BRAINPOOL-P256R1 (2B 24 03 03 02 08 01 01 07)\n");
+		name = "BRAINPOOL-P256R1";
 		break;
 	case PGP_EC_BRAINPOOL_384R1:
-		pos += xprint(buffer, "BRAINPOOL-P384R1 (2B 24 03 03 02 08 01 01 0B)\n");
+		name = "BRAINPOOL-P384R1";
 		break;
 	case PGP_EC_BRAINPOOL_512R1:
-		pos += xprint(buffer, "BRAINPOOL-P512R1 (2B 24 03 03 02 08 01 01 0D)\n");
+		name = "BRAINPOOL-P512R1";
 		break;
 	case PGP_EC_CURVE25519:
-	{
-		if (size == 10)
-		{
-			pos += xprint(buffer, "Curve25519 (2B 06 01 04 01 97 55 01 05 01) (Legacy OID)\n");
-		}
-		else
-		{
-			pos += xprint(buffer, "Curve25519 (2B 65 6E)\n");
-		}
-	}
-	break;
+		name = "Curve25519";
+		legacy = ((size == 10) ? " (Legacy OID)" : NULL);
+		break;
 	case PGP_EC_CURVE448:
-		pos += xprint(buffer, "Curve448 (2B 65 6F)\n");
+		name = "Curve448";
 		break;
 	case PGP_EC_ED25519:
-	{
-		if (size == 9)
-		{
-			pos += xprint(buffer, "Ed25519 (2B 06 01 04 01 DA 47 0F 01) (Legacy OID)\n");
-		}
-		else
-		{
-			pos += xprint(buffer, "Ed25519 (2B 65 70)\n");
-		}
-	}
-	break;
+		name = "Ed25519";
+		legacy = ((size == 9) ? " (Legacy OID)" : NULL);
+		break;
 	case PGP_EC_ED448:
-		pos += xprint(buffer, "Ed448 (2B 65 71)\n");
+		name = "Ed448";
 		break;
 	default:
-	{
-		pos += xprint(buffer, "Unknown (% A[%^02hhx])\n", oid, size);
-	}
-	break;
+		name = "Unknown";
+		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Elliptic Curve: %s (% A[%^.2hhx])%s\n", name, oid, size, legacy);
 }
 
 static size_t pgp_s2k_print(buffer_t *buffer, uint32_t indent, uint32_t options, pgp_s2k *s2k)
