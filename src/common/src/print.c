@@ -595,53 +595,7 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 		goto fail;
 	}
 
-	// Set the stride
-	if (config->subtype == PRINT_INT_NUMBER || config->subtype == PRINT_UINT_NUMBER || config->subtype == PRINT_UINT_BINARY ||
-		config->subtype == PRINT_UINT_OCTAL || config->subtype == PRINT_UINT_HEX)
-	{
-		config->stride = 4;
-
-		if (config->modifier == PRINT_MOD_LONG || config->modifier == PRINT_MOD_LONG_LONG || config->modifier == PRINT_MOD_MAX ||
-			config->modifier == PRINT_MOD_SIZE || config->modifier == PRINT_MOD_PTRDIFF)
-		{
-			config->stride = 8;
-		}
-
-		if (config->modifier == PRINT_MOD_SHORT)
-		{
-			config->stride = 2;
-		}
-
-		if (config->modifier == PRINT_MOD_SHORT_SHORT)
-		{
-			config->stride = 1;
-		}
-	}
-
-	if (config->subtype == PRINT_FLOAT_HEX || config->subtype == PRINT_FLOAT_NORMAL || config->subtype == PRINT_FLOAT_SCIENTIFIC)
-	{
-		config->stride = 4;
-
-		if (config->modifier == PRINT_MOD_LONG || config->modifier == PRINT_MOD_LONG_LONG)
-		{
-			config->stride = 8;
-		}
-	}
-
-	if (config->subtype == PRINT_CHAR)
-	{
-		config->stride = 1;
-
-		if (config->modifier == PRINT_MOD_LONG)
-		{
-			config->stride = 2;
-		}
-
-		if (config->modifier == PRINT_MOD_LONG_LONG)
-		{
-			config->stride = 4;
-		}
-	}
+	readbyte(format);
 
 	// Read optional separator
 	while ((byte = peekbyte(format, 0)) != '\0')
@@ -657,6 +611,8 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 			readbyte(format);
 			config->separator = readbyte(format);
 		}
+
+		break;
 	}
 
 	if (peekbyte(format, 0) != ']')
@@ -665,6 +621,54 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 	}
 
 	readbyte(format);
+
+	// Set the stride
+	if (config->subtype == PRINT_INT_NUMBER || config->subtype == PRINT_UINT_NUMBER || config->subtype == PRINT_UINT_BINARY ||
+		config->subtype == PRINT_UINT_OCTAL || config->subtype == PRINT_UINT_HEX)
+	{
+		config->stride = 4;
+
+		if (config->submodifier == PRINT_MOD_LONG || config->submodifier == PRINT_MOD_LONG_LONG || config->submodifier == PRINT_MOD_MAX ||
+			config->submodifier == PRINT_MOD_SIZE || config->submodifier == PRINT_MOD_PTRDIFF)
+		{
+			config->stride = 8;
+		}
+
+		if (config->submodifier == PRINT_MOD_SHORT)
+		{
+			config->stride = 2;
+		}
+
+		if (config->submodifier == PRINT_MOD_SHORT_SHORT)
+		{
+			config->stride = 1;
+		}
+	}
+
+	if (config->subtype == PRINT_FLOAT_HEX || config->subtype == PRINT_FLOAT_NORMAL || config->subtype == PRINT_FLOAT_SCIENTIFIC)
+	{
+		config->stride = 4;
+
+		if (config->submodifier == PRINT_MOD_LONG || config->submodifier == PRINT_MOD_LONG_LONG)
+		{
+			config->stride = 8;
+		}
+	}
+
+	if (config->subtype == PRINT_CHAR)
+	{
+		config->stride = 1;
+
+		if (config->submodifier == PRINT_MOD_LONG)
+		{
+			config->stride = 2;
+		}
+
+		if (config->submodifier == PRINT_MOD_LONG_LONG)
+		{
+			config->stride = 4;
+		}
+	}
 
 	// If both '-' and '0' are given '0' is ignored.
 	if (config->subflags & PRINT_LEFT_JUSTIFY)
@@ -698,8 +702,11 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 		}
 	}
 
+	return;
+
 fail:
 	config->type = PRINT_UNKNOWN;
+	return;
 }
 
 static byte_t alternate_form_char(print_config *config)
@@ -1473,11 +1480,11 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		print_config subconfig = {0};
 		buffer_t subbuffer = {0};
 
+		subconfig.type = config->subtype;
 		subconfig.flags = config->subflags;
 		subconfig.modifier = config->submodifier;
 		subconfig.width = config->subwidth;
 		subconfig.precision = config->subprecision;
-		subconfig.flags = config->subflags;
 
 		if (config->width != 0)
 		{
@@ -1490,7 +1497,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 		for (uint32_t i = 0; i < config->count; ++i)
 		{
-			subconfig.data = PTR_OFFSET(config->data, i * config->stride);
+			memcpy(&subconfig.data, PTR_OFFSET(config->data, i * config->stride), config->stride);
 			result += print_arg(&subbuffer, &subconfig);
 
 			if (i + 1 < config->count)
@@ -1542,6 +1549,8 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		{
 			*buffer = subbuffer;
 		}
+
+		return result;
 	}
 
 	return 0;
@@ -1600,6 +1609,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 					{
 						writebyte(buffer, readbyte(&in));
 						result += 1;
+						pos += 1;
 					}
 
 					continue;
