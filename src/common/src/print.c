@@ -593,6 +593,22 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 		goto fail;
 	}
 
+	// Read optional separator
+	while ((byte = peekbyte(format, 0)) != '\0')
+	{
+		if (byte == ' ')
+		{
+			readbyte(format);
+			continue;
+		}
+
+		if (byte == '%')
+		{
+			readbyte(format);
+			config->separator = readbyte(format);
+		}
+	}
+
 	if (peekbyte(format, 0) != ']')
 	{
 		goto fail;
@@ -619,14 +635,17 @@ static void parse_array_specifier(buffer_t *format, print_config *config)
 	}
 
 	// Prefer space over comma
-	if (config->flags & PRINT_GROUP_DIGITS)
+	if (config->separator == 0)
 	{
-		config->separator = ',';
-	}
+		if (config->flags & PRINT_GROUP_DIGITS)
+		{
+			config->separator = ',';
+		}
 
-	if (config->flags & PRINT_EMPTY_SPACE)
-	{
-		config->separator = ' ';
+		if (config->flags & PRINT_EMPTY_SPACE)
+		{
+			config->separator = ' ';
+		}
 	}
 
 fail:
