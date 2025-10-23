@@ -11,4 +11,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <buffer.h>
+
 #endif
