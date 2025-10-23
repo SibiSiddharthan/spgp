@@ -218,691 +218,977 @@ static uint32_t tls_client_hello_write_body(tls_client_hello *hello, void *buffe
 	return pos;
 }
 
-static uint32_t print_handshake_version(uint32_t indent, void *buffer, uint32_t size, tls_protocol_version version)
+static uint32_t print_handshake_version(buffer_t *buffer, uint32_t indent, tls_protocol_version version)
 {
-	uint32_t pos = 0;
-
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*sProtocol Version: ", indent * 4, "");
+	const char *name = NULL;
 
 	switch (TLS_VERSION_RAW(version))
 	{
 	case TLS_VERSION_1_0:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
+		name = "TLS 1.0";
 		break;
 	case TLS_VERSION_1_1:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.1 (3, 2)\n");
+		name = "TLS 1.1";
 		break;
 	case TLS_VERSION_1_2:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.2 (3, 3)\n");
+		name = "TLS 1.2";
 		break;
 	case TLS_VERSION_1_3:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
+		name = "TLS 1.3";
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (%hhu, %hhu)\n", version.major, version.minor);
+		name = "Unknown";
 		break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "Protocol Version: %s (%hhu, %hhu)", name, version.major, version.minor);
 }
 
-static uint32_t print_compression_method(uint32_t indent, void *buffer, uint32_t size, uint8_t method)
+static uint32_t print_compression_method(buffer_t *buffer, uint32_t indent, uint8_t method)
 {
 	switch (method)
 	{
 	case TLS_UNCOMPRESSED:
-		return print_format(indent, buffer, size, "NULL (ID 0)\n");
+		return print_format(buffer, indent, "NULL (ID %hhu)\n", method);
 	case TLS_ZLIB:
-		return print_format(indent, buffer, size, "DEFLATE (ID 1)\n");
+		return print_format(buffer, indent, "DEFLATE (ID %hhu)\n", method);
 	default:
-		return print_format(indent, buffer, size, "Unknown (ID %hhu)\n", method);
+		return print_format(buffer, indent, "Unknown (ID %hhu)\n", method);
 	}
 }
 
-static uint32_t print_cipher_suite(uint32_t indent, void *buffer, uint32_t size, uint8_t o1, uint8_t o2)
+static uint32_t print_cipher_suite(buffer_t *buffer, uint32_t indent, uint8_t o1, uint8_t o2)
 {
+	const char *name = NULL;
 	uint16_t id = TLS_MAKE_CIPHER_SUITE(o1, o2);
 
 	switch (id)
 	{
 	case TLS_NULL_WITH_NULL_NULL:
-		return print_format(indent, buffer, size, "TLS_NULL_WITH_NULL_NULL (ID {0x00, 0x00})\n");
+		name = "TLS_NULL_WITH_NULL_NULL";
+		break;
 
 	case TLS_RSA_WITH_NULL_MD5:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_NULL_MD5 (ID {0x00, 0x01})\n");
+		name = "TLS_RSA_WITH_NULL_MD5";
+		break;
 	case TLS_RSA_WITH_NULL_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_NULL_SHA1 (ID {0x00, 0x02})\n");
+		name = "TLS_RSA_WITH_NULL_SHA1";
+		break;
 	case TLS_RSA_WITH_NULL_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_NULL_SHA256 (ID {0x00, 0x3B})\n");
+		name = "TLS_RSA_WITH_NULL_SHA256";
+		break;
 	case TLS_RSA_WITH_RC4_128_MD5:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_RC4_128_MD5 (ID {0x00, 0x04})\n");
+		name = "TLS_RSA_WITH_RC4_128_MD5";
+		break;
 	case TLS_RSA_WITH_RC4_128_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_RC4_128_SHA1 (ID {0x00, 0x05})\n");
+		name = "TLS_RSA_WITH_RC4_128_SHA1";
+		break;
 	case TLS_RSA_WITH_IDEA_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_IDEA_CBC_SHA1 (ID {0x00, 0x07})\n");
+		name = "TLS_RSA_WITH_IDEA_CBC_SHA1";
+		break;
 	case TLS_RSA_WITH_DES_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x09})\n");
+		name = "TLS_RSA_WITH_DES_CBC_SHA1";
+		break;
 	case TLS_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x0A})\n");
+		name = "TLS_RSA_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_RSA_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x2F})\n");
+		name = "TLS_RSA_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_RSA_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x35})\n");
+		name = "TLS_RSA_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_RSA_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3C})\n");
+		name = "TLS_RSA_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_RSA_WITH_AES_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x3D})\n");
+		name = "TLS_RSA_WITH_AES_256_CBC_SHA256";
+		break;
 
 	case TLS_DH_DSS_WITH_DES_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_DES_CBC_SHA1 (ID {0x00, 0x0C})\n");
+		name = "TLS_DH_DSS_WITH_DES_CBC_SHA1";
+		break;
 	case TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x0D})\n");
+		name = "TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_DH_RSA_WITH_DES_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x0F})\n");
+		name = "TLS_DH_RSA_WITH_DES_CBC_SHA1";
+		break;
 	case TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x10})\n");
+		name = "TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_DHE_DSS_WITH_DES_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_DES_CBC_SHA1 (ID {0x00, 0x12})\n");
+		name = "TLS_DHE_DSS_WITH_DES_CBC_SHA1";
+		break;
 	case TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x13})\n");
+		name = "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_DHE_RSA_WITH_DES_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_DES_CBC_SHA1 (ID {0x00, 0x15})\n");
+		name = "TLS_DHE_RSA_WITH_DES_CBC_SHA1";
+		break;
 	case TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x16})\n");
+		name = "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_DH_DSS_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x30})\n");
+		name = "TLS_DH_DSS_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_DH_RSA_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x31})\n");
+		name = "TLS_DH_RSA_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_DHE_DSS_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x32})\n");
+		name = "TLS_DHE_DSS_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_DHE_RSA_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x33})\n");
+		name = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_DH_DSS_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x36})\n");
+		name = "TLS_DH_DSS_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_DH_RSA_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x37})\n");
+		name = "TLS_DH_RSA_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_DHE_DSS_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x38})\n");
+		name = "TLS_DHE_DSS_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_DHE_RSA_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x39})\n");
+		name = "TLS_DHE_RSA_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_DH_DSS_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3E})\n");
+		name = "TLS_DH_DSS_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x3F})\n");
+		name = "TLS_DH_RSA_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x40})\n");
+		name = "TLS_DHE_DSS_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x67})\n");
+		name = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_DH_DSS_WITH_AES_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x68})\n");
+		name = "TLS_DH_DSS_WITH_AES_256_CBC_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_AES_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x69})\n");
+		name = "TLS_DH_RSA_WITH_AES_256_CBC_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_AES_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6A})\n");
+		name = "TLS_DHE_DSS_WITH_AES_256_CBC_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_AES_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6B})\n");
+		name = "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256";
+		break;
 
 	case TLS_DH_ANON_WITH_RC4_128_MD5:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_RC4_128_MD5 (ID {0x00, 0x18})\n");
+		name = "TLS_DH_ANON_WITH_RC4_128_MD5";
+		break;
 	case TLS_DH_ANON_WITH_DES_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_DES_CBC_SHA1 (ID {0x00, 0x1A})\n");
+		name = "TLS_DH_ANON_WITH_DES_CBC_SHA1";
+		break;
 	case TLS_DH_ANON_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_3DES_EDE_CBC_SHA1 (ID {0x00, 0x1B})\n");
+		name = "TLS_DH_ANON_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_DH_ANON_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_AES_128_CBC_SHA1 (ID {0x00, 0x34})\n");
+		name = "TLS_DH_ANON_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_DH_ANON_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_AES_256_CBC_SHA1 (ID {0x00, 0x3A})\n");
+		name = "TLS_DH_ANON_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_DH_ANON_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_AES_128_CBC_SHA256 (ID {0x00, 0x6C})\n");
+		name = "TLS_DH_ANON_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_DH_ANON_WITH_AES_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_AES_256_CBC_SHA256 (ID {0x00, 0x6D})\n");
+		name = "TLS_DH_ANON_WITH_AES_256_CBC_SHA256";
+		break;
 
 	// RFC 5288: AES Galois Counter Mode (GCM) Cipher Suites for TLS
 	case TLS_RSA_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_128_GCM_SHA256 (ID {0x00, 0x9C})\n");
+		name = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_RSA_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_256_GCM_SHA384 (ID {0x00, 0x9D})\n");
+		name = "TLS_RSA_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_DHE_RSA_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 (ID {0x00, 0x9E})\n");
+		name = "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 (ID {0x00, 0x9F})\n");
+		name = "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_DH_RSA_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA0})\n");
+		name = "TLS_DH_RSA_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA1})\n");
+		name = "TLS_DH_RSA_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_DHE_DSS_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA2})\n");
+		name = "TLS_DHE_DSS_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA3})\n");
+		name = "TLS_DHE_DSS_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_DH_DSS_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA4})\n");
+		name = "TLS_DH_DSS_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_DH_DSS_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA5})\n");
+		name = "TLS_DH_DSS_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_DH_anon_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_anon_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA6})\n");
+		name = "TLS_DH_anon_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_DH_anon_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_anon_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA7})\n");
+		name = "TLS_DH_anon_WITH_AES_256_GCM_SHA384";
+		break;
 
 	// RFC 5487: Pre-Shared Key Cipher Suites for TLS with SHA-256/384 and AES Galois Counter Mode
 	case TLS_PSK_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xA8})\n");
+		name = "TLS_PSK_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_PSK_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xA9})\n");
+		name = "TLS_PSK_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_DHE_PSK_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xAA})\n");
+		name = "TLS_DHE_PSK_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xAB})\n");
+		name = "TLS_DHE_PSK_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_RSA_PSK_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_AES_128_GCM_SHA256 (ID {0x00, 0xAC})\n");
+		name = "TLS_RSA_PSK_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_AES_256_GCM_SHA384 (ID {0x00, 0xAD})\n");
+		name = "TLS_RSA_PSK_WITH_AES_256_GCM_SHA384";
+		break;
 
 	case TLS_PSK_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xAE})\n");
+		name = "TLS_PSK_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_PSK_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xAF})\n");
+		name = "TLS_PSK_WITH_AES_256_CBC_SHA384";
+		break;
 	case TLS_PSK_WITH_NULL_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB0})\n");
+		name = "TLS_PSK_WITH_NULL_SHA256";
+		break;
 	case TLS_PSK_WITH_NULL_SHA384:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB1})\n");
+		name = "TLS_PSK_WITH_NULL_SHA384";
+		break;
 
 	case TLS_DHE_PSK_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xB2})\n");
+		name = "TLS_DHE_PSK_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xB3})\n");
+		name = "TLS_DHE_PSK_WITH_AES_256_CBC_SHA384";
+		break;
 	case TLS_DHE_PSK_WITH_NULL_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB4})\n");
+		name = "TLS_DHE_PSK_WITH_NULL_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_NULL_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB5})\n");
+		name = "TLS_DHE_PSK_WITH_NULL_SHA384";
+		break;
 
 	case TLS_RSA_PSK_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_AES_128_CBC_SHA256 (ID {0x00, 0xB6})\n");
+		name = "TLS_RSA_PSK_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_AES_256_CBC_SHA384 (ID {0x00, 0xB7})\n");
+		name = "TLS_RSA_PSK_WITH_AES_256_CBC_SHA384";
+		break;
 	case TLS_RSA_PSK_WITH_NULL_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_NULL_SHA256 (ID {0x00, 0xB8})\n");
+		name = "TLS_RSA_PSK_WITH_NULL_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_NULL_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_NULL_SHA384 (ID {0x00, 0xB9})\n");
+		name = "TLS_RSA_PSK_WITH_NULL_SHA384";
+		break;
 
 	// RFC 5932:  Camellia Cipher Suites for TLS
 	case TLS_RSA_WITH_CAMELLIA_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x41})\n");
+		name = "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA1";
+		break;
 	case TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x42})\n");
+		name = "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA1";
+		break;
 	case TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x43})\n");
+		name = "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA1";
+		break;
 	case TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x44})\n");
+		name = "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA1";
+		break;
 	case TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x45})\n");
+		name = "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA1";
+		break;
 	case TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA1 (ID {0x00, 0x46})\n");
+		name = "TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA1";
+		break;
 
 	case TLS_RSA_WITH_CAMELLIA_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x84})\n");
+		name = "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA1";
+		break;
 	case TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x85})\n");
+		name = "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA1";
+		break;
 	case TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x86})\n");
+		name = "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA1";
+		break;
 	case TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x87})\n");
+		name = "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA1";
+		break;
 	case TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x88})\n");
+		name = "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA1";
+		break;
 	case TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA1 (ID {0x00, 0x89})\n");
+		name = "TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA1";
+		break;
 
 	case TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBA})\n");
+		name = "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBB})\n");
+		name = "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBC})\n");
+		name = "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBD})\n");
+		name = "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBE})\n");
+		name = "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA256 (ID {0x00, 0xBF})\n");
+		name = "TLS_DH_ANON_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 
 	case TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC0})\n");
+		name = "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256";
+		break;
 	case TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC1})\n");
+		name = "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC2})\n");
+		name = "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC3})\n");
+		name = "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC4})\n");
+		name = "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256";
+		break;
 	case TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA256 (ID {0x00, 0xC5})\n");
+		name = "TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA256";
+		break;
 
 	// RFC 8998: ShangMi (SM) Cipher Suites for TLS 1.3
 	case TLS_SM4_GCM_SM3:
-		return print_format(indent, buffer, size, "TLS_SM4_GCM_SM3 (ID {0x00, 0xC6})\n");
+		name = "TLS_SM4_GCM_SM3";
+		break;
 	case TLS_SM4_CCM_SM3:
-		return print_format(indent, buffer, size, "TLS_SM4_CCM_SM3 (ID {0x00, 0xC7})\n");
+		name = "TLS_SM4_CCM_SM3";
+		break;
 
 	// RFC 5746: Transport Layer Security (TLS) Renegotiation Indication Extension
 	case TLS_EMPTY_RENEGOTIATION_INFO_SCSV:
-		return print_format(indent, buffer, size, "TLS_EMPTY_RENEGOTIATION_INFO_SCSV (ID {0x00, 0xFF})\n");
+		name = "TLS_EMPTY_RENEGOTIATION_INFO_SCSV";
+		break;
 
 	// RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
 	case TLS_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_AES_128_GCM_SHA256 (ID {0x13, 0x01})\n");
+		name = "TLS_AES_128_GCM_SHA256";
+		break;
 	case TLS_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_AES_256_GCM_SHA384 (ID {0x13, 0x02})\n");
+		name = "TLS_AES_256_GCM_SHA384";
+		break;
 	case TLS_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_CHACHA20_POLY1305_SHA256 (ID {0x13, 0x03})\n");
+		name = "TLS_CHACHA20_POLY1305_SHA256";
+		break;
 	case TLS_AES_128_CCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_AES_128_CCM_SHA256 (ID {0x13, 0x04})\n");
+		name = "TLS_AES_128_CCM_SHA256";
+		break;
 	case TLS_AES_128_CCM_8_SHA256:
-		return print_format(indent, buffer, size, "TLS_AES_128_CCM_8_SHA256 (ID {0x13, 0x05})\n");
+		name = "TLS_AES_128_CCM_8_SHA256";
+		break;
 
 	// RFC 8422:  Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS) Versions 1.2 and Earlier
 	case TLS_ECDHE_ECDSA_WITH_NULL_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_NULL_SHA1 (ID {0xC0, 0x06})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_NULL_SHA1";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x08})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x09})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x0A})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA1";
+		break;
 
 	case TLS_ECDHE_RSA_WITH_NULL_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_NULL_SHA1 (ID {0xC0, 0x10})\n");
+		name = "TLS_ECDHE_RSA_WITH_NULL_SHA1";
+		break;
 	case TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x12})\n");
+		name = "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x13})\n");
+		name = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x14})\n");
+		name = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA1";
+		break;
 
 	case TLS_ECDH_ANON_WITH_NULL_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDH_ANON_WITH_NULL_SHA1 (ID {0xC0, 0x15})\n");
+		name = "TLS_ECDH_ANON_WITH_NULL_SHA1";
+		break;
 	case TLS_ECDH_ANON_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDH_ANON_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x17})\n");
+		name = "TLS_ECDH_ANON_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_ECDH_ANON_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDH_ANON_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x18})\n");
+		name = "TLS_ECDH_ANON_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x19})\n");
+		name = "TLS_ECDH_ANON_WITH_AES_256_CBC_SHA1";
+		break;
 
 	// RFC 5054: Using the Secure Remote Password (SRP) Protocol for TLS Authentication
 	case TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x1A})\n");
+		name = "TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x1B})\n");
+		name = "TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x1C})\n");
+		name = "TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x1D})\n");
+		name = "TLS_SRP_SHA_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x1E})\n");
+		name = "TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x1F})\n");
+		name = "TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x20})\n");
+		name = "TLS_SRP_SHA_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x21})\n");
+		name = "TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x22})\n");
+		name = "TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA1";
+		break;
 
 	// RFC 5289: TLS Elliptic Curve Cipher Suites with SHA-256/384 and AES Galois Counter Mode (GCM)
 	case TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x23})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x24})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384";
+		break;
 	case TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x25})\n");
+		name = "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x26})\n");
+		name = "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384";
+		break;
 	case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x27})\n");
+		name = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x28})\n");
+		name = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384";
+		break;
 	case TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x29})\n");
+		name = "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x2A})\n");
+		name = "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384";
+		break;
 
 	case TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2B})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x2C})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2D})\n");
+		name = "TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x2E})\n");
+		name = "TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x2F})\n");
+		name = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x30})\n");
+		name = "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256 (ID {0xC0, 0x31})\n");
+		name = "TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384 (ID {0xC0, 0x32})\n");
+		name = "TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384";
+		break;
 
 	// RFC 5489: ECDHE_PSK Cipher Suites for Transport Layer Security (TLS)
 	case TLS_ECDHE_PSK_WITH_RC4_128_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_RC4_128_SHA1 (ID {0xC0, 0x33})\n");
+		name = "TLS_ECDHE_PSK_WITH_RC4_128_SHA1";
+		break;
 	case TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA1 (ID {0xC0, 0x34})\n");
+		name = "TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA1";
+		break;
 	case TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA1 (ID {0xC0, 0x35})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA1";
+		break;
 	case TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA1 (ID {0xC0, 0x36})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA1";
+		break;
 	case TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256 (ID {0xC0, 0x37})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384 (ID {0xC0, 0x38})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384";
+		break;
 	case TLS_ECDHE_PSK_WITH_NULL_SHA1:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_NULL_SHA1 (ID {0xC0, 0x39})\n");
+		name = "TLS_ECDHE_PSK_WITH_NULL_SHA1";
+		break;
 	case TLS_ECDHE_PSK_WITH_NULL_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_NULL_SHA256 (ID {0xC0, 0x3A})\n");
+		name = "TLS_ECDHE_PSK_WITH_NULL_SHA256";
+		break;
 	case TLS_ECDHE_PSK_WITH_NULL_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_NULL_SHA384 (ID {0xC0, 0x3B})\n");
+		name = "TLS_ECDHE_PSK_WITH_NULL_SHA384";
+		break;
 
 	// RFC 6209: Addition of the ARIA Cipher Suites to Transport Layer Security (TLS)
 	case TLS_RSA_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x3C})\n");
+		name = "TLS_RSA_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_RSA_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x3D})\n");
+		name = "TLS_RSA_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x3E})\n");
+		name = "TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x3F})\n");
+		name = "TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x40})\n");
+		name = "TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x41})\n");
+		name = "TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x42})\n");
+		name = "TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x43})\n");
+		name = "TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x44})\n");
+		name = "TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x45})\n");
+		name = "TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_DH_ANON_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x46})\n");
+		name = "TLS_DH_ANON_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_DH_ANON_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x47})\n");
+		name = "TLS_DH_ANON_WITH_ARIA_256_CBC_SHA384";
+		break;
 
 	case TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x48})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x49})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4A})\n");
+		name = "TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4B})\n");
+		name = "TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4C})\n");
+		name = "TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4D})\n");
+		name = "TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x4E})\n");
+		name = "TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x4F})\n");
+		name = "TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384";
+		break;
 
 	case TLS_RSA_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x50})\n");
+		name = "TLS_RSA_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_RSA_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x51})\n");
+		name = "TLS_RSA_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x52})\n");
+		name = "TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x53})\n");
+		name = "TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x54})\n");
+		name = "TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x55})\n");
+		name = "TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x56})\n");
+		name = "TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x57})\n");
+		name = "TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x58})\n");
+		name = "TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x59})\n");
+		name = "TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_DH_ANON_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5A})\n");
+		name = "TLS_DH_ANON_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_DH_ANON_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5B})\n");
+		name = "TLS_DH_ANON_WITH_ARIA_256_GCM_SHA384";
+		break;
 
 	case TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5C})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5D})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x5E})\n");
+		name = "TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x5F})\n");
+		name = "TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x60})\n");
+		name = "TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x61})\n");
+		name = "TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x62})\n");
+		name = "TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x63})\n");
+		name = "TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384";
+		break;
 
 	case TLS_PSK_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x64})\n");
+		name = "TLS_PSK_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_PSK_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x65})\n");
+		name = "TLS_PSK_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x66})\n");
+		name = "TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x67})\n");
+		name = "TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x68})\n");
+		name = "TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x69})\n");
+		name = "TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384";
+		break;
 	case TLS_PSK_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6A})\n");
+		name = "TLS_PSK_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_PSK_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6B})\n");
+		name = "TLS_PSK_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6C})\n");
+		name = "TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6D})\n");
+		name = "TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256 (ID {0xC0, 0x6E})\n");
+		name = "TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384 (ID {0xC0, 0x6F})\n");
+		name = "TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 (ID {0xC0, 0x70})\n");
+		name = "TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 (ID {0xC0, 0x71})\n");
+		name = "TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384";
+		break;
 
 	// RFC 6367: Addition of the Camellia Cipher Suites to Transport Layer Security (TLS)
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x72})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x73})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x74})\n");
+		name = "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x75})\n");
+		name = "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x76})\n");
+		name = "TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x77})\n");
+		name = "TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 	case TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x78})\n");
+		name = "TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x79})\n");
+		name = "TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 
 	case TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7A})\n");
+		name = "TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7B})\n");
+		name = "TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7C})\n");
+		name = "TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7D})\n");
+		name = "TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x7E})\n");
+		name = "TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x7F})\n");
+		name = "TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x80})\n");
+		name = "TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x81})\n");
+		name = "TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x82})\n");
+		name = "TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x83})\n");
+		name = "TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_DH_ANON_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x84})\n");
+		name = "TLS_DH_ANON_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_DH_ANON_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DH_ANON_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x85})\n");
+		name = "TLS_DH_ANON_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x86})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x87})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x88})\n");
+		name = "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x89})\n");
+		name = "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8A})\n");
+		name = "TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8B})\n");
+		name = "TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8C})\n");
+		name = "TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8D})\n");
+		name = "TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 
 	case TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x8D})\n");
+		name = "TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x8F})\n");
+		name = "TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x90})\n");
+		name = "TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x91})\n");
+		name = "TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256 (ID {0xC0, 0x92})\n");
+		name = "TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384 (ID {0xC0, 0x93})\n");
+		name = "TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384";
+		break;
 	case TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x94})\n");
+		name = "TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x95})\n");
+		name = "TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 	case TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x96})\n");
+		name = "TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x97})\n");
+		name = "TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 	case TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x98})\n");
+		name = "TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x99})\n");
+		name = "TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 	case TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 (ID {0xC0, 0x9A})\n");
+		name = "TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256";
+		break;
 	case TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 (ID {0xC0, 0x9B})\n");
+		name = "TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384";
+		break;
 
 	// RFC 6655: AES-CCM Cipher Suites for Transport Layer Security (TLS)
 	case TLS_RSA_WITH_AES_128_CCM:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_128_CCM (ID {0xC0, 0x9C})\n");
+		name = "TLS_RSA_WITH_AES_128_CCM";
+		break;
 	case TLS_RSA_WITH_AES_256_CCM:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_256_CCM (ID {0xC0, 0x9D})\n");
+		name = "TLS_RSA_WITH_AES_256_CCM";
+		break;
 	case TLS_DHE_RSA_WITH_AES_128_CCM:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_128_CCM (ID {0xC0, 0x9E})\n");
+		name = "TLS_DHE_RSA_WITH_AES_128_CCM";
+		break;
 	case TLS_DHE_RSA_WITH_AES_256_CCM:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_256_CCM (ID {0xC0, 0x9F})\n");
+		name = "TLS_DHE_RSA_WITH_AES_256_CCM";
+		break;
 	case TLS_RSA_WITH_AES_128_CCM_8:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_128_CCM_8 (ID {0xC0, 0xA0})\n");
+		name = "TLS_RSA_WITH_AES_128_CCM_8";
+		break;
 	case TLS_RSA_WITH_AES_256_CCM_8:
-		return print_format(indent, buffer, size, "TLS_RSA_WITH_AES_256_CCM_8 (ID {0xC0, 0xA1})\n");
+		name = "TLS_RSA_WITH_AES_256_CCM_8";
+		break;
 	case TLS_DHE_RSA_WITH_AES_128_CCM_8:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_128_CCM_8 (ID {0xC0, 0xA2})\n");
+		name = "TLS_DHE_RSA_WITH_AES_128_CCM_8";
+		break;
 	case TLS_DHE_RSA_WITH_AES_256_CCM_8:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_AES_256_CCM_8 (ID {0xC0, 0xA3})\n");
+		name = "TLS_DHE_RSA_WITH_AES_256_CCM_8";
+		break;
 
 	case TLS_PSK_WITH_AES_128_CCM:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_128_CCM (ID {0xC0, 0xA4})\n");
+		name = "TLS_PSK_WITH_AES_128_CCM";
+		break;
 	case TLS_PSK_WITH_AES_256_CCM:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_256_CCM (ID {0xC0, 0xA5})\n");
+		name = "TLS_PSK_WITH_AES_256_CCM";
+		break;
 	case TLS_DHE_PSK_WITH_AES_128_CCM:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_AES_128_CCM (ID {0xC0, 0xA6})\n");
+		name = "TLS_DHE_PSK_WITH_AES_128_CCM";
+		break;
 	case TLS_DHE_PSK_WITH_AES_256_CCM:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_AES_256_CCM (ID {0xC0, 0xA7})\n");
+		name = "TLS_DHE_PSK_WITH_AES_256_CCM";
+		break;
 	case TLS_PSK_WITH_AES_128_CCM_8:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_128_CCM_8 (ID {0xC0, 0xA8})\n");
+		name = "TLS_PSK_WITH_AES_128_CCM_8";
+		break;
 	case TLS_PSK_WITH_AES_256_CCM_8:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_AES_256_CCM_8 (ID {0xC0, 0xA9})\n");
+		name = "TLS_PSK_WITH_AES_256_CCM_8";
+		break;
 	case TLS_PSK_DHE_WITH_AES_128_CCM_8:
-		return print_format(indent, buffer, size, "TLS_PSK_DHE_WITH_AES_128_CCM_8 (ID {0xC0, 0xAA})\n");
+		name = "TLS_PSK_DHE_WITH_AES_128_CCM_8";
+		break;
 	case TLS_PSK_DHE_WITH_AES_256_CCM_8:
-		return print_format(indent, buffer, size, "TLS_PSK_DHE_WITH_AES_256_CCM_8 (ID {0xC0, 0xAB})\n");
+		name = "TLS_PSK_DHE_WITH_AES_256_CCM_8";
+		break;
 
 	// RFC 9150: TLS 1.3 Authentication and Integrity-Only Cipher Suites
 	case TLS_SHA256_SHA256:
-		return print_format(indent, buffer, size, "TLS_SHA256_SHA256 (ID {0xC0, 0xB4})\n");
+		name = "TLS_SHA256_SHA256";
+		break;
 	case TLS_SHA384_SHA384:
-		return print_format(indent, buffer, size, "TLS_SHA384_SHA384 (ID {0xC0, 0xB5})\n");
+		name = "TLS_SHA384_SHA384";
+		break;
 
 	// RFC 9189: GOST Cipher Suites for Transport Layer Security (TLS) Protocol Version 1.2
 	case TLS_GOST_R341112_256_WITH_KUZNYECHIK_CTR_OMAC:
-		return print_format(indent, buffer, size, "TLS_GOST_R341112_256_WITH_KUZNYECHIK_CTR_OMAC (ID {0xC1, 0x00})\n");
+		name = "TLS_GOST_R341112_256_WITH_KUZNYECHIK_CTR_OMAC";
+		break;
 	case TLS_GOST_R341112_256_WITH_MAGMA_CTR_OMAC:
-		return print_format(indent, buffer, size, "TLS_GOST_R341112_256_WITH_MAGMA_CTR_OMAC (ID {0xC1, 0x01})\n");
+		name = "TLS_GOST_R341112_256_WITH_MAGMA_CTR_OMAC";
+		break;
 	case TLS_GOST_R341112_256_WITH_28147_CNT_IMIT:
-		return print_format(indent, buffer, size, "TLS_GOST_R341112_256_WITH_28147_CNT_IMIT (ID {0xC1, 0x02})\n");
+		name = "TLS_GOST_R341112_256_WITH_28147_CNT_IMIT";
+		break;
 	case TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_LIGHT:
-		return print_format(indent, buffer, size, "TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_LIGHT (ID {0xC1, 0x03})\n");
+		name = "TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_LIGHT";
+		break;
 	case TLS_GOST_R341112_256_WITH_MAGMA_MGM_LIGHT:
-		return print_format(indent, buffer, size, "TLS_GOST_R341112_256_WITH_MAGMA_MGM_LIGHT (ID {0xC1, 0x04})\n");
+		name = "TLS_GOST_R341112_256_WITH_MAGMA_MGM_LIGHT";
+		break;
 	case TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_STRONG:
-		return print_format(indent, buffer, size, "TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_STRONG (ID {0xC1, 0x05})\n");
+		name = "TLS_GOST_R341112_256_WITH_KUZNYECHIK_MGM_STRONG";
+		break;
 	case TLS_GOST_R341112_256_WITH_MAGMA_MGM_STRONG:
-		return print_format(indent, buffer, size, "TLS_GOST_R341112_256_WITH_MAGMA_MGM_STRONG (ID {0xC1, 0x06})\n");
+		name = "TLS_GOST_R341112_256_WITH_MAGMA_MGM_STRONG";
+		break;
 
 	// RFC 7905: ChaCha20-Poly1305 Cipher Suites for Transport Layer Security (TLS)
 	case TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xA8})\n");
+		name = "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256";
+		break;
 	case TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xA9})\n");
+		name = "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256";
+		break;
 	case TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAA})\n");
+		name = "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256";
+		break;
 
 	case TLS_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAB})\n");
+		name = "TLS_PSK_WITH_CHACHA20_POLY1305_SHA256";
+		break;
 	case TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAC})\n");
+		name = "TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256";
+		break;
 	case TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAD})\n");
+		name = "TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256";
+		break;
 	case TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256:
-		return print_format(indent, buffer, size, "TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256 (ID {0xCC, 0xAE})\n");
+		name = "TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256";
+		break;
 
 	// RFC 8442: ECDHE_PSK with AES-GCM and AES-CCM Cipher Suites for TLS 1.2 and DTLS 1.2
 	case TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256 (ID {0xD0, 0x01})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256";
+		break;
 	case TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 (ID {0xD0, 0x02})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384";
+		break;
 	case TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 (ID {0xD0, 0x03})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256";
+		break;
 	case TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256:
-		return print_format(indent, buffer, size, "TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 (ID {0xD0, 0x05})\n");
+		name = "TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256";
+		break;
 
 	default:
 	{
 		if (tls_check_grease_value(id))
 		{
-			return print_format(indent, buffer, size, "GREASE Cipher (ID {0x%02hhX, 0x%02hhX})\n", o1, o2);
+			name = "GREASE Cipher";
 		}
 		else
 		{
-			return print_format(indent, buffer, size, "Unknown (ID {0x%02hhX, 0x%02hhX})\n", o1, o2);
+			name = "Unknown";
 		}
 	}
+	break;
 	}
+
+	return print_format(buffer, indent, "%s (ID {%#^.2hhx, %#^.2hhx})\n", name, o1, o2);
 }
 
-static uint32_t tls_client_hello_print_body(tls_client_hello *hello, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_client_hello_print_body(tls_client_hello *hello, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1096,7 +1382,7 @@ static uint32_t tls_server_hello_write_body(tls_server_hello *hello, void *buffe
 	return pos;
 }
 
-static uint32_t tls_server_hello_print_body(tls_server_hello *hello, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_server_hello_print_body(tls_server_hello *hello, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1275,7 +1561,7 @@ static uint32_t tls_new_session_ticket_write_body(tls_new_session_ticket *sessio
 	return pos;
 }
 
-static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *session, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *session, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1382,7 +1668,7 @@ static uint32_t tls_encrypted_extensions_write_body(tls_encrypted_extensions *ex
 	return pos;
 }
 
-static uint32_t tls_encrypted_extensions_print_body(tls_encrypted_extensions *extensions, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_encrypted_extensions_print_body(tls_encrypted_extensions *extensions, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1492,7 +1778,7 @@ static uint32_t tls_certificate_request_write_body(tls_certificate_request *requ
 	return pos;
 }
 
-static uint32_t tls_certificate_request_print_body(tls_certificate_request *request, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_certificate_request_print_body(tls_certificate_request *request, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1562,7 +1848,7 @@ static uint32_t tls_certificate_verify_write_body(tls_certificate_verify *verify
 	return pos;
 }
 
-static uint32_t tls_certificate_verify_print_body(tls_certificate_verify *verify, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_certificate_verify_print_body(tls_certificate_verify *verify, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1618,7 +1904,7 @@ static uint32_t tls_key_update_write_body(tls_key_update *update, void *buffer)
 	return pos;
 }
 
-static uint32_t tls_key_update_print_body(tls_key_update *update, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_key_update_print_body(tls_key_update *update, buffer_t *buffer, uint32_t indent)
 {
 	// Update Request
 	switch (update->request)
@@ -1675,7 +1961,7 @@ static uint32_t tls_handshake_finished_write_body(tls_handshake_finished *finish
 	return pos;
 }
 
-static uint32_t tls_handshake_finished_print_body(tls_handshake_finished *finish, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_handshake_finished_print_body(tls_handshake_finished *finish, buffer_t *buffer, uint32_t indent)
 {
 	// Verify MAC
 	return print_bytes(indent, buffer, size, "Verification MAC", finish->verify, finish->header.size);
@@ -1724,7 +2010,7 @@ static uint32_t tls_handshake_message_hash_write_body(tls_handshake_message_hash
 	return pos;
 }
 
-static uint32_t tls_handshake_message_hash_print_body(tls_handshake_message_hash *hash, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_handshake_message_hash_print_body(tls_handshake_message_hash *hash, buffer_t *buffer, uint32_t indent)
 {
 	// Message Hash
 	return print_bytes(indent, buffer, size, "Message Hash", hash->hash, hash->header.size);
