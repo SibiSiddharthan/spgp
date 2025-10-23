@@ -161,10 +161,10 @@ uint32_t tls_record_write(void *record, void *buffer, uint32_t size)
 	return pos;
 }
 
-static uint32_t print_record_header(tls_record_header *header, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t print_record_header(tls_record_header *header, buffer_t *buffer, uint32_t indent)
 {
-	uint32_t pos = 0;
-	char *version = NULL;
+	const char *version = NULL;
+	const char *type = NULL;
 
 	switch (TLS_VERSION_RAW(header->version))
 	{
@@ -185,63 +185,60 @@ static uint32_t print_record_header(tls_record_header *header, void *buffer, uin
 		break;
 	}
 
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*s", indent * 4, "");
-
 	switch (header->type)
 	{
 	case TLS_INVALID_CONTENT:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Invalid Content Type (ID 0) (%hu bytes) ", header->size);
+		type = "TLS Invalid Content Type";
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Cipher Specification Change (ID 20) (%hu bytes) ", header->size);
+		type = "TLS Cipher Specification Change";
 		break;
 	case TLS_ALERT:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Alert (ID 21) (%hu bytes) ", header->size);
+		type = "TLS Alert";
 		break;
 	case TLS_HANDSHAKE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Handshake (ID 22) (%hu bytes) ", header->size);
+		type = "TLS Handshake";
 		break;
 	case TLS_APPLICATION_DATA:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Application Data (ID 23) (%hu bytes) ", header->size);
+		type = "TLS Application Data";
 		break;
 	case TLS_HEARTBEAT:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Heartbeat (ID 24) (%hu bytes) ", header->size);
+		type = "TLS Heartbeat";
 		break;
 	case TLS_CID:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Content Identifier (ID 25) (%hu bytes) ", header->size);
+		type = "TLS Content Identifier";
 		break;
 	case TLS_ACK:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "TLS Acknowledge (ID 26) (%hu bytes) ", header->size);
+		type = "TLS Acknowledge";
 		break;
 	default:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu) (%hu bytes) ", header->type, header->size);
+		type = "Unknown";
 		break;
 	}
 
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "(%s)\n", version);
-
-	return pos;
+	return print_format(buffer, indent, "%s (ID %hhu) (%hu bytes) (%s)\n", type, header->type, header->size, version);
 }
 
-uint32_t tls_record_print(void *record, void *buffer, uint32_t size, uint32_t indent)
+uint32_t tls_record_print(void *record, buffer_t *buffer, uint32_t indent)
 {
 	tls_record_header *header = record;
 	uint32_t pos = 0;
 
-	pos += print_record_header(header, PTR_OFFSET(buffer, pos), size - pos, indent);
+	pos += print_record_header(header, buffer, indent);
+	indent += 1;
 
 	switch (header->type)
 	{
 	case TLS_INVALID_CONTENT:
 		break;
 	case TLS_CHANGE_CIPHER_SPEC:
-		pos += tls_change_cipher_spec_print_body(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_change_cipher_spec_print_body(record, buffer, indent);
 		break;
 	case TLS_ALERT:
-		pos += tls_alert_print_body(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_alert_print_body(record, buffer, indent);
 		break;
 	case TLS_HANDSHAKE:
-		pos += tls_handshake_print_body(record, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_handshake_print_body(record, buffer, indent);
 		break;
 	case TLS_APPLICATION_DATA:
 	case TLS_HEARTBEAT:
