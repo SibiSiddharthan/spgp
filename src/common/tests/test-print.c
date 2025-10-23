@@ -1094,6 +1094,8 @@ uint32_t test_array(void)
 
 	char *c[] = {"hello", "world"};
 
+	char d[] = {'a', 'b', 'c', 'd'};
+
 	memset(buffer, 0, 256);
 	result = sprint(buffer, 256, "%A[%u]", a, 4);
 	status += CHECK_STRING(buffer, "1234");
@@ -1123,6 +1125,26 @@ uint32_t test_array(void)
 	result = sprint(buffer, 256, "%'A[%s % ]", c, 2);
 	status += CHECK_STRING(buffer, "hello world");
 	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%5A[%c]", d, 4);
+	status += CHECK_STRING(buffer, " abcd");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%1$-*2$.*3$A[%c]", d, 6, 3);
+	status += CHECK_STRING(buffer, "abc   ");
+	status += CHECK_RESULT(result, 6);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%A[%c", d, 3);
+	status += CHECK_STRING(buffer, "%A[%c");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%A%c", d, 3, d[0]);
+	status += CHECK_STRING(buffer, "%Aa");
+	status += CHECK_RESULT(result, 3);
 
 	return status;
 }

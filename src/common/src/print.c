@@ -1512,6 +1512,8 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 
 		if (config->width != 0)
 		{
+			size = result;
+
 			if ((config->flags & PRINT_LEFT_JUSTIFY) == 0)
 			{
 				if (config->width > subbuffer.pos)
@@ -1604,6 +1606,7 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 					in.pos = pos;
 
 					writebyte(buffer, '%');
+					result += 1;
 
 					while (pos < npos)
 					{
