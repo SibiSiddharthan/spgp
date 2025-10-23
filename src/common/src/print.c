@@ -1421,6 +1421,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	if (config->type == PRINT_ARRAY)
 	{
 		print_config subconfig = {0};
+		buffer_t subbuffer = {0};
 
 		subconfig.flags = config->subflags;
 		subconfig.modifier = config->submodifier;
@@ -1428,19 +1429,68 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		subconfig.precision = config->subprecision;
 		subconfig.flags = config->subflags;
 
+		if (config->width != 0)
+		{
+			memory_buffer_init(&subbuffer, 256);
+		}
+		else
+		{
+			subbuffer = *buffer;
+		}
+
 		for (uint32_t i = 0; i < config->count; ++i)
 		{
 			subconfig.data = PTR_OFFSET(config->data, i * config->stride);
-			result += print_arg(buffer, &subconfig);
+			result += print_arg(&subbuffer, &subconfig);
 
 			if (i + 1 < config->count)
 			{
 				if (config->separator != 0)
 				{
-					writebyte(buffer, config->separator);
+					writebyte(&subbuffer, config->separator);
 					result += 1;
 				}
 			}
+		}
+
+		if (config->width != 0)
+		{
+			if ((config->flags & PRINT_LEFT_JUSTIFY) == 0)
+			{
+				if (config->width > subbuffer.pos)
+				{
+					uint32_t count = config->width - size;
+
+					while (count--)
+					{
+						writebyte(buffer, ' ');
+						result += 1;
+					}
+				}
+
+				writen(buffer, subbuffer.data, subbuffer.pos);
+			}
+			else
+			{
+				writen(buffer, subbuffer.data, subbuffer.pos);
+
+				if (config->width > subbuffer.pos)
+				{
+					uint32_t count = config->width - size;
+
+					while (count--)
+					{
+						writebyte(buffer, ' ');
+						result += 1;
+					}
+				}
+			}
+
+			memory_buffer_free(&subbuffer);
+		}
+		else
+		{
+			*buffer = subbuffer;
 		}
 	}
 
