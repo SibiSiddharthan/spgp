@@ -59,14 +59,9 @@ static inline uint32_t print_hex(void *buffer, void *data, uint32_t size)
 	return pos;
 }
 
-static inline uint32_t print_bytes(uint32_t indent, void *buffer, uint32_t buffer_size, char *prefix, void *data, uint32_t data_size)
+static inline uint32_t print_bytes(void *buffer, uint32_t indent, char *prefix, void *data, uint32_t size)
 {
-	uint32_t pos = 0;
-
-	pos += print_format(indent, PTR_OFFSET(buffer, pos), buffer_size, "%s (%u bytes): ", prefix, data_size);
-	pos += print_hex(PTR_OFFSET(buffer, pos), data, data_size);
-
-	return pos;
+	return print_format(buffer, indent, "%1$s (%3$u bytes): %2$.*3$R\n", prefix, data, size);
 }
 
 static inline uint32_t print_signature_algorithm(uint32_t indent, void *buffer, uint32_t size, uint16_t algorithm)

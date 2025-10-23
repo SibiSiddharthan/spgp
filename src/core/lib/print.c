@@ -69,7 +69,7 @@ static size_t print_bytes(buffer_t *buffer, uint32_t indent, uint32_t options, c
 		return print_format(buffer, indent, "%s (%u bytes): ...\n", prefix, size);
 	}
 
-	return print_format(buffer, indent, "%1$s (%2$u bytes): %3$.*2$R\n", prefix, size, data);
+	return print_format(buffer, indent, "%1$s (%3$u bytes): %2$.*3$R\n", prefix, data, size);
 }
 
 static size_t print_timestamp(buffer_t *buffer, uint32_t indent, char *prefix, time_t timestamp)
