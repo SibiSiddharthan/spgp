@@ -1082,8 +1082,53 @@ uint32_t test_hex(void)
 	return status;
 }
 
+uint32_t test_array(void)
+{
+	uint32_t status = 0;
+
+	uint32_t result = 0;
+	char buffer[256] = {0};
+
+	uint32_t a[4] = {1, 2, 3, 4};
+	uint16_t b[4] = {0, 16, 20, 4};
+
+	char *c[] = {"hello", "world"};
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%A[%u]", a, 4);
+	status += CHECK_STRING(buffer, "1234");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%.4A[ %u ]", a);
+	status += CHECK_STRING(buffer, "1234");
+	status += CHECK_RESULT(result, 4);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "% A[%u]", a, 3);
+	status += CHECK_STRING(buffer, "1 2 3");
+	status += CHECK_RESULT(result, 5);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'A[%.2hu]", b, 4);
+	status += CHECK_STRING(buffer, "00,16,20,04");
+	status += CHECK_RESULT(result, 11);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%A[%^.2hhx%:]", "\x01\x02\xAA\xAF\xBF\xED", 6);
+	status += CHECK_STRING(buffer, "01:02:AA:AF:BF:ED");
+	status += CHECK_RESULT(result, 17);
+
+	memset(buffer, 0, 256);
+	result = sprint(buffer, 256, "%'A[%s % ]", c, 2);
+	status += CHECK_STRING(buffer, "hello world");
+	status += CHECK_RESULT(result, 11);
+
+	return status;
+}
+
 int main()
 {
 	return test_simple() + test_int() + test_uint() + test_float() + test_char() + test_string() + test_pointer() + test_result() +
-		   test_overflow() + test_error() + test_hex();
+		   test_overflow() + test_error() + test_hex() + test_array();
 }
