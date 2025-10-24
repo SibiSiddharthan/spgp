@@ -1179,7 +1179,7 @@ static uint32_t print_cipher_suite(buffer_t *buffer, uint32_t indent, uint8_t o1
 		}
 		else
 		{
-			name = "Unknown";
+			name = "Unknown Cipher";
 		}
 	}
 	break;
@@ -1322,7 +1322,7 @@ uint32_t print_signature_algorithm(buffer_t *buffer, uint32_t indent, uint16_t a
 		}
 		else
 		{
-			name = "Unknown";
+			name = "Unknown Signature";
 		}
 	}
 	break;
@@ -2476,7 +2476,7 @@ static uint32_t print_handshake_header(tls_handshake_header *header, buffer_t *b
 		name = "Message Hash";
 		break;
 	default:
-		name = "Unknown";
+		name = "Unknown Handshake Type";
 		break;
 	}
 

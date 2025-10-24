@@ -1840,104 +1840,104 @@ static uint32_t tls_extension_key_share_print_body(tls_handshake_type context, t
 		switch (key[i].group)
 		{
 		case TLS_SECT_163K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163k1 (ID 1)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163k1 (ID 1)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_163R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163r1 (ID 2)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163r1 (ID 2)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_163R2:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163r2 (ID 3)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect163r2 (ID 3)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_193R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect193r1 (ID 4)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect193r1 (ID 4)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_193R2:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect193r2 (ID 5)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect193r2 (ID 5)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_233K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect233k1 (ID 6)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect233k1 (ID 6)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_233R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect233r1 (ID 7)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect233r1 (ID 7)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_239K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect239k1 (ID 8)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect239k1 (ID 8)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_283K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect283k1 (ID 9)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect283k1 (ID 9)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_283R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect283r1 (ID 10)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect283r1 (ID 10)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_409K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect409k1 (ID 11)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect409k1 (ID 11)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_409R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect409r1 (ID 12)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect409r1 (ID 12)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_571K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect571k1 (ID 13)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect571k1 (ID 13)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECT_571R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect571r1 (ID 14)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "sect571r1 (ID 14)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_160K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160k1 (ID 15)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160k1 (ID 15)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_160R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160r1 (ID 16)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160r1 (ID 16)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_160R2:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160r2 (ID 17)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp160r2 (ID 17)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_192K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp192k1 (ID 18)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp192k1 (ID 18)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_192R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp192r1 (ID 19)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp192r1 (ID 19)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_224K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp224k1 (ID 20)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp224k1 (ID 20)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_224R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp224r1 (ID 21)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp224r1 (ID 21)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_256K1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp256k1 (ID 22)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp256k1 (ID 22)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_256R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp256r1 (ID 23)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp256r1 (ID 23)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_384R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp384r1 (ID 24)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp384r1 (ID 24)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_521R1:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp521r1 (ID 25)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secp521r1 (ID 25)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_BRAINPOOL_256R1_TLS_12:
 			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "brainpoolP256r1 (TLS 1.2) (ID 26)",
@@ -1994,36 +1994,36 @@ static uint32_t tls_extension_key_share_print_body(tls_handshake_type context, t
 			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "SM2 (ID 41)", PTR_OFFSET(key, key[i].offset), key[i].size);
 			break;
 		case TLS_FFDHE_2048:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe2048 (ID 256)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe2048 (ID 256)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_FFDHE_3072:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe3072 (ID 257)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe3072 (ID 257)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_FFDHE_4096:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe4096 (ID 258)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe4096 (ID 258)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_FFDHE_6144:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe6144 (ID 259)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe6144 (ID 259)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_FFDHE_8192:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe8192 (ID 260)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "ffdhe8192 (ID 260)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_MLKEM_512:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM512 (ID 512)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM512 (ID 512)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_MLKEM_768:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM768 (ID 513)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM768 (ID 513)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_MLKEM_1024:
-			pos +=
-				print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM1024 (ID 514)", PTR_OFFSET(key, key[i].offset), key[i].size);
+			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "MLKEM1024 (ID 514)", PTR_OFFSET(key, key[i].offset),
+							   key[i].size);
 			break;
 		case TLS_SECP_256R1_MLKEM_768:
 			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "secP256r1MLKEM768 (ID 4587)", PTR_OFFSET(key, key[i].offset),
@@ -2331,278 +2331,275 @@ uint32_t tls_extension_write(tls_handshake_type context, void *extension, void *
 	return pos;
 }
 
-static uint32_t print_extension_header(tls_extension_header *header, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t print_extension_header(tls_extension_header *header, buffer_t *buffer, uint32_t indent)
 {
-	uint32_t pos = 0;
-
-	pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "%*s", indent * 4, "");
+	const char *name = NULL;
 
 	switch (header->type)
 	{
 	case TLS_EXT_SERVER_NAME:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Name (ID 0) (%hu bytes)\n", header->size);
+		name = "Server Name";
 		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Max Fragment Length (ID 1) (%hu bytes)\n", header->size);
+		name = "Max Fragment Length";
 		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Certificate URL (ID 2) (%hu bytes)\n", header->size);
+		name = "Client Certificate URL";
 		break;
 	case TLS_EXT_TRUSTED_CA_KEYS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Trusted CA Keys (ID 3) (%hu bytes)\n", header->size);
+		name = "Trusted CA Keys";
 		break;
 	case TLS_EXT_TRUNCATED_HMAC:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Truncated HMAC (ID 4) (%hu bytes)\n", header->size);
+		name = "Truncated HMAC";
 		break;
 	case TLS_EXT_STATUS_REQUEST:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Status Request (ID 5) (%hu bytes)\n", header->size);
+		name = "Status Request";
 		break;
 	case TLS_EXT_USER_MAPPING:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "User Mapping (ID 6) (%hu bytes)\n", header->size);
+		name = "User Mapping";
 		break;
 	case TLS_EXT_CLIENT_AUTHORIZATION:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Authorization (ID 7) (%hu bytes)\n", header->size);
+		name = "Client Authorization";
 		break;
 	case TLS_EXT_SERVER_AUTHORIZATION:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Authorization (ID 8) (%hu bytes)\n", header->size);
+		name = "Server Authorization";
 		break;
 	case TLS_EXT_CERTIFICATE_TYPE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Type (ID 9) (%hu bytes)\n", header->size);
+		name = "Certificate Type";
 		break;
 	case TLS_EXT_SUPPORTED_GROUPS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Supported Groups (ID 10) (%hu bytes)\n", header->size);
+		name = "Supported Groups";
 		break;
 	case TLS_EXT_EC_POINT_FORMATS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "EC Point Formats (ID 11) (%hu bytes)\n", header->size);
+		name = "EC Point Formats";
 		break;
 	case TLS_EXT_SRP:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Secure Remote Password (ID 12) (%hu bytes)\n", header->size);
+		name = "Secure Remote Password";
 		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Signature Algorithms (ID 13) (%hu bytes)\n", header->size);
+		name = "Signature Algorithms";
 		break;
 	case TLS_EXT_USE_SRTP:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Use SRTP (ID 14) (%hu bytes)\n", header->size);
+		name = "Use SRTP";
 		break;
 	case TLS_EXT_HEARTBEAT:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Heartbeat (ID 15) (%hu bytes)\n", header->size);
+		name = "Heartbeat";
 		break;
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Application Layer Protocol Negotiation (ID 16) (%hu bytes)\n", header->size);
+		name = "Application Layer Protocol Negotiation";
 		break;
 	case TLS_EXT_STATUS_REQUEST_V2:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Status Request V2 (ID 17) (%hu bytes)\n", header->size);
+		name = "Status Request V2";
 		break;
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Signed Certificate Timestamp (ID 18) (%hu bytes)\n", header->size);
+		name = "Signed Certificate Timestamp";
 		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Client Certificate Type (ID 19) (%hu bytes)\n", header->size);
+		name = "Client Certificate Type";
 		break;
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Server Certificate Type (ID 20) (%hu bytes)\n", header->size);
+		name = "Server Certificate Type";
 		break;
 	case TLS_EXT_PADDING:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Padding (ID 21) (%hu bytes)\n", header->size);
+		name = "Padding";
 		break;
 	case TLS_EXT_ENCRYPT_THEN_MAC:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypt Then MAC (ID 22) (%hu bytes)\n", header->size);
+		name = "Encrypt Then MAC";
 		break;
 	case TLS_EXT_EXTENDED_MASTER_SECRET:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Extended Master Secret (ID 23) (%hu bytes)\n", header->size);
+		name = "Extended Master Secret";
 		break;
 	case TLS_EXT_TOKEN_BINDING:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Token Binding (ID 24) (%hu bytes)\n", header->size);
+		name = "Token Binding";
 		break;
 	case TLS_EXT_CACHED_INFO:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Cached Information (ID 25) (%hu bytes)\n", header->size);
+		name = "Cached Information";
 		break;
 	case TLS_EXT_LTS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Long Term Support (ID 26) (%hu bytes)\n", header->size);
+		name = "Long Term Support";
 		break;
 	case TLS_EXT_COMPRESS_CERTIFICATE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Compressed Certificate (ID 27) (%hu bytes)\n", header->size);
+		name = "Compressed Certificate";
 		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Max Record Size (ID 28) (%hu bytes)\n", header->size);
+		name = "Max Record Size";
 		break;
 	case TLS_EXT_PASSWORD_PROTECT:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Password Protect (ID 29) (%hu bytes)\n", header->size);
+		name = "Password Protect";
 		break;
 	case TLS_EXT_PASSWORD_CLEAR:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Password Clear (ID 30) (%hu bytes)\n", header->size);
+		name = "Password Clear";
 		break;
 	case TLS_EXT_PASSWORD_SALT:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Password Salt (ID 31) (%hu bytes)\n", header->size);
+		name = "Password Salt";
 		break;
 	case TLS_EXT_TICKET_PINNING:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Ticket Pinning (ID 32) (%hu bytes)\n", header->size);
+		name = "Ticket Pinning";
 		break;
 	case TLS_EXT_PSK_EXTERNAL_CERTIFICATE:
-		pos +=
-			snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate With External Pre-Shared Key (ID 33) (%hu bytes)\n", header->size);
+		name = "Certificate With External Pre-Shared Key";
 		break;
 	case TLS_EXT_DELEGATED_CREDENTIAL:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Delegated Credential (ID 34) (%hu bytes)\n", header->size);
+		name = "Delegated Credential";
 		break;
 	case TLS_EXT_SESSION_TICKET:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Session Ticket (ID 35) (%hu bytes)\n", header->size);
+		name = "Session Ticket";
 		break;
 	case TLS_SUPPORTED_EKT_CIPHERS:
-		pos +=
-			snprintf(PTR_OFFSET(buffer, pos), size - pos, "Supported Encrypted Key Transport CIphers (ID 39) (%hu bytes)\n", header->size);
+		name = "Supported Encrypted Key Transport Ciphers";
 		break;
 	case TLS_EXT_PSK:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Pre-Shared Key (ID 41) (%hu bytes)\n", header->size);
+		name = "Pre-Shared Key";
 		break;
 	case TLS_EXT_EARLY_DATA:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Early Data (ID 42) (%hu bytes)\n", header->size);
+		name = "Early Data";
 		break;
 	case TLS_EXT_SUPPORTED_VERSIONS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Supported Version (ID 43) (%hu bytes)\n", header->size);
+		name = "Supported Version";
 		break;
 	case TLS_EXT_COOKIE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Cookie (ID 44) (%hu bytes)\n", header->size);
+		name = "Cookie";
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "PSK Exchange Modes (ID 45) (%hu bytes)\n", header->size);
+		name = "PSK Exchange Modes";
 		break;
 	case TLS_EXT_CERTIFICATE_AUTHORITIES:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Certificate Authorities (ID 47) (%hu bytes)\n", header->size);
+		name = "Certificate Authorities";
 		break;
 	case TLS_EXT_OID_FILTERS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "OID Filters (ID 48) (%hu bytes)\n", header->size);
+		name = "OID Filters";
 		break;
 	case TLS_EXT_POST_HANDSHAKE_AUTH:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Post Handshake Authorization (ID 49) (%hu bytes)\n", header->size);
+		name = "Post Handshake Authorization";
 		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Signature Algorithms Certificate (ID 50) (%hu bytes)\n", header->size);
+		name = "Signature Algorithms Certificate";
 		break;
 	case TLS_EXT_KEY_SHARE:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Key Share (ID 51) (%hu bytes)\n", header->size);
+		name = "Key Share";
 		break;
 	case TLS_EXT_TRANSPARENCY_INFO:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Transparency Information (ID 52) (%hu bytes)\n", header->size);
+		name = "Transparency Information";
 		break;
 	case TLS_EXT_CONNECTION_INFO_LEGACY:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Connection Information (Legacy) (ID 53) (%hu bytes)\n", header->size);
+		name = "Connection Information (Legacy)";
 		break;
 	case TLS_EXT_CONNECTION_INFO:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Connection Information (ID 54) (%hu bytes)\n", header->size);
+		name = "Connection Information";
 		break;
 	case TLS_EXT_EXTERNAL_ID_HASH:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "External ID Hash (ID 55) (%hu bytes)\n", header->size);
+		name = "External ID Hash";
 		break;
 	case TLS_EXT_EXTERNAL_SESSION_ID:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "External Session ID (ID 56) (%hu bytes)\n", header->size);
+		name = "External Session ID";
 		break;
 	case TLS_EXT_TICKET_REQUEST:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Ticket Request (ID 58) (%hu bytes)\n", header->size);
+		name = "Ticket Request";
 		break;
 	case TLS_EXT_DNSSEC_CHAIN:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "DNSSEC Chain (ID 59) (%hu bytes)\n", header->size);
+		name = "DNSSEC Chain";
 		break;
 	case TLS_EXT_APPLICATION_SETTINGS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Application Layer Protocol Settings (ID 17613) (%hu bytes)\n", header->size);
+		name = "Application Layer Protocol Settings";
 		break;
 	case TLS_EXT_ECH_OUTER_EXTENSIONS:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Outer Extensions (ID 64768) (%hu bytes)\n", header->size);
+		name = "Encrypted Outer Extensions";
 		break;
 	case TLS_EXT_ENCRYPTED_CLIENT_HELLO:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Encrypted Client Hello (ID 65037) (%hu bytes)\n", header->size);
+		name = "Encrypted Client Hello";
 		break;
 	case TLS_EXT_RENEGOTIATION_INFO:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Renegotiation Info (ID 65281) (%hu bytes)\n", header->size);
+		name = "Renegotiation Info";
 		break;
 	default:
 	{
 		if (tls_check_grease_value(header->type))
 		{
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "GREASE Extension (ID %04hX) (%hu bytes)\n", header->type, header->size);
+			name = "GREASE Extension";
 		}
 		else
 		{
-			pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hu) (%hu bytes)\n", header->type, header->size);
+			name = "Unknown Extension";
 		}
 	}
 	break;
 	}
 
-	return pos;
+	return print_format(buffer, indent, "%s (ID %hu) (%hu bytes)\n", name, header->type, header->size);
 }
 
-uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *buffer, uint32_t size, uint32_t indent)
+uint32_t tls_extension_print(tls_handshake_type context, void *extension, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
 	tls_extension_header *header = extension;
 
 	// Extension Type
-	pos += print_extension_header(header, PTR_OFFSET(buffer, pos), size - pos, indent);
+	pos += print_extension_header(header, buffer, indent);
+	indent += 1;
 
 	switch (header->type)
 	{
 	case TLS_EXT_SERVER_NAME:
-		pos += tls_extension_server_name_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_server_name_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_MAX_FRAGMENT_LENGTH:
-		pos += tls_extension_max_fragment_length_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_max_fragment_length_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_URL:
 		// empty body
 		break;
 	case TLS_EXT_TRUSTED_CA_KEYS:
-		pos += tls_extension_trusted_ca_keys_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_trusted_ca_keys_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_TRUNCATED_HMAC:
 		// empty body
 		break;
 	case TLS_EXT_STATUS_REQUEST:
-		pos += tls_extension_status_request_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_status_request_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_USER_MAPPING:
-		pos += tls_extension_user_mapping_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_user_mapping_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_CLIENT_AUTHORIZATION:
-		pos += tls_extension_authorization_formats_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_authorization_formats_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_SERVER_AUTHORIZATION:
-		pos += tls_extension_authorization_formats_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_authorization_formats_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_CERTIFICATE_TYPE:
-		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_certificate_types_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_SUPPORTED_GROUPS:
-		pos += tls_extension_supported_groups_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_supported_groups_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_EC_POINT_FORMATS:
-		pos += tls_extension_ec_point_format_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_ec_point_format_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_SRP:
 		break;
 	case TLS_EXT_SIGNATURE_ALGORITHMS:
-		pos += tls_extension_signature_algorithms_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_signature_algorithms_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_USE_SRTP:
 	case TLS_EXT_HEARTBEAT:
 		break;
 	case TLS_EXT_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
-		pos += tls_extension_application_protocol_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_application_protocol_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_STATUS_REQUEST_V2:
 		break;
 	case TLS_EXT_SIGNED_CERTIFICATE_TIMESTAMP:
-		pos += tls_extension_signed_certificate_timestamp_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_signed_certificate_timestamp_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_CLIENT_CERTIFICATE_TYPE:
-		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_certificate_types_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_SERVER_CERTIFICATE_TYPE:
-		pos += tls_extension_certificate_types_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_certificate_types_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_PADDING:
-		pos += tls_extension_padding_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_padding_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_ENCRYPT_THEN_MAC:
 		// empty body
@@ -2615,10 +2612,10 @@ uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *
 	case TLS_EXT_LTS:
 		break;
 	case TLS_EXT_COMPRESS_CERTIFICATE:
-		pos += tls_extension_compressed_certificate_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_compressed_certificate_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_RECORD_SIZE_LIMIT:
-		pos += tls_extension_record_size_limit_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_record_size_limit_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_PASSWORD_PROTECT:
 	case TLS_EXT_PASSWORD_CLEAR:
@@ -2626,7 +2623,7 @@ uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *
 	case TLS_EXT_TICKET_PINNING:
 		break;
 	case TLS_EXT_DELEGATED_CREDENTIAL:
-		pos += tls_extension_signature_algorithms_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_signature_algorithms_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_SESSION_TICKET:
 		// empty body
@@ -2635,12 +2632,12 @@ uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *
 	case TLS_EXT_EARLY_DATA:
 		break;
 	case TLS_EXT_SUPPORTED_VERSIONS:
-		pos += tls_extension_supported_versions_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_supported_versions_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_COOKIE:
 		break;
 	case TLS_EXT_PSK_KEY_EXCHANGE_MODES:
-		pos += tls_extension_psk_exchange_modes_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_psk_exchange_modes_print_body(extension, buffer, indent);
 		break;
 	case TLS_EXT_CERTIFICATE_AUTHORITIES:
 	case TLS_EXT_OID_FILTERS:
@@ -2648,7 +2645,7 @@ uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *
 	case TLS_EXT_SIGNATURE_ALGORITHMS_CERTIFICATE:
 		break;
 	case TLS_EXT_KEY_SHARE:
-		pos += tls_extension_key_share_print_body(context, extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_key_share_print_body(context, extension, buffer, indent);
 		break;
 	case TLS_EXT_TRANSPARENCY_INFO:
 	case TLS_EXT_CONNECTION_INFO_LEGACY:
@@ -2657,7 +2654,7 @@ uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *
 	case TLS_EXT_EXTERNAL_SESSION_ID:
 		break;
 	case TLS_EXT_APPLICATION_SETTINGS:
-		pos += tls_extension_application_protocol_print_body(extension, PTR_OFFSET(buffer, pos), size - pos, indent + 1);
+		pos += tls_extension_application_protocol_print_body(extension, buffer, indent);
 		break;
 	default:
 		break;

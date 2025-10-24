@@ -81,7 +81,7 @@ uint32_t tls_alert_print_body(tls_alert *alert, buffer_t *buffer, uint32_t inden
 		level_name = "Fatal";
 		break;
 	default:
-		level_name = "Unknown";
+		level_name = "Unknown Severity";
 		break;
 	}
 
@@ -187,7 +187,7 @@ uint32_t tls_alert_print_body(tls_alert *alert, buffer_t *buffer, uint32_t inden
 		description_name = "No Application Protocol";
 		break;
 	default:
-		description_name = "Unknown";
+		description_name = "Unknown Alert";
 		break;
 	}
 

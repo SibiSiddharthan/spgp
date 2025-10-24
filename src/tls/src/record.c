@@ -212,7 +212,7 @@ static uint32_t print_record_header(tls_record_header *header, buffer_t *buffer,
 		type = "TLS Acknowledge";
 		break;
 	default:
-		type = "Unknown";
+		type = "Unknown TLS Content Type";
 		break;
 	}
 
