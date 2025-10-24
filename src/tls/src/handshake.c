@@ -241,7 +241,7 @@ static uint32_t print_handshake_version(buffer_t *buffer, uint32_t indent, tls_p
 		break;
 	}
 
-	return print_format(buffer, indent, "Protocol Version: %s (%hhu, %hhu)", name, version.major, version.minor);
+	return print_format(buffer, indent, "Protocol Version: %s (%hhu, %hhu)\n", name, version.major, version.minor);
 }
 
 static uint32_t print_compression_method(buffer_t *buffer, uint32_t indent, uint8_t method)
