@@ -363,7 +363,7 @@ uint32_t tls_extension_header_write(tls_extension_header *header, void *buffer, 
 
 tls_error_t tls_extension_read(tls_handshake_type context, void **extension, void *data, uint32_t size);
 uint32_t tls_extension_write(tls_handshake_type context, void *extension, void *buffer, uint32_t size);
-uint32_t tls_extension_print(tls_handshake_type context, void *extension, void *buffer, uint32_t size, uint32_t indent);
+uint32_t tls_extension_print(tls_handshake_type context, void *extension, buffer_t *buffer, uint32_t indent);
 
 uint16_t tls_extension_count(void *data, uint32_t size);
 

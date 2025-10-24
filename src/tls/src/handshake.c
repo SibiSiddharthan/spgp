@@ -1188,6 +1188,149 @@ static uint32_t print_cipher_suite(buffer_t *buffer, uint32_t indent, uint8_t o1
 	return print_format(buffer, indent, "%s (ID {%#^.2hhx, %#^.2hhx})\n", name, o1, o2);
 }
 
+uint32_t print_signature_algorithm(buffer_t *buffer, uint32_t indent, uint16_t algorithm)
+{
+	const char *name = NULL;
+
+	switch (algorithm)
+	{
+	case TLS_RSA_PKCS_MD5:
+		name = "rsa_pkcs1_md5";
+		break;
+	case TLS_DSA_MD5:
+		name = "dsa_md5";
+		break;
+	case TLS_ECDSA_MD5:
+		name = "ecdsa_md5";
+		break;
+	case TLS_RSA_PKCS_SHA1:
+		name = "rsa_pkcs1_sha1";
+		break;
+	case TLS_DSA_SHA1:
+		name = "dsa_sha1";
+		break;
+	case TLS_ECDSA_SHA1:
+		name = "ecdsa_sha1";
+		break;
+	case TLS_RSA_PKCS_SHA224:
+		name = "rsa_pkcs1_sha224";
+		break;
+	case TLS_DSA_SHA224:
+		name = "dsa_sha224";
+		break;
+	case TLS_ECDSA_SHA224:
+		name = "ecdsa_sha224";
+		break;
+	case TLS_RSA_PKCS_SHA256:
+		name = "rsa_pkcs1_sha256";
+		break;
+	case TLS_DSA_SHA256:
+		name = "dsa_sha256";
+		break;
+	case TLS_ECDSA_SECP256R1_SHA256:
+		name = "ecdsa_secp256r1_sha1";
+		break;
+	case TLS_RSA_PKCS_SHA384:
+		name = "rsa_pkcs1_sha384";
+		break;
+	case TLS_DSA_SHA384:
+		name = "dsa_sha384";
+		break;
+	case TLS_ECDSA_SECP384R1_SHA384:
+		name = "ecdsa_secp384r1_sha384";
+		break;
+	case TLS_RSA_PKCS_SHA512:
+		name = "rsa_pkcs1_sha512";
+		break;
+	case TLS_DSA_SHA512:
+		name = "dsa_sha512";
+		break;
+	case TLS_ECDSA_SECP521R1_SHA512:
+		name = "ecdsa_secp521r1_sha512";
+		break;
+	case TLS_SM2_SM3:
+		name = "sm2sig_sm3";
+		break;
+	case TLS_GOST_R34102012_256A:
+		name = "gostr34102012_256a";
+		break;
+	case TLS_GOST_R34102012_256B:
+		name = "gostr34102012_256b";
+		break;
+	case TLS_GOST_R34102012_256C:
+		name = "gostr34102012_256c";
+		break;
+	case TLS_GOST_R34102012_256D:
+		name = "gostr34102012_256d";
+		break;
+	case TLS_GOST_R34102012_512A:
+		name = "gostr34102012_512a";
+		break;
+	case TLS_GOST_R34102012_512B:
+		name = "gostr34102012_512b";
+		break;
+	case TLS_GOST_R34102012_512C:
+		name = "gostr34102012_512c";
+		break;
+	case TLS_RSA_PSS_RSAE_SHA256:
+		name = "rsa_pss_rsae_sha256";
+		break;
+	case TLS_RSA_PSS_RSAE_SHA384:
+		name = "rsa_pss_rsae_sha384";
+		break;
+	case TLS_RSA_PSS_RSAE_SHA512:
+		name = "rsa_pss_rsae_sha512";
+		break;
+	case TLS_ED25519:
+		name = "ed25519";
+		break;
+	case TLS_ED448:
+		name = "ed448";
+		break;
+	case TLS_RSA_PSS_PSS_SHA256:
+		name = "rsa_pss_pss_sha256";
+		break;
+	case TLS_RSA_PSS_PSS_SHA384:
+		name = "rsa_pss_pss_sha384";
+		break;
+	case TLS_RSA_PSS_PSS_SHA512:
+		name = "rsa_pss_pss_sha512";
+		break;
+	case TLS_ECDSA_BRAINPOOL_P256R1_TLS13_SHA256:
+		name = "ecdsa_brainpoolP256r1tls13_sha256";
+		break;
+	case TLS_ECDSA_BRAINPOOL_P384R1_TLS13_SHA384:
+		name = "ecdsa_brainpoolP384r1tls13_sha384";
+		break;
+	case TLS_ECDSA_BRAINPOOL_P512R1_TLS13_SHA512:
+		name = "ecdsa_brainpoolP512r1tls13_sha512";
+		break;
+	case TLS_MLDSA44:
+		name = "mldsa44";
+		break;
+	case TLS_MLDSA65:
+		name = "mldsa65";
+		break;
+	case TLS_MLDSA87:
+		name = "mldsa87";
+		break;
+	default:
+	{
+		if (tls_check_grease_value(algorithm))
+		{
+			name = "GREASE Signature";
+		}
+		else
+		{
+			name = "Unknown";
+		}
+	}
+	break;
+	}
+
+	return print_format(buffer, indent, "%s (ID %^.4hx)\n", name, algorithm);
+}
+
 static uint32_t tls_client_hello_print_body(tls_client_hello *hello, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
@@ -1239,7 +1382,7 @@ static uint32_t tls_client_hello_print_body(tls_client_hello *hello, buffer_t *b
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_print(hello->header.type, hello->extensions[i], indent);
+			pos += tls_extension_print(hello->header.type, hello->extensions[i], buffer, indent);
 		}
 
 		indent -= 1;
@@ -1420,7 +1563,7 @@ static uint32_t tls_server_hello_print_body(tls_server_hello *hello, buffer_t *b
 
 		for (uint16_t i = 0; i < hello->extensions_count; ++i)
 		{
-			pos += tls_extension_print(hello->header.type, hello->extensions[i], indent);
+			pos += tls_extension_print(hello->header.type, hello->extensions[i], buffer, indent);
 		}
 	}
 
@@ -1600,7 +1743,7 @@ static uint32_t tls_new_session_ticket_print_body(tls_new_session_ticket *sessio
 
 		for (uint16_t i = 0; i < session->extensions_count; ++i)
 		{
-			pos += tls_extension_print(session->header.type, session->extensions[i], indent);
+			pos += tls_extension_print(session->header.type, session->extensions[i], buffer, indent);
 		}
 	}
 
@@ -1689,7 +1832,7 @@ static uint32_t tls_encrypted_extensions_print_body(tls_encrypted_extensions *ex
 
 		for (uint16_t i = 0; i < extensions->extensions_count; ++i)
 		{
-			pos += tls_extension_print(extensions->header.type, extensions->extensions[i], indent);
+			pos += tls_extension_print(extensions->header.type, extensions->extensions[i], buffer, indent);
 		}
 	}
 
@@ -1807,7 +1950,7 @@ static uint32_t tls_certificate_request_print_body(tls_certificate_request *requ
 
 		for (uint16_t i = 0; i < request->extensions_count; ++i)
 		{
-			pos += tls_extension_print(request->header.type, request->extensions[i], indent);
+			pos += tls_extension_print(request->header.type, request->extensions[i], buffer, indent);
 		}
 	}
 
