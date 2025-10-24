@@ -182,7 +182,7 @@ static uint32_t tls_extension_server_name_write_body(tls_extension_server_name *
 	return pos;
 }
 
-static uint32_t tls_extension_server_name_print_body(tls_extension_server_name *server, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_extension_server_name_print_body(tls_extension_server_name *server, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -195,11 +195,10 @@ static uint32_t tls_extension_server_name_print_body(tls_extension_server_name *
 		case TLS_HOST_NAME:
 		{
 			// Name Type
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Name Type: Host Name (ID 0)\n");
+			pos += print_format(buffer, indent, "Name Type: Host Name (ID 0)\n");
 
 			// Name
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Name (%hu bytes): %.*s\n", name->name_size, name->name_size,
-								name->name);
+			pos += print_format(buffer, indent, "Name (%hu bytes): %.*s\n", name->name_size, name->name_size, name->name);
 		}
 		break;
 		}
@@ -248,33 +247,21 @@ static uint32_t tls_extension_max_fragment_length_write_body(tls_extension_max_f
 	return pos;
 }
 
-static uint32_t tls_extension_max_fragment_length_print_body(tls_extension_max_fragment_length *fragment, void *buffer, uint32_t size,
-															 uint32_t indent)
+static uint32_t tls_extension_max_fragment_length_print_body(tls_extension_max_fragment_length *fragment, buffer_t *buffer, uint32_t indent)
 {
-	uint32_t pos = 0;
-
-	pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Maximum Fragment Length: ");
-
 	switch (fragment->max_fragment_length)
 	{
 	case TLS_MAX_FRAGMENT_LENGTH_512:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "512 (ID 1)\n");
-		break;
+		return print_format(buffer, indent, "Maximum Fragment Length: 512 (ID %hhu)\n", fragment->max_fragment_length);
 	case TLS_MAX_FRAGMENT_LENGTH_1024:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "1024 (ID 2)\n");
-		break;
+		return print_format(buffer, indent, "Maximum Fragment Length: 1024 (ID %hhu)\n", fragment->max_fragment_length);
 	case TLS_MAX_FRAGMENT_LENGTH_2048:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "2048 (ID 3)\n");
-		break;
+		return print_format(buffer, indent, "Maximum Fragment Length: 2048 (ID %hhu)\n", fragment->max_fragment_length);
 	case TLS_MAX_FRAGMENT_LENGTH_4096:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "4096 (ID 4)\n");
-		break;
+		return print_format(buffer, indent, "Maximum Fragment Length: 4096 (ID %hhu)\n", fragment->max_fragment_length);
 	default:
-		pos += snprintf(PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu) (Assuming 16384)\n", fragment->max_fragment_length);
-		break;
+		return print_format(buffer, indent, "Maximum Fragment Length: Unknown (ID %hhu) (Assuming 16384)\n", fragment->max_fragment_length);
 	}
-
-	return pos;
 }
 
 // RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
@@ -432,8 +419,7 @@ static uint32_t tls_extension_trusted_ca_keys_write_body(tls_extension_trusted_a
 	return pos;
 }
 
-static uint32_t tls_extension_trusted_ca_keys_print_body(tls_extension_trusted_authority *authorities, void *buffer, uint32_t size,
-														 uint32_t indent)
+static uint32_t tls_extension_trusted_ca_keys_print_body(tls_extension_trusted_authority *authorities, buffer_t *buffer, uint32_t indent)
 {
 	tls_trusted_authority *authority = NULL;
 	uint32_t pos = 0;
@@ -445,19 +431,20 @@ static uint32_t tls_extension_trusted_ca_keys_print_body(tls_extension_trusted_a
 		switch (authority->type)
 		{
 		case TLS_PRE_AGREED:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Pre Agreed (ID 0)\n");
+			pos += print_format(buffer, indent, "Pre Agreed (ID 0)\n");
 			break;
 		case TLS_KEY_SHA1:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Key SHA1-Hash (ID 1)", authority->sha1_hash, 20);
+			pos += print_bytes(buffer, indent, "Key SHA1-Hash (ID 1)", authority->sha1_hash, 20);
 			break;
 		case TLS_X509_NAME:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X509 Name (ID 2): %.*s\n", authority->distinguished_name.size,
+			pos += print_format(buffer, indent, "X509 Name (ID 2): %.*s\n", authority->distinguished_name.size,
 								authority->distinguished_name.name);
 			break;
 		case TLS_CERT_SHA1:
-			pos += print_bytes(indent, PTR_OFFSET(buffer, pos), size - pos, "Certificate SHA1-Hash (ID 3)", authority->sha1_hash, 20);
+			pos += print_bytes(buffer, indent, "Certificate SHA1-Hash (ID 3)", authority->sha1_hash, 20);
 			break;
 		default:
+			pos += print_format(buffer, indent, "Unknown (ID %hu)\n", authority->type);
 			break;
 		}
 	}
@@ -561,17 +548,17 @@ static uint32_t tls_extension_status_request_write_body(tls_extension_status_req
 	return pos;
 }
 
-static uint32_t tls_extension_status_request_print_body(tls_extension_status_request *status, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_extension_status_request_print_body(tls_extension_status_request *status, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
 	if (status->type == TLS_CERTIFICATE_STATUS_OCSP)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "OCSP (ID 1)\n");
+		pos += print_format(buffer, indent, "OCSP (ID %hhu)\n", status->type);
 	}
 	else
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown Certificate Request (ID %hhu)\n", status->type);
+		pos += print_format(buffer, indent, "Unknown Certificate Request (ID %hhu)\n", status->type);
 	}
 
 	return pos;
@@ -630,7 +617,7 @@ static uint32_t tls_extension_user_mapping_write_body(tls_extension_user_mapping
 	return pos;
 }
 
-static uint32_t tls_extension_user_mapping_print_body(tls_extension_user_mapping *user, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_extension_user_mapping_print_body(tls_extension_user_mapping *user, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -639,7 +626,7 @@ static uint32_t tls_extension_user_mapping_print_body(tls_extension_user_mapping
 		switch (user->types[i])
 		{
 		default:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", user->types[i]);
+			pos += print_format(buffer, indent, "Unknown (ID %hhu)\n", user->types[i]);
 			break;
 		}
 	}
@@ -701,7 +688,7 @@ static uint32_t tls_extension_authorization_formats_write_body(tls_extension_aut
 	return pos;
 }
 
-static uint32_t tls_extension_authorization_formats_print_body(tls_extension_authorization_formats *formats, void *buffer, uint32_t size,
+static uint32_t tls_extension_authorization_formats_print_body(tls_extension_authorization_formats *formats, buffer_t *buffer,
 															   uint32_t indent)
 {
 	uint32_t pos = 0;
@@ -711,19 +698,19 @@ static uint32_t tls_extension_authorization_formats_print_body(tls_extension_aut
 		switch (formats->formats[i])
 		{
 		case TLS_X509_ATTR_CERT:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X.509 Attibute Certificate (ID 0)\n");
+			pos += print_format(buffer, indent, "X.509 Attibute Certificate (ID %hhu)\n", formats->formats[i]);
 			break;
 		case TLS_SAML_ASSERTION:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "SAML (ID 1)\n");
+			pos += print_format(buffer, indent, "SAML (ID %hhu)\n", formats->formats[i]);
 			break;
 		case TLS_X509_ATTR_CERT_URL:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X.509 Attibute Certificate URL (ID 2)\n");
+			pos += print_format(buffer, indent, "X.509 Attibute Certificate URL (ID %hhu)\n", formats->formats[i]);
 			break;
 		case TLS_SAML_ASSERTION_URL:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "SAML URL (ID 3)\n");
+			pos += print_format(buffer, indent, "SAML URL (ID %hhu)\n", formats->formats[i]);
 			break;
 		default:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", formats->formats[i]);
+			pos += print_format(buffer, indent, "Unknown Format (ID %hhu)\n", formats->formats[i]);
 			break;
 		}
 	}
@@ -787,8 +774,7 @@ static uint32_t tls_extension_certificate_types_write_body(tls_extension_certifi
 	return pos;
 }
 
-static uint32_t tls_extension_certificate_types_print_body(tls_extension_certificate_type *types, void *buffer, uint32_t size,
-														   uint32_t indent)
+static uint32_t tls_extension_certificate_types_print_body(tls_extension_certificate_type *types, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -797,16 +783,16 @@ static uint32_t tls_extension_certificate_types_print_body(tls_extension_certifi
 		switch (types->types[i])
 		{
 		case TLS_CERTIFICATE_X509:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "X.509 (ID 0)\n");
+			pos += print_format(buffer, indent, "X.509 (ID %hhu)\n", types->types[i]);
 			break;
 		case TLS_CERTIFICATE_PGP:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "PGP (ID 1)\n");
+			pos += print_format(buffer, indent, "PGP (ID %hhu)\n", types->types[i]);
 			break;
 		case TLS_CERTIFICATE_RAW:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "RAW (ID 2)\n");
+			pos += print_format(buffer, indent, "RAW (ID %hhu)\n", types->types[i]);
 			break;
 		default:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", types->types[i]);
+			pos += print_format(buffer, indent, "Unknown (ID %hhu)\n", types->types[i]);
 			break;
 		}
 	}
@@ -877,8 +863,7 @@ static uint32_t tls_extension_supported_groups_write_body(tls_extension_supporte
 	return pos;
 }
 
-static uint32_t tls_extension_supported_groups_print_body(tls_extension_supported_group *group, void *buffer, uint32_t size,
-														  uint32_t indent)
+static uint32_t tls_extension_supported_groups_print_body(tls_extension_supported_group *group, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 	uint16_t count = group->size / 2;
@@ -1114,8 +1099,7 @@ static uint32_t tls_extension_ec_point_format_write_body(tls_extension_ec_point_
 	return pos;
 }
 
-static uint32_t tls_extension_ec_point_format_print_body(tls_extension_ec_point_format *format, void *buffer, uint32_t size,
-														 uint32_t indent)
+static uint32_t tls_extension_ec_point_format_print_body(tls_extension_ec_point_format *format, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1124,16 +1108,16 @@ static uint32_t tls_extension_ec_point_format_print_body(tls_extension_ec_point_
 		switch (format->formats[i])
 		{
 		case TLS_EC_POINT_UNCOMPRESSED:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Uncompressed (ID 0)\n");
+			pos += print_format(buffer, indent, "Uncompressed (ID %hhu)\n", format->formats[i]);
 			break;
 		case TLS_EC_POINT_ANSI_X962_COMPRESSED_PRIME:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Compressed Prime (ID 1)\n");
+			pos += print_format(buffer, indent, "Compressed Prime (ID %hhu)\n", format->formats[i]);
 			break;
 		case TLS_EC_POINT_ANSI_X962_COMPRESSED_CHAR2:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Compressed Binary (ID 2)\n");
+			pos += print_format(buffer, indent, "Compressed Binary (ID %hhu)\n", format->formats[i]);
 			break;
 		default:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", format->formats[i]);
+			pos += print_format(buffer, indent, "Unknown (ID %hhu)\n", format->formats[i]);
 			break;
 		}
 	}
@@ -1205,7 +1189,10 @@ static uint32_t tls_extension_signature_algorithms_write_body(tls_extension_sign
 	return pos;
 }
 
-static uint32_t tls_extension_signature_algorithms_print_body(tls_extension_signature_algorithm *signatures, void *buffer, uint32_t size,
+// From hanshake.c
+uint32_t print_signature_algorithm(buffer_t *buffer, uint32_t indent, uint16_t algorithm);
+
+static uint32_t tls_extension_signature_algorithms_print_body(tls_extension_signature_algorithm *signatures, buffer_t *buffer,
 															  uint32_t indent)
 {
 	uint32_t pos = 0;
@@ -1213,7 +1200,7 @@ static uint32_t tls_extension_signature_algorithms_print_body(tls_extension_sign
 
 	for (uint16_t i = 0; i < count; ++i)
 	{
-		pos += print_signature_algorithm(indent, PTR_OFFSET(buffer, pos), size - pos, signatures->algorithms[i]);
+		pos += print_signature_algorithm(buffer, indent, signatures->algorithms[i]);
 	}
 
 	return pos;
@@ -1307,15 +1294,15 @@ static uint32_t tls_extension_application_protocol_write_body(tls_extensions_app
 	return pos;
 }
 
-static uint32_t tls_extension_application_protocol_print_body(tls_extensions_application_protocol_negotiation *protocols, void *buffer,
-															  uint32_t size, uint32_t indent)
+static uint32_t tls_extension_application_protocol_print_body(tls_extensions_application_protocol_negotiation *protocols, buffer_t *buffer,
+															  uint32_t indent)
 {
 	tls_opaque_data *name = PTR_OFFSET(protocols, sizeof(tls_extensions_application_protocol_negotiation));
 	uint32_t pos = 0;
 
 	for (uint16_t i = 0; i < protocols->count; ++i)
 	{
-		pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "%.*s\n", name[i].size, PTR_OFFSET(name, name[i].offset));
+		pos += print_format(buffer, indent, "%.*s\n", name[i].size, PTR_OFFSET(name, name[i].offset));
 	}
 
 	return pos;
@@ -1352,11 +1339,10 @@ static uint32_t tls_extension_signed_certificate_timestamp_write_body(void *sct,
 	return 0;
 }
 
-static uint32_t tls_extension_signed_certificate_timestamp_print_body(void *sct, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_extension_signed_certificate_timestamp_print_body(void *sct, buffer_t *buffer, uint32_t indent)
 {
 	UNUSED(sct);
 	UNUSED(buffer);
-	UNUSED(size);
 	UNUSED(indent);
 
 	return 0;
@@ -1396,9 +1382,9 @@ static uint32_t tls_extension_padding_write_body(tls_extension_padding *padding,
 	return padding->header.size;
 }
 
-static uint32_t tls_extension_padding_print_body(tls_extension_padding *padding, void *buffer, uint32_t size, uint32_t indent)
+static uint32_t tls_extension_padding_print_body(tls_extension_padding *padding, buffer_t *buffer, uint32_t indent)
 {
-	return print_bytes(indent, buffer, size, "Padding", padding->pad, padding->header.size);
+	return print_bytes(buffer, indent, "Padding", padding->pad, padding->header.size);
 }
 
 // RFC 8879: TLS Certificate Compression
@@ -1454,8 +1440,8 @@ static uint32_t tls_extension_compressed_certificate_write_body(tls_extension_co
 	return pos;
 }
 
-static uint32_t tls_extension_compressed_certificate_print_body(tls_extension_compressed_certificate *compressed, void *buffer,
-																uint32_t size, uint32_t indent)
+static uint32_t tls_extension_compressed_certificate_print_body(tls_extension_compressed_certificate *compressed, buffer_t *buffer,
+																uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1464,19 +1450,19 @@ static uint32_t tls_extension_compressed_certificate_print_body(tls_extension_co
 		switch (compressed->algorithms[i])
 		{
 		case TLS_UNCOMPRESSED:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Uncompressed (ID 0)\n");
+			pos += print_format(buffer, indent, "Uncompressed (ID %hhu)\n", compressed->algorithms[i]);
 			break;
 		case TLS_ZLIB:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "zlib (ID 1)\n");
+			pos += print_format(buffer, indent, "zlib (ID %hhu)\n", compressed->algorithms[i]);
 			break;
 		case TLS_BROTLI:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "brotli (ID 2)\n");
+			pos += print_format(buffer, indent, "brotli (ID %hhu)\n", compressed->algorithms[i]);
 			break;
 		case TLS_ZSTD:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "zstd (ID 3)\n");
+			pos += print_format(buffer, indent, "zstd (ID %hhu)\n", compressed->algorithms[i]);
 			break;
 		default:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", compressed->algorithms[i]);
+			pos += print_format(buffer, indent, "Unknown Compression(ID %hhu)\n", compressed->algorithms[i]);
 			break;
 		}
 	}
@@ -1529,10 +1515,9 @@ static uint32_t tls_extension_record_size_limit_write_body(tls_extension_record_
 	return pos;
 }
 
-static uint32_t tls_extension_record_size_limit_print_body(tls_extension_record_size_limit *limit, void *buffer, uint32_t size,
-														   uint32_t indent)
+static uint32_t tls_extension_record_size_limit_print_body(tls_extension_record_size_limit *limit, buffer_t *buffer, uint32_t indent)
 {
-	return print_format(indent, buffer, size, "Record Size Limit: %hu bytes\n", limit->limit);
+	return print_format(buffer, indent, "Record Size Limit: %hu bytes\n", limit->limit);
 }
 
 // RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3
@@ -1588,8 +1573,7 @@ static uint32_t tls_extension_supported_versions_write_body(tls_extension_suppor
 	return pos;
 }
 
-static uint32_t tls_extension_supported_versions_print_body(tls_extension_supported_version *version, void *buffer, uint32_t size,
-															uint32_t indent)
+static uint32_t tls_extension_supported_versions_print_body(tls_extension_supported_version *version, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 	uint8_t count = version->size / 2;
@@ -1599,28 +1583,27 @@ static uint32_t tls_extension_supported_versions_print_body(tls_extension_suppor
 		switch (TLS_VERSION_RAW(version->version[i]))
 		{
 		case TLS_VERSION_1_0:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.0 (3, 1)\n");
+			pos += print_format(buffer, indent, "TLS 1.0 (%hhu, %hhu)\n", version->version[i].major, version->version[i].minor);
 			break;
 		case TLS_VERSION_1_1:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.1 (3, 2)\n");
+			pos += print_format(buffer, indent, "TLS 1.1 (%hhu, %hhu)\n", version->version[i].major, version->version[i].minor);
 			break;
 		case TLS_VERSION_1_2:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.2 (3, 3)\n");
+			pos += print_format(buffer, indent, "TLS 1.2 (%hhu, %hhu)\n", version->version[i].major, version->version[i].minor);
 			break;
 		case TLS_VERSION_1_3:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "TLS 1.3 (3, 4)\n");
+			pos += print_format(buffer, indent, "TLS 1.3 (%hhu, %hhu)\n", version->version[i].major, version->version[i].minor);
 			break;
 		default:
 		{
 			if (tls_check_grease_value(TLS_VERSION_RAW(version->version[i])))
 			{
-				pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "GREASE Version (%02hhX, %02hhX)\n",
-									version->version[i].major, version->version[i].minor);
+				pos += print_format(buffer, indent, "GREASE Version (%^.2hhx, %^.2hhx)\n", version->version[i].major,
+									version->version[i].minor);
 			}
 			else
 			{
-				pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (%hhu, %hhu)\n", version->version[i].major,
-									version->version[i].minor);
+				pos += print_format(buffer, indent, "Unknown Version (%hhu, %hhu)\n", version->version[i].major, version->version[i].minor);
 			}
 		}
 		break;
@@ -1683,8 +1666,7 @@ static uint32_t tls_extension_psk_exchange_modes_write_body(tls_extension_psk_ex
 	return pos;
 }
 
-static uint32_t tls_extension_psk_exchange_modes_print_body(tls_extension_psk_exchange_mode *modes, void *buffer, uint32_t size,
-															uint32_t indent)
+static uint32_t tls_extension_psk_exchange_modes_print_body(tls_extension_psk_exchange_mode *modes, buffer_t *buffer, uint32_t indent)
 {
 	uint32_t pos = 0;
 
@@ -1693,10 +1675,10 @@ static uint32_t tls_extension_psk_exchange_modes_print_body(tls_extension_psk_ex
 		switch (modes->modes[i])
 		{
 		case TLS_PSK_KEY_EXCHANGE:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "PSK-only key establishment (ID 0)\n");
+			pos += print_format(buffer, indent, "PSK-only key establishment (ID%hhu)\n", modes->modes[i]);
 			break;
 		case TLS_PSK_DHE_KEY_EXCHANGE:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "PSK with (EC)DHE key establishment (ID 1)\n");
+			pos += print_format(buffer, indent, "PSK with (EC)DHE key establishment (ID %hhu)\n", modes->modes[i]);
 			break;
 			// GREASE
 		case 0x0B:
@@ -1707,10 +1689,10 @@ static uint32_t tls_extension_psk_exchange_modes_print_body(tls_extension_psk_ex
 		case 0xA6:
 		case 0xC5:
 		case 0xE4:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "GREASE PSK (ID %02hhX)\n", modes->modes[i]);
+			pos += print_format(buffer, indent, "GREASE PSK (ID %^.2hhx)\n", modes->modes[i]);
 			break;
 		default:
-			pos += print_format(indent, PTR_OFFSET(buffer, pos), size - pos, "Unknown (ID %hhu)\n", modes->modes[i]);
+			pos += print_format(buffer, indent, "Unknown (ID %hhu)\n", modes->modes[i]);
 			break;
 		}
 	}
@@ -1824,7 +1806,7 @@ static uint32_t tls_extension_key_share_write_body(tls_handshake_type context, t
 	return pos;
 }
 
-static uint32_t tls_extension_key_share_print_body(tls_handshake_type context, tls_extension_key_share *shares, void *buffer, uint32_t size,
+static uint32_t tls_extension_key_share_print_body(tls_handshake_type context, tls_extension_key_share *shares, buffer_t *buffer,
 												   uint32_t indent)
 {
 	tls_key_share *key = PTR_OFFSET(shares, sizeof(tls_extension_key_share));
