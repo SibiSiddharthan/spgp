@@ -13,6 +13,6 @@ target_include_directories(tls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(WIN32)
 	add_executable(tls-tester src/tester.c)
-	target_link_libraries(tls-tester tls)
+	target_link_libraries(tls-tester tls common)
 	set_target_properties(tls-tester PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()

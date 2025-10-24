@@ -1824,7 +1824,7 @@ static uint32_t tls_extension_key_share_print_body(tls_handshake_type context, t
 
 	for (uint16_t i = 0; i < shares->count; ++i)
 	{
-		pos += print_bytes(buffer, indent, group_name(key[i].group), PTR_OFFSET(key, key[i].offset), key[i].size);
+		pos += print_bytes(buffer, indent, (char *)group_name(key[i].group), PTR_OFFSET(key, key[i].offset), key[i].size);
 	}
 
 	return pos;
