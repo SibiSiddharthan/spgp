@@ -1630,6 +1630,12 @@ uint32_t vxprint(buffer_t *buffer, const char *format, va_list list)
 
 			config.result = result;
 			result += print_arg(buffer, &config);
+
+			if (buffer->error)
+			{
+				break;
+			}
+
 			continue;
 		}
 
