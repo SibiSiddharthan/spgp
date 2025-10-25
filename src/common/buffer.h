@@ -51,6 +51,11 @@ static inline void flush(buffer_t *buffer)
 
 static inline size_t read8(buffer_t *buffer, void *out)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 1) > buffer->size)
 	{
 		return 0;
@@ -64,6 +69,11 @@ static inline size_t read8(buffer_t *buffer, void *out)
 
 static inline size_t read16(buffer_t *buffer, void *out)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 2) > buffer->size)
 	{
 		return 0;
@@ -77,6 +87,11 @@ static inline size_t read16(buffer_t *buffer, void *out)
 
 static inline size_t read16_be(buffer_t *buffer, void *out)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 2) > buffer->size)
 	{
 		return 0;
@@ -90,6 +105,11 @@ static inline size_t read16_be(buffer_t *buffer, void *out)
 
 static inline size_t read32(buffer_t *buffer, void *out)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 4) > buffer->size)
 	{
 		return 0;
@@ -103,6 +123,11 @@ static inline size_t read32(buffer_t *buffer, void *out)
 
 static inline size_t read32_be(buffer_t *buffer, void *out)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 4) > buffer->size)
 	{
 		return 0;
@@ -116,6 +141,11 @@ static inline size_t read32_be(buffer_t *buffer, void *out)
 
 static inline size_t read64(buffer_t *buffer, void *out)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 8) > buffer->size)
 	{
 		return 0;
@@ -129,6 +159,11 @@ static inline size_t read64(buffer_t *buffer, void *out)
 
 static inline size_t read64_be(buffer_t *buffer, void *out)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 8) > buffer->size)
 	{
 		return 0;
@@ -142,6 +177,11 @@ static inline size_t read64_be(buffer_t *buffer, void *out)
 
 static inline byte_t readbyte(buffer_t *buffer)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 1) > buffer->size)
 	{
 		return 0;
@@ -152,6 +192,11 @@ static inline byte_t readbyte(buffer_t *buffer)
 
 static inline size_t readn(buffer_t *buffer, void *out, size_t size)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + size) > buffer->size)
 	{
 		return 0;
@@ -165,6 +210,11 @@ static inline size_t readn(buffer_t *buffer, void *out, size_t size)
 
 static inline byte_t peekbyte(buffer_t *buffer, uint32_t offset)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + offset) >= buffer->size)
 	{
 		return 0;
@@ -175,6 +225,11 @@ static inline byte_t peekbyte(buffer_t *buffer, uint32_t offset)
 
 static inline size_t writebyte(buffer_t *buffer, byte_t byte)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 1) > buffer->size)
 	{
 		if (buffer->write == NULL)
@@ -198,6 +253,11 @@ static inline size_t writebyte(buffer_t *buffer, byte_t byte)
 
 static inline size_t writen(buffer_t *buffer, void *in, size_t size)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + size) > buffer->size)
 	{
 		if (buffer->write == NULL)

@@ -12,6 +12,11 @@ size_t peekline(buffer_t *buffer, void *out, size_t size)
 	void *result = NULL;
 	size_t copy_size = 0;
 
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	result = memchr(buffer->data + buffer->pos, '\n', buffer->size - buffer->pos);
 
 	// Copy the maximum amount allowable
@@ -54,6 +59,11 @@ size_t readline(buffer_t *buffer, void *out, size_t size)
 	void *result = NULL;
 	size_t copy_size = 0;
 	size_t move_size = 0;
+
+	if (buffer->error)
+	{
+		return 0;
+	}
 
 	result = memchr(buffer->data + buffer->pos, '\n', buffer->size - buffer->pos);
 
@@ -112,6 +122,11 @@ size_t writeline(buffer_t *buffer, void *in, size_t size, byte_t crlf)
 {
 	size_t required_size = size + (crlf ? 2 : 1);
 
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + required_size) > buffer->size)
 	{
 		if (buffer->write == NULL)
@@ -158,10 +173,13 @@ void memory_buffer_init(buffer_t *buffer, size_t size)
 	buffer->data = malloc(buffer->size);
 	buffer->write = memory_buffer_write;
 
-	if (buffer->data != NULL)
+	if (buffer->data == NULL)
 	{
-		memset(buffer->data, 0, buffer->size);
+		buffer->error = 1;
+		return;
 	}
+
+	memset(buffer->data, 0, buffer->size);
 }
 
 void memory_buffer_free(buffer_t *buffer)
@@ -174,7 +192,10 @@ size_t memory_buffer_write(buffer_t *buffer, size_t size)
 {
 	size_t old_size = buffer->size;
 
-	buffer->error = 0;
+	if (buffer->error)
+	{
+		return 0;
+	}
 
 	if (size == 0)
 	{
