@@ -8,6 +8,11 @@
 #ifndef ASN1_TAG_H
 #define ASN1_TAG_H
 
+#define ASN1_UNIVERSAL_TAG(T)   (((T) >> 6) == 0x00)
+#define ASN1_APPLICATION_TAG(T) (((T) >> 6) == 0x01)
+#define ASN1_CONTEXT_TAG(T)     (((T) >> 6) == 0x02)
+#define ASN1_PRIVATE_TAG(T)     (((T) >> 6) == 0x03)
+
 typedef enum _asn1_type
 {
 	ASN1_INTEGER = 0x02,
