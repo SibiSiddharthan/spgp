@@ -6,6 +6,7 @@
 */
 
 #include <asn1/tag.h>
+#include <string.h>
 
 static size_t asn1_required_header_size(asn1_field *field)
 {
@@ -32,6 +33,28 @@ static size_t asn1_required_header_size(asn1_field *field)
 	}
 
 	return required_size;
+}
+
+static byte_t asn1_validate_type(byte_t tag)
+{
+	switch (tag)
+	{
+	case ASN1_INTEGER:
+	case ASN1_BIT_STRING:
+	case ASN1_OCTET_STRING:
+	case ASN1_NULL:
+	case ASN1_OBJECT_IDENTIFIER:
+	case ASN1_UTF8_STRING:
+	case ASN1_PRINTABLE_STRING:
+	case ASN1_IA5_STRING:
+	case ASN1_UTC_TIME:
+	case ASN1_GENERAL_TIME:
+	case ASN1_SEQUENCE:
+	case ASN1_SET:
+		return 1;
+	default:
+		return 0;
+	}
 }
 
 static size_t asn1_encode_size(void *data, size_t size)
@@ -66,6 +89,94 @@ static size_t asn1_encode_size(void *data, size_t size)
 
 asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 {
+	byte_t *in = data;
+	size_t pos = 0;
+
+	byte_t tag = 0;
+	byte_t length = 0;
+
+	memset(field, 0, sizeof(asn1_field));
+
+	if (*size < 2)
+	{
+		return ASN1_INSUFFICIENT_DATA;
+	}
+
+	tag = *in++;
+	pos += 1;
+
+	if (ASN1_UNIVERSAL_TAG(tag))
+	{
+		if (asn1_validate_type(tag) == 0)
+		{
+			return ASN1_UNKNOWN_UNIVERSAL_TYPE;
+		}
+
+		field->type = tag;
+	}
+	else if (ASN1_CONTEXT_TAG(tag))
+	{
+		field->context = tag;
+
+		if (ASN1_CONSTRUCTED_TAG(tag))
+		{
+			tag = *in++;
+			pos += 1;
+
+			if (asn1_validate_type(tag) == 0)
+			{
+				return ASN1_UNKNOWN_UNIVERSAL_TYPE;
+			}
+
+			field->type = tag;
+		}
+	}
+	else
+	{
+		field->type = tag;
+	}
+
+	if (pos + 1 > *size)
+	{
+		return ASN1_INSUFFICIENT_DATA;
+	}
+
+	length = *in++;
+	pos += 1;
+
+	if (length > 126)
+	{
+		length = length & 0x7F;
+
+		if (length == 127)
+		{
+			return ASN1_INVALID_LENGTH_SPECIFICATION;
+		}
+
+		if (length > 8)
+		{
+			return ASN1_FIELD_LENGTH_TOO_BIG;
+		}
+
+		if (pos + length > *size)
+		{
+			return ASN1_INSUFFICIENT_DATA;
+		}
+
+		for (byte_t i = 0; i < length; ++i)
+		{
+			field->size = (field->size << 8) + *in++;
+			pos += 1;
+		}
+	}
+	else
+	{
+		field->size = length;
+	}
+
+	*size = pos;
+
+	return ASN1_SUCCESS;
 }
 
 size_t asn1_header_write(asn1_field *field, void *data, size_t size)
