@@ -36,6 +36,32 @@ static size_t asn1_required_header_size(asn1_field *field)
 
 static size_t asn1_encode_size(void *data, size_t size)
 {
+	byte_t *out = data;
+	byte_t pos = 0;
+
+	byte_t buffer[8] = {0};
+
+	if (size <= 126)
+	{
+		*out = (byte_t)size;
+		return 1;
+	}
+
+	do
+	{
+		buffer[pos++] = size & 0xFF;
+		size >>= 8;
+
+	} while (size != 0);
+
+	*out++ = pos;
+
+	for (byte_t i = 0; i < pos; ++i)
+	{
+		*out++ = buffer[(pos - i) - 1];
+	}
+
+	return pos + 1;
 }
 
 asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
