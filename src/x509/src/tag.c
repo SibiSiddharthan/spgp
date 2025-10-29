@@ -34,3 +34,44 @@ static size_t asn1_required_header_size(asn1_field *field)
 	return required_size;
 }
 
+static size_t asn1_encode_size(void *data, size_t size)
+{
+}
+
+asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
+{
+}
+
+size_t asn1_header_write(asn1_field *field, void *data, size_t size)
+{
+	size_t required_size = asn1_required_header_size(field);
+	byte_t *out = data;
+	size_t pos = 0;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	// Tag
+	if (field->context)
+	{
+		*out++ = field->context;
+		pos += 1;
+
+		if (ASN1_CONSTRUCTED_TAG(field->context))
+		{
+			*out++ = field->type;
+			pos += 1;
+		}
+	}
+	else
+	{
+		*out++ = field->type;
+		pos += 1;
+	}
+
+	pos += asn1_encode_size(out, field->size);
+
+	return pos;
+}

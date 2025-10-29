@@ -9,6 +9,7 @@
 #define ASN1_TAG_H
 
 #include <types.h>
+#include <asn1/error.h>
 
 // Tag Classes
 #define ASN1_UNIVERSAL_TAG(T)   (((T) >> 6) == 0x00)
@@ -50,5 +51,8 @@ typedef struct _asn1_field
 	};
 
 } asn1_field;
+
+asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size);
+size_t asn1_header_write(asn1_field *field, void *data, size_t size);
 
 #endif
