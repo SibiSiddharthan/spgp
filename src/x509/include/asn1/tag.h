@@ -8,6 +8,8 @@
 #ifndef ASN1_TAG_H
 #define ASN1_TAG_H
 
+#include <types.h>
+
 // Tag Classes
 #define ASN1_UNIVERSAL_TAG(T)   (((T) >> 6) == 0x00)
 #define ASN1_APPLICATION_TAG(T) (((T) >> 6) == 0x01)
@@ -34,5 +36,19 @@ typedef enum _asn1_type
 	ASN1_SET = 0x31
 
 } asn1_type;
+
+typedef struct _asn1_field
+{
+	byte_t context;
+	byte_t type;
+	size_t size;
+
+	union
+	{
+		void *data;
+		intmax_t value;
+	};
+
+} asn1_field;
 
 #endif
