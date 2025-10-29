@@ -17,6 +17,7 @@ typedef enum _asn1_error_t
 
 	ASN1_UNKNOWN_UNIVERSAL_TYPE,
 	ASN1_INVALID_LENGTH_SPECIFICATION,
+	ASN1_CONTEXT_MISMATCH,
 } asn1_error_t;
 
 #endif

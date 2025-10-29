@@ -8,6 +8,8 @@
 #include <asn1/tag.h>
 #include <string.h>
 
+#include <ptr.h>
+
 static size_t asn1_required_header_size(asn1_field *field)
 {
 	size_t required_size = 2; // tag, length
@@ -179,16 +181,10 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 	return ASN1_SUCCESS;
 }
 
-size_t asn1_header_write(asn1_field *field, void *data, size_t size)
+static size_t asn1_header_write_checked(asn1_field *field, void *buffer)
 {
-	size_t required_size = asn1_required_header_size(field);
-	byte_t *out = data;
+	byte_t *out = buffer;
 	size_t pos = 0;
-
-	if (size < required_size)
-	{
-		return 0;
-	}
 
 	// Tag
 	if (field->context)
@@ -208,7 +204,71 @@ size_t asn1_header_write(asn1_field *field, void *data, size_t size)
 		pos += 1;
 	}
 
+	// Length
 	pos += asn1_encode_size(out, field->size);
+
+	return pos;
+}
+
+size_t asn1_header_write(asn1_field *field, void *buffer, size_t size)
+{
+	size_t required_size = asn1_required_header_size(field);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	return asn1_header_write_checked(field, buffer);
+}
+
+asn1_error_t asn1_string_read(asn1_field *field, byte_t context, void *data, size_t *size)
+{
+	asn1_error_t error = 0;
+	size_t pos = *size;
+
+	error = asn1_header_read(field, data, &pos);
+
+	if (error != ASN1_SUCCESS)
+	{
+		return error;
+	}
+
+	if (*size - pos < field->size)
+	{
+		return ASN1_INSUFFICIENT_DATA;
+	}
+
+	if (context != 0)
+	{
+		if (field->context != context)
+		{
+			return ASN1_CONTEXT_MISMATCH;
+		}
+	}
+
+	field->data = PTR_OFFSET(data, pos);
+	pos += field->size;
+
+	*size = pos;
+
+	return ASN1_SUCCESS;
+}
+
+size_t asn1_string_write(asn1_field *field, void *buffer, size_t size)
+{
+	size_t required_size = asn1_required_header_size(field) + field->size;
+	size_t pos = 0;
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	pos += asn1_header_write_checked(field, buffer);
+
+	memcpy(PTR_OFFSET(buffer, pos), field->data, field->size);
+	pos += field->size;
 
 	return pos;
 }
