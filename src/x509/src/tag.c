@@ -222,7 +222,7 @@ size_t asn1_header_write(asn1_field *field, void *buffer, size_t size)
 	return asn1_header_write_checked(field, buffer);
 }
 
-asn1_error_t asn1_string_read(asn1_field *field, byte_t context, void *data, size_t *size)
+asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, void *data, size_t *size)
 {
 	asn1_error_t error = 0;
 	size_t pos = *size;
@@ -244,6 +244,14 @@ asn1_error_t asn1_string_read(asn1_field *field, byte_t context, void *data, siz
 		if (field->context != context)
 		{
 			return ASN1_CONTEXT_MISMATCH;
+		}
+	}
+
+	if (type != 0)
+	{
+		if (field->type != type)
+		{
+			return ASN1_TYPE_MISMATCH;
 		}
 	}
 
