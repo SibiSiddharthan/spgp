@@ -263,7 +263,7 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, voi
 	return ASN1_SUCCESS;
 }
 
-size_t asn1_string_write(asn1_field *field, void *buffer, size_t size)
+size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 {
 	size_t required_size = asn1_required_header_size(field) + field->size;
 	size_t pos = 0;
@@ -275,8 +275,38 @@ size_t asn1_string_write(asn1_field *field, void *buffer, size_t size)
 
 	pos += asn1_header_write_checked(field, buffer);
 
-	memcpy(PTR_OFFSET(buffer, pos), field->data, field->size);
-	pos += field->size;
+	switch (field->type)
+	{
+	case ASN1_INTEGER:
+		break;
+	case ASN1_NULL:
+		break;
+	case ASN1_OBJECT_IDENTIFIER:
+		break;
+	case ASN1_BIT_STRING:
+	case ASN1_OCTET_STRING:
+	case ASN1_UTF8_STRING:
+	case ASN1_PRINTABLE_STRING:
+	case ASN1_IA5_STRING:
+	{
+		memcpy(PTR_OFFSET(buffer, pos), field->data, field->size);
+		pos += field->size;
+	}
+	break;
+	case ASN1_UTC_TIME:
+	case ASN1_GENERAL_TIME:
+
+		break;
+	case ASN1_SEQUENCE:
+	case ASN1_SET:
+		break;
+	default:
+	{
+		memcpy(PTR_OFFSET(buffer, pos), field->data, field->size);
+		pos += field->size;
+	}
+	break;
+	}
 
 	return pos;
 }

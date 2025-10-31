@@ -56,6 +56,6 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size);
 size_t asn1_header_write(asn1_field *field, void *buffer, size_t size);
 
 asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, void *data, size_t *size);
-size_t asn1_string_write(asn1_field *field, void *buffer, size_t size);
+size_t asn1_field_write(asn1_field *field, void *buffer, size_t size);
 
 #endif
