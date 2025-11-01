@@ -65,6 +65,38 @@ x509_error_t x509_certificate_read_interntal(x509_certificate *certificate, void
 		return X509_UNKNOWN_VERSION;
 	}
 
+	// TBS Certificate Serial Number
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_INTEGER, 0, in, &remaining));
+
+	byte_t msb = *(byte_t *)field.data;
+	byte_t zero[20] = {0};
+
+	if (field.size > 20)
+	{
+		return X509_SERIAL_NUMBER_TOO_BIG;
+	}
+
+	if (msb & 0x80)
+	{
+		return X509_SERIAL_NUMBER_NEGATIVE;
+	}
+
+	if (msb == 0)
+	{
+		memcpy(certificate->serial_number, PTR_OFFSET(field.data, 1), field.size - 1);
+		certificate->serial_number_size = field.size - 1;
+	}
+	else
+	{
+		memcpy(certificate->serial_number, field.data, field.size);
+		certificate->serial_number_size = field.size;
+	}
+
+	if (memcmp(certificate->serial_number, zero, certificate->serial_number_size) == 0)
+	{
+		return X509_SERIAL_NUMBER_ZERO;
+	}
+
 	return X509_SUCCESS;
 }
 
