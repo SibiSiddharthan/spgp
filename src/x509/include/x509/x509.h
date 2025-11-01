@@ -13,6 +13,7 @@
 typedef struct _x509_certificate
 {
 	byte_t version;
+	byte_t serial_number_size;
 	byte_t serial_number[20];
 
 	uint64_t validity_start;
