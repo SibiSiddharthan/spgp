@@ -34,7 +34,73 @@
 		}                                               \
 	}
 
-x509_error_t x509_certificate_read_interntal(x509_certificate *certificate, void *data, size_t *size)
+#define X509_PARSE(EXPR)                    \
+	{                                       \
+		x509_error_t __x509_error = (EXPR); \
+                                            \
+		if (__x509_error != X509_SUCCESS)   \
+		{                                   \
+                                            \
+			return __x509_error;            \
+		}                                   \
+	}
+
+static x509_error_t x509_certificate_parse_version(x509_certificate *certificate, asn1_field *field)
+{
+	if (field->size > 1)
+	{
+		return X509_UNKNOWN_VERSION;
+	}
+
+	certificate->version = *(byte_t *)field->data;
+
+	if (certificate->version != X509_CERTIFICATE_V1 && certificate->version != X509_CERTIFICATE_V2 &&
+		certificate->version != X509_CERTIFICATE_V3)
+	{
+		return X509_UNKNOWN_VERSION;
+	}
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certificate, asn1_field *field)
+{
+	byte_t msb = *(byte_t *)field->data;
+	byte_t zero[20] = {0};
+
+	// Check size
+	if (field->size > 20)
+	{
+		return X509_SERIAL_NUMBER_TOO_BIG;
+	}
+
+	// Check negative
+	if (msb & 0x80)
+	{
+		return X509_SERIAL_NUMBER_NEGATIVE;
+	}
+
+	if (msb == 0)
+	{
+		memcpy(certificate->serial_number, PTR_OFFSET(field->data, 1), field->size - 1);
+		certificate->serial_number_size = field->size - 1;
+	}
+	else
+	{
+		memcpy(certificate->serial_number, field->data, field->size);
+		certificate->serial_number_size = field->size;
+	}
+
+	// Check zero
+	if (memcmp(certificate->serial_number, zero, certificate->serial_number_size) == 0)
+	{
+		return X509_SERIAL_NUMBER_ZERO;
+	}
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_certificate_read_internal(x509_certificate *certificate, void *data, size_t *size)
 {
 	byte_t *in = data;
 	size_t pos = 0;
@@ -51,51 +117,11 @@ x509_error_t x509_certificate_read_interntal(x509_certificate *certificate, void
 	// TBS Certificate Version
 	ASN1_PARSE(asn1_field_read(&field, 0, 0, ASN1_FLAG_CONTEXT_TAG, in, &remaining));
 	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_INTEGER, 0, in, &remaining));
-
-	if (field.size > 1)
-	{
-		return X509_UNKNOWN_VERSION;
-	}
-
-	certificate->version = *(byte_t *)field.data;
-
-	if (certificate->version != X509_CERTIFICATE_V1 && certificate->version != X509_CERTIFICATE_V2 &&
-		certificate->version != X509_CERTIFICATE_V3)
-	{
-		return X509_UNKNOWN_VERSION;
-	}
+	X509_PARSE(x509_certificate_parse_version(certificate, &field));
 
 	// TBS Certificate Serial Number
 	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_INTEGER, 0, in, &remaining));
-
-	byte_t msb = *(byte_t *)field.data;
-	byte_t zero[20] = {0};
-
-	if (field.size > 20)
-	{
-		return X509_SERIAL_NUMBER_TOO_BIG;
-	}
-
-	if (msb & 0x80)
-	{
-		return X509_SERIAL_NUMBER_NEGATIVE;
-	}
-
-	if (msb == 0)
-	{
-		memcpy(certificate->serial_number, PTR_OFFSET(field.data, 1), field.size - 1);
-		certificate->serial_number_size = field.size - 1;
-	}
-	else
-	{
-		memcpy(certificate->serial_number, field.data, field.size);
-		certificate->serial_number_size = field.size;
-	}
-
-	if (memcmp(certificate->serial_number, zero, certificate->serial_number_size) == 0)
-	{
-		return X509_SERIAL_NUMBER_ZERO;
-	}
+	X509_PARSE(x509_certificate_parse_serial_number(certificate, &field));
 
 	return X509_SUCCESS;
 }
@@ -113,7 +139,7 @@ x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, s
 
 	memset(*certificate, 0, sizeof(x509_certificate));
 
-	x509_error = x509_certificate_read_interntal(*certificate, data, size);
+	x509_error = x509_certificate_read_internal(*certificate, data, size);
 
 	if (x509_error != X509_SUCCESS)
 	{
