@@ -8,6 +8,8 @@
 #ifndef X509_ERROR_H
 #define X509_ERROR_H
 
+#include <types.h>
+
 typedef enum _asn1_error_t
 {
 	ASN1_SUCCESS = 0,

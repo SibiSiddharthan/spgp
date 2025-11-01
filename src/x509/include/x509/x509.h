@@ -8,7 +8,6 @@
 #ifndef X509_H
 #define X509_H
 
-#include <types.h>
 #include <x509/error.h>
 
 typedef struct _x509_certificate

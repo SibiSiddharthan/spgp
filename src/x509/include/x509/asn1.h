@@ -8,7 +8,6 @@
 #ifndef X509_ASN1_H
 #define X509_ASN1_H
 
-#include <types.h>
 #include <x509/error.h>
 
 // Tag Classes
