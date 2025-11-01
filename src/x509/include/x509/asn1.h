@@ -52,12 +52,7 @@ typedef struct _asn1_field
 {
 	byte_t tag;
 	size_t size;
-
-	union
-	{
-		void *data;
-		intmax_t value;
-	};
+	void *data;
 
 } asn1_field;
 

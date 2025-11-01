@@ -10,6 +10,13 @@
 
 #include <x509/error.h>
 
+typedef enum _x509_certificate_version
+{
+	X509_CERTIFICATE_V1 = 0,
+	X509_CERTIFICATE_V2 = 1,
+	X509_CERTIFICATE_V3 = 2
+} x509_certificate_version;
+
 typedef struct _x509_certificate
 {
 	byte_t version;
