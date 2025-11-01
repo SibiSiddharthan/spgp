@@ -14,14 +14,6 @@ static size_t asn1_required_header_size(asn1_field *field)
 {
 	size_t required_size = 2; // tag, length
 
-	if (field->context)
-	{
-		if (ASN1_CONSTRUCTED_TAG(field->context))
-		{
-			required_size += 1; // context tag
-		}
-	}
-
 	if (field->size > 126)
 	{
 		size_t size = field->size;
@@ -114,28 +106,11 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 			return ASN1_UNKNOWN_UNIVERSAL_TYPE;
 		}
 
-		field->type = tag;
-	}
-	else if (ASN1_CONTEXT_TAG(tag))
-	{
-		field->context = tag;
-
-		if (ASN1_CONSTRUCTED_TAG(tag))
-		{
-			tag = *in++;
-			pos += 1;
-
-			if (asn1_validate_type(tag) == 0)
-			{
-				return ASN1_UNKNOWN_UNIVERSAL_TYPE;
-			}
-
-			field->type = tag;
-		}
+		field->tag = tag;
 	}
 	else
 	{
-		field->type = tag;
+		field->tag = tag;
 	}
 
 	if (pos + 1 > *size)
@@ -187,22 +162,8 @@ static size_t asn1_header_write_checked(asn1_field *field, void *buffer)
 	size_t pos = 0;
 
 	// Tag
-	if (field->context)
-	{
-		*out++ = field->context;
-		pos += 1;
-
-		if (ASN1_CONSTRUCTED_TAG(field->context))
-		{
-			*out++ = field->type;
-			pos += 1;
-		}
-	}
-	else
-	{
-		*out++ = field->type;
-		pos += 1;
-	}
+	*out++ = field->tag;
+	pos += 1;
 
 	// Length
 	pos += asn1_encode_size(out, field->size);
@@ -222,7 +183,7 @@ size_t asn1_header_write(asn1_field *field, void *buffer, size_t size)
 	return asn1_header_write_checked(field, buffer);
 }
 
-asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, void *data, size_t *size)
+asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byte_t flags, void *data, size_t *size)
 {
 	asn1_error_t error = 0;
 	size_t pos = *size;
@@ -239,25 +200,56 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, voi
 		return ASN1_INSUFFICIENT_DATA;
 	}
 
-	if (context != 0)
+	if (flags)
 	{
-		if (field->context != context)
+		byte_t tag = (flags & (~ASN1_FLAG_IMPLICIT_TAG)) | context;
+
+		if ((flags & ASN1_FLAG_IMPLICIT_TAG) == 0)
+		{
+			tag |= ASN1_FLAG_CONSTRUCTED_TAG;
+		}
+
+		if (field->tag != tag)
 		{
 			return ASN1_CONTEXT_MISMATCH;
 		}
+
+		if (flags & ASN1_FLAG_IMPLICIT_TAG)
+		{
+			if (flags & ASN1_FLAG_CONSTRUCTED_TAG)
+			{
+				// Implicit sequence or set
+				goto end;
+			}
+			else
+			{
+				// Implicit other types
+				field->data = PTR_OFFSET(data, pos);
+				pos += field->size;
+
+				goto end;
+			}
+		}
+
+		// Unwrap the other header and return
+		goto end;
 	}
 
 	if (type != 0)
 	{
-		if (field->type != type)
+		if (field->tag != type)
 		{
 			return ASN1_TYPE_MISMATCH;
 		}
 	}
 
-	field->data = PTR_OFFSET(data, pos);
-	pos += field->size;
+	if (ASN1_PRIMITIVE_TAG(field->tag))
+	{
+		field->data = PTR_OFFSET(data, pos);
+		pos += field->size;
+	}
 
+end:
 	*size = pos;
 
 	return ASN1_SUCCESS;
@@ -275,7 +267,7 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 
 	pos += asn1_header_write_checked(field, buffer);
 
-	switch (field->type)
+	switch (field->tag)
 	{
 	case ASN1_INTEGER:
 		break;

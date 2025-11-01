@@ -20,6 +20,14 @@
 #define ASN1_PRIMITIVE_TAG(T)   ((((T) >> 5) & 0x1) == 0x0)
 #define ASN1_CONSTRUCTED_TAG(T) ((((T) >> 5) & 0x1) == 0x1)
 
+// Tag Flags
+#define ASN1_FLAG_IMPLICIT_TAG    0x01
+#define ASN1_FLAG_CONSTRUCTED_TAG 0x20
+
+#define ASN1_FLAG_APPLICATION_TAG 0x40
+#define ASN1_FLAG_CONTEXT_TAG     0x80
+#define ASN1_FLAG_PRIVATE_TAG     0xC0
+
 typedef enum _asn1_type
 {
 	ASN1_INTEGER = 0x02,
@@ -39,8 +47,7 @@ typedef enum _asn1_type
 
 typedef struct _asn1_field
 {
-	byte_t context;
-	byte_t type;
+	byte_t tag;
 	size_t size;
 
 	union
@@ -54,7 +61,7 @@ typedef struct _asn1_field
 asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size);
 size_t asn1_header_write(asn1_field *field, void *buffer, size_t size);
 
-asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, void *data, size_t *size);
+asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byte_t flags, void *data, size_t *size);
 size_t asn1_field_write(asn1_field *field, void *buffer, size_t size);
 
 #endif
