@@ -279,7 +279,10 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 	case ASN1_OCTET_STRING:
 	case ASN1_UTF8_STRING:
 	case ASN1_PRINTABLE_STRING:
+	case ASN1_TELETEX_STRING:
 	case ASN1_IA5_STRING:
+	case ASN1_UNIVERSAL_STRING:
+	case ASN1_BMP_STRING:
 	{
 		memcpy(PTR_OFFSET(buffer, pos), field->data, field->size);
 		pos += field->size;
