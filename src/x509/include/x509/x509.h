@@ -9,6 +9,7 @@
 #define X509_H
 
 #include <types.h>
+#include <x509/error.h>
 
 typedef struct _x509_certificate
 {
@@ -24,9 +25,17 @@ typedef struct _x509_certificate
 
 typedef struct _x509_certificate_chain
 {
-	x509_certificate *certificate;
-	x509_certificate *parent;
+	uint32_t count;
+	uint32_t capacity;
+
+	x509_certificate **certificates;
 
 } x509_certificate_chain;
+
+x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, size_t *size);
+size_t x509_certificate_write(x509_certificate *certificate, uint32_t options, void *buffer, size_t size);
+
+x509_error_t x509_certificate_chain_read(x509_certificate **certificate, void *data, size_t *size);
+size_t x509_certificate_chain_write(x509_certificate **certificate, uint32_t options, void *data, size_t size);
 
 #endif

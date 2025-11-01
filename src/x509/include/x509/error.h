@@ -21,4 +21,13 @@ typedef enum _asn1_error_t
 	ASN1_TYPE_MISMATCH,
 } asn1_error_t;
 
+typedef enum _x509_error_t
+{
+	X509_SUCCESS = 0,
+
+	X509_SERIAL_NUMBER_TOO_BIG,
+	X509_INVALID_VALIDITY,
+
+} x509_error_t;
+
 #endif
