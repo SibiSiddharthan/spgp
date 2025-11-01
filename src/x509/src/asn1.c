@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <asn1/tag.h>
+#include <x509/asn1.h>
 #include <string.h>
 
 #include <ptr.h>

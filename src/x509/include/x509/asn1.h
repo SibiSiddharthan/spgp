@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef ASN1_TAG_H
-#define ASN1_TAG_H
+#ifndef X509_ASN1_H
+#define X509_ASN1_H
 
 #include <types.h>
-#include <asn1/error.h>
+#include <x509/error.h>
 
 // Tag Classes
 #define ASN1_UNIVERSAL_TAG(T)   (((T) >> 6) == 0x00)

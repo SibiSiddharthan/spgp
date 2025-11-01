@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef ASN1_ERROR_H
-#define ASN1_ERROR_H
+#ifndef X509_ERROR_H
+#define X509_ERROR_H
 
 typedef enum _asn1_error_t
 {
