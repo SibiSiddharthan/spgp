@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef SPGP_CRC24_H
-#define SPGP_CRC24_H
+#ifndef CRYPTO_CRC24_H
+#define CRYPTO_CRC24_H
 
-#include <pgp/pgp.h>
+#include <crypt.h>
 
 /*
    Name   : "CRC-24"

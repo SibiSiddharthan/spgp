@@ -7,7 +7,6 @@
 
 add_library(pgp STATIC
 			lib/armor.c
-			lib/crc24.c
 			lib/mpi.c
 			lib/crypto.c
 			lib/error.c

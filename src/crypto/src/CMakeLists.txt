@@ -16,6 +16,7 @@ bignum/asm/generic/div.c
 add_library(crypto STATIC
 #armor
 armor/base64.c
+armor/crc24.c
 #bignum
 bignum/bignum.c
 bignum/ctx.c
