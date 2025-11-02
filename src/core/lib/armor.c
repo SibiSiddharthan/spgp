@@ -7,8 +7,8 @@
 
 #include <pgp/pgp.h>
 #include <pgp/armor.h>
-#include <pgp/base64.h>
 #include <pgp/crc24.h>
+#include <base64.h>
 
 #include <stdlib.h>
 #include <string.h>

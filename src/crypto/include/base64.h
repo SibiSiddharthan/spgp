@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef SPGP_BASE64_H
-#define SPGP_BASE64_H
+#ifndef CRYPTO_BASE64_H
+#define CRYPTO_BASE64_H
 
-#include <pgp/pgp.h>
+#include <crypt.h>
 
 #define BASE64_ENCODE_SIZE(x) (CEIL_DIV((x), 3) * 4)
 #define BASE64_DECODE_SIZE(x) (((x) / 4) * 3)
