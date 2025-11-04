@@ -8,9 +8,9 @@
 #include <x509/oid.h>
 #include <string.h>
 
-// Refer RFC 3279: Algorithms and Identifiers for the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
-// Refer RFC 5758: Internet X.509 Public Key Infrastructure: Additional Algorithms and Identifiers for DSA and ECDSA
-// Refer RFC 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
+// Refer RFC 3279: Algorithms and Identifiers for the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List
+// (CRL) Profile Refer RFC 5758: Internet X.509 Public Key Infrastructure: Additional Algorithms and Identifiers for DSA and ECDSA Refer RFC
+// 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
 
 // Refer NIST Computer Security Objects Register
 
@@ -35,6 +35,13 @@ const byte_t x509_ecdsa_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x
 const byte_t x509_ecdsa_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0C};
 const byte_t x509_ecdsa_shake128_oid[] = {0x01, 0x03, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x20};
 const byte_t x509_ecdsa_shake256_oid[] = {0x01, 0x03, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x21};
+
+const byte_t x509_mldsa_44_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x11};
+const byte_t x509_mldsa_65_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12};
+const byte_t x509_mldsa_87_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13};
+const byte_t x509_hash_mldsa_44_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x20};
+const byte_t x509_hash_mldsa_65_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x21};
+const byte_t x509_hash_mldsa_87_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x22};
 
 x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 {
