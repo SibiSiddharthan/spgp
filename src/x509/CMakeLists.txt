@@ -8,5 +8,5 @@
 cmake_minimum_required(VERSION 3.15)
 project(x509 C)
 
-add_library(x509 src/asn1.c src/certificate.c)
+add_library(x509 src/asn1.c src/oid.c src/certificate.c)
 target_include_directories(x509 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
