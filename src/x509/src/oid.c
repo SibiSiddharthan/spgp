@@ -1,0 +1,59 @@
+/*
+   Copyright (c) 2024 - 2025 Sibi Siddharthan
+
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
+*/
+
+#include <x509/oid.h>
+#include <string.h>
+
+const byte_t x509_dsa_sha1_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x03};
+const byte_t x509_dsa_sha224_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x01};
+const byte_t x509_dsa_sha256_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x02};
+const byte_t x509_dsa_sha384_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x03};
+const byte_t x509_dsa_sha512_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x04};
+const byte_t x509_dsa_sha3_224_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x05};
+const byte_t x509_dsa_sha3_256_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x06};
+const byte_t x509_dsa_sha3_384_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x07};
+const byte_t x509_dsa_sha3_512_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x08};
+
+x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
+{
+	if (size == 7)
+	{
+		if (memcmp(oid, x509_dsa_sha1_oid, 7) == 0)
+		{
+			return X509_DSA_SHA1;
+		}
+	}
+
+	if (size == 8)
+	{
+		// Common Prefix
+		if (memcmp(oid, x509_dsa_sha224_oid, 7) == 0)
+		{
+			switch (oid[7])
+			{
+			case 0x1:
+				return X509_DSA_SHA224;
+			case 0x2:
+				return X509_DSA_SHA256;
+			case 0x3:
+				return X509_DSA_SHA384;
+			case 0x4:
+				return X509_DSA_SHA512;
+			case 0x5:
+				return X509_DSA_SHA3_224;
+			case 0x6:
+				return X509_DSA_SHA3_256;
+			case 0x7:
+				return X509_DSA_SHA3_384;
+			case 0x8:
+				return X509_DSA_SHA3_512;
+			}
+		}
+	}
+
+	return X509_SIG_RESERVED;
+}
