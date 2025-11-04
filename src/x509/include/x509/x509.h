@@ -26,6 +26,8 @@ typedef struct _x509_certificate
 	uint64_t validity_start;
 	uint64_t validity_end;
 
+	byte_t signature_algorithm;
+
 	void **extensions;
 
 } x509_certificate;

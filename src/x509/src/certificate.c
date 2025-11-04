@@ -7,7 +7,7 @@
 
 #include <x509/x509.h>
 #include <x509/asn1.h>
-#include <buffer.h>
+#include <x509/oid.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -123,6 +123,26 @@ static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certi
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate, void *data, size_t *size)
+{
+	byte_t *in = data;
+	size_t pos = 0;
+	size_t remaining = *size;
+
+	asn1_field field = {0};
+
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+
+	certificate->signature_algorithm = x509_signature_oid_decode(field.data, field.size);
+
+	if (certificate->signature_algorithm == X509_SIG_RESERVED)
+	{
+		return X509_UNKNOWN_SIGNATURE_ALGORITHM;
+	}
+
+	return X509_SUCCESS;
+}
+
 static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *certificate, void *data, size_t *size)
 {
 	byte_t *in = data;
@@ -139,6 +159,9 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 
 	// TBS Certificate Serial Number
 	X509_PARSE(x509_certificate_parse_serial_number(certificate, in, &remaining));
+
+	// TBS Signature Algorithm
+	X509_PARSE(x509_parse_signature_algorithm(certificate, in, &remaining));
 
 	*size = remaining;
 
@@ -158,6 +181,9 @@ static x509_error_t x509_certificate_read_internal(x509_certificate *certificate
 
 	// TBS Certificate
 	X509_PARSE(x509_certificate_parse_tbs_certificate(certificate, data, &remaining));
+
+	// Signature Algorithm
+	X509_PARSE(x509_parse_signature_algorithm(certificate, in, &remaining));
 
 	return X509_SUCCESS;
 }
