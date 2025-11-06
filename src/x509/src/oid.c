@@ -204,6 +204,8 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 	uint64_t first = 0;
 	uint32_t count = 0;
 
+	byte_t digit = 0;
+
 	// Minimum size is 3. eg 1.0, 0.2 ...
 	if (oid_size < 3)
 	{
@@ -217,10 +219,20 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 			component = (component * 10) + (*in - '0');
 			in++;
 			in_pos++;
+
+			digit = 1;
+
+			continue;
 		}
 
 		if (*in == '.')
 		{
+			// Catch 1..
+			if (digit == 0)
+			{
+				return 0;
+			}
+
 			in++;
 			in_pos++;
 			count++;
@@ -228,6 +240,8 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 			if (count == 1)
 			{
 				first = component;
+				component = 0;
+				digit = 0;
 
 				if (first > 2)
 				{
@@ -237,7 +251,7 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 				continue;
 			}
 
-			if (count <= 2)
+			if (count == 2)
 			{
 				if (first < 2)
 				{
@@ -251,7 +265,12 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 			}
 
 			result += base128_encode(out + out_pos, buffer_size - out_pos, component);
-			out_pos = MIN(buffer_size, out_pos + result);
+			out_pos = MIN(buffer_size, result);
+
+			component = 0;
+			digit = 0;
+
+			continue;
 		}
 
 		return 0;
@@ -263,7 +282,13 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 		return 0;
 	}
 
-	if (count <= 2)
+	// Trailing dot
+	if(digit == 0)
+	{
+		return 0;
+	}
+
+	if (count < 2)
 	{
 		if (first < 2)
 		{
