@@ -204,6 +204,12 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 	uint64_t first = 0;
 	uint32_t count = 0;
 
+	// Minimum size is 3. eg 1.0, 0.2 ...
+	if (oid_size < 3)
+	{
+		return 0;
+	}
+
 	while (in_pos < oid_size)
 	{
 		if (*in >= '0' && *in <= '9')
@@ -215,11 +221,19 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 
 		if (*in == '.')
 		{
+			in++;
+			in_pos++;
 			count++;
 
 			if (count == 1)
 			{
 				first = component;
+
+				if (first > 2)
+				{
+					return 0;
+				}
+
 				continue;
 			}
 
@@ -240,6 +254,12 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 			out_pos = MIN(buffer_size, out_pos + result);
 		}
 
+		return 0;
+	}
+
+	// Atleast 2 components
+	if (count == 0)
+	{
 		return 0;
 	}
 
