@@ -16,6 +16,7 @@
 // Refer RFC 4055: Additional Algorithms and Identifiers for RSA Cryptography for use in the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
 // Refer RFC 5758: Internet X.509 Public Key Infrastructure: Additional Algorithms and Identifiers for DSA and ECDSA 
 // Refer RFC 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
+// Refer RFC 8410: Algorithm Identifiers for Ed25519, Ed448, X25519, and X448 for Use in the Internet X.509 Public Key Infrastructure
 
 // clang-format on
 
@@ -57,6 +58,9 @@ const byte_t x509_ecdsa_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x
 const byte_t x509_ecdsa_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0C};
 const byte_t x509_ecdsa_shake128_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X20};
 const byte_t x509_ecdsa_shake256_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X21};
+
+const byte_t x509_ed25519_oid[] = {0X2B, 0X65, 0X70};
+const byte_t x509_ed448_oid[] = {0X2B, 0X65, 0X71};
 
 const byte_t x509_mldsa_44_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x11};
 const byte_t x509_mldsa_65_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12};
