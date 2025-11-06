@@ -143,6 +143,7 @@ static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 	{
 		temp[pos++] = value % 128;
 		value /= 128;
+
 	} while (value != 0);
 
 	result = pos;
@@ -152,6 +153,35 @@ static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 		if (size > 0)
 		{
 			*buffer++ = temp[pos - 1] | (pos > 1 ? 0x80 : 0x00);
+			--size;
+		}
+
+		--pos;
+	}
+
+	return result;
+}
+
+static uint32_t base128_decode(byte_t *buffer, uint32_t size, uint64_t value)
+{
+	byte_t temp[32] = {0};
+	byte_t pos = 0;
+	byte_t result = 0;
+
+	do
+	{
+		temp[pos++] = value % 10;
+		value /= 10;
+
+	} while (value != 0);
+
+	result = pos;
+
+	while (pos != 0)
+	{
+		if (size > 0)
+		{
+			*buffer++ = temp[pos - 1] + '0';
 			--size;
 		}
 
