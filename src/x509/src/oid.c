@@ -231,3 +231,87 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 
 	return result;
 }
+
+uint32_t oid_decode(void *oid, uint32_t oid_size, void *buffer, uint32_t buffer_size)
+{
+	byte_t *in = buffer;
+	byte_t *out = oid;
+
+	uint32_t pos = 0;
+	uint32_t result = 0;
+
+	uint64_t component = 0;
+	byte_t arc = 0;
+	byte_t last = 0;
+
+	while (pos < buffer_size)
+	{
+		last = 0;
+
+		while (pos < buffer_size)
+		{
+			component = (component << 7) + (*in & 0x7F);
+
+			if (*in < 128)
+			{
+				++in;
+				++pos;
+				last = 1;
+
+				break;
+			}
+
+			++in;
+			++pos;
+		}
+
+		if (arc == 0)
+		{
+
+			if (component < 40)
+			{
+				arc = '0';
+			}
+			else if (component < 80)
+			{
+				arc = '1';
+				component -= 40;
+			}
+			else
+			{
+				arc = '2';
+				component -= 80;
+			}
+
+			if (oid_size > 0)
+			{
+				*out++ = arc;
+				--oid_size;
+			}
+
+			++result;
+		}
+
+		if (last)
+		{
+			if (oid_size > 0)
+			{
+				*out++ = ',';
+				--oid_size;
+			}
+
+			++result;
+
+			result += base128_decode(out, oid_size, component);
+
+			component = 0;
+		}
+	}
+
+	if (last == 0)
+	{
+		return 0;
+	}
+
+	return result;
+}
