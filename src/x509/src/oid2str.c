@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	sprint(string, 256, "{%'A[%#.2hhx]}", buffer, result);
+	sprint(string, 256, "{%'A[%#^.2hhx]}", buffer, result);
 	printf("%s\n", string);
 
 	return 0;
