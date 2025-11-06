@@ -9,6 +9,8 @@
 #include <x509/asn1.h>
 #include <x509/oid.h>
 
+#include <ptr.h>
+
 #include <stdlib.h>
 #include <string.h>
 

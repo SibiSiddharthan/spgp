@@ -8,6 +8,8 @@
 #include <x509/oid.h>
 #include <string.h>
 
+#include <minmax.h>
+
 // Refer RFC 3279: Algorithms and Identifiers for the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List
 // (CRL) Profile Refer RFC 5758: Internet X.509 Public Key Infrastructure: Additional Algorithms and Identifiers for DSA and ECDSA Refer RFC
 // 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
@@ -129,4 +131,79 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 	}
 
 	return X509_SIG_RESERVED;
+}
+
+static uint32_t base128_encode(byte_t *buffer, uint32_t size)
+{
+}
+
+uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_size)
+{
+	byte_t *in = oid;
+	byte_t *out = buffer;
+
+	uint32_t in_pos = 0;
+	uint32_t out_pos = 0;
+	uint32_t result = 0;
+
+	uint64_t component = 0;
+	uint64_t first = 0;
+	uint32_t count = 0;
+
+	while (in_pos < oid_size)
+	{
+		if (*in >= '0' && *in <= '9')
+		{
+			component = (component * 10) + (*in - '0');
+			in++;
+			in_pos++;
+		}
+
+		if (*in == '.')
+		{
+			count++;
+
+			if (count == 1)
+			{
+				first = component;
+				continue;
+			}
+
+			if (count <= 2)
+			{
+				if (first < 2)
+				{
+					if (component >= 40)
+					{
+						return 0;
+					}
+				}
+
+				component = (first * 40) + component;
+			}
+
+			result += base128_encode(out + out_pos, buffer_size - out_pos);
+			out_pos = MIN(buffer_size, out_pos + result);
+		}
+
+		return 0;
+	}
+
+	if (count <= 2)
+	{
+		if (first < 2)
+		{
+			if (component >= 40)
+			{
+				return 0;
+			}
+		}
+
+		component = (first * 40) + component;
+	}
+
+	result += base128_encode(out + out_pos, buffer_size - out_pos);
+	out_pos = MIN(buffer_size, out_pos + result);
+
+	return result;
 }
