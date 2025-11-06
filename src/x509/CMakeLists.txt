@@ -10,3 +10,7 @@ project(x509 C)
 
 add_library(x509 src/asn1.c src/oid.c src/certificate.c)
 target_include_directories(x509 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_executable(oid2str src/oid2str.c)
+target_link_libraries(oid2str x509 common)
+set_target_properties(oid2str PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
