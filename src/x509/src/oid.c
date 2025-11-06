@@ -10,11 +10,27 @@
 
 #include <minmax.h>
 
-// Refer RFC 3279: Algorithms and Identifiers for the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List
-// (CRL) Profile Refer RFC 5758: Internet X.509 Public Key Infrastructure: Additional Algorithms and Identifiers for DSA and ECDSA Refer RFC
-// 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
+// clang-format off
+
+// Refer RFC 3279: Algorithms and Identifiers for the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
+// Refer RFC 4055: Additional Algorithms and Identifiers for RSA Cryptography for use in the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
+// Refer RFC 5758: Internet X.509 Public Key Infrastructure: Additional Algorithms and Identifiers for DSA and ECDSA 
+// Refer RFC 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
+
+// clang-format on
 
 // Refer NIST Computer Security Objects Register
+
+const byte_t x509_rsa_pkcs_md5_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X04};
+const byte_t x509_rsa_pkcs_sha1_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X05};
+const byte_t x509_rsa_pkcs_sha224_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0E};
+const byte_t x509_rsa_pkcs_sha256_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0B};
+const byte_t x509_rsa_pkcs_sha384_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0C};
+const byte_t x509_rsa_pkcs_sha512_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0D};
+const byte_t x509_rsa_pkcs_sha3_224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0D};
+const byte_t x509_rsa_pkcs_sha3_256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0E};
+const byte_t x509_rsa_pkcs_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0F};
+const byte_t x509_rsa_pkcs_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x10};
 
 const byte_t x509_dsa_sha1_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x03};
 const byte_t x509_dsa_sha224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x01};
