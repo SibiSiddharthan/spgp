@@ -133,8 +133,32 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 	return X509_SIG_RESERVED;
 }
 
-static uint32_t base128_encode(byte_t *buffer, uint32_t size)
+static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 {
+	byte_t temp[16] = {0};
+	byte_t pos = 0;
+	byte_t result = 0;
+
+	do
+	{
+		temp[pos++] = value % 128;
+		value /= 128;
+	} while (value != 0);
+
+	result = pos;
+
+	while (pos != 0)
+	{
+		if (size > 0)
+		{
+			*buffer++ = temp[pos - 1] | (pos > 1 ? 0x80 : 0x00);
+			--size;
+		}
+
+		--pos;
+	}
+
+	return result;
 }
 
 uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_size)
@@ -182,7 +206,7 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 				component = (first * 40) + component;
 			}
 
-			result += base128_encode(out + out_pos, buffer_size - out_pos);
+			result += base128_encode(out + out_pos, buffer_size - out_pos, component);
 			out_pos = MIN(buffer_size, out_pos + result);
 		}
 
@@ -202,7 +226,7 @@ uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_
 		component = (first * 40) + component;
 	}
 
-	result += base128_encode(out + out_pos, buffer_size - out_pos);
+	result += base128_encode(out + out_pos, buffer_size - out_pos, component);
 	out_pos = MIN(buffer_size, out_pos + result);
 
 	return result;
