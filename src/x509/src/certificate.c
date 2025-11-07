@@ -145,6 +145,32 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_name(void **name, void *data, size_t *size)
+{
+	byte_t *in = data;
+	size_t pos = 0;
+	size_t remaining = *size;
+
+	asn1_field field = {0};
+
+	// RDNSequence
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+
+	// Relatively Distinguised Name
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SET, 0, in, &remaining));
+
+	// Attribute
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+
+	// Type
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+
+	// Value
+	ASN1_PARSE(asn1_field_read(&field, 0, 0, 0, in, &remaining));
+
+	return X509_SUCCESS;
+}
+
 #define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
 #define TO_DIGIT(x) ((x) - '0')
 
@@ -403,8 +429,14 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 	// TBS Signature Algorithm
 	X509_PARSE(x509_parse_signature_algorithm(certificate, in, &remaining));
 
+	// TBS Certificate Issuer
+	X509_PARSE(x509_parse_name(&certificate->issuer, in, &remaining));
+
 	// TBS Certificate Validity
 	X509_PARSE(x509_parse_certificate_validity(certificate, in, &remaining));
+
+	// TBS Certificate Subject
+	X509_PARSE(x509_parse_name(&certificate->subject, in, &remaining));
 
 	*size = remaining;
 

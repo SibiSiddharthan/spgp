@@ -28,6 +28,9 @@ typedef struct _x509_certificate
 
 	byte_t signature_algorithm;
 
+	void *issuer;
+	void *subject;
+
 	void **extensions;
 
 } x509_certificate;
