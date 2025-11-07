@@ -145,7 +145,203 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
+#define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
+#define TO_DIGIT(x) ((x) - '0')
 
+static uint64_t x509_parse_validity_time(asn1_field *field)
+{
+	byte_t *data = field->data;
+	size_t size = field->size;
+	uint32_t offset = 0;
+
+	uint64_t epoch = 0;
+	uint32_t year = 0;
+	uint32_t month = 0;
+	uint32_t day = 0;
+	uint32_t hour = 0;
+	uint32_t minute = 0;
+	uint32_t second = 0;
+
+	for (size_t i = 0; i + 1 < field->size; ++i)
+	{
+		if (!IS_DIGIT(data[i]))
+		{
+			return UINT64_MAX;
+		}
+	}
+
+	if (data[size - 1] != 'Z')
+	{
+		return UINT64_MAX;
+	}
+
+	if (field->tag == ASN1_UTC_TIME)
+	{
+		if (field->size != 13)
+		{
+			return UINT64_MAX;
+		}
+
+		year = (TO_DIGIT(data[0]) * 10) + TO_DIGIT(data[1]);
+
+		if (year >= 50)
+		{
+			year += 1900;
+		}
+		else
+		{
+			year += 2000;
+		}
+
+		offset = 2;
+	}
+
+	if (field->tag == ASN1_GENERAL_TIME)
+	{
+		if (field->size != 15)
+		{
+			return UINT64_MAX;
+		}
+
+		year = (TO_DIGIT(data[0]) * 1000) + (TO_DIGIT(data[1]) * 100) + (TO_DIGIT(data[2]) * 10) + TO_DIGIT(data[3]);
+		offset = 4;
+	}
+
+	// Start of epoch is 0 AD. Assume leap year
+	// Year
+	epoch = year * 31536000;
+	epoch += ((year / 4) + 1) * 86400;
+
+	// Month
+	month = (TO_DIGIT(data[offset + 0]) * 10) + TO_DIGIT(data[offset + 1]);
+	offset += 2;
+
+	switch (month)
+	{
+	case 1:
+		break;
+	case 2:
+		epoch += 31 * 86400;
+		break;
+	case 3:
+		epoch += 59 * 86400;
+		break;
+	case 4:
+		epoch += 90 * 86400;
+		break;
+	case 5:
+		epoch += 120 * 86400;
+		break;
+	case 6:
+		epoch += 151 * 86400;
+		break;
+	case 7:
+		epoch += 181 * 86400;
+		break;
+	case 8:
+		epoch += 212 * 86400;
+		break;
+	case 9:
+		epoch += 243 * 86400;
+		break;
+	case 10:
+		epoch += 273 * 86400;
+		break;
+	case 11:
+		epoch += 304 * 86400;
+		break;
+	case 12:
+		epoch += 334 * 86400;
+		break;
+	default:
+		return UINT64_MAX;
+	}
+
+	if (year % 4 == 0)
+	{
+		if (month > 2)
+		{
+			epoch += 86400;
+		}
+	}
+
+	// Day
+	day = (TO_DIGIT(data[offset + 0]) * 10) + TO_DIGIT(data[offset + 1]);
+	epoch += day * 86400;
+	offset += 2;
+
+	if (day == 0)
+	{
+		return UINT64_MAX;
+	}
+
+	if (month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12)
+	{
+		if (day > 31)
+		{
+			return UINT64_MAX;
+		}
+	}
+	else
+	{
+		if (month == 2)
+		{
+			if (year % 4 == 0)
+			{
+				if (day > 29)
+				{
+					return UINT64_MAX;
+				}
+			}
+			else
+			{
+				if (day > 28)
+				{
+					return UINT64_MAX;
+				}
+			}
+		}
+		else
+		{
+			if (day > 30)
+			{
+				return UINT64_MAX;
+			}
+		}
+	}
+
+	// Hours
+	hour = (TO_DIGIT(data[offset + 0]) * 10) + TO_DIGIT(data[offset + 1]);
+	epoch += hour * 3600;
+	offset += 2;
+
+	if (hour >= 24)
+	{
+		return UINT64_MAX;
+	}
+
+	// Minutes
+	minute = (TO_DIGIT(data[offset + 0]) * 10) + TO_DIGIT(data[offset + 1]);
+	epoch += minute * 60;
+	offset += 2;
+
+	if (minute >= 60)
+	{
+		return UINT64_MAX;
+	}
+
+	// Seconds
+	second = (TO_DIGIT(data[offset + 0]) * 10) + TO_DIGIT(data[offset + 1]);
+	epoch += second;
+	offset += 2;
+
+	if (second >= 60)
+	{
+		return UINT64_MAX;
+	}
+
+	return epoch;
+}
 
 static x509_error_t x509_parse_certificate_validity(x509_certificate *certificate, void *data, size_t *size)
 {
