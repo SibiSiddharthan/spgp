@@ -145,6 +145,48 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
+
+
+static x509_error_t x509_parse_certificate_validity(x509_certificate *certificate, void *data, size_t *size)
+{
+	byte_t *in = data;
+	size_t pos = 0;
+	size_t remaining = *size;
+
+	asn1_field field = {0};
+	asn1_field start = {0};
+	asn1_field end = {0};
+
+	// Validity Sequence
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+
+	// Validity Start (Not Before)
+	ASN1_PARSE(asn1_field_read(&start, 0, 0, 0, in, &remaining));
+
+	// Validity End (Not After)
+	ASN1_PARSE(asn1_field_read(&end, 0, 0, 0, in, &remaining));
+
+	if ((start.tag != ASN1_UTC_TIME && start.tag != ASN1_GENERAL_TIME) || (end.tag != ASN1_UTC_TIME && end.tag != ASN1_GENERAL_TIME))
+	{
+		return X509_INVALID_CERTIFICATE;
+	}
+
+	certificate->validity_start = x509_parse_validity_time(&start);
+	certificate->validity_end = x509_parse_validity_time(&end);
+
+	if (certificate->validity_start == UINT64_MAX || certificate->validity_end == UINT64_MAX)
+	{
+		return X509_INVALID_VALIDITY;
+	}
+
+	if (certificate->validity_end < certificate->validity_start)
+	{
+		return X509_INVALID_VALIDITY;
+	}
+
+	return X509_SUCCESS;
+}
+
 static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *certificate, void *data, size_t *size)
 {
 	byte_t *in = data;
@@ -164,6 +206,9 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 
 	// TBS Signature Algorithm
 	X509_PARSE(x509_parse_signature_algorithm(certificate, in, &remaining));
+
+	// TBS Certificate Validity
+	X509_PARSE(x509_parse_certificate_validity(certificate, in, &remaining));
 
 	*size = remaining;
 
