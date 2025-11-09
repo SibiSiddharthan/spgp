@@ -157,6 +157,27 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 	return X509_SIG_RESERVED;
 }
 
+// Refer RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
+const byte_t x509_rdn_common_name_oid[] = {0X55, 0X04, 0X03};
+const byte_t x509_rdn_surname_oid[] = {0X55, 0X04, 0X04};
+const byte_t x509_rdn_name_oid[] = {0X55, 0X04, 0X29};
+const byte_t x509_rdn_given_name_oid[] = {0X55, 0X04, 0X2A};
+const byte_t x509_rdn_initials_oid[] = {0X55, 0X04, 0X2B};
+const byte_t x509_rdn_generation_qualifier_oid[] = {0X55, 0X04, 0X2C};
+
+const byte_t x509_rdn_locality_name_oid[] = {0X55, 0X04, 0X07};
+const byte_t x509_rdn_state_province_name_oid[] = {0X55, 0X04, 0X08};
+const byte_t x509_rdn_organization_name_oid[] = {0X55, 0X04, 0X0A};
+const byte_t x509_rdn_organizational_unit_name_oid[] = {0X55, 0X04, 0X0B};
+
+const byte_t x509_rdn_title_oid[] = {0X55, 0X04, 0X0C};
+const byte_t x509_rdn_serial_number_oid[] = {0X55, 0X04, 0X05};
+const byte_t x509_rdn_country_name_oid[] = {0X55, 0X04, 0X06};
+const byte_t x509_rdn_dn_qualifier_oid[] = {0X55, 0X04, 0X2E};
+const byte_t x509_rdn_pseudonym_oid[] = {0X55, 0X04, 0X41};
+const byte_t x509_rdn_domain_component_oid[] = {0X09, 0X92, 0X26, 0X89, 0X93, 0XF2, 0X2C, 0X64, 0X01, 0X19};
+const byte_t x509_rdn_email_addres_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X09, 0X01};
+
 static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 {
 	byte_t temp[16] = {0};
