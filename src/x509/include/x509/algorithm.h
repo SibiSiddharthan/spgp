@@ -8,6 +8,27 @@
 #ifndef X509_ALGORITHM_H
 #define X509_ALGORITHM_H
 
+typedef enum _x509_algorithm
+{
+	X509_RESERVED = 0,
+
+	X509_DSA,
+	X509_ECDSA,
+
+	X509_ECDH,
+	X509_ECMQV,
+
+	X509_RSA_PKCS,
+	X509_RSA_OAEP,
+	X509_RSA_PSS,
+
+	X509_X25519,
+	X509_X448,
+	X509_ED25519,
+	X509_ED448,
+
+} x509_algorithm;
+
 typedef enum _x509_signature_algorithm
 {
 	X509_SIG_RESERVED = 0,
