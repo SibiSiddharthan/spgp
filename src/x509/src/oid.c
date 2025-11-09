@@ -15,12 +15,28 @@
 // Refer RFC 3279: Algorithms and Identifiers for the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
 // Refer RFC 4055: Additional Algorithms and Identifiers for RSA Cryptography for use in the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
 // Refer RFC 5758: Internet X.509 Public Key Infrastructure: Additional Algorithms and Identifiers for DSA and ECDSA 
-// Refer RFC 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
+// Refer RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
 // Refer RFC 8410: Algorithm Identifiers for Ed25519, Ed448, X25519, and X448 for Use in the Internet X.509 Public Key Infrastructure
+// Refer RFC 8692: Internet X.509 Public Key Infrastructure: Additional Algorithm Identifiers for RSASSA-PSS and ECDSA Using SHAKEs
 
 // clang-format on
 
 // Refer NIST Computer Security Objects Register
+
+const byte_t x509_dsa_oid[] = {0X2A, 0X86, 0X48, 0XCE, 0X38, 0X04, 0X01};
+
+const byte_t x509_ecdsa_oid[] = {0X2A, 0X86, 0X48, 0XCE, 0X3D, 0X02, 0X01};
+const byte_t x509_ecdh_oid[] = {0X2B, 0X81, 0X04, 0X01, 0X0C};
+const byte_t x509_ecmqv_oid[] = {0X2B, 0X81, 0X04, 0X01, 0X0D};
+
+const byte_t x509_rsa_pkcs_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X01};
+const byte_t x509_rsa_oaep_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X07};
+const byte_t x509_rsa_pss_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0A};
+
+const byte_t x509_x25519_oid[] = {0X2B, 0X65, 0X6E};
+const byte_t x509_x448_oid[] = {0X2B, 0X65, 0X6F};
+const byte_t x509_ed25519_oid[] = {0X2B, 0X65, 0X70};
+const byte_t x509_ed448_oid[] = {0X2B, 0X65, 0X71};
 
 const byte_t x509_rsa_pkcs_md5_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X04};
 const byte_t x509_rsa_pkcs_sha1_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X05};
