@@ -178,6 +178,26 @@ const byte_t x509_rdn_pseudonym_oid[] = {0X55, 0X04, 0X41};
 const byte_t x509_rdn_domain_component_oid[] = {0X09, 0X92, 0X26, 0X89, 0X93, 0XF2, 0X2C, 0X64, 0X01, 0X19};
 const byte_t x509_rdn_email_addres_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X09, 0X01};
 
+const byte_t x509_ext_subject_directory_attributes_oid[] = {0X55, 0X1D, 0X09};
+const byte_t x509_ext_subject_key_identifier_oid[] = {0X55, 0X1D, 0X0E};
+const byte_t x509_ext_key_usage_oid[] = {0X55, 0X1D, 0X0F};
+const byte_t x509_ext_private_key_usage_period_oid[] = {0X55, 0X1D, 0X10};
+const byte_t x509_ext_subject_alternate_name_oid[] = {0X55, 0X1D, 0X11};
+const byte_t x509_ext_issuer_alternate_name_oid[] = {0X55, 0X1D, 0X12};
+const byte_t x509_ext_basic_constraints_oid[] = {0X55, 0X1D, 0X13};
+const byte_t x509_ext_name_constraints_oid[] = {0X55, 0X1D, 0X1E};
+const byte_t x509_ext_crl_distribution_points_oid[] = {0X55, 0X1D, 0X1F};
+const byte_t x509_ext_certificate_policies_oid[] = {0X55, 0X1D, 0X20};
+const byte_t x509_ext_policy_mappings_oid[] = {0X55, 0X1D, 0X21};
+const byte_t x509_ext_authority_key_identifier_oid[] = {0X55, 0X1D, 0X23};
+const byte_t x509_ext_policy_constraints_oid[] = {0X55, 0X1D, 0X24};
+const byte_t x509_ext_extended_key_usage_oid[] = {0X55, 0X1D, 0X25};
+const byte_t x509_ext_delta_crl_distribution_points_oid[] = {0X55, 0X1D, 0X2E};
+const byte_t x509_ext_inhibit_anypolicy_oid[] = {0X55, 0X1D, 0X36};
+
+const byte_t x509_ext_authority_information_access_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X01, 0X01};
+const byte_t x509_ext_subject_information_access_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X01, 0X0B};
+
 static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 {
 	byte_t temp[16] = {0};
