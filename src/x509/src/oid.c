@@ -49,7 +49,6 @@ const byte_t x509_rsa_pkcs_sha3_256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
 const byte_t x509_rsa_pkcs_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0F};
 const byte_t x509_rsa_pkcs_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x10};
 
-const byte_t x509_rsa_pss_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0A};
 const byte_t x509_rsa_pss_shake128_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X1E};
 const byte_t x509_rsa_pss_shake256_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X1F};
 
@@ -75,9 +74,6 @@ const byte_t x509_ecdsa_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x
 const byte_t x509_ecdsa_shake128_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X20};
 const byte_t x509_ecdsa_shake256_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X21};
 
-const byte_t x509_ed25519_oid[] = {0X2B, 0X65, 0X70};
-const byte_t x509_ed448_oid[] = {0X2B, 0X65, 0X71};
-
 const byte_t x509_mldsa_44_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x11};
 const byte_t x509_mldsa_65_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12};
 const byte_t x509_mldsa_87_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13};
@@ -91,7 +87,7 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 	{
 		if (memcmp(oid, x509_dsa_sha1_oid, 7) == 0)
 		{
-			return X509_DSA_SHA1;
+			return X509_SIG_DSA_SHA1;
 		}
 	}
 
@@ -99,7 +95,7 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 	{
 		if (memcmp(oid, x509_ecdsa_sha1_oid, 8) == 0)
 		{
-			return X509_ECDSA_SHA1;
+			return X509_SIG_ECDSA_SHA1;
 		}
 	}
 
@@ -111,29 +107,29 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 			switch (oid[8])
 			{
 			case 0x1:
-				return X509_DSA_SHA224;
+				return X509_SIG_DSA_SHA224;
 			case 0x2:
-				return X509_DSA_SHA256;
+				return X509_SIG_DSA_SHA256;
 			case 0x3:
-				return X509_DSA_SHA384;
+				return X509_SIG_DSA_SHA384;
 			case 0x4:
-				return X509_DSA_SHA512;
+				return X509_SIG_DSA_SHA512;
 			case 0x5:
-				return X509_DSA_SHA3_224;
+				return X509_SIG_DSA_SHA3_224;
 			case 0x6:
-				return X509_DSA_SHA3_256;
+				return X509_SIG_DSA_SHA3_256;
 			case 0x7:
-				return X509_DSA_SHA3_384;
+				return X509_SIG_DSA_SHA3_384;
 			case 0x8:
-				return X509_DSA_SHA3_512;
+				return X509_SIG_DSA_SHA3_512;
 			case 0x9:
-				return X509_ECDSA_SHA3_224;
+				return X509_SIG_ECDSA_SHA3_224;
 			case 0xA:
-				return X509_ECDSA_SHA3_256;
+				return X509_SIG_ECDSA_SHA3_256;
 			case 0xB:
-				return X509_ECDSA_SHA3_384;
+				return X509_SIG_ECDSA_SHA3_384;
 			case 0xc:
-				return X509_ECDSA_SHA3_512;
+				return X509_SIG_ECDSA_SHA3_512;
 			}
 		}
 
@@ -143,13 +139,13 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 			switch (oid[8])
 			{
 			case 0x1:
-				return X509_ECDSA_SHA224;
+				return X509_SIG_ECDSA_SHA224;
 			case 0x2:
-				return X509_ECDSA_SHA256;
+				return X509_SIG_ECDSA_SHA256;
 			case 0x3:
-				return X509_ECDSA_SHA384;
+				return X509_SIG_ECDSA_SHA384;
 			case 0x4:
-				return X509_ECDSA_SHA512;
+				return X509_SIG_ECDSA_SHA512;
 			}
 		}
 
@@ -159,13 +155,13 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 			switch (oid[8])
 			{
 			case 0x1:
-				return X509_ECDSA_SHA224;
+				return X509_SIG_ECDSA_SHA224;
 			case 0x2:
-				return X509_ECDSA_SHA256;
+				return X509_SIG_ECDSA_SHA256;
 			case 0x3:
-				return X509_ECDSA_SHA384;
+				return X509_SIG_ECDSA_SHA384;
 			case 0x4:
-				return X509_ECDSA_SHA512;
+				return X509_SIG_ECDSA_SHA512;
 			}
 		}
 	}
