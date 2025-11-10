@@ -43,6 +43,20 @@ typedef enum _x509_rdn_type
 
 } x509_rdn_type;
 
+typedef enum _x509_general_name_type
+{
+	X509_GN_RESERVED = 0,
+
+	X509_GN_RFC822,
+	X509_GN_DNS,
+	X509_GN_X400,
+	X509_GN_IP,
+	X509_GN_URI,
+	X509_GN_RID,
+
+
+} x509_general_name_type;
+
 typedef enum _x509_extension_type
 {
 	X509_EXT_RESERVED = 0,
