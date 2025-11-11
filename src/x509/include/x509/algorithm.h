@@ -31,6 +31,8 @@ typedef enum _x509_algorithm
 
 typedef enum _x509_hash_algorithm
 {
+	X509_HASH_RESERVED = 0,
+
 	X509_HASH_MD5,
 	X509_HASH_SHA1,
 	X509_HASH_SHA224,

@@ -55,6 +55,65 @@ const byte_t x509_hash_shake256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x0
 const byte_t x509_hash_shake128x_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x11};
 const byte_t x509_hash_shake256x_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x12};
 
+x509_hash_algorithm x509_hash_oid_decode(byte_t *oid, uint32_t size)
+{
+	if (size == 5)
+	{
+		if (memcmp(oid, x509_hash_sha1_oid, 5) == 0)
+		{
+			return X509_HASH_SHA1;
+		}
+	}
+
+	if (size == 8)
+	{
+		if (memcmp(oid, x509_hash_md5_oid, 9) == 0)
+		{
+			return X509_HASH_MD5;
+		}
+	}
+
+	if (size == 9)
+	{
+		if (memcmp(oid, x509_hash_sha224_oid, 8) == 0)
+		{
+			switch (oid[8])
+			{
+			case 0x01:
+				return X509_HASH_SHA224;
+			case 0x02:
+				return X509_HASH_SHA256;
+			case 0x03:
+				return X509_HASH_SHA384;
+			case 0x04:
+				return X509_HASH_SHA512;
+			case 0x05:
+				return X509_HASH_SHA512_224;
+			case 0x06:
+				return X509_HASH_SHA512_256;
+			case 0x07:
+				return X509_HASH_SHA3_224;
+			case 0x08:
+				return X509_HASH_SHA3_256;
+			case 0x09:
+				return X509_HASH_SHA3_384;
+			case 0x0A:
+				return X509_HASH_SHA3_512;
+			case 0x0B:
+				return X509_HASH_SHAKE128;
+			case 0x0C:
+				return X509_HASH_SHAKE256;
+			case 0x11:
+				return X509_HASH_SHAKE128X;
+			case 0x12:
+				return X509_HASH_SHAKE256X;
+			}
+		}
+	}
+
+	return X509_HASH_RESERVED;
+}
+
 const byte_t x509_sig_rsa_pkcs_md5_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x04};
 const byte_t x509_sig_rsa_pkcs_sha1_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x05};
 const byte_t x509_sig_rsa_pkcs_sha224_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0E};
