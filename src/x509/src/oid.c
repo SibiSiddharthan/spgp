@@ -281,6 +281,64 @@ const byte_t x509_rdn_pseudonym_oid[] = {0x55, 0x04, 0x41};
 const byte_t x509_rdn_domain_component_oid[] = {0x09, 0x92, 0x26, 0x89, 0x93, 0xF2, 0x2C, 0x64, 0x01, 0x19};
 const byte_t x509_rdn_email_addres_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01};
 
+x509_rdn_type x509_rdn_oid_decode(byte_t *oid, uint32_t size)
+{
+	if (size == 3)
+	{
+		if (oid[0] == 0x55 && oid[1] == 0x04)
+		{
+			switch (oid[2])
+			{
+			case 0x03:
+				return X509_RDN_COMMON_NAME;
+			case 0x04:
+				return X509_RDN_SURNAME;
+			case 0x05:
+				return X509_RDN_SERIAL_NUMBER;
+			case 0x06:
+				return X509_RDN_COUNTRY_NAME;
+			case 0x07:
+				return X509_RDN_LOCALITY_NAME;
+			case 0x08:
+				return X509_RDN_STATE_PROVINCE_NAME;
+			case 0x0A:
+				return X509_RDN_ORGANIZATION_NAME;
+			case 0x0B:
+				return X509_RDN_ORGANIZATIONAL_UNIT_NAME;
+			case 0x0C:
+				return X509_RDN_TITLE;
+			case 0x29:
+				return X509_RDN_NAME;
+			case 0x2A:
+				return X509_RDN_GIVEN_NAME;
+			case 0x2B:
+				return X509_RDN_INITIALS;
+			case 0x2C:
+				return X509_RDN_GENERATION_QUALIFIER;
+			case 0x2E:
+				return X509_RDN_DN_QUALIFIER;
+			case 0x41:
+				return X509_RDN_PSEUDONYM;
+			}
+		}
+	}
+
+	if (size == 10)
+	{
+		if (memcmp(oid, x509_rdn_domain_component_oid, 10) == 0)
+		{
+			return X509_RDN_DOMAIN_COMPONENT;
+		}
+
+		if (memcmp(oid, x509_rdn_email_addres_oid, 10) == 0)
+		{
+			return X509_RDN_EMAIL_ADDRESS;
+		}
+	}
+
+	return X509_RDN_RESERVED;
+}
+
 const byte_t x509_ext_subject_directory_attributes_oid[] = {0x55, 0x1D, 0x09};
 const byte_t x509_ext_subject_key_identifier_oid[] = {0x55, 0x1D, 0x0E};
 const byte_t x509_ext_key_usage_oid[] = {0x55, 0x1D, 0x0F};
