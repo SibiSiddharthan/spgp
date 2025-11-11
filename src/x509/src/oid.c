@@ -319,6 +319,171 @@ const byte_t x509_ec_curve448_oid[] = {0x2B, 0x65, 0x6F};
 const byte_t x509_ec_ed25519_oid[] = {0x2B, 0x65, 0x70};
 const byte_t x509_ec_ed448_oid[] = {0x2B, 0x65, 0x71};
 
+x509_curve_id x509_curve_oid_decode(byte_t *oid, uint32_t size)
+{
+	if (size < 2)
+	{
+		return X509_EC_RESERVED;
+	}
+
+	// Standard curves
+	if (oid[0] == 0x2B)
+	{
+		// NIST and SEC
+		if (oid[1] == 0x81)
+		{
+			if (size != 5)
+			{
+				return X509_EC_RESERVED;
+			}
+
+			if (oid[2] != 0x04 && oid[3] != 0x00)
+			{
+				return X509_EC_RESERVED;
+			}
+
+			switch (oid[4])
+			{
+			case 0x01:
+				return X509_EC_NIST_K163;
+			case 0x02:
+				return X509_EC_SECT_163R1;
+			case 0x03:
+				return X509_EC_SECT_239K1;
+			case 0x08:
+				return X509_EC_SECP_160R1;
+			case 0x09:
+				return X509_EC_SECP_160K1;
+			case 0x0A:
+				return X509_EC_SECP_256K1;
+			case 0x0F:
+				return X509_EC_NIST_B163;
+			case 0x10:
+				return X509_EC_NIST_K283;
+			case 0x11:
+				return X509_EC_NIST_B283;
+			case 0x18:
+				return X509_EC_SECT_193R1;
+			case 0x19:
+				return X509_EC_SECT_193R2;
+			case 0x1A:
+				return X509_EC_NIST_K233;
+			case 0x1B:
+				return X509_EC_NIST_B233;
+			case 0x1E:
+				return X509_EC_SECP_160R2;
+			case 0x1F:
+				return X509_EC_SECP_192K1;
+			case 0x20:
+				return X509_EC_SECP_224K1;
+			case 0x21:
+				return X509_EC_NIST_P224;
+			case 0x22:
+				return X509_EC_NIST_P384;
+			case 0x23:
+				return X509_EC_NIST_P521;
+			case 0x24:
+				return X509_EC_NIST_K409;
+			case 0x25:
+				return X509_EC_NIST_B409;
+			case 0x26:
+				return X509_EC_NIST_K571;
+			case 0x27:
+				return X509_EC_NIST_B571;
+			}
+		}
+		// Brainpool
+		else if (oid[1] == 0x24)
+		{
+			if (size != 9)
+			{
+				return X509_EC_RESERVED;
+			}
+
+			if (oid[2] != 0x03 && oid[3] != 0x03 && oid[4] != 0x02 && oid[5] != 0x08 && oid[6] != 0x01 && oid[7] != 0x01)
+			{
+				return X509_EC_RESERVED;
+			}
+
+			switch (oid[8])
+			{
+			case 0x01:
+				return X509_EC_BRAINPOOL_160R1;
+			case 0x02:
+				return X509_EC_BRAINPOOL_160T1;
+			case 0x03:
+				return X509_EC_BRAINPOOL_192R1;
+			case 0x04:
+				return X509_EC_BRAINPOOL_192T1;
+			case 0x05:
+				return X509_EC_BRAINPOOL_224R1;
+			case 0x06:
+				return X509_EC_BRAINPOOL_224T1;
+			case 0x07:
+				return X509_EC_BRAINPOOL_256R1;
+			case 0x08:
+				return X509_EC_BRAINPOOL_256T1;
+			case 0x09:
+				return X509_EC_BRAINPOOL_320R1;
+			case 0x0A:
+				return X509_EC_BRAINPOOL_320T1;
+			case 0x0B:
+				return X509_EC_BRAINPOOL_384R1;
+			case 0x0C:
+				return X509_EC_BRAINPOOL_384T1;
+			case 0x0D:
+				return X509_EC_BRAINPOOL_512R1;
+			case 0x0E:
+				return X509_EC_BRAINPOOL_512T1;
+			}
+		}
+		// Montgomery and Edwards
+		else if (oid[1] == 0x65)
+		{
+			if (size != 3)
+			{
+				return 0;
+			}
+
+			switch (oid[2])
+			{
+			case 0x6E:
+				return X509_EC_CURVE25519;
+			case 0x6F:
+				return X509_EC_CURVE448;
+			case 0x70:
+				return X509_EC_ED25519;
+			case 0x71:
+				return X509_EC_ED448;
+			}
+		}
+	}
+
+	// Outliers NIST-P192, NIST-P256
+	else if (oid[0] == 0x2A)
+	{
+		if (size != 8)
+		{
+			return X509_EC_RESERVED;
+		}
+
+		if (oid[1] != 0x86 && oid[2] != 0x48 && oid[3] != 0xCE && oid[4] != 0x3D && oid[5] != 0x03 && oid[6] != 0x01)
+		{
+			return X509_EC_RESERVED;
+		}
+
+		switch (oid[7])
+		{
+		case 0x01:
+			return X509_EC_NIST_P192;
+		case 0x07:
+			return X509_EC_NIST_P256;
+		}
+	}
+
+	return X509_EC_RESERVED;
+}
+
 // Refer RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
 const byte_t x509_rdn_common_name_oid[] = {0x55, 0x04, 0x03};
 const byte_t x509_rdn_surname_oid[] = {0x55, 0x04, 0x04};
