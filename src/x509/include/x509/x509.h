@@ -54,7 +54,6 @@ typedef enum _x509_general_name_type
 	X509_GN_URI,
 	X509_GN_RID,
 
-
 } x509_general_name_type;
 
 typedef enum _x509_extension_type

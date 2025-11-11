@@ -23,51 +23,51 @@
 
 // Refer NIST Computer Security Objects Register
 
-const byte_t x509_dsa_oid[] = {0X2A, 0X86, 0X48, 0XCE, 0X38, 0X04, 0X01};
+const byte_t x509_dsa_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x01};
 
-const byte_t x509_ecdsa_oid[] = {0X2A, 0X86, 0X48, 0XCE, 0X3D, 0X02, 0X01};
-const byte_t x509_ecdh_oid[] = {0X2B, 0X81, 0X04, 0X01, 0X0C};
-const byte_t x509_ecmqv_oid[] = {0X2B, 0X81, 0X04, 0X01, 0X0D};
+const byte_t x509_ecdsa_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01};
+const byte_t x509_ecdh_oid[] = {0x2B, 0x81, 0x04, 0x01, 0x0C};
+const byte_t x509_ecmqv_oid[] = {0x2B, 0x81, 0x04, 0x01, 0x0D};
 
-const byte_t x509_rsa_pkcs_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X01};
-const byte_t x509_rsa_oaep_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X07};
-const byte_t x509_rsa_pss_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0A};
+const byte_t x509_rsa_pkcs_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01};
+const byte_t x509_rsa_oaep_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x07};
+const byte_t x509_rsa_pss_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0A};
 
-const byte_t x509_x25519_oid[] = {0X2B, 0X65, 0X6E};
-const byte_t x509_x448_oid[] = {0X2B, 0X65, 0X6F};
-const byte_t x509_ed25519_oid[] = {0X2B, 0X65, 0X70};
-const byte_t x509_ed448_oid[] = {0X2B, 0X65, 0X71};
+const byte_t x509_x25519_oid[] = {0x2B, 0x65, 0x6E};
+const byte_t x509_x448_oid[] = {0x2B, 0x65, 0x6F};
+const byte_t x509_ed25519_oid[] = {0x2B, 0x65, 0x70};
+const byte_t x509_ed448_oid[] = {0x2B, 0x65, 0x71};
 
-const byte_t x509_hash_md5_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X02, 0X05};
-const byte_t x509_hash_sha1_oid[] = {0X2B, 0X0E, 0X03, 0X02, 0X1A};
-const byte_t x509_hash_sha224_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X01};
-const byte_t x509_hash_sha256_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X02};
-const byte_t x509_hash_sha384_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X03};
-const byte_t x509_hash_sha512_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X04};
-const byte_t x509_hash_sha512_224_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X05};
-const byte_t x509_hash_sha512_256_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X06};
-const byte_t x509_hash_sha3_224_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X07};
-const byte_t x509_hash_sha3_256_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X08};
-const byte_t x509_hash_sha3_384_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X09};
-const byte_t x509_hash_sha3_512_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X0A};
-const byte_t x509_hash_shake128_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X0B};
-const byte_t x509_hash_shake256_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X0C};
-const byte_t x509_hash_shake128x_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X11};
-const byte_t x509_hash_shake256x_oid[] = {0X60, 0X86, 0X48, 0X01, 0X65, 0X03, 0X04, 0X02, 0X12};
+const byte_t x509_hash_md5_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05};
+const byte_t x509_hash_sha1_oid[] = {0x2B, 0x0E, 0x03, 0x02, 0x1A};
+const byte_t x509_hash_sha224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01};
+const byte_t x509_hash_sha256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02};
+const byte_t x509_hash_sha384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03};
+const byte_t x509_hash_sha512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04};
+const byte_t x509_hash_sha512_224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x05};
+const byte_t x509_hash_sha512_256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x06};
+const byte_t x509_hash_sha3_224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x07};
+const byte_t x509_hash_sha3_256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x08};
+const byte_t x509_hash_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x09};
+const byte_t x509_hash_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0A};
+const byte_t x509_hash_shake128_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0B};
+const byte_t x509_hash_shake256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0C};
+const byte_t x509_hash_shake128x_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x11};
+const byte_t x509_hash_shake256x_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x12};
 
-const byte_t x509_sig_rsa_pkcs_md5_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X04};
-const byte_t x509_sig_rsa_pkcs_sha1_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X05};
-const byte_t x509_sig_rsa_pkcs_sha224_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0E};
-const byte_t x509_sig_rsa_pkcs_sha256_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0B};
-const byte_t x509_sig_rsa_pkcs_sha384_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0C};
-const byte_t x509_sig_rsa_pkcs_sha512_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X01, 0X0D};
+const byte_t x509_sig_rsa_pkcs_md5_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x04};
+const byte_t x509_sig_rsa_pkcs_sha1_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x05};
+const byte_t x509_sig_rsa_pkcs_sha224_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0E};
+const byte_t x509_sig_rsa_pkcs_sha256_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B};
+const byte_t x509_sig_rsa_pkcs_sha384_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0C};
+const byte_t x509_sig_rsa_pkcs_sha512_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D};
 const byte_t x509_sig_rsa_pkcs_sha3_224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0D};
 const byte_t x509_sig_rsa_pkcs_sha3_256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0E};
 const byte_t x509_sig_rsa_pkcs_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0F};
 const byte_t x509_sig_rsa_pkcs_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x10};
 
-const byte_t x509_sig_rsa_pss_shake128_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X1E};
-const byte_t x509_sig_rsa_pss_shake256_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X1F};
+const byte_t x509_sig_rsa_pss_shake128_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x1E};
+const byte_t x509_sig_rsa_pss_shake256_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x1F};
 
 const byte_t x509_sig_dsa_sha1_oid[] = {0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x03};
 const byte_t x509_sig_dsa_sha224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x01};
@@ -88,8 +88,8 @@ const byte_t x509_sig_ecdsa_sha3_224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03
 const byte_t x509_sig_ecdsa_sha3_256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0A};
 const byte_t x509_sig_ecdsa_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0B};
 const byte_t x509_sig_ecdsa_sha3_512_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0C};
-const byte_t x509_sig_ecdsa_shake128_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X20};
-const byte_t x509_sig_ecdsa_shake256_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X06, 0X21};
+const byte_t x509_sig_ecdsa_shake128_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x20};
+const byte_t x509_sig_ecdsa_shake256_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x21};
 
 const byte_t x509_sig_mldsa_44_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x11};
 const byte_t x509_sig_mldsa_65_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12};
@@ -261,45 +261,72 @@ const byte_t x509_ec_ed25519_oid[] = {0x2B, 0x65, 0x70};
 const byte_t x509_ec_ed448_oid[] = {0x2B, 0x65, 0x71};
 
 // Refer RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
-const byte_t x509_rdn_common_name_oid[] = {0X55, 0X04, 0X03};
-const byte_t x509_rdn_surname_oid[] = {0X55, 0X04, 0X04};
-const byte_t x509_rdn_name_oid[] = {0X55, 0X04, 0X29};
-const byte_t x509_rdn_given_name_oid[] = {0X55, 0X04, 0X2A};
-const byte_t x509_rdn_initials_oid[] = {0X55, 0X04, 0X2B};
-const byte_t x509_rdn_generation_qualifier_oid[] = {0X55, 0X04, 0X2C};
+const byte_t x509_rdn_common_name_oid[] = {0x55, 0x04, 0x03};
+const byte_t x509_rdn_surname_oid[] = {0x55, 0x04, 0x04};
+const byte_t x509_rdn_name_oid[] = {0x55, 0x04, 0x29};
+const byte_t x509_rdn_given_name_oid[] = {0x55, 0x04, 0x2A};
+const byte_t x509_rdn_initials_oid[] = {0x55, 0x04, 0x2B};
+const byte_t x509_rdn_generation_qualifier_oid[] = {0x55, 0x04, 0x2C};
 
-const byte_t x509_rdn_locality_name_oid[] = {0X55, 0X04, 0X07};
-const byte_t x509_rdn_state_province_name_oid[] = {0X55, 0X04, 0X08};
-const byte_t x509_rdn_organization_name_oid[] = {0X55, 0X04, 0X0A};
-const byte_t x509_rdn_organizational_unit_name_oid[] = {0X55, 0X04, 0X0B};
+const byte_t x509_rdn_locality_name_oid[] = {0x55, 0x04, 0x07};
+const byte_t x509_rdn_state_province_name_oid[] = {0x55, 0x04, 0x08};
+const byte_t x509_rdn_organization_name_oid[] = {0x55, 0x04, 0x0A};
+const byte_t x509_rdn_organizational_unit_name_oid[] = {0x55, 0x04, 0x0B};
 
-const byte_t x509_rdn_title_oid[] = {0X55, 0X04, 0X0C};
-const byte_t x509_rdn_serial_number_oid[] = {0X55, 0X04, 0X05};
-const byte_t x509_rdn_country_name_oid[] = {0X55, 0X04, 0X06};
-const byte_t x509_rdn_dn_qualifier_oid[] = {0X55, 0X04, 0X2E};
-const byte_t x509_rdn_pseudonym_oid[] = {0X55, 0X04, 0X41};
-const byte_t x509_rdn_domain_component_oid[] = {0X09, 0X92, 0X26, 0X89, 0X93, 0XF2, 0X2C, 0X64, 0X01, 0X19};
-const byte_t x509_rdn_email_addres_oid[] = {0X2A, 0X86, 0X48, 0X86, 0XF7, 0X0D, 0X01, 0X09, 0X01};
+const byte_t x509_rdn_title_oid[] = {0x55, 0x04, 0x0C};
+const byte_t x509_rdn_serial_number_oid[] = {0x55, 0x04, 0x05};
+const byte_t x509_rdn_country_name_oid[] = {0x55, 0x04, 0x06};
+const byte_t x509_rdn_dn_qualifier_oid[] = {0x55, 0x04, 0x2E};
+const byte_t x509_rdn_pseudonym_oid[] = {0x55, 0x04, 0x41};
+const byte_t x509_rdn_domain_component_oid[] = {0x09, 0x92, 0x26, 0x89, 0x93, 0xF2, 0x2C, 0x64, 0x01, 0x19};
+const byte_t x509_rdn_email_addres_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01};
 
-const byte_t x509_ext_subject_directory_attributes_oid[] = {0X55, 0X1D, 0X09};
-const byte_t x509_ext_subject_key_identifier_oid[] = {0X55, 0X1D, 0X0E};
-const byte_t x509_ext_key_usage_oid[] = {0X55, 0X1D, 0X0F};
-const byte_t x509_ext_private_key_usage_period_oid[] = {0X55, 0X1D, 0X10};
-const byte_t x509_ext_subject_alternate_name_oid[] = {0X55, 0X1D, 0X11};
-const byte_t x509_ext_issuer_alternate_name_oid[] = {0X55, 0X1D, 0X12};
-const byte_t x509_ext_basic_constraints_oid[] = {0X55, 0X1D, 0X13};
-const byte_t x509_ext_name_constraints_oid[] = {0X55, 0X1D, 0X1E};
-const byte_t x509_ext_crl_distribution_points_oid[] = {0X55, 0X1D, 0X1F};
-const byte_t x509_ext_certificate_policies_oid[] = {0X55, 0X1D, 0X20};
-const byte_t x509_ext_policy_mappings_oid[] = {0X55, 0X1D, 0X21};
-const byte_t x509_ext_authority_key_identifier_oid[] = {0X55, 0X1D, 0X23};
-const byte_t x509_ext_policy_constraints_oid[] = {0X55, 0X1D, 0X24};
-const byte_t x509_ext_extended_key_usage_oid[] = {0X55, 0X1D, 0X25};
-const byte_t x509_ext_delta_crl_distribution_points_oid[] = {0X55, 0X1D, 0X2E};
-const byte_t x509_ext_inhibit_anypolicy_oid[] = {0X55, 0X1D, 0X36};
+const byte_t x509_ext_subject_directory_attributes_oid[] = {0x55, 0x1D, 0x09};
+const byte_t x509_ext_subject_key_identifier_oid[] = {0x55, 0x1D, 0x0E};
+const byte_t x509_ext_key_usage_oid[] = {0x55, 0x1D, 0x0F};
+const byte_t x509_ext_private_key_usage_period_oid[] = {0x55, 0x1D, 0x10};
+const byte_t x509_ext_subject_alternate_name_oid[] = {0x55, 0x1D, 0x11};
+const byte_t x509_ext_issuer_alternate_name_oid[] = {0x55, 0x1D, 0x12};
+const byte_t x509_ext_basic_constraints_oid[] = {0x55, 0x1D, 0x13};
+const byte_t x509_ext_name_constraints_oid[] = {0x55, 0x1D, 0x1E};
+const byte_t x509_ext_crl_distribution_points_oid[] = {0x55, 0x1D, 0x1F};
+const byte_t x509_ext_certificate_policies_oid[] = {0x55, 0x1D, 0x20};
+const byte_t x509_ext_policy_mappings_oid[] = {0x55, 0x1D, 0x21};
+const byte_t x509_ext_authority_key_identifier_oid[] = {0x55, 0x1D, 0x23};
+const byte_t x509_ext_policy_constraints_oid[] = {0x55, 0x1D, 0x24};
+const byte_t x509_ext_extended_key_usage_oid[] = {0x55, 0x1D, 0x25};
+const byte_t x509_ext_delta_crl_distribution_points_oid[] = {0x55, 0x1D, 0x2E};
+const byte_t x509_ext_inhibit_anypolicy_oid[] = {0x55, 0x1D, 0x36};
 
-const byte_t x509_ext_authority_information_access_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X01, 0X01};
-const byte_t x509_ext_subject_information_access_oid[] = {0X2B, 0X06, 0X01, 0X05, 0X05, 0X07, 0X01, 0X0B};
+const byte_t x509_ext_authority_information_access_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x01, 0x01};
+const byte_t x509_ext_subject_information_access_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x01, 0x0B};
+
+x509_extension_type x509_extension_oid_decode(byte_t *oid, uint32_t size)
+{
+	if (size == 3)
+	{
+		if(oid[0] == 0x55 &&)
+
+	}
+
+	if (size == 8)
+	{
+		if (memcmp(oid, x509_ext_authority_information_access_oid, 7) == 0)
+		{
+			if (oid[7] == 0x01)
+			{
+				return X509_EXT_AUTHORITY_INFORMATION_ACCESS;
+			}
+
+			if (oid[7] == 0x0B)
+			{
+				return X509_EXT_SUBJECT_INFORMATION_ACCESS;
+			}
+		}
+	}
+
+	return X509_EXT_RESERVED;
+}
 
 static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 {
