@@ -38,6 +38,88 @@ const byte_t x509_x448_oid[] = {0x2B, 0x65, 0x6F};
 const byte_t x509_ed25519_oid[] = {0x2B, 0x65, 0x70};
 const byte_t x509_ed448_oid[] = {0x2B, 0x65, 0x71};
 
+x509_algorithm x509_algorithm_oid_decode(byte_t *oid, uint32_t size)
+{
+	if (size == 0)
+	{
+		return X509_RESERVED;
+	}
+
+	if (oid[0] == 0x2A)
+	{
+		if (size == 7)
+		{
+			if (oid[1] == 0x86 && oid[2] == 0x48 && oid[3] == 0xCE)
+			{
+				if (oid[4] == 0x38 && oid[5] == 0x04 && oid[6] == 0x01)
+				{
+					return X509_DSA;
+				}
+
+				if (oid[4] == 0x3D && oid[5] == 0x02 && oid[6] == 0x01)
+				{
+					return X509_ECDSA;
+				}
+			}
+		}
+
+		if (size == 9)
+		{
+			if (memcmp(oid + 1, x509_rsa_pkcs_oid + 1, 7) == 0)
+			{
+				switch (oid[8])
+				{
+				case 0x01:
+					return X509_RSA_PKCS;
+				case 0x07:
+					return X509_RSA_OAEP;
+				case 0x0A:
+					return X509_RSA_PSS;
+				}
+			}
+		}
+	}
+
+	if (oid[0] == 0x2B)
+	{
+		if (size == 3)
+		{
+			if (oid[1] == 0x65)
+			{
+				switch (oid[2])
+				{
+				case 0x6E:
+					return X509_X25519;
+				case 0x6F:
+					return X509_X448;
+				case 0x70:
+					return X509_ED25519;
+				case 0x71:
+					return X509_ED448;
+				}
+			}
+		}
+
+		if (size == 5)
+		{
+			if (oid[1] == 0x81 && oid[2] == 0x04 && oid[3] == 0x01)
+			{
+				if (oid[4] == 0x0C)
+				{
+					return X509_ECDH;
+				}
+
+				if (oid[5] == 0x0D)
+				{
+					return X509_ECMQV;
+				}
+			}
+		}
+	}
+
+	return X509_RESERVED;
+}
+
 const byte_t x509_hash_md5_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05};
 const byte_t x509_hash_sha1_oid[] = {0x2B, 0x0E, 0x03, 0x02, 0x1A};
 const byte_t x509_hash_sha224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01};
