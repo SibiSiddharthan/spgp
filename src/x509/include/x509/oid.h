@@ -10,8 +10,11 @@
 
 #include <x509/algorithm.h>
 #include <x509/error.h>
+#include <x509/x509.h>
 
 x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size);
+
+x509_extension_type x509_extension_oid_decode(byte_t *oid, uint32_t size);
 
 uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_size);
 uint32_t oid_decode(void *oid, uint32_t oid_size, void *buffer, uint32_t buffer_size);

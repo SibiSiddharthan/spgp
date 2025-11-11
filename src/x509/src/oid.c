@@ -305,8 +305,44 @@ x509_extension_type x509_extension_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 3)
 	{
-		if(oid[0] == 0x55 &&)
-
+		if (oid[0] == 0x55 && oid[1] == 0x1D)
+		{
+			switch (oid[2])
+			{
+			case 0x09:
+				return X509_EXT_SUBJECT_DIRECTORY_ATTRIBUTES;
+			case 0x0E:
+				return X509_EXT_SUBJECT_KEY_IDENTIFIER;
+			case 0x0F:
+				return X509_EXT_KEY_USAGE;
+			case 0x10:
+				return X509_EXT_PRIVATE_KEY_USAGE_PERIOD;
+			case 0x11:
+				return X509_EXT_SUBJECT_ALTERNATE_NAME;
+			case 0x12:
+				return X509_EXT_ISSUER_ALTERNATE_NAME;
+			case 0x13:
+				return X509_EXT_BASIC_CONSTRAINTS;
+			case 0x1E:
+				return X509_EXT_NAME_CONSTRAINTS;
+			case 0x1F:
+				return X509_EXT_CRL_DISTRIBUTION_POINTS;
+			case 0x20:
+				return X509_EXT_CERTIFICATE_POLICIES;
+			case 0x21:
+				return X509_EXT_POLICY_MAPPINGS;
+			case 0x23:
+				return X509_EXT_AUTHORITY_KEY_IDENTIFIER;
+			case 0x24:
+				return X509_EXT_POLICY_CONSTRAINTS;
+			case 0x25:
+				return X509_EXT_EXTENDED_KEY_USAGE;
+			case 0x2E:
+				return X509_EXT_DELTA_CRL_DISTRIBUTION_POINTS;
+			case 0x36:
+				return X509_EXT_INHIBIT_ANYPOLICY;
+			}
+		}
 	}
 
 	if (size == 8)
