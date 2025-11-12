@@ -198,10 +198,10 @@ x509_hash_algorithm x509_hash_oid_decode(byte_t *oid, uint32_t size)
 
 const byte_t x509_sig_rsa_pkcs_md5_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x04};
 const byte_t x509_sig_rsa_pkcs_sha1_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x05};
-const byte_t x509_sig_rsa_pkcs_sha224_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0E};
 const byte_t x509_sig_rsa_pkcs_sha256_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B};
 const byte_t x509_sig_rsa_pkcs_sha384_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0C};
 const byte_t x509_sig_rsa_pkcs_sha512_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D};
+const byte_t x509_sig_rsa_pkcs_sha224_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0E};
 const byte_t x509_sig_rsa_pkcs_sha3_224_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0D};
 const byte_t x509_sig_rsa_pkcs_sha3_256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0E};
 const byte_t x509_sig_rsa_pkcs_sha3_384_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0F};
@@ -241,85 +241,148 @@ const byte_t x509_sig_hash_mldsa_87_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
 
 x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 {
-	if (size == 7)
+	if (size == 0)
 	{
-		if (memcmp(oid, x509_sig_dsa_sha1_oid, 7) == 0)
-		{
-			return X509_SIG_DSA_SHA1;
-		}
+		return X509_SIG_RESERVED;
 	}
 
-	if (size == 8)
+	if (oid[0] == 0x2A)
 	{
-		if (memcmp(oid, x509_sig_ecdsa_sha1_oid, 8) == 0)
+		if (size == 7)
 		{
-			return X509_SIG_ECDSA_SHA1;
-		}
-	}
-
-	if (size == 9)
-	{
-		// Common Prefix
-		if (memcmp(oid, x509_sig_dsa_sha224_oid, 8) == 0)
-		{
-			switch (oid[8])
+			if (oid[1] == 0x86 && oid[2] == 0x48 && oid[3] == 0xCE && oid[5] == 0x04)
 			{
-			case 0x1:
-				return X509_SIG_DSA_SHA224;
-			case 0x2:
-				return X509_SIG_DSA_SHA256;
-			case 0x3:
-				return X509_SIG_DSA_SHA384;
-			case 0x4:
-				return X509_SIG_DSA_SHA512;
-			case 0x5:
-				return X509_SIG_DSA_SHA3_224;
-			case 0x6:
-				return X509_SIG_DSA_SHA3_256;
-			case 0x7:
-				return X509_SIG_DSA_SHA3_384;
-			case 0x8:
-				return X509_SIG_DSA_SHA3_512;
-			case 0x9:
-				return X509_SIG_ECDSA_SHA3_224;
-			case 0xA:
-				return X509_SIG_ECDSA_SHA3_256;
-			case 0xB:
-				return X509_SIG_ECDSA_SHA3_384;
-			case 0xc:
-				return X509_SIG_ECDSA_SHA3_512;
+				if (oid[4] == 0x38 && oid[6] == 0x03)
+				{
+					return X509_SIG_DSA_SHA1;
+				}
+
+				if (oid[4] == 0x3D && oid[6] == 0x01)
+				{
+					return X509_SIG_ECDSA_SHA1;
+				}
 			}
 		}
 
-		// Common Prefix
-		if (memcmp(oid, x509_sig_ecdsa_sha224_oid, 8) == 0)
+		if (size == 8)
 		{
-			switch (oid[8])
+			if (memcmp(oid + 1, x509_sig_ecdsa_sha224_oid + 1, 6) == 0)
 			{
-			case 0x1:
-				return X509_SIG_ECDSA_SHA224;
-			case 0x2:
-				return X509_SIG_ECDSA_SHA256;
-			case 0x3:
-				return X509_SIG_ECDSA_SHA384;
-			case 0x4:
-				return X509_SIG_ECDSA_SHA512;
+				switch (oid[7])
+				{
+				case 0x01:
+					return X509_SIG_ECDSA_SHA224;
+				case 0x02:
+					return X509_SIG_ECDSA_SHA256;
+				case 0x03:
+					return X509_SIG_ECDSA_SHA384;
+				case 0x04:
+					return X509_SIG_ECDSA_SHA512;
+				}
 			}
 		}
 
-		// Common Prefix
-		if (memcmp(oid, x509_sig_ecdsa_sha224_oid, 8) == 0)
+		// RSA
+		if (size == 9)
 		{
-			switch (oid[8])
+			if (memcmp(oid + 1, x509_sig_rsa_pkcs_md5_oid + 1, 7) == 0)
 			{
-			case 0x1:
-				return X509_SIG_ECDSA_SHA224;
-			case 0x2:
-				return X509_SIG_ECDSA_SHA256;
-			case 0x3:
-				return X509_SIG_ECDSA_SHA384;
-			case 0x4:
-				return X509_SIG_ECDSA_SHA512;
+				switch (oid[8])
+				{
+				case 0x04:
+					return X509_SIG_RSA_PKCS_MD5;
+				case 0x05:
+					return X509_SIG_RSA_PKCS_SHA1;
+				case 0x0A:
+					return X509_SIG_RSA_PSS;
+				case 0x0B:
+					return X509_SIG_RSA_PKCS_SHA256;
+				case 0x0C:
+					return X509_SIG_RSA_PKCS_SHA384;
+				case 0x0D:
+					return X509_SIG_RSA_PKCS_SHA512;
+				case 0x0E:
+					return X509_SIG_RSA_PKCS_SHA224;
+				}
+			}
+		}
+	}
+
+	if (oid[0] == 0x2B)
+	{
+		if (size == 8)
+		{
+			if (memcmp(oid + 1, x509_sig_ecdsa_shake256_oid + 1, 6) == 0)
+			{
+				switch (oid[7])
+				{
+				case 0x1E:
+					return X509_SIG_RSA_PSS_SHAKE128;
+				case 0x1F:
+					return X509_SIG_RSA_PSS_SHAKE256;
+				case 0x20:
+					return X509_SIG_ECDSA_SHAKE128;
+				case 0x21:
+					return X509_SIG_ECDSA_SHAKE256;
+				}
+			}
+		}
+	}
+
+	// NIST
+	if (oid[0] == 0x60)
+	{
+		if (size == 9)
+		{
+			if (memcmp(oid + 1, x509_sig_rsa_pkcs_sha3_224_oid + 1, 7) == 0)
+			{
+				switch (oid[8])
+				{
+				case 0x01:
+					return X509_SIG_DSA_SHA224;
+				case 0x02:
+					return X509_SIG_DSA_SHA256;
+				case 0x03:
+					return X509_SIG_DSA_SHA384;
+				case 0x04:
+					return X509_SIG_DSA_SHA512;
+				case 0x05:
+					return X509_SIG_DSA_SHA3_224;
+				case 0x06:
+					return X509_SIG_DSA_SHA3_256;
+				case 0x07:
+					return X509_SIG_DSA_SHA3_384;
+				case 0x08:
+					return X509_SIG_DSA_SHA3_512;
+				case 0x09:
+					return X509_SIG_ECDSA_SHA3_224;
+				case 0x0A:
+					return X509_SIG_ECDSA_SHA3_256;
+				case 0x0B:
+					return X509_SIG_ECDSA_SHA3_384;
+				case 0x0C:
+					return X509_SIG_ECDSA_SHA3_512;
+				case 0x0D:
+					return X509_SIG_RSA_PKCS_SHA3_224;
+				case 0x0E:
+					return X509_SIG_RSA_PKCS_SHA3_256;
+				case 0x0F:
+					return X509_SIG_RSA_PKCS_SHA3_384;
+				case 0x10:
+					return X509_SIG_RSA_PKCS_SHA3_512;
+				case 0x11:
+					return X509_SIG_MLDSA_44;
+				case 0x12:
+					return X509_SIG_MLDSA_65;
+				case 0x13:
+					return X509_SIG_MLDSA_87;
+				case 0x20:
+					return X509_SIG_HASH_MLDSA_44;
+				case 0x21:
+					return X509_SIG_HASH_MLDSA_65;
+				case 0x22:
+					return X509_SIG_HASH_MLDSA_87;
+				}
 			}
 		}
 	}
