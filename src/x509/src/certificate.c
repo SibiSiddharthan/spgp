@@ -145,7 +145,7 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_parse_name(void **name, void *data, size_t *size)
+static x509_error_t x509_parse_name(x509_rdn **names, void *data, size_t *size)
 {
 	byte_t *in = data;
 	size_t pos = 0;
@@ -156,17 +156,28 @@ static x509_error_t x509_parse_name(void **name, void *data, size_t *size)
 	// RDNSequence
 	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
 
-	// Relatively Distinguised Name
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SET, 0, in, &remaining));
+	while (pos < remaining)
+	{
+		size_t inner_remaining = 0;
+		size_t inner_pos = 0;
 
-	// Attribute
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+		// Relatively Distinguised Name
+		ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SET, 0, in, &inner_remaining));
 
-	// Type
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+		while (inner_pos < inner_remaining)
+		{
+			size_t length = 0;
 
-	// Value
-	ASN1_PARSE(asn1_field_read(&field, 0, 0, 0, in, &remaining));
+			// Attribute
+			ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &length));
+
+			// Type
+			ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+
+			// Value
+			ASN1_PARSE(asn1_field_read(&field, 0, 0, 0, in, &remaining));
+		}
+	}
 
 	return X509_SUCCESS;
 }
