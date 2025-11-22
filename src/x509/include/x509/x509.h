@@ -82,6 +82,21 @@ typedef enum _x509_extension_type
 
 } x509_extension_type;
 
+typedef struct _x509_name
+{
+	x509_rdn_type type;
+	uint16_t size;
+	void *value;
+
+	struct _x509_name *next;
+} x509_name;
+
+typedef struct _x509_rdn
+{
+	x509_name *name;
+	struct _x509_rdn *next;
+} x509_rdn;
+
 typedef struct _x509_certificate
 {
 	byte_t version;
@@ -93,8 +108,8 @@ typedef struct _x509_certificate
 
 	byte_t signature_algorithm;
 
-	void *issuer;
-	void *subject;
+	x509_rdn *issuer;
+	x509_rdn *subject;
 
 	void **extensions;
 
