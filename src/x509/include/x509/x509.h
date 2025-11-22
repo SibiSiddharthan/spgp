@@ -85,7 +85,10 @@ typedef enum _x509_extension_type
 typedef struct _x509_name
 {
 	x509_rdn_type type;
-	uint16_t size;
+	byte_t oid_size;
+	byte_t oid[16];
+
+	uint16_t value_size;
 	void *value;
 
 	struct _x509_name *next;

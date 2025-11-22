@@ -145,7 +145,29 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_parse_name(x509_rdn **names, void *data, size_t *size)
+static x509_error_t x509_parse_name(x509_name **name, void *data, size_t *size)
+{
+	byte_t *in = data;
+	size_t pos = 0;
+	size_t remaining = *size;
+
+	asn1_field field = {0};
+	asn1_field type = {0};
+	asn1_field value = {0};
+
+	// Attribute
+	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+
+	// Type
+	ASN1_PARSE(asn1_field_read(&type, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+
+	// Value
+	ASN1_PARSE(asn1_field_read(&value, 0, 0, 0, in, &remaining));
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_parse_rdn(x509_rdn **names, void *data, size_t *size)
 {
 	byte_t *in = data;
 	size_t pos = 0;
@@ -158,6 +180,8 @@ static x509_error_t x509_parse_name(x509_rdn **names, void *data, size_t *size)
 
 	while (pos < remaining)
 	{
+		x509_name *name = NULL;
+
 		size_t inner_remaining = 0;
 		size_t inner_pos = 0;
 
@@ -166,16 +190,7 @@ static x509_error_t x509_parse_name(x509_rdn **names, void *data, size_t *size)
 
 		while (inner_pos < inner_remaining)
 		{
-			size_t length = 0;
-
-			// Attribute
-			ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &length));
-
-			// Type
-			ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
-
-			// Value
-			ASN1_PARSE(asn1_field_read(&field, 0, 0, 0, in, &remaining));
+			x509_parse_name(&name, in, 0);
 		}
 	}
 
@@ -441,13 +456,13 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 	X509_PARSE(x509_parse_signature_algorithm(certificate, in, &remaining));
 
 	// TBS Certificate Issuer
-	X509_PARSE(x509_parse_name(&certificate->issuer, in, &remaining));
+	X509_PARSE(x509_parse_rdn(&certificate->issuer, in, &remaining));
 
 	// TBS Certificate Validity
 	X509_PARSE(x509_parse_certificate_validity(certificate, in, &remaining));
 
 	// TBS Certificate Subject
-	X509_PARSE(x509_parse_name(&certificate->subject, in, &remaining));
+	X509_PARSE(x509_parse_rdn(&certificate->subject, in, &remaining));
 
 	*size = remaining;
 
