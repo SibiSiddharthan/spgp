@@ -145,6 +145,30 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_name_new(x509_name **name, void *attribute, size_t attribute_size, asn1_field *value)
+{
+	*name = malloc(sizeof(x509_name) + value->size);
+
+	if (*name == NULL)
+	{
+		return X509_NO_MEMORY;
+	}
+
+	memset(*name, 0, sizeof(x509_name) + value->size);
+
+	(*name)->attribute_type = x509_rdn_oid_decode(attribute, attribute_size);
+	(*name)->value_type = value->tag;
+
+	memcpy((*name)->oid, attribute, attribute_size);
+	(*name)->oid_size = attribute_size;
+
+	(*name)->value = PTR_OFFSET(*name, sizeof(x509_name));
+	(*name)->value_size = value->size;
+	memcpy((*name)->value, value->data, value->size);
+
+	return X509_SUCCESS;
+}
+
 static x509_error_t x509_parse_name(x509_name **name, void *data, size_t *size)
 {
 	byte_t *in = data;
@@ -152,17 +176,20 @@ static x509_error_t x509_parse_name(x509_name **name, void *data, size_t *size)
 	size_t remaining = *size;
 
 	asn1_field field = {0};
-	asn1_field type = {0};
+	asn1_field attribute = {0};
 	asn1_field value = {0};
 
 	// Attribute
 	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
 
 	// Type
-	ASN1_PARSE(asn1_field_read(&type, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+	ASN1_PARSE(asn1_field_read(&attribute, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
 
 	// Value
 	ASN1_PARSE(asn1_field_read(&value, 0, 0, 0, in, &remaining));
+
+	// Create the name
+	X509_PARSE(x509_name_new(name, attribute.data, attribute.size, &value));
 
 	return X509_SUCCESS;
 }

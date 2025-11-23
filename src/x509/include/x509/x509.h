@@ -9,6 +9,7 @@
 #define X509_H
 
 #include <x509/error.h>
+#include <x509/asn1.h>
 
 typedef enum _x509_certificate_version
 {
@@ -84,7 +85,9 @@ typedef enum _x509_extension_type
 
 typedef struct _x509_name
 {
-	x509_rdn_type type;
+	x509_rdn_type attribute_type;
+	asn1_type value_type;
+
 	byte_t oid_size;
 	byte_t oid[16];
 
