@@ -453,8 +453,6 @@ uint32_t x509_signature_oid_size(x509_signature_algorithm algorithm)
 	case X509_SIG_RSA_PKCS_SHA256:
 	case X509_SIG_RSA_PKCS_SHA384:
 	case X509_SIG_RSA_PKCS_SHA512:
-	case X509_SIG_RSA_PKCS_SHA512_224:
-	case X509_SIG_RSA_PKCS_SHA512_256:
 	case X509_SIG_RSA_PKCS_SHA3_224:
 	case X509_SIG_RSA_PKCS_SHA3_256:
 	case X509_SIG_RSA_PKCS_SHA3_384:
@@ -558,12 +556,6 @@ uint32_t x509_signature_oid_encode(x509_signature_algorithm algorithm, void *buf
 		break;
 	case X509_SIG_RSA_PKCS_SHA512:
 		memcpy(buffer, x509_sig_rsa_pkcs_sha512_oid, required_size);
-		break;
-	case X509_SIG_RSA_PKCS_SHA512_224:
-		memcpy(buffer, x509_hash_shake256x_oid, required_size);
-		break;
-	case X509_SIG_RSA_PKCS_SHA512_256:
-		memcpy(buffer, x509_hash_shake256x_oid, required_size);
 		break;
 	case X509_SIG_RSA_PKCS_SHA3_224:
 		memcpy(buffer, x509_sig_rsa_pkcs_sha3_224_oid, required_size);
