@@ -229,6 +229,38 @@ const byte_t x509_hash_shake256_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x0
 const byte_t x509_hash_shake128x_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x11};
 const byte_t x509_hash_shake256x_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x12};
 
+uint32_t x509_hash_oid_size(x509_hash_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case X509_HASH_RESERVED:
+		return 0;
+
+	case X509_HASH_MD5:
+		return 8;
+	case X509_HASH_SHA1:
+		return 5;
+
+	case X509_HASH_SHA224:
+	case X509_HASH_SHA256:
+	case X509_HASH_SHA384:
+	case X509_HASH_SHA512:
+	case X509_HASH_SHA512_224:
+	case X509_HASH_SHA512_256:
+	case X509_HASH_SHA3_224:
+	case X509_HASH_SHA3_256:
+	case X509_HASH_SHA3_384:
+	case X509_HASH_SHA3_512:
+	case X509_HASH_SHAKE128:
+	case X509_HASH_SHAKE256:
+	case X509_HASH_SHAKE128X:
+	case X509_HASH_SHAKE256X:
+		return 9;
+	}
+
+	return 0;
+}
+
 x509_hash_algorithm x509_hash_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 5)
