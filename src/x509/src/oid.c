@@ -438,6 +438,78 @@ const byte_t x509_sig_hash_mldsa_44_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
 const byte_t x509_sig_hash_mldsa_65_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x21};
 const byte_t x509_sig_hash_mldsa_87_oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x22};
 
+uint32_t x509_signature_oid_size(x509_signature_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case X509_SIG_RESERVED:
+		return 0;
+
+	// RSA
+	case X509_SIG_RSA_PSS:
+	case X509_SIG_RSA_PKCS_MD5:
+	case X509_SIG_RSA_PKCS_SHA1:
+	case X509_SIG_RSA_PKCS_SHA224:
+	case X509_SIG_RSA_PKCS_SHA256:
+	case X509_SIG_RSA_PKCS_SHA384:
+	case X509_SIG_RSA_PKCS_SHA512:
+	case X509_SIG_RSA_PKCS_SHA512_224:
+	case X509_SIG_RSA_PKCS_SHA512_256:
+	case X509_SIG_RSA_PKCS_SHA3_224:
+	case X509_SIG_RSA_PKCS_SHA3_256:
+	case X509_SIG_RSA_PKCS_SHA3_384:
+	case X509_SIG_RSA_PKCS_SHA3_512:
+		return 9;
+
+	// DSA
+	case X509_SIG_DSA_SHA224:
+	case X509_SIG_DSA_SHA256:
+	case X509_SIG_DSA_SHA384:
+	case X509_SIG_DSA_SHA512:
+	case X509_SIG_DSA_SHA3_224:
+	case X509_SIG_DSA_SHA3_256:
+	case X509_SIG_DSA_SHA3_384:
+	case X509_SIG_DSA_SHA3_512:
+		return 9;
+
+	// ECDSA
+	case X509_SIG_ECDSA_SHA224:
+	case X509_SIG_ECDSA_SHA256:
+	case X509_SIG_ECDSA_SHA384:
+	case X509_SIG_ECDSA_SHA512:
+	case X509_SIG_ECDSA_SHA3_224:
+	case X509_SIG_ECDSA_SHA3_256:
+	case X509_SIG_ECDSA_SHA3_384:
+	case X509_SIG_ECDSA_SHA3_512:
+		return 9;
+
+	case X509_SIG_DSA_SHA1:
+	case X509_SIG_ECDSA_SHA1:
+		return 7;
+
+	case X509_SIG_RSA_PSS_SHAKE128:
+	case X509_SIG_RSA_PSS_SHAKE256:
+	case X509_SIG_ECDSA_SHAKE128:
+	case X509_SIG_ECDSA_SHAKE256:
+		return 8;
+
+	case X509_SIG_ED25519:
+	case X509_SIG_ED448:
+		return 3;
+
+	// MLDSA
+	case X509_SIG_MLDSA_44:
+	case X509_SIG_MLDSA_65:
+	case X509_SIG_MLDSA_87:
+	case X509_SIG_HASH_MLDSA_44:
+	case X509_SIG_HASH_MLDSA_65:
+	case X509_SIG_HASH_MLDSA_87:
+		return 9;
+	}
+
+	return 0;
+}
+
 x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 0)
