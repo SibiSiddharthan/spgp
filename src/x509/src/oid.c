@@ -510,6 +510,169 @@ uint32_t x509_signature_oid_size(x509_signature_algorithm algorithm)
 	return 0;
 }
 
+uint32_t x509_signature_oid_encode(x509_signature_algorithm algorithm, void *buffer, uint32_t size)
+{
+	uint32_t required_size = 0;
+
+	required_size = x509_signature_oid_size(algorithm);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	if (required_size == 0)
+	{
+		return 0;
+	}
+
+	switch (algorithm)
+	{
+	case X509_SIG_RESERVED:
+		return 0;
+
+	// RSA
+	case X509_SIG_RSA_PSS:
+		memcpy(buffer, x509_rsa_pss_oid, required_size);
+		break;
+	case X509_SIG_RSA_PSS_SHAKE128:
+		memcpy(buffer, x509_sig_rsa_pss_shake128_oid, required_size);
+		break;
+	case X509_SIG_RSA_PSS_SHAKE256:
+		memcpy(buffer, x509_sig_rsa_pss_shake256_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_MD5:
+		memcpy(buffer, x509_sig_rsa_pkcs_md5_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA1:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha1_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA224:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha224_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA256:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha256_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA384:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha384_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA512:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha512_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA512_224:
+		memcpy(buffer, x509_hash_shake256x_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA512_256:
+		memcpy(buffer, x509_hash_shake256x_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA3_224:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha3_224_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA3_256:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha3_256_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA3_384:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha3_384_oid, required_size);
+		break;
+	case X509_SIG_RSA_PKCS_SHA3_512:
+		memcpy(buffer, x509_sig_rsa_pkcs_sha3_512_oid, required_size);
+		break;
+
+	// DSA
+	case X509_SIG_DSA_SHA1:
+		memcpy(buffer, x509_sig_dsa_sha1_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA224:
+		memcpy(buffer, x509_sig_dsa_sha224_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA256:
+		memcpy(buffer, x509_sig_dsa_sha256_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA384:
+		memcpy(buffer, x509_sig_dsa_sha384_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA512:
+		memcpy(buffer, x509_sig_dsa_sha512_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA3_224:
+		memcpy(buffer, x509_sig_dsa_sha3_224_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA3_256:
+		memcpy(buffer, x509_sig_dsa_sha3_256_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA3_384:
+		memcpy(buffer, x509_sig_dsa_sha3_384_oid, required_size);
+		break;
+	case X509_SIG_DSA_SHA3_512:
+		memcpy(buffer, x509_sig_dsa_sha3_512_oid, required_size);
+		break;
+
+	// ECDSA
+	case X509_SIG_ECDSA_SHA1:
+		memcpy(buffer, x509_sig_ecdsa_sha1_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA224:
+		memcpy(buffer, x509_sig_ecdsa_sha224_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA256:
+		memcpy(buffer, x509_sig_ecdsa_sha256_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA384:
+		memcpy(buffer, x509_sig_ecdsa_sha384_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA512:
+		memcpy(buffer, x509_sig_ecdsa_sha512_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA3_224:
+		memcpy(buffer, x509_sig_ecdsa_sha3_224_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA3_256:
+		memcpy(buffer, x509_sig_ecdsa_sha3_256_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA3_384:
+		memcpy(buffer, x509_sig_ecdsa_sha3_384_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHA3_512:
+		memcpy(buffer, x509_sig_ecdsa_sha3_512_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHAKE128:
+		memcpy(buffer, x509_sig_ecdsa_shake128_oid, required_size);
+		break;
+	case X509_SIG_ECDSA_SHAKE256:
+		memcpy(buffer, x509_sig_ecdsa_shake256_oid, required_size);
+		break;
+
+	case X509_SIG_ED25519:
+		memcpy(buffer, x509_ed25519_oid, required_size);
+		break;
+	case X509_SIG_ED448:
+		memcpy(buffer, x509_ed448_oid, required_size);
+		break;
+
+	// MLDSA
+	case X509_SIG_MLDSA_44:
+		memcpy(buffer, x509_sig_mldsa_44_oid, required_size);
+		break;
+	case X509_SIG_MLDSA_65:
+		memcpy(buffer, x509_sig_mldsa_65_oid, required_size);
+		break;
+	case X509_SIG_MLDSA_87:
+		memcpy(buffer, x509_sig_mldsa_87_oid, required_size);
+		break;
+	case X509_SIG_HASH_MLDSA_44:
+		memcpy(buffer, x509_sig_hash_mldsa_44_oid, required_size);
+		break;
+	case X509_SIG_HASH_MLDSA_65:
+		memcpy(buffer, x509_sig_hash_mldsa_65_oid, required_size);
+		break;
+	case X509_SIG_HASH_MLDSA_87:
+		memcpy(buffer, x509_sig_hash_mldsa_87_oid, required_size);
+		break;
+	}
+
+	return required_size;
+}
+
 x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 0)
