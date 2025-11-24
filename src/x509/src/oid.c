@@ -581,6 +581,20 @@ x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size)
 
 	if (oid[0] == 0x2B)
 	{
+		if (size == 3)
+		{
+			if (oid[1] == 0x65)
+			{
+				switch (oid[2])
+				{
+				case 0x70:
+					return X509_SIG_ED25519;
+				case 0x71:
+					return X509_SIG_ED448;
+				}
+			}
+		}
+
 		if (size == 8)
 		{
 			if (memcmp(oid + 1, x509_sig_ecdsa_shake256_oid + 1, 6) == 0)
