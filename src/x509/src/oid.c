@@ -38,6 +38,36 @@ const byte_t x509_x448_oid[] = {0x2B, 0x65, 0x6F};
 const byte_t x509_ed25519_oid[] = {0x2B, 0x65, 0x70};
 const byte_t x509_ed448_oid[] = {0x2B, 0x65, 0x71};
 
+uint32_t x509_algorithm_oid_size(x509_algorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case X509_RESERVED:
+		return 0;
+
+	case X509_DSA:
+	case X509_ECDSA:
+		return 7;
+
+	case X509_ECDH:
+	case X509_ECMQV:
+		return 5;
+
+	case X509_RSA_PKCS:
+	case X509_RSA_OAEP:
+	case X509_RSA_PSS:
+		return 9;
+
+	case X509_X25519:
+	case X509_X448:
+	case X509_ED25519:
+	case X509_ED448:
+		return 3;
+	}
+
+	return 0;
+}
+
 x509_algorithm x509_algorithm_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 0)
