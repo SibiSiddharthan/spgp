@@ -261,6 +261,81 @@ uint32_t x509_hash_oid_size(x509_hash_algorithm algorithm)
 	return 0;
 }
 
+uint32_t x509_hash_oid_encode(x509_hash_algorithm algorithm, void *buffer, uint32_t size)
+{
+	uint32_t required_size = 0;
+
+	required_size = x509_hash_oid_size(algorithm);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	if (required_size == 0)
+	{
+		return 0;
+	}
+
+	switch (algorithm)
+	{
+	case X509_HASH_RESERVED:
+		return 0;
+
+	case X509_HASH_MD5:
+		memcpy(buffer, x509_hash_md5_oid, required_size);
+		break;
+	case X509_HASH_SHA1:
+		memcpy(buffer, x509_hash_sha1_oid, required_size);
+		break;
+
+	case X509_HASH_SHA224:
+		memcpy(buffer, x509_hash_sha224_oid, required_size);
+		break;
+	case X509_HASH_SHA256:
+		memcpy(buffer, x509_hash_sha256_oid, required_size);
+		break;
+	case X509_HASH_SHA384:
+		memcpy(buffer, x509_hash_sha384_oid, required_size);
+		break;
+	case X509_HASH_SHA512:
+		memcpy(buffer, x509_hash_sha512_oid, required_size);
+		break;
+	case X509_HASH_SHA512_224:
+		memcpy(buffer, x509_hash_sha512_224_oid, required_size);
+		break;
+	case X509_HASH_SHA512_256:
+		memcpy(buffer, x509_hash_sha512_256_oid, required_size);
+		break;
+	case X509_HASH_SHA3_224:
+		memcpy(buffer, x509_hash_sha3_224_oid, required_size);
+		break;
+	case X509_HASH_SHA3_256:
+		memcpy(buffer, x509_hash_sha3_256_oid, required_size);
+		break;
+	case X509_HASH_SHA3_384:
+		memcpy(buffer, x509_hash_sha3_384_oid, required_size);
+		break;
+	case X509_HASH_SHA3_512:
+		memcpy(buffer, x509_hash_sha3_512_oid, required_size);
+		break;
+	case X509_HASH_SHAKE128:
+		memcpy(buffer, x509_hash_shake128_oid, required_size);
+		break;
+	case X509_HASH_SHAKE256:
+		memcpy(buffer, x509_hash_shake256_oid, required_size);
+		break;
+	case X509_HASH_SHAKE128X:
+		memcpy(buffer, x509_hash_shake128x_oid, required_size);
+		break;
+	case X509_HASH_SHAKE256X:
+		memcpy(buffer, x509_hash_shake256x_oid, required_size);
+		break;
+	}
+
+	return required_size;
+}
+
 x509_hash_algorithm x509_hash_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 5)
