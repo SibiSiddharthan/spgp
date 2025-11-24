@@ -13,6 +13,7 @@
 #include <x509/x509.h>
 
 uint32_t x509_algorithm_oid_size(x509_algorithm algorithm);
+uint32_t x509_algorithm_encode(x509_algorithm algorithm, void *buffer, uint32_t size);
 x509_algorithm x509_algorithm_oid_decode(byte_t *oid, uint32_t size);
 
 x509_hash_algorithm x509_hash_oid_decode(byte_t *oid, uint32_t size);

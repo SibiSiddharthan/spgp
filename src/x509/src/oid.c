@@ -68,6 +68,68 @@ uint32_t x509_algorithm_oid_size(x509_algorithm algorithm)
 	return 0;
 }
 
+uint32_t x509_algorithm_encode(x509_algorithm algorithm, void *buffer, uint32_t size)
+{
+	uint32_t required_size = 0;
+
+	required_size = x509_algorithm_oid_size(algorithm);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	if (required_size == 0)
+	{
+		return 0;
+	}
+
+	switch (algorithm)
+	{
+	case X509_RESERVED:
+		break;
+
+	case X509_DSA:
+		memcpy(buffer, x509_dsa_oid, required_size);
+		break;
+	case X509_ECDSA:
+		memcpy(buffer, x509_ecdsa_oid, required_size);
+		break;
+
+	case X509_ECDH:
+		memcpy(buffer, x509_ecdh_oid, required_size);
+		break;
+	case X509_ECMQV:
+		memcpy(buffer, x509_ecmqv_oid, required_size);
+		break;
+
+	case X509_RSA_PKCS:
+		memcpy(buffer, x509_rsa_pkcs_oid, required_size);
+		break;
+	case X509_RSA_OAEP:
+		memcpy(buffer, x509_rsa_oaep_oid, required_size);
+		break;
+	case X509_RSA_PSS:
+		memcpy(buffer, x509_rsa_pss_oid, required_size);
+		break;
+
+	case X509_X25519:
+		memcpy(buffer, x509_x25519_oid, required_size);
+		break;
+	case X509_X448:
+		memcpy(buffer, x509_x448_oid, required_size);
+		break;
+	case X509_ED25519:
+		memcpy(buffer, x509_ed25519_oid, required_size);
+		break;
+	case X509_ED448:
+		memcpy(buffer, x509_ed448_oid, required_size);
+		break;
+	}
+
+	return required_size;
+}
+
 x509_algorithm x509_algorithm_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 0)
