@@ -995,6 +995,219 @@ uint32_t x509_curve_oid_size(x509_curve_id id)
 	return 0;
 }
 
+x509_curve_id x509_curve_oid_encode(x509_curve_id id, void *buffer, uint32_t size)
+{
+	uint32_t required_size = 0;
+
+	required_size = x509_curve_oid_size(id);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	if (required_size == 0)
+	{
+		return 0;
+	}
+
+	switch (id)
+	{
+	case X509_EC_RESERVED:
+		return 0;
+
+	// NIST
+	// Prime curves
+	case X509_EC_NIST_P192:
+		memcpy(buffer, x509_ec_nist_p192_oid, required_size);
+		break;
+	case X509_EC_NIST_P224:
+		memcpy(buffer, x509_ec_nist_p224_oid, required_size);
+		break;
+	case X509_EC_NIST_P256:
+		memcpy(buffer, x509_ec_nist_p256_oid, required_size);
+		break;
+	case X509_EC_NIST_P384:
+		memcpy(buffer, x509_ec_nist_p384_oid, required_size);
+		break;
+	case X509_EC_NIST_P521:
+		memcpy(buffer, x509_ec_nist_p521_oid, required_size);
+		break;
+
+	// Binary curves
+	case X509_EC_NIST_K163:
+		memcpy(buffer, x509_ec_nist_k163_oid, required_size);
+		break;
+	case X509_EC_NIST_B163:
+		memcpy(buffer, x509_ec_nist_b163_oid, required_size);
+		break;
+	case X509_EC_NIST_K233:
+		memcpy(buffer, x509_ec_nist_k233_oid, required_size);
+		break;
+	case X509_EC_NIST_B233:
+		memcpy(buffer, x509_ec_nist_b233_oid, required_size);
+		break;
+	case X509_EC_NIST_K283:
+		memcpy(buffer, x509_ec_nist_k283_oid, required_size);
+		break;
+	case X509_EC_NIST_B283:
+		memcpy(buffer, x509_ec_nist_b283_oid, required_size);
+		break;
+	case X509_EC_NIST_K409:
+		memcpy(buffer, x509_ec_nist_k409_oid, required_size);
+		break;
+	case X509_EC_NIST_B409:
+		memcpy(buffer, x509_ec_nist_b409_oid, required_size);
+		break;
+	case X509_EC_NIST_K571:
+		memcpy(buffer, x509_ec_nist_k571_oid, required_size);
+		break;
+	case X509_EC_NIST_B571:
+		memcpy(buffer, x509_ec_nist_b571_oid, required_size);
+		break;
+
+	// SEC
+	// Prime curves
+	case X509_EC_SECP_160K1:
+		memcpy(buffer, x509_ec_secp_160k1_oid, required_size);
+		break;
+	case X509_EC_SECP_160R1:
+		memcpy(buffer, x509_ec_secp_160r1_oid, required_size);
+		break;
+	case X509_EC_SECP_160R2:
+		memcpy(buffer, x509_ec_secp_160r2_oid, required_size);
+		break;
+	case X509_EC_SECP_192K1:
+		memcpy(buffer, x509_ec_secp_192k1_oid, required_size);
+		break;
+	case X509_EC_SECP_192R1:
+		memcpy(buffer, x509_ec_secp_192r1_oid, required_size);
+		break;
+	case X509_EC_SECP_224K1:
+		memcpy(buffer, x509_ec_secp_224k1_oid, required_size);
+		break;
+	case X509_EC_SECP_224R1:
+		memcpy(buffer, x509_ec_secp_224r1_oid, required_size);
+		break;
+	case X509_EC_SECP_256K1:
+		memcpy(buffer, x509_ec_secp_256k1_oid, required_size);
+		break;
+	case X509_EC_SECP_256R1:
+		memcpy(buffer, x509_ec_secp_256r1_oid, required_size);
+		break;
+	case X509_EC_SECP_384R1:
+		memcpy(buffer, x509_ec_secp_384r1_oid, required_size);
+		break;
+	case X509_EC_SECP_521R1:
+		memcpy(buffer, x509_ec_secp_521r1_oid, required_size);
+		break;
+
+	// Binary curves
+	case X509_EC_SECT_163K1:
+		memcpy(buffer, x509_ec_sect_163k1_oid, required_size);
+		break;
+	case X509_EC_SECT_163R1:
+		memcpy(buffer, x509_ec_sect_163r1_oid, required_size);
+		break;
+	case X509_EC_SECT_163R2:
+		memcpy(buffer, x509_ec_sect_163r2_oid, required_size);
+		break;
+	case X509_EC_SECT_193R1:
+		memcpy(buffer, x509_ec_sect_193r1_oid, required_size);
+		break;
+	case X509_EC_SECT_193R2:
+		memcpy(buffer, x509_ec_sect_193r2_oid, required_size);
+		break;
+	case X509_EC_SECT_233K1:
+		memcpy(buffer, x509_ec_sect_233k1_oid, required_size);
+		break;
+	case X509_EC_SECT_233R1:
+		memcpy(buffer, x509_ec_sect_233r1_oid, required_size);
+		break;
+	case X509_EC_SECT_239K1:
+		memcpy(buffer, x509_ec_sect_239k1_oid, required_size);
+		break;
+	case X509_EC_SECT_283K1:
+		memcpy(buffer, x509_ec_sect_283k1_oid, required_size);
+		break;
+	case X509_EC_SECT_283R1:
+		memcpy(buffer, x509_ec_sect_283r1_oid, required_size);
+		break;
+	case X509_EC_SECT_409K1:
+		memcpy(buffer, x509_ec_sect_409k1_oid, required_size);
+		break;
+	case X509_EC_SECT_409R1:
+		memcpy(buffer, x509_ec_sect_409r1_oid, required_size);
+		break;
+	case X509_EC_SECT_571K1:
+		memcpy(buffer, x509_ec_sect_571k1_oid, required_size);
+		break;
+	case X509_EC_SECT_571R1:
+		memcpy(buffer, x509_ec_sect_571r1_oid, required_size);
+		break;
+
+	// Brainpool
+	case X509_EC_BRAINPOOL_160R1:
+		memcpy(buffer, x509_ec_brainpool_160r1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_160T1:
+		memcpy(buffer, x509_ec_brainpool_160t1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_192R1:
+		memcpy(buffer, x509_ec_brainpool_192r1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_192T1:
+		memcpy(buffer, x509_ec_brainpool_192t1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_224R1:
+		memcpy(buffer, x509_ec_brainpool_224r1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_224T1:
+		memcpy(buffer, x509_ec_brainpool_224t1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_256R1:
+		memcpy(buffer, x509_ec_brainpool_256r1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_256T1:
+		memcpy(buffer, x509_ec_brainpool_256t1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_320R1:
+		memcpy(buffer, x509_ec_brainpool_320r1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_320T1:
+		memcpy(buffer, x509_ec_brainpool_320t1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_384R1:
+		memcpy(buffer, x509_ec_brainpool_384r1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_384T1:
+		memcpy(buffer, x509_ec_brainpool_384t1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_512R1:
+		memcpy(buffer, x509_ec_brainpool_512r1_oid, required_size);
+		break;
+	case X509_EC_BRAINPOOL_512T1:
+		memcpy(buffer, x509_ec_brainpool_512t1_oid, required_size);
+		break;
+
+	// Montgomery and Edwards
+	case X509_EC_CURVE25519:
+		memcpy(buffer, x509_ec_curve25519_oid, required_size);
+		break;
+	case X509_EC_CURVE448:
+		memcpy(buffer, x509_ec_curve448_oid, required_size);
+		break;
+	case X509_EC_ED25519:
+		memcpy(buffer, x509_ec_ed25519_oid, required_size);
+		break;
+	case X509_EC_ED448:
+		memcpy(buffer, x509_ec_ed448_oid, required_size);
+		break;
+	}
+
+	return required_size;
+}
+
 x509_curve_id x509_curve_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 0)

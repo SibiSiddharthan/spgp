@@ -25,6 +25,7 @@ uint32_t x509_signature_oid_encode(x509_signature_algorithm algorithm, void *buf
 x509_signature_algorithm x509_signature_oid_decode(byte_t *oid, uint32_t size);
 
 uint32_t x509_curve_oid_size(x509_curve_id id);
+x509_curve_id x509_curve_oid_encode(x509_curve_id id, void *buffer, uint32_t size);
 x509_curve_id x509_curve_oid_decode(byte_t *oid, uint32_t size);
 
 x509_rdn_type x509_rdn_oid_decode(byte_t *oid, uint32_t size);
