@@ -904,6 +904,97 @@ const byte_t x509_ec_curve448_oid[] = {0x2B, 0x65, 0x6F};
 const byte_t x509_ec_ed25519_oid[] = {0x2B, 0x65, 0x70};
 const byte_t x509_ec_ed448_oid[] = {0x2B, 0x65, 0x71};
 
+uint32_t x509_curve_oid_size(x509_curve_id id)
+{
+	switch (id)
+	{
+	case X509_EC_RESERVED:
+		return 0;
+
+	// NIST
+	// Prime curves
+	case X509_EC_NIST_P192:
+	case X509_EC_NIST_P256:
+		return 8;
+	case X509_EC_NIST_P224:
+	case X509_EC_NIST_P384:
+	case X509_EC_NIST_P521:
+		return 5;
+
+	// Binary curves
+	case X509_EC_NIST_K163:
+	case X509_EC_NIST_B163:
+	case X509_EC_NIST_K233:
+	case X509_EC_NIST_B233:
+	case X509_EC_NIST_K283:
+	case X509_EC_NIST_B283:
+	case X509_EC_NIST_K409:
+	case X509_EC_NIST_B409:
+	case X509_EC_NIST_K571:
+	case X509_EC_NIST_B571:
+		return 5;
+
+	// SEC
+	// Prime curves
+	case X509_EC_SECP_192R1:
+	case X509_EC_SECP_256R1:
+		return 8;
+	case X509_EC_SECP_160K1:
+	case X509_EC_SECP_160R1:
+	case X509_EC_SECP_160R2:
+	case X509_EC_SECP_192K1:
+	case X509_EC_SECP_224K1:
+	case X509_EC_SECP_224R1:
+	case X509_EC_SECP_256K1:
+	case X509_EC_SECP_384R1:
+	case X509_EC_SECP_521R1:
+		return 5;
+
+	// Binary curves
+	case X509_EC_SECT_163K1:
+	case X509_EC_SECT_163R1:
+	case X509_EC_SECT_163R2:
+	case X509_EC_SECT_193R1:
+	case X509_EC_SECT_193R2:
+	case X509_EC_SECT_233K1:
+	case X509_EC_SECT_233R1:
+	case X509_EC_SECT_239K1:
+	case X509_EC_SECT_283K1:
+	case X509_EC_SECT_283R1:
+	case X509_EC_SECT_409K1:
+	case X509_EC_SECT_409R1:
+	case X509_EC_SECT_571K1:
+	case X509_EC_SECT_571R1:
+		return 5;
+
+	// Brainpool
+	case X509_EC_BRAINPOOL_160R1:
+	case X509_EC_BRAINPOOL_160T1:
+	case X509_EC_BRAINPOOL_192R1:
+	case X509_EC_BRAINPOOL_192T1:
+	case X509_EC_BRAINPOOL_224R1:
+	case X509_EC_BRAINPOOL_224T1:
+	case X509_EC_BRAINPOOL_256R1:
+	case X509_EC_BRAINPOOL_256T1:
+	case X509_EC_BRAINPOOL_320R1:
+	case X509_EC_BRAINPOOL_320T1:
+	case X509_EC_BRAINPOOL_384R1:
+	case X509_EC_BRAINPOOL_384T1:
+	case X509_EC_BRAINPOOL_512R1:
+	case X509_EC_BRAINPOOL_512T1:
+		return 9;
+
+	// Montgomery and Edwards
+	case X509_EC_CURVE25519:
+	case X509_EC_CURVE448:
+	case X509_EC_ED25519:
+	case X509_EC_ED448:
+		return 3;
+	}
+
+	return 0;
+}
+
 x509_curve_id x509_curve_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 0)
