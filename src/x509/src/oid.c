@@ -1599,6 +1599,87 @@ uint32_t x509_extension_oid_size(x509_extension_type type)
 	return 0;
 }
 
+uint32_t x509_extension_oid_encode(x509_extension_type type, void *buffer, uint32_t size)
+{
+	uint32_t required_size = 0;
+
+	required_size = x509_extension_oid_size(type);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	if (required_size == 0)
+	{
+		return 0;
+	}
+
+	switch (type)
+	{
+	case X509_EXT_RESERVED:
+		return 0;
+
+	case X509_EXT_AUTHORITY_KEY_IDENTIFIER:
+		memcpy(buffer, x509_ext_authority_key_identifier_oid, required_size);
+		break;
+	case X509_EXT_SUBJECT_KEY_IDENTIFIER:
+		memcpy(buffer, x509_ext_subject_key_identifier_oid, required_size);
+		break;
+	case X509_EXT_KEY_USAGE:
+		memcpy(buffer, x509_ext_key_usage_oid, required_size);
+		break;
+	case X509_EXT_CERTIFICATE_POLICIES:
+		memcpy(buffer, x509_ext_certificate_policies_oid, required_size);
+		break;
+	case X509_EXT_POLICY_MAPPINGS:
+		memcpy(buffer, x509_ext_policy_mappings_oid, required_size);
+		break;
+	case X509_EXT_SUBJECT_ALTERNATE_NAME:
+		memcpy(buffer, x509_ext_subject_alternate_name_oid, required_size);
+		break;
+	case X509_EXT_ISSUER_ALTERNATE_NAME:
+		memcpy(buffer, x509_ext_issuer_alternate_name_oid, required_size);
+		break;
+	case X509_EXT_SUBJECT_DIRECTORY_ATTRIBUTES:
+		memcpy(buffer, x509_ext_subject_directory_attributes_oid, required_size);
+		break;
+	case X509_EXT_BASIC_CONSTRAINTS:
+		memcpy(buffer, x509_ext_basic_constraints_oid, required_size);
+		break;
+	case X509_EXT_NAME_CONSTRAINTS:
+		memcpy(buffer, x509_ext_name_constraints_oid, required_size);
+		break;
+	case X509_EXT_POLICY_CONSTRAINTS:
+		memcpy(buffer, x509_ext_policy_constraints_oid, required_size);
+		break;
+	case X509_EXT_EXTENDED_KEY_USAGE:
+		memcpy(buffer, x509_ext_extended_key_usage_oid, required_size);
+		break;
+	case X509_EXT_PRIVATE_KEY_USAGE_PERIOD:
+		memcpy(buffer, x509_ext_private_key_usage_period_oid, required_size);
+		break;
+	case X509_EXT_INHIBIT_ANYPOLICY:
+		memcpy(buffer, x509_ext_inhibit_anypolicy_oid, required_size);
+		break;
+	case X509_EXT_CRL_DISTRIBUTION_POINTS:
+		memcpy(buffer, x509_ext_crl_distribution_points_oid, required_size);
+		break;
+	case X509_EXT_DELTA_CRL_DISTRIBUTION_POINTS:
+		memcpy(buffer, x509_ext_delta_crl_distribution_points_oid, required_size);
+		break;
+
+	case X509_EXT_AUTHORITY_INFORMATION_ACCESS:
+		memcpy(buffer, x509_ext_authority_information_access_oid, required_size);
+		break;
+	case X509_EXT_SUBJECT_INFORMATION_ACCESS:
+		memcpy(buffer, x509_ext_subject_information_access_oid, required_size);
+		break;
+	}
+
+	return required_size;
+}
+
 x509_extension_type x509_extension_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 3)
