@@ -1410,6 +1410,84 @@ uint32_t x509_rdn_oid_size(x509_rdn_type type)
 	return 0;
 }
 
+uint32_t x509_rdn_oid_encode(x509_rdn_type type, void *buffer, uint32_t size)
+{
+	uint32_t required_size = 0;
+
+	required_size = x509_rdn_oid_size(type);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	if (required_size == 0)
+	{
+		return 0;
+	}
+
+	switch (type)
+	{
+	case X509_RDN_RESERVED:
+		return 0;
+
+	case X509_RDN_NAME:
+		memcpy(buffer, x509_rdn_name_oid, required_size);
+		break;
+	case X509_RDN_SURNAME:
+		memcpy(buffer, x509_rdn_surname_oid, required_size);
+		break;
+	case X509_RDN_INITIALS:
+		memcpy(buffer, x509_rdn_initials_oid, required_size);
+		break;
+	case X509_RDN_COMMON_NAME:
+		memcpy(buffer, x509_rdn_common_name_oid, required_size);
+		break;
+	case X509_RDN_GIVEN_NAME:
+		memcpy(buffer, x509_rdn_given_name_oid, required_size);
+		break;
+	case X509_RDN_GENERATION_QUALIFIER:
+		memcpy(buffer, x509_rdn_generation_qualifier_oid, required_size);
+		break;
+	case X509_RDN_LOCALITY_NAME:
+		memcpy(buffer, x509_rdn_locality_name_oid, required_size);
+		break;
+	case X509_RDN_STATE_PROVINCE_NAME:
+		memcpy(buffer, x509_rdn_state_province_name_oid, required_size);
+		break;
+	case X509_RDN_ORGANIZATION_NAME:
+		memcpy(buffer, x509_rdn_organization_name_oid, required_size);
+		break;
+	case X509_RDN_ORGANIZATIONAL_UNIT_NAME:
+		memcpy(buffer, x509_rdn_organizational_unit_name_oid, required_size);
+		break;
+	case X509_RDN_TITLE:
+		memcpy(buffer, x509_rdn_title_oid, required_size);
+		break;
+	case X509_RDN_PSEUDONYM:
+		memcpy(buffer, x509_rdn_pseudonym_oid, required_size);
+		break;
+	case X509_RDN_COUNTRY_NAME:
+		memcpy(buffer, x509_rdn_country_name_oid, required_size);
+		break;
+	case X509_RDN_SERIAL_NUMBER:
+		memcpy(buffer, x509_rdn_serial_number_oid, required_size);
+		break;
+	case X509_RDN_DN_QUALIFIER:
+		memcpy(buffer, x509_rdn_dn_qualifier_oid, required_size);
+		break;
+
+	case X509_RDN_DOMAIN_COMPONENT:
+		memcpy(buffer, x509_rdn_domain_component_oid, required_size);
+		break;
+	case X509_RDN_EMAIL_ADDRESS:
+		memcpy(buffer, x509_rdn_email_addres_oid, required_size);
+		break;
+	}
+
+	return required_size;
+}
+
 x509_rdn_type x509_rdn_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 3)
