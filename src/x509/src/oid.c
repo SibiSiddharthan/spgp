@@ -1566,6 +1566,39 @@ const byte_t x509_ext_inhibit_anypolicy_oid[] = {0x55, 0x1D, 0x36};
 const byte_t x509_ext_authority_information_access_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x01, 0x01};
 const byte_t x509_ext_subject_information_access_oid[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x01, 0x0B};
 
+uint32_t x509_extension_oid_size(x509_extension_type type)
+{
+	switch (type)
+	{
+	case X509_EXT_RESERVED:
+		return 0;
+
+	case X509_EXT_AUTHORITY_KEY_IDENTIFIER:
+	case X509_EXT_SUBJECT_KEY_IDENTIFIER:
+	case X509_EXT_KEY_USAGE:
+	case X509_EXT_CERTIFICATE_POLICIES:
+	case X509_EXT_POLICY_MAPPINGS:
+	case X509_EXT_SUBJECT_ALTERNATE_NAME:
+	case X509_EXT_ISSUER_ALTERNATE_NAME:
+	case X509_EXT_SUBJECT_DIRECTORY_ATTRIBUTES:
+	case X509_EXT_BASIC_CONSTRAINTS:
+	case X509_EXT_NAME_CONSTRAINTS:
+	case X509_EXT_POLICY_CONSTRAINTS:
+	case X509_EXT_EXTENDED_KEY_USAGE:
+	case X509_EXT_PRIVATE_KEY_USAGE_PERIOD:
+	case X509_EXT_INHIBIT_ANYPOLICY:
+	case X509_EXT_CRL_DISTRIBUTION_POINTS:
+	case X509_EXT_DELTA_CRL_DISTRIBUTION_POINTS:
+		return 3;
+
+	case X509_EXT_AUTHORITY_INFORMATION_ACCESS:
+	case X509_EXT_SUBJECT_INFORMATION_ACCESS:
+		return 8;
+	}
+
+	return 0;
+}
+
 x509_extension_type x509_extension_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 3)
