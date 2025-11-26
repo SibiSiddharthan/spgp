@@ -1377,6 +1377,39 @@ const byte_t x509_rdn_pseudonym_oid[] = {0x55, 0x04, 0x41};
 const byte_t x509_rdn_domain_component_oid[] = {0x09, 0x92, 0x26, 0x89, 0x93, 0xF2, 0x2C, 0x64, 0x01, 0x19};
 const byte_t x509_rdn_email_addres_oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01};
 
+uint32_t x509_rdn_oid_size(x509_rdn_type type)
+{
+	switch (type)
+	{
+	case X509_RDN_RESERVED:
+		return 0;
+
+	case X509_RDN_NAME:
+	case X509_RDN_SURNAME:
+	case X509_RDN_INITIALS:
+	case X509_RDN_COMMON_NAME:
+	case X509_RDN_GIVEN_NAME:
+	case X509_RDN_GENERATION_QUALIFIER:
+	case X509_RDN_LOCALITY_NAME:
+	case X509_RDN_STATE_PROVINCE_NAME:
+	case X509_RDN_ORGANIZATION_NAME:
+	case X509_RDN_ORGANIZATIONAL_UNIT_NAME:
+	case X509_RDN_TITLE:
+	case X509_RDN_PSEUDONYM:
+	case X509_RDN_COUNTRY_NAME:
+	case X509_RDN_SERIAL_NUMBER:
+	case X509_RDN_DN_QUALIFIER:
+		return 3;
+
+	case X509_RDN_DOMAIN_COMPONENT:
+		return 10;
+	case X509_RDN_EMAIL_ADDRESS:
+		return 9;
+	}
+
+	return 0;
+}
+
 x509_rdn_type x509_rdn_oid_decode(byte_t *oid, uint32_t size)
 {
 	if (size == 3)
