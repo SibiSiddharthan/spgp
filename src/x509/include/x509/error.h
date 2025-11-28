@@ -21,6 +21,8 @@ typedef enum _asn1_error_t
 	ASN1_INVALID_LENGTH_SPECIFICATION,
 	ASN1_CONTEXT_MISMATCH,
 	ASN1_TYPE_MISMATCH,
+
+	ASN1_STACK_OVERFLOW,
 } asn1_error_t;
 
 typedef enum _x509_error_t

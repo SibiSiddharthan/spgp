@@ -351,7 +351,7 @@ static asn1_error_t asn1_stack_pop(asn1_stack *stack)
 {
 	if (stack->top == 0)
 	{
-		return;
+		return ASN1_STACK_OVERFLOW;
 	}
 
 	stack->st[stack->top--] = 0;
@@ -363,6 +363,7 @@ static asn1_error_t asn1_stack_push(asn1_stack *stack, size_t value)
 {
 	if (stack->top == ASN1_STACK_DEPTH)
 	{
+		return ASN1_STACK_OVERFLOW;
 	}
 
 	stack->st[stack->top++] = value;
