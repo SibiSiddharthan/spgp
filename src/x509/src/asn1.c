@@ -6,9 +6,11 @@
 */
 
 #include <x509/asn1.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <ptr.h>
+#include <minmax.h>
 
 static size_t asn1_required_header_size(asn1_field *field)
 {
@@ -304,4 +306,66 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 	}
 
 	return pos;
+}
+
+#define ASN1_STACK_DEPTH 16
+
+typedef struct _asn1_stack
+{
+	uint32_t top;
+	uint32_t size;
+	size_t *st;
+} asn1_stack;
+
+static asn1_stack *asn1_stack_new()
+{
+	asn1_stack *stack = NULL;
+	uint32_t size = ASN1_STACK_DEPTH;
+
+	stack = malloc(sizeof(asn1_stack) + (sizeof(size_t) * size));
+
+	if (stack == NULL)
+	{
+		return NULL;
+	}
+
+	memset(stack, 0, sizeof(asn1_stack) + (sizeof(size_t) * size));
+
+	stack->size = size;
+	stack->st = PTR_OFFSET(stack, sizeof(asn1_stack));
+
+	return stack;
+}
+
+static void asn1_stack_delete(asn1_stack *stack)
+{
+	free(stack);
+}
+
+static size_t asn1_stack_top(asn1_stack *stack)
+{
+	return stack->st[stack->top];
+}
+
+static asn1_error_t asn1_stack_pop(asn1_stack *stack)
+{
+	if (stack->top == 0)
+	{
+		return;
+	}
+
+	stack->st[stack->top--] = 0;
+
+	return ASN1_SUCCESS;
+}
+
+static asn1_error_t asn1_stack_push(asn1_stack *stack, size_t value)
+{
+	if (stack->top == ASN1_STACK_DEPTH)
+	{
+	}
+
+	stack->st[stack->top++] = value;
+
+	return ASN1_SUCCESS;
 }

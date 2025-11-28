@@ -62,20 +62,6 @@ size_t asn1_header_write(asn1_field *field, void *buffer, size_t size);
 asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byte_t flags, void *data, size_t *size);
 size_t asn1_field_write(asn1_field *field, void *buffer, size_t size);
 
-typedef struct _asn1_stack
-{
-	uint32_t top;
-	uint32_t size;
-	size_t *st;
-} asn1_stack;
-
-asn1_stack *asn1_stack_new(uint32_t size);
-void asn1_stack_delete(asn1_stack *stack);
-
-size_t asn1_stack_top();
-void asn1_stack_pop();
-asn1_stack *asn1_stack_push(size_t value);
-
 typedef struct _asn1_reader
 {
 	void *stack;
