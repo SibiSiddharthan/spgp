@@ -370,3 +370,38 @@ static asn1_error_t asn1_stack_push(asn1_stack *stack, size_t value)
 
 	return ASN1_SUCCESS;
 }
+
+asn1_reader *asn1_reader_new(void *data, size_t size)
+{
+	asn1_reader *reader = NULL;
+	asn1_stack *stack = NULL;
+
+	reader = malloc(sizeof(asn1_reader));
+	stack = asn1_stack_new();
+
+	if (reader == NULL || stack == NULL)
+	{
+		free(reader);
+		free(stack);
+
+		return NULL;
+	}
+
+	reader->stack = stack;
+	reader->data = data;
+	reader->size = size;
+
+	return reader;
+}
+
+void asn1_reader_delete(asn1_reader *reader)
+{
+	if (reader != NULL)
+	{
+		free(reader->stack);
+		free(reader);
+	}
+}
+
+asn1_error_t asn1_reader_push(byte_t type, byte_t context, byte_t flags);
+asn1_error_t asn1_reader_pop();
