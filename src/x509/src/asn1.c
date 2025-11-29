@@ -188,7 +188,7 @@ size_t asn1_header_write(asn1_field *field, void *buffer, size_t size)
 	return asn1_header_write_checked(field, buffer);
 }
 
-asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byte_t flags, void *data, size_t *size)
+asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byte_t flags, void *data, size_t *size)
 {
 	asn1_error_t error = 0;
 	size_t pos = *size;

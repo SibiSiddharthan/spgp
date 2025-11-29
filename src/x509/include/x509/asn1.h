@@ -60,7 +60,7 @@ typedef struct _asn1_field
 asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size);
 size_t asn1_header_write(asn1_field *field, void *buffer, size_t size);
 
-asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byte_t flags, void *data, size_t *size);
+asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byte_t flags, void *data, size_t *size);
 size_t asn1_field_write(asn1_field *field, void *buffer, size_t size);
 
 typedef struct _asn1_reader
@@ -77,9 +77,9 @@ typedef struct _asn1_reader
 asn1_reader *asn1_reader_new(void *data, size_t size);
 void asn1_reader_delete(asn1_reader *reader);
 
-asn1_error_t asn1_reader_push(byte_t type, byte_t context, byte_t flags);
-asn1_error_t asn1_reader_pop();
+asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, byte_t flags);
+asn1_error_t asn1_reader_pop(asn1_reader *reader);
 
-asn1_error_t asn1_reader_read(asn1_field *field, byte_t context, byte_t type, byte_t flags);
+asn1_error_t asn1_reader_read(asn1_reader *reader, asn1_field *field, byte_t context, byte_t type, byte_t flags);
 
 #endif
