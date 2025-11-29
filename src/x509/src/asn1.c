@@ -313,11 +313,21 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 
 #define ASN1_STACK_DEPTH 16
 
+typedef struct _asn1_stack_member
+{
+	void *start;
+	size_t pos;
+	size_t size;
+
+} asn1_stack_member;
+
 typedef struct _asn1_stack
 {
 	uint32_t top;
 	uint32_t size;
-	size_t *st;
+
+	asn1_stack_member *st;
+
 } asn1_stack;
 
 static asn1_stack *asn1_stack_new()
@@ -325,14 +335,14 @@ static asn1_stack *asn1_stack_new()
 	asn1_stack *stack = NULL;
 	uint32_t size = ASN1_STACK_DEPTH;
 
-	stack = malloc(sizeof(asn1_stack) + (sizeof(size_t) * size));
+	stack = malloc(sizeof(asn1_stack) + (sizeof(asn1_stack_member) * size));
 
 	if (stack == NULL)
 	{
 		return NULL;
 	}
 
-	memset(stack, 0, sizeof(asn1_stack) + (sizeof(size_t) * size));
+	memset(stack, 0, sizeof(asn1_stack) + (sizeof(asn1_stack_member) * size));
 
 	stack->size = size;
 	stack->st = PTR_OFFSET(stack, sizeof(asn1_stack));
@@ -345,31 +355,32 @@ static void asn1_stack_delete(asn1_stack *stack)
 	free(stack);
 }
 
-static size_t asn1_stack_top(asn1_stack *stack)
+static asn1_error_t asn1_stack_pop(asn1_stack *stack, asn1_stack_member *top)
 {
-	return stack->st[stack->top];
-}
+	uint32_t index = stack->top - 1;
 
-static asn1_error_t asn1_stack_pop(asn1_stack *stack)
-{
 	if (stack->top == 0)
 	{
 		return ASN1_STACK_OVERFLOW;
 	}
 
-	stack->st[stack->top--] = 0;
+	*top = stack->st[index];
+	stack->st[index] = (asn1_stack_member){0};
+
+	stack->top--;
 
 	return ASN1_SUCCESS;
 }
 
-static asn1_error_t asn1_stack_push(asn1_stack *stack, size_t value)
+static asn1_error_t asn1_stack_push(asn1_stack *stack, asn1_stack_member *element)
 {
 	if (stack->top == ASN1_STACK_DEPTH)
 	{
 		return ASN1_STACK_OVERFLOW;
 	}
 
-	stack->st[stack->top++] = value;
+	stack->st[stack->top] = *element;
+	stack->top++;
 
 	return ASN1_SUCCESS;
 }
@@ -435,34 +446,37 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 		return error;
 	}
 
-	error = asn1_stack_push(reader->stack, reader->size);
+	error = asn1_stack_push(reader->stack, &(asn1_stack_member){.start = reader->data, .pos = reader->pos, .size = reader->size});
 
 	if (error != ASN1_SUCCESS)
 	{
 		return error;
 	}
 
-	reader->data = PTR_OFFSET(reader->data, field.data_size);
-	reader->pos = 0;
-	reader->size = field.data_size;
+	reader->data = PTR_OFFSET(reader->data, reader->pos);
+	reader->pos = field.header_size;
+	reader->size = field.header_size + field.data_size;
 
 	return ASN1_SUCCESS;
 }
 
 asn1_error_t asn1_reader_pop(asn1_reader *reader)
 {
+	asn1_stack_member top = {0};
+
 	if (reader->pos != reader->size)
 	{
 		return ASN1_LENGTH_MISMATCH;
 	}
 
-	reader->size = asn1_stack_top(reader->stack);
-	reader->pos += reader->size;
-
-	if (asn1_stack_pop(reader->stack) != ASN1_SUCCESS)
+	if (asn1_stack_pop(reader->stack, &top) != ASN1_SUCCESS)
 	{
 		return ASN1_STACK_OVERFLOW;
 	}
+
+	reader->pos = top.pos + reader->size;
+	reader->size = top.size;
+	reader->data = top.start;
 
 	return ASN1_SUCCESS;
 }
