@@ -388,7 +388,9 @@ asn1_reader *asn1_reader_new(void *data, size_t size)
 	}
 
 	reader->stack = stack;
+	reader->start = data;
 	reader->data = data;
+	reader->pos = 0;
 	reader->size = size;
 
 	return reader;
@@ -403,5 +405,61 @@ void asn1_reader_delete(asn1_reader *reader)
 	}
 }
 
-asn1_error_t asn1_reader_push(byte_t type, byte_t context, byte_t flags);
-asn1_error_t asn1_reader_pop();
+asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, byte_t flags)
+{
+	asn1_error_t error = 0;
+	asn1_field field = {0};
+
+	if (context == 0)
+	{
+		error = asn1_field_read(&field, 0, type, 0, PTR_OFFSET(reader->data, reader->pos), reader->size);
+	}
+	else
+	{
+		error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->pos), reader->size);
+
+		if ((flags & ASN1_FLAG_IMPLICIT_TAG) == 0)
+		{
+		}
+		else
+		{
+			error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->pos), reader->size);
+		}
+	}
+
+	if (error != ASN1_SUCCESS)
+	{
+		return error;
+	}
+
+	error = asn1_stack_push(reader->stack, reader->size);
+
+	if (error != ASN1_SUCCESS)
+	{
+		return error;
+	}
+
+	reader->data = PTR_OFFSET(reader->data, field.size);
+	reader->pos = 0;
+	reader->size = field.size;
+
+	return ASN1_SUCCESS;
+}
+
+asn1_error_t asn1_reader_pop(asn1_reader *reader)
+{
+	if (reader->pos != reader->size)
+	{
+		return ASN1_LENGTH_MISMATCH;
+	}
+
+	reader->size = asn1_stack_top(reader->stack);
+	reader->pos += reader->size;
+
+	if (asn1_stack_pop(reader->stack) != ASN1_SUCCESS)
+	{
+		return ASN1_STACK_OVERFLOW;
+	}
+
+	return ASN1_SUCCESS;
+}
