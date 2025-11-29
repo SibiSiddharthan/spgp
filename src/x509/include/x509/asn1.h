@@ -51,7 +51,8 @@ typedef enum _asn1_type
 typedef struct _asn1_field
 {
 	byte_t tag;
-	size_t size;
+	byte_t header_size;
+	size_t data_size;
 	void *data;
 
 } asn1_field;

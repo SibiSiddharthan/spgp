@@ -58,7 +58,7 @@ static x509_error_t x509_certificate_parse_version(x509_certificate *certificate
 	ASN1_PARSE(asn1_field_read(&field, 0, 0, ASN1_FLAG_CONTEXT_TAG, in, &remaining));
 	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_INTEGER, 0, in, &remaining));
 
-	if (field.size > 1)
+	if (field.data_size > 1)
 	{
 		return X509_UNKNOWN_VERSION;
 	}
@@ -92,7 +92,7 @@ static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certi
 	msb = *(byte_t *)field.data;
 
 	// Check size
-	if (field.size > 20)
+	if (field.data_size > 20)
 	{
 		return X509_SERIAL_NUMBER_TOO_BIG;
 	}
@@ -105,13 +105,13 @@ static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certi
 
 	if (msb == 0)
 	{
-		memcpy(certificate->serial_number, PTR_OFFSET(field.data, 1), field.size - 1);
-		certificate->serial_number_size = field.size - 1;
+		memcpy(certificate->serial_number, PTR_OFFSET(field.data, 1), field.data_size - 1);
+		certificate->serial_number_size = field.data_size - 1;
 	}
 	else
 	{
-		memcpy(certificate->serial_number, field.data, field.size);
-		certificate->serial_number_size = field.size;
+		memcpy(certificate->serial_number, field.data, field.data_size);
+		certificate->serial_number_size = field.data_size;
 	}
 
 	// Check zero
@@ -135,7 +135,7 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 
 	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
 
-	certificate->signature_algorithm = x509_signature_oid_decode(field.data, field.size);
+	certificate->signature_algorithm = x509_signature_oid_decode(field.data, field.data_size);
 
 	if (certificate->signature_algorithm == X509_SIG_RESERVED)
 	{
@@ -147,14 +147,14 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 
 static x509_error_t x509_name_new(x509_name **name, void *attribute, size_t attribute_size, asn1_field *value)
 {
-	*name = malloc(sizeof(x509_name) + value->size);
+	*name = malloc(sizeof(x509_name) + value->data_size);
 
 	if (*name == NULL)
 	{
 		return X509_NO_MEMORY;
 	}
 
-	memset(*name, 0, sizeof(x509_name) + value->size);
+	memset(*name, 0, sizeof(x509_name) + value->data_size);
 
 	(*name)->attribute_type = x509_rdn_oid_decode(attribute, attribute_size);
 	(*name)->value_type = value->tag;
@@ -163,8 +163,8 @@ static x509_error_t x509_name_new(x509_name **name, void *attribute, size_t attr
 	(*name)->oid_size = attribute_size;
 
 	(*name)->value = PTR_OFFSET(*name, sizeof(x509_name));
-	(*name)->value_size = value->size;
-	memcpy((*name)->value, value->data, value->size);
+	(*name)->value_size = value->data_size;
+	memcpy((*name)->value, value->data, value->data_size);
 
 	return X509_SUCCESS;
 }
@@ -189,7 +189,7 @@ static x509_error_t x509_parse_name(x509_name **name, void *data, size_t *size)
 	ASN1_PARSE(asn1_field_read(&value, 0, 0, 0, in, &remaining));
 
 	// Create the name
-	X509_PARSE(x509_name_new(name, attribute.data, attribute.size, &value));
+	X509_PARSE(x509_name_new(name, attribute.data, attribute.data_size, &value));
 
 	return X509_SUCCESS;
 }
@@ -230,7 +230,7 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, void *data, size_t *size)
 static uint64_t x509_parse_validity_time(asn1_field *field)
 {
 	byte_t *data = field->data;
-	size_t size = field->size;
+	size_t size = field->data_size;
 	uint32_t offset = 0;
 
 	uint64_t epoch = 0;
@@ -241,7 +241,7 @@ static uint64_t x509_parse_validity_time(asn1_field *field)
 	uint32_t minute = 0;
 	uint32_t second = 0;
 
-	for (size_t i = 0; i + 1 < field->size; ++i)
+	for (size_t i = 0; i + 1 < field->data_size; ++i)
 	{
 		if (!IS_DIGIT(data[i]))
 		{
@@ -256,7 +256,7 @@ static uint64_t x509_parse_validity_time(asn1_field *field)
 
 	if (field->tag == ASN1_UTC_TIME)
 	{
-		if (field->size != 13)
+		if (field->data_size != 13)
 		{
 			return UINT64_MAX;
 		}
@@ -277,7 +277,7 @@ static uint64_t x509_parse_validity_time(asn1_field *field)
 
 	if (field->tag == ASN1_GENERAL_TIME)
 	{
-		if (field->size != 15)
+		if (field->data_size != 15)
 		{
 			return UINT64_MAX;
 		}

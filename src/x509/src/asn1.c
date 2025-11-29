@@ -16,9 +16,9 @@ static size_t asn1_required_header_size(asn1_field *field)
 {
 	size_t required_size = 2; // tag, length
 
-	if (field->size > 126)
+	if (field->data_size > 126)
 	{
-		size_t size = field->size;
+		size_t size = field->data_size;
 
 		do
 		{
@@ -142,15 +142,18 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 			return ASN1_INSUFFICIENT_DATA;
 		}
 
+		field->header_size = 1 + length;
+
 		for (byte_t i = 0; i < length; ++i)
 		{
-			field->size = (field->size << 8) + *in++;
+			field->data_size = (field->data_size << 8) + *in++;
 			pos += 1;
 		}
 	}
 	else
 	{
-		field->size = length;
+		field->header_size = 2;
+		field->data_size = length;
 	}
 
 	*size = pos;
@@ -168,7 +171,7 @@ static size_t asn1_header_write_checked(asn1_field *field, void *buffer)
 	pos += 1;
 
 	// Length
-	pos += asn1_encode_size(out, field->size);
+	pos += asn1_encode_size(out, field->data_size);
 
 	return pos;
 }
@@ -197,7 +200,7 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byt
 		return error;
 	}
 
-	if (*size - pos < field->size)
+	if (*size - pos < field->data_size)
 	{
 		return ASN1_INSUFFICIENT_DATA;
 	}
@@ -227,7 +230,7 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byt
 			{
 				// Implicit other types
 				field->data = PTR_OFFSET(data, pos);
-				pos += field->size;
+				pos += field->data_size;
 
 				goto end;
 			}
@@ -248,7 +251,7 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t context, byte_t type, byt
 	if (ASN1_PRIMITIVE_TAG(field->tag))
 	{
 		field->data = PTR_OFFSET(data, pos);
-		pos += field->size;
+		pos += field->data_size;
 	}
 
 end:
@@ -259,7 +262,7 @@ end:
 
 size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 {
-	size_t required_size = asn1_required_header_size(field) + field->size;
+	size_t required_size = field->header_size + field->data_size;
 	size_t pos = 0;
 
 	if (size < required_size)
@@ -286,8 +289,8 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 	case ASN1_UNIVERSAL_STRING:
 	case ASN1_BMP_STRING:
 	{
-		memcpy(PTR_OFFSET(buffer, pos), field->data, field->size);
-		pos += field->size;
+		memcpy(PTR_OFFSET(buffer, pos), field->data, field->data_size);
+		pos += field->data_size;
 	}
 	break;
 	case ASN1_UTC_TIME:
@@ -299,8 +302,8 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 		break;
 	default:
 	{
-		memcpy(PTR_OFFSET(buffer, pos), field->data, field->size);
-		pos += field->size;
+		memcpy(PTR_OFFSET(buffer, pos), field->data, field->data_size);
+		pos += field->data_size;
 	}
 	break;
 	}
@@ -439,9 +442,9 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 		return error;
 	}
 
-	reader->data = PTR_OFFSET(reader->data, field.size);
+	reader->data = PTR_OFFSET(reader->data, field.data_size);
 	reader->pos = 0;
-	reader->size = field.size;
+	reader->size = field.data_size;
 
 	return ASN1_SUCCESS;
 }
