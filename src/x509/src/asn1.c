@@ -83,7 +83,7 @@ static size_t asn1_encode_size(void *data, size_t size)
 	return pos + 1;
 }
 
-asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
+asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t size)
 {
 	byte_t *in = data;
 	size_t pos = 0;
@@ -93,7 +93,7 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 
 	memset(field, 0, sizeof(asn1_field));
 
-	if (*size < 2)
+	if (size < 2)
 	{
 		return ASN1_INSUFFICIENT_DATA;
 	}
@@ -115,7 +115,7 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 		field->tag = tag;
 	}
 
-	if (pos + 1 > *size)
+	if (pos + 1 > size)
 	{
 		return ASN1_INSUFFICIENT_DATA;
 	}
@@ -137,7 +137,7 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 			return ASN1_FIELD_LENGTH_TOO_BIG;
 		}
 
-		if (pos + length > *size)
+		if (pos + length > size)
 		{
 			return ASN1_INSUFFICIENT_DATA;
 		}
@@ -155,8 +155,6 @@ asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t *size)
 		field->header_size = 2;
 		field->data_size = length;
 	}
-
-	*size = pos;
 
 	return ASN1_SUCCESS;
 }
@@ -425,26 +423,53 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 	asn1_field field = {0};
 	asn1_stack_member frame = {.start = reader->data, .pos = reader->current_pos, .size = reader->current_size};
 
-	if (context == 0)
-	{
-		error = asn1_field_read(&field, type, 0, 0, PTR_OFFSET(reader->current_start, reader->current_pos), reader->current_size);
-	}
-	else
-	{
-		error = asn1_field_read(&field, 0, context, 0, PTR_OFFSET(reader->current_start, reader->current_pos), reader->current_size);
+	size_t wrapped_size = 0;
 
+	if (context)
+	{
 		if ((flags & ASN1_FLAG_IMPLICIT_TAG) == 0)
 		{
-		}
-		else
-		{
-			error = asn1_field_read(&field, 0, context, 0, PTR_OFFSET(reader->current_start, reader->current_pos), reader->current_size);
+			error = asn1_header_read(&field, PTR_OFFSET(reader->current_start, reader->current_pos),
+									 reader->current_size - reader->current_pos);
+
+			if (error != ASN1_SUCCESS)
+			{
+				return error;
+			}
+
+			wrapped_size = field.data_size;
+			reader->current_pos += field.header_size;
 		}
 	}
+
+	error = asn1_header_read(&field, PTR_OFFSET(reader->current_start, reader->current_pos), reader->current_size - reader->current_pos);
 
 	if (error != ASN1_SUCCESS)
 	{
 		return error;
+	}
+
+	if (wrapped_size != 0)
+	{
+		if (field.header_size + field.data_size != wrapped_size)
+		{
+			return ASN1_LENGTH_MISMATCH;
+		}
+	}
+
+	if (context == 0)
+	{
+		if (field.tag != ASN1_SEQUENCE && field.tag != ASN1_SET)
+		{
+			return ASN1_CONTEXT_MISMATCH;
+		}
+	}
+	else
+	{
+		if (field.tag != ((flags & (~ASN1_FLAG_IMPLICIT_TAG)) | context))
+		{
+			return ASN1_CONTEXT_MISMATCH;
+		}
 	}
 
 	error = asn1_stack_push(reader->stack, &frame);
