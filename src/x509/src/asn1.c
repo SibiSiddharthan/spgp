@@ -188,10 +188,10 @@ size_t asn1_header_write(asn1_field *field, void *buffer, size_t size)
 	return asn1_header_write_checked(field, buffer);
 }
 
-asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byte_t flags, void *data, size_t *size)
+asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byte_t flags, void *data, size_t size)
 {
 	asn1_error_t error = 0;
-	size_t pos = *size;
+	size_t pos = size;
 
 	error = asn1_header_read(field, data, &pos);
 
@@ -200,7 +200,7 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byt
 		return error;
 	}
 
-	if (*size - pos < field->data_size)
+	if (size - pos < field->data_size)
 	{
 		return ASN1_INSUFFICIENT_DATA;
 	}
@@ -255,8 +255,6 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byt
 	}
 
 end:
-	*size = pos;
-
 	return ASN1_SUCCESS;
 }
 
@@ -429,18 +427,18 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 
 	if (context == 0)
 	{
-		error = asn1_field_read(&field, 0, type, 0, PTR_OFFSET(reader->data, reader->current_pos), reader->current_size);
+		error = asn1_field_read(&field, type, 0, 0, PTR_OFFSET(reader->current_start, reader->current_pos), reader->current_size);
 	}
 	else
 	{
-		error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->current_pos), reader->current_size);
+		error = asn1_field_read(&field, 0, context, 0, PTR_OFFSET(reader->current_start, reader->current_pos), reader->current_size);
 
 		if ((flags & ASN1_FLAG_IMPLICIT_TAG) == 0)
 		{
 		}
 		else
 		{
-			error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->current_pos), reader->current_size);
+			error = asn1_field_read(&field, 0, context, 0, PTR_OFFSET(reader->current_start, reader->current_pos), reader->current_size);
 		}
 	}
 
