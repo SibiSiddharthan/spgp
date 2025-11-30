@@ -402,10 +402,12 @@ asn1_reader *asn1_reader_new(void *data, size_t size)
 	}
 
 	reader->stack = stack;
-	reader->start = data;
 	reader->data = data;
-	reader->pos = 0;
 	reader->size = size;
+
+	reader->current_start = data;
+	reader->current_pos = 0;
+	reader->current_size = size;
 
 	return reader;
 }
@@ -423,21 +425,22 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 {
 	asn1_error_t error = 0;
 	asn1_field field = {0};
+	asn1_stack_member frame = {.start = reader->data, .pos = reader->current_pos, .size = reader->current_size};
 
 	if (context == 0)
 	{
-		error = asn1_field_read(&field, 0, type, 0, PTR_OFFSET(reader->data, reader->pos), reader->size);
+		error = asn1_field_read(&field, 0, type, 0, PTR_OFFSET(reader->data, reader->current_pos), reader->current_size);
 	}
 	else
 	{
-		error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->pos), reader->size);
+		error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->current_pos), reader->current_size);
 
 		if ((flags & ASN1_FLAG_IMPLICIT_TAG) == 0)
 		{
 		}
 		else
 		{
-			error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->pos), reader->size);
+			error = asn1_field_read(&field, context, 0, 0, PTR_OFFSET(reader->data, reader->current_pos), reader->current_size);
 		}
 	}
 
@@ -446,16 +449,16 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 		return error;
 	}
 
-	error = asn1_stack_push(reader->stack, &(asn1_stack_member){.start = reader->data, .pos = reader->pos, .size = reader->size});
+	error = asn1_stack_push(reader->stack, &frame);
 
 	if (error != ASN1_SUCCESS)
 	{
 		return error;
 	}
 
-	reader->data = PTR_OFFSET(reader->data, reader->pos);
-	reader->pos = field.header_size;
-	reader->size = field.header_size + field.data_size;
+	reader->current_start = PTR_OFFSET(reader->current_start, reader->current_pos);
+	reader->current_pos = field.header_size;
+	reader->current_size = field.header_size + field.data_size;
 
 	return ASN1_SUCCESS;
 }
@@ -464,7 +467,7 @@ asn1_error_t asn1_reader_pop(asn1_reader *reader)
 {
 	asn1_stack_member top = {0};
 
-	if (reader->pos != reader->size)
+	if (reader->current_pos != reader->current_size)
 	{
 		return ASN1_LENGTH_MISMATCH;
 	}
@@ -474,9 +477,9 @@ asn1_error_t asn1_reader_pop(asn1_reader *reader)
 		return ASN1_STACK_OVERFLOW;
 	}
 
-	reader->pos = top.pos + reader->size;
-	reader->size = top.size;
-	reader->data = top.start;
+	reader->current_pos = top.pos + reader->current_size;
+	reader->current_size = top.size;
+	reader->current_start = top.start;
 
 	return ASN1_SUCCESS;
 }

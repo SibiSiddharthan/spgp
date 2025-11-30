@@ -66,11 +66,12 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size);
 typedef struct _asn1_reader
 {
 	void *stack;
-	void *start;
 	void *data;
-
-	size_t pos;
 	size_t size;
+
+	void *current_start;
+	size_t current_pos;
+	size_t current_size;
 
 } asn1_reader;
 
