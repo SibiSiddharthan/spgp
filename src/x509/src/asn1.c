@@ -189,16 +189,15 @@ size_t asn1_header_write(asn1_field *field, void *buffer, size_t size)
 asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byte_t flags, void *data, size_t size)
 {
 	asn1_error_t error = 0;
-	size_t pos = size;
 
-	error = asn1_header_read(field, data, &pos);
+	error = asn1_header_read(field, data, size);
 
 	if (error != ASN1_SUCCESS)
 	{
 		return error;
 	}
 
-	if (size - pos < field->data_size)
+	if (size < field->header_size + field->data_size)
 	{
 		return ASN1_INSUFFICIENT_DATA;
 	}
@@ -216,26 +215,6 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byt
 		{
 			return ASN1_CONTEXT_MISMATCH;
 		}
-
-		if (flags & ASN1_FLAG_IMPLICIT_TAG)
-		{
-			if (flags & ASN1_FLAG_CONSTRUCTED_TAG)
-			{
-				// Implicit sequence or set
-				goto end;
-			}
-			else
-			{
-				// Implicit other types
-				field->data = PTR_OFFSET(data, pos);
-				pos += field->data_size;
-
-				goto end;
-			}
-		}
-
-		// Unwrap the other header and return
-		goto end;
 	}
 
 	if (type != 0)
@@ -246,13 +225,8 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byt
 		}
 	}
 
-	if (ASN1_PRIMITIVE_TAG(field->tag))
-	{
-		field->data = PTR_OFFSET(data, pos);
-		pos += field->data_size;
-	}
+	field->data = PTR_OFFSET(data, field->header_size);
 
-end:
 	return ASN1_SUCCESS;
 }
 
@@ -503,6 +477,28 @@ asn1_error_t asn1_reader_pop(asn1_reader *reader)
 	reader->current_pos = top.pos + reader->current_size;
 	reader->current_size = top.size;
 	reader->current_start = top.start;
+
+	return ASN1_SUCCESS;
+}
+
+asn1_error_t asn1_reader_read(asn1_reader *reader, asn1_field *field, byte_t type, byte_t context, byte_t flags)
+{
+	asn1_error_t error = 0;
+
+	error = asn1_field_read(field, type, context, flags, PTR_OFFSET(reader->current_start, reader->current_pos),
+							reader->current_size - reader->current_pos);
+
+	if (error != ASN1_SUCCESS)
+	{
+		return error;
+	}
+
+	reader->current_pos += field->header_size;
+
+	if (ASN1_PRIMITIVE_TAG(field->tag))
+	{
+		reader->current_pos += field->data_size;
+	}
 
 	return ASN1_SUCCESS;
 }

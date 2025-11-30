@@ -81,6 +81,6 @@ void asn1_reader_delete(asn1_reader *reader);
 asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, byte_t flags);
 asn1_error_t asn1_reader_pop(asn1_reader *reader);
 
-asn1_error_t asn1_reader_read(asn1_reader *reader, asn1_field *field, byte_t context, byte_t type, byte_t flags);
+asn1_error_t asn1_reader_read(asn1_reader *reader, asn1_field *field, byte_t type, byte_t context, byte_t flags);
 
 #endif
