@@ -173,23 +173,59 @@ static x509_error_t x509_parse_name(x509_name **name, asn1_reader *reader)
 
 static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 {
+	x509_rdn *root = NULL;
+
+	root = malloc(sizeof(x509_rdn));
+
+	if (root == NULL)
+	{
+		return X509_NO_MEMORY;
+	}
+
+	memset(root, 0, sizeof(x509_rdn));
+	*names = root;
+
 	// RDNSequence Start
 	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
 
 	while (reader->current_pos < reader->current_size)
 	{
-		x509_name *name = NULL;
+		x509_name *level = NULL;
+		x509_name *current = NULL;
 
 		// Relatively Distinguised Name Start
 		ASN1_PARSE(asn1_reader_push(reader, ASN1_SET, 0, 0));
 
 		while (reader->current_pos < reader->current_size)
 		{
-			x509_parse_name(&name, reader);
+			x509_name *name = NULL;
+
+			X509_PARSE(x509_parse_name(&name, reader));
+
+			if (level == NULL)
+			{
+				level = name;
+				current = level;
+			}
+			else
+			{
+				current->next = name;
+				current = current->next;
+			}
 		}
 
 		// Relatively Distinguised Name End
 		ASN1_PARSE(asn1_reader_pop(reader));
+
+		root->name = level;
+		root->next = malloc(sizeof(x509_rdn));
+
+		if (root->next == NULL)
+		{
+			return X509_NO_MEMORY;
+		}
+
+		root = root->next;
 	}
 
 	// RDNSequence End
