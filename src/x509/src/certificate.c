@@ -47,12 +47,8 @@
 		}                                   \
 	}
 
-static x509_error_t x509_certificate_parse_version(x509_certificate *certificate, void *data, size_t *size)
+static x509_error_t x509_certificate_parse_version(x509_certificate *certificate, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	asn1_field field = {0};
 
 	ASN1_PARSE(asn1_field_read(&field, 0, 0, ASN1_FLAG_CONTEXT_TAG, in, &remaining));
@@ -76,12 +72,8 @@ static x509_error_t x509_certificate_parse_version(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certificate, void *data, size_t *size)
+static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certificate, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	byte_t msb = 0;
 	byte_t zero[20] = {0};
 
@@ -125,12 +117,8 @@ static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certi
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate, void *data, size_t *size)
+static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	asn1_field field = {0};
 
 	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
@@ -169,12 +157,8 @@ static x509_error_t x509_name_new(x509_name **name, void *attribute, size_t attr
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_parse_name(x509_name **name, void *data, size_t *size)
+static x509_error_t x509_parse_name(x509_name **name, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	asn1_field field = {0};
 	asn1_field attribute = {0};
 	asn1_field value = {0};
@@ -422,12 +406,8 @@ static uint64_t x509_parse_validity_time(asn1_field *field)
 	return epoch;
 }
 
-static x509_error_t x509_parse_certificate_validity(x509_certificate *certificate, void *data, size_t *size)
+static x509_error_t x509_parse_certificate_validity(x509_certificate *certificate, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	asn1_field field = {0};
 	asn1_field start = {0};
 	asn1_field end = {0};
@@ -462,12 +442,8 @@ static x509_error_t x509_parse_certificate_validity(x509_certificate *certificat
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *certificate, void *data, size_t *size)
+static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *certificate, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	asn1_field field = {0};
 
 	// TBS Certificate Sequence
@@ -496,12 +472,8 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_certificate_read_internal(x509_certificate *certificate, void *data, size_t *size)
+static x509_error_t x509_certificate_read_internal(x509_certificate *certificate, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	asn1_field field = {0};
 
 	// Certificate Sequence
@@ -516,26 +488,35 @@ static x509_error_t x509_certificate_read_internal(x509_certificate *certificate
 	return X509_SUCCESS;
 }
 
-x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, size_t *size)
+x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, size_t size)
 {
 	x509_error_t x509_error = 0;
+	asn1_reader *reader = NULL;
 
+	reader = asn1_reader_new(data, size);
 	*certificate = malloc(sizeof(x509_certificate));
 
-	if (*certificate == NULL)
+	if (*certificate == NULL || reader == NULL)
 	{
+		asn1_reader_delete(reader);
+		free(*certificate);
+
 		return X509_NO_MEMORY;
 	}
 
 	memset(*certificate, 0, sizeof(x509_certificate));
 
-	x509_error = x509_certificate_read_internal(*certificate, data, size);
+	x509_error = x509_certificate_read_internal(*certificate, reader);
 
 	if (x509_error != X509_SUCCESS)
 	{
+		asn1_reader_delete(reader);
 		free(*certificate);
+
 		return x509_error;
 	}
+
+	asn1_reader_delete(reader);
 
 	return X509_SUCCESS;
 }

@@ -130,7 +130,7 @@ typedef struct _x509_certificate_chain
 
 } x509_certificate_chain;
 
-x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, size_t *size);
+x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, size_t size);
 size_t x509_certificate_write(x509_certificate *certificate, uint32_t options, void *buffer, size_t size);
 
 x509_error_t x509_certificate_chain_read(x509_certificate **certificate, void *data, size_t *size);
