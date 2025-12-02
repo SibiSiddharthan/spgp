@@ -18,12 +18,7 @@
 
 #define ASN1_PARSE(EXPR)                                \
 	{                                                   \
-		asn1_error_t __asn1_error = 0;                  \
-                                                        \
-		__asn1_error = (EXPR);                          \
-		pos += remaining;                               \
-		in += pos;                                      \
-		remaining = *size - pos;                        \
+		asn1_error_t __asn1_error = (EXPR);             \
                                                         \
 		if (__asn1_error != ASN1_SUCCESS)               \
 		{                                               \
