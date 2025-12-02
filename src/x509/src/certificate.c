@@ -46,8 +46,8 @@ static x509_error_t x509_certificate_parse_version(x509_certificate *certificate
 {
 	asn1_field field = {0};
 
-	ASN1_PARSE(asn1_field_read(&field, 0, 0, ASN1_FLAG_CONTEXT_TAG, in, &remaining));
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_INTEGER, 0, in, &remaining));
+	ASN1_PARSE(asn1_reader_read(reader, &field, 0, 0, ASN1_FLAG_CONTEXT_TAG));
+	ASN1_PARSE(asn1_reader_read(reader, &field, ASN1_INTEGER, 0, 0));
 
 	if (field.data_size > 1)
 	{
@@ -62,8 +62,6 @@ static x509_error_t x509_certificate_parse_version(x509_certificate *certificate
 		return X509_UNKNOWN_VERSION;
 	}
 
-	*size = remaining;
-
 	return X509_SUCCESS;
 }
 
@@ -74,7 +72,7 @@ static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certi
 
 	asn1_field field = {0};
 
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_INTEGER, 0, in, &remaining));
+	ASN1_PARSE(asn1_reader_read(reader, &field, ASN1_INTEGER, 0, 0));
 
 	msb = *(byte_t *)field.data;
 
@@ -107,8 +105,6 @@ static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certi
 		return X509_SERIAL_NUMBER_ZERO;
 	}
 
-	*size = remaining;
-
 	return X509_SUCCESS;
 }
 
@@ -116,7 +112,7 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 {
 	asn1_field field = {0};
 
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+	ASN1_PARSE(asn1_reader_read(reader, &field, ASN1_OBJECT_IDENTIFIER, 0, 0));
 
 	certificate->signature_algorithm = x509_signature_oid_decode(field.data, field.data_size);
 
@@ -159,13 +155,13 @@ static x509_error_t x509_parse_name(x509_name **name, asn1_reader *reader)
 	asn1_field value = {0};
 
 	// Attribute
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+	// ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
 
 	// Type
-	ASN1_PARSE(asn1_field_read(&attribute, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
+	// ASN1_PARSE(asn1_field_read(&attribute, 0, ASN1_OBJECT_IDENTIFIER, 0, in, &remaining));
 
 	// Value
-	ASN1_PARSE(asn1_field_read(&value, 0, 0, 0, in, &remaining));
+	// ASN1_PARSE(asn1_field_read(&value, 0, 0, 0, in, &remaining));
 
 	// Create the name
 	X509_PARSE(x509_name_new(name, attribute.data, attribute.data_size, &value));
@@ -173,18 +169,14 @@ static x509_error_t x509_parse_name(x509_name **name, asn1_reader *reader)
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_parse_rdn(x509_rdn **names, void *data, size_t *size)
+static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 {
-	byte_t *in = data;
-	size_t pos = 0;
-	size_t remaining = *size;
-
 	asn1_field field = {0};
 
 	// RDNSequence
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+	// ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
 
-	while (pos < remaining)
+	// while (pos < remaining)
 	{
 		x509_name *name = NULL;
 
@@ -192,11 +184,11 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, void *data, size_t *size)
 		size_t inner_pos = 0;
 
 		// Relatively Distinguised Name
-		ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SET, 0, in, &inner_remaining));
+		// ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SET, 0, in, &inner_remaining));
 
 		while (inner_pos < inner_remaining)
 		{
-			x509_parse_name(&name, in, 0);
+			// x509_parse_name(&name, in, 0);
 		}
 	}
 
@@ -403,18 +395,20 @@ static uint64_t x509_parse_validity_time(asn1_field *field)
 
 static x509_error_t x509_parse_certificate_validity(x509_certificate *certificate, asn1_reader *reader)
 {
-	asn1_field field = {0};
 	asn1_field start = {0};
 	asn1_field end = {0};
 
-	// Validity Sequence
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+	// Validity Sequence Start
+	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
 
 	// Validity Start (Not Before)
-	ASN1_PARSE(asn1_field_read(&start, 0, 0, 0, in, &remaining));
+	ASN1_PARSE(asn1_reader_read(reader, &start, 0, 0, 0));
 
 	// Validity End (Not After)
-	ASN1_PARSE(asn1_field_read(&end, 0, 0, 0, in, &remaining));
+	ASN1_PARSE(asn1_reader_read(reader, &end, 0, 0, 0));
+
+	// Validity Sequence End
+	ASN1_PARSE(asn1_reader_pop(reader));
 
 	if ((start.tag != ASN1_UTC_TIME && start.tag != ASN1_GENERAL_TIME) || (end.tag != ASN1_UTC_TIME && end.tag != ASN1_GENERAL_TIME))
 	{
@@ -439,46 +433,46 @@ static x509_error_t x509_parse_certificate_validity(x509_certificate *certificat
 
 static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *certificate, asn1_reader *reader)
 {
-	asn1_field field = {0};
-
-	// TBS Certificate Sequence
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+	// TBS Certificate Sequence Start
+	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
 
 	// TBS Certificate Version
-	X509_PARSE(x509_certificate_parse_version(certificate, in, &remaining));
+	X509_PARSE(x509_certificate_parse_version(certificate, reader));
 
 	// TBS Certificate Serial Number
-	X509_PARSE(x509_certificate_parse_serial_number(certificate, in, &remaining));
+	X509_PARSE(x509_certificate_parse_serial_number(certificate, reader));
 
 	// TBS Signature Algorithm
-	X509_PARSE(x509_parse_signature_algorithm(certificate, in, &remaining));
+	X509_PARSE(x509_parse_signature_algorithm(certificate, reader));
 
 	// TBS Certificate Issuer
-	X509_PARSE(x509_parse_rdn(&certificate->issuer, in, &remaining));
+	X509_PARSE(x509_parse_rdn(&certificate->issuer, reader));
 
 	// TBS Certificate Validity
-	X509_PARSE(x509_parse_certificate_validity(certificate, in, &remaining));
+	X509_PARSE(x509_parse_certificate_validity(certificate, reader));
 
 	// TBS Certificate Subject
-	X509_PARSE(x509_parse_rdn(&certificate->subject, in, &remaining));
+	X509_PARSE(x509_parse_rdn(&certificate->subject, reader));
 
-	*size = remaining;
+	// TBS Certificate Sequence End
+	ASN1_PARSE(asn1_reader_pop(reader));
 
 	return X509_SUCCESS;
 }
 
 static x509_error_t x509_certificate_read_internal(x509_certificate *certificate, asn1_reader *reader)
 {
-	asn1_field field = {0};
-
-	// Certificate Sequence
-	ASN1_PARSE(asn1_field_read(&field, 0, ASN1_SEQUENCE, 0, in, &remaining));
+	// Certificate Sequence Start
+	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
 
 	// TBS Certificate
-	X509_PARSE(x509_certificate_parse_tbs_certificate(certificate, data, &remaining));
+	X509_PARSE(x509_certificate_parse_tbs_certificate(certificate, reader));
 
 	// Signature Algorithm
-	X509_PARSE(x509_parse_signature_algorithm(certificate, in, &remaining));
+	X509_PARSE(x509_parse_signature_algorithm(certificate, reader));
+
+	// Certificate Sequence End
+	ASN1_PARSE(asn1_reader_pop(reader));
 
 	return X509_SUCCESS;
 }
