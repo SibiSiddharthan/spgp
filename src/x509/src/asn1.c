@@ -305,14 +305,12 @@ static asn1_stack *asn1_stack_new()
 	asn1_stack *stack = NULL;
 	uint32_t size = ASN1_STACK_DEPTH;
 
-	stack = malloc(sizeof(asn1_stack) + (sizeof(asn1_stack_member) * size));
+	stack = zmalloc(sizeof(asn1_stack) + (sizeof(asn1_stack_member) * size));
 
 	if (stack == NULL)
 	{
 		return NULL;
 	}
-
-	memset(stack, 0, sizeof(asn1_stack) + (sizeof(asn1_stack_member) * size));
 
 	stack->size = size;
 	stack->st = PTR_OFFSET(stack, sizeof(asn1_stack));
@@ -322,7 +320,7 @@ static asn1_stack *asn1_stack_new()
 
 static void asn1_stack_delete(asn1_stack *stack)
 {
-	free(stack);
+	zfree(stack);
 }
 
 static asn1_error_t asn1_stack_pop(asn1_stack *stack, asn1_stack_member *top)
@@ -360,13 +358,13 @@ asn1_reader *asn1_reader_new(void *data, size_t size)
 	asn1_reader *reader = NULL;
 	asn1_stack *stack = NULL;
 
-	reader = malloc(sizeof(asn1_reader));
+	reader = zmalloc(sizeof(asn1_reader));
 	stack = asn1_stack_new();
 
 	if (reader == NULL || stack == NULL)
 	{
-		free(reader);
-		free(stack);
+		zfree(reader);
+		zfree(stack);
 
 		return NULL;
 	}
@@ -386,8 +384,8 @@ void asn1_reader_delete(asn1_reader *reader)
 {
 	if (reader != NULL)
 	{
-		free(reader->stack);
-		free(reader);
+		zfree(reader->stack);
+		zfree(reader);
 	}
 }
 

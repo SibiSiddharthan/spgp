@@ -8,11 +8,9 @@
 #include <x509/x509.h>
 #include <x509/asn1.h>
 #include <x509/oid.h>
+#include <x509/memory.h>
 
 #include <ptr.h>
-
-#include <stdlib.h>
-#include <string.h>
 
 // Refer RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
 
@@ -126,14 +124,12 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 
 static x509_error_t x509_name_new(x509_name **name, asn1_field *type, asn1_field *value)
 {
-	*name = malloc(sizeof(x509_name) + value->data_size);
+	*name = zmalloc(sizeof(x509_name) + value->data_size);
 
 	if (*name == NULL)
 	{
 		return X509_NO_MEMORY;
 	}
-
-	memset(*name, 0, sizeof(x509_name) + value->data_size);
 
 	(*name)->attribute_type = x509_rdn_oid_decode(type->data, type->data_size);
 	(*name)->value_type = value->tag;
@@ -175,14 +171,13 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 {
 	x509_rdn *root = NULL;
 
-	root = malloc(sizeof(x509_rdn));
+	root = zmalloc(sizeof(x509_rdn));
 
 	if (root == NULL)
 	{
 		return X509_NO_MEMORY;
 	}
 
-	memset(root, 0, sizeof(x509_rdn));
 	*names = root;
 
 	// RDNSequence Start
@@ -218,7 +213,7 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 		ASN1_PARSE(asn1_reader_pop(reader));
 
 		root->name = level;
-		root->next = malloc(sizeof(x509_rdn));
+		root->next = zmalloc(sizeof(x509_rdn));
 
 		if (root->next == NULL)
 		{
@@ -522,7 +517,7 @@ x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, s
 	asn1_reader *reader = NULL;
 
 	reader = asn1_reader_new(data, size);
-	*certificate = malloc(sizeof(x509_certificate));
+	*certificate = zmalloc(sizeof(x509_certificate));
 
 	if (*certificate == NULL || reader == NULL)
 	{
@@ -531,8 +526,6 @@ x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, s
 
 		return X509_NO_MEMORY;
 	}
-
-	memset(*certificate, 0, sizeof(x509_certificate));
 
 	x509_error = x509_certificate_read_internal(*certificate, reader);
 
