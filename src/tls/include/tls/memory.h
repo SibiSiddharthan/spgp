@@ -43,4 +43,9 @@ static inline void *zrealloc(void *old, size_t size)
 	return mem;
 }
 
+static inline void zfree(void *mem)
+{
+	free(mem);
+}
+
 #endif
