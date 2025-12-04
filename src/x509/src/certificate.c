@@ -541,3 +541,74 @@ x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, s
 
 	return X509_SUCCESS;
 }
+
+x509_certificate_chain *x509_certificate_chain_new(uint32_t capacity)
+{
+	x509_certificate_chain *chain = NULL;
+	x509_certificate *certificates = NULL;
+
+	// Round to multiple of 4
+	capacity = ROUND_UP(MAX(capacity, 1), 4);
+
+	chain = zmalloc(sizeof(x509_certificate_chain));
+	certificates = zmalloc(sizeof(void *) * capacity);
+
+	if (chain == NULL || certificates == NULL)
+	{
+		zfree(chain);
+		zfree(certificates);
+
+		return NULL;
+	}
+
+	chain->capacity = capacity;
+	chain->certificates = certificates;
+
+	return chain;
+}
+
+void x509_certificate_chain_delete(x509_certificate_chain *chain)
+{
+	if (chain == NULL)
+	{
+		return;
+	}
+
+	for (uint32_t i = 0; i < chain->count; ++i)
+	{
+		chain->certificates[i] = NULL;
+	}
+}
+
+x509_certificate_chain *x509_certificate_chain_push(x509_certificate_chain *chain, x509_certificate *certificate)
+{
+	x509_certificate *temp = NULL;
+
+	if (chain == NULL)
+	{
+		chain = x509_certificate_chain_new(4);
+
+		if (chain == NULL)
+		{
+			return NULL;
+		}
+	}
+
+	if (chain->count == chain->capacity)
+	{
+		chain->capacity *= 2;
+		temp = zrealloc(chain->certificates, sizeof(void *) * chain->capacity);
+
+		if (temp == NULL)
+		{
+			return NULL;
+		}
+
+		chain->certificates = temp;
+	}
+
+	chain->certificates[chain->count] = certificate;
+	chain->count += 1;
+
+	return chain;
+}
