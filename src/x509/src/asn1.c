@@ -6,8 +6,7 @@
 */
 
 #include <x509/asn1.h>
-#include <stdlib.h>
-#include <string.h>
+#include <x509/memory.h>
 
 #include <ptr.h>
 #include <minmax.h>

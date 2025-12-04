@@ -11,6 +11,8 @@
 #include <x509/memory.h>
 
 #include <ptr.h>
+#include <round.h>
+#include <minmax.h>
 
 // Refer RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
 
@@ -545,7 +547,7 @@ x509_error_t x509_certificate_read(x509_certificate **certificate, void *data, s
 x509_certificate_chain *x509_certificate_chain_new(uint32_t capacity)
 {
 	x509_certificate_chain *chain = NULL;
-	x509_certificate *certificates = NULL;
+	x509_certificate **certificates = NULL;
 
 	// Round to multiple of 4
 	capacity = ROUND_UP(MAX(capacity, 1), 4);
@@ -582,7 +584,7 @@ void x509_certificate_chain_delete(x509_certificate_chain *chain)
 
 x509_certificate_chain *x509_certificate_chain_push(x509_certificate_chain *chain, x509_certificate *certificate)
 {
-	x509_certificate *temp = NULL;
+	x509_certificate **temp = NULL;
 
 	if (chain == NULL)
 	{
@@ -611,4 +613,58 @@ x509_certificate_chain *x509_certificate_chain_push(x509_certificate_chain *chai
 	chain->count += 1;
 
 	return chain;
+}
+
+x509_error_t x509_certificate_chain_read(x509_certificate_chain **chain, void *data, size_t size)
+{
+	x509_error_t error = X509_NO_MEMORY;
+	asn1_reader *reader = NULL;
+
+	*chain = x509_certificate_chain_new(4);
+	reader = asn1_reader_new(data, size);
+
+	if (*chain == NULL || reader == NULL)
+	{
+		goto no_memory;
+	}
+
+	while (reader->current_pos < reader->current_size)
+	{
+		void *result = NULL;
+		x509_certificate *certificate = zmalloc(sizeof(x509_certificate));
+
+		error = 0;
+
+		if (certificate == NULL)
+		{
+			goto no_memory;
+		}
+
+		error = x509_certificate_read_internal(certificate, reader);
+
+		if (error != X509_SUCCESS)
+		{
+			goto fail;
+		}
+
+		result = x509_certificate_chain_push(*chain, certificate);
+
+		if (result == NULL)
+		{
+			goto no_memory;
+		}
+	}
+
+	asn1_reader_delete(reader);
+
+	return X509_SUCCESS;
+
+no_memory:
+	error = X509_NO_MEMORY;
+
+fail:
+	x509_certificate_chain_delete(*chain);
+	asn1_reader_delete(reader);
+
+	return error;
 }
