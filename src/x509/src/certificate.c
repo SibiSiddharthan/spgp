@@ -126,6 +126,12 @@ static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate
 
 static x509_error_t x509_name_new(x509_name **name, asn1_field *type, asn1_field *value)
 {
+	if (value->tag != ASN1_TELETEX_STRING && value->tag != ASN1_PRINTABLE_STRING && value->tag != ASN1_UNIVERSAL_STRING &&
+		value->tag != ASN1_UTF8_STRING && value->tag != ASN1_BMP_STRING)
+	{
+		return X509_UNKNOWN_DIRECTORY_STRING_TYPE;
+	}
+
 	*name = zmalloc(sizeof(x509_name) + value->data_size);
 
 	if (*name == NULL)
