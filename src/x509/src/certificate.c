@@ -191,7 +191,7 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 	// RDNSequence Start
 	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
 
-	while (reader->current_pos < reader->current_size)
+	while (asn1_reader_pending(reader))
 	{
 		x509_name *level = NULL;
 		x509_name *current = NULL;
@@ -199,7 +199,7 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 		// Relatively Distinguised Name Start
 		ASN1_PARSE(asn1_reader_push(reader, ASN1_SET, 0, 0));
 
-		while (reader->current_pos < reader->current_size)
+		while (asn1_reader_pending(reader))
 		{
 			x509_name *name = NULL;
 
@@ -634,7 +634,7 @@ x509_error_t x509_certificate_chain_read(x509_certificate_chain **chain, void *d
 		goto no_memory;
 	}
 
-	while (reader->current_pos < reader->current_size)
+	while (asn1_reader_pending(reader))
 	{
 		void *result = NULL;
 		x509_certificate *certificate = zmalloc(sizeof(x509_certificate));
