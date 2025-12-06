@@ -383,7 +383,7 @@ void asn1_reader_delete(asn1_reader *reader)
 {
 	if (reader != NULL)
 	{
-		zfree(reader->stack);
+		asn1_stack_delete(reader->stack);
 		zfree(reader);
 	}
 }
