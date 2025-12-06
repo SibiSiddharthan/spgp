@@ -430,7 +430,7 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 
 	if (context == 0)
 	{
-		if (field.tag != ASN1_SEQUENCE && field.tag != ASN1_SET)
+		if (type != field.tag)
 		{
 			return ASN1_CONTEXT_MISMATCH;
 		}
