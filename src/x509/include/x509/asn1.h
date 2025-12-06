@@ -83,4 +83,9 @@ asn1_error_t asn1_reader_pop(asn1_reader *reader);
 
 asn1_error_t asn1_reader_read(asn1_reader *reader, asn1_field *field, byte_t type, byte_t context, byte_t flags);
 
+static inline uint32_t asn1_reader_pending(asn1_reader *reader)
+{
+	return reader->current_pos < reader->current_size;
+}
+
 #endif
