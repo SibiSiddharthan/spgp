@@ -239,12 +239,35 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 
 static asn1_error_t asn1_parse_octet_string(x509_uid **uid, asn1_field *field)
 {
-	uint8_t unused_bits = ((byte_t *)field->data)[0];
+	x509_uid *octets = NULL;
+	uint32_t unused_bits = ((byte_t *)field->data)[0];
+	uint32_t used_bits = ((field->data_size - 1) * 8) - unused_bits;
 
 	if (unused_bits > 8)
 	{
-		return X509_INVALID_CERTIFICATE;
+		return ASN1_INVALID_OCTET_STRING;
 	}
+
+	if (field->data_size < 2)
+	{
+		return ASN1_INVALID_OCTET_STRING;
+	}
+
+	octets = zmalloc(sizeof(x509_uid) + (field->data_size - 1));
+
+	if (octets == NULL)
+	{
+		return ASN1_INVALID_OCTET_STRING;
+	}
+
+	octets->bits = used_bits;
+	octets->data = PTR_OFFSET(octets, sizeof(x509_uid));
+
+	memcpy(octets->data, PTR_OFFSET(field->data, 1), field->data_size - 1);
+
+	*uid = octets;
+
+	return ASN1_SUCCESS;
 }
 
 static x509_error_t x509_parse_uid(x509_uid **uid, asn1_reader *reader, uint32_t context)
@@ -262,7 +285,7 @@ static x509_error_t x509_parse_uid(x509_uid **uid, asn1_reader *reader, uint32_t
 
 	if (field.tag == (ASN1_FLAG_CONTEXT_TAG | context))
 	{
-		error = x509_parse_octet_string(uid, &field);
+		error = asn1_parse_octet_string(uid, &field);
 
 		if (error != ASN1_SUCCESS)
 		{
@@ -533,10 +556,10 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 	X509_PARSE(x509_parse_rdn(&certificate->subject_rdn, reader));
 
 	// TBS Issuer Unique ID
-	X509_PARSE(x509_parse_uid(certificate->issuer_uid, reader, 1));
+	X509_PARSE(x509_parse_uid(&certificate->issuer_uid, reader, 1));
 
 	// TBS Subject Unique ID
-	X509_PARSE(x509_parse_uid(certificate->subject_uid, reader, 2));
+	X509_PARSE(x509_parse_uid(&certificate->subject_uid, reader, 2));
 
 	// TBS Certificate Sequence End
 	ASN1_PARSE(asn1_reader_pop(reader));
