@@ -27,6 +27,11 @@
 				return X509_INSUFFICIENT_DATA;          \
 			}                                           \
                                                         \
+			if (__asn1_error == ASN1_NO_MEMEORY)        \
+			{                                           \
+				return X509_NO_MEMORY;                  \
+			}                                           \
+                                                        \
 			return X509_INVALID_CERTIFICATE;            \
 		}                                               \
 	}
@@ -257,7 +262,7 @@ static asn1_error_t asn1_parse_octet_string(x509_uid **uid, asn1_field *field)
 
 	if (octets == NULL)
 	{
-		return ASN1_INVALID_OCTET_STRING;
+		return ASN1_NO_MEMEORY;
 	}
 
 	octets->bits = used_bits;
