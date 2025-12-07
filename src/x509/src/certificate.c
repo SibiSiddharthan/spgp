@@ -242,7 +242,7 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 	return X509_SUCCESS;
 }
 
-static asn1_error_t asn1_parse_octet_string(x509_uid **uid, asn1_field *field)
+static asn1_error_t asn1_parse_bit_string(x509_uid **uid, asn1_field *field)
 {
 	x509_uid *octets = NULL;
 	uint32_t unused_bits = ((byte_t *)field->data)[0];
@@ -290,7 +290,7 @@ static x509_error_t x509_parse_uid(x509_uid **uid, asn1_reader *reader, uint32_t
 
 	if (field.tag == (ASN1_FLAG_CONTEXT_TAG | context))
 	{
-		error = asn1_parse_octet_string(uid, &field);
+		error = asn1_parse_bit_string(uid, &field);
 
 		if (error != ASN1_SUCCESS)
 		{
