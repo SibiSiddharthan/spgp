@@ -103,6 +103,13 @@ typedef struct _x509_rdn
 	struct _x509_rdn *next;
 } x509_rdn;
 
+typedef struct _x509_uid
+{
+	size_t bits;
+	void *data;
+
+} x509_uid;
+
 typedef struct _x509_certificate
 {
 	byte_t version;
@@ -114,8 +121,11 @@ typedef struct _x509_certificate
 
 	byte_t signature_algorithm;
 
-	x509_rdn *issuer;
-	x509_rdn *subject;
+	x509_rdn *issuer_rdn;
+	x509_rdn *subject_rdn;
+
+	x509_uid *issuer_uid;
+	x509_uid *subject_uid;
 
 	void **extensions;
 

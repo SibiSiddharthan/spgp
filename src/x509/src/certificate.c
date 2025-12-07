@@ -237,6 +237,10 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_uid(x509_uid **uid, asn1_reader *reader)
+{
+}
+
 #define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
 #define TO_DIGIT(x) ((x) - '0')
 
@@ -488,13 +492,19 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 	X509_PARSE(x509_parse_signature_algorithm(certificate, reader));
 
 	// TBS Certificate Issuer
-	X509_PARSE(x509_parse_rdn(&certificate->issuer, reader));
+	X509_PARSE(x509_parse_rdn(&certificate->issuer_rdn, reader));
 
 	// TBS Certificate Validity
 	X509_PARSE(x509_parse_certificate_validity(certificate, reader));
 
 	// TBS Certificate Subject
-	X509_PARSE(x509_parse_rdn(&certificate->subject, reader));
+	X509_PARSE(x509_parse_rdn(&certificate->subject_rdn, reader));
+
+	// TBS Issuer Unique ID
+	X509_PARSE(x509_parse_uid(&certificate->issuer_uid, reader));
+
+	// TBS Subject Unique ID
+	X509_PARSE(x509_parse_uid(&certificate->subject_uid, reader));
 
 	// TBS Certificate Sequence End
 	ASN1_PARSE(asn1_reader_pop(reader));
