@@ -237,8 +237,40 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_parse_uid(x509_uid **uid, asn1_reader *reader)
+static asn1_error_t asn1_parse_octet_string(x509_uid **uid, asn1_field *field)
 {
+	uint8_t unused_bits = ((byte_t *)field->data)[0];
+
+	if (unused_bits > 8)
+	{
+		return X509_INVALID_CERTIFICATE;
+	}
+}
+
+static x509_error_t x509_parse_uid(x509_uid **uid, asn1_reader *reader, uint32_t context)
+{
+	asn1_error_t error = 0;
+	asn1_field field = {0};
+
+	error = asn1_reader_read(reader, &field, 0, 0, 0);
+
+	if (error == ASN1_INSUFFICIENT_DATA)
+	{
+		// Optional field
+		return X509_SUCCESS;
+	}
+
+	if (field.tag == (ASN1_FLAG_CONTEXT_TAG | context))
+	{
+		error = x509_parse_octet_string(uid, &field);
+
+		if (error != ASN1_SUCCESS)
+		{
+			return X509_INVALID_CERTIFICATE;
+		}
+	}
+
+	return X509_SUCCESS;
 }
 
 #define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
@@ -501,10 +533,10 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 	X509_PARSE(x509_parse_rdn(&certificate->subject_rdn, reader));
 
 	// TBS Issuer Unique ID
-	X509_PARSE(x509_parse_uid(&certificate->issuer_uid, reader));
+	X509_PARSE(x509_parse_uid(certificate->issuer_uid, reader, 1));
 
 	// TBS Subject Unique ID
-	X509_PARSE(x509_parse_uid(&certificate->subject_uid, reader));
+	X509_PARSE(x509_parse_uid(certificate->subject_uid, reader, 2));
 
 	// TBS Certificate Sequence End
 	ASN1_PARSE(asn1_reader_pop(reader));
