@@ -203,7 +203,7 @@ asn1_error_t asn1_field_read(asn1_field *field, byte_t type, byte_t context, byt
 
 	if (flags)
 	{
-		byte_t tag = (flags & (~ASN1_FLAG_IMPLICIT_TAG)) | context;
+		byte_t tag = (flags & (~(ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL))) | context;
 
 		if ((flags & ASN1_FLAG_IMPLICIT_TAG) == 0)
 		{
@@ -437,7 +437,7 @@ asn1_error_t asn1_reader_push(asn1_reader *reader, byte_t type, byte_t context, 
 	}
 	else
 	{
-		if (field.tag != ((flags & (~ASN1_FLAG_IMPLICIT_TAG)) | context))
+		if (field.tag != ((flags & (~(ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL))) | context))
 		{
 			return ASN1_CONTEXT_MISMATCH;
 		}
@@ -487,6 +487,11 @@ asn1_error_t asn1_reader_read(asn1_reader *reader, asn1_field *field, byte_t typ
 
 	if (error != ASN1_SUCCESS)
 	{
+		if (flags & ASN1_FLAG_OPTIONAL)
+		{
+			return ASN1_SUCCESS;
+		}
+
 		return error;
 	}
 
