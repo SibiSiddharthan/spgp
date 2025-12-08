@@ -280,15 +280,9 @@ static x509_error_t x509_parse_uid(x509_certificate *certificate, x509_uid **uid
 	asn1_error_t error = 0;
 	asn1_field field = {0};
 
-	error = asn1_reader_read(reader, &field, 0, 0, 0);
+	error = asn1_reader_read(reader, &field, 0, context, ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL);
 
-	if (error == ASN1_INSUFFICIENT_DATA)
-	{
-		// Optional field
-		return X509_SUCCESS;
-	}
-
-	if (field.tag == (ASN1_FLAG_CONTEXT_TAG | context))
+	if (error == ASN1_SUCCESS)
 	{
 		// The unique identifiers should only present in V2 and V3 certificates.
 		if (certificate->version == X509_CERTIFICATE_V1)
