@@ -113,22 +113,6 @@ static x509_error_t x509_certificate_parse_serial_number(x509_certificate *certi
 	return X509_SUCCESS;
 }
 
-static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate, asn1_reader *reader)
-{
-	asn1_field field = {0};
-
-	ASN1_PARSE(asn1_reader_read(reader, &field, ASN1_OBJECT_IDENTIFIER, 0, 0));
-
-	certificate->signature_algorithm = x509_signature_oid_decode(field.data, field.data_size);
-
-	if (certificate->signature_algorithm == X509_SIG_RESERVED)
-	{
-		return X509_UNKNOWN_SIGNATURE_ALGORITHM;
-	}
-
-	return X509_SUCCESS;
-}
-
 static x509_error_t x509_name_new(x509_name **name, asn1_field *type, asn1_field *value)
 {
 	if (value->tag != ASN1_TELETEX_STRING && value->tag != ASN1_PRINTABLE_STRING && value->tag != ASN1_UNIVERSAL_STRING &&
@@ -566,6 +550,32 @@ static x509_error_t x509_parse_certificate_validity(x509_certificate *certificat
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_signature_algorithm(x509_certificate *certificate, asn1_reader *reader)
+{
+	asn1_field field = {0};
+
+	ASN1_PARSE(asn1_reader_read(reader, &field, ASN1_OBJECT_IDENTIFIER, 0, 0));
+
+	certificate->signature_algorithm = x509_signature_oid_decode(field.data, field.data_size);
+
+	if (certificate->signature_algorithm == X509_SIG_RESERVED)
+	{
+		return X509_UNKNOWN_SIGNATURE_ALGORITHM;
+	}
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_parse_signature_value(x509_certificate *certificate, asn1_reader *reader)
+{
+	asn1_field field = {0};
+
+	ASN1_PARSE(asn1_reader_read(reader, &field, ASN1_BIT_STRING, 0, 0));
+	ASN1_PARSE(asn1_parse_bit_string(&certificate->signature, &field));
+
+	return X509_SUCCESS;
+}
+
 static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *certificate, asn1_reader *reader)
 {
 	// TBS Certificate Sequence Start
@@ -614,6 +624,9 @@ static x509_error_t x509_certificate_read_internal(x509_certificate *certificate
 
 	// Signature Algorithm
 	X509_PARSE(x509_parse_signature_algorithm(certificate, reader));
+
+	// Signature Value
+	X509_PARSE(x509_parse_signature_value(certificate, reader));
 
 	// Certificate Sequence End
 	ASN1_PARSE(asn1_reader_pop(reader));

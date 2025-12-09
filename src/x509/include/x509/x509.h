@@ -127,6 +127,8 @@ typedef struct _x509_certificate
 	x509_uid *issuer_uid;
 	x509_uid *subject_uid;
 
+	void *signature;
+
 	void **extensions;
 
 } x509_certificate;
