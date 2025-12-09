@@ -301,6 +301,35 @@ static x509_error_t x509_parse_uid(x509_certificate *certificate, x509_uid **uid
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_reader *reader)
+{
+	asn1_error_t error = 0;
+	asn1_field field = {0};
+
+	error = asn1_reader_read(reader, &field, 0, 3, ASN1_FLAG_OPTIONAL);
+
+	if (error != ASN1_SUCCESS)
+	{
+		return X509_SUCCESS;
+	}
+
+	// Extensions are only allowed in V3 certificates.
+	if (certificate->version != X509_CERTIFICATE_V3)
+	{
+		return X509_INVALID_CERTIFICATE;
+	}
+
+	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
+
+	while (asn1_reader_pending(reader))
+	{
+	}
+
+	ASN1_PARSE(asn1_reader_pop(reader));
+
+	return X509_SUCCESS;
+}
+
 #define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
 #define TO_DIGIT(x) ((x) - '0')
 
@@ -565,6 +594,9 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 
 	// TBS Subject Unique ID
 	X509_PARSE(x509_parse_uid(certificate, &certificate->subject_uid, reader, 2));
+
+	// TBS Extensions
+	X509_PARSE(x509_parse_extensions(certificate, reader));
 
 	// TBS Certificate Sequence End
 	ASN1_PARSE(asn1_reader_pop(reader));
