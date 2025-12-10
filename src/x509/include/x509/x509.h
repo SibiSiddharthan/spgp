@@ -120,6 +120,7 @@ typedef struct _x509_certificate
 	uint64_t validity_end;
 
 	byte_t signature_algorithm;
+	byte_t certificate_algorithm;
 
 	x509_rdn *issuer_rdn;
 	x509_rdn *subject_rdn;
@@ -127,6 +128,7 @@ typedef struct _x509_certificate
 	x509_uid *issuer_uid;
 	x509_uid *subject_uid;
 
+	void *public_key;
 	void *signature;
 
 	void **extensions;

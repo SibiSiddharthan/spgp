@@ -285,6 +285,35 @@ static x509_error_t x509_parse_uid(x509_certificate *certificate, x509_uid **uid
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_public_key(x509_certificate *certificate, asn1_reader *reader)
+{
+	asn1_field algorithm = {0};
+	asn1_field public_key = {0};
+
+	// Public Key Info Sequence Start
+	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
+
+	// Signature Algorithm
+	ASN1_PARSE(asn1_reader_read(reader, &algorithm, ASN1_OBJECT_IDENTIFIER, 0, 0));
+
+	// Public Key
+	ASN1_PARSE(asn1_reader_read(reader, &public_key, ASN1_BIT_STRING, 0, 0));
+
+	// Public Key Info Sequence End
+	ASN1_PARSE(asn1_reader_pop(reader));
+
+	certificate->certificate_algorithm = x509_algorithm_oid_decode(algorithm.data, algorithm.data_size);
+
+	if (certificate->signature_algorithm == X509_RESERVED)
+	{
+		return X509_UNKNOWN_SIGNATURE_ALGORITHM;
+	}
+
+	ASN1_PARSE(asn1_parse_bit_string(&certificate->public_key, &public_key));
+
+	return X509_SUCCESS;
+}
+
 static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_reader *reader)
 {
 	asn1_error_t error = 0;
@@ -598,6 +627,9 @@ static x509_error_t x509_certificate_parse_tbs_certificate(x509_certificate *cer
 
 	// TBS Certificate Subject
 	X509_PARSE(x509_parse_rdn(&certificate->subject_rdn, reader));
+
+	// TBS Public Key Info
+	X509_PARSE(x509_parse_public_key(certificate, reader));
 
 	// TBS Issuer Unique ID
 	X509_PARSE(x509_parse_uid(certificate, &certificate->issuer_uid, reader, 1));
