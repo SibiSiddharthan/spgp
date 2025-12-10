@@ -83,6 +83,14 @@ typedef enum _x509_extension_type
 
 } x509_extension_type;
 
+typedef struct _x509_extension
+{
+	x509_extension_type type;
+	byte_t critical;
+	void *extension;
+
+} x509_extension;
+
 typedef struct _x509_name
 {
 	x509_rdn_type attribute_type;
