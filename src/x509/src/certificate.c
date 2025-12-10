@@ -226,9 +226,9 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 	return X509_SUCCESS;
 }
 
-static asn1_error_t asn1_parse_bit_string(x509_uid **uid, asn1_field *field)
+static asn1_error_t asn1_parse_bit_string(asn1_bitstring **uid, asn1_field *field)
 {
-	x509_uid *octets = NULL;
+	asn1_bitstring *octets = NULL;
 	uint32_t unused_bits = ((byte_t *)field->data)[0];
 	uint32_t used_bits = ((field->data_size - 1) * 8) - unused_bits;
 
@@ -242,7 +242,7 @@ static asn1_error_t asn1_parse_bit_string(x509_uid **uid, asn1_field *field)
 		return ASN1_INVALID_OCTET_STRING;
 	}
 
-	octets = zmalloc(sizeof(x509_uid) + (field->data_size - 1));
+	octets = zmalloc(sizeof(asn1_bitstring) + (field->data_size - 1));
 
 	if (octets == NULL)
 	{
@@ -250,7 +250,7 @@ static asn1_error_t asn1_parse_bit_string(x509_uid **uid, asn1_field *field)
 	}
 
 	octets->bits = used_bits;
-	octets->data = PTR_OFFSET(octets, sizeof(x509_uid));
+	octets->data = PTR_OFFSET(octets, sizeof(asn1_bitstring));
 
 	memcpy(octets->data, PTR_OFFSET(field->data, 1), field->data_size - 1);
 
@@ -259,7 +259,7 @@ static asn1_error_t asn1_parse_bit_string(x509_uid **uid, asn1_field *field)
 	return ASN1_SUCCESS;
 }
 
-static x509_error_t x509_parse_uid(x509_certificate *certificate, x509_uid **uid, asn1_reader *reader, uint32_t context)
+static x509_error_t x509_parse_uid(x509_certificate *certificate, asn1_bitstring **uid, asn1_reader *reader, uint32_t context)
 {
 	asn1_error_t error = 0;
 	asn1_field field = {0};

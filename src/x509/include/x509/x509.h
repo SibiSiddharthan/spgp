@@ -103,13 +103,6 @@ typedef struct _x509_rdn
 	struct _x509_rdn *next;
 } x509_rdn;
 
-typedef struct _x509_uid
-{
-	size_t bits;
-	void *data;
-
-} x509_uid;
-
 typedef struct _x509_certificate
 {
 	byte_t version;
@@ -125,11 +118,11 @@ typedef struct _x509_certificate
 	x509_rdn *issuer_rdn;
 	x509_rdn *subject_rdn;
 
-	x509_uid *issuer_uid;
-	x509_uid *subject_uid;
+	asn1_bitstring *issuer_uid;
+	asn1_bitstring *subject_uid;
 
-	void *public_key;
-	void *signature;
+	asn1_bitstring *public_key;
+	asn1_bitstring *signature;
 
 	void **extensions;
 

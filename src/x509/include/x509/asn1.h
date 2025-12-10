@@ -58,6 +58,13 @@ typedef struct _asn1_field
 
 } asn1_field;
 
+typedef struct _asn1_bitstring
+{
+	size_t bits;
+	void *data;
+
+} asn1_bitstring;
+
 asn1_error_t asn1_header_read(asn1_field *field, void *data, size_t size);
 size_t asn1_header_write(asn1_field *field, void *buffer, size_t size);
 
