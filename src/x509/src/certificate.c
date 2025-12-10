@@ -49,10 +49,24 @@
 
 static x509_error_t x509_certificate_parse_version(x509_certificate *certificate, asn1_reader *reader)
 {
+	asn1_error_t error = 0;
 	asn1_field field = {0};
 
-	ASN1_PARSE(asn1_reader_read(reader, &field, 0, 0, ASN1_FLAG_CONTEXT_TAG));
-	ASN1_PARSE(asn1_reader_read(reader, &field, ASN1_INTEGER, 0, 0));
+	error = asn1_reader_read(reader, &field, 0, 0, ASN1_FLAG_CONTEXT_TAG | ASN1_FLAG_OPTIONAL);
+
+	if (error != ASN1_SUCCESS)
+	{
+		// Default
+		certificate->version = X509_CERTIFICATE_V1;
+		return X509_SUCCESS;
+	}
+
+	error = asn1_reader_read(reader, &field, ASN1_INTEGER, 0, 0);
+
+	if (error != ASN1_SUCCESS)
+	{
+		return X509_INVALID_CERTIFICATE;
+	}
 
 	if (field.data_size > 1)
 	{
