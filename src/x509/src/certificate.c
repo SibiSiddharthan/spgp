@@ -350,6 +350,32 @@ static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_re
 
 	while (asn1_reader_pending(reader))
 	{
+		asn1_field type = {0};
+		asn1_field criticial = {0};
+		asn1_field octets = {0};
+
+		// Extension Identifier
+		error = asn1_reader_read(reader, &type, ASN1_OBJECT_IDENTIFIER, 0, 0);
+
+		if (error != ASN1_SUCCESS)
+		{
+			return X509_INVALID_CERTIFICATE;
+		}
+
+		// Criticality
+		error = asn1_reader_read(reader, &criticial, ASN1_BOOLEAN, 0, ASN1_FLAG_OPTIONAL);
+
+		if (error != ASN1_SUCCESS)
+		{
+		}
+
+		// Extension
+		error = asn1_reader_read(reader, &octets, ASN1_OCTET_STRING, 0, 0);
+
+		if (error != ASN1_SUCCESS)
+		{
+			return X509_INVALID_CERTIFICATE;
+		}
 	}
 
 	ASN1_PARSE(asn1_reader_pop(reader));
