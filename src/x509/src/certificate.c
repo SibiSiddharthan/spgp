@@ -328,6 +328,61 @@ static x509_error_t x509_parse_public_key(x509_certificate *certificate, asn1_re
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_extension(x509_certificate *certificate, asn1_field *type, asn1_field *criticial, asn1_field *octets)
+{
+	x509_extension_type ext_type = 0;
+	byte_t ext_criticial = 0;
+
+	asn1_reader *reader = NULL;
+
+	ext_type = x509_extension_oid_decode(type->data, type->data_size);
+	ext_criticial = ((uintptr_t)criticial->data) != 0;
+
+	if (ext_type == X509_EXT_RESERVED)
+	{
+		if (ext_criticial)
+		{
+			return X509_UNKNOWN_CRITICAL_EXTENSION;
+		}
+	}
+
+	reader = asn1_reader_new(octets->data, octets->data_size);
+
+	if (reader == NULL)
+	{
+		return X509_NO_MEMORY;
+	}
+
+	switch (ext_type)
+	{
+	case X509_EXT_AUTHORITY_KEY_IDENTIFIER:
+	case X509_EXT_SUBJECT_KEY_IDENTIFIER:
+	case X509_EXT_KEY_USAGE:
+	case X509_EXT_CERTIFICATE_POLICIES:
+	case X509_EXT_POLICY_MAPPINGS:
+	case X509_EXT_SUBJECT_ALTERNATE_NAME:
+	case X509_EXT_ISSUER_ALTERNATE_NAME:
+	case X509_EXT_SUBJECT_DIRECTORY_ATTRIBUTES:
+	case X509_EXT_BASIC_CONSTRAINTS:
+	case X509_EXT_NAME_CONSTRAINTS:
+	case X509_EXT_POLICY_CONSTRAINTS:
+	case X509_EXT_EXTENDED_KEY_USAGE:
+	case X509_EXT_PRIVATE_KEY_USAGE_PERIOD:
+	case X509_EXT_INHIBIT_ANYPOLICY:
+	case X509_EXT_CRL_DISTRIBUTION_POINTS:
+	case X509_EXT_DELTA_CRL_DISTRIBUTION_POINTS:
+
+	case X509_EXT_AUTHORITY_INFORMATION_ACCESS:
+	case X509_EXT_SUBJECT_INFORMATION_ACCESS:
+
+	default:
+		// Unknown non critical extensions
+		break;
+	}
+
+	return X509_SUCCESS;
+}
+
 static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_reader *reader)
 {
 	asn1_error_t error = 0;
@@ -367,6 +422,11 @@ static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_re
 
 		if (error != ASN1_SUCCESS)
 		{
+			// Default is false
+			criticial.tag = ASN1_BOOLEAN;
+			criticial.header_size = 2;
+			criticial.data_size = 1;
+			criticial.data = 0;
 		}
 
 		// Extension
@@ -376,6 +436,8 @@ static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_re
 		{
 			return X509_INVALID_CERTIFICATE;
 		}
+
+		X509_PARSE(x509_parse_extension(certificate, &type, &criticial, &octets));
 	}
 
 	ASN1_PARSE(asn1_reader_pop(reader));
