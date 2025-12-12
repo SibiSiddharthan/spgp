@@ -31,6 +31,7 @@
 
 typedef enum _asn1_type
 {
+	ASN1_BOOLEAN = 0x01,
 	ASN1_INTEGER = 0x02,
 	ASN1_BIT_STRING = 0x03,
 	ASN1_OCTET_STRING = 0x04,

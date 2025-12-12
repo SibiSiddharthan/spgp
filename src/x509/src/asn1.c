@@ -34,6 +34,7 @@ static byte_t asn1_validate_type(byte_t tag)
 {
 	switch (tag)
 	{
+	case ASN1_BOOLEAN:
 	case ASN1_INTEGER:
 	case ASN1_BIT_STRING:
 	case ASN1_OCTET_STRING:
@@ -243,6 +244,8 @@ size_t asn1_field_write(asn1_field *field, void *buffer, size_t size)
 
 	switch (field->tag)
 	{
+	case ASN1_BOOLEAN:
+		break;
 	case ASN1_INTEGER:
 		break;
 	case ASN1_NULL:
