@@ -600,19 +600,19 @@ static x509_error_t x509_parse_extension(x509_certificate *certificate, asn1_fie
 		asn1_field not_before = {0};
 		asn1_field not_after = {0};
 
-		error = asn1_reader_read(reader, &not_before, ASN1_GENERAL_TIME, 0,
-								 (ASN1_FLAG_CONTEXT_TAG | ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL));
+		error = asn1_reader_read(reader, &not_before, 0, 0, (ASN1_FLAG_CONTEXT_TAG | ASN1_FLAG_OPTIONAL));
 
 		if (error == ASN1_SUCCESS)
 		{
+			ASN1_PARSE(asn1_reader_read(reader, &not_before, ASN1_GENERAL_TIME, 0, 0));
 			certificate->private_validity_start = x509_parse_validity_time(&not_before);
 		}
 
-		error = asn1_reader_read(reader, &not_after, ASN1_GENERAL_TIME, 1,
-								 (ASN1_FLAG_CONTEXT_TAG | ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL));
+		error = asn1_reader_read(reader, &not_after, 0, 1, (ASN1_FLAG_CONTEXT_TAG | ASN1_FLAG_OPTIONAL));
 
 		if (error == ASN1_SUCCESS)
 		{
+			ASN1_PARSE(asn1_reader_read(reader, &not_after, ASN1_GENERAL_TIME, 0, 0));
 			certificate->private_validity_end = x509_parse_validity_time(&not_after);
 		}
 	}
