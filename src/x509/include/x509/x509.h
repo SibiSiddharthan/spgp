@@ -111,6 +111,16 @@ typedef struct _x509_rdn
 	struct _x509_rdn *next;
 } x509_rdn;
 
+#define X509_KEY_USAGE_DIGITAL_SIGN      0x01
+#define X509_KEY_USAGE_NON_REPUDIATION   0x02
+#define X509_KEY_USAGE_KEY_ENCIPHERMENT  0x04
+#define X509_KEY_USAGE_DATA_ENCIPHERMENT 0x08
+#define X509_KEY_USAGE_KEY_AGREEMENT     0x10
+#define X509_KEY_USAGE_KEY_CERT_SIGN     0x20
+#define X509_KEY_USAGE_CRL_SIGN          0x40
+#define X509_KEY_USAGE_ENCIPHER_ONLY     0x80
+#define X509_KEY_USAGE_DECIPHER_ONLY     0x100
+
 typedef struct _x509_certificate
 {
 	byte_t version;
@@ -131,6 +141,8 @@ typedef struct _x509_certificate
 
 	asn1_bitstring *public_key;
 	asn1_bitstring *signature;
+
+	uint16_t key_usage;
 
 	void **extensions;
 
