@@ -240,7 +240,7 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 	return X509_SUCCESS;
 }
 
-static asn1_error_t asn1_parse_bit_string(asn1_bitstring **uid, asn1_field *field)
+static asn1_error_t asn1_parse_bit_string(asn1_bitstring **bitstring, asn1_field *field)
 {
 	asn1_bitstring *octets = NULL;
 	uint32_t unused_bits = ((byte_t *)field->data)[0];
@@ -268,7 +268,7 @@ static asn1_error_t asn1_parse_bit_string(asn1_bitstring **uid, asn1_field *fiel
 
 	memcpy(octets->data, PTR_OFFSET(field->data, 1), field->data_size - 1);
 
-	*uid = octets;
+	*bitstring = octets;
 
 	return ASN1_SUCCESS;
 }
