@@ -111,6 +111,19 @@ typedef struct _x509_rdn
 	struct _x509_rdn *next;
 } x509_rdn;
 
+typedef struct _x509_general_name
+{
+	x509_general_name_type type;
+	uint16_t size;
+	void *value;
+} x509_general_name;
+
+typedef struct _x509_alternate_name
+{
+	x509_general_name *name;
+	struct _x509_alternate_name *next;
+} x509_alternate_name;
+
 #define X509_KEY_USAGE_DIGITAL_SIGN      0x01
 #define X509_KEY_USAGE_NON_REPUDIATION   0x02
 #define X509_KEY_USAGE_KEY_ENCIPHERMENT  0x04
@@ -138,6 +151,9 @@ typedef struct _x509_certificate
 
 	x509_rdn *issuer_rdn;
 	x509_rdn *subject_rdn;
+
+	x509_alternate_name *issuer_alt;
+	x509_alternate_name *subject_alt;
 
 	asn1_bitstring *issuer_uid;
 	asn1_bitstring *subject_uid;
