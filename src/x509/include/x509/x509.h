@@ -134,6 +134,13 @@ typedef struct _x509_alternate_name
 #define X509_KEY_USAGE_ENCIPHER_ONLY     0x80
 #define X509_KEY_USAGE_DECIPHER_ONLY     0x100
 
+#define X509_KEY_EXT_USAGE_SERVER_AUTH      0x01
+#define X509_KEY_EXT_USAGE_CLIENT_AUTH      0x02
+#define X509_KEY_EXT_USAGE_CODE_SIGNING     0x04
+#define X509_KEY_EXT_USAGE_EMAIL_PROTECTION 0x08
+#define X509_KEY_EXT_USAGE_TIME_STAMPING    0x10
+#define X509_KEY_EXT_USAGE_OCSP_SIGNING     0x20
+
 typedef struct _x509_certificate
 {
 	byte_t version;
@@ -162,6 +169,7 @@ typedef struct _x509_certificate
 	asn1_bitstring *signature;
 
 	uint16_t key_usage;
+	uint16_t key_ext_usage;
 
 	void **extensions;
 
