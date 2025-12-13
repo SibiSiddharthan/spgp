@@ -240,242 +240,6 @@ static x509_error_t x509_parse_rdn(x509_rdn **names, asn1_reader *reader)
 	return X509_SUCCESS;
 }
 
-static asn1_error_t asn1_parse_bit_string(asn1_bitstring **bitstring, asn1_field *field)
-{
-	asn1_bitstring *octets = NULL;
-	uint32_t unused_bits = ((byte_t *)field->data)[0];
-	uint32_t used_bits = ((field->data_size - 1) * 8) - unused_bits;
-
-	if (unused_bits > 8)
-	{
-		return ASN1_INVALID_OCTET_STRING;
-	}
-
-	if (field->data_size < 2)
-	{
-		return ASN1_INVALID_OCTET_STRING;
-	}
-
-	octets = zmalloc(sizeof(asn1_bitstring) + (field->data_size - 1));
-
-	if (octets == NULL)
-	{
-		return ASN1_NO_MEMEORY;
-	}
-
-	octets->bits = used_bits;
-	octets->data = PTR_OFFSET(octets, sizeof(asn1_bitstring));
-
-	memcpy(octets->data, PTR_OFFSET(field->data, 1), field->data_size - 1);
-
-	*bitstring = octets;
-
-	return ASN1_SUCCESS;
-}
-
-static x509_error_t x509_parse_uid(x509_certificate *certificate, asn1_bitstring **uid, asn1_reader *reader, uint32_t context)
-{
-	asn1_error_t error = 0;
-	asn1_field field = {0};
-
-	error = asn1_reader_read(reader, &field, 0, context, ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL);
-
-	if (error == ASN1_SUCCESS)
-	{
-		// The unique identifiers should only present in V2 and V3 certificates.
-		if (certificate->version == X509_CERTIFICATE_V1)
-		{
-			return X509_INVALID_CERTIFICATE;
-		}
-
-		error = asn1_parse_bit_string(uid, &field);
-
-		if (error != ASN1_SUCCESS)
-		{
-			return X509_INVALID_CERTIFICATE;
-		}
-	}
-
-	return X509_SUCCESS;
-}
-
-static x509_error_t x509_parse_public_key(x509_certificate *certificate, asn1_reader *reader)
-{
-	asn1_field algorithm = {0};
-	asn1_field public_key = {0};
-
-	// Public Key Info Sequence Start
-	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
-
-	// Signature Algorithm
-	ASN1_PARSE(asn1_reader_read(reader, &algorithm, ASN1_OBJECT_IDENTIFIER, 0, 0));
-
-	// Public Key
-	ASN1_PARSE(asn1_reader_read(reader, &public_key, ASN1_BIT_STRING, 0, 0));
-
-	// Public Key Info Sequence End
-	ASN1_PARSE(asn1_reader_pop(reader));
-
-	certificate->certificate_algorithm = x509_algorithm_oid_decode(algorithm.data, algorithm.data_size);
-
-	if (certificate->signature_algorithm == X509_RESERVED)
-	{
-		return X509_UNKNOWN_SIGNATURE_ALGORITHM;
-	}
-
-	ASN1_PARSE(asn1_parse_bit_string(&certificate->public_key, &public_key));
-
-	return X509_SUCCESS;
-}
-
-static x509_error_t x509_parse_key_usage(x509_certificate *certificate, asn1_field *usage)
-{
-	byte_t *bits = usage->data;
-	uint32_t unused_bits = bits[0];
-	uint32_t used_bits = ((usage->data_size - 1) * 8) - unused_bits;
-
-	if (used_bits == 0 || used_bits > 9)
-	{
-		return X509_INVALID_KEY_USAGE;
-	}
-
-	certificate->key_usage = 0;
-	certificate->key_usage |= bits[1];
-
-	if (used_bits > 8)
-	{
-		certificate->key_usage |= (bits[2] >> 7) << 8;
-	}
-
-	return X509_SUCCESS;
-}
-
-static x509_error_t x509_parse_extension(x509_certificate *certificate, asn1_field *type, asn1_field *criticial, asn1_field *octets)
-{
-	x509_extension_type ext_type = 0;
-	byte_t ext_criticial = 0;
-
-	asn1_reader *reader = NULL;
-
-	ext_type = x509_extension_oid_decode(type->data, type->data_size);
-	ext_criticial = ((uintptr_t)criticial->data) != 0;
-
-	if (ext_type == X509_EXT_RESERVED)
-	{
-		if (ext_criticial)
-		{
-			return X509_UNKNOWN_CRITICAL_EXTENSION;
-		}
-	}
-
-	reader = asn1_reader_new(octets->data, octets->data_size);
-
-	if (reader == NULL)
-	{
-		return X509_NO_MEMORY;
-	}
-
-	switch (ext_type)
-	{
-	case X509_EXT_AUTHORITY_KEY_IDENTIFIER:
-	case X509_EXT_SUBJECT_KEY_IDENTIFIER:
-	case X509_EXT_KEY_USAGE:
-	{
-		asn1_field usage = {0};
-
-		ASN1_PARSE(asn1_reader_read(reader, &usage, ASN1_BIT_STRING, 0, 0));
-		X509_PARSE(x509_parse_key_usage(certificate, &usage));
-	}
-	break;
-	case X509_EXT_CERTIFICATE_POLICIES:
-	case X509_EXT_POLICY_MAPPINGS:
-	case X509_EXT_SUBJECT_ALTERNATE_NAME:
-	case X509_EXT_ISSUER_ALTERNATE_NAME:
-	case X509_EXT_SUBJECT_DIRECTORY_ATTRIBUTES:
-	case X509_EXT_BASIC_CONSTRAINTS:
-	case X509_EXT_NAME_CONSTRAINTS:
-	case X509_EXT_POLICY_CONSTRAINTS:
-	case X509_EXT_EXTENDED_KEY_USAGE:
-	case X509_EXT_PRIVATE_KEY_USAGE_PERIOD:
-	case X509_EXT_INHIBIT_ANYPOLICY:
-	case X509_EXT_CRL_DISTRIBUTION_POINTS:
-	case X509_EXT_DELTA_CRL_DISTRIBUTION_POINTS:
-
-	case X509_EXT_AUTHORITY_INFORMATION_ACCESS:
-	case X509_EXT_SUBJECT_INFORMATION_ACCESS:
-
-	default:
-		// Unknown non critical extensions
-		break;
-	}
-
-	asn1_reader_delete(reader);
-
-	return X509_SUCCESS;
-}
-
-static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_reader *reader)
-{
-	asn1_error_t error = 0;
-	asn1_field field = {0};
-
-	error = asn1_reader_read(reader, &field, 0, 3, ASN1_FLAG_OPTIONAL);
-
-	if (error != ASN1_SUCCESS)
-	{
-		return X509_SUCCESS;
-	}
-
-	// Extensions are only allowed in V3 certificates.
-	if (certificate->version != X509_CERTIFICATE_V3)
-	{
-		return X509_INVALID_CERTIFICATE;
-	}
-
-	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
-
-	while (asn1_reader_pending(reader))
-	{
-		asn1_field type = {0};
-		asn1_field criticial = {0};
-		asn1_field octets = {0};
-
-		// Extension Identifier
-		error = asn1_reader_read(reader, &type, ASN1_OBJECT_IDENTIFIER, 0, 0);
-
-		if (error != ASN1_SUCCESS)
-		{
-			return X509_INVALID_CERTIFICATE;
-		}
-
-		// Criticality
-		error = asn1_reader_read(reader, &criticial, ASN1_BOOLEAN, 0, ASN1_FLAG_OPTIONAL);
-
-		if (error != ASN1_SUCCESS)
-		{
-			// Default is false
-			criticial.tag = ASN1_BOOLEAN;
-			criticial.header_size = 2;
-			criticial.data_size = 1;
-			criticial.data = 0;
-		}
-
-		// Extension
-		error = asn1_reader_read(reader, &octets, ASN1_OCTET_STRING, 0, 0);
-
-		if (error != ASN1_SUCCESS)
-		{
-			return X509_INVALID_CERTIFICATE;
-		}
-
-		X509_PARSE(x509_parse_extension(certificate, &type, &criticial, &octets));
-	}
-
-	ASN1_PARSE(asn1_reader_pop(reader));
-
-	return X509_SUCCESS;
-}
-
 #define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
 #define TO_DIGIT(x) ((x) - '0')
 
@@ -672,6 +436,264 @@ static uint64_t x509_parse_validity_time(asn1_field *field)
 	}
 
 	return epoch;
+}
+
+static asn1_error_t asn1_parse_bit_string(asn1_bitstring **bitstring, asn1_field *field)
+{
+	asn1_bitstring *octets = NULL;
+	uint32_t unused_bits = ((byte_t *)field->data)[0];
+	uint32_t used_bits = ((field->data_size - 1) * 8) - unused_bits;
+
+	if (unused_bits > 8)
+	{
+		return ASN1_INVALID_OCTET_STRING;
+	}
+
+	if (field->data_size < 2)
+	{
+		return ASN1_INVALID_OCTET_STRING;
+	}
+
+	octets = zmalloc(sizeof(asn1_bitstring) + (field->data_size - 1));
+
+	if (octets == NULL)
+	{
+		return ASN1_NO_MEMEORY;
+	}
+
+	octets->bits = used_bits;
+	octets->data = PTR_OFFSET(octets, sizeof(asn1_bitstring));
+
+	memcpy(octets->data, PTR_OFFSET(field->data, 1), field->data_size - 1);
+
+	*bitstring = octets;
+
+	return ASN1_SUCCESS;
+}
+
+static x509_error_t x509_parse_uid(x509_certificate *certificate, asn1_bitstring **uid, asn1_reader *reader, uint32_t context)
+{
+	asn1_error_t error = 0;
+	asn1_field field = {0};
+
+	error = asn1_reader_read(reader, &field, 0, context, ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL);
+
+	if (error == ASN1_SUCCESS)
+	{
+		// The unique identifiers should only present in V2 and V3 certificates.
+		if (certificate->version == X509_CERTIFICATE_V1)
+		{
+			return X509_INVALID_CERTIFICATE;
+		}
+
+		error = asn1_parse_bit_string(uid, &field);
+
+		if (error != ASN1_SUCCESS)
+		{
+			return X509_INVALID_CERTIFICATE;
+		}
+	}
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_parse_public_key(x509_certificate *certificate, asn1_reader *reader)
+{
+	asn1_field algorithm = {0};
+	asn1_field public_key = {0};
+
+	// Public Key Info Sequence Start
+	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
+
+	// Signature Algorithm
+	ASN1_PARSE(asn1_reader_read(reader, &algorithm, ASN1_OBJECT_IDENTIFIER, 0, 0));
+
+	// Public Key
+	ASN1_PARSE(asn1_reader_read(reader, &public_key, ASN1_BIT_STRING, 0, 0));
+
+	// Public Key Info Sequence End
+	ASN1_PARSE(asn1_reader_pop(reader));
+
+	certificate->certificate_algorithm = x509_algorithm_oid_decode(algorithm.data, algorithm.data_size);
+
+	if (certificate->signature_algorithm == X509_RESERVED)
+	{
+		return X509_UNKNOWN_SIGNATURE_ALGORITHM;
+	}
+
+	ASN1_PARSE(asn1_parse_bit_string(&certificate->public_key, &public_key));
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_parse_key_usage(x509_certificate *certificate, asn1_field *usage)
+{
+	byte_t *bits = usage->data;
+	uint32_t unused_bits = bits[0];
+	uint32_t used_bits = ((usage->data_size - 1) * 8) - unused_bits;
+
+	if (used_bits == 0 || used_bits > 9)
+	{
+		return X509_INVALID_KEY_USAGE;
+	}
+
+	certificate->key_usage = 0;
+	certificate->key_usage |= bits[1];
+
+	if (used_bits > 8)
+	{
+		certificate->key_usage |= (bits[2] >> 7) << 8;
+	}
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_parse_extension(x509_certificate *certificate, asn1_field *type, asn1_field *criticial, asn1_field *octets)
+{
+	x509_extension_type ext_type = 0;
+	byte_t ext_criticial = 0;
+
+	asn1_reader *reader = NULL;
+	asn1_error_t error = 0;
+
+	ext_type = x509_extension_oid_decode(type->data, type->data_size);
+	ext_criticial = ((uintptr_t)criticial->data) != 0;
+
+	if (ext_type == X509_EXT_RESERVED)
+	{
+		if (ext_criticial)
+		{
+			return X509_UNKNOWN_CRITICAL_EXTENSION;
+		}
+	}
+
+	reader = asn1_reader_new(octets->data, octets->data_size);
+
+	if (reader == NULL)
+	{
+		return X509_NO_MEMORY;
+	}
+
+	switch (ext_type)
+	{
+	case X509_EXT_AUTHORITY_KEY_IDENTIFIER:
+	case X509_EXT_SUBJECT_KEY_IDENTIFIER:
+	case X509_EXT_KEY_USAGE:
+	{
+		asn1_field usage = {0};
+
+		ASN1_PARSE(asn1_reader_read(reader, &usage, ASN1_BIT_STRING, 0, 0));
+		X509_PARSE(x509_parse_key_usage(certificate, &usage));
+	}
+	break;
+	case X509_EXT_CERTIFICATE_POLICIES:
+	case X509_EXT_POLICY_MAPPINGS:
+	case X509_EXT_SUBJECT_ALTERNATE_NAME:
+	case X509_EXT_ISSUER_ALTERNATE_NAME:
+	case X509_EXT_SUBJECT_DIRECTORY_ATTRIBUTES:
+	case X509_EXT_BASIC_CONSTRAINTS:
+	case X509_EXT_NAME_CONSTRAINTS:
+	case X509_EXT_POLICY_CONSTRAINTS:
+	case X509_EXT_EXTENDED_KEY_USAGE:
+	case X509_EXT_PRIVATE_KEY_USAGE_PERIOD:
+	{
+		asn1_field not_before = {0};
+		asn1_field not_after = {0};
+
+		error = asn1_reader_read(reader, &not_before, ASN1_GENERAL_TIME, 0,
+								 (ASN1_FLAG_CONTEXT_TAG | ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL));
+
+		if (error == ASN1_SUCCESS)
+		{
+			certificate->private_validity_start = x509_parse_validity_time(&not_before);
+		}
+
+		error = asn1_reader_read(reader, &not_after, ASN1_GENERAL_TIME, 1,
+								 (ASN1_FLAG_CONTEXT_TAG | ASN1_FLAG_IMPLICIT_TAG | ASN1_FLAG_OPTIONAL));
+
+		if (error == ASN1_SUCCESS)
+		{
+			certificate->private_validity_end = x509_parse_validity_time(&not_after);
+		}
+	}
+	break;
+	case X509_EXT_INHIBIT_ANYPOLICY:
+	case X509_EXT_CRL_DISTRIBUTION_POINTS:
+	case X509_EXT_DELTA_CRL_DISTRIBUTION_POINTS:
+
+	case X509_EXT_AUTHORITY_INFORMATION_ACCESS:
+	case X509_EXT_SUBJECT_INFORMATION_ACCESS:
+
+	default:
+		// Unknown non critical extensions
+		break;
+	}
+
+	asn1_reader_delete(reader);
+
+	return X509_SUCCESS;
+}
+
+static x509_error_t x509_parse_extensions(x509_certificate *certificate, asn1_reader *reader)
+{
+	asn1_error_t error = 0;
+	asn1_field field = {0};
+
+	error = asn1_reader_read(reader, &field, 0, 3, ASN1_FLAG_OPTIONAL);
+
+	if (error != ASN1_SUCCESS)
+	{
+		return X509_SUCCESS;
+	}
+
+	// Extensions are only allowed in V3 certificates.
+	if (certificate->version != X509_CERTIFICATE_V3)
+	{
+		return X509_INVALID_CERTIFICATE;
+	}
+
+	ASN1_PARSE(asn1_reader_push(reader, ASN1_SEQUENCE, 0, 0));
+
+	while (asn1_reader_pending(reader))
+	{
+		asn1_field type = {0};
+		asn1_field criticial = {0};
+		asn1_field octets = {0};
+
+		// Extension Identifier
+		error = asn1_reader_read(reader, &type, ASN1_OBJECT_IDENTIFIER, 0, 0);
+
+		if (error != ASN1_SUCCESS)
+		{
+			return X509_INVALID_CERTIFICATE;
+		}
+
+		// Criticality
+		error = asn1_reader_read(reader, &criticial, ASN1_BOOLEAN, 0, ASN1_FLAG_OPTIONAL);
+
+		if (error != ASN1_SUCCESS)
+		{
+			// Default is false
+			criticial.tag = ASN1_BOOLEAN;
+			criticial.header_size = 2;
+			criticial.data_size = 1;
+			criticial.data = 0;
+		}
+
+		// Extension
+		error = asn1_reader_read(reader, &octets, ASN1_OCTET_STRING, 0, 0);
+
+		if (error != ASN1_SUCCESS)
+		{
+			return X509_INVALID_CERTIFICATE;
+		}
+
+		X509_PARSE(x509_parse_extension(certificate, &type, &criticial, &octets));
+	}
+
+	ASN1_PARSE(asn1_reader_pop(reader));
+
+	return X509_SUCCESS;
 }
 
 static x509_error_t x509_parse_certificate_validity(x509_certificate *certificate, asn1_reader *reader)

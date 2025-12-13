@@ -130,6 +130,9 @@ typedef struct _x509_certificate
 	uint64_t validity_start;
 	uint64_t validity_end;
 
+	uint64_t private_validity_start;
+	uint64_t private_validity_end;
+
 	byte_t signature_algorithm;
 	byte_t certificate_algorithm;
 
