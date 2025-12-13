@@ -328,6 +328,28 @@ static x509_error_t x509_parse_public_key(x509_certificate *certificate, asn1_re
 	return X509_SUCCESS;
 }
 
+static x509_error_t x509_parse_key_usage(x509_certificate *certificate, asn1_field *usage)
+{
+	byte_t *bits = usage->data;
+	uint32_t unused_bits = bits[0];
+	uint32_t used_bits = ((usage->data_size - 1) * 8) - unused_bits;
+
+	if (used_bits == 0 || used_bits > 9)
+	{
+		return X509_INVALID_KEY_USAGE;
+	}
+
+	certificate->key_usage = 0;
+	certificate->key_usage |= bits[1];
+
+	if (used_bits > 8)
+	{
+		certificate->key_usage |= (bits[2] >> 7) << 8;
+	}
+
+	return X509_SUCCESS;
+}
+
 static x509_error_t x509_parse_extension(x509_certificate *certificate, asn1_field *type, asn1_field *criticial, asn1_field *octets)
 {
 	x509_extension_type ext_type = 0;
@@ -358,6 +380,13 @@ static x509_error_t x509_parse_extension(x509_certificate *certificate, asn1_fie
 	case X509_EXT_AUTHORITY_KEY_IDENTIFIER:
 	case X509_EXT_SUBJECT_KEY_IDENTIFIER:
 	case X509_EXT_KEY_USAGE:
+	{
+		asn1_field usage = {0};
+
+		ASN1_PARSE(asn1_reader_read(reader, &usage, ASN1_BIT_STRING, 0, 0));
+		X509_PARSE(x509_parse_key_usage(certificate, &usage));
+	}
+	break;
 	case X509_EXT_CERTIFICATE_POLICIES:
 	case X509_EXT_POLICY_MAPPINGS:
 	case X509_EXT_SUBJECT_ALTERNATE_NAME:
@@ -379,6 +408,8 @@ static x509_error_t x509_parse_extension(x509_certificate *certificate, asn1_fie
 		// Unknown non critical extensions
 		break;
 	}
+
+	asn1_reader_delete(reader);
 
 	return X509_SUCCESS;
 }
