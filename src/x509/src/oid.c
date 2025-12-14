@@ -1750,6 +1750,22 @@ const byte_t x509_key_ext_usage_email_protection[] = {0x2B, 0x06, 0x01, 0x05, 0x
 const byte_t x509_key_ext_usage_time_stamping[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x08};
 const byte_t x509_key_ext_usage_ocsp_signing[] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x09};
 
+uint32_t x509_key_ext_usage_oid_size(byte_t type)
+{
+	switch (type)
+	{
+	case X509_KEY_EXT_USAGE_SERVER_AUTH:
+	case X509_KEY_EXT_USAGE_CLIENT_AUTH:
+	case X509_KEY_EXT_USAGE_CODE_SIGNING:
+	case X509_KEY_EXT_USAGE_EMAIL_PROTECTION:
+	case X509_KEY_EXT_USAGE_TIME_STAMPING:
+	case X509_KEY_EXT_USAGE_OCSP_SIGNING:
+		return 8;
+	}
+
+	return 0;
+}
+
 static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 {
 	byte_t temp[16] = {0};
