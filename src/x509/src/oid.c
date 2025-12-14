@@ -1766,6 +1766,74 @@ uint32_t x509_key_ext_usage_oid_size(byte_t type)
 	return 0;
 }
 
+uint32_t x509_key_ext_usage_oid_encode(byte_t type, void *buffer, uint32_t size)
+{
+	uint32_t required_size = 0;
+
+	required_size = x509_extension_oid_size(type);
+
+	if (size < required_size)
+	{
+		return 0;
+	}
+
+	if (required_size == 0)
+	{
+		return 0;
+	}
+
+	switch (type)
+	{
+	case X509_KEY_EXT_USAGE_SERVER_AUTH:
+		memcpy(buffer, x509_key_ext_usage_server_auth, required_size);
+		break;
+	case X509_KEY_EXT_USAGE_CLIENT_AUTH:
+		memcpy(buffer, x509_key_ext_usage_client_auth, required_size);
+		break;
+	case X509_KEY_EXT_USAGE_CODE_SIGNING:
+		memcpy(buffer, x509_key_ext_usage_code_signing, required_size);
+		break;
+	case X509_KEY_EXT_USAGE_EMAIL_PROTECTION:
+		memcpy(buffer, x509_key_ext_usage_email_protection, required_size);
+		break;
+	case X509_KEY_EXT_USAGE_TIME_STAMPING:
+		memcpy(buffer, x509_key_ext_usage_time_stamping, required_size);
+		break;
+	case X509_KEY_EXT_USAGE_OCSP_SIGNING:
+		memcpy(buffer, x509_key_ext_usage_ocsp_signing, required_size);
+		break;
+	}
+
+	return required_size;
+}
+
+byte_t x509_key_ext_usage_oid_decode(byte_t *oid, uint32_t size)
+{
+	if (size == 8)
+	{
+		if (memcmp(oid, x509_key_ext_usage_server_auth, 7) == 0)
+		{
+			switch (oid[7])
+			{
+			case 0x01:
+				return X509_KEY_EXT_USAGE_SERVER_AUTH;
+			case 0x02:
+				return X509_KEY_EXT_USAGE_CLIENT_AUTH;
+			case 0x03:
+				return X509_KEY_EXT_USAGE_CODE_SIGNING;
+			case 0x04:
+				return X509_KEY_EXT_USAGE_EMAIL_PROTECTION;
+			case 0x08:
+				return X509_KEY_EXT_USAGE_TIME_STAMPING;
+			case 0x09:
+				return X509_KEY_EXT_USAGE_OCSP_SIGNING;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static uint32_t base128_encode(byte_t *buffer, uint32_t size, uint64_t value)
 {
 	byte_t temp[16] = {0};

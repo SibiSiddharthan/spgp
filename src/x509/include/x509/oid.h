@@ -37,6 +37,8 @@ uint32_t x509_extension_oid_encode(x509_extension_type type, void *buffer, uint3
 x509_extension_type x509_extension_oid_decode(byte_t *oid, uint32_t size);
 
 uint32_t x509_key_ext_usage_oid_size(byte_t type);
+uint32_t x509_key_ext_usage_oid_encode(byte_t type, void *buffer, uint32_t size);
+byte_t x509_key_ext_usage_oid_decode(byte_t *oid, uint32_t size);
 
 uint32_t oid_encode(void *buffer, uint32_t buffer_size, void *oid, uint32_t oid_size);
 uint32_t oid_decode(void *oid, uint32_t oid_size, void *buffer, uint32_t buffer_size);
