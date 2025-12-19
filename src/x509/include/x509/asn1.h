@@ -50,6 +50,51 @@ typedef enum _asn1_type
 
 } asn1_type;
 
+typedef struct _asn1_boolean
+{
+	uint8_t value;
+
+} asn1_boolean;
+
+typedef struct _asn1_integer
+{
+	size_t value_size;
+
+	union
+	{
+		int64_t small_value;
+		void *large_value;
+	};
+
+} asn1_integer;
+
+typedef struct _asn1_bitstring
+{
+	size_t bits;
+	void *data;
+
+} asn1_bitstring;
+
+typedef struct _asn1_octets
+{
+	size_t size;
+	void *data;
+
+} asn1_octets;
+
+typedef struct _asn1_string
+{
+	size_t size;
+	void *data;
+
+} asn1_string;
+
+typedef struct _asn1_time
+{
+	uint64_t time;
+
+} asn1_time;
+
 typedef struct _asn1_field
 {
 	byte_t tag;
