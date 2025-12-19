@@ -80,14 +80,15 @@ typedef struct _asn1_octets
 	size_t size;
 	void *data;
 
-} asn1_octets;
+} asn1_octets, asn1_string, asn1_oid;
 
-typedef struct _asn1_string
+typedef struct _asn1_list
 {
-	size_t size;
-	void *data;
+	uint32_t capacity;
+	uint32_t count;
+	void **fields;
 
-} asn1_string;
+} asn1_sequence, asn1_set;
 
 typedef struct _asn1_time
 {
@@ -100,7 +101,20 @@ typedef struct _asn1_field
 	byte_t tag;
 	byte_t header_size;
 	size_t data_size;
+
 	void *data;
+
+	union
+	{
+		asn1_boolean boolean;
+		asn1_integer integer;
+		asn1_bitstring bitstring;
+		asn1_octets octets;
+		asn1_string string;
+		asn1_oid oid;
+		asn1_sequence sequence;
+		asn1_set set;
+	};
 
 } asn1_field;
 
