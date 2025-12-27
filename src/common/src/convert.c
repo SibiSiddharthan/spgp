@@ -59,6 +59,65 @@ uint32_t print_raw_hex(buffer_t *buffer, void *data, size_t size, uint8_t upper)
 	return result;
 }
 
+uint32_t scan_raw_hex(buffer_t *buffer, size_t size, void *data)
+{
+	byte_t *out = data;
+	byte_t lower = 0, upper = 0;
+
+	uint32_t result = 0;
+
+	for (uint32_t i = 0; i < size; i += 2)
+	{
+		upper = peekbyte(buffer, 0);
+		lower = peekbyte(buffer, 1);
+
+		if (hex_to_nibble_table[upper] != 255 && hex_to_nibble_table[lower] != 255)
+		{
+			*(out++) = (hex_to_nibble_table[upper] << 4) + hex_to_nibble_table[lower];
+			advance(buffer, 2);
+
+			result += 2;
+
+			continue;
+		}
+
+		if (hex_to_nibble_table[upper] == 255)
+		{
+			break;
+		}
+
+		if (hex_to_nibble_table[lower] == 255)
+		{
+			*(out++) = hex_to_nibble_table[upper] << 4;
+			advance(buffer, 1);
+
+			result += 1;
+
+			break;
+		}
+	}
+
+	// Shift the data
+	if ((result % 2) != 0)
+	{
+		byte_t spill = 0;
+		byte_t temp = 0;
+
+		out = data;
+
+		for (uint32_t i = 0; i < result; i += 2)
+		{
+			temp = *out & 0xF;
+			*out = (spill << 4) | (*out >> 4);
+			spill = temp;
+
+			out++;
+		}
+	}
+
+	return result;
+}
+
 typedef struct _digit_parse_state
 {
 	uint8_t period;

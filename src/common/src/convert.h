@@ -641,5 +641,6 @@ uint32_t utf16_encode(byte_t buffer[32], uint32_t codepoint);
 uint32_t utf16_decode(void *buffer, uint8_t size, uint32_t *codepoint);
 
 uint32_t print_raw_hex(buffer_t *buffer, void *data, size_t size, uint8_t upper);
+uint32_t scan_raw_hex(buffer_t *buffer, size_t size, void *data);
 
 #endif
