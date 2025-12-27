@@ -54,6 +54,8 @@ typedef enum _scan_type
 	SCAN_POINTER, // p
 	SCAN_RESULT,  // n
 
+	SCAN_RAW_HEX, // R
+
 	SCAN_UNKNOWN
 
 } scan_type;
@@ -243,6 +245,10 @@ static void parse_scan_specifier(buffer_t *format, scan_config *config, variadic
 		break;
 	case 'n':
 		config->type = SCAN_RESULT;
+		break;
+
+	case 'R':
+		config->type = SCAN_RAW_HEX;
 		break;
 
 	default:
@@ -915,6 +921,11 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		}
 
 		return 0;
+	}
+
+	if (config->type == SCAN_RAW_HEX)
+	{
+		return scan_raw_hex(buffer, 0, config->data);
 	}
 
 	return 0;
