@@ -161,6 +161,11 @@ typedef struct _ec_point
 	bignum_t *x, *y;
 } ec_point;
 
+typedef struct _ec_affine_point
+{
+	bignum_t *x, *y, *z;
+} ec_affine_point;
+
 typedef struct _ec_group
 {
 	curve_id id;
@@ -186,9 +191,17 @@ typedef struct _ec_group
 	ec_point *(*_add)(struct _ec_group *, struct _ec_point *, struct _ec_point *, struct _ec_point *);
 	ec_point *(*_double)(struct _ec_group *, struct _ec_point *, struct _ec_point *);
 	ec_point *(*_multiply)(struct _ec_group *, struct _ec_point *, struct _ec_point *, bignum_t *);
+
+	ec_point *(*_montgomery_ladder_multiply)(struct _ec_group *, struct _ec_point *, struct _ec_point *, bignum_t *);
+	ec_point *(*_fast_table_multiply)(struct _ec_group *, struct _ec_point *, struct _ec_point *, bignum_t *);
+
+	ec_affine_point *(*_affine_encode)(struct _ec_group *, struct _ec_point *);
+	ec_point *(*_affine_decode)(struct _ec_group *, struct _ec_affine_point *);
+
 	uint32_t (*_on_curve)(struct _ec_group *, struct _ec_point *);
 	uint32_t (*_is_identity)(struct _ec_group *, struct _ec_point *);
 	void (*_make_identity)(struct _ec_group *, struct _ec_point *);
+
 	uint32_t (*_encode)(struct _ec_group *, struct _ec_point *, void *, uint32_t, uint32_t);
 	ec_point *(*_decode)(struct _ec_group *, struct _ec_point *, void *, uint32_t);
 
