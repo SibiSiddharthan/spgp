@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2024 - 2025 Sibi Siddharthan
+   Copyright (c) 2024 - 2026 Sibi Siddharthan
 
    Distributed under the MIT license.
    Refer to the LICENSE file at the root directory for details.
@@ -18,7 +18,7 @@ spgp_command command = {0};
 
 static const char *version = "\
 sgpg 0.1\n\
-Copyright (c) 2024 - 2025 Sibi Siddharthan\n\
+Copyright (c) 2024 - 2026 Sibi Siddharthan\n\
 Distributed under the MIT license\n\
 \n\
 Supported algorithms:\n\
